@@ -6,7 +6,7 @@
 <title>Налоговик — Brand Preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Manrope:wght@400;500;600;700&family=Nunito+Sans:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -163,10 +163,7 @@ h1 {
   margin-bottom: 10px;
   text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
-.v-hero-btns {
-  display: flex;
-  gap: 8px;
-}
+.v-hero-btns { display: flex; gap: 8px; }
 .btn-primary {
   background: var(--accent);
   color: #fff;
@@ -187,13 +184,11 @@ h1 {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  font-family: var(--font), Inter, sans-serif;
   backdrop-filter: blur(4px);
 }
 .v-bottom {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0;
   background: var(--bg);
 }
 .v-card {
@@ -248,7 +243,7 @@ h1 {
 }
 .v-typo-body {
   font-size: 12px;
-  color: #111111;
+  color: #222;
   line-height: 1.55;
   margin-bottom: 6px;
 }
@@ -266,7 +261,7 @@ h1 {
 <body>
 
 <h1>Налоговик — Brand Preview</h1>
-<p class="subtitle">p2ptax.ru · 10 color variants · 2025 trends</p>
+<p class="subtitle">p2ptax.ru · 10 вариантов · юридическо-налоговая тематика</p>
 
 <div class="grid" id="grid"></div>
 
@@ -275,104 +270,104 @@ const IMAGE = 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=90
 
 const variants = [
   {
-    num: '01', name: 'Fintech Clean', mood: 'Digital trust',
-    bg: '#F8FAFB', primary: '#0F2B47', accent: '#3B82F6',
-    muted: '#7A90A8', overlayRgb: '15,43,71',
+    num: '01', name: 'Государственный', mood: 'Доверие как у ФНС, но человечнее',
+    bg: '#F4F8FC', primary: '#0F2447', accent: '#1A5BA8',
+    muted: '#6A80A0', overlayRgb: '15,36,71',
     font: 'Inter',
-    headline: 'Найдите налогового эксперта',
+    headline: 'Найдите вашего налогового эксперта',
     tag: 'Налоговый маркетплейс',
-    card: { label: 'Топ специалист', title: 'Иван Петров', text: 'Налоговый консультант · Москва' },
-    badge: 'Verified'
+    card: { label: 'Налоговый юрист', title: 'Иван Петров', text: 'Налоговые споры · Москва · 12 лет опыта' },
+    badge: 'Знакомый в налоговой'
   },
   {
-    num: '02', name: 'Legal Cream', mood: 'Traditional authority',
-    bg: '#FAF8F3', primary: '#1A180E', accent: '#C8952A',
-    muted: '#8A8070', overlayRgb: '26,24,14',
-    font: 'Source Sans 3',
-    headline: 'Ваш налоговый советник',
-    tag: 'Налоговый маркетплейс',
-    card: { label: 'Специалист', title: 'Анна Смирнова', text: 'Юрист · Санкт-Петербург' },
-    badge: 'Лицензия'
-  },
-  {
-    num: '03', name: 'Sage Relief', mood: 'Calming, resolved',
-    bg: '#F5FAF7', primary: '#1A2E20', accent: '#3D8B5A',
-    muted: '#6A8A70', overlayRgb: '26,46,32',
-    font: 'Nunito Sans',
-    headline: 'Решите налоговый вопрос',
-    tag: 'Налоговый маркетплейс',
-    card: { label: 'Онлайн', title: 'Михаил Козлов', text: 'Бухгалтер-аудитор · Казань' },
-    badge: 'Онлайн-консультация'
-  },
-  {
-    num: '04', name: 'Stone Pro', mood: 'Quiet professional',
-    bg: '#F7F6F4', primary: '#2A2520', accent: '#7A6040',
-    muted: '#8A7A68', overlayRgb: '42,37,32',
-    font: 'Manrope',
-    headline: 'Профессиональная налоговая помощь',
-    tag: 'Налоговый маркетплейс',
-    card: { label: 'Опытный', title: 'Сергей Новиков', text: '15 лет стажа · Екатеринбург' },
-    badge: 'Эксперт'
-  },
-  {
-    num: '05', name: 'Navy Amber', mood: 'Classic authority',
-    bg: '#F5F7FA', primary: '#162040', accent: '#E8A820',
-    muted: '#7A8AA0', overlayRgb: '22,32,64',
-    font: 'Plus Jakarta Sans',
-    headline: 'Налоги под контролем',
-    tag: 'Налоговый маркетплейс',
-    card: { label: 'Рейтинг', title: 'Ольга Федорова', text: 'Налоговый юрист · Новосибирск' },
-    badge: '★ 4.9'
-  },
-  {
-    num: '06', name: 'Warm Expert', mood: 'Personal advisor',
-    bg: '#FAF7F3', primary: '#3A2010', accent: '#C87040',
-    muted: '#9A7860', overlayRgb: '58,32,16',
-    font: 'Lora',
-    headline: 'Личный налоговый советник',
-    tag: 'Налоговый маркетплейс',
-    card: { label: 'Индивидуально', title: 'Дмитрий Волков', text: 'Личные консультации · Краснодар' },
-    badge: 'Личный подход'
-  },
-  {
-    num: '07', name: 'Clean Teal', mood: 'Modern solutions',
-    bg: '#F3FAFA', primary: '#0F3030', accent: '#1A9688',
-    muted: '#5A8A88', overlayRgb: '15,48,48',
-    font: 'Work Sans',
-    headline: 'Современные налоговые решения',
-    tag: 'Налоговый маркетплейс',
-    card: { label: 'Быстро', title: 'Елена Морозова', text: 'Налоговый консультант · Самара' },
-    badge: 'Ответ за 2 часа'
-  },
-  {
-    num: '08', name: 'Dust Rose', mood: 'Approachable, kind',
-    bg: '#FAF5F5', primary: '#2A1818', accent: '#A84858',
-    muted: '#9A7880', overlayRgb: '42,24,24',
-    font: 'Poppins',
-    headline: 'Налоги — это просто',
-    tag: 'Налоговый маркетплейс',
-    card: { label: 'Дружелюбно', title: 'Татьяна Белова', text: 'Налоговый консультант · Уфа' },
-    badge: 'Первая консультация бесплатно'
-  },
-  {
-    num: '09', name: 'Forest', mood: 'Growth, relief',
-    bg: '#F4FAF5', primary: '#1A3520', accent: '#4A8A40',
-    muted: '#6A8A68', overlayRgb: '26,53,32',
+    num: '02', name: 'Деньги растут', mood: 'Налоги = ваша экономия',
+    bg: '#F2FAF5', primary: '#0A2E18', accent: '#1A7840',
+    muted: '#5A8A68', overlayRgb: '10,46,24',
     font: 'DM Sans',
-    headline: 'Расти без налоговых рисков',
+    headline: 'Снизьте налоги. Сохраните деньги.',
     tag: 'Налоговый маркетплейс',
-    card: { label: 'Для бизнеса', title: 'Андрей Соколов', text: 'Бухгалтер ИП/ООО · Воронеж' },
-    badge: 'Бизнес-план'
+    card: { label: 'Бухгалтер', title: 'Ольга Соколова', text: 'Налоговая оптимизация · СПб' },
+    badge: 'Знакомый в налоговой'
   },
   {
-    num: '10', name: 'Ink', mood: 'Ultra minimal, modern',
-    bg: '#F9F9F7', primary: '#111111', accent: '#555555',
-    muted: '#888888', overlayRgb: '17,17,17',
-    font: 'Inter',
-    headline: 'Налоговый маркетплейс',
+    num: '03', name: 'Нотариат', mood: 'Традиция и авторитет',
+    bg: '#FAF8F0', primary: '#2A1808', accent: '#BF9018',
+    muted: '#8A7850', overlayRgb: '42,24,8',
+    font: 'Cormorant Garamond',
+    headline: 'Юридическая помощь с опытом',
     tag: 'Налоговый маркетплейс',
-    card: { label: 'Специалист', title: 'Кирилл Зайцев', text: 'Налоговый консультант · Москва' },
-    badge: 'Проверен'
+    card: { label: 'Нотариус', title: 'Анна Смирнова', text: 'Нотариальное заверение · Москва' },
+    badge: 'Знакомый в налоговой'
+  },
+  {
+    num: '04', name: 'Адвокатское бюро', mood: 'Серьёзность и защита',
+    bg: '#FAF4F5', primary: '#3A0A18', accent: '#8A1A2A',
+    muted: '#8A6068', overlayRgb: '58,10,24',
+    font: 'Libre Baskerville',
+    headline: 'Защита от налоговых претензий',
+    tag: 'Налоговый маркетплейс',
+    card: { label: 'Адвокат', title: 'Дмитрий Волков', text: 'Арбитражные споры · Москва' },
+    badge: 'Знакомый в налоговой'
+  },
+  {
+    num: '05', name: 'Деловой партнёр', mood: 'Корпоративный, надёжный',
+    bg: '#F5F7FA', primary: '#142240', accent: '#2A6090',
+    muted: '#6A7A90', overlayRgb: '20,34,64',
+    font: 'Plus Jakarta Sans',
+    headline: 'Налоговые решения для бизнеса',
+    tag: 'Налоговый маркетплейс',
+    card: { label: 'Консультант', title: 'Сергей Новиков', text: 'Налоги ООО и ИП · Новосибирск' },
+    badge: 'Знакомый в налоговой'
+  },
+  {
+    num: '06', name: 'Тёплый советник', mood: 'Персональный, доверительный',
+    bg: '#FAF6F0', primary: '#382008', accent: '#C07030',
+    muted: '#9A7860', overlayRgb: '56,32,8',
+    font: 'Source Sans 3',
+    headline: 'Ваш личный налоговый советник',
+    tag: 'Налоговый маркетплейс',
+    card: { label: 'Консультант', title: 'Татьяна Белова', text: 'Физлица и ИП · Краснодар' },
+    badge: 'Знакомый в налоговой'
+  },
+  {
+    num: '07', name: 'Цифровой юрист', mood: 'Быстро, онлайн, прозрачно',
+    bg: '#F0F8FA', primary: '#0A2830', accent: '#1A8898',
+    muted: '#5A8898', overlayRgb: '10,40,48',
+    font: 'Manrope',
+    headline: 'Юридическая помощь онлайн за 2 часа',
+    tag: 'Налоговый маркетплейс',
+    card: { label: 'Онлайн', title: 'Елена Морозова', text: 'Дистанционные консультации · РФ' },
+    badge: 'Знакомый в налоговой'
+  },
+  {
+    num: '08', name: 'Бухгалтер', mood: 'Точность, цифры, доверие',
+    bg: '#F3FAF5', primary: '#0A2A18', accent: '#2A8850',
+    muted: '#5A8A68', overlayRgb: '10,42,24',
+    font: 'Nunito Sans',
+    headline: 'Бухгалтерия и налоги без ошибок',
+    tag: 'Налоговый маркетплейс',
+    card: { label: 'Бухгалтер', title: 'Михаил Козлов', text: 'Расчёт налогов ИП · Казань' },
+    badge: 'Знакомый в налоговой'
+  },
+  {
+    num: '09', name: 'Премиум консьерж', mood: 'Элитный, VIP сервис',
+    bg: '#FAF8FC', primary: '#20103A', accent: '#6040A8',
+    muted: '#8070A0', overlayRgb: '32,16,58',
+    font: 'Work Sans',
+    headline: 'Налоговый консьерж-сервис',
+    tag: 'Налоговый маркетплейс',
+    card: { label: 'VIP', title: 'Андрей Соколов', text: 'Крупный бизнес · Москва-Сити' },
+    badge: 'Знакомый в налоговой'
+  },
+  {
+    num: '10', name: 'Нейтральный Pro', mood: 'Чисто, ясно, профессионально',
+    bg: '#F8F8F8', primary: '#1A1A20', accent: '#3A5878',
+    muted: '#808898', overlayRgb: '26,26,32',
+    font: 'Inter',
+    headline: 'Налоговые консультанты России',
+    tag: 'Налоговый маркетплейс',
+    card: { label: 'Специалист', title: 'Кирилл Зайцев', text: 'Общие вопросы · Вся Россия' },
+    badge: 'Знакомый в налоговой'
   }
 ];
 
@@ -388,7 +383,7 @@ variants.forEach(v => {
     { color: v.accent, label: 'accent' },
     { color: v.bg, label: 'bg' },
     { color: '#FFFFFF', label: 'surface' },
-    { color: '#111111', label: 'text' },
+    { color: '#1A1A1A', label: 'text' },
   ];
 
   el.innerHTML = `
@@ -413,14 +408,14 @@ variants.forEach(v => {
       `).join('')}
     </div>
     <div class="v-hero">
-      <img src="${IMAGE}" alt="Office" loading="lazy">
-      <div class="v-hero-overlay" style="background:linear-gradient(to top, rgba(${v.overlayRgb},0.82) 0%, rgba(${v.overlayRgb},0.20) 70%)"></div>
+      <img src="${IMAGE}" alt="Legal office" loading="lazy">
+      <div class="v-hero-overlay" style="background:linear-gradient(to top, rgba(${v.overlayRgb},0.85) 0%, rgba(${v.overlayRgb},0.18) 70%)"></div>
       <div class="v-hero-content">
         <div class="v-hero-tag">${v.tag}</div>
         <div class="v-hero-title">${v.headline}</div>
         <div class="v-hero-btns">
           <button class="btn-primary">Найти специалиста</button>
-          <button class="btn-secondary">Узнать больше</button>
+          <button class="btn-secondary">Я исполнитель</button>
         </div>
       </div>
     </div>
@@ -432,9 +427,9 @@ variants.forEach(v => {
         <div class="v-badge">${v.badge}</div>
       </div>
       <div class="v-typo">
-        <div class="v-typo-heading">Налоговые услуги</div>
-        <div class="v-typo-body">Найдите проверенного налогового консультанта в вашем городе. Онлайн и офлайн.</div>
-        <div class="v-typo-mood">*mood: ${v.mood}*</div>
+        <div class="v-typo-heading">Снижение штрафа</div>
+        <div class="v-typo-body">Обжалование решений ИФНС. Результат — снижение штрафа или полная отмена.</div>
+        <div class="v-typo-mood">${v.mood}</div>
       </div>
     </div>
   `;
