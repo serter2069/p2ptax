@@ -1,0 +1,14 @@
+{
+  "project_name": "p2ptax",
+  "staging_url": "https://p2ptax.smartlaunchhub.com",
+  "local_url": "http://localhost:8081",
+  "api_url": "http://localhost:3812",
+  "github": "https://github.com/serter2069/p2ptax",
+  "server_path": "/var/www/p2ptax",
+  "pm2_name": "p2ptax-api",
+  "stack": "expo-web + express + prisma + postgresql",
+  "database": {
+    "remote": "postgresql://p2ptax_user:***@91.98.205.156:5432/p2ptax_db",
+    "note": "DB is REMOTE ONLY. For local dev connect directly or use SSH tunnel."
+  }
+}
