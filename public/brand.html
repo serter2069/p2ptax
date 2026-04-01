@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Налоговик — Brand Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito+Sans:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Source+Sans+3:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #EBEBEB;
+    font-family: Inter, sans-serif;
+    padding: 40px 24px;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1A1A1A;
+    letter-spacing: -0.5px;
+  }
+  .page-header p {
+    color: #666;
+    font-size: 15px;
+    margin-top: 6px;
+  }
+  .page-header .url {
+    font-size: 13px;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 800px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .variant {
+    background: var(--bg);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  /* Variant header */
+  .variant-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 0;
+    font-family: var(--font), sans-serif;
+  }
+  .variant-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .variant-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Logo */
+  .logo-area {
+    padding: 14px 18px 10px;
+    font-family: var(--font), sans-serif;
+  }
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    font-family: var(--font), sans-serif;
+    flex-shrink: 0;
+  }
+  .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: var(--font), sans-serif;
+    letter-spacing: -0.3px;
+  }
+  .logo-sub {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    font-family: var(--font), sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  /* Hero */
+  .hero {
+    margin: 0 18px;
+    border-radius: 14px;
+    overflow: hidden;
+    height: 190px;
+    position: relative;
+  }
+  .hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 16px;
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    background: var(--accent);
+    color: var(--btn-text);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--font), sans-serif;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+    width: fit-content;
+  }
+  .hero-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    font-family: var(--font), sans-serif;
+    line-height: 1.3;
+    margin-bottom: 12px;
+  }
+  .hero-btns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--btn-text);
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font), sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-outline {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.6);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font), sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Cards row */
+  .cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px 18px;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+
+  /* Profile card */
+  .profile-avatar {
+    width: 38px;
+    height: 38px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font), sans-serif;
+    margin-bottom: 8px;
+  }
+  .profile-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: var(--font), sans-serif;
+  }
+  .profile-role {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font), sans-serif;
+    margin-top: 2px;
+  }
+  .profile-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--primary);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: var(--font), sans-serif;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-top: 7px;
+    letter-spacing: 0.2px;
+  }
+  .profile-stars {
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 5px;
+  }
+
+  /* Service card */
+  .service-icon {
+    width: 34px;
+    height: 34px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .service-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: var(--font), sans-serif;
+    line-height: 1.3;
+  }
+  .service-desc {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font), sans-serif;
+    margin-top: 3px;
+  }
+  .service-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: var(--font), sans-serif;
+    margin-top: 8px;
+  }
+  .service-cta {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: var(--font), sans-serif;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-top: 7px;
+    cursor: pointer;
+  }
+
+  /* Swatches */
+  .swatches {
+    display: flex;
+    gap: 6px;
+    padding: 4px 18px 12px;
+  }
+  .swatch {
+    flex: 1;
+    height: 28px;
+    border-radius: 6px;
+    position: relative;
+    cursor: default;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .swatch-label {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: #888;
+    white-space: nowrap;
+    font-family: monospace;
+  }
+
+  /* Mood */
+  .mood-row {
+    padding: 22px 18px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    margin-top: 4px;
+  }
+  .mood-text {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--muted);
+    font-family: var(--font), sans-serif;
+  }
+  .font-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    font-family: var(--font), sans-serif;
+    background: rgba(0,0,0,0.05);
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Налоговик — Brand Preview</h1>
+  <p>10 style variants &middot; All minimalist &amp; light</p>
+  <div class="url">p2ptax.smartlaunchhub.com</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const HERO_IMG = 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=900&q=75&fit=crop';
+
+const variants = [
+  {
+    num: '01', name: 'Trust Blue',
+    primary: '#1B4965', accent: '#F18F01', bg: '#F7F9FB', surface: '#FFFFFF',
+    text: '#1B2D3E', muted: '#6B8A9E', font: 'Inter', btnText: '#FFFFFF',
+    mood: 'reliable, professional, clear'
+  },
+  {
+    num: '02', name: 'Clean Sage',
+    primary: '#2D6A4F', accent: '#E76F51', bg: '#FAFDF7', surface: '#FFFFFF',
+    text: '#1C3A2C', muted: '#6B8F7A', font: 'Nunito Sans', btnText: '#FFFFFF',
+    mood: 'calm, friendly, solve'
+  },
+  {
+    num: '03', name: 'Graphite Pro',
+    primary: '#2B2D42', accent: '#3A86FF', bg: '#F8F9FA', surface: '#FFFFFF',
+    text: '#1A1C2E', muted: '#7A7D94', font: 'Manrope', btnText: '#FFFFFF',
+    mood: 'modern, fintech, fast'
+  },
+  {
+    num: '04', name: 'Warm Advisor',
+    primary: '#6C3D18', accent: '#2A6F97', bg: '#FFFCF5', surface: '#FFF8EE',
+    text: '#3A2010', muted: '#9A7B60', font: 'Source Sans 3', btnText: '#FFFFFF',
+    mood: 'personal, expert, warm'
+  },
+  {
+    num: '05', name: 'Forest Law',
+    primary: '#1E5C3A', accent: '#E8A820', bg: '#FAFEF9', surface: '#FFFFFF',
+    text: '#12321F', muted: '#5C8A70', font: 'DM Sans', btnText: '#FFFFFF',
+    mood: 'growth, trust, resolved'
+  },
+  {
+    num: '06', name: 'Clean Navy',
+    primary: '#1A3A6B', accent: '#FFB800', bg: '#FFFFFF', surface: '#F4F7FC',
+    text: '#0F2040', muted: '#6B82A8', font: 'Plus Jakarta Sans', btnText: '#1A1A1A',
+    mood: 'professional, clear, bold'
+  },
+  {
+    num: '07', name: 'Soft Coral',
+    primary: '#1B4F8A', accent: '#E8644A', bg: '#FFF8F5', surface: '#FFFFFF',
+    text: '#1A2A3A', muted: '#7A8EA0', font: 'Poppins', btnText: '#FFFFFF',
+    mood: 'approachable, friendly'
+  },
+  {
+    num: '08', name: 'Steel Modern',
+    primary: '#1C3D5A', accent: '#00A8A8', bg: '#F0F4F8', surface: '#FFFFFF',
+    text: '#111E2A', muted: '#6A8099', font: 'Work Sans', btnText: '#FFFFFF',
+    mood: 'tech, fast, teal'
+  },
+  {
+    num: '09', name: 'Cream Legal',
+    primary: '#1A1A1A', accent: '#C4952A', bg: '#FBF8F0', surface: '#F5F0E4',
+    text: '#1A1A1A', muted: '#7A6E58', font: 'Libre Baskerville', btnText: '#FFFFFF',
+    mood: 'traditional, expertise'
+  },
+  {
+    num: '10', name: 'Mint Clear',
+    primary: '#1A3A5C', accent: '#34B89A', bg: '#F5FFFC', surface: '#FFFFFF',
+    text: '#0F2233', muted: '#5A8090', font: 'Outfit', btnText: '#FFFFFF',
+    mood: 'fresh, clean, resolved'
+  }
+];
+
+function swatchData(v) {
+  return [
+    { color: v.primary, label: 'primary' },
+    { color: v.accent, label: 'accent' },
+    { color: v.bg, label: 'bg' },
+    { color: v.surface, label: 'surface' },
+    { color: v.text, label: 'text' }
+  ];
+}
+
+function renderVariant(v) {
+  const swatches = swatchData(v).map(s =>
+    `<div class="swatch" style="background:${s.color}" title="${s.label}: ${s.color}">
+       <span class="swatch-label">${s.color}</span>
+     </div>`
+  ).join('');
+
+  return `
+  <div class="variant" style="
+    --primary:${v.primary};--accent:${v.accent};--bg:${v.bg};
+    --surface:${v.surface};--text:${v.text};--muted:${v.muted};
+    --font:'${v.font}';--btn-text:${v.btnText};
+  ">
+    <div class="variant-label">
+      <span class="variant-num">${v.num}</span>
+      <span class="variant-name">${v.name}</span>
+    </div>
+
+    <div class="logo-area">
+      <div class="logo-mark">
+        <div class="logo-icon">Н</div>
+        <div>
+          <div class="logo-text">Налоговик</div>
+          <div class="logo-sub">Налоговая защита</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero">
+      <img src="${HERO_IMG}" alt="office" loading="lazy">
+      <div class="hero-overlay">
+        <span class="hero-tag">Налоговая защита · p2ptax.ru</span>
+        <div class="hero-title">Найдите своего<br>налогового эксперта</div>
+        <div class="hero-btns">
+          <button class="btn-primary">Найти специалиста</button>
+          <button class="btn-outline">Я исполнитель</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="profile-avatar">ИА</div>
+        <div class="profile-name">Иванов А.В.</div>
+        <div class="profile-role">Налоговые споры</div>
+        <div class="profile-stars">★★★★★ 4.9</div>
+        <div class="profile-badge">Знакомый в налоговой</div>
+      </div>
+      <div class="card">
+        <div class="service-icon">⚖️</div>
+        <div class="service-title">Снижение штрафа</div>
+        <div class="service-desc">Обжалование решений ФНС, переговоры</div>
+        <div class="service-price">от 5 000 ₽</div>
+        <div class="service-cta">Подробнее</div>
+      </div>
+    </div>
+
+    <div class="swatches">${swatches}</div>
+
+    <div class="mood-row">
+      <span class="mood-text">${v.mood}</span>
+      <span class="font-tag">${v.font}</span>
+    </div>
+  </div>`;
+}
+
+document.getElementById('grid').innerHTML = variants.map(renderVariant).join('');
+</script>
+</body>
+</html>
