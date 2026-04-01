@@ -2,6 +2,23 @@
 
 Налоговый информационный арбитраж. Поиск исполнителей (юристов, налоговых консультантов) в любом городе.
 
+## Local Development
+
+Secrets: **Doppler** (workspace: Sergei MSP, project: `p2ptax`, config: `dev`)
+
+```bash
+doppler login      # один раз на машину
+doppler setup --project p2ptax --config dev --no-interactive
+cd api && doppler run -- npm run dev
+npx expo start --web
+```
+
+Управление секретами:
+```bash
+doppler secrets --project p2ptax --config dev
+doppler secrets set KEY=value --project p2ptax --config dev
+```
+
 ## Stack
 - Frontend: Expo (React Native web-first) with expo-router
 - Backend: Express.js API in /api/
