@@ -3,15 +3,10 @@ import {
   Get,
   Query,
   UseGuards,
-  Request,
-  ForbiddenException,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-
-// Admin emails are comma-separated in ADMIN_EMAILS env var.
-// Same pattern as PromotionsController — no ADMIN role in DB yet.
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? '').split(',').filter(Boolean);
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('admin')
 export class AdminController {
@@ -19,39 +14,29 @@ export class AdminController {
 
   /** GET /admin/stats — dashboard totals */
   @Get('stats')
-  @UseGuards(JwtAuthGuard)
-  getStats(@Request() req: any) {
-    this.assertAdmin(req.user.email);
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getStats() {
     return this.adminService.getStats();
   }
 
   /** GET /admin/users — all users, optional ?role=CLIENT|SPECIALIST */
   @Get('users')
-  @UseGuards(JwtAuthGuard)
-  getUsers(@Request() req: any, @Query('role') role?: string) {
-    this.assertAdmin(req.user.email);
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getUsers(@Query('role') role?: string) {
     return this.adminService.getUsers(role);
   }
 
   /** GET /admin/specialists — all specialist profiles */
   @Get('specialists')
-  @UseGuards(JwtAuthGuard)
-  getSpecialists(@Request() req: any) {
-    this.assertAdmin(req.user.email);
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getSpecialists() {
     return this.adminService.getSpecialists();
   }
 
   /** GET /admin/requests — all platform requests */
   @Get('requests')
-  @UseGuards(JwtAuthGuard)
-  getAllRequests(@Request() req: any) {
-    this.assertAdmin(req.user.email);
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getAllRequests() {
     return this.adminService.getAllRequests();
-  }
-
-  private assertAdmin(email: string) {
-    if (!ADMIN_EMAILS.includes(email)) {
-      throw new ForbiddenException('Admin access required');
-    }
   }
 }
