@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   navArrow: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.md,
     color: Colors.textMuted,
   },
 });

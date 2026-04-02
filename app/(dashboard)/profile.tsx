@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addBtnText: {
-    fontSize: 24,
+    fontSize: Typography.fontSize['2xl'],
     color: Colors.textPrimary,
     lineHeight: 28,
   },
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   tagRemove: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.md,
     color: Colors.textMuted,
     lineHeight: 18,
   },
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   emptyIcon: {
-    fontSize: 48,
+    fontSize: Typography.fontSize.jumbo,
     marginBottom: Spacing.sm,
   },
   emptyTitle: {

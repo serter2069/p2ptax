@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   rowArrow: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.md,
     color: Colors.textMuted,
     marginLeft: Spacing.sm,
   },

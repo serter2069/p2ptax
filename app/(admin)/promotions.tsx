@@ -395,13 +395,13 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   tierBASIC: {
-    backgroundColor: '#132240',
+    backgroundColor: Colors.statusBg.info,
   },
   tierFEATURED: {
-    backgroundColor: '#2a1f4a',
+    backgroundColor: Colors.statusBg.accent,
   },
   tierTOP: {
-    backgroundColor: '#3a2c10',
+    backgroundColor: Colors.statusBg.warning,
   },
   tierPillText: {
     fontSize: Typography.fontSize.xs,
