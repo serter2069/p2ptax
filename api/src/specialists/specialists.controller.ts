@@ -32,6 +32,11 @@ export class SpecialistsController {
     return this.specialistsService.updateProfile(req.user.id, dto);
   }
 
+  @Get('cities')
+  getAvailableCities() {
+    return this.specialistsService.getAvailableCities();
+  }
+
   @Get()
   getCatalog(
     @Query('city') city?: string,

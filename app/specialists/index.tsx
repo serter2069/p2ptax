@@ -5,6 +5,7 @@ import {
   StyleSheet,
   SafeAreaView,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -15,7 +16,6 @@ import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Color
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Avatar } from '../../components/Avatar';
-import { Input } from '../../components/Input';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
 
@@ -44,8 +44,14 @@ export default function SpecialistsCatalogScreen() {
   const [error, setError] = useState('');
 
   const [cityFilter, setCityFilter] = useState('');
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [badgeFilter, setBadgeFilter] = useState(false);
   const [sort, setSort] = useState('newest');
+
+  // Load available cities once on mount
+  useEffect(() => {
+    api.get<string[]>('/specialists/cities').then(setAvailableCities).catch(() => {});
+  }, []);
 
   const fetchSpecialists = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -74,15 +80,9 @@ export default function SpecialistsCatalogScreen() {
   }, [cityFilter, badgeFilter, sort]);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchSpecialists(), cityFilter ? 400 : 0);
-    return () => clearTimeout(timer);
-  }, [fetchSpecialists, cityFilter]);
-
-  // Fetch immediately when non-city filters change
-  useEffect(() => {
     fetchSpecialists();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [badgeFilter, sort]);
+  }, [cityFilter, badgeFilter, sort]);
 
   function handleRefresh() {
     setRefreshing(true);
@@ -173,14 +173,34 @@ export default function SpecialistsCatalogScreen() {
         }
         ListHeaderComponent={
           <View style={styles.filters}>
-            {/* City filter */}
-            <Input
-              label="Город"
-              value={cityFilter}
-              onChangeText={setCityFilter}
-              placeholder="Например, Москва"
-              autoCapitalize="words"
-            />
+            {/* City filter chips */}
+            {availableCities.length > 0 && (
+              <View>
+                <Text style={styles.filterLabel}>Город</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.cityChipsRow}
+                >
+                  {['', ...availableCities].map((city) => {
+                    const isAll = city === '';
+                    const isActive = cityFilter === city;
+                    return (
+                      <TouchableOpacity
+                        key={isAll ? '__all__' : city}
+                        onPress={() => setCityFilter(city)}
+                        style={[styles.cityChip, isActive && styles.cityChipActive]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.cityChipText, isActive && styles.cityChipTextActive]}>
+                          {isAll ? 'Все города' : city}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
 
             {/* Badge filter toggle */}
             <TouchableOpacity
@@ -265,6 +285,37 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
+  },
+  filterLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
+    marginBottom: Spacing.sm,
+  },
+  cityChipsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingRight: Spacing.sm,
+  },
+  cityChip: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  cityChipActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  cityChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  cityChipTextActive: {
+    color: Colors.textPrimary,
   },
   badgeToggle: {
     paddingVertical: Spacing.sm,
