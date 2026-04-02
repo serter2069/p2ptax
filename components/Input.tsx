@@ -17,9 +17,11 @@ interface InputProps {
   error?: string;
   style?: ViewStyle;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   autoFocus?: boolean;
   editable?: boolean;
+  maxLength?: number;
 }
 
 export function Input({
@@ -31,9 +33,11 @@ export function Input({
   error,
   style,
   autoCapitalize = 'none',
+  autoCorrect,
   keyboardType = 'default',
   autoFocus = false,
   editable = true,
+  maxLength,
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
@@ -47,9 +51,11 @@ export function Input({
         placeholderTextColor={Colors.textMuted}
         secureTextEntry={secureTextEntry}
         autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
         keyboardType={keyboardType}
         autoFocus={autoFocus}
         editable={editable}
+        maxLength={maxLength}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={[
