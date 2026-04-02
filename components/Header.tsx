@@ -76,10 +76,10 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   backBtn: {
-    padding: 4,
+    padding: Spacing.xs,
   },
   backIcon: {
-    fontSize: 20,
+    fontSize: Typography.fontSize.xl,
     color: Colors.textPrimary,
   },
 });

@@ -192,11 +192,11 @@ const styles = StyleSheet.create({
     marginRight: Spacing.lg,
   },
   cardEmoji: {
-    fontSize: 22,
+    fontSize: Typography.fontSize.title,
   },
   cardContent: {
     flex: 1,
-    gap: 4,
+    gap: Spacing.xs,
   },
   cardTitle: {
     fontSize: Typography.fontSize.md,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   cardArrow: {
-    fontSize: 18,
+    fontSize: Typography.fontSize.lg,
     color: Colors.textMuted,
     marginLeft: Spacing.sm,
   },

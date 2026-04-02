@@ -275,8 +275,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   badgeToggleActive: {
-    backgroundColor: '#2a2070',
-    borderColor: '#a5b4fc',
+    backgroundColor: Colors.statusBg.familiar,
+    borderColor: Colors.textFamiliar,
   },
   badgeToggleText: {
     fontSize: Typography.fontSize.sm,
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   badgeToggleTextActive: {
-    color: '#a5b4fc',
+    color: Colors.textFamiliar,
   },
   sortRow: {
     flexDirection: 'row',

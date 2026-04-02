@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   cityChip: {
     backgroundColor: Colors.bgSecondary,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: Spacing.xxs,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.borderLight,
@@ -285,9 +285,9 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   statusChip: {
-    backgroundColor: '#1a3a1e',
+    backgroundColor: Colors.statusBg.success,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: Spacing.xxs,
     borderRadius: BorderRadius.full,
   },
   statusText: {
