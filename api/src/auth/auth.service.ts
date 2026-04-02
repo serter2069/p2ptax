@@ -28,11 +28,9 @@ export class AuthService {
 
     otpStore.set(email.toLowerCase(), { code, expiresAt });
 
-    // Store OTP in DB for audit (upsert)
-    await this.prisma.otpCode.upsert({
-      where: { email: email.toLowerCase() },
-      create: { email: email.toLowerCase(), code, expiresAt },
-      update: { code, expiresAt, usedAt: null },
+    // Store OTP in DB for audit (create new record per request)
+    await this.prisma.otpCode.create({
+      data: { email: email.toLowerCase(), code, expiresAt },
     });
 
     // In dev mode: log code to console. In prod: send email (implement later)
@@ -60,11 +58,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid OTP');
     }
 
-    // Mark used in DB
-    await this.prisma.otpCode.update({
-      where: { email: normalizedEmail },
-      data: { usedAt: new Date() },
+    // Mark used in DB — find latest unused OTP for this email
+    const otpRecord = await this.prisma.otpCode.findFirst({
+      where: { email: normalizedEmail, usedAt: null },
+      orderBy: { createdAt: 'desc' },
     });
+    if (otpRecord) {
+      await this.prisma.otpCode.update({
+        where: { id: otpRecord.id },
+        data: { usedAt: new Date() },
+      });
+    }
 
     otpStore.delete(normalizedEmail);
 

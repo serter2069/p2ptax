@@ -7,25 +7,144 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  CLIENT
+  SPECIALIST
+}
+
+enum RequestStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum PromotionTier {
+  BASIC
+  FEATURED
+  TOP
+}
+
 model User {
   id          String    @id @default(cuid())
   email       String    @unique
+  role        Role      @default(CLIENT)
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?
-  messages    ChatMessage[]
+
+  // legacy chat (preserved for ChatGateway until task #1530)
+  chatMessages        ChatMessage[]
+
+  // new relations
+  specialistProfile   SpecialistProfile?
+  requests            Request[]
+  responses           Response[]
+  promotions          Promotion[]
+  threadsAsParticipant1 Thread[]        @relation("ThreadParticipant1")
+  threadsAsParticipant2 Thread[]        @relation("ThreadParticipant2")
+  sentMessages        Message[]
 
   @@map("users")
 }
 
 model OtpCode {
   id        String    @id @default(cuid())
-  email     String    @unique
+  email     String
   code      String
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 
+  @@index([email])
   @@map("otp_codes")
+}
+
+model SpecialistProfile {
+  id       String   @id @default(cuid())
+  userId   String   @unique
+  user     User     @relation(fields: [userId], references: [id])
+  nick     String   @unique
+  cities   String[]
+  services String[]
+  badges   String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("specialist_profiles")
+}
+
+model Request {
+  id          String        @id @default(cuid())
+  clientId    String
+  client      User          @relation(fields: [clientId], references: [id])
+  description String
+  city        String
+  status      RequestStatus @default(OPEN)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  responses   Response[]
+
+  @@index([clientId])
+  @@index([city, status])
+  @@map("requests")
+}
+
+model Response {
+  id           String   @id @default(cuid())
+  specialistId String
+  specialist   User     @relation(fields: [specialistId], references: [id])
+  requestId    String
+  request      Request  @relation(fields: [requestId], references: [id])
+  message      String
+  createdAt    DateTime @default(now())
+
+  @@unique([specialistId, requestId])
+  @@index([requestId])
+  @@map("responses")
+}
+
+model Thread {
+  id             String   @id @default(cuid())
+  participant1Id String
+  participant1   User     @relation("ThreadParticipant1", fields: [participant1Id], references: [id])
+  participant2Id String
+  participant2   User     @relation("ThreadParticipant2", fields: [participant2Id], references: [id])
+  createdAt      DateTime @default(now())
+
+  messages       Message[]
+
+  // participant1Id < participant2Id enforced at application level
+  @@unique([participant1Id, participant2Id])
+  @@map("threads")
+}
+
+model Message {
+  id        String    @id @default(cuid())
+  threadId  String
+  thread    Thread    @relation(fields: [threadId], references: [id])
+  senderId  String
+  sender    User      @relation(fields: [senderId], references: [id])
+  content   String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([threadId])
+  @@map("messages")
+}
+
+model Promotion {
+  id           String        @id @default(cuid())
+  specialistId String
+  specialist   User          @relation(fields: [specialistId], references: [id])
+  city         String
+  tier         PromotionTier
+  expiresAt    DateTime
+  createdAt    DateTime      @default(now())
+
+  @@index([city, tier, expiresAt])
+  @@index([specialistId])
+  @@map("promotions")
 }
 
 model ChatMessage {
