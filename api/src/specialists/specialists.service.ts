@@ -61,6 +61,19 @@ export class SpecialistsService {
     return { ...profile, activity };
   }
 
+  async getAvailableCities(): Promise<string[]> {
+    const profiles = await this.prisma.specialistProfile.findMany({
+      select: { cities: true },
+    });
+    const citySet = new Set<string>();
+    for (const profile of profiles) {
+      for (const city of profile.cities) {
+        if (city && city.trim()) citySet.add(city.trim());
+      }
+    }
+    return Array.from(citySet).sort((a, b) => a.localeCompare(b, 'ru'));
+  }
+
   async getCatalog(city?: string, badge?: string, sort?: string) {
     const now = new Date();
     const where: any = {};
