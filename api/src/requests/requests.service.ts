@@ -78,6 +78,22 @@ export class RequestsService {
       throw new BadRequestException('Request is not open for responses');
     }
 
+    // Check specialist's cities cover the request's city
+    const specialistProfile = await this.prisma.specialistProfile.findUnique({
+      where: { userId: specialistId },
+      select: { cities: true },
+    });
+    if (!specialistProfile) {
+      throw new BadRequestException('Specialist profile not found');
+    }
+    const requestCityLower = request.city.toLowerCase();
+    const coversCity = specialistProfile.cities.some(
+      (c) => c.toLowerCase() === requestCityLower,
+    );
+    if (!coversCity) {
+      throw new BadRequestException('Ваш профиль не обслуживает город этого запроса');
+    }
+
     // Check specialist hasn't already responded (@@unique will catch too, but better UX)
     const existing = await this.prisma.response.findUnique({
       where: { specialistId_requestId: { specialistId, requestId } },
