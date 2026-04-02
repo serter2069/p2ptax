@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -34,6 +35,66 @@ export class UsersService {
     });
 
     return { id: user.id, email: user.email, role: user.role, username: user.username! };
+  }
+
+  /**
+   * Onboarding step 3: set cities + services, create SpecialistProfile, promote user to SPECIALIST.
+   * Nick is taken from the user's username (set in step 1).
+   * No role guard — called during onboarding before the role is assigned.
+   */
+  async setupSpecialistProfile(
+    userId: string,
+    cities: string[],
+    services: string,
+  ): Promise<{ ok: true }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.username) throw new BadRequestException('Username must be set before creating specialist profile');
+
+    const trimmedServices = services.trim();
+    if (!trimmedServices) throw new BadRequestException('Services description cannot be empty');
+
+    const trimmedCities = cities.map((c) => c.trim()).filter(Boolean);
+    if (trimmedCities.length === 0) throw new BadRequestException('At least one city must be selected');
+
+    // Check for existing profile (idempotent — allow re-submission)
+    const existing = await this.prisma.specialistProfile.findUnique({ where: { userId } });
+
+    if (existing) {
+      // Update existing profile and ensure role is SPECIALIST
+      await this.prisma.$transaction([
+        this.prisma.specialistProfile.update({
+          where: { userId },
+          data: { cities: trimmedCities, services: [trimmedServices] },
+        }),
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { role: Role.SPECIALIST },
+        }),
+      ]);
+    } else {
+      // Check nick uniqueness (username is used as nick)
+      const nickTaken = await this.prisma.specialistProfile.findUnique({ where: { nick: user.username } });
+      if (nickTaken) throw new ConflictException('Nick already taken');
+
+      await this.prisma.$transaction([
+        this.prisma.specialistProfile.create({
+          data: {
+            userId,
+            nick: user.username,
+            cities: trimmedCities,
+            services: [trimmedServices],
+            badges: [],
+          },
+        }),
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { role: Role.SPECIALIST },
+        }),
+      ]);
+    }
+
+    return { ok: true };
   }
 
   /**
