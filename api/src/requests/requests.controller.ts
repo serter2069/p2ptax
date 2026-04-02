@@ -39,6 +39,14 @@ export class RequestsController {
     return this.requestsService.findMy(req.user.id);
   }
 
+  // GET /requests/my-responses — specialist's own responses with request info
+  @Get('my-responses')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SPECIALIST)
+  getMyResponses(@Request() req: any) {
+    return this.requestsService.findMyResponses(req.user.id);
+  }
+
   // GET /requests — public feed (specialists browse)
   @Get()
   getFeed(
