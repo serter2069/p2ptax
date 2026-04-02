@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   icon: {
-    fontSize: 48,
+    fontSize: Typography.fontSize.jumbo,
     marginBottom: Spacing.sm,
   },
   title: {

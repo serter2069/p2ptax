@@ -11,12 +11,12 @@ interface BadgeProps {
 }
 
 const VARIANT_COLORS: Record<BadgeVariant, { bg: string; text: string }> = {
-  success: { bg: '#1a3a1e', text: Colors.statusSuccess },
-  warning: { bg: '#3a2c10', text: Colors.statusWarning },
-  error: { bg: '#3a1414', text: Colors.statusError },
-  info: { bg: '#132240', text: Colors.statusInfo },
-  accent: { bg: '#2a1f4a', text: Colors.textAccent },
-  familiar: { bg: '#2a2070', text: '#a5b4fc' },
+  success: { bg: Colors.statusBg.success, text: Colors.statusSuccess },
+  warning: { bg: Colors.statusBg.warning, text: Colors.statusWarning },
+  error: { bg: Colors.statusBg.error, text: Colors.statusError },
+  info: { bg: Colors.statusBg.info, text: Colors.statusInfo },
+  accent: { bg: Colors.statusBg.accent, text: Colors.textAccent },
+  familiar: { bg: Colors.statusBg.familiar, text: Colors.textFamiliar },
 };
 
 export function Badge({ variant = 'accent', label, style }: BadgeProps) {
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: Spacing.xxs,
     borderRadius: BorderRadius.full,
   },
   label: {

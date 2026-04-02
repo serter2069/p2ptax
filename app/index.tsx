@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.brandPrimary,
   },
   logoEmoji: {
-    fontSize: 36,
+    fontSize: Typography.fontSize.display,
   },
   appName: {
     fontSize: Typography.fontSize['3xl'],

@@ -21,12 +21,26 @@ export const Colors = {
   statusError: '#ef4444',
   statusInfo: '#3b82f6',
 
+  // Status background tints (for badges)
+  statusBg: {
+    success: '#1a3a1e',
+    warning: '#3a2c10',
+    error: '#3a1414',
+    info: '#132240',
+    accent: '#2a1f4a',
+    familiar: '#2a2070',
+  },
+
+  // Extended text
+  textFamiliar: '#a5b4fc',
+
   // Borders
   border: '#2d2d4a',
   borderLight: '#3d3d5c',
 } as const;
 
 export const Spacing = {
+  xxs: 3,
   xs: 4,
   sm: 8,
   md: 12,
@@ -76,6 +90,9 @@ export const Typography = {
     xl: 20,
     '2xl': 24,
     '3xl': 30,
+    title: 22,
+    display: 36,
+    jumbo: 48,
   },
   fontWeight: {
     regular: '400' as const,
