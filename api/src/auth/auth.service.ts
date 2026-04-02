@@ -3,9 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 
-// In-memory OTP store: email -> { code, expiresAt }
-const otpStore = new Map<string, { code: string; expiresAt: Date }>();
-
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const DEV_OTP = '000000';
 
@@ -57,9 +54,7 @@ export class AuthService {
     const code = generateOtp();
     const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
-    otpStore.set(email.toLowerCase(), { code, expiresAt });
-
-    // Store OTP in DB for audit (create new record per request)
+    // Store OTP in DB (sole source of truth — survives server restarts)
     await this.prisma.otpCode.create({
       data: { email: email.toLowerCase(), code, expiresAt },
     });
@@ -74,20 +69,14 @@ export class AuthService {
 
   async verifyOtp(email: string, code: string, role?: string): Promise<VerifyOtpResult> {
     const normalizedEmail = email.toLowerCase();
-    const record = otpStore.get(normalizedEmail);
 
-    if (!record) {
-      throw new BadRequestException('OTP not found or expired');
-    }
-
-    if (new Date() > record.expiresAt) {
-      otpStore.delete(normalizedEmail);
-      throw new BadRequestException('OTP expired');
-    }
-
-    // Find latest unused OTP record in DB to track attempt counter
+    // Find the latest unused, non-expired OTP for this email from DB
     const otpRecord = await this.prisma.otpCode.findFirst({
-      where: { email: normalizedEmail, usedAt: null },
+      where: {
+        email: normalizedEmail,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -100,7 +89,7 @@ export class AuthService {
       throw new HttpException('Too many OTP attempts', HttpStatus.TOO_MANY_REQUESTS);
     }
 
-    if (record.code !== code) {
+    if (otpRecord.code !== code) {
       // Increment attempt counter, then reject
       await this.prisma.otpCode.update({
         where: { id: otpRecord.id },
@@ -114,8 +103,6 @@ export class AuthService {
       where: { id: otpRecord.id },
       data: { usedAt: new Date() },
     });
-
-    otpStore.delete(normalizedEmail);
 
     // Check if user already exists to preserve existing role
     const existingUser = await this.prisma.user.findUnique({
