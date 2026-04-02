@@ -16,6 +16,7 @@ import { Input } from '../../components/Input';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 interface RequestItem {
   id: string;
@@ -37,6 +38,7 @@ interface FeedResponse {
 }
 
 export default function RequestsFeedScreen() {
+  const { isMobile, numColumns } = useBreakpoints();
   const [items, setItems] = useState<RequestItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -110,7 +112,7 @@ export default function RequestsFeedScreen() {
 
   function renderItem({ item }: { item: RequestItem }) {
     return (
-      <View style={styles.cardWrapper}>
+      <View style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}>
         <Card padding={Spacing.lg}>
           {/* City + date row */}
           <View style={styles.metaRow}>
@@ -159,11 +161,18 @@ export default function RequestsFeedScreen() {
     <SafeAreaView style={styles.safe}>
       <Header title="Лента запросов" />
 
+      {/* key={numColumns} forces FlatList remount when columns change on resize */}
       <FlatList
+        key={numColumns}
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        numColumns={numColumns}
+        contentContainerStyle={[
+          styles.listContent,
+          !isMobile && styles.listContentWide,
+        ]}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -173,7 +182,7 @@ export default function RequestsFeedScreen() {
           />
         }
         ListHeaderComponent={
-          <View style={styles.filtersBox}>
+          <View style={[styles.filtersBox, !isMobile && styles.filtersBoxWide]}>
             <Input
               label="Город"
               value={cityFilter}
@@ -215,7 +224,7 @@ export default function RequestsFeedScreen() {
         }
         ListFooterComponent={
           hasMore ? (
-            <View style={styles.loadMoreBox}>
+            <View style={[styles.loadMoreBox, !isMobile && styles.loadMoreBoxWide]}>
               <Button
                 onPress={handleLoadMore}
                 variant="secondary"
@@ -238,10 +247,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bgPrimary,
   },
+  // Mobile: centered, single column
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing['3xl'],
     alignItems: 'center',
+  },
+  // Wide: stretch to fill, grid takes over
+  listContentWide: {
+    alignItems: 'stretch',
+  },
+  columnWrapper: {
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
   },
   filtersBox: {
     width: '100%',
@@ -250,14 +268,22 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
   },
+  filtersBoxWide: {
+    maxWidth: 600,
+  },
   totalText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textMuted,
   },
-  cardWrapper: {
+  // Mobile: centered single column, maxWidth 430
+  cardWrapperMobile: {
     width: '100%',
     maxWidth: 430,
     marginBottom: Spacing.md,
+  },
+  // Grid: flex 1 fills column, gutter from columnWrapper
+  cardWrapperGrid: {
+    flex: 1,
   },
   metaRow: {
     flexDirection: 'row',
@@ -343,6 +369,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 430,
     paddingTop: Spacing.md,
+  },
+  loadMoreBoxWide: {
+    maxWidth: 300,
   },
   loadMoreBtn: {
     width: '100%',

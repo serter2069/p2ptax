@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography } from '../constants/Colors';
+import { useBreakpoints } from '../hooks/useBreakpoints';
 
 interface HeaderProps {
   title: string;
@@ -18,6 +19,7 @@ interface HeaderProps {
 
 export function Header({ title, showBack = false, rightAction, onBackPress }: HeaderProps) {
   const router = useRouter();
+  const { isMobile } = useBreakpoints();
 
   const handleBack = () => {
     if (onBackPress) {
@@ -27,23 +29,49 @@ export function Header({ title, showBack = false, rightAction, onBackPress }: He
     }
   };
 
+  // On desktop/tablet, align title left (sidebar handles branding)
+  // On mobile, keep centered layout
+  const titleStyle = isMobile ? styles.titleCentered : styles.titleLeft;
+
   return (
     <View style={styles.container}>
-      <View style={styles.left}>
-        {showBack && (
-          <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={12}>
-            <Text style={styles.backIcon}>{'←'}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {isMobile ? (
+        // Mobile: left spacer | centered title | right action
+        <>
+          <View style={styles.left}>
+            {showBack && (
+              <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={12}>
+                <Text style={styles.backIcon}>{'←'}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
+          <Text style={titleStyle} numberOfLines={1}>
+            {title}
+          </Text>
 
-      <View style={styles.right}>
-        {rightAction ?? null}
-      </View>
+          <View style={styles.right}>
+            {rightAction ?? null}
+          </View>
+        </>
+      ) : (
+        // Desktop/tablet: back (if needed) | left-aligned title | right spacer + action
+        <>
+          {showBack && (
+            <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={12}>
+              <Text style={styles.backIcon}>{'←'}</Text>
+            </TouchableOpacity>
+          )}
+
+          <Text style={titleStyle} numberOfLines={1}>
+            {title}
+          </Text>
+
+          <View style={styles.rightWide}>
+            {rightAction ?? null}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -53,13 +81,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 56,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
     backgroundColor: Colors.bgSecondary,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    // Extra top padding for web/status bar
     paddingTop: Platform.OS === 'web' ? 0 : 0,
   },
+  // Mobile layout pieces
   left: {
     width: 48,
     alignItems: 'flex-start',
@@ -68,12 +96,26 @@ const styles = StyleSheet.create({
     width: 48,
     alignItems: 'flex-end',
   },
-  title: {
+  // Wide layout: pushes actions to the far right
+  rightWide: {
+    marginLeft: 'auto' as any,
+    alignItems: 'flex-end',
+  },
+  // Title variants
+  titleCentered: {
     flex: 1,
     textAlign: 'center',
     fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
+  },
+  titleLeft: {
+    flex: 1,
+    textAlign: 'left',
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+    marginLeft: Spacing.sm,
   },
   backBtn: {
     padding: Spacing.xs,

@@ -15,6 +15,7 @@ import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 interface MyRequest {
   id: string;
@@ -30,6 +31,7 @@ interface ThreadItem {
 export default function DashboardHub() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { isMobile } = useBreakpoints();
   const [requestCount, setRequestCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
   const [threadCount, setThreadCount] = useState(0);
@@ -55,7 +57,6 @@ export default function DashboardHub() {
   }, []);
 
   // Check if SPECIALIST has filled their profile; redirect to profile setup if not.
-  // Only runs once on mount, not on refresh, to avoid re-redirecting after profile is saved.
   useEffect(() => {
     if (!user || user.role !== 'SPECIALIST') return;
 
@@ -66,7 +67,6 @@ export default function DashboardHub() {
         if (err instanceof ApiError && err.status === 404) {
           router.replace('/(dashboard)/specialist-profile');
         }
-        // Any other error (network, 500, etc.) — silently ignore, stay on dashboard
       }
     }
 
@@ -87,6 +87,64 @@ export default function DashboardHub() {
     router.replace('/');
   }
 
+  // --- Desktop/tablet: welcome + stats view (sidebar handles navigation) ---
+  if (!isMobile) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView
+          contentContainerStyle={styles.scrollWide}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.brandPrimary}
+            />
+          }
+        >
+          <View style={styles.wideContainer}>
+            <Text style={styles.wideGreeting}>
+              Добро пожаловать,
+            </Text>
+            <Text style={styles.wideEmail}>
+              {user?.email ?? ''}
+            </Text>
+
+            {loading ? (
+              <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginTop: Spacing['3xl'] }} />
+            ) : (
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{requestCount}</Text>
+                  <Text style={styles.statLabel}>Всего запросов</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{activeCount}</Text>
+                  <Text style={styles.statLabel}>Активных запросов</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{threadCount}</Text>
+                  <Text style={styles.statLabel}>Диалогов</Text>
+                </View>
+              </View>
+            )}
+
+            {!loading && user?.role !== 'SPECIALIST' && (
+              <Button
+                onPress={() => router.push('/(dashboard)/requests/new')}
+                variant="primary"
+                style={styles.wideCreateBtn}
+              >
+                Создать запрос
+              </Button>
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // --- Mobile: original hub navigation cards ---
   return (
     <SafeAreaView style={styles.safe}>
       <Header
@@ -211,6 +269,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bgPrimary,
   },
+  // Mobile
   scroll: {
     flexGrow: 1,
     alignItems: 'center',
@@ -275,5 +334,55 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.statusError,
     fontWeight: Typography.fontWeight.medium,
+  },
+  // Desktop / tablet
+  scrollWide: {
+    flexGrow: 1,
+    paddingVertical: Spacing['4xl'],
+    paddingHorizontal: Spacing['3xl'],
+  },
+  wideContainer: {
+    gap: Spacing['2xl'],
+  },
+  wideGreeting: {
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+  },
+  wideEmail: {
+    fontSize: Typography.fontSize.lg,
+    color: Colors.textSecondary,
+    marginTop: -Spacing.lg,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.xl,
+    flexWrap: 'wrap',
+  },
+  statCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing['2xl'],
+    minWidth: 160,
+    flex: 1,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    ...Shadows.sm,
+  },
+  statValue: {
+    fontSize: Typography.fontSize['3xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.brandPrimary,
+  },
+  statLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  wideCreateBtn: {
+    alignSelf: 'flex-start',
+    minWidth: 200,
   },
 });

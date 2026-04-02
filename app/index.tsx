@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Button } from '../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../constants/Colors';
+import { useBreakpoints } from '../hooks/useBreakpoints';
 
 const FEATURES = [
   'Проверенные специалисты',
@@ -18,69 +19,146 @@ const FEATURES = [
 
 export default function LandingScreen() {
   const router = useRouter();
+  const { isMobile, isDesktop } = useBreakpoints();
 
+  // Mobile: stacked single column (original)
+  if (isMobile) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.container}>
+            {/* Hero */}
+            <View style={styles.hero}>
+              <View style={styles.logoCircle}>
+                <Text style={styles.logoEmoji}>⚖️</Text>
+              </View>
+              <Text style={styles.appName}>Налоговик</Text>
+              <Text style={styles.tagline}>
+                Найди специалиста по налогам{'\n'}в своём городе
+              </Text>
+            </View>
+
+            {/* Features */}
+            <View style={styles.features}>
+              {FEATURES.map((f) => (
+                <View key={f} style={styles.featureRow}>
+                  <Text style={styles.featureCheck}>✓</Text>
+                  <Text style={styles.featureText}>{f}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Quick access */}
+            <View style={styles.quickAccess}>
+              <Button
+                onPress={() => router.push('/specialists')}
+                variant="secondary"
+                style={styles.btn}
+              >
+                Каталог специалистов
+              </Button>
+              <Button
+                onPress={() => router.push('/requests')}
+                variant="secondary"
+                style={styles.btn}
+              >
+                Лента запросов
+              </Button>
+            </View>
+
+            {/* CTAs */}
+            <View style={styles.ctas}>
+              <Button
+                onPress={() => router.push('/(auth)/email?role=CLIENT')}
+                variant="primary"
+                style={styles.btn}
+              >
+                Войти как заказчик
+              </Button>
+              <Button
+                onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
+                variant="secondary"
+                style={styles.btn}
+              >
+                Я специалист / Зарегистрироваться
+              </Button>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Tablet / Desktop: two-column layout
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={styles.scrollWide}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.container}>
-          {/* Hero */}
-          <View style={styles.hero}>
+        <View style={[styles.wideContainer, isDesktop && styles.wideContainerDesktop]}>
+          {/* Left: Hero + features */}
+          <View style={styles.wideLeft}>
             <View style={styles.logoCircle}>
               <Text style={styles.logoEmoji}>⚖️</Text>
             </View>
             <Text style={styles.appName}>Налоговик</Text>
-            <Text style={styles.tagline}>
-              Найди специалиста по налогам{'\n'}в своём городе
+            <Text style={[styles.tagline, styles.taglineWide]}>
+              Найди специалиста по налогам в своём городе
             </Text>
+
+            <View style={styles.features}>
+              {FEATURES.map((f) => (
+                <View key={f} style={styles.featureRow}>
+                  <Text style={styles.featureCheck}>✓</Text>
+                  <Text style={styles.featureText}>{f}</Text>
+                </View>
+              ))}
+            </View>
           </View>
 
-          {/* Features */}
-          <View style={styles.features}>
-            {FEATURES.map((f) => (
-              <View key={f} style={styles.featureRow}>
-                <Text style={styles.featureCheck}>✓</Text>
-                <Text style={styles.featureText}>{f}</Text>
-              </View>
-            ))}
-          </View>
+          {/* Right: Actions */}
+          <View style={styles.wideRight}>
+            <Text style={styles.actionTitle}>Начать работу</Text>
 
-          {/* Quick access */}
-          <View style={styles.quickAccess}>
-            <Button
-              onPress={() => router.push('/specialists')}
-              variant="secondary"
-              style={styles.btn}
-            >
-              Каталог специалистов
-            </Button>
-            <Button
-              onPress={() => router.push('/requests')}
-              variant="secondary"
-              style={styles.btn}
-            >
-              Лента запросов
-            </Button>
-          </View>
+            <View style={styles.quickAccess}>
+              <Button
+                onPress={() => router.push('/specialists')}
+                variant="secondary"
+                style={styles.btn}
+              >
+                Каталог специалистов
+              </Button>
+              <Button
+                onPress={() => router.push('/requests')}
+                variant="secondary"
+                style={styles.btn}
+              >
+                Лента запросов
+              </Button>
+            </View>
 
-          {/* CTAs */}
-          <View style={styles.ctas}>
-            <Button
-              onPress={() => router.push('/(auth)/email?role=CLIENT')}
-              variant="primary"
-              style={styles.btn}
-            >
-              Войти как заказчик
-            </Button>
-            <Button
-              onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-              variant="secondary"
-              style={styles.btn}
-            >
-              Я специалист / Зарегистрироваться
-            </Button>
+            <View style={styles.divider} />
+
+            <View style={styles.ctas}>
+              <Button
+                onPress={() => router.push('/(auth)/email?role=CLIENT')}
+                variant="primary"
+                style={styles.btn}
+              >
+                Войти как заказчик
+              </Button>
+              <Button
+                onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
+                variant="secondary"
+                style={styles.btn}
+              >
+                Я специалист / Зарегистрироваться
+              </Button>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -93,6 +171,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bgPrimary,
   },
+  // ---- Mobile styles ----
   scroll: {
     flexGrow: 1,
     alignItems: 'center',
@@ -105,6 +184,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing['3xl'],
   },
+  // ---- Wide styles ----
+  scrollWide: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: Spacing['4xl'],
+    paddingHorizontal: Spacing['3xl'],
+  },
+  wideContainer: {
+    flexDirection: 'row',
+    gap: Spacing['4xl'],
+    alignItems: 'flex-start',
+    maxWidth: 900,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  wideContainerDesktop: {
+    maxWidth: 1100,
+  },
+  wideLeft: {
+    flex: 1,
+    gap: Spacing['2xl'],
+    paddingTop: Spacing['2xl'],
+  },
+  wideRight: {
+    width: 340,
+    gap: Spacing.xl,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing['2xl'],
+  },
+  actionTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: Spacing.sm,
+  },
+  // Shared
   hero: {
     alignItems: 'center',
     gap: Spacing.lg,
@@ -134,6 +257,9 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 26,
+  },
+  taglineWide: {
+    textAlign: 'left',
   },
   features: {
     width: '100%',

@@ -17,6 +17,7 @@ import { Header } from '../../../components/Header';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { EmptyState } from '../../../components/EmptyState';
+import { useBreakpoints } from '../../../hooks/useBreakpoints';
 
 interface ResponseItem {
   id: string;
@@ -41,6 +42,7 @@ type Tab = 'active' | 'closed';
 
 export default function MyRequestsScreen() {
   const router = useRouter();
+  const { isMobile, numColumns } = useBreakpoints();
   const [items, setItems] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -107,7 +109,7 @@ export default function MyRequestsScreen() {
   function renderItem({ item }: { item: RequestItem }) {
     return (
       <TouchableOpacity
-        style={styles.cardWrapper}
+        style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
         onPress={() => router.push(`/(dashboard)/requests/${item.id}`)}
         activeOpacity={0.75}
       >
@@ -170,10 +172,10 @@ export default function MyRequestsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Мои запросы" showBack />
+      <Header title="Мои запросы" showBack={isMobile} />
 
       {/* Tabs */}
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, !isMobile && styles.tabsWide]}>
         <TouchableOpacity
           style={[styles.tab, tab === 'active' && styles.tabActive]}
           onPress={() => setTab('active')}
@@ -192,11 +194,18 @@ export default function MyRequestsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* key={numColumns} forces FlatList remount when columns change on resize */}
       <FlatList
+        key={numColumns}
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        numColumns={numColumns}
+        contentContainerStyle={[
+          styles.listContent,
+          !isMobile && styles.listContentWide,
+        ]}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -230,7 +239,7 @@ export default function MyRequestsScreen() {
         }
         ListFooterComponent={
           !loading && filtered.length > 0 ? (
-            <View style={styles.footerBtn}>
+            <View style={[styles.footerBtn, !isMobile && styles.footerBtnWide]}>
               <Button
                 onPress={() => router.push('/(dashboard)/requests/new')}
                 variant="primary"
@@ -261,6 +270,10 @@ const styles = StyleSheet.create({
     maxWidth: 430,
     width: '100%',
   },
+  tabsWide: {
+    maxWidth: 500,
+    alignSelf: 'flex-start',
+  },
   tab: {
     flex: 1,
     height: 40,
@@ -284,14 +297,29 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: Typography.fontWeight.semibold,
   },
+  // Mobile: centered, single column
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing['3xl'],
     alignItems: 'center',
   },
-  cardWrapper: {
+  // Wide: stretch
+  listContentWide: {
+    alignItems: 'stretch',
+  },
+  columnWrapper: {
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  // Mobile card
+  cardWrapperMobile: {
     width: '100%',
     maxWidth: 430,
+    marginTop: Spacing.md,
+  },
+  // Grid card
+  cardWrapperGrid: {
+    flex: 1,
     marginTop: Spacing.md,
   },
   metaRow: {
@@ -387,6 +415,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 430,
     paddingTop: Spacing.xl,
+  },
+  footerBtnWide: {
+    maxWidth: 250,
   },
   createBtn: {
     width: '100%',
