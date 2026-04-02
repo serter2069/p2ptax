@@ -158,7 +158,7 @@ export default function DashboardHub() {
               {user?.role === 'SPECIALIST' && (
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => router.push('/(dashboard)/specialist-profile')}
+                  onPress={() => router.push('/(dashboard)/profile')}
                   activeOpacity={0.75}
                 >
                   <View style={styles.cardIcon}>

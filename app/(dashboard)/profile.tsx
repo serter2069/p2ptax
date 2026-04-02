@@ -12,6 +12,7 @@ import {
   TextInput,
   RefreshControl,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
@@ -30,6 +31,7 @@ interface SpecialistProfile {
 }
 
 export default function SpecialistProfileScreen() {
+  const router = useRouter();
   const [profile, setProfile] = useState<SpecialistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -160,18 +162,8 @@ export default function SpecialistProfileScreen() {
   }
 
   if (error === 'profile_not_found') {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <Header title="Мой профиль" showBack />
-        <View style={styles.center}>
-          <Text style={styles.emptyIcon}>{'👤'}</Text>
-          <Text style={styles.emptyTitle}>Профиль не создан</Text>
-          <Text style={styles.emptySubtitle}>
-            Обратитесь в поддержку или создайте профиль через API
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
+    router.replace('/(dashboard)/specialist-profile');
+    return null;
   }
 
   return (
