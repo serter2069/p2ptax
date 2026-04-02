@@ -28,6 +28,8 @@ interface RequestDetail {
   id: string;
   description: string;
   city: string;
+  budget?: number | null;
+  category?: string | null;
   status: string;
   createdAt: string;
   _count: { responses: number };
@@ -172,6 +174,19 @@ export default function RequestDetailScreen() {
 
             <Text style={styles.description}>{request.description}</Text>
 
+            {(request.budget != null || request.category) ? (
+              <View style={styles.tagsRow}>
+                {request.category ? (
+                  <View style={styles.categoryChip}>
+                    <Text style={styles.categoryText}>{request.category}</Text>
+                  </View>
+                ) : null}
+                {request.budget != null ? (
+                  <Text style={styles.budgetText}>Бюджет: {request.budget.toLocaleString('ru-RU')} ₽</Text>
+                ) : null}
+              </View>
+            ) : null}
+
             <Text style={styles.dateLabel}>{formatDate(request.createdAt)}</Text>
 
             {request.status === 'OPEN' && (
@@ -293,6 +308,30 @@ const styles = StyleSheet.create({
   closeBtn: {
     marginTop: Spacing.lg,
     width: '100%',
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  categoryChip: {
+    backgroundColor: Colors.bgSecondary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  categoryText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  budgetText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
   },
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
