@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
 import { api, ApiError } from '../../lib/api';
+import { isAdmin } from '../../lib/adminEmails';
 import { Header } from '../../components/Header';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 
@@ -143,6 +144,23 @@ export default function SettingsScreen() {
               )}
             </View>
           </View>
+
+          {/* Admin section — visible only for admin emails */}
+          {isAdmin(user?.email) ? (
+            <>
+              <Text style={styles.sectionTitle}>Администрирование</Text>
+              <View style={styles.card}>
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() => router.push('/(admin)')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.rowLabel}>Панель администратора</Text>
+                  <Text style={styles.rowArrow}>{'>'}</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : null}
 
           {/* Actions section */}
           <Text style={styles.sectionTitle}>Действия</Text>
