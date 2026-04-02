@@ -25,7 +25,7 @@ interface RequestItem {
   category?: string | null;
   status: string;
   createdAt: string;
-  client: { id: string; email: string };
+  client: { id: string };
   _count: { responses: number };
 }
 

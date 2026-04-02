@@ -45,8 +45,9 @@ export class RequestsController {
     return this.requestsService.findMyResponses(req.user.id);
   }
 
-  // GET /requests — public feed (specialists browse)
+  // GET /requests — authenticated feed (specialists browse)
   @Get()
+  @UseGuards(JwtAuthGuard)
   getFeed(@Query('city') city?: string, @Query('page') page?: string) {
     return this.requestsService.findFeed(city, page ? parseInt(page, 10) : 1);
   }

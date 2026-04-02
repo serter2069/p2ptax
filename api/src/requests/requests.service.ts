@@ -41,7 +41,7 @@ export class RequestsService {
         skip,
         take: PAGE_SIZE,
         include: {
-          client: { select: { id: true, email: true } },
+          client: { select: { id: true } },
           _count: { select: { responses: true } },
         },
       }),
