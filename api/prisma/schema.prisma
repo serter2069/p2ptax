@@ -148,6 +148,20 @@ model Promotion {
   @@map("promotions")
 }
 
+// Persisted price overrides for promotion tiers.
+// city = null means "default for all cities".
+// city-specific entry takes priority over the null entry.
+model PromotionPrice {
+  id        String        @id @default(cuid())
+  city      String?
+  tier      PromotionTier
+  price     Int
+  updatedAt DateTime      @updatedAt
+
+  @@unique([city, tier])
+  @@map("promotion_prices")
+}
+
 model ChatMessage {
   id        String   @id @default(cuid())
   room      String

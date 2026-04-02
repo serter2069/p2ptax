@@ -29,35 +29,35 @@ export class PromotionsController {
   @Post('purchase')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SPECIALIST)
-  purchase(@Request() req: any, @Body() dto: PurchasePromotionDto) {
+  async purchase(@Request() req: any, @Body() dto: PurchasePromotionDto) {
     return this.promotionsService.purchase(req.user.id, dto);
   }
 
   /** Get my promotions (any authenticated user, but mostly specialists) */
   @Get('my')
   @UseGuards(JwtAuthGuard)
-  getMyPromotions(@Request() req: any) {
+  async getMyPromotions(@Request() req: any) {
     return this.promotionsService.getMyPromotions(req.user.id);
   }
 
   /** Admin: list all promotions */
   @Get('admin')
   @UseGuards(JwtAuthGuard)
-  adminList(@Request() req: any) {
+  async adminList(@Request() req: any) {
     this.assertAdmin(req.user.email);
     return this.promotionsService.adminList();
   }
 
   /** Public: get current prices (no auth required) */
   @Get('prices')
-  getPublicPrices(@Query('city') city?: string) {
+  async getPublicPrices(@Query('city') city?: string) {
     return this.promotionsService.getPrices(city);
   }
 
   /** Admin: get current prices */
   @Get('admin/prices')
   @UseGuards(JwtAuthGuard)
-  getPrices(@Request() req: any, @Query('city') city?: string) {
+  async getPrices(@Request() req: any, @Query('city') city?: string) {
     this.assertAdmin(req.user.email);
     return this.promotionsService.getPrices(city);
   }
@@ -65,7 +65,7 @@ export class PromotionsController {
   /** Admin: update price for city+tier */
   @Patch('admin/prices')
   @UseGuards(JwtAuthGuard)
-  updatePrices(@Request() req: any, @Body() dto: UpdatePricesDto) {
+  async updatePrices(@Request() req: any, @Body() dto: UpdatePricesDto) {
     this.assertAdmin(req.user.email);
     return this.promotionsService.updatePrices(dto);
   }
