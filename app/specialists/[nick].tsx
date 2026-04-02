@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
@@ -20,6 +21,7 @@ import { EmptyState } from '../../components/EmptyState';
 
 interface SpecialistProfile {
   id: string;
+  userId: string;
   nick: string;
   cities: string[];
   services: string[];
@@ -39,6 +41,7 @@ export default function SpecialistProfileScreen() {
   const [profile, setProfile] = useState<SpecialistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [writingLoading, setWritingLoading] = useState(false);
 
   useEffect(() => {
     if (!nick) return;
@@ -67,12 +70,22 @@ export default function SpecialistProfileScreen() {
     return () => { cancelled = true; };
   }, [nick]);
 
-  function handleWrite() {
+  async function handleWrite() {
     if (!user) {
       router.push('/(auth)/email?role=CLIENT');
       return;
     }
-    router.push(`/(dashboard)/requests/new?specialist=${profile!.nick}`);
+    if (!profile || writingLoading) return;
+    setWritingLoading(true);
+    try {
+      const resp = await api.post<{ threadId: string }>('/threads/start', { otherUserId: profile.userId });
+      router.push(`/(dashboard)/messages/${resp.threadId}`);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Не удалось открыть диалог';
+      Alert.alert('Ошибка', msg);
+    } finally {
+      setWritingLoading(false);
+    }
   }
 
   if (loading) {
@@ -184,6 +197,8 @@ export default function SpecialistProfileScreen() {
           <Button
             onPress={handleWrite}
             variant="primary"
+            loading={writingLoading}
+            disabled={writingLoading}
             style={styles.writeBtn}
           >
             {user ? 'Написать' : 'Написать (войдите)'}

@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -71,6 +71,29 @@ export class ChatService {
     ]);
 
     return { messages, total, page, pages: Math.ceil(total / take) };
+  }
+
+  /** Upsert thread between two users. Returns { threadId } */
+  async startThread(userId: string, otherUserId: string) {
+    if (userId === otherUserId) {
+      throw new BadRequestException('Cannot start a thread with yourself');
+    }
+
+    // Verify the other user exists
+    const other = await this.prisma.user.findUnique({ where: { id: otherUserId } });
+    if (!other) throw new NotFoundException('User not found');
+
+    // Sort IDs to enforce unique constraint invariant: participant1Id < participant2Id
+    const [p1, p2] = [userId, otherUserId].sort();
+
+    const thread = await this.prisma.thread.upsert({
+      where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
+      create: { participant1Id: p1, participant2Id: p2 },
+      update: {},
+      select: { id: true },
+    });
+
+    return { threadId: thread.id };
   }
 
   /** Verify user is participant of thread */

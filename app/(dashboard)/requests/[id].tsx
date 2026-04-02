@@ -9,7 +9,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
@@ -36,11 +36,13 @@ interface RequestDetail {
 
 export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [closingId, setClosingId] = useState(false);
+  const [startingDialogId, setStartingDialogId] = useState<string | null>(null);
 
   const fetchDetail = useCallback(async (isRefresh = false) => {
     if (!id) return;
@@ -100,8 +102,18 @@ export default function RequestDetailScreen() {
     });
   }
 
-  function handleStartDialog() {
-    Alert.alert('Скоро', 'Функция диалогов будет доступна в ближайшее время');
+  async function handleStartDialog(specialistId: string) {
+    if (startingDialogId) return;
+    setStartingDialogId(specialistId);
+    try {
+      const resp = await api.post<{ threadId: string }>('/threads/start', { otherUserId: specialistId });
+      router.push(`/(dashboard)/messages/${resp.threadId}`);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Не удалось открыть диалог';
+      Alert.alert('Ошибка', msg);
+    } finally {
+      setStartingDialogId(null);
+    }
   }
 
   if (loading) {
@@ -194,8 +206,10 @@ export default function RequestDetailScreen() {
                 </View>
                 <Text style={styles.responseMessage}>{resp.message}</Text>
                 <Button
-                  onPress={handleStartDialog}
+                  onPress={() => handleStartDialog(resp.specialist.id)}
                   variant="secondary"
+                  loading={startingDialogId === resp.specialist.id}
+                  disabled={startingDialogId !== null}
                   style={styles.dialogBtn}
                 >
                   Начать диалог
