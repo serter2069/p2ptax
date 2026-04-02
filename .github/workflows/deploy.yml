@@ -55,35 +55,31 @@ jobs:
 
       - name: Run DB migrations
         working-directory: ./api
-        run: npx prisma migrate deploy
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STG }}
+        run: DOPPLER_TOKEN="$DOPPLER_TOKEN" doppler run -- npx prisma migrate deploy
 
       - name: Deploy to server
         env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STG }}
         run: |
           DEPLOY_DIR="/var/www/p2ptax"
 
-          # Deploy frontend
           sudo mkdir -p $DEPLOY_DIR/web
           sudo rsync -av --delete dist/ $DEPLOY_DIR/web/
 
-          # Deploy API
           sudo mkdir -p $DEPLOY_DIR/api
           sudo rsync -av --delete api/dist/ $DEPLOY_DIR/api/dist/
           sudo rsync -av --delete api/node_modules/ $DEPLOY_DIR/api/node_modules/
           sudo rsync -av api/prisma/ $DEPLOY_DIR/api/prisma/
           sudo cp api/package.json $DEPLOY_DIR/api/package.json
 
-          # Write version info
           echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" | sudo tee $DEPLOY_DIR/web/version.json
 
-          # Write .env for dotenv to pick up at runtime
-          printf "JWT_SECRET=%s\nALLOWED_ORIGINS=%s\n" "$JWT_SECRET" "$ALLOWED_ORIGINS" | sudo tee $DEPLOY_DIR/api/.env > /dev/null
+          DOPPLER_TOKEN="$DOPPLER_TOKEN" doppler secrets download --no-file --format env > /tmp/p2ptax.env
+          sudo cp /tmp/p2ptax.env $DEPLOY_DIR/api/.env
+          rm /tmp/p2ptax.env
 
-          # Restart API (start from dist/main.js for NestJS)
           cd $DEPLOY_DIR/api
           sudo pm2 restart p2ptax-api --update-env || sudo pm2 start dist/main.js --name p2ptax-api
           sudo pm2 save
