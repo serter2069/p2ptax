@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../stores/authStore';
+import { isAdmin } from '../lib/adminEmails';
 import { Colors } from '../constants/Colors';
 
 function RootNavigator() {
@@ -15,6 +16,7 @@ function RootNavigator() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inDashboardGroup = segments[0] === '(dashboard)';
+    const inAdminGroup = segments[0] === '(admin)';
     // Public routes that guests can access freely
     const isPublicRoute =
       segments[0] === 'specialists' || segments[0] === 'requests';
@@ -27,6 +29,9 @@ function RootNavigator() {
       router.replace('/(dashboard)');
     } else if (user && !inDashboardGroup && !isPublicRoute && segments[0] === undefined) {
       // Authenticated user on landing → redirect to dashboard
+      router.replace('/(dashboard)');
+    } else if (user && inAdminGroup && !isAdmin(user.email)) {
+      // Non-admin trying to access admin section → redirect to dashboard
       router.replace('/(dashboard)');
     }
   }, [user, isLoading, segments, router]);
