@@ -121,6 +121,24 @@ export class RequestsService {
     return result;
   }
 
+  async findMyResponses(specialistId: string) {
+    return this.prisma.response.findMany({
+      where: { specialistId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        request: {
+          select: {
+            id: true,
+            description: true,
+            city: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+  }
+
   async updateStatus(clientId: string, requestId: string, status: RequestStatus) {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');
