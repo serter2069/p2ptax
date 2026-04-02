@@ -6,3 +6,36 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  createdAt   DateTime  @default(now())
+  lastLoginAt DateTime?
+  messages    ChatMessage[]
+
+  @@map("users")
+}
+
+model OtpCode {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("otp_codes")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  room      String
+  text      String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([room])
+  @@map("chat_messages")
+}
