@@ -1,31 +1,13 @@
-name: Deploy P2PTax Staging
+name: Deploy P2PTax Production
 
 on:
   push:
-    branches: [development]
+    branches: [main]
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install API dependencies
-        working-directory: ./api
-        run: npm ci
-
-      - name: Build API (type check)
-        working-directory: ./api
-        run: npm run build
-
   deploy:
-    needs: validate
     runs-on: self-hosted
+    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,35 +39,29 @@ jobs:
         working-directory: ./api
         run: npx prisma migrate deploy
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
 
       - name: Deploy to server
         run: |
           DEPLOY_DIR="/var/www/p2ptax"
 
-          # Deploy frontend
           sudo mkdir -p $DEPLOY_DIR/web
           sudo rsync -av --delete dist/ $DEPLOY_DIR/web/
 
-          # Deploy API
           sudo mkdir -p $DEPLOY_DIR/api
           sudo rsync -av --delete api/dist/ $DEPLOY_DIR/api/dist/
           sudo rsync -av --delete api/node_modules/ $DEPLOY_DIR/api/node_modules/
           sudo rsync -av api/prisma/ $DEPLOY_DIR/api/prisma/
           sudo cp api/package.json $DEPLOY_DIR/api/package.json
 
-          # Write version info
-          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" | sudo tee $DEPLOY_DIR/web/version.json
+          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"env\":\"production\"}" | sudo tee $DEPLOY_DIR/web/version.json
 
-          # Restart API (start from dist/main.js for NestJS)
           cd $DEPLOY_DIR/api
           sudo pm2 restart p2ptax-api --update-env || sudo pm2 start dist/main.js --name p2ptax-api
           sudo pm2 save
 
-      - name: Verify staging
+      - name: Verify production
         run: |
           sleep 5
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://p2ptax.smartlaunchhub.com/api/health || echo "000")
-          echo "Health check HTTP status: $HTTP_STATUS"
           curl -s https://p2ptax.smartlaunchhub.com/api/health
           curl -s https://p2ptax.smartlaunchhub.com/version.json
