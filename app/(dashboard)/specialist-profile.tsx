@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addBtnText: {
-    fontSize: 24,
+    fontSize: Typography.fontSize['2xl'],
     color: Colors.textPrimary,
     lineHeight: 28,
   },
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   tagRemove: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.md,
     color: Colors.textMuted,
     lineHeight: 18,
   },

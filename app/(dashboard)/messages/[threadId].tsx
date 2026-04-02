@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   },
   sendIcon: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
   },
 });
