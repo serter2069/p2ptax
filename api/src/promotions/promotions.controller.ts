@@ -48,6 +48,12 @@ export class PromotionsController {
     return this.promotionsService.adminList();
   }
 
+  /** Public: get current prices (no auth required) */
+  @Get('prices')
+  getPublicPrices(@Query('city') city?: string) {
+    return this.promotionsService.getPrices(city);
+  }
+
   /** Admin: get current prices */
   @Get('admin/prices')
   @UseGuards(JwtAuthGuard)
