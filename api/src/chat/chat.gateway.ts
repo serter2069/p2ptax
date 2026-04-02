@@ -18,7 +18,7 @@ interface AuthenticatedSocket extends Socket {
 
 @WebSocketGateway({
   namespace: '/chat',
-  cors: { origin: '*' },
+  cors: { origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://p2ptax.smartlaunchhub.com'] },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -39,7 +39,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-prod',
+        secret: process.env.JWT_SECRET!,
       });
 
       client.data.userId = payload.sub;
