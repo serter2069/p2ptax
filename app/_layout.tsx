@@ -2,6 +2,7 @@ import '../global.css';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import Head from 'expo-router/head';
 import { AuthProvider, useAuth } from '../stores/authStore';
 import { Colors } from '../constants/Colors';
 
@@ -51,8 +52,17 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <>
+      <Head>
+        <title>Налоговик — поиск налоговых специалистов</title>
+        <meta name="description" content="Найдите налогового специалиста или получите заявки от клиентов" />
+        <meta property="og:title" content="Налоговик" />
+        <meta property="og:description" content="Сервис поиска налоговых специалистов" />
+        <meta property="og:type" content="website" />
+      </Head>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </>
   );
 }
