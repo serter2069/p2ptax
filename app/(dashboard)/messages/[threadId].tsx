@@ -172,11 +172,23 @@ export default function ThreadScreen() {
     setInput('');
     setSending(true);
 
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('send_message', { threadId, content });
-      setSending(false);
-    } else {
-      // Fallback: not connected, just clear (WebSocket handles delivery)
+    try {
+      if (socketRef.current?.connected) {
+        // Primary path: send via WebSocket — gateway broadcasts message_received to room
+        socketRef.current.emit('send_message', { threadId, content });
+      } else {
+        // Fallback: WebSocket unavailable — send via REST, which also emits to WS room
+        const message = await api.post<Message>(`/threads/${threadId}/messages`, { content });
+        // Append locally so sender sees the message immediately without waiting for WS event
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
+      }
+    } catch {
+      // Restore input on failure so user can retry
+      setInput(content);
+    } finally {
       setSending(false);
     }
   }
