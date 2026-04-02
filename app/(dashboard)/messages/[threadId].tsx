@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   sendBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',

@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: BorderRadius.sm,
     backgroundColor: Colors.brandPrimary,
     borderWidth: 2,
     borderColor: Colors.bgPrimary,

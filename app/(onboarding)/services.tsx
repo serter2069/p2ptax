@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   progressDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: BorderRadius.sm,
     backgroundColor: Colors.border,
   },
   progressDotDone: {
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandPrimary,
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: BorderRadius.sm,
   },
   progressLine: {
     width: 32,

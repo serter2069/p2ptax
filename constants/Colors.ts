@@ -108,9 +108,9 @@ export const Typography = {
 } as const;
 
 export const BorderRadius = {
-  sm: 6,
-  md: 10,
-  lg: 14,
+  sm: 8,
+  md: 12,
+  lg: 16,
   xl: 20,
   full: 9999,
 } as const;
