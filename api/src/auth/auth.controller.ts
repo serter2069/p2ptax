@@ -1,5 +1,5 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { IsEmail, IsString, Length } from 'class-validator';
+import { IsEmail, IsString, Length, IsOptional, IsIn } from 'class-validator';
 import { AuthService } from './auth.service';
 
 class RequestOtpDto {
@@ -14,6 +14,15 @@ class VerifyOtpDto {
   @IsString()
   @Length(6, 6)
   code!: string;
+
+  @IsOptional()
+  @IsIn(['client', 'specialist'])
+  role?: string;
+}
+
+class RefreshDto {
+  @IsString()
+  refreshToken!: string;
 }
 
 @Controller('auth')
@@ -27,6 +36,11 @@ export class AuthController {
 
   @Post('verify-otp')
   verifyOtp(@Body() body: VerifyOtpDto) {
-    return this.authService.verifyOtp(body.email, body.code);
+    return this.authService.verifyOtp(body.email, body.code, body.role);
+  }
+
+  @Post('refresh')
+  refresh(@Body() body: RefreshDto) {
+    return this.authService.refresh(body.refreshToken);
   }
 }
