@@ -18,6 +18,7 @@ import { Badge } from '../../components/Badge';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
+import { Stars } from '../../components/Stars';
 
 interface SpecialistItem {
   id: string;
@@ -27,12 +28,13 @@ interface SpecialistItem {
   badges: string[];
   promoted: boolean;
   promotionTier: number;
-  activity: { responseCount: number };
+  activity: { responseCount: number; avgRating: number | null; reviewCount: number };
 }
 
 const SORT_OPTIONS: { label: string; value: string }[] = [
   { label: 'По новизне', value: 'newest' },
   { label: 'По активности', value: 'responses' },
+  { label: 'По рейтингу', value: 'rating' },
 ];
 
 export default function SpecialistsCatalogScreen() {
@@ -144,9 +146,17 @@ export default function SpecialistsCatalogScreen() {
 
           {/* Footer */}
           <View style={styles.cardFooter}>
-            <Text style={styles.activityText}>
-              Откликов: {item.activity.responseCount}
-            </Text>
+            <View style={styles.footerLeft}>
+              <Stars
+                rating={item.activity.avgRating}
+                reviewCount={item.activity.reviewCount}
+                size="sm"
+                showEmpty={false}
+              />
+              <Text style={styles.activityText}>
+                Откликов: {item.activity.responseCount}
+              </Text>
+            </View>
             <Text style={styles.writeLink}>Написать →</Text>
           </View>
         </Card>
@@ -426,6 +436,10 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+  },
+  footerLeft: {
+    flex: 1,
+    gap: Spacing.xxs,
   },
   activityText: {
     fontSize: Typography.fontSize.xs,
