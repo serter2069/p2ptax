@@ -72,8 +72,7 @@ export default function SpecialistProfileScreen() {
       router.push('/(auth)/email?role=CLIENT');
       return;
     }
-    // TODO: navigate to chat when chat screen is implemented
-    router.push('/(auth)/email?role=CLIENT');
+    router.push(`/(dashboard)/requests/new?specialist=${profile!.nick}`);
   }
 
   if (loading) {
