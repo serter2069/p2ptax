@@ -13,6 +13,11 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
+  // Trust Cloudflare proxy so Express uses X-Forwarded-For as the real client IP.
+  // Without this, @nestjs/throttler uses the Cloudflare edge IP as the rate-limit key,
+  // making all rate limits ineffective (one shared bucket for all users).
+  app.set('trust proxy', 1);
+
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
