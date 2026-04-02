@@ -14,6 +14,7 @@ function RootNavigator() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inDashboardGroup = segments[0] === '(dashboard)';
     // Public routes that guests can access freely
     const isPublicRoute =
       segments[0] === 'specialists' || segments[0] === 'requests';
@@ -22,8 +23,11 @@ function RootNavigator() {
       // Not authenticated and trying to access a protected route → landing
       router.replace('/');
     } else if (user && inAuthGroup) {
-      // Already authenticated and still in auth group → home
-      router.replace('/');
+      // Already authenticated and still in auth group → dashboard
+      router.replace('/(dashboard)');
+    } else if (user && !inDashboardGroup && !isPublicRoute && segments[0] === undefined) {
+      // Authenticated user on landing → redirect to dashboard
+      router.replace('/(dashboard)');
     }
   }, [user, isLoading, segments, router]);
 
