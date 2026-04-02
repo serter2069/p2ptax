@@ -89,6 +89,25 @@ export class EmailService {
     }
   }
 
+  /** Send a one-time password to the user */
+  async sendOtp(email: string, code: string): Promise<void> {
+    if (!this.transporter) {
+      this.logger.log(`[DEV] OTP for ${email}: ${code} (SMTP not configured, email not sent)`);
+      return;
+    }
+
+    try {
+      await this.send({
+        to: email,
+        subject: 'Ваш код для входа — Налоговик',
+        text: `Ваш код для входа: ${code}\n\nКод действителен 10 минут. Если вы не запрашивали код, проигнорируйте это письмо.`,
+      });
+      this.logger.log(`OTP email sent to ${email}`);
+    } catch (err) {
+      this.logger.error(`[sendOtp] Failed to send OTP email to ${email}`, err);
+    }
+  }
+
   private async send(opts: { to: string; subject: string; text: string }): Promise<void> {
     if (!this.transporter) return;
 

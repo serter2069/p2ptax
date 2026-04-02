@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../notifications/email.service';
 import { Role } from '@prisma/client';
 
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -33,6 +34,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   private generateTokens(user: { id: string; email: string; role: Role }): TokenPair {
@@ -59,9 +61,11 @@ export class AuthService {
       data: { email: email.toLowerCase(), code, expiresAt },
     });
 
-    // In dev mode: log code to console. In prod: send email (implement later)
+    // In dev mode: log code to console. In prod: send email via EmailService
     if (process.env.DEV_AUTH === 'true') {
       console.log(`[DEV] OTP for ${email}: ${code}`);
+    } else {
+      await this.emailService.sendOtp(email.toLowerCase(), code);
     }
 
     return { message: 'OTP sent to email' };
