@@ -162,6 +162,24 @@ export class RequestsService {
     if (!request) throw new NotFoundException('Request not found');
     if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
 
+    // Guard: reject no-op transitions
+    if (request.status === status) {
+      throw new BadRequestException(`Request is already in status ${status}`);
+    }
+
+    // Transition matrix: defines all valid moves
+    const ALLOWED_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
+      [RequestStatus.OPEN]: [RequestStatus.CLOSED, RequestStatus.CANCELLED],
+      // CLOSED and CANCELLED are final — no transitions allowed
+    };
+
+    const allowed = ALLOWED_TRANSITIONS[request.status] ?? [];
+    if (!allowed.includes(status)) {
+      throw new BadRequestException(
+        `Cannot transition request from ${request.status} to ${status}`,
+      );
+    }
+
     return this.prisma.request.update({
       where: { id: requestId },
       data: { status },
