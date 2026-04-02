@@ -39,6 +39,8 @@ export class AuthController {
     return this.authService.requestOtp(body.email);
   }
 
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { ttl: 300000, limit: 10 } })
   @Post('verify-otp')
   verifyOtp(@Body() body: VerifyOtpDto) {
     return this.authService.verifyOtp(body.email, body.code, body.role);
