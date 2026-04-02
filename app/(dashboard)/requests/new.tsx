@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { api, ApiError } from '../../../lib/api';
@@ -16,13 +17,26 @@ import { Header } from '../../../components/Header';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 
+const TAX_CATEGORIES = [
+  'НДС',
+  'НДФЛ',
+  'Налог на прибыль',
+  'УСН',
+  'ИП/ООО',
+  'Таможня',
+  'Налоговая проверка',
+  'Другое',
+];
+
 export default function CreateRequestScreen() {
   const router = useRouter();
   const { specialist } = useLocalSearchParams<{ specialist?: string }>();
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
+  const [budget, setBudget] = useState('');
+  const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ description?: string; city?: string }>({});
+  const [errors, setErrors] = useState<{ description?: string; city?: string; budget?: string }>({});
 
   function validate(): boolean {
     const e: typeof errors = {};
@@ -32,6 +46,9 @@ export default function CreateRequestScreen() {
     if (!city.trim()) {
       e.city = 'Укажите город';
     }
+    if (budget.trim() && (isNaN(Number(budget)) || Number(budget) < 0 || !Number.isInteger(Number(budget)))) {
+      e.budget = 'Введите целое число';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -40,10 +57,13 @@ export default function CreateRequestScreen() {
     if (!validate()) return;
     setLoading(true);
     try {
-      await api.post('/requests', {
+      const body: Record<string, unknown> = {
         description: description.trim(),
         city: city.trim(),
-      });
+      };
+      if (budget.trim()) body.budget = Number(budget.trim());
+      if (category) body.category = category;
+      await api.post('/requests', body);
       router.replace('/(dashboard)/requests');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Не удалось создать запрос';
@@ -105,6 +125,36 @@ export default function CreateRequestScreen() {
               autoCapitalize="words"
               error={errors.city}
             />
+
+            <Input
+              label="Бюджет (₽, необязательно)"
+              value={budget}
+              onChangeText={(t) => {
+                setBudget(t);
+                if (errors.budget) setErrors((e) => ({ ...e, budget: undefined }));
+              }}
+              placeholder="Например, 5000"
+              keyboardType="numeric"
+              error={errors.budget}
+            />
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Категория (необязательно)</Text>
+              <View style={styles.chipsRow}>
+                {TAX_CATEGORIES.map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.chip, category === cat && styles.chipActive]}
+                    onPress={() => setCategory(category === cat ? '' : cat)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
 
             <Button
               onPress={handleSubmit}
@@ -172,5 +222,30 @@ const styles = StyleSheet.create({
   submitBtn: {
     width: '100%',
     marginTop: Spacing.md,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  chip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  chipActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  chipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  chipTextActive: {
+    color: Colors.textPrimary,
   },
 });

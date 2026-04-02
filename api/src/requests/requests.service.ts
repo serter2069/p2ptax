@@ -22,6 +22,8 @@ export class RequestsService {
         clientId,
         description: dto.description,
         city: dto.city,
+        budget: dto.budget ?? null,
+        category: dto.category ?? null,
       },
     });
   }

@@ -21,6 +21,8 @@ interface RequestItem {
   id: string;
   description: string;
   city: string;
+  budget?: number | null;
+  category?: string | null;
   status: string;
   createdAt: string;
   client: { id: string; email: string };
@@ -122,6 +124,20 @@ export default function RequestsFeedScreen() {
           <Text style={styles.description} numberOfLines={4}>
             {item.description}
           </Text>
+
+          {/* Budget + Category */}
+          {(item.budget != null || item.category) ? (
+            <View style={styles.tagsRow}>
+              {item.category ? (
+                <View style={styles.categoryChip}>
+                  <Text style={styles.categoryText}>{item.category}</Text>
+                </View>
+              ) : null}
+              {item.budget != null ? (
+                <Text style={styles.budgetText}>{item.budget.toLocaleString('ru-RU')} ₽</Text>
+              ) : null}
+            </View>
+          ) : null}
 
           {/* Footer */}
           <View style={styles.footer}>
@@ -293,6 +309,30 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.statusSuccess,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  categoryChip: {
+    backgroundColor: Colors.bgSecondary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  categoryText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  budgetText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
     fontWeight: Typography.fontWeight.medium,
   },
   loadingBox: {

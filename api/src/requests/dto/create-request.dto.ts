@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsInt, Min } from 'class-validator';
 
 export class CreateRequestDto {
   @IsString()
@@ -10,4 +10,14 @@ export class CreateRequestDto {
   @IsNotEmpty()
   @MaxLength(100)
   city!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  budget?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  category?: string;
 }
