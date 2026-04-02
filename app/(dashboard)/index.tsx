@@ -120,7 +120,7 @@ export default function DashboardHub() {
               {/* Threads card */}
               <TouchableOpacity
                 style={styles.card}
-                onPress={() => router.push('/(dashboard)/requests')}
+                onPress={() => router.push('/(dashboard)/messages')}
                 activeOpacity={0.75}
               >
                 <View style={styles.cardIcon}>
@@ -131,6 +131,22 @@ export default function DashboardHub() {
                   <Text style={styles.cardSub}>
                     Диалогов: {threadCount}
                   </Text>
+                </View>
+                <Text style={styles.cardArrow}>{'>'}</Text>
+              </TouchableOpacity>
+
+              {/* Settings card */}
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push('/(dashboard)/settings')}
+                activeOpacity={0.75}
+              >
+                <View style={styles.cardIcon}>
+                  <Text style={styles.cardEmoji}>{'⚙️'}</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>Настройки</Text>
+                  <Text style={styles.cardSub}>Уведомления, аккаунт</Text>
                 </View>
                 <Text style={styles.cardArrow}>{'>'}</Text>
               </TouchableOpacity>
