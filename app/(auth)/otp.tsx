@@ -22,10 +22,12 @@ const RESEND_SECONDS = 60;
 interface VerifyOtpResponse {
   accessToken: string;
   refreshToken?: string;
+  isNewUser: boolean;
   user: {
     userId: string;
     email: string;
     role: string;
+    username: string | null;
   };
 }
 
@@ -100,9 +102,15 @@ export default function OtpScreen() {
         userId: res.user.userId,
         email: res.user.email,
         role: res.user.role,
+        username: res.user.username,
+        isNewUser: res.isNewUser,
       });
-      // Navigate based on role — expand when dashboards are ready
-      router.replace('/');
+      // New users go to onboarding to pick a username; returning users go to dashboard
+      if (res.isNewUser) {
+        router.replace('/(onboarding)/username');
+      } else {
+        router.replace('/');
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

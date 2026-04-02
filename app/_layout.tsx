@@ -71,9 +71,16 @@ function RootNavigator() {
     const inAuthGroup = segments[0] === '(auth)';
     const inDashboardGroup = segments[0] === '(dashboard)';
     const inAdminGroup = segments[0] === '(admin)';
+    const inOnboardingGroup = segments[0] === '(onboarding)';
     // Public routes that guests can access freely
     const isPublicRoute =
       segments[0] === 'specialists' || segments[0] === 'requests';
+
+    // New user must complete onboarding before accessing anything else
+    if (user && user.isNewUser && !inOnboardingGroup) {
+      router.replace('/(onboarding)/username');
+      return;
+    }
 
     if (!user && !inAuthGroup && !isPublicRoute && segments[0] !== undefined) {
       // Not authenticated and trying to access a protected route → landing
