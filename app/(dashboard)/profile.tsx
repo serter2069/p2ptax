@@ -20,6 +20,7 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 
 const BADGE_TAX = 'familiar';
+const BADGE_TAX_LABEL = 'Знакомый в налоговой';
 
 interface SpecialistProfile {
   id: string;
@@ -207,7 +208,7 @@ export default function SpecialistProfileScreen() {
             <Text style={styles.sectionTitle}>Бейджи</Text>
             <View style={styles.badgeRow}>
               <View style={styles.badgeInfo}>
-                <Text style={styles.badgeLabel}>{BADGE_TAX}</Text>
+                <Text style={styles.badgeLabel}>{BADGE_TAX_LABEL}</Text>
                 <Text style={styles.badgeHint}>Подтверждённый контакт в ФНС</Text>
               </View>
               <Switch
