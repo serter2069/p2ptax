@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { secureStorage } from '../stores/storage';
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ?? 'https://p2ptax.smartlaunchhub.com/api';
@@ -24,36 +24,36 @@ function emitUnauthorized() {
 // Token storage helpers
 export async function getToken(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem(TOKEN_KEY);
+    return await secureStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
 }
 
 export async function setToken(token: string): Promise<void> {
-  await AsyncStorage.setItem(TOKEN_KEY, token);
+  await secureStorage.setItem(TOKEN_KEY, token);
 }
 
 export async function clearToken(): Promise<void> {
-  await AsyncStorage.removeItem(TOKEN_KEY);
+  await secureStorage.removeItem(TOKEN_KEY);
 }
 
 const REFRESH_TOKEN_KEY = '@p2ptax_refresh_token';
 
 export async function getRefreshToken(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+    return await secureStorage.getItem(REFRESH_TOKEN_KEY);
   } catch {
     return null;
   }
 }
 
 export async function setRefreshToken(token: string): Promise<void> {
-  await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
+  await secureStorage.setItem(REFRESH_TOKEN_KEY, token);
 }
 
 export async function clearRefreshToken(): Promise<void> {
-  await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+  await secureStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 // Refresh in-flight guard to avoid concurrent refresh calls

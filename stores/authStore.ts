@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setToken, clearToken, onUnauthorized } from '../lib/api';
+import { secureStorage } from './storage';
 
 const TOKEN_KEY = '@p2ptax_token';
 const USER_KEY = '@p2ptax_user';
@@ -81,8 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function restore() {
       try {
         const [token, userJson] = await Promise.all([
-          AsyncStorage.getItem(TOKEN_KEY),
-          AsyncStorage.getItem(USER_KEY),
+          secureStorage.getItem(TOKEN_KEY),
+          secureStorage.getItem(USER_KEY),
         ]);
 
         if (!cancelled) {
@@ -109,8 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onUnauthorized(() => {
       dispatch({ type: 'LOGOUT' });
       Promise.all([
-        AsyncStorage.removeItem(TOKEN_KEY),
-        AsyncStorage.removeItem(USER_KEY),
+        secureStorage.removeItem(TOKEN_KEY),
+        secureStorage.removeItem(USER_KEY),
       ]).catch(() => {});
     });
     return unsubscribe;
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (token: string, user: AuthUser) => {
     await Promise.all([
       setToken(token),
-      AsyncStorage.setItem(USER_KEY, JSON.stringify(user)),
+      secureStorage.setItem(USER_KEY, JSON.stringify(user)),
     ]);
     dispatch({ type: 'LOGIN', payload: { token, user } });
   }, []);
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await Promise.all([
       clearToken(),
-      AsyncStorage.removeItem(USER_KEY),
+      secureStorage.removeItem(USER_KEY),
     ]);
     dispatch({ type: 'LOGOUT' });
   }, []);
@@ -139,12 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Called after onboarding completes — clears isNewUser flag and stores username
   const completeOnboarding = useCallback(async (username: string) => {
     dispatch({ type: 'SET_USERNAME', payload: username });
-    // Persist updated user (isNewUser=false, username set) to AsyncStorage
-    const userJson = await AsyncStorage.getItem(USER_KEY);
+    // Persist updated user (isNewUser=false, username set) to secure storage
+    const userJson = await secureStorage.getItem(USER_KEY);
     if (userJson) {
       const existing = JSON.parse(userJson) as AuthUser;
       const updated: AuthUser = { ...existing, username, isNewUser: false };
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
+      await secureStorage.setItem(USER_KEY, JSON.stringify(updated));
     }
   }, []);
 
