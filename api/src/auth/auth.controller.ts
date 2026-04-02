@@ -1,4 +1,5 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { IsEmail, IsString, Length, IsOptional, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { AuthService } from './auth.service';
@@ -31,6 +32,8 @@ class RefreshDto {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { ttl: 300000, limit: 3 } })
   @Post('request-otp')
   requestOtp(@Body() body: RequestOtpDto) {
     return this.authService.requestOtp(body.email);
