@@ -9,7 +9,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { api, ApiError } from '../../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
@@ -18,6 +18,7 @@ import { Input } from '../../../components/Input';
 
 export default function CreateRequestScreen() {
   const router = useRouter();
+  const { specialist } = useLocalSearchParams<{ specialist?: string }>();
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
   const [loading, setLoading] = useState(false);
@@ -68,6 +69,12 @@ export default function CreateRequestScreen() {
             <Text style={styles.subtitle}>
               Опишите вашу задачу, и специалисты откликнутся
             </Text>
+
+            {specialist ? (
+              <Text style={styles.specialistHint}>
+                Запрос будет виден специалисту @{specialist}
+              </Text>
+            ) : null}
 
             <View style={styles.field}>
               <Text style={styles.label}>Описание</Text>
@@ -138,6 +145,11 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.textSecondary,
     lineHeight: 22,
+  },
+  specialistHint: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
   },
   field: {
     gap: Spacing.xs,
