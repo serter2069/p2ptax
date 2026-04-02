@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
@@ -80,21 +80,35 @@ export class AuthService {
       throw new BadRequestException('OTP expired');
     }
 
-    if (record.code !== code) {
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    // Mark used in DB — find latest unused OTP for this email
+    // Find latest unused OTP record in DB to track attempt counter
     const otpRecord = await this.prisma.otpCode.findFirst({
       where: { email: normalizedEmail, usedAt: null },
       orderBy: { createdAt: 'desc' },
     });
-    if (otpRecord) {
+
+    if (!otpRecord) {
+      throw new BadRequestException('OTP not found or expired');
+    }
+
+    // Check attempt counter BEFORE verifying the code
+    if (otpRecord.attempts >= 3) {
+      throw new HttpException('Too many OTP attempts', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    if (record.code !== code) {
+      // Increment attempt counter, then reject
       await this.prisma.otpCode.update({
         where: { id: otpRecord.id },
-        data: { usedAt: new Date() },
+        data: { attempts: { increment: 1 } },
       });
+      throw new UnauthorizedException('Invalid OTP');
     }
+
+    // Code is correct — mark used
+    await this.prisma.otpCode.update({
+      where: { id: otpRecord.id },
+      data: { usedAt: new Date() },
+    });
 
     otpStore.delete(normalizedEmail);
 
