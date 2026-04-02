@@ -114,3 +114,8 @@ export const BorderRadius = {
   xl: 20,
   full: 9999,
 } as const;
+
+export const Breakpoints = {
+  tablet: 768,
+  desktop: 1024,
+} as const;

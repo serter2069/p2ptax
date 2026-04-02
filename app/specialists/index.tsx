@@ -19,6 +19,7 @@ import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
 import { Stars } from '../../components/Stars';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 interface SpecialistItem {
   id: string;
@@ -39,6 +40,7 @@ const SORT_OPTIONS: { label: string; value: string }[] = [
 
 export default function SpecialistsCatalogScreen() {
   const router = useRouter();
+  const { isMobile, numColumns, contentMaxWidth } = useBreakpoints();
 
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,13 +95,14 @@ export default function SpecialistsCatalogScreen() {
 
   function renderSpecialist({ item }: { item: SpecialistItem }) {
     const hasFamiliar = item.badges.includes('familiar');
-    const isPromoted = item.promoted;
 
     return (
       <TouchableOpacity
         onPress={() => router.push(`/specialists/${item.nick}`)}
         activeOpacity={0.8}
-        style={styles.cardWrapper}
+        // On mobile: full-width with maxWidth 430 (via listContent alignItems center)
+        // On multi-column: flex: 1 so columns fill evenly, with margin for gutter
+        style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
       >
         <Card padding={Spacing.lg}>
           <View style={styles.cardHeader}>
@@ -161,15 +164,25 @@ export default function SpecialistsCatalogScreen() {
     );
   }
 
+  // Filters bar — width adapts to breakpoint
+  const filtersMaxWidth = isMobile ? 430 : (contentMaxWidth as number);
+
   return (
     <SafeAreaView style={styles.safe}>
       <Header title="Каталог специалистов" />
 
+      {/* key={numColumns} forces FlatList remount when columns change on resize */}
       <FlatList
+        key={numColumns}
         data={specialists}
         keyExtractor={(item) => item.id}
         renderItem={renderSpecialist}
-        contentContainerStyle={styles.listContent}
+        numColumns={numColumns}
+        contentContainerStyle={[
+          styles.listContent,
+          !isMobile && styles.listContentWide,
+        ]}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -179,7 +192,7 @@ export default function SpecialistsCatalogScreen() {
           />
         }
         ListHeaderComponent={
-          <View style={styles.filters}>
+          <View style={[styles.filters, { maxWidth: filtersMaxWidth }]}>
             {/* City filter chips */}
             {availableCities.length > 0 && (
               <View>
@@ -281,14 +294,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bgPrimary,
   },
+  // Mobile: centered single column
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing['3xl'],
     alignItems: 'center',
   },
+  // Wide (tablet/desktop): align to start so grid fills from left
+  listContentWide: {
+    alignItems: 'stretch',
+  },
+  // Grid column spacing
+  columnWrapper: {
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
   filters: {
     width: '100%',
-    maxWidth: 430,
     gap: Spacing.md,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
@@ -368,10 +390,15 @@ const styles = StyleSheet.create({
   sortTabTextActive: {
     color: Colors.textPrimary,
   },
-  cardWrapper: {
+  // Mobile card: centered single column, maxWidth 430
+  cardWrapperMobile: {
     width: '100%',
     maxWidth: 430,
     marginBottom: Spacing.md,
+  },
+  // Grid card: flex 1 fills column evenly (gutter handled by columnWrapper gap)
+  cardWrapperGrid: {
+    flex: 1,
   },
   cardHeader: {
     flexDirection: 'row',
