@@ -47,6 +47,24 @@ export default function LandingScreen() {
             ))}
           </View>
 
+          {/* Quick access */}
+          <View style={styles.quickAccess}>
+            <Button
+              onPress={() => router.push('/specialists')}
+              variant="secondary"
+              style={styles.btn}
+            >
+              Каталог специалистов
+            </Button>
+            <Button
+              onPress={() => router.push('/requests')}
+              variant="secondary"
+              style={styles.btn}
+            >
+              Лента запросов
+            </Button>
+          </View>
+
           {/* CTAs */}
           <View style={styles.ctas}>
             <Button
@@ -139,6 +157,10 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: Typography.fontSize.base,
     color: Colors.textSecondary,
+  },
+  quickAccess: {
+    width: '100%',
+    gap: Spacing.md,
   },
   ctas: {
     width: '100%',

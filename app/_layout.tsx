@@ -14,8 +14,11 @@ function RootNavigator() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    // Public routes that guests can access freely
+    const isPublicRoute =
+      segments[0] === 'specialists' || segments[0] === 'requests';
 
-    if (!user && !inAuthGroup && segments[0] !== undefined) {
+    if (!user && !inAuthGroup && !isPublicRoute && segments[0] !== undefined) {
       // Not authenticated and trying to access a protected route → landing
       router.replace('/');
     } else if (user && inAuthGroup) {

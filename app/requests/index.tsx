@@ -1,0 +1,310 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  TouchableOpacity,
+} from 'react-native';
+import { api, ApiError } from '../../lib/api';
+import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Card } from '../../components/Card';
+import { Input } from '../../components/Input';
+import { EmptyState } from '../../components/EmptyState';
+import { Header } from '../../components/Header';
+import { Button } from '../../components/Button';
+
+interface RequestItem {
+  id: string;
+  description: string;
+  city: string;
+  status: string;
+  createdAt: string;
+  client: { id: string; email: string };
+  _count: { responses: number };
+}
+
+interface FeedResponse {
+  items: RequestItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export default function RequestsFeedScreen() {
+  const [items, setItems] = useState<RequestItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
+
+  const fetchFeed = useCallback(
+    async (opts: { pageNum?: number; replace?: boolean; isRefresh?: boolean } = {}) => {
+      const { pageNum = 1, replace = true, isRefresh = false } = opts;
+
+      if (replace && !isRefresh) setLoading(true);
+      if (!replace) setLoadingMore(true);
+      setError('');
+
+      try {
+        const params = new URLSearchParams();
+        if (cityFilter.trim()) params.set('city', cityFilter.trim());
+        params.set('page', String(pageNum));
+        const data = await api.get<FeedResponse>(`/requests?${params.toString()}`);
+
+        if (replace || isRefresh) {
+          setItems(data.items);
+        } else {
+          setItems((prev) => [...prev, ...data.items]);
+        }
+        setTotal(data.total);
+        setPage(data.page);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError('Не удалось загрузить запросы.');
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
+      }
+    },
+    [cityFilter],
+  );
+
+  // Debounce city filter
+  useEffect(() => {
+    const timer = setTimeout(() => fetchFeed({ replace: true }), cityFilter ? 400 : 0);
+    return () => clearTimeout(timer);
+  }, [fetchFeed, cityFilter]);
+
+  function handleRefresh() {
+    setRefreshing(true);
+    fetchFeed({ replace: true, isRefresh: true });
+  }
+
+  function handleLoadMore() {
+    if (loadingMore || items.length >= total) return;
+    fetchFeed({ pageNum: page + 1, replace: false });
+  }
+
+  function formatDate(iso: string) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  function renderItem({ item }: { item: RequestItem }) {
+    return (
+      <View style={styles.cardWrapper}>
+        <Card padding={Spacing.lg}>
+          {/* City + date row */}
+          <View style={styles.metaRow}>
+            <View style={styles.cityChip}>
+              <Text style={styles.cityText}>{item.city}</Text>
+            </View>
+            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+          </View>
+
+          {/* Description */}
+          <Text style={styles.description} numberOfLines={4}>
+            {item.description}
+          </Text>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.responsesText}>
+              Откликов: {item._count.responses}
+            </Text>
+            <View style={styles.statusChip}>
+              <Text style={styles.statusText}>Открыт</Text>
+            </View>
+          </View>
+        </Card>
+      </View>
+    );
+  }
+
+  const hasMore = items.length < total;
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <Header title="Лента запросов" />
+
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.brandPrimary}
+          />
+        }
+        ListHeaderComponent={
+          <View style={styles.filtersBox}>
+            <Input
+              label="Город"
+              value={cityFilter}
+              onChangeText={setCityFilter}
+              placeholder="Например, Тбилиси"
+              autoCapitalize="words"
+            />
+            {total > 0 && (
+              <Text style={styles.totalText}>
+                Найдено запросов: {total}
+              </Text>
+            )}
+          </View>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="large" color={Colors.brandPrimary} />
+            </View>
+          ) : error ? (
+            <EmptyState
+              icon="⚠️"
+              title="Ошибка загрузки"
+              subtitle={error}
+              ctaLabel="Повторить"
+              onCtaPress={() => fetchFeed()}
+            />
+          ) : (
+            <EmptyState
+              icon="📋"
+              title="Запросов пока нет"
+              subtitle={
+                cityFilter
+                  ? `Нет открытых запросов в городе "${cityFilter}"`
+                  : 'Нет открытых запросов. Проверьте позже.'
+              }
+            />
+          )
+        }
+        ListFooterComponent={
+          hasMore ? (
+            <View style={styles.loadMoreBox}>
+              <Button
+                onPress={handleLoadMore}
+                variant="secondary"
+                loading={loadingMore}
+                disabled={loadingMore}
+                style={styles.loadMoreBtn}
+              >
+                Загрузить ещё
+              </Button>
+            </View>
+          ) : null
+        }
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.bgPrimary,
+  },
+  listContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing['3xl'],
+    alignItems: 'center',
+  },
+  filtersBox: {
+    width: '100%',
+    maxWidth: 430,
+    gap: Spacing.sm,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  totalText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+  },
+  cardWrapper: {
+    width: '100%',
+    maxWidth: 430,
+    marginBottom: Spacing.md,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  cityChip: {
+    backgroundColor: Colors.bgSecondary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  cityText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  dateText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+  },
+  description: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    lineHeight: 22,
+    marginBottom: Spacing.md,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  responsesText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+  },
+  statusChip: {
+    backgroundColor: '#1a3a1e',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  statusText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.statusSuccess,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  loadingBox: {
+    paddingTop: Spacing['4xl'],
+    alignItems: 'center',
+  },
+  loadMoreBox: {
+    width: '100%',
+    maxWidth: 430,
+    paddingTop: Spacing.md,
+  },
+  loadMoreBtn: {
+    width: '100%',
+  },
+});
