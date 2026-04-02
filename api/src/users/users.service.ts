@@ -107,6 +107,15 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
 
     await this.prisma.$transaction([
+      // Reviews given by user
+      this.prisma.review.deleteMany({ where: { clientId: userId } }),
+
+      // Reviews received by user
+      this.prisma.review.deleteMany({ where: { specialistId: userId } }),
+
+      // Reviews on user's requests (from other clients)
+      this.prisma.review.deleteMany({ where: { request: { clientId: userId } } }),
+
       // Messages sent by user
       this.prisma.message.deleteMany({ where: { senderId: userId } }),
 
