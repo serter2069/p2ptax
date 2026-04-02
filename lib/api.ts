@@ -38,6 +38,61 @@ export async function clearToken(): Promise<void> {
   await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
+const REFRESH_TOKEN_KEY = '@p2ptax_refresh_token';
+
+export async function getRefreshToken(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function setRefreshToken(token: string): Promise<void> {
+  await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
+}
+
+export async function clearRefreshToken(): Promise<void> {
+  await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+// Refresh in-flight guard to avoid concurrent refresh calls
+let refreshPromise: Promise<boolean> | null = null;
+
+export async function tryRefreshTokens(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) return false;
+
+      const url = `${BASE_URL}/auth/refresh`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json() as { accessToken: string; refreshToken?: string };
+      await setToken(data.accessToken);
+      if (data.refreshToken) {
+        await setRefreshToken(data.refreshToken);
+      }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 // Core fetch helper
 async function request<T>(
   method: string,

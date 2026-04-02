@@ -1,16 +1,69 @@
 import '../global.css';
-import React, { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { ActivityIndicator, AppState, Platform, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import Head from 'expo-router/head';
 import { AuthProvider, useAuth } from '../stores/authStore';
 import { isAdmin } from '../lib/adminEmails';
 import { Colors } from '../constants/Colors';
+import { tryRefreshTokens } from '../lib/api';
+
+const PROACTIVE_INTERVAL_MS = 20 * 60 * 1000; // 20 minutes
+const VISIBILITY_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+
+function useProactiveRefresh(isAuthenticated: boolean) {
+  const lastRefreshRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    async function refresh() {
+      await tryRefreshTokens();
+      lastRefreshRef.current = Date.now();
+    }
+
+    // 20-minute interval refresh
+    const interval = setInterval(refresh, PROACTIVE_INTERVAL_MS);
+
+    if (Platform.OS === 'web') {
+      // Web: listen for tab visibility changes
+      const onVisibilityChange = () => {
+        if (
+          document.visibilityState === 'visible' &&
+          Date.now() - lastRefreshRef.current >= VISIBILITY_THRESHOLD_MS
+        ) {
+          refresh();
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+      };
+    } else {
+      // Native: listen for AppState changes (background → active)
+      const subscription = AppState.addEventListener('change', (nextState) => {
+        if (
+          nextState === 'active' &&
+          Date.now() - lastRefreshRef.current >= VISIBILITY_THRESHOLD_MS
+        ) {
+          refresh();
+        }
+      });
+      return () => {
+        clearInterval(interval);
+        subscription.remove();
+      };
+    }
+  }, [isAuthenticated]);
+}
 
 function RootNavigator() {
   const { user, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  useProactiveRefresh(!!user);
 
   useEffect(() => {
     if (isLoading) return;
