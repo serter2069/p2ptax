@@ -55,7 +55,7 @@ export class RequestsService {
   ): Promise<void> {
     const cityLower = city.toLowerCase();
     const profiles = await this.prisma.specialistProfile.findMany({
-      where: {},
+      where: { cities: { has: cityLower } },
       include: { user: { select: { email: true } } },
     });
 
