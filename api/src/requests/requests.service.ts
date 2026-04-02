@@ -4,8 +4,10 @@ import {
   ForbiddenException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../notifications/email.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
 import { RequestStatus } from '@prisma/client';
@@ -14,7 +16,12 @@ const PAGE_SIZE = 20;
 
 @Injectable()
 export class RequestsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(RequestsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async create(clientId: string, dto: CreateRequestDto) {
     const openCount = await this.prisma.request.count({
@@ -24,7 +31,7 @@ export class RequestsService {
       throw new BadRequestException('Maximum 5 active requests allowed');
     }
 
-    return this.prisma.request.create({
+    const created = await this.prisma.request.create({
       data: {
         clientId,
         description: dto.description,
@@ -33,6 +40,32 @@ export class RequestsService {
         category: dto.category ?? null,
       },
     });
+
+    // Notify specialists in this city — non-blocking, does not delay response
+    this.notifySpecialistsAsync(dto.city, created.id, created.description).catch(() => {});
+
+    return created;
+  }
+
+  /** Fire-and-forget: find all specialists covering this city and email them */
+  private async notifySpecialistsAsync(
+    city: string,
+    requestId: string,
+    description: string,
+  ): Promise<void> {
+    const cityLower = city.toLowerCase();
+    const profiles = await this.prisma.specialistProfile.findMany({
+      where: {},
+      include: { user: { select: { email: true } } },
+    });
+
+    const emails = profiles
+      .filter((p) => p.cities.some((c) => c.toLowerCase() === cityLower))
+      .map((p) => p.user.email);
+
+    if (emails.length > 0) {
+      this.emailService.notifyNewRequestInCity(emails, city, description);
+    }
   }
 
   async findFeed(city?: string, page = 1) {
@@ -132,16 +165,8 @@ export class RequestsService {
       return { response, thread };
     });
 
-    // Email notification to client (no mail service yet — log + TODO)
-    try {
-      // TODO: replace with real email service when available
-      console.log(
-        `[NOTIFY] New response to request ${requestId}. ` +
-          `Client: ${request.client.email}, Specialist: ${specialistId}`,
-      );
-    } catch (err) {
-      console.error('[NOTIFY] Failed to send email notification:', err);
-    }
+    // Notify client about new response — fire-and-forget
+    this.emailService.notifyNewResponse(request.client.email, requestId, specialistId);
 
     return result;
   }

@@ -10,6 +10,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../notifications/email.service';
 import { ChatService } from './chat.service';
 
 interface AuthenticatedSocket extends Socket {
@@ -27,6 +29,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly jwtService: JwtService,
     private readonly chatService: ChatService,
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
@@ -107,19 +111,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const room = `thread:${data.threadId}`;
     this.server.to(room).emit('message_received', message);
 
-    // Email notification for offline recipient (TODO: implement email service)
-    try {
-      const recipientId =
-        thread.participant1Id === client.data.userId
-          ? thread.participant2Id
-          : thread.participant1Id;
+    // Email notification for offline recipient — fire-and-forget
+    const recipientId =
+      thread.participant1Id === client.data.userId
+        ? thread.participant2Id
+        : thread.participant1Id;
 
-      const recipientOnline = this.isUserInRoom(recipientId, room);
-      if (!recipientOnline) {
-        console.log(`[Chat] TODO: send email notification to user ${recipientId}`);
-      }
-    } catch (err) {
-      console.error('[Chat] Email notification failed (non-blocking):', err);
+    const recipientOnline = this.isUserInRoom(recipientId, room);
+    if (!recipientOnline) {
+      this.notifyRecipientAsync(recipientId, client.data.email, data.threadId).catch(() => {});
     }
   }
 
@@ -153,6 +153,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     client.emit('message_read', { messageId: updated.id, readAt: updated.readAt });
+  }
+
+  /** Look up recipient email and send notification */
+  private async notifyRecipientAsync(
+    recipientId: string,
+    senderEmail: string,
+    threadId: string,
+  ): Promise<void> {
+    const recipient = await this.prisma.user.findUnique({
+      where: { id: recipientId },
+      select: { email: true },
+    });
+    if (recipient?.email) {
+      this.emailService.notifyNewMessage(recipient.email, senderEmail, threadId);
+    }
   }
 
   /** Check if a user has any socket in a given room */
