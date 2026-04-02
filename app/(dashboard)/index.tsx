@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
-import { api } from '../../lib/api';
+import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
@@ -53,6 +53,25 @@ export default function DashboardHub() {
       setRefreshing(false);
     }
   }, []);
+
+  // Check if SPECIALIST has filled their profile; redirect to profile setup if not.
+  // Only runs once on mount, not on refresh, to avoid re-redirecting after profile is saved.
+  useEffect(() => {
+    if (!user || user.role !== 'SPECIALIST') return;
+
+    async function checkSpecialistProfile() {
+      try {
+        await api.get('/specialists/me');
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          router.replace('/(dashboard)/profile');
+        }
+        // Any other error (network, 500, etc.) — silently ignore, stay on dashboard
+      }
+    }
+
+    checkSpecialistProfile();
+  }, [user, router]);
 
   useEffect(() => {
     fetchData();
@@ -135,6 +154,24 @@ export default function DashboardHub() {
                 <Text style={styles.cardArrow}>{'>'}</Text>
               </TouchableOpacity>
 
+              {/* Profile card — specialists only */}
+              {user?.role === 'SPECIALIST' && (
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => router.push('/(dashboard)/profile')}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.cardIcon}>
+                    <Text style={styles.cardEmoji}>{'👤'}</Text>
+                  </View>
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>Мой профиль</Text>
+                    <Text style={styles.cardSub}>Ник, города, услуги</Text>
+                  </View>
+                  <Text style={styles.cardArrow}>{'>'}</Text>
+                </TouchableOpacity>
+              )}
+
               {/* Settings card */}
               <TouchableOpacity
                 style={styles.card}
@@ -151,14 +188,16 @@ export default function DashboardHub() {
                 <Text style={styles.cardArrow}>{'>'}</Text>
               </TouchableOpacity>
 
-              {/* Quick create */}
-              <Button
-                onPress={() => router.push('/(dashboard)/requests/new')}
-                variant="primary"
-                style={styles.createBtn}
-              >
-                Создать запрос
-              </Button>
+              {/* Quick create — clients only */}
+              {user?.role !== 'SPECIALIST' && (
+                <Button
+                  onPress={() => router.push('/(dashboard)/requests/new')}
+                  variant="primary"
+                  style={styles.createBtn}
+                >
+                  Создать запрос
+                </Button>
+              )}
             </>
           )}
         </View>
