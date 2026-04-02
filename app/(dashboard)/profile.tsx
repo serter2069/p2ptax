@@ -19,7 +19,7 @@ import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 
-const BADGE_TAX = 'Знакомый в налоговой';
+const BADGE_TAX = 'familiar';
 
 interface SpecialistProfile {
   id: string;
