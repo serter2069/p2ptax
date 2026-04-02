@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   statusChipClosed: {
-    backgroundColor: '#3a2a1e',
+    backgroundColor: Colors.statusBg.warning,
   },
   statusText: {
     fontSize: Typography.fontSize.xs,

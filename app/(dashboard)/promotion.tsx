@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     minWidth: 110,
   },
   activePill: {
-    backgroundColor: '#1a3a1e',
+    backgroundColor: Colors.statusBg.success,
     paddingHorizontal: Spacing.md,
     paddingVertical: 5,
     borderRadius: BorderRadius.full,

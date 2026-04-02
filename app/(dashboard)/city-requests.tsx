@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   respondedBadge: {
-    backgroundColor: '#1a3a1e',
+    backgroundColor: Colors.statusBg.success,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.sm,
     alignItems: 'center',
