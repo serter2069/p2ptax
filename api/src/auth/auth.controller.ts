@@ -1,5 +1,6 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { IsEmail, IsString, Length, IsOptional, IsIn } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { AuthService } from './auth.service';
 
 class RequestOtpDto {
@@ -16,6 +17,7 @@ class VerifyOtpDto {
   code!: string;
 
   @IsOptional()
+  @Transform(({ value }) => value?.toLowerCase())
   @IsIn(['client', 'specialist'])
   role?: string;
 }
