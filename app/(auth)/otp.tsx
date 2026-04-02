@@ -13,7 +13,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Button } from '../../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { api, ApiError } from '../../lib/api';
+import { api, ApiError, setRefreshToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 
 const CODE_LENGTH = 6;
@@ -98,6 +98,9 @@ export default function OtpScreen() {
         code,
         role: role.toLowerCase(),
       });
+      if (res.refreshToken) {
+        await setRefreshToken(res.refreshToken);
+      }
       await login(res.accessToken, {
         userId: res.user.userId,
         email: res.user.email,

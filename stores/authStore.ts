@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { setToken, clearToken, onUnauthorized } from '../lib/api';
+import { setToken, clearToken, clearRefreshToken, onUnauthorized } from '../lib/api';
 import { secureStorage } from './storage';
 
 const TOKEN_KEY = '@p2ptax_token';
@@ -111,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       Promise.all([
         secureStorage.removeItem(TOKEN_KEY),
         secureStorage.removeItem(USER_KEY),
+        clearRefreshToken(),
       ]).catch(() => {});
     });
     return unsubscribe;
@@ -127,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await Promise.all([
       clearToken(),
+      clearRefreshToken(),
       secureStorage.removeItem(USER_KEY),
     ]);
     dispatch({ type: 'LOGOUT' });
