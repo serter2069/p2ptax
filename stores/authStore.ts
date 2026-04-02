@@ -9,6 +9,8 @@ export interface AuthUser {
   userId: string;
   email: string;
   role: string;
+  username: string | null;
+  isNewUser: boolean;
 }
 
 interface AuthState {
@@ -21,7 +23,8 @@ type AuthAction =
   | { type: 'LOGIN'; payload: { token: string; user: AuthUser } }
   | { type: 'LOGOUT' }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'RESTORE'; payload: { token: string; user: AuthUser } | null };
+  | { type: 'RESTORE'; payload: { token: string; user: AuthUser } | null }
+  | { type: 'SET_USERNAME'; payload: string };
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
@@ -42,6 +45,12 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         token: action.payload?.token ?? null,
         isLoading: false,
       };
+    case 'SET_USERNAME':
+      if (!state.user) return state;
+      return {
+        ...state,
+        user: { ...state.user, username: action.payload, isNewUser: false },
+      };
     default:
       return state;
   }
@@ -57,6 +66,7 @@ interface AuthContextValue extends AuthState {
   login: (token: string, user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
   setLoading: (loading: boolean) => void;
+  completeOnboarding: (username: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -126,11 +136,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_LOADING', payload: loading });
   }, []);
 
+  // Called after onboarding completes — clears isNewUser flag and stores username
+  const completeOnboarding = useCallback(async (username: string) => {
+    dispatch({ type: 'SET_USERNAME', payload: username });
+    // Persist updated user (isNewUser=false, username set) to AsyncStorage
+    const userJson = await AsyncStorage.getItem(USER_KEY);
+    if (userJson) {
+      const existing = JSON.parse(userJson) as AuthUser;
+      const updated: AuthUser = { ...existing, username, isNewUser: false };
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
+    }
+  }, []);
+
   const value: AuthContextValue = {
     ...state,
     login,
     logout,
     setLoading,
+    completeOnboarding,
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);

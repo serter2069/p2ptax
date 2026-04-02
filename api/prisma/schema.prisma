@@ -27,6 +27,7 @@ enum PromotionTier {
 model User {
   id          String    @id @default(cuid())
   email       String    @unique
+  username    String?   @unique
   role        Role      @default(CLIENT)
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?

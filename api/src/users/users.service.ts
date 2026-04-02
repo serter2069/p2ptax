@@ -1,9 +1,40 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+
+const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Return current user profile (id, email, role, username). */
+  async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return { id: user.id, email: user.email, role: user.role, username: user.username };
+  }
+
+  /** Set username for a user. 3-20 chars, alphanumeric + underscore, globally unique. */
+  async setUsername(userId: string, username: string): Promise<{ id: string; email: string; role: string; username: string }> {
+    if (username.length < 3 || username.length > 20) {
+      throw new BadRequestException('Username must be between 3 and 20 characters');
+    }
+    if (!USERNAME_REGEX.test(username)) {
+      throw new BadRequestException('Username can only contain letters, numbers, and underscores');
+    }
+
+    const taken = await this.prisma.user.findUnique({ where: { username } });
+    if (taken && taken.id !== userId) {
+      throw new ConflictException('Username already taken');
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { username },
+    });
+
+    return { id: user.id, email: user.email, role: user.role, username: user.username! };
+  }
 
   /**
    * Delete a user and all related records.

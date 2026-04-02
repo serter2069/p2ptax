@@ -26,6 +26,11 @@ export interface TokenPair {
   refreshToken: string;
 }
 
+export interface VerifyOtpResult extends TokenPair {
+  isNewUser: boolean;
+  user: { userId: string; email: string; role: string; username: string | null };
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -67,7 +72,7 @@ export class AuthService {
     return { message: 'OTP sent to email' };
   }
 
-  async verifyOtp(email: string, code: string, role?: string): Promise<TokenPair> {
+  async verifyOtp(email: string, code: string, role?: string): Promise<VerifyOtpResult> {
     const normalizedEmail = email.toLowerCase();
     const record = otpStore.get(normalizedEmail);
 
@@ -117,6 +122,8 @@ export class AuthService {
       where: { email: normalizedEmail },
     });
 
+    const isNewUser = !existingUser;
+
     // Assign role only on first login; subsequent logins preserve existing role
     const assignedRole = existingUser ? existingUser.role : mapRole(role);
 
@@ -126,7 +133,17 @@ export class AuthService {
       update: { lastLoginAt: new Date() },
     });
 
-    return this.generateTokens(user);
+    const tokens = this.generateTokens(user);
+    return {
+      ...tokens,
+      isNewUser,
+      user: {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        username: user.username,
+      },
+    };
   }
 
   async refresh(refreshToken: string): Promise<TokenPair> {
