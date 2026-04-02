@@ -94,7 +94,7 @@ export default function OtpScreen() {
       const res = await api.post<VerifyOtpResponse>('/auth/verify-otp', {
         email,
         code,
-        role,
+        role: role.toLowerCase(),
       });
       await login(res.accessToken, {
         userId: res.user.userId,
