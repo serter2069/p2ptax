@@ -8,6 +8,7 @@ import { SpecialistsModule } from './specialists/specialists.module';
 import { RequestsModule } from './requests/requests.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { UsersModule } from './users/users.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UsersModule } from './users/users.module';
     RequestsModule,
     PromotionsModule,
     UsersModule,
+    AdminModule,
   ],
   controllers: [AppController],
 })
