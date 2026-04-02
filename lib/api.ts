@@ -4,6 +4,7 @@ const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ?? 'https://p2ptax.smartlaunchhub.com/api';
 
 const TOKEN_KEY = '@p2ptax_token';
+const REFRESH_TOKEN_KEY = '@p2ptax_refresh_token';
 
 // Simple event emitter for auth events
 type AuthEventListener = () => void;
@@ -21,7 +22,7 @@ function emitUnauthorized() {
   unauthorizedListeners.forEach((l) => l());
 }
 
-// Token storage helpers
+// Access token helpers
 export async function getToken(): Promise<string | null> {
   try {
     return await AsyncStorage.getItem(TOKEN_KEY);
@@ -38,11 +39,66 @@ export async function clearToken(): Promise<void> {
   await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
+// Refresh token helpers
+export async function getRefreshToken(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function setRefreshToken(token: string): Promise<void> {
+  await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
+}
+
+export async function clearRefreshToken(): Promise<void> {
+  await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+// Refresh in-flight guard to avoid concurrent refresh calls
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshTokens(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) return false;
+
+      const url = `${BASE_URL}/auth/refresh`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json() as { accessToken: string; refreshToken?: string };
+      await setToken(data.accessToken);
+      if (data.refreshToken) {
+        await setRefreshToken(data.refreshToken);
+      }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 // Core fetch helper
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
+  retry = true,
 ): Promise<T> {
   const token = await getToken();
 
@@ -59,11 +115,27 @@ async function request<T>(
   const response = await fetch(url, {
     method,
     headers,
+    credentials: 'include',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
+  if (response.status === 401 && retry) {
+    // Attempt silent token refresh
+    const refreshed = await tryRefreshTokens();
+    if (refreshed) {
+      // Retry original request once with new access token
+      return request<T>(method, path, body, false);
+    }
+    // Refresh failed — force logout
+    await clearToken();
+    await clearRefreshToken();
+    emitUnauthorized();
+    throw new ApiError(401, 'Unauthorized');
+  }
+
   if (response.status === 401) {
     await clearToken();
+    await clearRefreshToken();
     emitUnauthorized();
     throw new ApiError(401, 'Unauthorized');
   }

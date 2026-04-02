@@ -42,6 +42,7 @@ model User {
   threadsAsParticipant1 Thread[]        @relation("ThreadParticipant1")
   threadsAsParticipant2 Thread[]        @relation("ThreadParticipant2")
   sentMessages        Message[]
+  refreshTokens       RefreshToken[]
 
   @@map("users")
 }
@@ -146,6 +147,18 @@ model Promotion {
   @@index([city, tier, expiresAt])
   @@index([specialistId])
   @@map("promotions")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model ChatMessage {

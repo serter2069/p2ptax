@@ -96,11 +96,15 @@ export default function OtpScreen() {
         code,
         role: role.toLowerCase(),
       });
-      await login(res.accessToken, {
-        userId: res.user.userId,
-        email: res.user.email,
-        role: res.user.role,
-      });
+      await login(
+        res.accessToken,
+        {
+          userId: res.user.userId,
+          email: res.user.email,
+          role: res.user.role,
+        },
+        res.refreshToken,
+      );
       // Navigate based on role — expand when dashboards are ready
       router.replace('/');
     } catch (err) {

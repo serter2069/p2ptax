@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setToken, clearToken, onUnauthorized } from '../lib/api';
+import { setToken, clearToken, setRefreshToken, clearRefreshToken, onUnauthorized } from '../lib/api';
 
 const TOKEN_KEY = '@p2ptax_token';
+const REFRESH_TOKEN_KEY = '@p2ptax_refresh_token';
 const USER_KEY = '@p2ptax_user';
 
 export interface AuthUser {
@@ -54,7 +55,7 @@ const initialState: AuthState = {
 };
 
 interface AuthContextValue extends AuthState {
-  login: (token: string, user: AuthUser) => Promise<void>;
+  login: (accessToken: string, user: AuthUser, refreshToken?: string) => Promise<void>;
   logout: () => Promise<void>;
   setLoading: (loading: boolean) => void;
 }
@@ -100,23 +101,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'LOGOUT' });
       Promise.all([
         AsyncStorage.removeItem(TOKEN_KEY),
+        AsyncStorage.removeItem(REFRESH_TOKEN_KEY),
         AsyncStorage.removeItem(USER_KEY),
       ]).catch(() => {});
     });
     return unsubscribe;
   }, []);
 
-  const login = useCallback(async (token: string, user: AuthUser) => {
-    await Promise.all([
-      setToken(token),
+  const login = useCallback(async (accessToken: string, user: AuthUser, refreshToken?: string) => {
+    const saves: Promise<void>[] = [
+      setToken(accessToken),
       AsyncStorage.setItem(USER_KEY, JSON.stringify(user)),
-    ]);
-    dispatch({ type: 'LOGIN', payload: { token, user } });
+    ];
+    if (refreshToken) {
+      saves.push(setRefreshToken(refreshToken));
+    }
+    await Promise.all(saves);
+    dispatch({ type: 'LOGIN', payload: { token: accessToken, user } });
   }, []);
 
   const logout = useCallback(async () => {
     await Promise.all([
       clearToken(),
+      clearRefreshToken(),
       AsyncStorage.removeItem(USER_KEY),
     ]);
     dispatch({ type: 'LOGOUT' });

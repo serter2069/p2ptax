@@ -1,12 +1,11 @@
 import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 
-// In-memory OTP store: email -> { code, expiresAt }
-const otpStore = new Map<string, { code: string; expiresAt: Date }>();
-
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const DEV_OTP = '000000';
 
 function generateOtp(): string {
@@ -14,6 +13,10 @@ function generateOtp(): string {
     return DEV_OTP;
   }
   return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
 }
 
 function mapRole(role?: string): Role {
@@ -33,18 +36,35 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  private generateTokens(user: { id: string; email: string; role: Role }): TokenPair {
-    const accessToken = this.jwt.sign(
+  private generateAccessToken(user: { id: string; email: string; role: Role }): string {
+    return this.jwt.sign(
       { sub: user.id, email: user.email, role: user.role },
       { expiresIn: '15m' },
     );
-    const refreshToken = this.jwt.sign(
-      { sub: user.id },
+  }
+
+  private generateRefreshTokenValue(): string {
+    return this.jwt.sign(
+      { sub: Math.random().toString(36) },
       {
-        secret: process.env.JWT_SECRET! + '-refresh',
+        secret: process.env.JWT_REFRESH_SECRET!,
         expiresIn: '30d',
       },
     );
+  }
+
+  private async storeRefreshToken(userId: string, tokenValue: string): Promise<void> {
+    const tokenHash = hashToken(tokenValue);
+    const expiresAt = new Date(Date.now() + REFRESH_TTL_MS);
+    await this.prisma.refreshToken.create({
+      data: { userId, tokenHash, expiresAt },
+    });
+  }
+
+  private async issueTokenPair(user: { id: string; email: string; role: Role }): Promise<TokenPair> {
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = this.generateRefreshTokenValue();
+    await this.storeRefreshToken(user.id, refreshToken);
     return { accessToken, refreshToken };
   }
 
@@ -52,9 +72,7 @@ export class AuthService {
     const code = generateOtp();
     const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
-    otpStore.set(email.toLowerCase(), { code, expiresAt });
-
-    // Store OTP in DB for audit (create new record per request)
+    // Store OTP in DB only (no in-memory store)
     await this.prisma.otpCode.create({
       data: { email: email.toLowerCase(), code, expiresAt },
     });
@@ -69,34 +87,30 @@ export class AuthService {
 
   async verifyOtp(email: string, code: string, role?: string): Promise<TokenPair> {
     const normalizedEmail = email.toLowerCase();
-    const record = otpStore.get(normalizedEmail);
 
-    if (!record) {
+    // Find latest unused, non-expired OTP from DB
+    const otpRecord = await this.prisma.otpCode.findFirst({
+      where: {
+        email: normalizedEmail,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRecord) {
       throw new BadRequestException('OTP not found or expired');
     }
 
-    if (new Date() > record.expiresAt) {
-      otpStore.delete(normalizedEmail);
-      throw new BadRequestException('OTP expired');
-    }
-
-    if (record.code !== code) {
+    if (otpRecord.code !== code) {
       throw new UnauthorizedException('Invalid OTP');
     }
 
-    // Mark used in DB — find latest unused OTP for this email
-    const otpRecord = await this.prisma.otpCode.findFirst({
-      where: { email: normalizedEmail, usedAt: null },
-      orderBy: { createdAt: 'desc' },
+    // Mark used
+    await this.prisma.otpCode.update({
+      where: { id: otpRecord.id },
+      data: { usedAt: new Date() },
     });
-    if (otpRecord) {
-      await this.prisma.otpCode.update({
-        where: { id: otpRecord.id },
-        data: { usedAt: new Date() },
-      });
-    }
-
-    otpStore.delete(normalizedEmail);
 
     // Check if user already exists to preserve existing role
     const existingUser = await this.prisma.user.findUnique({
@@ -112,24 +126,35 @@ export class AuthService {
       update: { lastLoginAt: new Date() },
     });
 
-    return this.generateTokens(user);
+    return this.issueTokenPair(user);
   }
 
   async refresh(refreshToken: string): Promise<TokenPair> {
-    let payload: { sub: string };
-    try {
-      payload = this.jwt.verify(refreshToken, {
-        secret: process.env.JWT_SECRET! + '-refresh',
-      }) as { sub: string };
-    } catch {
+    const tokenHash = hashToken(refreshToken);
+
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!stored) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!user) {
-      throw new UnauthorizedException('User not found');
+    if (new Date() > stored.expiresAt) {
+      // Clean up expired token
+      await this.prisma.refreshToken.delete({ where: { tokenHash } });
+      throw new UnauthorizedException('Refresh token expired');
     }
 
-    return this.generateTokens(user);
+    // Rotate: delete old token, issue new pair
+    await this.prisma.refreshToken.delete({ where: { tokenHash } });
+
+    return this.issueTokenPair(stored.user);
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    const tokenHash = hashToken(refreshToken);
+    await this.prisma.refreshToken.deleteMany({ where: { tokenHash } });
   }
 }
