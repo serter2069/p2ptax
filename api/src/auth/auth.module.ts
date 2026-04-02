@@ -10,7 +10,7 @@ import { JwtStrategy } from './jwt.strategy';
     PassportModule,
     JwtModule.register({
       // No global expiresIn — each jwt.sign call specifies its own expiry
-      secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-prod',
+      secret: process.env.JWT_SECRET!,
     }),
   ],
   controllers: [AuthController],

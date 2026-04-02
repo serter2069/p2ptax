@@ -60,6 +60,9 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Deploy to server
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
         run: |
           DEPLOY_DIR="/var/www/p2ptax"
 
@@ -76,6 +79,9 @@ jobs:
 
           # Write version info
           echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" | sudo tee $DEPLOY_DIR/web/version.json
+
+          # Write .env for dotenv to pick up at runtime
+          printf "JWT_SECRET=%s\nALLOWED_ORIGINS=%s\n" "$JWT_SECRET" "$ALLOWED_ORIGINS" | sudo tee $DEPLOY_DIR/api/.env > /dev/null
 
           # Restart API (start from dist/main.js for NestJS)
           cd $DEPLOY_DIR/api

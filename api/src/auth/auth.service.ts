@@ -41,7 +41,7 @@ export class AuthService {
     const refreshToken = this.jwt.sign(
       { sub: user.id },
       {
-        secret: (process.env.JWT_SECRET ?? 'dev-secret-change-in-prod') + '-refresh',
+        secret: process.env.JWT_SECRET! + '-refresh',
         expiresIn: '30d',
       },
     );
@@ -119,7 +119,7 @@ export class AuthService {
     let payload: { sub: string };
     try {
       payload = this.jwt.verify(refreshToken, {
-        secret: (process.env.JWT_SECRET ?? 'dev-secret-change-in-prod') + '-refresh',
+        secret: process.env.JWT_SECRET! + '-refresh',
       }) as { sub: string };
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
