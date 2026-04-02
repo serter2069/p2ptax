@@ -43,6 +43,8 @@ model User {
   threadsAsParticipant1 Thread[]        @relation("ThreadParticipant1")
   threadsAsParticipant2 Thread[]        @relation("ThreadParticipant2")
   sentMessages        Message[]
+  reviewsGiven        Review[]          @relation("ReviewClient")
+  reviewsReceived     Review[]          @relation("ReviewSpecialist")
 
   @@map("users")
 }
@@ -89,6 +91,7 @@ model Request {
   updatedAt   DateTime      @updatedAt
 
   responses   Response[]
+  reviews     Review[]
 
   @@index([clientId])
   @@index([city, status])
@@ -176,4 +179,22 @@ model ChatMessage {
 
   @@index([room])
   @@map("chat_messages")
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  clientId     String
+  client       User     @relation("ReviewClient", fields: [clientId], references: [id])
+  specialistId String
+  specialist   User     @relation("ReviewSpecialist", fields: [specialistId], references: [id])
+  requestId    String
+  request      Request  @relation(fields: [requestId], references: [id])
+  rating       Int
+  comment      String?
+  createdAt    DateTime @default(now())
+
+  @@unique([clientId, specialistId, requestId])
+  @@index([specialistId])
+  @@index([clientId])
+  @@map("reviews")
 }

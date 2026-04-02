@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
@@ -18,6 +20,7 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Header } from '../../components/Header';
 import { EmptyState } from '../../components/EmptyState';
+import { Stars } from '../../components/Stars';
 
 interface SpecialistProfile {
   id: string;
@@ -29,8 +32,28 @@ interface SpecialistProfile {
   contacts: string | null;
   promoted: boolean;
   promotionTier: number;
-  activity: { responseCount: number };
+  activity: { responseCount: number; avgRating: number | null; reviewCount: number };
   createdAt: string;
+}
+
+interface ReviewItem {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  client: { id: string; username: string | null; email: string };
+}
+
+interface ReviewsResponse {
+  items: ReviewItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+interface Eligibility {
+  canReview: boolean;
+  eligibleRequestId: string | null;
 }
 
 export default function SpecialistProfileScreen() {
@@ -42,6 +65,21 @@ export default function SpecialistProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [writingLoading, setWritingLoading] = useState(false);
+
+  // Reviews state
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  // Eligibility (only for logged-in clients)
+  const [eligibility, setEligibility] = useState<Eligibility | null>(null);
+
+  // Review form state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   useEffect(() => {
     if (!nick) return;
@@ -70,6 +108,40 @@ export default function SpecialistProfileScreen() {
     return () => { cancelled = true; };
   }, [nick]);
 
+  // Load reviews when profile is available
+  const loadReviews = useCallback(async (page: number) => {
+    if (!nick) return;
+    setReviewsLoading(true);
+    try {
+      const data = await api.get<ReviewsResponse>(`/reviews/specialist/${nick}?page=${page}`);
+      if (page === 1) {
+        setReviews(data.items);
+      } else {
+        setReviews((prev) => [...prev, ...data.items]);
+      }
+      setReviewsTotal(data.total);
+      setReviewsPage(page);
+    } catch {
+      // silently fail — reviews are supplementary
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [nick]);
+
+  useEffect(() => {
+    if (profile) {
+      loadReviews(1);
+    }
+  }, [profile, loadReviews]);
+
+  // Check eligibility for logged-in clients
+  useEffect(() => {
+    if (!nick || !user || user.role !== 'CLIENT') return;
+    api.get<Eligibility>(`/reviews/eligibility/${nick}`)
+      .then(setEligibility)
+      .catch(() => setEligibility(null));
+  }, [nick, user]);
+
   async function handleWrite() {
     if (!user) {
       router.push('/(auth)/email?role=CLIENT');
@@ -85,6 +157,32 @@ export default function SpecialistProfileScreen() {
       Alert.alert('Ошибка', msg);
     } finally {
       setWritingLoading(false);
+    }
+  }
+
+  async function handleSubmitReview() {
+    if (!eligibility?.eligibleRequestId || !profile) return;
+    setSubmitLoading(true);
+    try {
+      await api.post('/reviews', {
+        specialistNick: profile.nick,
+        requestId: eligibility.eligibleRequestId,
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
+      });
+      setShowReviewForm(false);
+      setReviewComment('');
+      setReviewRating(5);
+      setEligibility({ canReview: false, eligibleRequestId: null });
+      // Reload reviews and profile activity
+      loadReviews(1);
+      const updated = await api.get<SpecialistProfile>(`/specialists/${profile.nick}`);
+      setProfile(updated);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Не удалось отправить отзыв';
+      Alert.alert('Ошибка', msg);
+    } finally {
+      setSubmitLoading(false);
     }
   }
 
@@ -116,8 +214,10 @@ export default function SpecialistProfileScreen() {
   const hasFamiliar = profile.badges.includes('familiar');
   const isPromoted = profile.promoted;
 
-  // Activity rating: 0–100 score based on responseCount (capped at 50)
+  // Activity score: 0-100 based on responseCount (capped at 50)
   const activityScore = Math.min(100, Math.round((profile.activity.responseCount / 50) * 100));
+
+  const canShowMore = reviews.length < reviewsTotal;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -139,6 +239,13 @@ export default function SpecialistProfileScreen() {
                   {isPromoted && <Badge variant="accent" label="Продвинутый" />}
                   {hasFamiliar && <Badge variant="familiar" />}
                 </View>
+                {/* Star rating summary */}
+                <Stars
+                  rating={profile.activity.avgRating}
+                  reviewCount={profile.activity.reviewCount}
+                  size="md"
+                  showEmpty
+                />
               </View>
             </View>
 
@@ -153,7 +260,7 @@ export default function SpecialistProfileScreen() {
 
           {/* Activity */}
           <Card>
-            <Text style={styles.sectionTitle}>Рейтинг активности</Text>
+            <Text style={styles.sectionTitle}>Активность</Text>
             <View style={styles.activityRow}>
               <View style={styles.activityBar}>
                 <View
@@ -209,6 +316,114 @@ export default function SpecialistProfileScreen() {
               Для связи со специалистом необходимо войти или зарегистрироваться
             </Text>
           )}
+
+          {/* Reviews section */}
+          <Card>
+            <View style={styles.reviewsHeader}>
+              <Text style={styles.sectionTitle}>
+                Отзывы {reviewsTotal > 0 ? `(${reviewsTotal})` : ''}
+              </Text>
+              {eligibility?.canReview && !showReviewForm && (
+                <TouchableOpacity
+                  onPress={() => setShowReviewForm(true)}
+                  style={styles.leaveReviewBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.leaveReviewBtnText}>Оставить отзыв</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Review form */}
+            {showReviewForm && (
+              <View style={styles.reviewForm}>
+                <Text style={styles.reviewFormLabel}>Оценка</Text>
+                <View style={styles.starPicker}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity
+                      key={star}
+                      onPress={() => setReviewRating(star)}
+                      activeOpacity={0.7}
+                      style={styles.starBtn}
+                    >
+                      <Text style={[
+                        styles.starPickerChar,
+                        star <= reviewRating ? styles.starFilled : styles.starEmpty,
+                      ]}>
+                        {star <= reviewRating ? '★' : '☆'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={styles.reviewFormLabel}>Комментарий (необязательно)</Text>
+                <TextInput
+                  style={styles.reviewInput}
+                  value={reviewComment}
+                  onChangeText={setReviewComment}
+                  placeholder="Расскажите о своём опыте..."
+                  placeholderTextColor={Colors.textMuted}
+                  multiline
+                  numberOfLines={3}
+                />
+                <View style={styles.reviewFormActions}>
+                  <TouchableOpacity
+                    onPress={() => { setShowReviewForm(false); setReviewComment(''); setReviewRating(5); }}
+                    style={styles.cancelBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.cancelBtnText}>Отмена</Text>
+                  </TouchableOpacity>
+                  <Button
+                    onPress={handleSubmitReview}
+                    variant="primary"
+                    loading={submitLoading}
+                    disabled={submitLoading}
+                    style={styles.submitBtn}
+                  >
+                    Отправить
+                  </Button>
+                </View>
+              </View>
+            )}
+
+            {/* Reviews list */}
+            {reviews.length === 0 && !reviewsLoading ? (
+              <Text style={styles.noReviewsText}>Отзывов пока нет</Text>
+            ) : (
+              <View style={styles.reviewsList}>
+                {reviews.map((review) => (
+                  <View key={review.id} style={styles.reviewItem}>
+                    <View style={styles.reviewItemHeader}>
+                      <Text style={styles.reviewAuthor}>
+                        {review.client.username ? `@${review.client.username}` : review.client.email.split('@')[0]}
+                      </Text>
+                      <Stars rating={review.rating} size="sm" />
+                    </View>
+                    {review.comment ? (
+                      <Text style={styles.reviewComment}>{review.comment}</Text>
+                    ) : null}
+                    <Text style={styles.reviewDate}>
+                      {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {reviewsLoading && (
+              <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.reviewsLoader} />
+            )}
+
+            {canShowMore && !reviewsLoading && (
+              <TouchableOpacity
+                onPress={() => loadReviews(reviewsPage + 1)}
+                style={styles.loadMoreBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.loadMoreText}>Показать ещё</Text>
+              </TouchableOpacity>
+            )}
+          </Card>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -343,5 +558,130 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  // Reviews section
+  reviewsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  leaveReviewBtn: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
+  },
+  leaveReviewBtnText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  noReviewsText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: Spacing.md,
+  },
+  reviewsList: {
+    gap: Spacing.md,
+  },
+  reviewItem: {
+    gap: Spacing.xs,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  reviewItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reviewAuthor: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textSecondary,
+  },
+  reviewComment: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  reviewDate: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+  },
+  reviewsLoader: {
+    marginTop: Spacing.md,
+  },
+  loadMoreBtn: {
+    marginTop: Spacing.md,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  loadMoreText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  // Review form
+  reviewForm: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+    padding: Spacing.md,
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.md,
+  },
+  reviewFormLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  starPicker: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  starBtn: {
+    padding: Spacing.xs,
+  },
+  starPickerChar: {
+    fontSize: Typography.fontSize['2xl'],
+    lineHeight: 32,
+  },
+  starFilled: {
+    color: Colors.brandPrimary,
+  },
+  starEmpty: {
+    color: Colors.border,
+  },
+  reviewInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    color: Colors.textPrimary,
+    fontSize: Typography.fontSize.sm,
+    backgroundColor: Colors.bgCard,
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
+  reviewFormActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  cancelBtn: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  cancelBtnText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+  },
+  submitBtn: {
+    flex: 1,
+    maxWidth: 160,
   },
 });

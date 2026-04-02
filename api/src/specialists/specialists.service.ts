@@ -108,18 +108,44 @@ export class SpecialistsService {
     });
     const countMap = new Map(responseCounts.map((r) => [r.specialistId, r._count.id]));
 
+    // Compute rating aggregates for all profiles in one query
+    const ratingAggs = await this.prisma.review.groupBy({
+      by: ['specialistId'],
+      where: { specialistId: { in: userIds } },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+    const ratingMap = new Map(
+      ratingAggs.map((r) => [
+        r.specialistId,
+        { avgRating: r._avg.rating ?? null, reviewCount: r._count.id },
+      ]),
+    );
+
     // Build result with promotion rank and activity
-    const result = profiles.map((profile) => ({
-      ...profile,
-      promoted: promotionMap.has(profile.userId),
-      promotionTier: promotionMap.get(profile.userId) ?? 0,
-      activity: { responseCount: countMap.get(profile.userId) ?? 0 },
-    }));
+    const result = profiles.map((profile) => {
+      const ratingData = ratingMap.get(profile.userId);
+      return {
+        ...profile,
+        promoted: promotionMap.has(profile.userId),
+        promotionTier: promotionMap.get(profile.userId) ?? 0,
+        activity: {
+          responseCount: countMap.get(profile.userId) ?? 0,
+          avgRating: ratingData?.avgRating ?? null,
+          reviewCount: ratingData?.reviewCount ?? 0,
+        },
+      };
+    });
 
     // Sort: promoted first (by tier desc), then by sort param
     result.sort((a, b) => {
       if (b.promotionTier !== a.promotionTier) return b.promotionTier - a.promotionTier;
       if (sort === 'responses') return (b.activity.responseCount) - (a.activity.responseCount);
+      if (sort === 'rating') {
+        const aRating = a.activity.avgRating ?? 0;
+        const bRating = b.activity.avgRating ?? 0;
+        return bRating - aRating;
+      }
       // Default: newest first
       return b.createdAt.getTime() - a.createdAt.getTime();
     });
@@ -128,9 +154,18 @@ export class SpecialistsService {
   }
 
   private async computeActivity(userId: string) {
-    const responseCount = await this.prisma.response.count({
-      where: { specialistId: userId },
-    });
-    return { responseCount };
+    const [responseCount, ratingAgg] = await Promise.all([
+      this.prisma.response.count({ where: { specialistId: userId } }),
+      this.prisma.review.aggregate({
+        where: { specialistId: userId },
+        _avg: { rating: true },
+        _count: { id: true },
+      }),
+    ]);
+    return {
+      responseCount,
+      avgRating: ratingAgg._avg.rating ?? null,
+      reviewCount: ratingAgg._count.id,
+    };
   }
 }
