@@ -17,6 +17,13 @@ export class RequestsService {
   constructor(private prisma: PrismaService) {}
 
   async create(clientId: string, dto: CreateRequestDto) {
+    const openCount = await this.prisma.request.count({
+      where: { clientId, status: RequestStatus.OPEN },
+    });
+    if (openCount >= 5) {
+      throw new BadRequestException('Maximum 5 active requests allowed');
+    }
+
     return this.prisma.request.create({
       data: {
         clientId,
