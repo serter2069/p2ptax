@@ -13,7 +13,6 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError } from '../../lib/api';
-import { useAuth } from '../../stores/authStore';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
@@ -26,7 +25,6 @@ function validateUsername(value: string): string | null {
 
 export default function UsernameScreen() {
   const router = useRouter();
-  const { completeOnboarding } = useAuth();
 
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,8 +47,8 @@ export default function UsernameScreen() {
     setLoading(true);
     try {
       await api.patch('/users/me/username', { username: trimmed });
-      await completeOnboarding(trimmed);
-      router.replace('/');
+      // Do NOT call completeOnboarding here — onboarding continues in cities + services steps
+      router.replace('/(onboarding)/cities');
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError('Этот ник уже занят, попробуйте другой');
