@@ -1,9 +1,11 @@
-import { IsString, IsEnum, IsNumber, Min } from 'class-validator';
+import { IsString, IsEnum, IsNumber, Min, IsOptional } from 'class-validator';
 import { PromotionTier } from '@prisma/client';
 
 export class UpdatePricesDto {
+  // city=undefined means "global default for all cities"
+  @IsOptional()
   @IsString()
-  city!: string;
+  city?: string;
 
   @IsEnum(PromotionTier)
   tier!: PromotionTier;

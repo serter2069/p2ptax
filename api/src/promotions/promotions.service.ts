@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
@@ -11,17 +10,12 @@ import { PurchasePromotionDto } from './dto/purchase-promotion.dto';
 import { UpdatePricesDto } from './dto/update-prices.dto';
 import { PromotionTier } from '@prisma/client';
 
-// Default prices (rubles). Admin can override per city via updatePrices.
-// TODO: persist prices in DB (add PromotionPrice model) when admin pricing is needed
+// Hardcoded fallback prices (rubles) used when no DB override exists.
 const DEFAULT_PRICES: Record<PromotionTier, number> = {
   BASIC: 500,
   FEATURED: 1500,
   TOP: 3000,
 };
-
-// In-memory price overrides (city:tier -> price). Resets on restart.
-// TODO: replace with DB table when persistence is needed
-const priceOverrides = new Map<string, number>();
 
 @Injectable()
 export class PromotionsService {
@@ -64,7 +58,7 @@ export class PromotionsService {
       );
     }
 
-    const price = this.getPrice(dto.city, dto.tier);
+    const price = await this.getPrice(dto.city, dto.tier);
 
     // TODO: Integrate Stripe when STRIPE_SECRET_KEY is added to Doppler
     // For now, mock payment: log and proceed
@@ -116,36 +110,48 @@ export class PromotionsService {
     });
   }
 
-  /** Admin: update price for city+tier combination */
-  updatePrices(dto: UpdatePricesDto) {
-    const key = `${dto.city}:${dto.tier}`;
-    priceOverrides.set(key, dto.price);
-    this.logger.log(`Price updated: ${key} = ${dto.price} RUB`);
+  /**
+   * Admin: persist price for city+tier to DB.
+   * city=undefined/null means "global default for all cities".
+   */
+  async updatePrices(dto: UpdatePricesDto) {
+    const cityValue = dto.city ?? null;
+    // Use upsert with compound unique key. Prisma accepts null for nullable fields at runtime.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.prisma.promotionPrice.upsert({
+      where: { city_tier: { city: cityValue as any, tier: dto.tier } },
+      update: { price: dto.price },
+      create: { city: cityValue, tier: dto.tier, price: dto.price },
+    });
+    this.logger.log(`Price persisted: city=${cityValue} tier=${dto.tier} price=${dto.price} RUB`);
     return {
-      city: dto.city,
+      city: cityValue,
       tier: dto.tier,
       price: dto.price,
-      note: 'Price stored in memory. Will reset on server restart. TODO: persist to DB.',
     };
   }
 
   /** Admin: get current prices for all tiers, optionally filtered by city */
-  getPrices(city?: string) {
+  async getPrices(city?: string) {
     const tiers = Object.values(PromotionTier);
-    const result: Array<{ city: string; tier: PromotionTier; price: number }> = [];
+    const result: Array<{ city: string | null; tier: PromotionTier; price: number }> = [];
 
     if (city) {
       for (const tier of tiers) {
-        result.push({ city, tier, price: this.getPrice(city, tier) });
+        result.push({ city, tier, price: await this.getPrice(city, tier) });
       }
     } else {
-      // Return defaults + all overrides
+      // Return effective defaults + all DB overrides
       for (const tier of tiers) {
-        result.push({ city: 'default', tier, price: DEFAULT_PRICES[tier] });
+        result.push({ city: null, tier, price: await this.getPrice(null, tier) });
       }
-      for (const [key, price] of priceOverrides.entries()) {
-        const [c, t] = key.split(':');
-        result.push({ city: c, tier: t as PromotionTier, price });
+      // Fetch all city-specific overrides
+      const cityOverrides = await this.prisma.promotionPrice.findMany({
+        where: { city: { not: null } },
+        orderBy: [{ city: 'asc' }, { tier: 'asc' }],
+      });
+      for (const row of cityOverrides) {
+        result.push({ city: row.city, tier: row.tier, price: row.price });
       }
     }
 
@@ -163,8 +169,22 @@ export class PromotionsService {
     }
   }
 
-  private getPrice(city: string, tier: PromotionTier): number {
-    const key = `${city}:${tier}`;
-    return priceOverrides.get(key) ?? DEFAULT_PRICES[tier];
+  /**
+   * Resolve the effective price for a city+tier.
+   * Priority: city-specific DB row > global default DB row > hardcoded fallback.
+   */
+  private async getPrice(city: string | null, tier: PromotionTier): Promise<number> {
+    if (city) {
+      // Try city-specific override first
+      const cityRow = await this.prisma.promotionPrice.findFirst({
+        where: { city, tier },
+      });
+      if (cityRow) return cityRow.price;
+    }
+    // Fall back to global default in DB (city IS NULL)
+    const defaultRow = await this.prisma.promotionPrice.findFirst({
+      where: { city: null, tier },
+    });
+    return defaultRow?.price ?? DEFAULT_PRICES[tier];
   }
 }
