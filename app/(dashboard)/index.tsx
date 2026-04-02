@@ -64,7 +64,7 @@ export default function DashboardHub() {
         await api.get('/specialists/me');
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) {
-          router.replace('/(dashboard)/profile');
+          router.replace('/(dashboard)/specialist-profile');
         }
         // Any other error (network, 500, etc.) — silently ignore, stay on dashboard
       }
@@ -158,7 +158,7 @@ export default function DashboardHub() {
               {user?.role === 'SPECIALIST' && (
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => router.push('/(dashboard)/profile')}
+                  onPress={() => router.push('/(dashboard)/specialist-profile')}
                   activeOpacity={0.75}
                 >
                   <View style={styles.cardIcon}>
