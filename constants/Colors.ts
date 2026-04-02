@@ -1,14 +1,14 @@
 export const Colors = {
   // Backgrounds
-  bgPrimary: '#0f0f1a',
-  bgSecondary: '#1a1a2e',
-  bgSurface: '#16213e',
-  bgCard: '#1e1e35',
+  bgPrimary: '#FFFFFF',
+  bgSecondary: '#F4F8FC',
+  bgSurface: '#EBF3FB',
+  bgCard: '#F8FBFE',
 
   // Text
-  textPrimary: '#e2e8f0',
-  textSecondary: '#94a3b8',
-  textMuted: '#64748b',
+  textPrimary: '#0F2447',
+  textSecondary: '#4A6080',
+  textMuted: '#6B7280',
   textAccent: '#a78bfa',
 
   // Brand
@@ -35,7 +35,7 @@ export const Colors = {
   textFamiliar: '#a5b4fc',
 
   // Borders
-  border: '#2d2d4a',
+  border: '#C8D8EA',
   borderLight: '#3d3d5c',
 } as const;
 
