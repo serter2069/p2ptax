@@ -124,13 +124,15 @@ export class SpecialistsService {
 
     // Build result with promotion rank and activity
     const result = profiles.map((profile) => {
-      const ratingData = ratingMap.get(profile.userId);
+      // contacts excluded from public list response (security: phone leak)
+      const { contacts: _contacts, ...rest } = profile;
+      const ratingData = ratingMap.get(rest.userId);
       return {
-        ...profile,
-        promoted: promotionMap.has(profile.userId),
-        promotionTier: promotionMap.get(profile.userId) ?? 0,
+        ...rest,
+        promoted: promotionMap.has(rest.userId),
+        promotionTier: promotionMap.get(rest.userId) ?? 0,
         activity: {
-          responseCount: countMap.get(profile.userId) ?? 0,
+          responseCount: countMap.get(rest.userId) ?? 0,
           avgRating: ratingData?.avgRating ?? null,
           reviewCount: ratingData?.reviewCount ?? 0,
         },
