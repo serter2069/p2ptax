@@ -186,13 +186,13 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   statusChip: {
-    backgroundColor: '#1a3a1e',
+    backgroundColor: Colors.statusBg.success,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
     borderRadius: BorderRadius.full,
   },
   statusChipClosed: {
-    backgroundColor: '#3a2a1e',
+    backgroundColor: Colors.statusBg.warning,
   },
   statusText: {
     fontSize: Typography.fontSize.xs,
