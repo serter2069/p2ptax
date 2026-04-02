@@ -9,8 +9,8 @@ import { JwtStrategy } from './jwt.strategy';
   imports: [
     PassportModule,
     JwtModule.register({
+      // No global expiresIn — each jwt.sign call specifies its own expiry
       secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-prod',
-      signOptions: { expiresIn: '7d' },
     }),
   ],
   controllers: [AuthController],

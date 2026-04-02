@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { Role } from '@prisma/client';
 
 // In-memory OTP store: email -> { code, expiresAt }
 const otpStore = new Map<string, { code: string; expiresAt: Date }>();
@@ -15,12 +16,37 @@ function generateOtp(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+function mapRole(role?: string): Role {
+  if (role === 'specialist') return Role.SPECIALIST;
+  return Role.CLIENT;
+}
+
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
   ) {}
+
+  private generateTokens(user: { id: string; email: string; role: Role }): TokenPair {
+    const accessToken = this.jwt.sign(
+      { sub: user.id, email: user.email, role: user.role },
+      { expiresIn: '15m' },
+    );
+    const refreshToken = this.jwt.sign(
+      { sub: user.id },
+      {
+        secret: (process.env.JWT_SECRET ?? 'dev-secret-change-in-prod') + '-refresh',
+        expiresIn: '30d',
+      },
+    );
+    return { accessToken, refreshToken };
+  }
 
   async requestOtp(email: string): Promise<{ message: string }> {
     const code = generateOtp();
@@ -41,7 +67,7 @@ export class AuthService {
     return { message: 'OTP sent to email' };
   }
 
-  async verifyOtp(email: string, code: string): Promise<{ token: string }> {
+  async verifyOtp(email: string, code: string, role?: string): Promise<TokenPair> {
     const normalizedEmail = email.toLowerCase();
     const record = otpStore.get(normalizedEmail);
 
@@ -72,14 +98,38 @@ export class AuthService {
 
     otpStore.delete(normalizedEmail);
 
-    // Upsert user
+    // Check if user already exists to preserve existing role
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    // Assign role only on first login; subsequent logins preserve existing role
+    const assignedRole = existingUser ? existingUser.role : mapRole(role);
+
     const user = await this.prisma.user.upsert({
       where: { email: normalizedEmail },
-      create: { email: normalizedEmail },
+      create: { email: normalizedEmail, role: assignedRole },
       update: { lastLoginAt: new Date() },
     });
 
-    const token = this.jwt.sign({ sub: user.id, email: user.email });
-    return { token };
+    return this.generateTokens(user);
+  }
+
+  async refresh(refreshToken: string): Promise<TokenPair> {
+    let payload: { sub: string };
+    try {
+      payload = this.jwt.verify(refreshToken, {
+        secret: (process.env.JWT_SECRET ?? 'dev-secret-change-in-prod') + '-refresh',
+      }) as { sub: string };
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return this.generateTokens(user);
   }
 }
