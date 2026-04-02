@@ -109,9 +109,6 @@ export default function SpecialistsCatalogScreen() {
                 <Text style={styles.nick} numberOfLines={1}>
                   @{item.nick}
                 </Text>
-                {isPromoted && (
-                  <Badge variant="accent" label="Продвинутый" />
-                )}
               </View>
               {item.cities.length > 0 && (
                 <Text style={styles.cities} numberOfLines={1}>

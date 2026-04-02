@@ -236,7 +236,6 @@ export default function SpecialistProfileScreen() {
                 <Text style={styles.nick}>@{profile.nick}</Text>
                 {/* Badges */}
                 <View style={styles.badgesRow}>
-                  {isPromoted && <Badge variant="accent" label="Продвинутый" />}
                   {hasFamiliar && <Badge variant="familiar" />}
                 </View>
                 {/* Star rating summary */}
