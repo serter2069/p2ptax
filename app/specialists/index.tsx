@@ -16,6 +16,7 @@ import { api, ApiError } from '../../lib/api';
 import { formatExperience, shortFnsLabel as formatFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Avatar } from '../../components/Avatar';
+import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
@@ -58,7 +59,8 @@ export default function SpecialistsCatalogScreen() {
   const router = useRouter();
   const { isMobile, numColumns, contentMaxWidth } = useBreakpoints();
 
-  const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
+  const [allSpecialists, setAllSpecialists] = useState<SpecialistItem[]>([]);
+  const [visibleCount, setVisibleCount] = useState(9);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -87,6 +89,8 @@ export default function SpecialistsCatalogScreen() {
 
   const fnsFilterParam = selectedFns.map((o) => o.name).join(',');
 
+  const PAGE_SIZE = 9;
+
   const fetchSpecialists = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     setError('');
@@ -100,7 +104,8 @@ export default function SpecialistsCatalogScreen() {
       const data = await api.get<SpecialistItem[]>(
         `/specialists${query ? `?${query}` : ''}`,
       );
-      setSpecialists(data);
+      setAllSpecialists(data);
+      setVisibleCount(PAGE_SIZE);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -122,6 +127,13 @@ export default function SpecialistsCatalogScreen() {
     setRefreshing(true);
     fetchSpecialists(true);
   }
+
+  function handleLoadMore() {
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+  }
+
+  const specialists = allSpecialists.slice(0, visibleCount);
+  const hasMore = visibleCount < allSpecialists.length;
 
   function renderSpecialist({ item }: { item: SpecialistItem }) {
     const isVerified = item.badges.includes('verified');
@@ -361,6 +373,19 @@ export default function SpecialistsCatalogScreen() {
               subtitle="Попробуйте изменить фильтры"
             />
           )
+        }
+        ListFooterComponent={
+          hasMore && specialists.length > 0 ? (
+            <View style={styles.loadMoreBox}>
+              <Button
+                onPress={handleLoadMore}
+                variant="secondary"
+                style={styles.loadMoreBtn}
+              >
+                Загрузить ещё
+              </Button>
+            </View>
+          ) : null
         }
       />
     </SafeAreaView>
@@ -629,5 +654,15 @@ const styles = StyleSheet.create({
   loadingBox: {
     paddingTop: Spacing['4xl'],
     alignItems: 'center',
+  },
+  loadMoreBox: {
+    width: '100%',
+    maxWidth: 430,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
+    alignSelf: 'center',
+  },
+  loadMoreBtn: {
+    width: '100%',
   },
 });

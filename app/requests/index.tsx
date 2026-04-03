@@ -9,7 +9,9 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
+import { useAuth } from '../../stores/authStore';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
@@ -39,6 +41,8 @@ interface FeedResponse {
 }
 
 export default function RequestsFeedScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
   const { isMobile, numColumns } = useBreakpoints();
   const [items, setItems] = useState<RequestItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -113,7 +117,11 @@ export default function RequestsFeedScreen() {
 
   function renderItem({ item }: { item: RequestItem }) {
     return (
-      <View style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}>
+      <TouchableOpacity
+        onPress={() => router.push(`/requests/${item.id}` as any)}
+        activeOpacity={0.8}
+        style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
+      >
         <Card padding={Spacing.lg}>
           {/* City + date row */}
           <View style={styles.metaRow}>
@@ -154,7 +162,7 @@ export default function RequestsFeedScreen() {
             </View>
           </View>
         </Card>
-      </View>
+      </TouchableOpacity>
     );
   }
 
@@ -227,19 +235,35 @@ export default function RequestsFeedScreen() {
           )
         }
         ListFooterComponent={
-          hasMore ? (
-            <View style={[styles.loadMoreBox, !isMobile && styles.loadMoreBoxWide]}>
-              <Button
-                onPress={handleLoadMore}
-                variant="secondary"
-                loading={loadingMore}
-                disabled={loadingMore}
-                style={styles.loadMoreBtn}
-              >
-                Загрузить ещё
-              </Button>
-            </View>
-          ) : null
+          <>
+            {hasMore ? (
+              <View style={[styles.loadMoreBox, !isMobile && styles.loadMoreBoxWide]}>
+                <Button
+                  onPress={handleLoadMore}
+                  variant="secondary"
+                  loading={loadingMore}
+                  disabled={loadingMore}
+                  style={styles.loadMoreBtn}
+                >
+                  Загрузить ещё
+                </Button>
+              </View>
+            ) : null}
+            {!user && items.length > 0 && (
+              <View style={styles.ctaBanner}>
+                <Text style={styles.ctaBannerText}>
+                  Вы специалист? Зарегистрируйтесь и получайте заказы
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/(auth)/email?role=SPECIALIST' as any)}
+                  activeOpacity={0.8}
+                  style={styles.ctaBannerBtn}
+                >
+                  <Text style={styles.ctaBannerBtnText}>Стать специалистом</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         }
       />
     </SafeAreaView>
@@ -382,5 +406,35 @@ const styles = StyleSheet.create({
   },
   loadMoreBtn: {
     width: '100%',
+  },
+  ctaBanner: {
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+    backgroundColor: '#EBF3FB',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  ctaBannerText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.medium,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  ctaBannerBtn: {
+    backgroundColor: Colors.brandPrimary,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.md,
+  },
+  ctaBannerBtnText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
   },
 });
