@@ -70,8 +70,10 @@ export class SpecialistsService {
     if (!profile) throw new NotFoundException('Specialist not found');
 
     const activity = await this.computeActivity(profile.userId);
+    // Strip internal IDs and contacts from public profile response
+    const { id: _id, userId: _userId, contacts: _contacts, ...publicProfile } = profile;
     return {
-      ...profile,
+      ...publicProfile,
       activity,
       rating: activity.avgRating,
       reviewCount: activity.reviewCount,
@@ -176,15 +178,15 @@ export class SpecialistsService {
 
     // Build result with promotion rank and activity
     const result = profiles.map((profile) => {
-      // contacts and bio excluded from public list response
-      const { contacts: _contacts, bio: _bio, ...rest } = profile;
-      const ratingData = ratingMap.get(rest.userId);
+      // Strip internal IDs, contacts and bio from public catalog response
+      const { contacts: _contacts, bio: _bio, id: _id, userId, ...rest } = profile;
+      const ratingData = ratingMap.get(userId);
       return {
         ...rest,
-        promoted: promotionMap.has(rest.userId),
-        promotionTier: promotionMap.get(rest.userId) ?? 0,
+        promoted: promotionMap.has(userId),
+        promotionTier: promotionMap.get(userId) ?? 0,
         activity: {
-          responseCount: countMap.get(rest.userId) ?? 0,
+          responseCount: countMap.get(userId) ?? 0,
           avgRating: ratingData?.avgRating ?? null,
           reviewCount: ratingData?.reviewCount ?? 0,
         },
