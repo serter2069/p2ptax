@@ -197,7 +197,7 @@ export default function SettingsScreen() {
                       review.specialist.specialistProfile?.displayName ??
                       review.specialist.specialistProfile?.nick ??
                       review.specialist.email.split('@')[0];
-                    const stars = Array.from({ length: 5 }, (_, i) => (i < review.rating ? '*' : '-')).join('');
+                    const stars = Array.from({ length: 5 }, (_, i) => (i < review.rating ? '\u2605' : '\u2606')).join('');
                     return (
                       <View key={review.id}>
                         {idx > 0 && <View style={styles.divider} />}

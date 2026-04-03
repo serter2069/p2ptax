@@ -71,7 +71,7 @@ export default function EmailScreen() {
         >
           <View style={styles.container}>
             {/* Back */}
-            <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+            <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back}>
               <Text style={styles.backText}>← Назад</Text>
             </TouchableOpacity>
 

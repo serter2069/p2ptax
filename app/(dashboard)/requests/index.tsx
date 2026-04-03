@@ -87,7 +87,9 @@ export default function MyRequestsScreen() {
   }
 
   const filtered = items.filter((r) =>
-    tab === 'active' ? r.status === 'OPEN' : r.status !== 'OPEN',
+    tab === 'active'
+      ? r.status === 'OPEN' || r.status === 'IN_PROGRESS'
+      : r.status !== 'OPEN' && r.status !== 'IN_PROGRESS',
   );
 
   function getStatusConfig(status: string) {
