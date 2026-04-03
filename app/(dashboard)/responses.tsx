@@ -8,12 +8,14 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
+import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 
 interface ResponseItem {
@@ -26,6 +28,7 @@ interface ResponseItem {
     city: string;
     status: string;
     createdAt: string;
+    clientId?: string;
   };
 }
 
@@ -35,6 +38,7 @@ export default function MyResponsesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [startingDialogId, setStartingDialogId] = useState<string | null>(null);
 
   const fetchResponses = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -57,6 +61,20 @@ export default function MyResponsesScreen() {
   function handleRefresh() {
     setRefreshing(true);
     fetchResponses(true);
+  }
+
+  async function handleStartDialog(clientId: string) {
+    if (startingDialogId) return;
+    setStartingDialogId(clientId);
+    try {
+      const resp = await api.post<{ threadId: string }>('/threads/start', { otherUserId: clientId });
+      router.push(`/(dashboard)/messages/${resp.threadId}`);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Не удалось открыть диалог';
+      Alert.alert('Ошибка', msg);
+    } finally {
+      setStartingDialogId(null);
+    }
   }
 
   function formatDate(iso: string) {
@@ -106,6 +124,19 @@ export default function MyResponsesScreen() {
             <Text style={styles.dateText}>{'Отклик: '}{formatDate(item.createdAt)}</Text>
             <Text style={styles.dateText}>{'Запрос: '}{formatDate(req.createdAt)}</Text>
           </View>
+
+          {/* Write to client button */}
+          {item.request.clientId && (
+            <Button
+              onPress={() => handleStartDialog(item.request.clientId!)}
+              variant="secondary"
+              loading={startingDialogId === item.request.clientId}
+              disabled={startingDialogId !== null}
+              style={styles.writeBtn}
+            >
+              Написать
+            </Button>
+          )}
         </Card>
       </TouchableOpacity>
     );
@@ -240,6 +271,10 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
+  },
+  writeBtn: {
+    marginTop: Spacing.md,
+    width: '100%',
   },
   loadingBox: {
     paddingTop: Spacing['4xl'],

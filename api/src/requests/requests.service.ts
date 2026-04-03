@@ -216,6 +216,7 @@ export class RequestsService {
             city: true,
             status: true,
             createdAt: true,
+            clientId: true,
           },
         },
       },

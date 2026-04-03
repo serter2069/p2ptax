@@ -17,10 +17,20 @@ import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 
+interface SpecialistProfile {
+  nick?: string;
+  displayName?: string;
+  avatarUrl?: string;
+}
+
 interface ResponseItem {
   id: string;
   message: string;
-  specialist: { id: string; email: string };
+  specialist: {
+    id: string;
+    email: string;
+    specialistProfile?: SpecialistProfile | null;
+  };
   createdAt: string;
 }
 
@@ -212,7 +222,11 @@ export default function RequestDetailScreen() {
             request.responses.map((resp) => (
               <Card key={resp.id} padding={Spacing.lg}>
                 <View style={styles.responseHeader}>
-                  <Text style={styles.specialistEmail}>{resp.specialist.email}</Text>
+                  <Text style={styles.specialistEmail}>
+                    {resp.specialist?.specialistProfile?.displayName
+                      || resp.specialist?.specialistProfile?.nick
+                      || resp.specialist?.email?.split('@')[0]}
+                  </Text>
                   <Text style={styles.responseDateText}>{formatDate(resp.createdAt)}</Text>
                 </View>
                 <Text style={styles.responseMessage}>{resp.message}</Text>
