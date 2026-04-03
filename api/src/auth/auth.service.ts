@@ -37,6 +37,11 @@ export class AuthService {
     private readonly emailService: EmailService,
   ) {}
 
+  /** Public alias for generating tokens — used by UsersService for email change flow. */
+  async generateTokensPublic(user: { id: string; email: string; role: Role }): Promise<TokenPair> {
+    return this.generateTokens(user);
+  }
+
   private async generateTokens(user: { id: string; email: string; role: Role }): Promise<TokenPair> {
     const accessToken = this.jwt.sign(
       { sub: user.id, email: user.email, role: user.role },

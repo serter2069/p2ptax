@@ -1,12 +1,19 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthService, TokenPair } from '../auth/auth.service';
+import { EmailService } from '../notifications/email.service';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authService: AuthService,
+    private readonly emailService: EmailService,
+  ) {}
 
   /** Return current user profile (id, email, role, username). */
   async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null }> {
@@ -155,6 +162,118 @@ export class UsersService {
     });
 
     return { emailNotifications: updated.emailNotifications };
+  }
+
+  /**
+   * Step 1: Request OTP sent to the NEW email address.
+   * Validates new email is not already registered, then sends OTP.
+   */
+  async requestEmailChange(userId: string, newEmail: string): Promise<{ message: string }> {
+    const normalizedEmail = newEmail.toLowerCase();
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.email === normalizedEmail) {
+      throw new BadRequestException('New email must be different from current email');
+    }
+
+    // Check new email is not already taken by another account
+    const taken = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (taken) {
+      throw new ConflictException('Email is already registered');
+    }
+
+    // Reuse OTP infrastructure — generate code, store in OtpCode table keyed by new email
+    const isDev = process.env.DEV_AUTH === 'true';
+    const code = isDev ? '000000' : String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+    await this.prisma.otpCode.create({
+      data: { email: normalizedEmail, code, expiresAt },
+    });
+
+    if (isDev) {
+      console.log(`[DEV] Email change OTP for ${normalizedEmail}: ${code}`);
+    } else {
+      await this.emailService.sendOtp(normalizedEmail, code);
+    }
+
+    return { message: 'OTP sent to new email' };
+  }
+
+  /**
+   * Step 2: Verify OTP for the new email, update email in DB, issue new tokens.
+   * Trap #3: re-checks email uniqueness to guard against race conditions.
+   */
+  async confirmEmailChange(
+    userId: string,
+    newEmail: string,
+    code: string,
+  ): Promise<TokenPair & { email: string }> {
+    const normalizedEmail = newEmail.toLowerCase();
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.email === normalizedEmail) {
+      throw new BadRequestException('New email must be different from current email');
+    }
+
+    // Find latest unused, non-expired OTP for the new email
+    const otpRecord = await this.prisma.otpCode.findFirst({
+      where: {
+        email: normalizedEmail,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRecord) {
+      throw new BadRequestException('OTP not found or expired');
+    }
+
+    if (otpRecord.attempts >= 3) {
+      throw new UnauthorizedException('Too many OTP attempts');
+    }
+
+    if (otpRecord.code !== code) {
+      await this.prisma.otpCode.update({
+        where: { id: otpRecord.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    // Mark OTP as used
+    await this.prisma.otpCode.update({
+      where: { id: otpRecord.id },
+      data: { usedAt: new Date() },
+    });
+
+    // Trap #3: re-check email uniqueness to guard against race condition
+    const takenNow = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (takenNow) {
+      throw new ConflictException('Email was just registered by another user. Please try a different email.');
+    }
+
+    // Update user email in DB
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { email: normalizedEmail },
+    });
+
+    // Revoke all existing refresh tokens for this user (forces re-auth with new identity)
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revoked: false },
+      data: { revoked: true },
+    });
+
+    // Issue new token pair with updated email
+    const tokens = await this.authService.generateTokensPublic(updatedUser);
+
+    return { ...tokens, email: updatedUser.email };
   }
 
   /**
