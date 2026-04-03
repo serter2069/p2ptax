@@ -14,6 +14,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
@@ -54,10 +55,71 @@ export default function CityRequestsScreen() {
   const [submitting, setSubmitting] = useState(false);
   // Track already-responded request IDs optimistically
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
+  // Track seen request IDs (persisted in AsyncStorage)
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   // Pagination state per city
   const [cityPages, setCityPages] = useState<Record<string, number>>({});
   const [cityHasMore, setCityHasMore] = useState<Record<string, boolean>>({});
   const [loadingMoreCity, setLoadingMoreCity] = useState<string | null>(null);
+
+  const SEEN_STORAGE_KEY = 'p2ptax_seen_city_requests';
+  const SEEN_CAP = 500;
+
+  // Load seen IDs from AsyncStorage
+  const loadSeenIds = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem(SEEN_STORAGE_KEY);
+      if (raw) {
+        const arr: string[] = JSON.parse(raw);
+        setSeenIds(new Set(arr));
+      }
+    } catch {
+      // Silently ignore storage errors — feature degrades gracefully
+    }
+  }, []);
+
+  // Persist a set of seen IDs, capped at SEEN_CAP most recent entries
+  const persistSeenIds = useCallback(async (ids: Set<string>) => {
+    try {
+      const arr = Array.from(ids).slice(-SEEN_CAP);
+      await AsyncStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(arr));
+    } catch {
+      // Silently ignore storage errors
+    }
+  }, []);
+
+  // Mark a single request as seen
+  const markAsSeen = useCallback(
+    (id: string) => {
+      setSeenIds((prev) => {
+        if (prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.add(id);
+        persistSeenIds(next);
+        return next;
+      });
+    },
+    [persistSeenIds],
+  );
+
+  // Mark all currently loaded requests as seen
+  const markAllSeen = useCallback(() => {
+    setSeenIds((prev) => {
+      const next = new Set(prev);
+      // will be populated after requests are loaded
+      return next;
+    });
+    // Use functional form to access latest requests
+    setRequests((currentRequests) => {
+      setSeenIds((prev) => {
+        const next = new Set(prev);
+        for (const r of currentRequests) next.add(r.id);
+        persistSeenIds(next);
+        return next;
+      });
+      return currentRequests;
+    });
+  }, [persistSeenIds]);
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -119,8 +181,10 @@ export default function CityRequestsScreen() {
   }, []);
 
   useEffect(() => {
+    // Load seen IDs in parallel with data fetch so first render has correct state
+    loadSeenIds();
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, loadSeenIds]);
 
   function handleRefresh() {
     setRefreshing(true);
@@ -129,6 +193,8 @@ export default function CityRequestsScreen() {
   }
 
   function openRespond(id: string) {
+    // Mark as seen when specialist opens the respond dialog
+    markAsSeen(id);
     Alert.alert(
       'Подтверждение',
       'Откликнуться на этот запрос?',
@@ -213,12 +279,20 @@ export default function CityRequestsScreen() {
 
   function renderItem({ item }: { item: RequestItem }) {
     const alreadyResponded = respondedIds.has(item.id);
+    const isNew = !seenIds.has(item.id) && !alreadyResponded;
     return (
       <View style={styles.cardWrapper}>
         <Card padding={Spacing.lg}>
           <View style={styles.metaRow}>
-            <View style={styles.cityChip}>
-              <Text style={styles.cityText}>{item.city}</Text>
+            <View style={styles.metaLeft}>
+              <View style={styles.cityChip}>
+                <Text style={styles.cityText}>{item.city}</Text>
+              </View>
+              {isNew && (
+                <View style={styles.newBadge}>
+                  <Text style={styles.newBadgeText}>Новый</Text>
+                </View>
+              )}
             </View>
             <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
           </View>
@@ -311,6 +385,11 @@ export default function CityRequestsScreen() {
           <Text style={styles.citiesText}>
             {'Города: '}{myCities.join(', ')}
           </Text>
+          {requests.some((r) => !seenIds.has(r.id) && !respondedIds.has(r.id)) && (
+            <TouchableOpacity onPress={markAllSeen} style={styles.markAllBtn}>
+              <Text style={styles.markAllText}>Отметить все прочитанными</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -420,12 +499,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     alignItems: 'center',
+    gap: Spacing.xs,
   },
   citiesText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
     maxWidth: 430,
     width: '100%',
+  },
+  markAllBtn: {
+    maxWidth: 430,
+    width: '100%',
+  },
+  markAllText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
@@ -443,6 +532,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.sm,
+  },
+  metaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    flexShrink: 1,
+  },
+  newBadge: {
+    backgroundColor: Colors.statusBg.info,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+  },
+  newBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.statusInfo,
+    fontWeight: Typography.fontWeight.semibold,
   },
   cityChip: {
     backgroundColor: Colors.bgSecondary,
