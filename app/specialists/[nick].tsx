@@ -34,6 +34,7 @@ interface SpecialistProfile {
   bio: string | null;
   experience: number | null;
   cities: string[];
+  fnsOffices: string[];
   services: string[];
   badges: string[];
   contacts: string | null;
@@ -373,6 +374,7 @@ export default function SpecialistProfileScreen() {
           <View style={styles.servicesList}>
             {profile.services.map((svc, idx) => (
               <View key={idx} style={styles.serviceCard}>
+                <Text style={styles.serviceCheckmark}>{'\u2713'}</Text>
                 <Text style={styles.serviceText}>{svc}</Text>
               </View>
             ))}
@@ -401,6 +403,20 @@ export default function SpecialistProfileScreen() {
             {profile.cities.map((city, idx) => (
               <View key={idx} style={styles.cityTag}>
                 <Text style={styles.cityTagText}>{city}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* FNS offices */}
+      {profile.fnsOffices && profile.fnsOffices.length > 0 && (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Налоговые инспекции</Text>
+          <View style={styles.citiesTags}>
+            {profile.fnsOffices.map((office, idx) => (
+              <View key={idx} style={styles.fnsTag}>
+                <Text style={styles.fnsTagText}>{office}</Text>
               </View>
             ))}
           </View>
@@ -774,6 +790,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   serviceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#C0D0EA',
@@ -781,7 +800,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
+  serviceCheckmark: {
+    fontSize: 16,
+    color: '#1A7848',
+    fontWeight: '700',
+  },
   serviceText: {
+    flex: 1,
     fontSize: 15,
     color: '#4A6B88',
     lineHeight: 22,
@@ -818,6 +843,19 @@ const styles = StyleSheet.create({
   cityTagText: {
     fontSize: 14,
     color: '#1A5BA8',
+    fontWeight: '500',
+  },
+
+  // FNS offices
+  fnsTag: {
+    backgroundColor: '#FEF3E2',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  fnsTagText: {
+    fontSize: 14,
+    color: '#B8860B',
     fontWeight: '500',
   },
 

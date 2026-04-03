@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   SafeAreaView,
   ScrollView,
@@ -100,19 +101,29 @@ export default function CreateRequestScreen() {
 
             <View style={styles.field}>
               <Text style={styles.label}>Описание</Text>
-              <View style={[styles.textareaWrapper, errors.description ? styles.textareaError : null]}>
-                <View style={styles.textarea}>
-                  <Input
-                    value={description}
-                    onChangeText={(t) => {
-                      setDescription(t);
-                      if (errors.description) setErrors((e) => ({ ...e, description: undefined }));
-                    }}
-                    placeholder="Опишите вашу задачу подробно..."
-                    autoCapitalize="sentences"
-                    error={errors.description}
-                  />
-                </View>
+              <TextInput
+                value={description}
+                onChangeText={(t) => {
+                  if (t.length <= 1000) setDescription(t);
+                  if (errors.description) setErrors((e) => ({ ...e, description: undefined }));
+                }}
+                placeholder="Опишите вашу задачу подробно..."
+                placeholderTextColor={Colors.textMuted}
+                autoCapitalize="sentences"
+                multiline={true}
+                numberOfLines={4}
+                maxLength={1000}
+                style={[
+                  styles.descriptionInput,
+                  errors.description ? styles.descriptionInputError : null,
+                ]}
+                textAlignVertical="top"
+              />
+              <View style={styles.descriptionFooter}>
+                {errors.description ? (
+                  <Text style={styles.errorText}>{errors.description}</Text>
+                ) : <View />}
+                <Text style={styles.charCounter}>{description.length}/1000</Text>
               </View>
             </View>
 
@@ -212,14 +223,32 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 2,
   },
-  textareaWrapper: {
+  descriptionInput: {
+    minHeight: 100,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
   },
-  textareaError: {
-    // handled by Input component
+  descriptionInputError: {
+    borderColor: Colors.statusError,
   },
-  textarea: {
-    minHeight: 48,
+  descriptionFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.statusError,
+  },
+  charCounter: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
   },
   submitBtn: {
     width: '100%',

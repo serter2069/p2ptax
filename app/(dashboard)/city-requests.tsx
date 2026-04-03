@@ -114,9 +114,21 @@ export default function CityRequestsScreen() {
   }
 
   function openRespond(id: string) {
-    setRespondingId(id);
-    setMessage('');
-    setModalVisible(true);
+    Alert.alert(
+      'Подтверждение',
+      'Откликнуться на этот запрос?',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Откликнуться',
+          onPress: () => {
+            setRespondingId(id);
+            setMessage('');
+            setModalVisible(true);
+          },
+        },
+      ],
+    );
   }
 
   function closeModal() {

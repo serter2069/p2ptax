@@ -94,6 +94,15 @@ export function LandingHeader() {
         )}
       </View>
 
+      {/* Mobile menu overlay — closes menu on outside tap */}
+      {isMobile && menuOpen && (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setMenuOpen(false)}
+          style={styles.menuOverlay}
+        />
+      )}
+
       {/* Mobile dropdown menu */}
       {isMobile && menuOpen && (
         <View style={styles.mobileMenu}>
@@ -256,6 +265,14 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: '#0F2447',
     borderRadius: 1,
+  },
+  menuOverlay: {
+    position: 'absolute' as any,
+    top: 64,
+    left: 0,
+    right: 0,
+    bottom: -9999,
+    zIndex: 9,
   },
   mobileMenu: {
     ...Platform.select({
