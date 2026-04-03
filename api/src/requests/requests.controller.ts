@@ -52,6 +52,13 @@ export class RequestsController {
     return this.requestsService.findFeed(city, page ? parseInt(page, 10) : 1);
   }
 
+  // GET /requests/:id — client gets single request with responses
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  getById(@Request() req: any, @Param('id') id: string) {
+    return this.requestsService.findById(id, req.user.id);
+  }
+
   // POST /requests/:id/respond — specialist responds to a request
   @Post(':id/respond')
   @UseGuards(JwtAuthGuard, RolesGuard)
