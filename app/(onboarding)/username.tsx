@@ -105,7 +105,7 @@ export default function UsernameScreen() {
               <Button
                 onPress={handleSubmit}
                 loading={loading}
-                disabled={loading || username.trim().length < 3}
+                disabled={loading || validateUsername(username.trim()) !== null}
                 style={styles.btn}
               >
                 Продолжить

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
+import { formatExperience } from '../../lib/format';
 import { useAuth } from '../../stores/authStore';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Avatar } from '../../components/Avatar';
@@ -59,12 +60,6 @@ interface ReviewsResponse {
 interface Eligibility {
   canReview: boolean;
   eligibleRequestId: string | null;
-}
-
-function formatExperience(years: number): string {
-  if (years === 1) return '1 год опыта';
-  if (years >= 2 && years <= 4) return `${years} года опыта`;
-  return `${years} лет опыта`;
 }
 
 function getReviewerInitials(review: ReviewItem): string {

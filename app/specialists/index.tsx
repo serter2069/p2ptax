@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
+import { formatExperience, shortFnsLabel as formatFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
@@ -22,10 +23,6 @@ import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 
-function shortFnsLabel(office: FNSOffice): string {
-  const match = office.name.match(/№\s*(\d+)/);
-  return match ? `ИФНС №${match[1]} · ${office.city}` : office.city;
-}
 
 interface SpecialistItem {
   id: string;
@@ -124,12 +121,6 @@ export default function SpecialistsCatalogScreen() {
   function handleRefresh() {
     setRefreshing(true);
     fetchSpecialists(true);
-  }
-
-  function formatExperience(years: number): string {
-    if (years === 1) return '1 год опыта';
-    if (years >= 2 && years <= 4) return `${years} года опыта`;
-    return `${years} лет опыта`;
   }
 
   function renderSpecialist({ item }: { item: SpecialistItem }) {
@@ -290,7 +281,7 @@ export default function SpecialistsCatalogScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.fnsChipText} numberOfLines={1}>
-                      {shortFnsLabel(office)}
+                      {formatFnsLabel(office.name, office.city)}
                     </Text>
                     <Text style={styles.fnsChipRemove}>×</Text>
                   </TouchableOpacity>
@@ -518,7 +509,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
-    borderColor: '#C0D0EA',
+    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     ...Shadows.sm,
@@ -540,16 +531,16 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.bold,
-    color: '#0F2447',
+    color: Colors.textPrimary,
   },
   specialization: {
     fontSize: Typography.fontSize.sm,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     marginTop: 1,
   },
   cityText: {
     fontSize: Typography.fontSize.xs,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     marginTop: 1,
   },
   metaRow: {
@@ -560,7 +551,7 @@ const styles = StyleSheet.create({
   },
   experienceText: {
     fontSize: Typography.fontSize.xs,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
   },
   verifiedBadge: {
     backgroundColor: '#E8F5ED',
@@ -603,12 +594,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: '#1A5BA8',
+    borderColor: Colors.brandPrimary,
     backgroundColor: 'transparent',
   },
   detailsBtnText: {
     fontSize: Typography.fontSize.sm,
-    color: '#1A5BA8',
+    color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.medium,
   },
   chipsRow: {
@@ -633,7 +624,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   chipTextActive: {
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   loadingBox: {
     paddingTop: Spacing['4xl'],

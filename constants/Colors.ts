@@ -8,18 +8,23 @@ export const Colors = {
   // Text
   textPrimary: '#0F2447',
   textSecondary: '#4A6B88',
-  textMuted: '#4A6B88',
+  textMuted: '#6A80A0',
   textAccent: '#1A5BA8',
 
   // Brand
   brandPrimary: '#1A5BA8',
+  brandPrimaryHover: '#2368BE',
   brandSecondary: '#1E3A6E',
 
   // Status
   statusSuccess: '#1A7848',
   statusWarning: '#f59e0b',
   statusError: '#B91C1C',
+  statusErrorHover: '#991818',
   statusInfo: '#1A5BA8',
+
+  // Utilities
+  white: '#FFFFFF',
 
   // Status background tints (for badges)
   statusBg: {
@@ -55,21 +60,21 @@ export const Shadows = {
   sm: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 2,
   },
   md: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.10,
     shadowRadius: 4,
     elevation: 4,
   },
   lg: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 8,
   },
