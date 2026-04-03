@@ -3,6 +3,7 @@ import { SpecialistsService } from './specialists.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
@@ -44,8 +45,15 @@ export class SpecialistsController {
     @Query('sort') sort?: string,
     @Query('search') search?: string,
     @Query('fns') fns?: string,
+    @Query('category') category?: string,
   ) {
-    return this.specialistsService.getCatalog(city, badge, sort, search, fns);
+    return this.specialistsService.getCatalog(city, badge, sort, search, fns, category);
+  }
+
+  @Patch(':id/badges')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  updateBadges(@Param('id') id: string, @Body('badges') badges: string[]) {
+    return this.specialistsService.adminUpdateBadges(id, badges);
   }
 
   @Get(':nick')

@@ -110,6 +110,7 @@ export default function CityRequestsScreen() {
 
   function handleRefresh() {
     setRefreshing(true);
+    // Keep existing respondedIds — do NOT reset on pull-to-refresh
     fetchData(true);
   }
 
