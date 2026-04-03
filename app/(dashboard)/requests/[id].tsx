@@ -51,12 +51,7 @@ export default function RequestDetailScreen() {
     if (!isRefresh) setLoading(true);
     setError('');
     try {
-      // Use /requests/my and find by id
-      const all = await api.get<RequestDetail[]>('/requests/my');
-      const found = all.find((r) => r.id === id) ?? null;
-      if (!found) {
-        setError('Запрос не найден');
-      }
+      const found = await api.get<RequestDetail>(`/requests/${id}`);
       setRequest(found);
     } catch (err) {
       if (err instanceof ApiError) {

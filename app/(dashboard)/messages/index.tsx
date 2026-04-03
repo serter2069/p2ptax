@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../../stores/authStore';
-import { api } from '../../../lib/api';
+import { api, ApiError } from '../../../lib/api';
 import { Avatar } from '../../../components/Avatar';
 import { Header } from '../../../components/Header';
 import { EmptyState } from '../../../components/EmptyState';
@@ -60,13 +60,20 @@ export default function MessagesScreen() {
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchThreads = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
+    setError('');
     try {
       const data = await api.get<ThreadItem[]>('/threads');
       setThreads(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Не удалось загрузить диалоги.');
+      }
       setThreads([]);
     } finally {
       setLoading(false);
@@ -152,10 +159,20 @@ export default function MessagesScreen() {
           ]}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
-            <EmptyState
-              title="Нет диалогов"
-              subtitle="Диалоги появятся, когда специалист ответит на ваш запрос"
-            />
+            error ? (
+              <EmptyState
+                icon="alert-circle-outline"
+                title="Ошибка загрузки"
+                subtitle={error}
+                ctaLabel="Повторить"
+                onCtaPress={() => fetchThreads()}
+              />
+            ) : (
+              <EmptyState
+                title="Нет диалогов"
+                subtitle="Диалоги появятся, когда специалист ответит на ваш запрос"
+              />
+            )
           }
           refreshControl={
             <RefreshControl

@@ -146,15 +146,17 @@ export default function ThreadScreen() {
       socket.off('message_received', onMessageReceived);
       socket.off('typing', onTyping);
       if (typingTimer.current) clearTimeout(typingTimer.current);
+      disconnectSocket();
     };
   }, [token, threadId, user]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [messages]);
 
