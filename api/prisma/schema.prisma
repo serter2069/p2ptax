@@ -153,10 +153,12 @@ model Promotion {
   city         String
   tier         PromotionTier
   expiresAt    DateTime
+  reminderSent Boolean       @default(false)
   createdAt    DateTime      @default(now())
 
   @@index([city, tier, expiresAt])
   @@index([specialistId])
+  @@index([reminderSent, expiresAt])
   @@map("promotions")
 }
 
