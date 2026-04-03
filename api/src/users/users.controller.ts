@@ -30,9 +30,10 @@ class SetupSpecialistProfileDto {
   @ArrayMinSize(1)
   cities!: string[];
 
-  @IsString()
-  @MinLength(1)
-  services!: string;
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1)
+  services!: string[];
 
   @IsArray()
   @IsString({ each: true })
