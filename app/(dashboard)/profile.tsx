@@ -162,8 +162,13 @@ export default function SpecialistProfileScreen() {
     );
   }
 
+  useEffect(() => {
+    if (error === 'profile_not_found') {
+      router.replace('/(dashboard)/specialist-profile');
+    }
+  }, [error, router]);
+
   if (error === 'profile_not_found') {
-    router.replace('/(dashboard)/specialist-profile');
     return null;
   }
 
