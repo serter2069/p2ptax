@@ -89,6 +89,19 @@ export class EmailService {
     }
   }
 
+  /** Notify specialist that their promotion expires in 3 days */
+  async notifyPromotionExpiringSoon(specialistEmail: string, city: string): Promise<void> {
+    if (!process.env.SMTP_HOST) {
+      this.logger.log(`[DEV] Promotion expiry reminder → ${specialistEmail} for city ${city}`);
+      return;
+    }
+    await this.send({
+      to: specialistEmail,
+      subject: 'Продвижение истекает через 3 дня',
+      text: `Ваше продвижение в городе ${city} истекает через 3 дня.\n\nОбратитесь через чат для продления.`,
+    });
+  }
+
   /** Send a one-time password to the user */
   async sendOtp(email: string, code: string): Promise<void> {
     if (!this.transporter) {
