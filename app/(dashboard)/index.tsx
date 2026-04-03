@@ -147,28 +147,53 @@ export default function DashboardHub() {
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Быстрые действия</Text>
       <View style={styles.actionsRow}>
-        {isClient && (
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push('/(dashboard)/requests/new')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.actionIconWrap}>
-              <Ionicons name="document-text-outline" size={22} color={Colors.brandPrimary} />
-            </View>
-            <Text style={styles.actionLabel}>Создать запрос</Text>
-          </TouchableOpacity>
+        {isClient ? (
+          <>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/(dashboard)/requests/new')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionIconWrap}>
+                <Ionicons name="document-text-outline" size={22} color={Colors.brandPrimary} />
+              </View>
+              <Text style={styles.actionLabel}>Создать запрос</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/specialists' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionIconWrap}>
+                <Ionicons name="search-outline" size={22} color={Colors.brandPrimary} />
+              </View>
+              <Text style={styles.actionLabel}>Найти специалиста</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/(dashboard)/city-requests')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionIconWrap}>
+                <Ionicons name="location-outline" size={22} color={Colors.brandPrimary} />
+              </View>
+              <Text style={styles.actionLabel}>Запросы города</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/(dashboard)/responses')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionIconWrap}>
+                <Ionicons name="checkmark-circle-outline" size={22} color={Colors.brandPrimary} />
+              </View>
+              <Text style={styles.actionLabel}>Мои отклики</Text>
+            </TouchableOpacity>
+          </>
         )}
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={() => router.push('/specialists' as any)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.actionIconWrap}>
-            <Ionicons name="search-outline" size={22} color={Colors.brandPrimary} />
-          </View>
-          <Text style={styles.actionLabel}>Найти специалиста</Text>
-        </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionCard}
           onPress={() => router.push('/(dashboard)/messages')}
@@ -183,21 +208,19 @@ export default function DashboardHub() {
     </View>
   );
 
-  const recentSection = (
+  const recentSection = isClient ? (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Последние запросы</Text>
       {recentRequests.length === 0 ? (
         <View style={styles.emptyRecent}>
           <Text style={styles.emptyRecentText}>Создайте первый запрос</Text>
-          {isClient && (
-            <Button
-              onPress={() => router.push('/(dashboard)/requests/new')}
-              variant="primary"
-              style={styles.emptyBtn}
-            >
-              Создать запрос
-            </Button>
-          )}
+          <Button
+            onPress={() => router.push('/(dashboard)/requests/new')}
+            variant="primary"
+            style={styles.emptyBtn}
+          >
+            Создать запрос
+          </Button>
         </View>
       ) : (
         recentRequests.map((req) => (
@@ -225,7 +248,7 @@ export default function DashboardHub() {
         ))
       )}
     </View>
-  );
+  ) : null;
 
   // --- Desktop/tablet ---
   if (!isMobile) {
