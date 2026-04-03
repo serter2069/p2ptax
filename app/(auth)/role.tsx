@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
@@ -16,9 +17,11 @@ export default function RoleScreen() {
   const router = useRouter();
   useAuth();
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   async function handleSelect(role: 'CLIENT' | 'SPECIALIST') {
     setLoading(true);
+    setSelectedRole(role);
     try {
       await api.patch('/users/me', { role });
       // Navigate to onboarding for specialists, dashboard for clients
@@ -31,6 +34,7 @@ export default function RoleScreen() {
       Alert.alert('Ошибка', 'Не удалось сохранить роль. Попробуйте снова.');
     } finally {
       setLoading(false);
+      setSelectedRole(null);
     }
   }
 
@@ -51,7 +55,11 @@ export default function RoleScreen() {
             activeOpacity={0.8}
             disabled={loading}
           >
-            <Text style={styles.cardIcon}>{'\u{1F50D}'}</Text>
+            {selectedRole === 'CLIENT' ? (
+              <ActivityIndicator size="large" color={Colors.brandPrimary} style={styles.cardSpinner} />
+            ) : (
+              <Text style={styles.cardIcon}>{'\u{1F50D}'}</Text>
+            )}
             <Text style={styles.cardTitle}>Я ищу специалиста</Text>
             <Text style={styles.cardDesc}>
               Опубликую запрос и получу предложения от налоговых консультантов
@@ -64,7 +72,11 @@ export default function RoleScreen() {
             activeOpacity={0.8}
             disabled={loading}
           >
-            <Text style={styles.cardIcon}>{'\u{1F4BC}'}</Text>
+            {selectedRole === 'SPECIALIST' ? (
+              <ActivityIndicator size="large" color={Colors.brandPrimary} style={styles.cardSpinner} />
+            ) : (
+              <Text style={styles.cardIcon}>{'\u{1F4BC}'}</Text>
+            )}
             <Text style={styles.cardTitle}>Я специалист</Text>
             <Text style={styles.cardDesc}>
               Буду получать заявки от клиентов и предлагать свои услуги
@@ -127,6 +139,10 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 36,
+    marginBottom: Spacing.xs,
+  },
+  cardSpinner: {
+    height: 36,
     marginBottom: Spacing.xs,
   },
   cardTitle: {

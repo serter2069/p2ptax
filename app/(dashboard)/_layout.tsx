@@ -18,6 +18,7 @@ const CLIENT_NAV_ITEMS: SidebarNavItem[] = [
 const SPECIALIST_NAV_ITEMS: SidebarNavItem[] = [
   { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
   { label: 'Мой профиль', icon: 'person-outline', route: '/(dashboard)/profile', segment: 'profile' },
+  { label: 'Мои отклики', icon: 'checkmark-circle-outline', route: '/(dashboard)/responses', segment: 'responses' },
   { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
   { label: 'Запросы города', icon: 'location-outline', route: '/(dashboard)/city-requests', segment: 'city-requests' },
   { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'requests' },

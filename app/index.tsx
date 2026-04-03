@@ -106,6 +106,7 @@ const btnStyles = StyleSheet.create({
 export default function LandingScreen() {
   const router = useRouter();
   const { isMobile, isTablet, isDesktop } = useBreakpoints();
+  const [heroImageError, setHeroImageError] = React.useState(false);
 
   const isWide = !isMobile;
   const sectionMaxWidth: number | '100%' = isDesktop ? 1200 : isTablet ? 900 : '100%';
@@ -163,11 +164,17 @@ export default function LandingScreen() {
 
             {isWide && (
               <View style={[styles.heroRight, styles.heroRightWide]}>
-                <Image
-                  source={{ uri: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80' }}
-                  style={[styles.heroImage, styles.heroImageWide]}
-                  resizeMode="cover"
-                />
+                {heroImageError ? (
+                  <View style={[styles.heroImage, styles.heroImageWide, styles.heroImageFallback]} />
+                ) : (
+                  <Image
+                    source={{ uri: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80' }}
+                    style={[styles.heroImage, styles.heroImageWide]}
+                    resizeMode="cover"
+                    onError={() => setHeroImageError(true)}
+                    accessibilityLabel="Налоговый консультант за работой"
+                  />
+                )}
               </View>
             )}
           </View>
@@ -542,6 +549,12 @@ const styles = StyleSheet.create({
   },
   heroImageWide: {
     height: 400,
+  },
+  heroImageFallback: {
+    backgroundColor: '#1A5BA8',
+    ...(Platform.OS === 'web'
+      ? { background: 'linear-gradient(135deg, #1A5BA8 0%, #2368BE 100%)' } as any
+      : {}),
   },
 
   // ---- Launch Banner (replaces fake stats) ----

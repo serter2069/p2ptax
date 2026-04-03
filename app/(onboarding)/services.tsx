@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -54,10 +55,29 @@ export default function ServicesScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const POPULAR_SERVICES = [
+    'Декларации 3-НДФЛ',
+    'Налоговые споры',
+    'Оптимизация налогов',
+    'Вычеты НДФЛ',
+    'Регистрация ООО/ИП',
+    'НДС консультации',
+    'Налоговый аудит',
+    'Представительство в суде',
+  ];
+
   const [services, setServices] = useState('');
+  const [selectedChips, setSelectedChips] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [focused, setFocused] = useState(false);
+
+  function handleChipToggle(chip: string) {
+    setSelectedChips((prev) =>
+      prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip],
+    );
+    if (error) setError('');
+  }
 
   function handleChange(value: string) {
     setServices(value);
@@ -66,7 +86,8 @@ export default function ServicesScreen() {
 
   async function handleSubmit() {
     const trimmed = services.trim();
-    if (!trimmed) {
+    const combined = [...selectedChips, ...(trimmed ? [trimmed] : [])].join(', ');
+    if (!combined) {
       setError('Расскажите о своих услугах');
       return;
     }
@@ -81,7 +102,7 @@ export default function ServicesScreen() {
       await api.patch('/users/me/specialist-profile', {
         cities,
         fnsOffices,
-        services: trimmed,
+        services: combined,
       });
       // Mark onboarding complete — sets isNewUser=false in store + AsyncStorage
       await completeOnboarding(user?.username ?? '');
@@ -138,6 +159,28 @@ export default function ServicesScreen() {
               </Text>
             </View>
 
+            {/* Popular services chips */}
+            <View style={styles.chipsContainer}>
+              <Text style={styles.chipsLabel}>Популярные услуги</Text>
+              <View style={styles.chipsRow}>
+                {POPULAR_SERVICES.map((svc) => {
+                  const isActive = selectedChips.includes(svc);
+                  return (
+                    <TouchableOpacity
+                      key={svc}
+                      onPress={() => handleChipToggle(svc)}
+                      style={[styles.chip, isActive && styles.chipActive]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                        {svc}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
             {/* Textarea */}
             <View style={styles.form}>
               <View style={styles.textareaWrapper}>
@@ -165,7 +208,7 @@ export default function ServicesScreen() {
               <Button
                 onPress={handleSubmit}
                 loading={loading}
-                disabled={loading || services.trim().length === 0}
+                disabled={loading || (services.trim().length === 0 && selectedChips.length === 0)}
                 style={styles.btn}
               >
                 Завершить настройку
@@ -290,6 +333,39 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.statusError,
     marginTop: 2,
+  },
+  chipsContainer: {
+    gap: Spacing.xs,
+  },
+  chipsLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textSecondary,
+    marginBottom: 2,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  chip: {
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  chipActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  chipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  chipTextActive: {
+    color: '#FFFFFF',
   },
   btn: {
     width: '100%',
