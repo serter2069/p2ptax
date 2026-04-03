@@ -94,33 +94,33 @@ export class SpecialistsService {
     return Array.from(citySet).sort((a, b) => a.localeCompare(b, 'ru'));
   }
 
-  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string) {
+  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string, page: number = 1, limit: number = 9) {
     const now = new Date();
-    const where: any = { displayName: { not: null } };
+    const profileWhere: any = { displayName: { not: null } };
     if (city) {
       // Support comma-separated list of cities (multi-select)
       const cityList = city.split(',').map((c) => c.trim()).filter(Boolean);
       if (cityList.length === 1) {
-        where.cities = { has: cityList[0] };
+        profileWhere.cities = { has: cityList[0] };
       } else if (cityList.length > 1) {
-        where.cities = { hasSome: cityList };
+        profileWhere.cities = { hasSome: cityList };
       }
     }
-    if (badge) where.badges = { has: badge };
+    if (badge) profileWhere.badges = { has: badge };
     if (fns) {
       const fnsList = fns.split(',').map((f) => f.trim()).filter(Boolean);
-      where.fnsOffices = fnsList.length === 1 ? { has: fnsList[0] } : { hasSome: fnsList };
+      profileWhere.fnsOffices = fnsList.length === 1 ? { has: fnsList[0] } : { hasSome: fnsList };
     }
 
     // Category filter: match against services array
     if (category && category.trim()) {
-      where.services = { hasSome: [category.trim()] };
+      profileWhere.services = { hasSome: [category.trim()] };
     }
 
     // Search filter: match against displayName, nick, services, cities, bio
     if (search && search.trim()) {
       const term = search.trim();
-      where.OR = [
+      profileWhere.OR = [
         { displayName: { contains: term, mode: 'insensitive' } },
         { nick: { contains: term, mode: 'insensitive' } },
         { bio: { contains: term, mode: 'insensitive' } },
@@ -128,13 +128,15 @@ export class SpecialistsService {
       ];
     }
 
-    const profiles = await this.prisma.specialistProfile.findMany({
-      where,
+    // PASS 1: Fetch all filtered profiles (lightweight — only fields needed for sorting)
+    const allProfiles = await this.prisma.specialistProfile.findMany({
+      where: profileWhere,
+      select: { userId: true, experience: true, createdAt: true },
     });
 
-    // Get active promotions to rank promoted specialists first
-    // When city filter is active, only show promoted badge for that city
-    const promotionWhere: any = { expiresAt: { gt: now } };
+    // Get active promotions for ALL matching userIds (needed for correct sort order)
+    const allUserIds = allProfiles.map((p) => p.userId);
+    const promotionWhere: any = { expiresAt: { gt: now }, specialistId: { in: allUserIds } };
     if (city) {
       const cityList = city.split(',').map((c) => c.trim()).filter(Boolean);
       promotionWhere.city = cityList.length === 1 ? cityList[0] : { in: cityList };
@@ -153,19 +155,17 @@ export class SpecialistsService {
       if (tierVal > current) promotionMap.set(p.specialistId, tierVal);
     }
 
-    // Compute activity for all profiles
-    const userIds = profiles.map((p) => p.userId);
+    // Compute activity aggregates for all profiles in batch (for sort by rating/responses)
     const responseCounts = await this.prisma.response.groupBy({
       by: ['specialistId'],
-      where: { specialistId: { in: userIds } },
+      where: { specialistId: { in: allUserIds } },
       _count: { id: true },
     });
     const countMap = new Map(responseCounts.map((r) => [r.specialistId, r._count.id]));
 
-    // Compute rating aggregates for all profiles in one query
     const ratingAggs = await this.prisma.review.groupBy({
       by: ['specialistId'],
-      where: { specialistId: { in: userIds } },
+      where: { specialistId: { in: allUserIds } },
       _avg: { rating: true },
       _count: { id: true },
     });
@@ -176,8 +176,41 @@ export class SpecialistsService {
       ]),
     );
 
+    // Sort all profiles in-memory: promoted first (by tier desc), then by sort param
+    allProfiles.sort((a, b) => {
+      const aTier = promotionMap.get(a.userId) ?? 0;
+      const bTier = promotionMap.get(b.userId) ?? 0;
+      if (bTier !== aTier) return bTier - aTier;
+      if (sort === 'responses') {
+        return (countMap.get(b.userId) ?? 0) - (countMap.get(a.userId) ?? 0);
+      }
+      if (sort === 'experience') return (b.experience ?? 0) - (a.experience ?? 0);
+      if (sort === 'rating') {
+        const aRating = ratingMap.get(a.userId)?.avgRating ?? 0;
+        const bRating = ratingMap.get(b.userId)?.avgRating ?? 0;
+        return bRating - aRating;
+      }
+      // Default: newest first
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+
+    const total = allProfiles.length;
+    const pages = Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+    const pageUserIds = allProfiles.slice(skip, skip + limit).map((p) => p.userId);
+
+    // PASS 2: Fetch full data only for the current page
+    const pageProfiles = await this.prisma.specialistProfile.findMany({
+      where: { userId: { in: pageUserIds } },
+    });
+
+    // Restore sort order (DB does not guarantee order for IN queries)
+    const orderedProfiles = pageUserIds
+      .map((id) => pageProfiles.find((p) => p.userId === id))
+      .filter((p): p is NonNullable<typeof p> => p !== undefined);
+
     // Build result with promotion rank and activity
-    const result = profiles.map((profile) => {
+    const items = orderedProfiles.map((profile) => {
       // Strip internal IDs, contacts and bio from public catalog response
       const { contacts: _contacts, bio: _bio, id: _id, userId, ...rest } = profile;
       const ratingData = ratingMap.get(userId);
@@ -193,21 +226,7 @@ export class SpecialistsService {
       };
     });
 
-    // Sort: promoted first (by tier desc), then by sort param
-    result.sort((a, b) => {
-      if (b.promotionTier !== a.promotionTier) return b.promotionTier - a.promotionTier;
-      if (sort === 'responses') return (b.activity.responseCount) - (a.activity.responseCount);
-      if (sort === 'experience') return (b.experience ?? 0) - (a.experience ?? 0);
-      if (sort === 'rating') {
-        const aRating = a.activity.avgRating ?? 0;
-        const bRating = b.activity.avgRating ?? 0;
-        return bRating - aRating;
-      }
-      // Default: newest first
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    });
-
-    return result;
+    return { items, total, page, pages };
   }
 
   async updateAvatarUrl(userId: string, avatarUrl: string) {
