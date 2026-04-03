@@ -42,6 +42,8 @@ interface SpecialistItem {
 const SORT_OPTIONS: { label: string; value: string }[] = [
   { label: 'По рейтингу', value: 'rating' },
   { label: 'По новизне', value: 'newest' },
+  { label: 'По опыту', value: 'experience' },
+  { label: 'По откликам', value: 'responses' },
 ];
 
 const SPECIALIZATION_FILTERS = [
@@ -67,6 +69,7 @@ export default function SpecialistsCatalogScreen() {
 
   const [searchText, setSearchText] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
   const [sort, setSort] = useState('rating');
 
@@ -99,6 +102,7 @@ export default function SpecialistsCatalogScreen() {
       if (fnsFilterParam) params.set('fns', fnsFilterParam);
       if (sort) params.set('sort', sort);
       if (searchDebounced.trim()) params.set('search', searchDebounced.trim());
+      if (selectedCategory) params.set('category', selectedCategory);
 
       const query = params.toString();
       const data = await api.get<SpecialistItem[]>(
@@ -116,12 +120,12 @@ export default function SpecialistsCatalogScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [fnsFilterParam, sort, searchDebounced]);
+  }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
 
   useEffect(() => {
     fetchSpecialists();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fnsFilterParam, sort, searchDebounced]);
+  }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
 
   function handleRefresh() {
     setRefreshing(true);
@@ -311,20 +315,11 @@ export default function SpecialistsCatalogScreen() {
                 contentContainerStyle={styles.chipsRow}
               >
                 {SPECIALIZATION_FILTERS.map((spec) => {
-                  const activeSpec = SPECIALIZATION_FILTERS.find(
-                    (s) => s.value !== '' && searchDebounced === s.value
-                  );
-                  const isActive = spec.value === '' ? !activeSpec : searchDebounced === spec.value;
+                  const isActive = spec.value === selectedCategory;
                   return (
                     <TouchableOpacity
                       key={spec.value || '__all_spec__'}
-                      onPress={() => {
-                        if (spec.value === '') {
-                          setSearchText('');
-                        } else {
-                          setSearchText(spec.value);
-                        }
-                      }}
+                      onPress={() => setSelectedCategory(spec.value)}
                       style={[styles.chip, isActive && styles.chipActive]}
                       activeOpacity={0.7}
                     >

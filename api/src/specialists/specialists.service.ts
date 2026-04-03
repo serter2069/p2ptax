@@ -3,7 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
 
-const ALLOWED_BADGES = ['verified', 'familiar'];
+// Badges users can self-assign; 'familiar' and 'fns_insider' require admin
+const ALLOWED_BADGES = ['verified'];
 
 @Injectable()
 export class SpecialistsService {
@@ -90,7 +91,7 @@ export class SpecialistsService {
     return Array.from(citySet).sort((a, b) => a.localeCompare(b, 'ru'));
   }
 
-  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string) {
+  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string) {
     const now = new Date();
     const where: any = { displayName: { not: null } };
     if (city) {
@@ -106,6 +107,11 @@ export class SpecialistsService {
     if (fns) {
       const fnsList = fns.split(',').map((f) => f.trim()).filter(Boolean);
       where.fnsOffices = fnsList.length === 1 ? { has: fnsList[0] } : { hasSome: fnsList };
+    }
+
+    // Category filter: match against services array
+    if (category && category.trim()) {
+      where.services = { hasSome: [category.trim()] };
     }
 
     // Search filter: match against displayName, nick, services, cities, bio
@@ -182,6 +188,7 @@ export class SpecialistsService {
     result.sort((a, b) => {
       if (b.promotionTier !== a.promotionTier) return b.promotionTier - a.promotionTier;
       if (sort === 'responses') return (b.activity.responseCount) - (a.activity.responseCount);
+      if (sort === 'experience') return (b.experience ?? 0) - (a.experience ?? 0);
       if (sort === 'rating') {
         const aRating = a.activity.avgRating ?? 0;
         const bRating = b.activity.avgRating ?? 0;
@@ -192,6 +199,15 @@ export class SpecialistsService {
     });
 
     return result;
+  }
+
+  async adminUpdateBadges(specialistId: string, badges: string[]) {
+    const profile = await this.prisma.specialistProfile.findUnique({ where: { userId: specialistId } });
+    if (!profile) throw new NotFoundException('Profile not found');
+    return this.prisma.specialistProfile.update({
+      where: { userId: specialistId },
+      data: { badges },
+    });
   }
 
   private async computeActivity(userId: string) {

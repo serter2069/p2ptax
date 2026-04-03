@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
   FlatList,
+  ScrollView,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
@@ -20,6 +21,17 @@ import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
 import { Button } from '../../components/Button';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
+
+const CATEGORY_FILTERS = [
+  { label: 'Все', value: '' },
+  { label: 'НДФЛ', value: 'НДФЛ' },
+  { label: 'НДС', value: 'НДС' },
+  { label: 'Споры', value: 'Споры' },
+  { label: 'Декларации', value: 'Декларации' },
+  { label: 'Оптимизация', value: 'Оптимизация' },
+  { label: 'Вычеты', value: 'Вычеты' },
+  { label: 'Аудит', value: 'Аудит' },
+];
 
 interface RequestItem {
   id: string;
@@ -52,6 +64,8 @@ export default function RequestsFeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [activeOnly, setActiveOnly] = useState(true);
 
   const fetchFeed = useCallback(
     async (opts: { pageNum?: number; replace?: boolean; isRefresh?: boolean } = {}) => {
@@ -166,6 +180,20 @@ export default function RequestsFeedScreen() {
     );
   }
 
+  // Client-side filtering by category and active status
+  const filteredItems = useMemo(() => {
+    let result = items;
+    if (selectedCategory) {
+      result = result.filter((item) =>
+        item.category?.includes(selectedCategory) || item.description.includes(selectedCategory),
+      );
+    }
+    if (activeOnly) {
+      result = result.filter((item) => item.status === 'OPEN');
+    }
+    return result;
+  }, [items, selectedCategory, activeOnly]);
+
   const hasMore = items.length < total;
 
   return (
@@ -177,7 +205,7 @@ export default function RequestsFeedScreen() {
       {/* key={numColumns} forces FlatList remount when columns change on resize */}
       <FlatList
         key={numColumns}
-        data={items}
+        data={filteredItems}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         numColumns={numColumns}
@@ -203,9 +231,58 @@ export default function RequestsFeedScreen() {
               placeholder="Например, Тбилиси"
               autoCapitalize="words"
             />
-            {total > 0 && (
+
+            {/* Category filter chips */}
+            <View>
+              <Text style={styles.filterLabel}>Категория</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
+              >
+                {CATEGORY_FILTERS.map((cat) => {
+                  const isActive = cat.value === selectedCategory;
+                  return (
+                    <TouchableOpacity
+                      key={cat.value || '__all_cat__'}
+                      onPress={() => setSelectedCategory(cat.value)}
+                      style={[styles.chip, isActive && styles.chipActive]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Active/All toggle */}
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                onPress={() => setActiveOnly(true)}
+                style={[styles.toggleBtn, activeOnly && styles.toggleBtnActive]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.toggleText, activeOnly && styles.toggleTextActive]}>
+                  Активные
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setActiveOnly(false)}
+                style={[styles.toggleBtn, !activeOnly && styles.toggleBtnActive]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.toggleText, !activeOnly && styles.toggleTextActive]}>
+                  Все
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {filteredItems.length > 0 && (
               <Text style={styles.totalText}>
-                Найдено запросов: {total}
+                Найдено {filteredItems.length} запросов
               </Text>
             )}
           </View>
@@ -303,6 +380,60 @@ const styles = StyleSheet.create({
   totalText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textMuted,
+  },
+  filterLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
+    marginBottom: Spacing.sm,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  chip: {
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  chipActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  chipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  chipTextActive: {
+    color: Colors.white,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  toggleBtn: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  toggleBtnActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  toggleText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  toggleTextActive: {
+    color: Colors.white,
   },
   // Mobile: centered single column, maxWidth 430
   cardWrapperMobile: {
