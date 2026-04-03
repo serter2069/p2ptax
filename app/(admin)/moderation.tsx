@@ -36,11 +36,14 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
+const VERIFIED_BADGE = 'verified';
+
 export default function AdminModeration() {
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const fetchSpecialists = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -60,12 +63,34 @@ export default function AdminModeration() {
 
   const handleRefresh = () => { setRefreshing(true); fetchSpecialists(true); };
 
-  const handleApprove = () => {
-    Alert.alert('Скоро', 'Модерация профилей будет доступна в следующей версии.');
+  const handleApprove = async (s: SpecialistItem) => {
+    setActionLoading((prev) => ({ ...prev, [s.id]: true }));
+    try {
+      const newBadges = [...new Set([...s.badges, VERIFIED_BADGE])];
+      await api.patch(`/specialists/${s.user.id}/badges`, { badges: newBadges });
+      setSpecialists((prev) =>
+        prev.map((item) => item.id === s.id ? { ...item, badges: newBadges } : item)
+      );
+    } catch (e: any) {
+      Alert.alert('Ошибка', e?.message ?? 'Не удалось одобрить профиль');
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [s.id]: false }));
+    }
   };
 
-  const handleReject = () => {
-    Alert.alert('Скоро', 'Модерация профилей будет доступна в следующей версии.');
+  const handleReject = async (s: SpecialistItem) => {
+    setActionLoading((prev) => ({ ...prev, [s.id]: true }));
+    try {
+      const newBadges = s.badges.filter((b) => b !== VERIFIED_BADGE);
+      await api.patch(`/specialists/${s.user.id}/badges`, { badges: newBadges });
+      setSpecialists((prev) =>
+        prev.map((item) => item.id === s.id ? { ...item, badges: newBadges } : item)
+      );
+    } catch (e: any) {
+      Alert.alert('Ошибка', e?.message ?? 'Не удалось отклонить профиль');
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [s.id]: false }));
+    }
   };
 
   return (
@@ -80,7 +105,7 @@ export default function AdminModeration() {
       >
         <View style={styles.container}>
           <Text style={styles.hint}>
-            Профили исполнителей. Кнопки одобрения/отклонения будут доступны после добавления статусов модерации.
+            Профили исполнителей. Значок «verified» добавляет/убирает кнопка одобрения.
           </Text>
 
           {loading ? (
@@ -122,12 +147,38 @@ export default function AdminModeration() {
                   ) : null}
 
                   <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.approveBtn} onPress={handleApprove} activeOpacity={0.75}>
-                      <Text style={styles.approveBtnText}>Одобрить</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.rejectBtn} onPress={handleReject} activeOpacity={0.75}>
-                      <Text style={styles.rejectBtnText}>Отклонить</Text>
-                    </TouchableOpacity>
+                    {actionLoading[s.id] ? (
+                      <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.cardLoader} />
+                    ) : (
+                      <>
+                        <TouchableOpacity
+                          style={[
+                            styles.approveBtn,
+                            s.badges.includes(VERIFIED_BADGE) && styles.approveBtnActive,
+                          ]}
+                          onPress={() => handleApprove(s)}
+                          activeOpacity={0.75}
+                          disabled={s.badges.includes(VERIFIED_BADGE)}
+                        >
+                          <Text style={styles.approveBtnText}>
+                            {s.badges.includes(VERIFIED_BADGE) ? 'Одобрен' : 'Одобрить'}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.rejectBtn}
+                          onPress={() => handleReject(s)}
+                          activeOpacity={0.75}
+                          disabled={!s.badges.includes(VERIFIED_BADGE)}
+                        >
+                          <Text style={[
+                            styles.rejectBtnText,
+                            !s.badges.includes(VERIFIED_BADGE) && styles.btnTextDisabled,
+                          ]}>
+                            Отклонить
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
                 </View>
               ))}
@@ -247,5 +298,17 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.medium,
     color: Colors.statusError,
+  },
+  approveBtnActive: {
+    backgroundColor: Colors.statusSuccess,
+    borderColor: Colors.statusSuccess,
+    opacity: 0.7,
+  },
+  btnTextDisabled: {
+    opacity: 0.35,
+  },
+  cardLoader: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
   },
 });
