@@ -125,6 +125,38 @@ export class ReviewsService {
     return { items, total, page, pageSize: PAGE_SIZE };
   }
 
+  async adminFindAll(page = 1) {
+    const skip = (page - 1) * PAGE_SIZE;
+    const [items, total] = await Promise.all([
+      this.prisma.review.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: PAGE_SIZE,
+        include: {
+          specialist: {
+            select: {
+              id: true,
+              email: true,
+              specialistProfile: { select: { nick: true } },
+            },
+          },
+          client: { select: { id: true, email: true } },
+        },
+      }),
+      this.prisma.review.count(),
+    ]);
+    return { items, total, page, pageSize: PAGE_SIZE };
+  }
+
+  async adminDelete(id: string) {
+    const review = await this.prisma.review.findUnique({ where: { id } });
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+    await this.prisma.review.delete({ where: { id } });
+    return { success: true };
+  }
+
   /**
    * Check if a client can review a specialist:
    * - has a CLOSED request that the specialist responded to
