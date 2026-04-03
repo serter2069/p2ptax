@@ -12,7 +12,6 @@ const CLIENT_NAV_ITEMS: SidebarNavItem[] = [
   { label: 'Мои запросы', icon: 'document-text-outline', route: '/(dashboard)/requests', segment: 'requests' },
   { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
   { label: 'Специалисты', icon: 'search-outline', route: '/specialists', segment: 'specialists' },
-  { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'requests' },
   { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
 ];
 

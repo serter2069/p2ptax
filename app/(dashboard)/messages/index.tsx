@@ -39,19 +39,40 @@ interface ThreadItem {
   createdAt: string;
 }
 
+function getDisplayName(participant: ThreadParticipant): string {
+  // Extract readable name from email
+  const local = participant.email.split('@')[0] ?? '';
+  // Capitalize first letter
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
+
+function getInitials(participant: ThreadParticipant): string {
+  const local = participant.email.split('@')[0] ?? '';
+  return local.slice(0, 2).toUpperCase();
+}
+
 function formatTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-  if (diffDays === 0) {
-    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const hours = date.getHours().toString().padStart(2, '0');
+  const mins = date.getMinutes().toString().padStart(2, '0');
+
+  if (msgDay.getTime() === today.getTime()) {
+    return `${hours}:${mins}`;
   }
-  if (diffDays < 7) {
-    return date.toLocaleDateString('ru-RU', { weekday: 'short' });
+  if (msgDay.getTime() === yesterday.getTime()) {
+    return 'Вчера';
   }
   return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+}
+
+function truncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + '...';
 }
 
 export default function MessagesScreen() {
@@ -100,9 +121,16 @@ export default function MessagesScreen() {
     );
   }
 
-  function renderItem({ item }: { item: ThreadItem }) {
+  function renderItem({ item, index }: { item: ThreadItem; index: number }) {
     const other = getOtherParticipant(item);
     const unread = isUnread(item);
+    const displayName = getDisplayName(other);
+    const initials = getInitials(other);
+
+    const previewText = item.lastMessage
+      ? (item.lastMessage.senderId === user?.userId ? 'Вы: ' : '') +
+        truncate(item.lastMessage.content, 45)
+      : 'Нет сообщений';
 
     return (
       <TouchableOpacity
@@ -111,29 +139,29 @@ export default function MessagesScreen() {
         activeOpacity={0.7}
       >
         <View style={styles.avatarWrap}>
-          <Avatar name={other.email} size="md" />
+          <Avatar name={initials} size="md" />
           {unread && <View style={styles.unreadDot} />}
         </View>
 
         <View style={styles.info}>
           <View style={styles.infoTop}>
-            <Text style={[styles.email, unread && styles.emailBold]} numberOfLines={1}>
-              {other.email}
+            <Text style={[styles.displayName, unread && styles.displayNameBold]} numberOfLines={1}>
+              {displayName}
             </Text>
-            {item.lastMessage && (
-              <Text style={styles.time}>
-                {formatTime(item.lastMessage.createdAt)}
-              </Text>
-            )}
+            <View style={styles.timeRow}>
+              {unread && <View style={styles.unreadBadge} />}
+              {item.lastMessage && (
+                <Text style={[styles.time, unread && styles.timeBold]}>
+                  {formatTime(item.lastMessage.createdAt)}
+                </Text>
+              )}
+            </View>
           </View>
           <Text
             style={[styles.preview, unread && styles.previewBold]}
             numberOfLines={1}
           >
-            {item.lastMessage
-              ? (item.lastMessage.senderId === user?.userId ? 'Вы: ' : '') +
-                item.lastMessage.content
-              : 'Нет сообщений'}
+            {previewText}
           </Text>
         </View>
       </TouchableOpacity>
@@ -170,7 +198,7 @@ export default function MessagesScreen() {
             ) : (
               <EmptyState
                 title="Нет диалогов"
-                subtitle="Диалоги появятся, когда специалист ответит на ваш запрос"
+                subtitle="У вас пока нет диалогов. Напишите специалисту!"
               />
             )
           }
@@ -228,10 +256,17 @@ const styles = StyleSheet.create({
     right: 0,
     width: 10,
     height: 10,
-    borderRadius: BorderRadius.sm,
+    borderRadius: 5,
     backgroundColor: Colors.brandPrimary,
     borderWidth: 2,
     borderColor: Colors.bgPrimary,
+  },
+  unreadBadge: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.brandPrimary,
+    marginRight: Spacing.xs,
   },
   info: {
     flex: 1,
@@ -242,20 +277,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  email: {
+  displayName: {
     flex: 1,
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.regular,
     color: Colors.textPrimary,
     marginRight: Spacing.sm,
   },
-  emailBold: {
+  displayNameBold: {
     fontWeight: Typography.fontWeight.semibold,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   time: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
     flexShrink: 0,
+  },
+  timeBold: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
   },
   preview: {
     fontSize: Typography.fontSize.sm,
@@ -270,6 +314,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     width: '100%',
     maxWidth: 430,
-    marginLeft: 72, // align with text, after avatar
+    marginLeft: 72,
   },
 });

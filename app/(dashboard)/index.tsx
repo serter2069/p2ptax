@@ -20,13 +20,31 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 interface MyRequest {
   id: string;
+  description: string;
+  city: string;
   status: string;
+  createdAt: string;
   _count: { responses: number };
 }
 
 interface ThreadItem {
   id: string;
   unreadCount?: number;
+}
+
+function getDisplayName(user: { email: string; username?: string | null } | null): string {
+  if (!user) return '';
+  if (user.username) return user.username;
+  const local = user.email.split('@')[0] ?? '';
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  const months = ['янв.', 'фев.', 'мар.', 'апр.', 'мая', 'июн.', 'июл.', 'авг.', 'сен.', 'окт.', 'ноя.', 'дек.'];
+  const hours = d.getHours().toString().padStart(2, '0');
+  const mins = d.getMinutes().toString().padStart(2, '0');
+  return `${d.getDate()} ${months[d.getMonth()]} в ${hours}:${mins}`;
 }
 
 export default function DashboardHub() {
@@ -36,6 +54,7 @@ export default function DashboardHub() {
   const [requestCount, setRequestCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
   const [threadCount, setThreadCount] = useState(0);
+  const [recentRequests, setRecentRequests] = useState<MyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -49,6 +68,7 @@ export default function DashboardHub() {
       setRequestCount(requests.length);
       setActiveCount(requests.filter((r) => r.status === 'OPEN').length);
       setThreadCount(Array.isArray(threads) ? threads.length : 0);
+      setRecentRequests(requests.slice(0, 3));
     } catch {
       // silently fail, show 0
     } finally {
@@ -88,7 +108,123 @@ export default function DashboardHub() {
     router.replace('/');
   }
 
-  // --- Desktop/tablet: welcome + stats view (sidebar handles navigation) ---
+  const displayName = getDisplayName(user);
+  const isClient = user?.role !== 'SPECIALIST';
+
+  const statsSection = (
+    <View style={styles.statsRow}>
+      <TouchableOpacity
+        style={styles.statCard}
+        onPress={() => router.push('/(dashboard)/requests')}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.statValue}>{requestCount}</Text>
+        <Text style={styles.statLabel}>Всего запросов</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.statCard}
+        onPress={() => router.push('/(dashboard)/requests')}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.statValue}>{activeCount}</Text>
+        <Text style={styles.statLabel}>Активных</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.statCard}
+        onPress={() => router.push('/(dashboard)/messages')}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.statValue}>{threadCount}</Text>
+        <Text style={styles.statLabel}>Диалогов</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const quickActions = (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Быстрые действия</Text>
+      <View style={styles.actionsRow}>
+        {isClient && (
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push('/(dashboard)/requests/new')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconWrap}>
+              <Ionicons name="document-text-outline" size={22} color={Colors.brandPrimary} />
+            </View>
+            <Text style={styles.actionLabel}>Создать запрос</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => router.push('/specialists' as any)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.actionIconWrap}>
+            <Ionicons name="search-outline" size={22} color={Colors.brandPrimary} />
+          </View>
+          <Text style={styles.actionLabel}>Найти специалиста</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => router.push('/(dashboard)/messages')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.actionIconWrap}>
+            <Ionicons name="chatbubble-outline" size={22} color={Colors.brandPrimary} />
+          </View>
+          <Text style={styles.actionLabel}>Мои сообщения</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const recentSection = (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Последние запросы</Text>
+      {recentRequests.length === 0 ? (
+        <View style={styles.emptyRecent}>
+          <Text style={styles.emptyRecentText}>Создайте первый запрос</Text>
+          {isClient && (
+            <Button
+              onPress={() => router.push('/(dashboard)/requests/new')}
+              variant="primary"
+              style={styles.emptyBtn}
+            >
+              Создать запрос
+            </Button>
+          )}
+        </View>
+      ) : (
+        recentRequests.map((req) => (
+          <TouchableOpacity
+            key={req.id}
+            style={styles.recentCard}
+            onPress={() => router.push(`/(dashboard)/requests/${req.id}`)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.recentTop}>
+              <Text style={styles.recentTitle} numberOfLines={1}>
+                {req.description.slice(0, 60)}
+              </Text>
+              <View style={[styles.recentStatus, req.status !== 'OPEN' && styles.recentStatusClosed]}>
+                <Text style={[styles.recentStatusText, req.status !== 'OPEN' && styles.recentStatusTextClosed]}>
+                  {req.status === 'OPEN' ? 'Открыт' : 'Закрыт'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.recentBottom}>
+              <Text style={styles.recentCity}>{req.city}</Text>
+              <Text style={styles.recentDate}>{formatDate(req.createdAt)}</Text>
+            </View>
+          </TouchableOpacity>
+        ))
+      )}
+    </View>
+  );
+
+  // --- Desktop/tablet ---
   if (!isMobile) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -96,48 +232,22 @@ export default function DashboardHub() {
           contentContainerStyle={styles.scrollWide}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={Colors.brandPrimary}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />
           }
         >
           <View style={styles.wideContainer}>
             <Text style={styles.wideGreeting}>
-              Добро пожаловать,
-            </Text>
-            <Text style={styles.wideEmail}>
-              {user?.email ?? ''}
+              {`\u0414\u043E\u0431\u0440\u043E \u043F\u043E\u0436\u0430\u043B\u043E\u0432\u0430\u0442\u044C, ${displayName}`}
             </Text>
 
             {loading ? (
               <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginTop: Spacing['3xl'] }} />
             ) : (
-              <View style={styles.statsRow}>
-                <View style={styles.statCard}>
-                  <Text style={styles.statValue}>{requestCount}</Text>
-                  <Text style={styles.statLabel}>Всего запросов</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statValue}>{activeCount}</Text>
-                  <Text style={styles.statLabel}>Активных запросов</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statValue}>{threadCount}</Text>
-                  <Text style={styles.statLabel}>Диалогов</Text>
-                </View>
-              </View>
-            )}
-
-            {!loading && user?.role !== 'SPECIALIST' && (
-              <Button
-                onPress={() => router.push('/(dashboard)/requests/new')}
-                variant="primary"
-                style={styles.wideCreateBtn}
-              >
-                Создать запрос
-              </Button>
+              <>
+                {statsSection}
+                {quickActions}
+                {recentSection}
+              </>
             )}
           </View>
         </ScrollView>
@@ -145,7 +255,7 @@ export default function DashboardHub() {
     );
   }
 
-  // --- Mobile: original hub navigation cards ---
+  // --- Mobile ---
   return (
     <SafeAreaView style={styles.safe}>
       <Header
@@ -160,139 +270,125 @@ export default function DashboardHub() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={Colors.brandPrimary}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />
         }
       >
         <View style={styles.container}>
           {/* Welcome */}
           <Text style={styles.welcome}>
-            {user?.email ?? 'Заказчик'}
+            {`\u0414\u043E\u0431\u0440\u043E \u043F\u043E\u0436\u0430\u043B\u043E\u0432\u0430\u0442\u044C, ${displayName}`}
           </Text>
 
           {loading ? (
             <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginTop: Spacing['3xl'] }} />
           ) : (
             <>
-              {/* Requests card */}
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => router.push('/(dashboard)/requests')}
-                activeOpacity={0.75}
-              >
-                <View style={styles.cardIcon}>
-                  <Ionicons name="document-text-outline" size={24} color={Colors.brandPrimary} />
-                </View>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle}>Мои запросы</Text>
-                  <Text style={styles.cardSub}>
-                    Всего: {requestCount} | Активных: {activeCount}
-                  </Text>
-                </View>
-                <Text style={styles.cardArrow}>{'>'}</Text>
-              </TouchableOpacity>
+              {statsSection}
+              {quickActions}
+              {recentSection}
 
-              {/* Threads card */}
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => router.push('/(dashboard)/messages')}
-                activeOpacity={0.75}
-              >
-                <View style={styles.cardIcon}>
-                  <Ionicons name="chatbubble-outline" size={24} color={Colors.brandPrimary} />
-                </View>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle}>Мои диалоги</Text>
-                  <Text style={styles.cardSub}>
-                    Диалогов: {threadCount}
-                  </Text>
-                </View>
-                <Text style={styles.cardArrow}>{'>'}</Text>
-              </TouchableOpacity>
+              {/* Navigation cards — mobile only */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Навигация</Text>
 
-              {/* Profile card — specialists only */}
-              {user?.role === 'SPECIALIST' && (
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => router.push('/(dashboard)/profile')}
+                  onPress={() => router.push('/(dashboard)/requests')}
                   activeOpacity={0.75}
                 >
                   <View style={styles.cardIcon}>
-                    <Ionicons name="person-outline" size={24} color={Colors.brandPrimary} />
+                    <Ionicons name="document-text-outline" size={24} color={Colors.brandPrimary} />
                   </View>
                   <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>Мой профиль</Text>
-                    <Text style={styles.cardSub}>Ник, города, услуги</Text>
+                    <Text style={styles.cardTitle}>Мои запросы</Text>
+                    <Text style={styles.cardSub}>
+                      Всего: {requestCount} | Активных: {activeCount}
+                    </Text>
                   </View>
-                  <Text style={styles.cardArrow}>{'>'}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
                 </TouchableOpacity>
-              )}
 
-              {/* City requests card — specialists only */}
-              {user?.role === 'SPECIALIST' && (
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => router.push('/(dashboard)/city-requests')}
+                  onPress={() => router.push('/(dashboard)/messages')}
                   activeOpacity={0.75}
                 >
                   <View style={styles.cardIcon}>
-                    <Ionicons name="map-outline" size={24} color={Colors.brandPrimary} />
+                    <Ionicons name="chatbubble-outline" size={24} color={Colors.brandPrimary} />
                   </View>
                   <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>Запросы в моих городах</Text>
-                    <Text style={styles.cardSub}>Найти клиентов рядом</Text>
+                    <Text style={styles.cardTitle}>Мои диалоги</Text>
+                    <Text style={styles.cardSub}>
+                      Диалогов: {threadCount}
+                    </Text>
                   </View>
-                  <Text style={styles.cardArrow}>{'>'}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
                 </TouchableOpacity>
-              )}
 
-              {/* My responses card — specialists only */}
-              {user?.role === 'SPECIALIST' && (
+                {user?.role === 'SPECIALIST' && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.card}
+                      onPress={() => router.push('/(dashboard)/profile')}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.cardIcon}>
+                        <Ionicons name="person-outline" size={24} color={Colors.brandPrimary} />
+                      </View>
+                      <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>Мой профиль</Text>
+                        <Text style={styles.cardSub}>Ник, города, услуги</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.card}
+                      onPress={() => router.push('/(dashboard)/city-requests')}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.cardIcon}>
+                        <Ionicons name="map-outline" size={24} color={Colors.brandPrimary} />
+                      </View>
+                      <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>Запросы в моих городах</Text>
+                        <Text style={styles.cardSub}>Найти клиентов рядом</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.card}
+                      onPress={() => router.push('/(dashboard)/responses')}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.cardIcon}>
+                        <Ionicons name="checkmark-circle-outline" size={24} color={Colors.brandPrimary} />
+                      </View>
+                      <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>Мои отклики</Text>
+                        <Text style={styles.cardSub}>Запросы, на которые вы откликнулись</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                    </TouchableOpacity>
+                  </>
+                )}
+
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => router.push('/(dashboard)/responses')}
+                  onPress={() => router.push('/(dashboard)/settings')}
                   activeOpacity={0.75}
                 >
                   <View style={styles.cardIcon}>
-                    <Ionicons name="checkmark-circle-outline" size={24} color={Colors.brandPrimary} />
+                    <Ionicons name="settings-outline" size={24} color={Colors.brandPrimary} />
                   </View>
                   <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>Мои отклики</Text>
-                    <Text style={styles.cardSub}>Запросы, на которые вы откликнулись</Text>
+                    <Text style={styles.cardTitle}>Настройки</Text>
+                    <Text style={styles.cardSub}>Уведомления, аккаунт</Text>
                   </View>
-                  <Text style={styles.cardArrow}>{'>'}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
                 </TouchableOpacity>
-              )}
-
-              {/* Settings card */}
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => router.push('/(dashboard)/settings')}
-                activeOpacity={0.75}
-              >
-                <View style={styles.cardIcon}>
-                  <Ionicons name="settings-outline" size={24} color={Colors.brandPrimary} />
-                </View>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle}>Настройки</Text>
-                  <Text style={styles.cardSub}>Уведомления, аккаунт</Text>
-                </View>
-                <Text style={styles.cardArrow}>{'>'}</Text>
-              </TouchableOpacity>
-
-              {/* Quick create — clients only */}
-              {user?.role !== 'SPECIALIST' && (
-                <Button
-                  onPress={() => router.push('/(dashboard)/requests/new')}
-                  variant="primary"
-                  style={styles.createBtn}
-                >
-                  Создать запрос
-                </Button>
-              )}
+              </View>
             </>
           )}
         </View>
@@ -310,7 +406,7 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingVertical: Spacing['3xl'],
+    paddingVertical: Spacing['2xl'],
   },
   container: {
     width: '100%',
@@ -320,9 +416,146 @@ const styles = StyleSheet.create({
   },
   welcome: {
     fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+  },
+  // Sections
+  section: {
+    gap: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  // Stats
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    flexWrap: 'wrap',
+  },
+  statCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.xl,
+    minWidth: 100,
+    flex: 1,
+    alignItems: 'center',
+    gap: Spacing.xs,
+    ...Shadows.sm,
+  },
+  statValue: {
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.brandPrimary,
+  },
+  statLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  // Quick actions
+  actionsRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    flexWrap: 'wrap',
+  },
+  actionCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.lg,
+    flex: 1,
+    minWidth: 100,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    ...Shadows.sm,
+  },
+  actionIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.statusBg.info,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  // Recent requests
+  recentCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  recentTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  recentTitle: {
+    flex: 1,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  recentStatus: {
+    backgroundColor: Colors.statusBg.info,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.full,
+  },
+  recentStatusClosed: {
+    backgroundColor: Colors.statusBg.warning,
+  },
+  recentStatusText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  recentStatusTextClosed: {
+    color: Colors.textMuted,
+  },
+  recentBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  recentCity: {
+    fontSize: Typography.fontSize.xs,
     color: Colors.textSecondary,
   },
+  recentDate: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+  },
+  emptyRecent: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing['2xl'],
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  emptyRecentText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textMuted,
+  },
+  emptyBtn: {
+    minWidth: 180,
+  },
+  // Nav cards (mobile)
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -355,15 +588,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.textMuted,
   },
-  cardArrow: {
-    fontSize: Typography.fontSize.lg,
-    color: Colors.textMuted,
-    marginLeft: Spacing.sm,
-  },
-  createBtn: {
-    width: '100%',
-    marginTop: Spacing.md,
-  },
   logoutText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.statusError,
@@ -377,46 +601,11 @@ const styles = StyleSheet.create({
   },
   wideContainer: {
     gap: Spacing['2xl'],
+    maxWidth: 800,
   },
   wideGreeting: {
     fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
-  },
-  wideEmail: {
-    fontSize: Typography.fontSize.lg,
-    color: Colors.textSecondary,
-    marginTop: -Spacing.lg,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-    flexWrap: 'wrap',
-  },
-  statCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing['2xl'],
-    minWidth: 160,
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  statValue: {
-    fontSize: Typography.fontSize['3xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.brandPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-  wideCreateBtn: {
-    alignSelf: 'flex-start',
-    minWidth: 200,
   },
 });

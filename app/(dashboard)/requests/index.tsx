@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../../lib/api';
@@ -40,6 +39,14 @@ interface RequestItem {
 
 type Tab = 'active' | 'closed';
 
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  const months = ['янв.', 'фев.', 'мар.', 'апр.', 'мая', 'июн.', 'июл.', 'авг.', 'сен.', 'окт.', 'ноя.', 'дек.'];
+  const hours = d.getHours().toString().padStart(2, '0');
+  const mins = d.getMinutes().toString().padStart(2, '0');
+  return `${d.getDate()} ${months[d.getMonth()]} в ${hours}:${mins}`;
+}
+
 export default function MyRequestsScreen() {
   const router = useRouter();
   const { isMobile, numColumns } = useBreakpoints();
@@ -48,7 +55,6 @@ export default function MyRequestsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('active');
-  const [closingId, setClosingId] = useState<string | null>(null);
 
   const fetchRequests = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -77,36 +83,28 @@ export default function MyRequestsScreen() {
     fetchRequests(true);
   }
 
-  async function handleClose(id: string) {
-    setClosingId(id);
-    try {
-      await api.patch(`/requests/${id}`, { status: 'CLOSED' });
-      setItems((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: 'CLOSED' } : r)),
-      );
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Ошибка при закрытии';
-      Alert.alert('Ошибка', msg);
-    } finally {
-      setClosingId(null);
-    }
-  }
-
   const filtered = items.filter((r) =>
     tab === 'active' ? r.status === 'OPEN' : r.status !== 'OPEN',
   );
 
-  function formatDate(iso: string) {
-    const d = new Date(iso);
-    return d.toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  function getStatusConfig(status: string) {
+    switch (status) {
+      case 'OPEN':
+        return { label: 'Открыт', bg: Colors.statusBg.info, color: Colors.brandPrimary };
+      case 'IN_PROGRESS':
+        return { label: 'В работе', bg: Colors.statusBg.success, color: Colors.statusSuccess };
+      default:
+        return { label: 'Закрыт', bg: Colors.statusBg.warning, color: Colors.textMuted };
+    }
   }
 
   function renderItem({ item }: { item: RequestItem }) {
+    const statusCfg = getStatusConfig(item.status);
+    const title = item.description.length > 60
+      ? item.description.slice(0, 60) + '...'
+      : item.description;
+    const responseCount = item._count.responses;
+
     return (
       <TouchableOpacity
         style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
@@ -114,18 +112,18 @@ export default function MyRequestsScreen() {
         activeOpacity={0.75}
       >
         <Card padding={Spacing.lg}>
-          {/* City + date */}
+          {/* Title */}
+          <Text style={styles.titleText} numberOfLines={2}>
+            {title}
+          </Text>
+
+          {/* City + date row */}
           <View style={styles.metaRow}>
             <View style={styles.cityChip}>
               <Text style={styles.cityText}>{item.city}</Text>
             </View>
             <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
           </View>
-
-          {/* Description */}
-          <Text style={styles.description} numberOfLines={3}>
-            {item.description}
-          </Text>
 
           {/* Budget + Category */}
           {(item.budget != null || item.category) ? (
@@ -136,35 +134,30 @@ export default function MyRequestsScreen() {
                 </View>
               ) : null}
               {item.budget != null ? (
-                <Text style={styles.budgetText}>{item.budget.toLocaleString('ru-RU')} ₽</Text>
+                <Text style={styles.budgetText}>{item.budget.toLocaleString('ru-RU')} &#8381;</Text>
               ) : null}
             </View>
           ) : null}
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.responsesText}>
-              Откликов: {item._count.responses}
-            </Text>
-            <View style={[styles.statusChip, item.status !== 'OPEN' && styles.statusChipClosed]}>
-              <Text style={[styles.statusText, item.status !== 'OPEN' && styles.statusTextClosed]}>
-                {item.status === 'OPEN' ? 'Открыт' : 'Закрыт'}
+            <TouchableOpacity
+              style={styles.responsesBtn}
+              onPress={() => router.push(`/(dashboard)/requests/${item.id}`)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.responsesBtnText}>
+                {responseCount > 0
+                  ? `Смотреть отклики (${responseCount})`
+                  : 'Нет откликов'}
+              </Text>
+            </TouchableOpacity>
+            <View style={[styles.statusChip, { backgroundColor: statusCfg.bg }]}>
+              <Text style={[styles.statusText, { color: statusCfg.color }]}>
+                {statusCfg.label}
               </Text>
             </View>
           </View>
-
-          {/* Close button for active */}
-          {item.status === 'OPEN' && (
-            <Button
-              onPress={() => handleClose(item.id)}
-              variant="ghost"
-              loading={closingId === item.id}
-              disabled={closingId === item.id}
-              style={styles.closeBtn}
-            >
-              Закрыть запрос
-            </Button>
-          )}
         </Card>
       </TouchableOpacity>
     );
@@ -194,7 +187,6 @@ export default function MyRequestsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* key={numColumns} forces FlatList remount when columns change on resize */}
       <FlatList
         key={numColumns}
         data={filtered}
@@ -297,13 +289,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: Typography.fontWeight.semibold,
   },
-  // Mobile: centered, single column
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing['3xl'],
     alignItems: 'center',
   },
-  // Wide: stretch
   listContentWide: {
     alignItems: 'stretch',
   },
@@ -311,16 +301,21 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     marginBottom: Spacing.md,
   },
-  // Mobile card
   cardWrapperMobile: {
     width: '100%',
     maxWidth: 430,
     marginTop: Spacing.md,
   },
-  // Grid card
   cardWrapperGrid: {
     flex: 1,
     marginTop: Spacing.md,
+  },
+  titleText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+    lineHeight: 22,
   },
   metaRow: {
     flexDirection: 'row',
@@ -345,44 +340,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
   },
-  description: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-    marginBottom: Spacing.md,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  responsesText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  statusChip: {
-    backgroundColor: Colors.statusBg.success,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-  },
-  statusChipClosed: {
-    backgroundColor: Colors.statusBg.warning,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusSuccess,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  statusTextClosed: {
-    color: Colors.textMuted,
-  },
-  closeBtn: {
-    marginTop: Spacing.md,
-  },
   tagsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -405,6 +362,31 @@ const styles = StyleSheet.create({
   budgetText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  responsesBtn: {
+    paddingVertical: Spacing.xxs,
+  },
+  responsesBtnText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  statusChip: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.full,
+  },
+  statusText: {
+    fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.medium,
   },
   loadingBox: {
