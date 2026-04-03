@@ -14,13 +14,14 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { api, ApiError } from '../../lib/api';
+import { api, ApiError, tryRefreshTokens, getToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
+import { AuthUser } from '../../stores/authStore';
 
 export default function ServicesScreen() {
   const router = useRouter();
   const { cities: citiesParam, fnsOffices: fnsParam } = useLocalSearchParams<{ cities: string; fnsOffices: string }>();
-  const { completeOnboarding, user } = useAuth();
+  const { completeOnboarding, login, user } = useAuth();
 
   let citiesFromParams: string[] = [];
   let fnsFromParams: string[] = [];
@@ -104,6 +105,20 @@ export default function ServicesScreen() {
         fnsOffices,
         services: combined,
       });
+      // Refresh JWT so the new token carries SPECIALIST role (not CLIENT)
+      await tryRefreshTokens();
+      const freshToken = await getToken();
+      if (freshToken) {
+        // Fetch updated user profile (role is now SPECIALIST in DB)
+        const freshUser = await api.get<{ id: string; email: string; role: string; username: string | null }>('/users/me');
+        await login(freshToken, {
+          userId: freshUser.id,
+          email: freshUser.email,
+          role: freshUser.role,
+          username: freshUser.username,
+          isNewUser: false,
+        } as AuthUser);
+      }
       // Mark onboarding complete — sets isNewUser=false in store + AsyncStorage
       await completeOnboarding(user?.username ?? '');
       router.replace('/');

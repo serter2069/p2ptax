@@ -47,8 +47,8 @@ export default function UsernameScreen() {
     setLoading(true);
     try {
       await api.patch('/users/me/username', { username: trimmed });
-      // Do NOT call completeOnboarding here — onboarding continues in fns + services steps
-      router.replace('/(onboarding)/fns');
+      // Do NOT call completeOnboarding here — onboarding continues in cities + fns + services steps
+      router.replace('/(onboarding)/cities');
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError('Этот ник уже занят, попробуйте другой');
