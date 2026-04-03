@@ -125,7 +125,7 @@ export default function OtpScreen() {
           router.replace('/(onboarding)/username');
         }
       } else {
-        router.replace('/');
+        router.replace('/(dashboard)');
       }
     } catch (err) {
       if (err instanceof ApiError) {

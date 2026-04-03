@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { setToken, clearToken, clearRefreshToken, onUnauthorized } from '../lib/api';
+import { setToken, clearToken, clearRefreshToken, onUnauthorized, TOKEN_KEY, tryRefreshTokens, getToken } from '../lib/api';
 import { secureStorage } from './storage';
 
-const TOKEN_KEY = '@p2ptax_token';
 const USER_KEY = '@p2ptax_user';
 
 export interface AuthUser {
@@ -88,7 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) {
           if (token && userJson) {
             const user = JSON.parse(userJson) as AuthUser;
-            dispatch({ type: 'RESTORE', payload: { token, user } });
+            // Try to refresh token proactively on restore; if refresh fails the
+            // 401-handler will clear the session on next API call
+            await tryRefreshTokens();
+            const freshToken = (await getToken()) ?? token;
+            dispatch({ type: 'RESTORE', payload: { token: freshToken, user } });
           } else {
             dispatch({ type: 'RESTORE', payload: null });
           }

@@ -4,7 +4,7 @@ const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
   (__DEV__ ? 'http://localhost:3812/api' : 'https://p2ptax.smartlaunchhub.com/api');
 
-const TOKEN_KEY = '@p2ptax_token';
+export const TOKEN_KEY = '@p2ptax_token';
 
 // Simple event emitter for auth events
 type AuthEventListener = () => void;
@@ -119,6 +119,43 @@ async function request<T>(
   });
 
   if (response.status === 401) {
+    // Attempt token refresh before giving up
+    const refreshed = await tryRefreshTokens();
+    if (refreshed) {
+      // Retry original request with new token
+      const newToken = await getToken();
+      const retryHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      };
+      if (newToken) {
+        retryHeaders['Authorization'] = `Bearer ${newToken}`;
+      }
+      const retryResponse = await fetch(url, {
+        method,
+        headers: retryHeaders,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+      if (retryResponse.status === 401) {
+        await clearToken();
+        emitUnauthorized();
+        throw new ApiError(401, 'Unauthorized');
+      }
+      if (!retryResponse.ok) {
+        let retryMessage = `HTTP ${retryResponse.status}`;
+        try {
+          const json = await retryResponse.json();
+          retryMessage = json?.message ?? json?.error ?? retryMessage;
+        } catch {
+          // ignore parse error
+        }
+        throw new ApiError(retryResponse.status, retryMessage);
+      }
+      if (retryResponse.status === 204) {
+        return undefined as T;
+      }
+      return retryResponse.json() as Promise<T>;
+    }
     await clearToken();
     emitUnauthorized();
     throw new ApiError(401, 'Unauthorized');
