@@ -164,6 +164,12 @@ export default function LandingScreen() {
                   style={isWide ? { minWidth: 220 } : { width: '100%' as any }}
                 />
                 <LandingButton
+                  onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Frequests%2Fnew')}
+                  label={'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}
+                  variant="outline"
+                  style={isWide ? { minWidth: 200 } : { width: '100%' as any }}
+                />
+                <LandingButton
                   onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
                   label={'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}
                   variant="outline"
@@ -417,6 +423,12 @@ export default function LandingScreen() {
                 style={{ minWidth: 200 }}
               />
               <LandingButton
+                onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Frequests%2Fnew')}
+                label={'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}
+                variant="outline-white"
+                style={{ minWidth: 200 }}
+              />
+              <LandingButton
                 onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
                 label={'\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F \u043A\u0430\u043A \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}
                 variant="outline-white"
@@ -542,6 +554,7 @@ const styles = StyleSheet.create({
   },
   heroCtasWide: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   heroImage: {
     width: '100%',
@@ -956,6 +969,7 @@ const styles = StyleSheet.create({
   },
   ctaButtonsWide: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
   },
 
