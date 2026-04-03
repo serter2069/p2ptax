@@ -37,7 +37,7 @@ export class AuthService {
     private readonly emailService: EmailService,
   ) {}
 
-  private generateTokens(user: { id: string; email: string; role: Role }): TokenPair {
+  private async generateTokens(user: { id: string; email: string; role: Role }): Promise<TokenPair> {
     const accessToken = this.jwt.sign(
       { sub: user.id, email: user.email, role: user.role },
       { expiresIn: '15m' },
@@ -49,23 +49,51 @@ export class AuthService {
         expiresIn: '30d',
       },
     );
+
+    // Store refresh token in DB for rotation tracking
+    await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        token: refreshToken,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      },
+    });
+
     return { accessToken, refreshToken };
   }
 
   async requestOtp(email: string): Promise<{ message: string }> {
+    const normalizedEmail = email.toLowerCase();
+
+    // #1860: Block new OTP if there is an active one with >= 3 failed attempts
+    const lockedOtp = await this.prisma.otpCode.findFirst({
+      where: {
+        email: normalizedEmail,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+        attempts: { gte: 3 },
+      },
+    });
+    if (lockedOtp) {
+      throw new HttpException(
+        'Too many OTP attempts. Wait for the current code to expire before requesting a new one.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     const code = generateOtp();
     const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
     // Store OTP in DB (sole source of truth — survives server restarts)
     await this.prisma.otpCode.create({
-      data: { email: email.toLowerCase(), code, expiresAt },
+      data: { email: normalizedEmail, code, expiresAt },
     });
 
     // In dev mode: log code to console. In prod: send email via EmailService
     if (process.env.DEV_AUTH === 'true') {
-      console.log(`[DEV] OTP for ${email}: ${code}`);
+      console.log(`[DEV] OTP for ${normalizedEmail}: ${code}`);
     } else {
-      await this.emailService.sendOtp(email.toLowerCase(), code);
+      await this.emailService.sendOtp(normalizedEmail, code);
     }
 
     return { message: 'OTP sent to email' };
@@ -124,7 +152,7 @@ export class AuthService {
       update: { lastLoginAt: new Date() },
     });
 
-    const tokens = this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
     return {
       ...tokens,
       isNewUser,
@@ -146,6 +174,20 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+
+    // #1841: Check token exists in DB and is not revoked
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    });
+    if (!storedToken || storedToken.revoked) {
+      throw new UnauthorizedException('Refresh token has been revoked');
+    }
+
+    // Revoke the old refresh token (rotation)
+    await this.prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { revoked: true },
+    });
 
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) {

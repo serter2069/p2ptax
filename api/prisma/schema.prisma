@@ -45,6 +45,7 @@ model User {
   sentMessages        Message[]
   reviewsGiven        Review[]          @relation("ReviewClient")
   reviewsReceived     Review[]          @relation("ReviewSpecialist")
+  refreshTokens       RefreshToken[]
 
   @@map("users")
 }
@@ -172,6 +173,19 @@ model PromotionPrice {
 
   @@unique([city, tier])
   @@map("promotion_prices")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model ChatMessage {
