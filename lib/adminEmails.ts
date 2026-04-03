@@ -5,7 +5,7 @@ const raw = process.env.EXPO_PUBLIC_ADMIN_EMAILS ?? 'dev@p2ptax.ru';
 
 export const ADMIN_EMAILS: string[] = raw
   .split(',')
-  .map((e) => e.trim().toLowerCase())
+  .map((e: string) => e.trim().toLowerCase())
   .filter(Boolean);
 
 export function isAdmin(email: string | undefined): boolean {
