@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
@@ -32,6 +33,15 @@ const CATEGORY_FILTERS = [
   { label: 'Вычеты', value: 'Вычеты' },
   { label: 'Аудит', value: 'Аудит' },
 ];
+
+const BUDGET_FILTERS = [
+  { label: 'Любой', value: 0 },
+  { label: 'до 5 000 ₽', value: 5000 },
+  { label: 'до 10 000 ₽', value: 10000 },
+  { label: 'до 50 000 ₽', value: 50000 },
+];
+
+const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 
 interface RequestItem {
   id: string;
@@ -65,6 +75,7 @@ export default function RequestsFeedScreen() {
   const [error, setError] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [maxBudget, setMaxBudget] = useState(0);
   const [activeOnly, setActiveOnly] = useState(true);
 
   const fetchFeed = useCallback(
@@ -78,6 +89,9 @@ export default function RequestsFeedScreen() {
       try {
         const params = new URLSearchParams();
         if (cityFilter.trim()) params.set('city', cityFilter.trim());
+        // #1801: Pass category and maxBudget to API for server-side filtering
+        if (selectedCategory) params.set('category', selectedCategory);
+        if (maxBudget > 0) params.set('maxBudget', String(maxBudget));
         params.set('page', String(pageNum));
         const data = await api.get<FeedResponse>(`/requests?${params.toString()}`);
 
@@ -100,14 +114,19 @@ export default function RequestsFeedScreen() {
         setRefreshing(false);
       }
     },
-    [cityFilter],
+    [cityFilter, selectedCategory, maxBudget],
   );
 
-  // Debounce city filter
+  // Debounce city filter; reset page on any filter change
   useEffect(() => {
     const timer = setTimeout(() => fetchFeed({ replace: true }), cityFilter ? 400 : 0);
     return () => clearTimeout(timer);
   }, [fetchFeed, cityFilter]);
+
+  // Immediately refetch when category or budget changes
+  useEffect(() => {
+    fetchFeed({ replace: true });
+  }, [selectedCategory, maxBudget]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRefresh() {
     setRefreshing(true);
@@ -180,25 +199,24 @@ export default function RequestsFeedScreen() {
     );
   }
 
-  // Client-side filtering by category and active status
+  // Client-side filter: activeOnly toggle (API returns OPEN only; toggle shows all when disabled)
   const filteredItems = useMemo(() => {
-    let result = items;
-    if (selectedCategory) {
-      result = result.filter((item) =>
-        item.category?.includes(selectedCategory) || item.description.includes(selectedCategory),
-      );
-    }
-    if (activeOnly) {
-      result = result.filter((item) => item.status === 'OPEN');
-    }
-    return result;
-  }, [items, selectedCategory, activeOnly]);
+    if (activeOnly) return items.filter((item) => item.status === 'OPEN');
+    return items;
+  }, [items, activeOnly]);
 
   const hasMore = items.length < total;
 
   return (
     <SafeAreaView style={styles.safe}>
       <Stack.Screen options={{ title: 'Лента запросов — Налоговик' }} />
+      <Head>
+        <title>Лента запросов — Налоговик</title>
+        <meta name="description" content="Открытые запросы на налоговые, юридические и бухгалтерские услуги. Найдите специалиста в вашем городе." />
+        <meta property="og:title" content="Лента запросов — Налоговик" />
+        <meta property="og:description" content="Открытые запросы на налоговые, юридические и бухгалтерские услуги. Найдите специалиста в вашем городе." />
+        <meta property="og:url" content={`${APP_URL}/requests`} />
+      </Head>
       <LandingHeader />
       <Header title="Лента запросов" />
 
@@ -251,6 +269,32 @@ export default function RequestsFeedScreen() {
                     >
                       <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
                         {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Budget filter chips */}
+            <View>
+              <Text style={styles.filterLabel}>Бюджет</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
+              >
+                {BUDGET_FILTERS.map((b) => {
+                  const isActive = b.value === maxBudget;
+                  return (
+                    <TouchableOpacity
+                      key={b.value}
+                      onPress={() => setMaxBudget(b.value)}
+                      style={[styles.chip, isActive && styles.chipActive]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                        {b.label}
                       </Text>
                     </TouchableOpacity>
                   );

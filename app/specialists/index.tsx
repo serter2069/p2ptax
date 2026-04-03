@@ -12,6 +12,9 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
+import Head from 'expo-router/head';
+
+const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { api, ApiError } from '../../lib/api';
 import { formatExperience, shortFnsLabel as formatFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
@@ -228,6 +231,13 @@ export default function SpecialistsCatalogScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <Stack.Screen options={{ title: 'Каталог специалистов — Налоговик' }} />
+      <Head>
+        <title>Каталог специалистов — Налоговик</title>
+        <meta name="description" content="Каталог проверенных налоговых консультантов и юристов. Выберите специалиста по городу, категории и рейтингу." />
+        <meta property="og:title" content="Каталог специалистов — Налоговик" />
+        <meta property="og:description" content="Каталог проверенных налоговых консультантов и юристов. Выберите специалиста по городу, категории и рейтингу." />
+        <meta property="og:url" content={`${APP_URL}/specialists`} />
+      </Head>
       <LandingHeader />
       <Header title="Каталог специалистов" />
 
