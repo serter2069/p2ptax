@@ -21,6 +21,8 @@ import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../consta
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
+import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
+import { shortFnsLabel } from '../../lib/format';
 
 const BADGE_TAX = 'familiar';
 const BADGE_TAX_LABEL = 'Знакомый в налоговой';
@@ -34,6 +36,7 @@ interface SpecialistProfile {
   badges: string[];
   contacts: string | null;
   avatarUrl: string | null;
+  fnsOffices: string[];
 }
 
 export default function SpecialistProfileScreen() {
@@ -53,6 +56,8 @@ export default function SpecialistProfileScreen() {
   const [serviceInput, setServiceInput] = useState('');
   const [services, setServices] = useState<string[]>([]);
   const [hasTaxBadge, setHasTaxBadge] = useState(false);
+  const [fnsOffices, setFnsOffices] = useState<string[]>([]);
+  const [fnsSearch, setFnsSearch] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -69,6 +74,7 @@ export default function SpecialistProfileScreen() {
       setServices(data.services);
       setHasTaxBadge(data.badges.includes(BADGE_TAX));
       setAvatarUrl(data.avatarUrl ?? null);
+      setFnsOffices(data.fnsOffices ?? []);
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         // No profile yet — will need to create one
@@ -176,9 +182,11 @@ export default function SpecialistProfileScreen() {
         cities,
         services,
         badges,
+        fnsOffices,
       });
       setProfile(updated);
       setDisplayName(updated.displayName ?? '');
+      setFnsOffices(updated.fnsOffices ?? []);
       Alert.alert('Сохранено', 'Профиль обновлён.');
     } catch (err) {
       const msg =
@@ -370,6 +378,68 @@ export default function SpecialistProfileScreen() {
             </View>
           </View>
 
+          {/* FNS Offices */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Налоговые инспекции (ИФНС)</Text>
+            <Text style={styles.sectionHint}>Введите номер или город для поиска</Text>
+            <View style={styles.addRow}>
+              <TextInput
+                value={fnsSearch}
+                onChangeText={setFnsSearch}
+                placeholder="Поиск ИФНС..."
+                placeholderTextColor={Colors.textMuted}
+                style={[styles.addInput, styles.addInputWide]}
+                autoCapitalize="none"
+                returnKeyType="done"
+              />
+            </View>
+            {fnsSearch.trim().length > 0 && (() => {
+              const terms = fnsSearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
+              const selectedSet = new Set(fnsOffices);
+              const matches = FNS_OFFICES.filter((o: FNSOffice) => {
+                if (selectedSet.has(o.name)) return false;
+                const text = `${o.name} ${o.city}`.toLowerCase();
+                return terms.every((t) => text.includes(t));
+              }).slice(0, 6);
+              if (matches.length === 0) return null;
+              return (
+                <View style={styles.fnsSuggestions}>
+                  {matches.map((office: FNSOffice) => (
+                    <TouchableOpacity
+                      key={office.code}
+                      style={styles.fnsSuggestionItem}
+                      onPress={() => {
+                        setFnsOffices((prev) => [...prev, office.name]);
+                        setFnsSearch('');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.fnsSuggestionName} numberOfLines={2}>{office.name}</Text>
+                      <Text style={styles.fnsSuggestionCity}>{office.city}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              );
+            })()}
+            {fnsOffices.length === 0 && (
+              <Text style={styles.emptyHint}>Нет ИФНС — добавьте хотя бы одну</Text>
+            )}
+            <View style={styles.tagList}>
+              {fnsOffices.map((name) => {
+                const office = FNS_OFFICES.find((o: FNSOffice) => o.name === name);
+                const label = office ? shortFnsLabel(office.name, office.city) : name;
+                return (
+                  <View key={name} style={[styles.tag, styles.fnsTag]}>
+                    <Text style={[styles.tagText, styles.fnsTagText]} numberOfLines={1}>{label}</Text>
+                    <TouchableOpacity onPress={() => setFnsOffices((prev) => prev.filter((n) => n !== name))} hitSlop={8}>
+                      <Text style={styles.tagRemove}>{'×'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+
           <Button
             onPress={handleSave}
             variant="primary"
@@ -530,6 +600,37 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
     fontStyle: 'italic',
+  },
+  fnsSuggestions: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.bgCard,
+    overflow: 'hidden',
+  },
+  fnsSuggestionItem: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.bgSecondary,
+  },
+  fnsSuggestionName: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  fnsSuggestionCity: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    marginTop: 1,
+  },
+  fnsTag: {
+    borderColor: Colors.brandPrimary,
+    backgroundColor: Colors.bgSecondary,
+  },
+  fnsTagText: {
+    color: Colors.textAccent,
+    maxWidth: 200,
   },
   errorText: {
     fontSize: Typography.fontSize.base,
