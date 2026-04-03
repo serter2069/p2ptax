@@ -95,7 +95,7 @@ export default function CreateRequestScreen() {
 
             {specialist ? (
               <Text style={styles.specialistHint}>
-                Запрос будет виден специалисту @{specialist}
+                Запрос увидят специалисты в вашем городе
               </Text>
             ) : null}
 

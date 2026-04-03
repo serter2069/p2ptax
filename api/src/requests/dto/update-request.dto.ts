@@ -16,7 +16,7 @@ export class UpdateRequestDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  budget?: number;
+  budget?: number | null;
 
   @IsOptional()
   @IsString()
