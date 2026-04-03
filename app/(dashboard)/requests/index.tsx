@@ -94,16 +94,14 @@ export default function MyRequestsScreen() {
 
   const filtered = items.filter((r) =>
     tab === 'active'
-      ? r.status === 'OPEN' || r.status === 'IN_PROGRESS'
-      : r.status !== 'OPEN' && r.status !== 'IN_PROGRESS',
+      ? r.status === 'OPEN'
+      : r.status !== 'OPEN',
   );
 
   function getStatusConfig(status: string) {
     switch (status) {
       case 'OPEN':
         return { label: 'Открыт', bg: Colors.statusBg.info, color: Colors.brandPrimary };
-      case 'IN_PROGRESS':
-        return { label: 'В работе', bg: Colors.statusBg.success, color: Colors.statusSuccess };
       default:
         return { label: 'Закрыт', bg: Colors.statusBg.warning, color: Colors.textMuted };
     }
