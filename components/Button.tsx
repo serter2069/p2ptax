@@ -30,7 +30,7 @@ const hoverBg: Record<string, string> = {
 };
 
 const webTransition = Platform.OS === 'web'
-  ? ({ transition: 'background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease' } as any)
+  ? ({ transition: 'background-color 0.15s ease, box-shadow 0.15s ease' } as any)
   : {};
 
 export function Button({
@@ -66,6 +66,7 @@ export function Button({
         style,
       ]}
       activeOpacity={0.75}
+      dataSet={{ hoverManaged: '1' }}
       {...(webProps as any)}
     >
       {loading ? (

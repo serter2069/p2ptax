@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Web hover & interaction polish ── */
+
+/* Smooth transitions on all interactive elements */
+[role="button"] {
+  transition: opacity 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+/* Cursor on interactive elements */
+[role="button"]:not([disabled]) {
+  cursor: pointer;
+}
+
+/* Subtle dim on hover for non-Button interactive elements (chips, cards, nav links)
+   Button component is excluded via data-hover-managed="1" */
+[role="button"]:not([disabled]):not([data-hover-managed]):hover {
+  opacity: 0.82;
+}
+
+/* Links */
+a {
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+a:hover {
+  opacity: 0.80;
+}
