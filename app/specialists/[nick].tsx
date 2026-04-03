@@ -80,6 +80,7 @@ export default function SpecialistProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [writingLoading, setWritingLoading] = useState(false);
+  const [copyToast, setCopyToast] = useState(false);
 
   // Reviews state
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
@@ -204,7 +205,8 @@ export default function SpecialistProfileScreen() {
     if (Platform.OS === 'web') {
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(url);
-        Alert.alert('Ссылка скопирована');
+        setCopyToast(true);
+        setTimeout(() => setCopyToast(false), 2000);
       }
     } else {
       try {
@@ -342,6 +344,13 @@ export default function SpecialistProfileScreen() {
       <TouchableOpacity onPress={handleShare} style={styles.shareBtn} activeOpacity={0.7}>
         <Text style={styles.shareBtnText}>Поделиться профилем</Text>
       </TouchableOpacity>
+
+      {/* Copy toast */}
+      {copyToast && (
+        <View style={styles.copyToast}>
+          <Text style={styles.copyToastText}>Ссылка скопирована</Text>
+        </View>
+      )}
     </View>
   );
 
@@ -397,11 +406,21 @@ export default function SpecialistProfileScreen() {
         </View>
       )}
 
-      {/* Contacts */}
+      {/* Contacts — visible only to authenticated users */}
       {profile.contacts && (
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Связаться</Text>
-          <Text style={styles.contactsText}>{profile.contacts}</Text>
+          {user ? (
+            <Text style={styles.contactsText}>{profile.contacts}</Text>
+          ) : (
+            <TouchableOpacity
+              onPress={() => router.push(`/(auth)/email?redirectTo=/specialists/${profile.nick}` as any)}
+              activeOpacity={0.8}
+              style={styles.contactsGuestBtn}
+            >
+              <Text style={styles.contactsGuestBtnText}>Войдите чтобы увидеть контакты</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -805,6 +824,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#4A6B88',
     lineHeight: 22,
+  },
+  contactsGuestBtn: {
+    borderWidth: 1,
+    borderColor: '#1A5BA8',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  contactsGuestBtnText: {
+    fontSize: 14,
+    color: '#1A5BA8',
+    fontWeight: '500',
+  },
+
+  // Copy toast
+  copyToast: {
+    backgroundColor: '#0F2447',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  copyToastText: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
 
   // Reviews header
