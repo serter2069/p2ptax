@@ -367,7 +367,7 @@ export default function SpecialistsCatalogScreen() {
             </View>
           ) : error ? (
             <EmptyState
-              icon="!"
+              icon="alert-circle-outline"
               title="Ошибка загрузки"
               subtitle={error}
               ctaLabel="Повторить"
@@ -375,7 +375,7 @@ export default function SpecialistsCatalogScreen() {
             />
           ) : (
             <EmptyState
-              icon="?"
+              icon="search-outline"
               title="Специалистов не найдено"
               subtitle="Попробуйте изменить фильтры"
             />

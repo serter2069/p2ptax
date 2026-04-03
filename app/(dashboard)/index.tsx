@@ -10,6 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../stores/authStore';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
@@ -183,7 +184,7 @@ export default function DashboardHub() {
                 activeOpacity={0.75}
               >
                 <View style={styles.cardIcon}>
-                  <Text style={styles.cardEmoji}>{'📋'}</Text>
+                  <Ionicons name="document-text-outline" size={24} color={Colors.brandPrimary} />
                 </View>
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}>Мои запросы</Text>
@@ -201,7 +202,7 @@ export default function DashboardHub() {
                 activeOpacity={0.75}
               >
                 <View style={styles.cardIcon}>
-                  <Text style={styles.cardEmoji}>{'💬'}</Text>
+                  <Ionicons name="chatbubble-outline" size={24} color={Colors.brandPrimary} />
                 </View>
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}>Мои диалоги</Text>
@@ -220,7 +221,7 @@ export default function DashboardHub() {
                   activeOpacity={0.75}
                 >
                   <View style={styles.cardIcon}>
-                    <Text style={styles.cardEmoji}>{'👤'}</Text>
+                    <Ionicons name="person-outline" size={24} color={Colors.brandPrimary} />
                   </View>
                   <View style={styles.cardContent}>
                     <Text style={styles.cardTitle}>Мой профиль</Text>
@@ -237,7 +238,7 @@ export default function DashboardHub() {
                 activeOpacity={0.75}
               >
                 <View style={styles.cardIcon}>
-                  <Text style={styles.cardEmoji}>{'⚙️'}</Text>
+                  <Ionicons name="settings-outline" size={24} color={Colors.brandPrimary} />
                 </View>
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}>Настройки</Text>
@@ -304,9 +305,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.lg,
-  },
-  cardEmoji: {
-    fontSize: Typography.fontSize.title,
   },
   cardContent: {
     flex: 1,

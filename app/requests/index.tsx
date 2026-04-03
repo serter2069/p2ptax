@@ -206,7 +206,7 @@ export default function RequestsFeedScreen() {
             </View>
           ) : error ? (
             <EmptyState
-              icon="⚠️"
+              icon="alert-circle-outline"
               title="Ошибка загрузки"
               subtitle={error}
               ctaLabel="Повторить"
@@ -214,7 +214,7 @@ export default function RequestsFeedScreen() {
             />
           ) : (
             <EmptyState
-              icon="📋"
+              icon="document-text-outline"
               title="Запросов пока нет"
               subtitle={
                 cityFilter

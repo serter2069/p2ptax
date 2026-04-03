@@ -221,7 +221,7 @@ export default function MyRequestsScreen() {
             </View>
           ) : error ? (
             <EmptyState
-              icon="⚠️"
+              icon="alert-circle-outline"
               title="Ошибка загрузки"
               subtitle={error}
               ctaLabel="Повторить"
@@ -229,7 +229,7 @@ export default function MyRequestsScreen() {
             />
           ) : (
             <EmptyState
-              icon="📋"
+              icon="document-text-outline"
               title={tab === 'active' ? 'Нет активных запросов' : 'Нет закрытых запросов'}
               subtitle={tab === 'active' ? 'Создайте свой первый запрос' : undefined}
               ctaLabel={tab === 'active' ? 'Создать запрос' : undefined}

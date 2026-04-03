@@ -227,7 +227,7 @@ export default function SpecialistProfileScreen() {
       <SafeAreaView style={styles.safe}>
         <LandingHeader />
         <EmptyState
-          icon="!"
+          icon="alert-circle-outline"
           title={error || 'Не удалось загрузить профиль'}
           ctaLabel="Назад"
           onCtaPress={() => router.back()}

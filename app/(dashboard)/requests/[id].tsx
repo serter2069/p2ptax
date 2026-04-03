@@ -134,7 +134,7 @@ export default function RequestDetailScreen() {
       <SafeAreaView style={styles.safe}>
         <Header title="Запрос" showBack />
         <EmptyState
-          icon="⚠️"
+          icon="alert-circle-outline"
           title="Ошибка"
           subtitle={error || 'Запрос не найден'}
           ctaLabel="Повторить"

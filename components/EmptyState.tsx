@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography } from '../constants/Colors';
 import { Button } from './Button';
 
 interface EmptyStateProps {
-  icon?: string;
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   subtitle?: string;
   ctaLabel?: string;
@@ -14,7 +15,11 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, subtitle, ctaLabel, onCtaPress }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      {icon ? <Text style={styles.icon}>{icon}</Text> : null}
+      {icon ? (
+        <View style={styles.icon}>
+          <Ionicons name={icon} size={48} color={Colors.textMuted} />
+        </View>
+      ) : null}
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       {ctaLabel && onCtaPress ? (
@@ -36,7 +41,6 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   icon: {
-    fontSize: Typography.fontSize.jumbo,
     marginBottom: Spacing.sm,
   },
   title: {

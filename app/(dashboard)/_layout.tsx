@@ -8,22 +8,22 @@ import { SidebarNavItem } from '../../components/Sidebar';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 const CLIENT_NAV_ITEMS: SidebarNavItem[] = [
-  { label: 'Главная', icon: '🏠', route: '/(dashboard)', segment: 'index' },
-  { label: 'Мои запросы', icon: '📋', route: '/(dashboard)/requests', segment: 'requests' },
-  { label: 'Сообщения', icon: '💬', route: '/(dashboard)/messages', segment: 'messages' },
-  { label: 'Специалисты', icon: '🔍', route: '/specialists', segment: 'specialists' },
-  { label: 'Лента запросов', icon: '📰', route: '/requests', segment: 'requests' },
-  { label: 'Настройки', icon: '⚙', route: '/(dashboard)/settings', segment: 'settings' },
+  { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
+  { label: 'Мои запросы', icon: 'document-text-outline', route: '/(dashboard)/requests', segment: 'requests' },
+  { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
+  { label: 'Специалисты', icon: 'search-outline', route: '/specialists', segment: 'specialists' },
+  { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'requests' },
+  { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
 ];
 
 const SPECIALIST_NAV_ITEMS: SidebarNavItem[] = [
-  { label: 'Главная', icon: '🏠', route: '/(dashboard)', segment: 'index' },
-  { label: 'Мой профиль', icon: '👤', route: '/(dashboard)/profile', segment: 'profile' },
-  { label: 'Сообщения', icon: '💬', route: '/(dashboard)/messages', segment: 'messages' },
-  { label: 'Запросы города', icon: '📍', route: '/(dashboard)/city-requests', segment: 'city-requests' },
-  { label: 'Лента запросов', icon: '📰', route: '/requests', segment: 'requests' },
-  { label: 'Продвижение', icon: '🚀', route: '/(dashboard)/promotion', segment: 'promotion' },
-  { label: 'Настройки', icon: '⚙', route: '/(dashboard)/settings', segment: 'settings' },
+  { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
+  { label: 'Мой профиль', icon: 'person-outline', route: '/(dashboard)/profile', segment: 'profile' },
+  { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
+  { label: 'Запросы города', icon: 'location-outline', route: '/(dashboard)/city-requests', segment: 'city-requests' },
+  { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'requests' },
+  { label: 'Продвижение', icon: 'rocket-outline', route: '/(dashboard)/promotion', segment: 'promotion' },
+  { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
 ];
 
 export default function DashboardLayout() {

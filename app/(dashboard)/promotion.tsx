@@ -9,7 +9,7 @@ export default function PromotionScreen() {
     <SafeAreaView style={styles.safe}>
       <Header title="Продвижение" showBack />
       <EmptyState
-        icon="🚀"
+        icon="rocket-outline"
         title="Скоро"
         subtitle="Инструменты продвижения будут доступны в следующих версиях"
       />

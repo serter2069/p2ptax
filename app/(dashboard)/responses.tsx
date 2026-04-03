@@ -131,7 +131,7 @@ export default function MyResponsesScreen() {
             </View>
           ) : error ? (
             <EmptyState
-              icon="⚠️"
+              icon="alert-circle-outline"
               title="Ошибка загрузки"
               subtitle={error}
               ctaLabel="Повторить"
@@ -139,7 +139,7 @@ export default function MyResponsesScreen() {
             />
           ) : (
             <EmptyState
-              icon="📩"
+              icon="mail-outline"
               title="Нет откликов"
               subtitle="Вы ещё не откликались ни на один запрос"
             />

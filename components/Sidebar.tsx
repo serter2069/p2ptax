@@ -6,11 +6,12 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius } from '../constants/Colors';
 
 export interface SidebarNavItem {
   label: string;
-  icon: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   route: string;
   /** Segment to match for active state, e.g. "index" or "requests" */
   segment?: string;
@@ -38,7 +39,7 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
     <View style={[styles.sidebar, { width }]}>
       {/* Logo / App name */}
       <View style={styles.brand}>
-        <Text style={styles.brandIcon}>{'⚖'}</Text>
+        <Ionicons name="scale-outline" size={22} color={Colors.brandPrimary} />
         <Text style={styles.brandName}>Налоговик</Text>
       </View>
 
@@ -53,7 +54,7 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
               onPress={() => router.replace(item.route as any)}
               activeOpacity={0.75}
             >
-              <Text style={styles.navIcon}>{item.icon}</Text>
+              <Ionicons name={item.icon} size={18} color={active ? Colors.brandPrimary : Colors.textMuted} />
               <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                 {item.label}
               </Text>
@@ -96,9 +97,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     marginBottom: Spacing['3xl'],
   },
-  brandIcon: {
-    fontSize: Typography.fontSize.xl,
-  },
   brandName: {
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
@@ -120,11 +118,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandPrimary + '22', // 13% opacity tint
     borderWidth: 1,
     borderColor: Colors.brandPrimary + '44',
-  },
-  navIcon: {
-    fontSize: Typography.fontSize.base,
-    width: 20,
-    textAlign: 'center',
   },
   navLabel: {
     fontSize: Typography.fontSize.sm,

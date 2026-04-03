@@ -208,7 +208,7 @@ export default function CityRequestsScreen() {
     if (error === 'no_profile') {
       return (
         <EmptyState
-          icon="👤"
+          icon="person-outline"
           title="Профиль не найден"
           subtitle="Создайте профиль специалиста, чтобы видеть запросы в ваших городах"
         />
@@ -218,7 +218,7 @@ export default function CityRequestsScreen() {
     if (error) {
       return (
         <EmptyState
-          icon="⚠️"
+          icon="alert-circle-outline"
           title="Ошибка загрузки"
           subtitle={error}
           ctaLabel="Повторить"
@@ -230,7 +230,7 @@ export default function CityRequestsScreen() {
     if (myCities.length === 0) {
       return (
         <EmptyState
-          icon="🏙️"
+          icon="business-outline"
           title="Нет городов в профиле"
           subtitle="Добавьте города в профиль, чтобы видеть запросы"
         />
@@ -240,7 +240,7 @@ export default function CityRequestsScreen() {
     if (requests.length === 0) {
       return (
         <EmptyState
-          icon="📭"
+          icon="mail-open-outline"
           title="Нет открытых запросов"
           subtitle={`В ваших городах (${myCities.join(', ')}) пока нет запросов`}
         />
