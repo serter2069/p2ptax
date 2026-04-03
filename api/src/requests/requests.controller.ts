@@ -15,6 +15,7 @@ import { RespondRequestDto } from './dto/respond-request.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
@@ -46,9 +47,9 @@ export class RequestsController {
     return this.requestsService.findMyResponses(req.user.id);
   }
 
-  // GET /requests — authenticated feed (specialists browse)
+  // GET /requests — public feed accessible without authentication
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   getFeed(
     @Query('city') city?: string,
     @Query('page') page?: string,
