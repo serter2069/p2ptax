@@ -28,24 +28,32 @@ export default function SettingsScreen() {
   const [notifLoading, setNotifLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
-  // Load notification preference from AsyncStorage
+  // Load notification preference from API, fallback to AsyncStorage
   useEffect(() => {
-    AsyncStorage.getItem(NOTIF_KEY)
-      .then((val) => {
-        if (val !== null) {
-          setEmailNotif(val === 'true');
-        }
+    api.get('/users/me/settings')
+      .then((data: any) => {
+        setEmailNotif(data.emailNotifications);
+        AsyncStorage.setItem(NOTIF_KEY, String(data.emailNotifications)).catch(() => {});
       })
-      .catch(() => {})
+      .catch(() => {
+        // Fallback to AsyncStorage if API unavailable
+        AsyncStorage.getItem(NOTIF_KEY)
+          .then((val) => {
+            if (val !== null) setEmailNotif(val === 'true');
+          })
+          .catch(() => {});
+      })
       .finally(() => setNotifLoading(false));
   }, []);
 
   async function handleNotifToggle(value: boolean) {
     setEmailNotif(value);
     try {
+      await api.patch('/users/me/settings', { emailNotifications: value });
       await AsyncStorage.setItem(NOTIF_KEY, String(value));
     } catch {
-      // ignore storage error
+      // Revert on failure
+      setEmailNotif(!value);
     }
   }
 

@@ -1,5 +1,5 @@
 import { Controller, Delete, Get, Patch, Body, Request, UseGuards } from '@nestjs/common';
-import { IsString, IsArray, Length, Matches, MinLength, ArrayMinSize } from 'class-validator';
+import { IsString, IsArray, IsBoolean, IsOptional, Length, Matches, MinLength, ArrayMinSize } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 
@@ -8,6 +8,12 @@ class SetUsernameDto {
   @Length(3, 20)
   @Matches(/^[a-zA-Z0-9_]+$/, { message: 'username can only contain letters, numbers, and underscores' })
   username!: string;
+}
+
+class UpdateSettingsDto {
+  @IsBoolean()
+  @IsOptional()
+  emailNotifications?: boolean;
 }
 
 class SetupSpecialistProfileDto {
@@ -52,6 +58,21 @@ export class UsersController {
     @Body() body: SetupSpecialistProfileDto,
   ) {
     return this.usersService.setupSpecialistProfile(req.user.id, body.cities, body.services);
+  }
+
+  /** GET /users/me/settings — return user settings */
+  @Get('me/settings')
+  getSettings(@Request() req: { user: { id: string } }) {
+    return this.usersService.getSettings(req.user.id);
+  }
+
+  /** PATCH /users/me/settings — update user settings (notifications etc.) */
+  @Patch('me/settings')
+  updateSettings(
+    @Request() req: { user: { id: string } },
+    @Body() body: UpdateSettingsDto,
+  ) {
+    return this.usersService.updateSettings(req.user.id, body);
   }
 
   /** DELETE /users/me — permanently delete the authenticated user's account */

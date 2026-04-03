@@ -97,6 +97,31 @@ export class UsersService {
     return { ok: true };
   }
 
+  /** Return user settings */
+  async getSettings(userId: string): Promise<{ emailNotifications: boolean }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return { emailNotifications: user.emailNotifications };
+  }
+
+  /** Update user settings (email notifications etc.) */
+  async updateSettings(
+    userId: string,
+    settings: { emailNotifications?: boolean },
+  ): Promise<{ emailNotifications: boolean }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(settings.emailNotifications !== undefined && { emailNotifications: settings.emailNotifications }),
+      },
+    });
+
+    return { emailNotifications: updated.emailNotifications };
+  }
+
   /**
    * Delete a user and all related records.
    * Order matters: delete dependent records first, then the user.
