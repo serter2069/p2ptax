@@ -26,8 +26,9 @@ interface RequestDetail {
   category?: string | null;
   status: string;
   createdAt: string;
-  client: { id: string };
+  client?: { id: string };
   _count: { responses: number };
+  responses?: any[];
 }
 
 function formatDate(iso: string) {
@@ -59,37 +60,11 @@ export default function RequestDetailScreen() {
       setLoading(true);
       setError('');
       try {
-        // Try fetching the specific request from the feed endpoint
-        const params = new URLSearchParams();
-        params.set('page', '1');
-        const data = await api.get<{ items: RequestDetail[]; total: number }>(
-          `/requests?${params.toString()}`,
-        );
-        const found = data.items.find((item) => item.id === id);
-        if (found) {
-          if (!cancelled) setRequest(found);
-        } else {
-          // Try loading more pages to find the request
-          let page = 2;
-          let foundItem: RequestDetail | null = null;
-          while (page <= Math.ceil(data.total / 20) + 1 && !foundItem && !cancelled) {
-            const moreData = await api.get<{ items: RequestDetail[] }>(
-              `/requests?page=${page}`,
-            );
-            foundItem = moreData.items.find((item) => item.id === id) || null;
-            page++;
-          }
-          if (foundItem && !cancelled) {
-            setRequest(foundItem);
-          } else if (!cancelled) {
-            setError('Запрос не найден');
-          }
-        }
+        const data = await api.get<RequestDetail>(`/requests/${id}`);
+        if (!cancelled) setRequest(data);
       } catch (err) {
         if (!cancelled) {
-          if (err instanceof ApiError && err.status === 401) {
-            setError('Войдите чтобы увидеть детали запроса');
-          } else if (err instanceof ApiError) {
+          if (err instanceof ApiError) {
             setError(err.message);
           } else {
             setError('Не удалось загрузить запрос');

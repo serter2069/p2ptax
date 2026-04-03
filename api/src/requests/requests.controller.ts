@@ -64,11 +64,11 @@ export class RequestsController {
     );
   }
 
-  // GET /requests/:id — client gets single request with responses
+  // GET /requests/:id — public, owner gets full data including responses
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   getById(@Request() req: any, @Param('id') id: string) {
-    return this.requestsService.findById(id, req.user.id);
+    return this.requestsService.findById(id, req.user?.id ?? null);
   }
 
   // POST /requests/:id/respond — specialist responds to a request
