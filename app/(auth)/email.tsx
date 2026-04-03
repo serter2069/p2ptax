@@ -111,6 +111,32 @@ export default function EmailScreen() {
             <Text style={styles.hint}>
               Вход и регистрация — одно действие. Просто введите email.
             </Text>
+
+            {role === 'SPECIALIST' ? (
+              <TouchableOpacity
+                onPress={() => {
+                  const redirectParam = redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : '';
+                  router.replace(`/(auth)/email${redirectParam}`);
+                }}
+              >
+                <Text style={styles.roleSwitchText}>
+                  Вы клиент?{' '}
+                  <Text style={styles.roleSwitchLink}>Войти как клиент</Text>
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  const redirectParam = redirectTo ? `&redirectTo=${encodeURIComponent(redirectTo)}` : '';
+                  router.replace(`/(auth)/email?role=SPECIALIST${redirectParam}`);
+                }}
+              >
+                <Text style={styles.roleSwitchText}>
+                  Вы специалист?{' '}
+                  <Text style={styles.roleSwitchLink}>Зарегистрироваться как специалист</Text>
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -170,5 +196,14 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
+  },
+  roleSwitchText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  roleSwitchLink: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
   },
 });

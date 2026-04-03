@@ -223,6 +223,34 @@ export class RequestsService {
     });
   }
 
+  async updateFields(
+    clientId: string,
+    requestId: string,
+    dto: { description?: string; city?: string; budget?: number; category?: string },
+  ) {
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
+    if (request.status !== RequestStatus.OPEN) {
+      throw new BadRequestException('Can only edit requests with OPEN status');
+    }
+
+    const data: Record<string, unknown> = {};
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.city !== undefined) data.city = dto.city;
+    if (dto.budget !== undefined) data.budget = dto.budget;
+    if (dto.category !== undefined) data.category = dto.category;
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('No fields to update');
+    }
+
+    return this.prisma.request.update({
+      where: { id: requestId },
+      data,
+    });
+  }
+
   async updateStatus(clientId: string, requestId: string, status: RequestStatus) {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');

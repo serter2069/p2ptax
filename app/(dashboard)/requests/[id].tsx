@@ -16,6 +16,7 @@ import { Header } from '../../../components/Header';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
+import { useAuth } from '../../../stores/authStore';
 
 interface SpecialistProfile {
   nick?: string;
@@ -36,6 +37,7 @@ interface ResponseItem {
 
 interface RequestDetail {
   id: string;
+  clientId: string;
   description: string;
   city: string;
   budget?: number | null;
@@ -49,6 +51,7 @@ interface RequestDetail {
 export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -194,16 +197,25 @@ export default function RequestDetailScreen() {
 
             <Text style={styles.dateLabel}>{formatDate(request.createdAt)}</Text>
 
-            {request.status === 'OPEN' && (
-              <Button
-                onPress={handleClose}
-                variant="danger"
-                loading={closingId}
-                disabled={closingId}
-                style={styles.closeBtn}
-              >
-                Закрыть запрос
-              </Button>
+            {request.status === 'OPEN' && user?.userId === request.clientId && (
+              <View style={styles.actionRow}>
+                <Button
+                  onPress={() => router.push(`/(dashboard)/requests/edit/${request.id}`)}
+                  variant="secondary"
+                  style={styles.actionBtn}
+                >
+                  Редактировать
+                </Button>
+                <Button
+                  onPress={handleClose}
+                  variant="danger"
+                  loading={closingId}
+                  disabled={closingId}
+                  style={styles.actionBtn}
+                >
+                  Закрыть запрос
+                </Button>
+              </View>
             )}
           </Card>
 
@@ -230,15 +242,26 @@ export default function RequestDetailScreen() {
                   <Text style={styles.responseDateText}>{formatDate(resp.createdAt)}</Text>
                 </View>
                 <Text style={styles.responseMessage}>{resp.message}</Text>
-                <Button
-                  onPress={() => handleStartDialog(resp.specialist.id)}
-                  variant="secondary"
-                  loading={startingDialogId === resp.specialist.id}
-                  disabled={startingDialogId !== null}
-                  style={styles.dialogBtn}
-                >
-                  Начать диалог
-                </Button>
+                <View style={styles.responseActions}>
+                  {resp.specialist?.specialistProfile?.nick ? (
+                    <Button
+                      onPress={() => router.push(`/specialists/${resp.specialist.specialistProfile!.nick}`)}
+                      variant="ghost"
+                      style={styles.profileBtn}
+                    >
+                      Посмотреть профиль
+                    </Button>
+                  ) : null}
+                  <Button
+                    onPress={() => handleStartDialog(resp.specialist.id)}
+                    variant="secondary"
+                    loading={startingDialogId === resp.specialist.id}
+                    disabled={startingDialogId !== null}
+                    style={styles.dialogBtn}
+                  >
+                    Начать диалог
+                  </Button>
+                </View>
               </Card>
             ))
           )}
@@ -315,9 +338,13 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
   },
-  closeBtn: {
+  actionRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
     marginTop: Spacing.lg,
-    width: '100%',
+  },
+  actionBtn: {
+    flex: 1,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -369,6 +396,12 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: 22,
     marginBottom: Spacing.md,
+  },
+  responseActions: {
+    gap: Spacing.sm,
+  },
+  profileBtn: {
+    width: '100%',
   },
   dialogBtn: {
     width: '100%',
