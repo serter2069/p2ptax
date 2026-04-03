@@ -203,10 +203,11 @@ export default function RequestDetailScreen() {
           </Text>
 
           {request.responses.length === 0 ? (
-            <View style={styles.emptyResponses}>
-              <Text style={styles.emptyText}>Пока нет откликов</Text>
-              <Text style={styles.emptySubtext}>Специалисты скоро увидят ваш запрос</Text>
-            </View>
+            <EmptyState
+              icon="mail-outline"
+              title="Пока нет откликов"
+              subtitle="Специалисты скоро увидят ваш запрос"
+            />
           ) : (
             request.responses.map((resp) => (
               <Card key={resp.id} padding={Spacing.lg}>
@@ -333,20 +334,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
     marginTop: Spacing.md,
-  },
-  emptyResponses: {
-    alignItems: 'center',
-    paddingVertical: Spacing['3xl'],
-    gap: Spacing.sm,
-  },
-  emptyText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  emptySubtext: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
   },
   responseHeader: {
     flexDirection: 'row',

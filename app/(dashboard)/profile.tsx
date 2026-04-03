@@ -453,21 +453,6 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontStyle: 'italic',
   },
-  emptyIcon: {
-    fontSize: Typography.fontSize.jumbo,
-    marginBottom: Spacing.sm,
-  },
-  emptyTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
   errorText: {
     fontSize: Typography.fontSize.base,
     color: Colors.statusError,

@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography } from '../constants/Colors';
@@ -85,7 +84,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgSecondary,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    paddingTop: Platform.OS === 'web' ? 0 : 0,
   },
   // Mobile layout pieces
   left: {
