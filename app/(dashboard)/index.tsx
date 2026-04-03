@@ -231,6 +231,42 @@ export default function DashboardHub() {
                 </TouchableOpacity>
               )}
 
+              {/* City requests card — specialists only */}
+              {user?.role === 'SPECIALIST' && (
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => router.push('/(dashboard)/city-requests')}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.cardIcon}>
+                    <Ionicons name="map-outline" size={24} color={Colors.brandPrimary} />
+                  </View>
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>Запросы в моих городах</Text>
+                    <Text style={styles.cardSub}>Найти клиентов рядом</Text>
+                  </View>
+                  <Text style={styles.cardArrow}>{'>'}</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* My responses card — specialists only */}
+              {user?.role === 'SPECIALIST' && (
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => router.push('/(dashboard)/responses')}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.cardIcon}>
+                    <Ionicons name="checkmark-circle-outline" size={24} color={Colors.brandPrimary} />
+                  </View>
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>Мои отклики</Text>
+                    <Text style={styles.cardSub}>Запросы, на которые вы откликнулись</Text>
+                  </View>
+                  <Text style={styles.cardArrow}>{'>'}</Text>
+                </TouchableOpacity>
+              )}
+
               {/* Settings card */}
               <TouchableOpacity
                 style={styles.card}

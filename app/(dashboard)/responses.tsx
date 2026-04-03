@@ -7,7 +7,9 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
@@ -28,6 +30,7 @@ interface ResponseItem {
 }
 
 export default function MyResponsesScreen() {
+  const router = useRouter();
   const [responses, setResponses] = useState<ResponseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,7 +73,7 @@ export default function MyResponsesScreen() {
     const req = item.request;
     const isOpen = req.status === 'OPEN';
     return (
-      <View style={styles.cardWrapper}>
+      <TouchableOpacity style={styles.cardWrapper} activeOpacity={0.8} onPress={() => router.push(`/(dashboard)/requests/${item.request.id}`)}>
         <Card padding={Spacing.lg}>
           {/* Request meta */}
           <View style={styles.metaRow}>
@@ -104,7 +107,7 @@ export default function MyResponsesScreen() {
             <Text style={styles.dateText}>{'Запрос: '}{formatDate(req.createdAt)}</Text>
           </View>
         </Card>
-      </View>
+      </TouchableOpacity>
     );
   }
 
