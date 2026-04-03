@@ -146,7 +146,7 @@ export default function LandingScreen() {
 
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
                 <LandingButton
-                  onPress={() => router.push('/(auth)/email?role=CLIENT')}
+                  onPress={() => router.push('/specialists')}
                   label={'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}
                   variant="primary"
                   style={isWide ? { minWidth: 220 } : { width: '100%' as any }}
@@ -402,7 +402,7 @@ export default function LandingScreen() {
             </Text>
             <View style={[styles.ctaButtons, isWide && styles.ctaButtonsWide]}>
               <LandingButton
-                onPress={() => router.push('/(auth)/email?role=CLIENT')}
+                onPress={() => router.push('/specialists')}
                 label={'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}
                 variant="white"
                 style={{ minWidth: 200 }}
