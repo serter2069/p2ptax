@@ -17,6 +17,7 @@ import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { EmptyState } from '../../../components/EmptyState';
 import { useBreakpoints } from '../../../hooks/useBreakpoints';
+import { useAuth } from '../../../stores/authStore';
 
 interface ResponseItem {
   id: string;
@@ -49,7 +50,9 @@ function formatDate(iso: string): string {
 
 export default function MyRequestsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { isMobile, numColumns } = useBreakpoints();
+  const isClient = user?.role === 'CLIENT';
   const [items, setItems] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -223,14 +226,14 @@ export default function MyRequestsScreen() {
             <EmptyState
               icon="document-text-outline"
               title={tab === 'active' ? 'Нет активных запросов' : 'Нет закрытых запросов'}
-              subtitle={tab === 'active' ? 'Создайте свой первый запрос' : undefined}
-              ctaLabel={tab === 'active' ? 'Создать запрос' : undefined}
-              onCtaPress={tab === 'active' ? () => router.push('/(dashboard)/requests/new') : undefined}
+              subtitle={tab === 'active' && isClient ? 'Создайте свой первый запрос' : undefined}
+              ctaLabel={tab === 'active' && isClient ? 'Создать запрос' : undefined}
+              onCtaPress={tab === 'active' && isClient ? () => router.push('/(dashboard)/requests/new') : undefined}
             />
           )
         }
         ListFooterComponent={
-          !loading && filtered.length > 0 ? (
+          !loading && filtered.length > 0 && isClient ? (
             <View style={[styles.footerBtn, !isMobile && styles.footerBtnWide]}>
               <Button
                 onPress={() => router.push('/(dashboard)/requests/new')}
