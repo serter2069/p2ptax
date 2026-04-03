@@ -1,6 +1,8 @@
-import { Controller, Delete, Get, Patch, Body, Request, UseGuards } from '@nestjs/common';
-import { IsString, IsArray, IsBoolean, IsOptional, IsIn, Length, Matches, MinLength, ArrayMinSize } from 'class-validator';
+import { Controller, Delete, Get, Patch, Post, Body, Request, UseGuards } from '@nestjs/common';
+import { IsString, IsArray, IsBoolean, IsOptional, IsIn, Length, Matches, MinLength, ArrayMinSize, IsEmail } from 'class-validator';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EmailThrottlerGuard } from '../auth/email-throttler.guard';
 import { UsersService } from './users.service';
 
 class SetUsernameDto {
@@ -36,6 +38,20 @@ class SetupSpecialistProfileDto {
   @IsString({ each: true })
   @IsOptional()
   fnsOffices?: string[];
+}
+
+class ChangeEmailRequestDto {
+  @IsEmail()
+  newEmail!: string;
+}
+
+class ChangeEmailConfirmDto {
+  @IsEmail()
+  newEmail!: string;
+
+  @IsString()
+  @Length(6, 6)
+  code!: string;
 }
 
 @Controller('users')
@@ -102,5 +118,35 @@ export class UsersController {
   @Delete('me')
   deleteMe(@Request() req: { user: { id: string } }) {
     return this.usersService.deleteUser(req.user.id);
+  }
+
+  /**
+   * POST /users/me/change-email/request
+   * Step 1: send OTP to the new email address.
+   * Throttled: max 3 requests per 5 minutes per IP.
+   */
+  @UseGuards(EmailThrottlerGuard)
+  @Throttle({ default: { ttl: 300000, limit: 3 } })
+  @Post('me/change-email/request')
+  requestEmailChange(
+    @Request() req: { user: { id: string } },
+    @Body() body: ChangeEmailRequestDto,
+  ) {
+    return this.usersService.requestEmailChange(req.user.id, body.newEmail);
+  }
+
+  /**
+   * POST /users/me/change-email/confirm
+   * Step 2: verify OTP, update email, return new tokens.
+   * Throttled: max 10 attempts per 5 minutes per IP.
+   */
+  @UseGuards(EmailThrottlerGuard)
+  @Throttle({ default: { ttl: 300000, limit: 10 } })
+  @Post('me/change-email/confirm')
+  confirmEmailChange(
+    @Request() req: { user: { id: string } },
+    @Body() body: ChangeEmailConfirmDto,
+  ) {
+    return this.usersService.confirmEmailChange(req.user.id, body.newEmail, body.code);
   }
 }

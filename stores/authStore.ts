@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { setToken, clearToken, clearRefreshToken, onUnauthorized, TOKEN_KEY, tryRefreshTokens, getToken } from '../lib/api';
+import { setToken, setRefreshToken, clearToken, clearRefreshToken, onUnauthorized, TOKEN_KEY, tryRefreshTokens, getToken } from '../lib/api';
 import { secureStorage } from './storage';
 
 const USER_KEY = '@p2ptax_user';
@@ -23,7 +23,8 @@ type AuthAction =
   | { type: 'LOGOUT' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'RESTORE'; payload: { token: string; user: AuthUser } | null }
-  | { type: 'SET_USERNAME'; payload: string };
+  | { type: 'SET_USERNAME'; payload: string }
+  | { type: 'SET_EMAIL'; payload: { email: string; token: string } };
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
@@ -50,6 +51,13 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         ...state,
         user: { ...state.user, username: action.payload, isNewUser: false },
       };
+    case 'SET_EMAIL':
+      if (!state.user) return state;
+      return {
+        ...state,
+        token: action.payload.token,
+        user: { ...state.user, email: action.payload.email },
+      };
     default:
       return state;
   }
@@ -66,6 +74,7 @@ interface AuthContextValue extends AuthState {
   logout: () => Promise<void>;
   setLoading: (loading: boolean) => void;
   completeOnboarding: (username: string) => Promise<void>;
+  updateEmail: (email: string, accessToken: string, refreshToken: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -153,12 +162,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Called after successful email change — replaces email and new tokens in state + storage
+  const updateEmail = useCallback(async (email: string, accessToken: string, refreshToken: string) => {
+    await Promise.all([
+      setToken(accessToken),
+      setRefreshToken(refreshToken),
+    ]);
+    dispatch({ type: 'SET_EMAIL', payload: { email, token: accessToken } });
+    // Persist updated user email to secure storage
+    const userJson = await secureStorage.getItem(USER_KEY);
+    if (userJson) {
+      const existing = JSON.parse(userJson) as AuthUser;
+      const updated: AuthUser = { ...existing, email };
+      await secureStorage.setItem(USER_KEY, JSON.stringify(updated));
+    }
+  }, []);
+
   const value: AuthContextValue = {
     ...state,
     login,
     logout,
     setLoading,
     completeOnboarding,
+    updateEmail,
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);
