@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { EmailThrottlerGuard } from './email-throttler.guard';
+import { CleanupService } from './cleanup.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { EmailThrottlerGuard } from './email-throttler.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, EmailThrottlerGuard],
+  providers: [AuthService, JwtStrategy, EmailThrottlerGuard, CleanupService],
   exports: [AuthService],
 })
 export class AuthModule {}
