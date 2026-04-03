@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Switch,
   Alert,
   TextInput,
   RefreshControl,
@@ -23,9 +22,6 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 import { shortFnsLabel } from '../../lib/format';
-
-const BADGE_TAX = 'familiar';
-const BADGE_TAX_LABEL = 'Знакомый в налоговой';
 
 interface SpecialistProfile {
   id: string;
@@ -55,7 +51,6 @@ export default function SpecialistProfileScreen() {
   const [cities, setCities] = useState<string[]>([]);
   const [serviceInput, setServiceInput] = useState('');
   const [services, setServices] = useState<string[]>([]);
-  const [hasTaxBadge, setHasTaxBadge] = useState(false);
   const [fnsOffices, setFnsOffices] = useState<string[]>([]);
   const [fnsSearch, setFnsSearch] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -72,7 +67,6 @@ export default function SpecialistProfileScreen() {
       setContacts(data.contacts ?? '');
       setCities(data.cities);
       setServices(data.services);
-      setHasTaxBadge(data.badges.includes(BADGE_TAX));
       setAvatarUrl(data.avatarUrl ?? null);
       setFnsOffices(data.fnsOffices ?? []);
     } catch (err) {
@@ -174,14 +168,12 @@ export default function SpecialistProfileScreen() {
     }
     setSaving(true);
     try {
-      const badges = hasTaxBadge ? [BADGE_TAX] : [];
       const updated = await api.patch<SpecialistProfile>('/specialists/me', {
         nick: nick.trim(),
         displayName: displayName.trim() || undefined,
         contacts: contacts.trim() || null,
         cities,
         services,
-        badges,
         fnsOffices,
       });
       setProfile(updated);
@@ -292,23 +284,6 @@ export default function SpecialistProfileScreen() {
               autoCapitalize="sentences"
               style={styles.inputGap}
             />
-          </View>
-
-          {/* Badge toggle */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Бейджи</Text>
-            <View style={styles.badgeRow}>
-              <View style={styles.badgeInfo}>
-                <Text style={styles.badgeLabel}>{BADGE_TAX_LABEL}</Text>
-                <Text style={styles.badgeHint}>Подтверждённый контакт в ФНС</Text>
-              </View>
-              <Switch
-                value={hasTaxBadge}
-                onValueChange={setHasTaxBadge}
-                trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
-                thumbColor={Colors.textPrimary}
-              />
-            </View>
           </View>
 
           {/* Cities */}
@@ -494,29 +469,6 @@ const styles = StyleSheet.create({
   },
   inputGap: {
     marginTop: Spacing.sm,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.sm,
-  },
-  badgeInfo: {
-    flex: 1,
-    gap: 3,
-  },
-  badgeLabel: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  badgeHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
   },
   addRow: {
     flexDirection: 'row',
