@@ -13,6 +13,7 @@ import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
+import { UpdateRequestDto } from './dto/update-request.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -71,15 +72,20 @@ export class RequestsController {
     return this.requestsService.respond(req.user.id, id, dto);
   }
 
-  // PATCH /requests/:id — client updates request status
+  // PATCH /requests/:id — client updates request (status or fields)
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CLIENT)
-  updateStatus(
+  update(
     @Request() req: any,
     @Param('id') id: string,
-    @Body() dto: UpdateRequestStatusDto,
+    @Body() dto: any,
   ) {
-    return this.requestsService.updateStatus(req.user.id, id, dto.status);
+    // If body contains status field, use status-update logic
+    if (dto.status) {
+      return this.requestsService.updateStatus(req.user.id, id, dto.status);
+    }
+    // Otherwise update fields (description, city, budget, category)
+    return this.requestsService.updateFields(req.user.id, id, dto);
   }
 }
