@@ -1,9 +1,10 @@
-import { IsString, IsArray, IsOptional, IsInt, Min, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsArray, IsOptional, IsInt, Min, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class UpdateSpecialistProfileDto {
   @IsString()
   @MinLength(3)
   @MaxLength(30)
+  @Matches(/^[a-zA-Z0-9_-]+$/, { message: 'Ник может содержать только латинские буквы, цифры, дефис и подчёркивание' })
   @IsOptional()
   nick?: string;
 

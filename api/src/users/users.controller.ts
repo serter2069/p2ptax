@@ -1,5 +1,5 @@
 import { Controller, Delete, Get, Patch, Body, Request, UseGuards } from '@nestjs/common';
-import { IsString, IsArray, IsBoolean, IsOptional, Length, Matches, MinLength, ArrayMinSize } from 'class-validator';
+import { IsString, IsArray, IsBoolean, IsOptional, IsIn, Length, Matches, MinLength, ArrayMinSize } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 
@@ -16,6 +16,12 @@ class UpdateSettingsDto {
   emailNotifications?: boolean;
 }
 
+class UpdateMeDto {
+  @IsString()
+  @IsIn(['CLIENT', 'SPECIALIST'])
+  role!: string;
+}
+
 class SetupSpecialistProfileDto {
   @IsArray()
   @IsString({ each: true })
@@ -25,6 +31,11 @@ class SetupSpecialistProfileDto {
   @IsString()
   @MinLength(1)
   services!: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  fnsOffices?: string[];
 }
 
 @Controller('users')
@@ -36,6 +47,18 @@ export class UsersController {
   @Get('me')
   getMe(@Request() req: { user: { id: string } }) {
     return this.usersService.getMe(req.user.id);
+  }
+
+  /**
+   * PATCH /users/me — set role for new users (isNewUser / role=null).
+   * Only allowed when the user has not yet picked a role.
+   */
+  @Patch('me')
+  updateMe(
+    @Request() req: { user: { id: string } },
+    @Body() body: UpdateMeDto,
+  ) {
+    return this.usersService.updateRole(req.user.id, body.role);
   }
 
   /** PATCH /users/me/username — set or update username */
@@ -57,7 +80,7 @@ export class UsersController {
     @Request() req: { user: { id: string } },
     @Body() body: SetupSpecialistProfileDto,
   ) {
-    return this.usersService.setupSpecialistProfile(req.user.id, body.cities, body.services);
+    return this.usersService.setupSpecialistProfile(req.user.id, body.cities, body.services, body.fnsOffices);
   }
 
   /** GET /users/me/settings — return user settings */
