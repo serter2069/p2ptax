@@ -3,8 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
 
-// Badges users can self-assign; 'fns_insider' requires admin
-const ALLOWED_BADGES = ['verified', 'familiar'];
+// Specialists cannot self-assign badges — all badges are admin-only
+const ALLOWED_BADGES: string[] = [];
 
 @Injectable()
 export class SpecialistsService {
