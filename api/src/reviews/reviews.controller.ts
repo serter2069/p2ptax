@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -11,6 +12,7 @@ import {
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
@@ -30,6 +32,20 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard)
   getMyReviews(@Request() req: any) {
     return this.reviewsService.listByClient(req.user.id);
+  }
+
+  /** GET /reviews/admin?page=N — all reviews (admin only) */
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  adminFindAll(@Query('page') page?: string) {
+    return this.reviewsService.adminFindAll(page ? parseInt(page, 10) : 1);
+  }
+
+  /** DELETE /reviews/admin/:id — delete review (admin only) */
+  @Delete('admin/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  adminDelete(@Param('id') id: string) {
+    return this.reviewsService.adminDelete(id);
   }
 
   @Get('specialist/:nick')
