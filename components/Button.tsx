@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -7,6 +7,7 @@ import {
   ViewStyle,
   TextStyle,
   View,
+  Platform,
 } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography } from '../constants/Colors';
 
@@ -21,6 +22,17 @@ interface ButtonProps {
   style?: ViewStyle;
 }
 
+const hoverBg: Record<string, string> = {
+  primary: '#2368BE',
+  secondary: Colors.bgPrimary,
+  ghost: 'rgba(26,91,168,0.06)',
+  danger: '#991818',
+};
+
+const webTransition = Platform.OS === 'web'
+  ? ({ transition: 'background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease' } as any)
+  : {};
+
 export function Button({
   onPress,
   children,
@@ -30,6 +42,16 @@ export function Button({
   style,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const [hovered, setHovered] = useState(false);
+
+  const hoverStyle: ViewStyle = (hovered && !isDisabled && Platform.OS === 'web')
+    ? { backgroundColor: hoverBg[variant] }
+    : {};
+
+  const webProps = Platform.OS === 'web' ? {
+    onMouseEnter: () => setHovered(true),
+    onMouseLeave: () => setHovered(false),
+  } : {};
 
   return (
     <TouchableOpacity
@@ -39,9 +61,12 @@ export function Button({
         styles.base,
         styles[variant],
         isDisabled && styles.disabled,
+        webTransition,
+        hoverStyle,
         style,
       ]}
       activeOpacity={0.75}
+      {...(webProps as any)}
     >
       {loading ? (
         <View style={styles.loadingRow}>
