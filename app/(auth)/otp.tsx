@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Button } from '../../components/Button';
+import { LandingHeader } from '../../components/LandingHeader';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError, setRefreshToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
@@ -53,6 +54,8 @@ export default function OtpScreen() {
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(RESEND_SECONDS);
   const [resending, setResending] = useState(false);
+  const [attemptsUsed, setAttemptsUsed] = useState(0);
+  const MAX_ATTEMPTS = 3;
 
   const inputs = useRef<(TextInput | null)[]>([]);
 
@@ -129,6 +132,7 @@ export default function OtpScreen() {
         router.replace((redirectTo || '/(dashboard)') as any);
       }
     } catch (err) {
+      setAttemptsUsed((prev) => prev + 1);
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
@@ -170,6 +174,7 @@ export default function OtpScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <LandingHeader />
       <KeyboardAvoidingView
         style={styles.kav}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -220,6 +225,13 @@ export default function OtpScreen() {
 
             {/* Error */}
             {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            {/* Attempt counter */}
+            {attemptsUsed > 0 && attemptsUsed < MAX_ATTEMPTS && (
+              <Text style={styles.attemptText}>
+                Попытка {attemptsUsed} из {MAX_ATTEMPTS}
+              </Text>
+            )}
 
             {/* Submit */}
             <Button
@@ -334,6 +346,11 @@ const styles = StyleSheet.create({
   error: {
     fontSize: Typography.fontSize.sm,
     color: Colors.statusError,
+    textAlign: 'center',
+  },
+  attemptText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
     textAlign: 'center',
   },
   btn: {

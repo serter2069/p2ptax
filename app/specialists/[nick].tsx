@@ -12,7 +12,7 @@ import {
   Platform,
   Share,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
 import { formatExperience } from '../../lib/format';
 import { useAuth } from '../../stores/authStore';
@@ -543,6 +543,7 @@ export default function SpecialistProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <Stack.Screen options={{ title: `${displayName} — Налоговик` }} />
       <LandingHeader />
       <ScrollView
         contentContainerStyle={styles.scroll}

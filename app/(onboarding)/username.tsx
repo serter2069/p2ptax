@@ -74,8 +74,20 @@ export default function UsernameScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
+            {/* Progress — 4 steps */}
+            <View style={styles.progressRow}>
+              <View style={[styles.progressDot, styles.progressDotActive]} />
+              <View style={styles.progressLine} />
+              <View style={styles.progressDot} />
+              <View style={styles.progressLine} />
+              <View style={styles.progressDot} />
+              <View style={styles.progressLine} />
+              <View style={styles.progressDot} />
+            </View>
+
             {/* Header */}
             <View style={styles.header}>
+              <Text style={styles.step}>Шаг 1 из 4</Text>
               <Text style={styles.title}>Придумайте ник</Text>
               <Text style={styles.subtitle}>
                 Это ваш публичный псевдоним на платформе. Можно изменить позже.
@@ -138,9 +150,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     gap: Spacing['2xl'],
   },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0,
+    marginTop: Spacing.xl,
+  },
+  progressDot: {
+    width: 10,
+    height: 10,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.border,
+  },
+  progressDotActive: {
+    backgroundColor: Colors.brandPrimary,
+    width: 12,
+    height: 12,
+    borderRadius: BorderRadius.sm,
+  },
+  progressLine: {
+    width: 32,
+    height: 2,
+    backgroundColor: Colors.border,
+    marginHorizontal: Spacing.xs,
+  },
+  step: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
+  },
   header: {
     gap: Spacing.sm,
-    marginTop: Spacing.xl,
   },
   title: {
     fontSize: Typography.fontSize['2xl'],

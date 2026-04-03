@@ -9,6 +9,7 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
+import { Stack } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { Card } from '../../components/Card';
@@ -162,6 +163,7 @@ export default function RequestsFeedScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <Stack.Screen options={{ title: 'Лента запросов — Налоговик' }} />
       <LandingHeader />
       <Header title="Лента запросов" />
 
