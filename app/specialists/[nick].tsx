@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
@@ -68,7 +69,7 @@ function formatExperience(years: number): string {
 }
 
 function getReviewerInitials(review: ReviewItem): string {
-  const name = review.client.username || review.client.email.split('@')[0];
+  const name = review.client.username || `U${review.client.id.slice(0, 3)}`;
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -161,7 +162,7 @@ export default function SpecialistProfileScreen() {
 
   async function handleWrite() {
     if (!user) {
-      router.push('/(auth)/email');
+      router.push(`/(auth)/email?redirectTo=/specialists/${profile?.nick}` as any);
       return;
     }
     if (!profile || writingLoading) return;
@@ -202,12 +203,20 @@ export default function SpecialistProfileScreen() {
     }
   }
 
-  function handleShare() {
+  async function handleShare() {
     if (!profile) return;
     const url = `https://p2ptax.smartlaunchhub.com/specialists/${profile.nick}`;
-    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-      Alert.alert('Ссылка скопирована');
+    if (Platform.OS === 'web') {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        Alert.alert('Ссылка скопирована');
+      }
+    } else {
+      try {
+        await Share.share({ url, message: `Профиль специалиста: ${url}` });
+      } catch {
+        // user cancelled or share unavailable — ignore silently
+      }
     }
   }
 
@@ -485,7 +494,7 @@ export default function SpecialistProfileScreen() {
                   </View>
                   <View style={styles.reviewerInfo}>
                     <Text style={styles.reviewAuthor}>
-                      {review.client.username ? `@${review.client.username}` : review.client.email.split('@')[0]}
+                      {review.client.username ? `@${review.client.username}` : `Пользователь #${review.client.id.slice(0, 4)}`}
                     </Text>
                     <Text style={styles.reviewDate}>
                       {new Date(review.createdAt).toLocaleDateString('ru-RU')}

@@ -172,29 +172,20 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        {/* ===== SECTION 2: Stats Bar ===== */}
+        {/* ===== SECTION 2: Early launch banner ===== */}
         <View style={styles.statsSection}>
           <View style={[styles.statsInner, innerStyle]}>
-            <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
-              <View style={[styles.statItem, isMobile && styles.statItemMobile]}>
-                <Text style={styles.statNumber}>100+</Text>
-                <Text style={styles.statLabel}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
-              </View>
-              {!isMobile && <View style={styles.statDivider} />}
-              <View style={[styles.statItem, isMobile && styles.statItemMobile]}>
-                <Text style={styles.statNumber}>10+</Text>
-                <Text style={styles.statLabel}>{'\u0413\u043E\u0440\u043E\u0434\u043E\u0432'}</Text>
-              </View>
-              {!isMobile && <View style={styles.statDivider} />}
-              <View style={[styles.statItem, isMobile && styles.statItemMobile]}>
-                <Text style={styles.statNumber}>200+</Text>
-                <Text style={styles.statLabel}>{'\u0417\u0430\u043F\u0440\u043E\u0441\u043E\u0432'}</Text>
-              </View>
-              {!isMobile && <View style={styles.statDivider} />}
-              <View style={[styles.statItem, isMobile && styles.statItemMobile]}>
-                <Text style={styles.statNumber}>4.8 / 5</Text>
-                <Text style={styles.statLabel}>{'\u0421\u0440\u0435\u0434\u043D\u044F\u044F \u043E\u0446\u0435\u043D\u043A\u0430'}</Text>
-              </View>
+            <View style={styles.launchBanner}>
+              <Text style={styles.launchBannerText}>
+                {'Первые специалисты уже на платформе \u2014 присоединяйтесь!'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push('/specialists')}
+                activeOpacity={0.8}
+                style={styles.launchBannerBtn}
+              >
+                <Text style={styles.launchBannerBtnLabel}>{'\u041F\u043E\u0441\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -325,40 +316,10 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        {/* ===== SECTION 7: Reviews ===== */}
-        <View style={[styles.section, { backgroundColor: '#FFFFFF' }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle}>{'\u041E\u0442\u0437\u044B\u0432\u044B'}</Text>
-
-            <View style={[styles.reviewsRow, isDesktop && styles.reviewsRowDesktop, isTablet && styles.reviewsRowTablet]}>
-              {[
-                {
-                  text: '\u041D\u0430\u043B\u043E\u0433\u043E\u0432\u0430\u044F \u0432\u044B\u0441\u0442\u0430\u0432\u0438\u043B\u0430 \u0448\u0442\u0440\u0430\u0444 80 000 \u0440\u0443\u0431. \u041D\u0430\u0448\u0451\u043B \u044E\u0440\u0438\u0441\u0442\u0430 \u0437\u0430 2 \u0447\u0430\u0441\u0430, \u0441\u043D\u0438\u0437\u0438\u043B\u0438 \u0434\u043E 12 000. \u0420\u0435\u043A\u043E\u043C\u0435\u043D\u0434\u0443\u044E!',
-                  name: '\u0410\u043D\u0434\u0440\u0435\u0439 \u041A.',
-                  city: '\u041C\u043E\u0441\u043A\u0432\u0430',
-                },
-                {
-                  text: '\u041F\u043E\u0434\u0430\u043B\u0430 \u043D\u0430 \u0432\u044B\u0447\u0435\u0442 \u0437\u0430 \u043A\u0432\u0430\u0440\u0442\u0438\u0440\u0443 \u2014 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442 \u0432\u0441\u0451 \u043E\u0444\u043E\u0440\u043C\u0438\u043B \u0437\u0430 3 \u0434\u043D\u044F. \u041F\u043E\u043B\u0443\u0447\u0438\u043B\u0430 260 000 \u0440\u0443\u0431\u043B\u0435\u0439 \u043E\u0431\u0440\u0430\u0442\u043D\u043E',
-                  name: '\u041C\u0430\u0440\u0438\u043D\u0430 \u0421.',
-                  city: '\u0421\u0430\u043D\u043A\u0442-\u041F\u0435\u0442\u0435\u0440\u0431\u0443\u0440\u0433',
-                },
-                {
-                  text: '\u041E\u0442\u043A\u0440\u044B\u0432\u0430\u043B \u041E\u041E\u041E, \u043F\u043E\u043C\u043E\u0433\u043B\u0438 \u0441 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u043E\u0439 \u0441\u0445\u0435\u043C\u043E\u0439. \u042D\u043A\u043E\u043D\u043E\u043C\u0438\u044F \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u0430\u044F, \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u043C \u0434\u0430\u043B\u044C\u0448\u0435',
-                  name: '\u0414\u043C\u0438\u0442\u0440\u0438\u0439 \u0412.',
-                  city: '\u0415\u043A\u0430\u0442\u0435\u0440\u0438\u043D\u0431\u0443\u0440\u0433',
-                },
-              ].map((review) => (
-                <View key={review.name} style={[styles.reviewCard, isTablet && styles.reviewCardTablet]}>
-                  <Text style={styles.reviewQuote}>{'\u201C'}</Text>
-                  <Text style={styles.reviewText}>{review.text}</Text>
-                  <Text style={styles.reviewStars}>{'\u2605\u2605\u2605\u2605\u2605'}</Text>
-                  <Text style={styles.reviewName}>{review.name}</Text>
-                  <Text style={styles.reviewCity}>{review.city}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
+        {/* ===== SECTION 7: Reviews — hidden until real reviews from API ===== */}
+        {false && (
+          <View style={[styles.section, { backgroundColor: '#FFFFFF' }]} />
+        )}
 
         {/* ===== SECTION 8: FAQ ===== */}
         <View style={[styles.section, { backgroundColor: '#F4FBFC' }]}>
@@ -550,6 +511,32 @@ const styles = StyleSheet.create({
   },
   heroImageWide: {
     height: 400,
+  },
+
+  // ---- Launch Banner (replaces fake stats) ----
+  launchBanner: {
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 8,
+  },
+  launchBannerText: {
+    fontSize: 17,
+    color: '#0F2447',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  launchBannerBtn: {
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#1A5BA8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  launchBannerBtnLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 
   // ---- Stats Bar ----

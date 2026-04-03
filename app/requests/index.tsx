@@ -148,7 +148,9 @@ export default function RequestsFeedScreen() {
               Откликов: {item._count.responses}
             </Text>
             <View style={styles.statusChip}>
-              <Text style={styles.statusText}>Открыт</Text>
+              <Text style={[styles.statusText, item.status !== 'OPEN' && styles.statusClosed]}>
+                {item.status === 'OPEN' ? 'Открыт' : item.status === 'CLOSED' ? 'Закрыт' : item.status}
+              </Text>
             </View>
           </View>
         </Card>
@@ -338,6 +340,9 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.statusSuccess,
     fontWeight: Typography.fontWeight.medium,
+  },
+  statusClosed: {
+    color: Colors.textMuted,
   },
   tagsRow: {
     flexDirection: 'row',
