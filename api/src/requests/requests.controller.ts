@@ -49,8 +49,18 @@ export class RequestsController {
   // GET /requests — authenticated feed (specialists browse)
   @Get()
   @UseGuards(JwtAuthGuard)
-  getFeed(@Query('city') city?: string, @Query('page') page?: string) {
-    return this.requestsService.findFeed(city, page ? parseInt(page, 10) : 1);
+  getFeed(
+    @Query('city') city?: string,
+    @Query('page') page?: string,
+    @Query('category') category?: string,
+    @Query('maxBudget') maxBudget?: string,
+  ) {
+    return this.requestsService.findFeed(
+      city,
+      page ? parseInt(page, 10) : 1,
+      category,
+      maxBudget ? parseInt(maxBudget, 10) : undefined,
+    );
   }
 
   // GET /requests/:id — client gets single request with responses

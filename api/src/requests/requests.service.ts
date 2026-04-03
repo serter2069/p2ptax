@@ -69,13 +69,17 @@ export class RequestsService {
     }
   }
 
-  async findFeed(city?: string, page = 1) {
+  async findFeed(city?: string, page = 1, category?: string, maxBudget?: number) {
     // #1855: Sanitize page to prevent negative skip
     const pageNum = Math.max(1, parseInt(page as unknown as string) || 1);
 
     const where: any = { status: RequestStatus.OPEN };
     // #1849: Case-insensitive city filter
     if (city) where.city = { equals: city, mode: 'insensitive' };
+    // #1801: Category filter (case-insensitive contains)
+    if (category) where.category = { contains: category, mode: 'insensitive' };
+    // #1801: Max budget filter
+    if (maxBudget && maxBudget > 0) where.budget = { lte: maxBudget };
 
     const skip = (pageNum - 1) * PAGE_SIZE;
 

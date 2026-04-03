@@ -10,7 +10,10 @@ import {
   Image,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { Typography, BorderRadius } from '../constants/Colors';
+
+const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { LandingHeader } from '../components/LandingHeader';
 
@@ -122,6 +125,13 @@ export default function LandingScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <Stack.Screen options={{ title: 'Налоговик — найдите налогового специалиста' }} />
+      <Head>
+        <title>Налоговик — найдите налогового специалиста</title>
+        <meta name="description" content="Налоговые консультанты и юристы в вашем городе. Опишите задачу бесплатно и получите предложения от проверенных специалистов." />
+        <meta property="og:title" content="Налоговик — найдите налогового специалиста" />
+        <meta property="og:description" content="Налоговые консультанты и юристы в вашем городе. Опишите задачу бесплатно и получите предложения от проверенных специалистов." />
+        <meta property="og:url" content={APP_URL} />
+      </Head>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
