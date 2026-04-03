@@ -201,7 +201,8 @@ export default function SpecialistProfileScreen() {
 
   async function handleShare() {
     if (!profile) return;
-    const url = `https://p2ptax.smartlaunchhub.com/specialists/${profile.nick}`;
+    const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
+    const url = `${baseUrl}/specialists/${profile.nick}`;
     if (Platform.OS === 'web') {
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(url);
