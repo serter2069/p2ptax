@@ -28,6 +28,7 @@ const BADGE_TAX_LABEL = 'Знакомый в налоговой';
 interface SpecialistProfile {
   id: string;
   nick: string;
+  displayName?: string;
   cities: string[];
   services: string[];
   badges: string[];
@@ -45,6 +46,7 @@ export default function SpecialistProfileScreen() {
 
   // Editable fields
   const [nick, setNick] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [contacts, setContacts] = useState('');
   const [cityInput, setCityInput] = useState('');
   const [cities, setCities] = useState<string[]>([]);
@@ -61,6 +63,7 @@ export default function SpecialistProfileScreen() {
       const data = await api.get<SpecialistProfile>('/specialists/me');
       setProfile(data);
       setNick(data.nick);
+      setDisplayName(data.displayName ?? '');
       setContacts(data.contacts ?? '');
       setCities(data.cities);
       setServices(data.services);
@@ -168,12 +171,14 @@ export default function SpecialistProfileScreen() {
       const badges = hasTaxBadge ? [BADGE_TAX] : [];
       const updated = await api.patch<SpecialistProfile>('/specialists/me', {
         nick: nick.trim(),
+        displayName: displayName.trim() || undefined,
         contacts: contacts.trim() || null,
         cities,
         services,
         badges,
       });
       setProfile(updated);
+      setDisplayName(updated.displayName ?? '');
       Alert.alert('Сохранено', 'Профиль обновлён.');
     } catch (err) {
       const msg =
@@ -262,6 +267,14 @@ export default function SpecialistProfileScreen() {
               onChangeText={setNick}
               placeholder="moi_nik"
               autoCapitalize="none"
+            />
+            <Input
+              label="Отображаемое имя (необязательно)"
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder="Иван Петров"
+              autoCapitalize="words"
+              style={styles.inputGap}
             />
             <Input
               label="Контакты (необязательно)"
