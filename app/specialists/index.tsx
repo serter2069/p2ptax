@@ -69,7 +69,6 @@ export default function SpecialistsCatalogScreen() {
   const [searchText, setSearchText] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
   const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
-  const [fnsSearch, setFnsSearch] = useState('');
   const [sort, setSort] = useState('rating');
 
   // Debounce search input
@@ -79,13 +78,14 @@ export default function SpecialistsCatalogScreen() {
   }, [searchText]);
 
   const selectedFnsCodes = new Set(selectedFns.map((o) => o.code));
-  const fnsTerms = fnsSearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  // Use same searchText to suggest FNS offices in dropdown
+  const fnsTerms = searchText.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const fnsDropdownResults = fnsTerms.length > 0
     ? FNS_OFFICES.filter((o) => {
         if (selectedFnsCodes.has(o.code)) return false;
         const text = `${o.name} ${o.city}`.toLowerCase();
         return fnsTerms.every((t) => text.includes(t));
-      }).slice(0, 8)
+      }).slice(0, 6)
     : [];
 
   const fnsFilterParam = selectedFns.map((o) => o.name).join(',');
@@ -244,52 +244,37 @@ export default function SpecialistsCatalogScreen() {
         }
         ListHeaderComponent={
           <View style={[styles.filters, { maxWidth: filtersMaxWidth }]}>
-            {/* Search input */}
-            <View style={styles.searchContainer}>
+            {/* Unified search — finds specialists, ИФНС offices, or services */}
+            <View style={styles.searchSection}>
               <TextInput
                 style={styles.searchInput}
                 value={searchText}
                 onChangeText={setSearchText}
-                placeholder="Найти специалиста или услугу..."
+                placeholder="Найти специалиста, ИФНС или услугу..."
                 placeholderTextColor={Colors.textMuted}
+                autoCorrect={false}
               />
-            </View>
-
-            {/* ИФНС filter — compact inline row + selected chips */}
-            <View style={styles.fnsSection}>
-              <View style={styles.fnsRow}>
-                <Text style={styles.fnsRowLabel}>ИФНС</Text>
-                <View style={[styles.fnsSearchWrap, { flex: 1 }]}>
-                  <TextInput
-                    style={styles.fnsSearchInput}
-                    value={fnsSearch}
-                    onChangeText={setFnsSearch}
-                    placeholder="Поиск по номеру или городу"
-                    placeholderTextColor={Colors.textMuted}
-                    autoCorrect={false}
-                  />
-                  {fnsDropdownResults.length > 0 && (
-                    <View style={styles.fnsDropdown}>
-                      {fnsDropdownResults.map((office) => (
-                        <TouchableOpacity
-                          key={office.code}
-                          onPress={() => {
-                            setSelectedFns((prev) => [...prev, office]);
-                            setFnsSearch('');
-                          }}
-                          style={styles.fnsDropdownItem}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.fnsDropdownName} numberOfLines={2}>
-                            {office.name}
-                          </Text>
-                          <Text style={styles.fnsDropdownCity}>{office.city}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
+              {fnsDropdownResults.length > 0 && (
+                <View style={styles.fnsDropdown}>
+                  <Text style={styles.fnsDropdownHeader}>Инспекции ФНС</Text>
+                  {fnsDropdownResults.map((office) => (
+                    <TouchableOpacity
+                      key={office.code}
+                      onPress={() => {
+                        setSelectedFns((prev) => [...prev, office]);
+                        setSearchText('');
+                      }}
+                      style={styles.fnsDropdownItem}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.fnsDropdownName} numberOfLines={2}>
+                        {office.name}
+                      </Text>
+                      <Text style={styles.fnsDropdownCity}>{office.city}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-              </View>
+              )}
               {selectedFns.length > 0 && (
                 <View style={styles.fnsChipsRow}>
                   {selectedFns.map((office) => (
@@ -418,8 +403,10 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
     marginBottom: Spacing.sm,
   },
-  searchContainer: {
-    width: '100%',
+  searchSection: {
+    position: 'relative',
+    zIndex: 10,
+    gap: Spacing.sm,
   },
   searchInput: {
     borderWidth: 1,
@@ -431,51 +418,27 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     backgroundColor: Colors.bgCard,
   },
-  fnsSection: {
-    gap: Spacing.xs,
-    zIndex: 10,
-  },
-  fnsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  fnsRowLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-    width: 44,
-  },
-  fnsSearchWrap: {
-    position: 'relative',
-    zIndex: 20,
-  },
-  fnsSearchInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.sm,
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.sm,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgCard,
-  },
   fnsDropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
-    marginTop: 4,
     zIndex: 30,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 10,
+  },
+  fnsDropdownHeader: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   fnsDropdownItem: {
     paddingVertical: Spacing.sm,
