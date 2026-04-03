@@ -208,6 +208,15 @@ export class SpecialistsService {
     return result;
   }
 
+  async updateAvatarUrl(userId: string, avatarUrl: string) {
+    const profile = await this.prisma.specialistProfile.findUnique({ where: { userId } });
+    if (!profile) throw new NotFoundException('Profile not found');
+    return this.prisma.specialistProfile.update({
+      where: { userId },
+      data: { avatarUrl },
+    });
+  }
+
   async adminUpdateBadges(specialistId: string, badges: string[]) {
     const profile = await this.prisma.specialistProfile.findUnique({ where: { userId: specialistId } });
     if (!profile) throw new NotFoundException('Profile not found');

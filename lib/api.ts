@@ -190,6 +190,48 @@ export class ApiError extends Error {
   }
 }
 
+// Multipart upload helper (for avatar etc.)
+async function uploadFile<T>(path: string, formData: FormData): Promise<T> {
+  const token = await getToken();
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const url = `${BASE_URL}${path}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (response.status === 401) {
+    const refreshed = await tryRefreshTokens();
+    if (refreshed) {
+      const newToken = await getToken();
+      const retryHeaders: Record<string, string> = { Accept: 'application/json' };
+      if (newToken) retryHeaders['Authorization'] = `Bearer ${newToken}`;
+      const retryResponse = await fetch(url, { method: 'POST', headers: retryHeaders, body: formData });
+      if (!retryResponse.ok) throw new ApiError(retryResponse.status, `HTTP ${retryResponse.status}`);
+      return retryResponse.json() as Promise<T>;
+    }
+    await clearToken();
+    emitUnauthorized();
+    throw new ApiError(401, 'Unauthorized');
+  }
+
+  if (!response.ok) {
+    let message = `HTTP ${response.status}`;
+    try { const json = await response.json(); message = json?.message ?? message; } catch {}
+    throw new ApiError(response.status, message);
+  }
+
+  return response.json() as Promise<T>;
+}
+
 export const api = {
   get<T>(path: string): Promise<T> {
     return request<T>('GET', path);
@@ -202,5 +244,8 @@ export const api = {
   },
   del<T>(path: string): Promise<T> {
     return request<T>('DELETE', path);
+  },
+  upload<T>(path: string, formData: FormData): Promise<T> {
+    return uploadFile<T>(path, formData);
   },
 };

@@ -2,8 +2,10 @@ import 'reflect-metadata';
 import * as dotenv from 'dotenv';
 dotenv.config();
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -11,12 +13,15 @@ async function bootstrap() {
     throw new Error('JWT_SECRET environment variable is required but not set');
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Trust Cloudflare proxy so Express uses X-Forwarded-For as the real client IP.
   // Without this, @nestjs/throttler uses the Cloudflare edge IP as the rate-limit key,
   // making all rate limits ineffective (one shared bucket for all users).
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
+  // Serve uploaded files (avatars etc.)
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/api/uploads/' });
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
