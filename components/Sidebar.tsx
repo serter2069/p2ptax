@@ -29,10 +29,10 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
   const segments = useSegments();
 
   function isActive(item: SidebarNavItem): boolean {
-    // Match by last segment or explicit segment override
-    const last = segments[segments.length - 1] ?? '';
+    // Match by segment presence anywhere in the route segments
+    // This ensures /messages/123 still highlights "messages"
     const target = item.segment ?? item.route.split('/').pop() ?? '';
-    return last === target;
+    return segments.includes(target as any);
   }
 
   return (

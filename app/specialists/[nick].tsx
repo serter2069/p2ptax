@@ -406,8 +406,8 @@ export default function SpecialistProfileScreen() {
         </View>
       )}
 
-      {/* Contacts — visible only to authenticated users */}
-      {profile.contacts && (
+      {/* Contacts — visible only to authenticated clients */}
+      {profile.contacts && user?.role !== 'SPECIALIST' && (
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Связаться</Text>
           {user ? (

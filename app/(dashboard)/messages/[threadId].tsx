@@ -16,6 +16,7 @@ import { useAuth } from '../../../stores/authStore';
 import { api } from '../../../lib/api';
 import { getSocket, disconnectSocket } from '../../../lib/socket';
 import { Header } from '../../../components/Header';
+import { EmptyState } from '../../../components/EmptyState';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import type { Socket } from 'socket.io-client';
 
@@ -66,6 +67,7 @@ export default function ThreadScreen() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [typingVisible, setTypingVisible] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const flatListRef = useRef<FlatList<Message>>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -75,6 +77,7 @@ export default function ThreadScreen() {
   const fetchData = useCallback(async () => {
     if (!threadId) return;
     setLoading(true);
+    setLoadError(false);
     try {
       const [msgData, threads] = await Promise.all([
         api.get<MessagesResponse>(`/threads/${threadId}/messages?page=1`),
@@ -92,7 +95,7 @@ export default function ThreadScreen() {
         setOtherEmail(other.email);
       }
     } catch {
-      // silently fail, show empty
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -174,6 +177,17 @@ export default function ThreadScreen() {
     setInput('');
     setSending(true);
 
+    // Optimistic update: add message to local state immediately
+    const optimisticMsg: Message = {
+      id: `optimistic-${Date.now()}`,
+      threadId: threadId!,
+      senderId: user!.userId,
+      content,
+      readAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
     try {
       if (socketRef.current?.connected) {
         // Primary path: send via WebSocket — gateway broadcasts message_received to room
@@ -190,6 +204,8 @@ export default function ThreadScreen() {
     } catch {
       // Restore input on failure so user can retry
       setInput(content);
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
     } finally {
       setSending(false);
     }
@@ -242,6 +258,13 @@ export default function ThreadScreen() {
           <View style={styles.center}>
             <ActivityIndicator size="large" color={Colors.brandPrimary} />
           </View>
+        ) : loadError ? (
+          <EmptyState
+            icon="alert-circle-outline"
+            title="Не удалось загрузить сообщения"
+            ctaLabel="Повторить"
+            onCtaPress={fetchData}
+          />
         ) : (
           <FlatList
             ref={flatListRef}
