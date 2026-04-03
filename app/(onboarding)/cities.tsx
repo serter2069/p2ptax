@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { RUSSIAN_CITIES } from '../../constants/Cities';
@@ -22,7 +23,9 @@ export default function CitiesScreen() {
     );
   }
 
-  function handleContinue() {
+  async function handleContinue() {
+    // Save cities to AsyncStorage so they survive refresh/deep links
+    await AsyncStorage.setItem('onboarding_cities', JSON.stringify(selected));
     router.push({
       pathname: '/(onboarding)/fns',
       params: { cities: JSON.stringify(selected) },
@@ -36,6 +39,11 @@ export default function CitiesScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.container}>
+          {/* Back button */}
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+            <Text style={styles.backBtnText}>← Назад</Text>
+          </TouchableOpacity>
+
           {/* Progress indicator — 4 steps */}
           <View style={styles.progressRow}>
             <View style={[styles.progressDot, styles.progressDotDone]} />
@@ -191,5 +199,14 @@ const styles = StyleSheet.create({
   btn: {
     width: '100%',
     marginTop: Spacing.sm,
+  },
+  backBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: Spacing.sm,
+  },
+  backBtnText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
   },
 });

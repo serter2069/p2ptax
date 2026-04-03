@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { shortFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
@@ -41,17 +42,21 @@ export default function FNSScreen() {
     setSelected((prev) => prev.filter((o) => o.name !== name));
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     if (selected.length === 0) {
       setError('Выберите хотя бы одну ИФНС');
       return;
     }
     const cities = [...new Set(selected.map((o) => o.city))];
+    const fnsNames = selected.map((o) => o.name);
+    // Persist to AsyncStorage for refresh/deep-link resilience
+    await AsyncStorage.setItem('onboarding_cities', JSON.stringify(cities));
+    await AsyncStorage.setItem('onboarding_fns', JSON.stringify(fnsNames));
     router.push({
       pathname: '/(onboarding)/services',
       params: {
         cities: JSON.stringify(cities),
-        fnsOffices: JSON.stringify(selected.map((o) => o.name)),
+        fnsOffices: JSON.stringify(fnsNames),
       },
     });
   }

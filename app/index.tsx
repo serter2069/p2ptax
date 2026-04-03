@@ -9,7 +9,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Typography, BorderRadius } from '../constants/Colors';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { LandingHeader } from '../components/LandingHeader';
@@ -120,6 +120,7 @@ export default function LandingScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <Stack.Screen options={{ title: 'Налоговик — найдите налогового специалиста' }} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}

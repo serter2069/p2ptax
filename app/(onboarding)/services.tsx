@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError } from '../../lib/api';
@@ -20,15 +21,38 @@ export default function ServicesScreen() {
   const { cities: citiesParam, fnsOffices: fnsParam } = useLocalSearchParams<{ cities: string; fnsOffices: string }>();
   const { completeOnboarding, user } = useAuth();
 
-  let cities: string[] = [];
-  let fnsOffices: string[] = [];
+  let citiesFromParams: string[] = [];
+  let fnsFromParams: string[] = [];
   try {
-    cities = citiesParam ? (JSON.parse(citiesParam) as string[]) : [];
-    fnsOffices = fnsParam ? (JSON.parse(fnsParam) as string[]) : [];
+    citiesFromParams = citiesParam ? (JSON.parse(citiesParam) as string[]) : [];
+    fnsFromParams = fnsParam ? (JSON.parse(fnsParam) as string[]) : [];
   } catch {
-    cities = [];
-    fnsOffices = [];
+    citiesFromParams = [];
+    fnsFromParams = [];
   }
+
+  const [cities, setCities] = useState<string[]>(citiesFromParams);
+  const [fnsOffices, setFnsOffices] = useState<string[]>(fnsFromParams);
+
+  // Fallback: load from AsyncStorage if params are empty (deep link / refresh)
+  useEffect(() => {
+    async function loadFromStorage() {
+      if (cities.length === 0) {
+        try {
+          const stored = await AsyncStorage.getItem('onboarding_cities');
+          if (stored) setCities(JSON.parse(stored));
+        } catch { /* ignore */ }
+      }
+      if (fnsOffices.length === 0) {
+        try {
+          const stored = await AsyncStorage.getItem('onboarding_fns');
+          if (stored) setFnsOffices(JSON.parse(stored));
+        } catch { /* ignore */ }
+      }
+    }
+    loadFromStorage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [services, setServices] = useState('');
   const [loading, setLoading] = useState(false);

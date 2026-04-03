@@ -11,7 +11,7 @@ import {
   RefreshControl,
   TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
 import { formatExperience, shortFnsLabel as formatFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
@@ -223,6 +223,7 @@ export default function SpecialistsCatalogScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <Stack.Screen options={{ title: 'Каталог специалистов — Налоговик' }} />
       <LandingHeader />
       <Header title="Каталог специалистов" />
 
