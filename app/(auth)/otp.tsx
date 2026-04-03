@@ -16,6 +16,7 @@ import { LandingHeader } from '../../components/LandingHeader';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError, setRefreshToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
+import { secureStorage } from '../../stores/storage';
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -129,6 +130,19 @@ export default function OtpScreen() {
           router.replace('/(onboarding)/username');
         }
       } else {
+        // Check for pending quick request saved before login
+        const pendingRaw = await secureStorage.getItem('p2ptax_pending_request');
+        if (pendingRaw && res.user.role === 'CLIENT') {
+          try {
+            await secureStorage.removeItem('p2ptax_pending_request'); // remove BEFORE post (race condition guard)
+            const pendingData = JSON.parse(pendingRaw);
+            const created = await api.post('/requests', pendingData);
+            router.replace(`/(dashboard)/requests/${(created as any).data.id}` as any);
+            return;
+          } catch {
+            // POST failed — fall through to normal dashboard redirect
+          }
+        }
         router.replace((redirectTo || '/(dashboard)') as any);
       }
     } catch (err) {
