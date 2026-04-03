@@ -29,7 +29,6 @@ import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 
 
 interface SpecialistItem {
-  id: string;
   nick: string;
   displayName: string | null;
   avatarUrl: string | null;
@@ -64,9 +63,11 @@ export default function SpecialistsCatalogScreen() {
   const router = useRouter();
   const { isMobile, numColumns, contentMaxWidth } = useBreakpoints();
 
-  const [allSpecialists, setAllSpecialists] = useState<SpecialistItem[]>([]);
-  const [visibleCount, setVisibleCount] = useState(9);
+  const [items, setItems] = useState<SpecialistItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
@@ -97,8 +98,12 @@ export default function SpecialistsCatalogScreen() {
 
   const PAGE_SIZE = 9;
 
-  const fetchSpecialists = useCallback(async (isRefresh = false) => {
-    if (!isRefresh) setLoading(true);
+  const fetchSpecialists = useCallback(async (pageNum: number, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     setError('');
     try {
       const params = new URLSearchParams();
@@ -106,13 +111,15 @@ export default function SpecialistsCatalogScreen() {
       if (sort) params.set('sort', sort);
       if (searchDebounced.trim()) params.set('search', searchDebounced.trim());
       if (selectedCategory) params.set('category', selectedCategory);
+      params.set('page', String(pageNum));
+      params.set('limit', String(PAGE_SIZE));
 
-      const query = params.toString();
-      const data = await api.get<SpecialistItem[]>(
-        `/specialists${query ? `?${query}` : ''}`,
+      const data = await api.get<{ items: SpecialistItem[]; total: number; page: number; pages: number }>(
+        `/specialists?${params.toString()}`,
       );
-      setAllSpecialists(data);
-      setVisibleCount(PAGE_SIZE);
+      setItems((prev) => append ? [...prev, ...data.items] : data.items);
+      setPage(pageNum);
+      setHasMore(pageNum < data.pages);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -121,26 +128,28 @@ export default function SpecialistsCatalogScreen() {
       }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
       setRefreshing(false);
     }
   }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
 
   useEffect(() => {
-    fetchSpecialists();
+    fetchSpecialists(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
 
   function handleRefresh() {
     setRefreshing(true);
-    fetchSpecialists(true);
+    fetchSpecialists(1, false);
   }
 
   function handleLoadMore() {
-    setVisibleCount((prev) => prev + PAGE_SIZE);
+    if (!loadingMore && hasMore) {
+      fetchSpecialists(page + 1, true);
+    }
   }
 
-  const specialists = allSpecialists.slice(0, visibleCount);
-  const hasMore = visibleCount < allSpecialists.length;
+  const specialists = items;
 
   function renderSpecialist({ item }: { item: SpecialistItem }) {
     const isVerified = item.badges.includes('verified');
@@ -244,7 +253,7 @@ export default function SpecialistsCatalogScreen() {
       <FlatList
         key={numColumns}
         data={specialists}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.nick}
         renderItem={renderSpecialist}
         numColumns={numColumns}
         contentContainerStyle={[
@@ -370,7 +379,7 @@ export default function SpecialistsCatalogScreen() {
               title="Ошибка загрузки"
               subtitle={error}
               ctaLabel="Повторить"
-              onCtaPress={() => fetchSpecialists()}
+              onCtaPress={() => fetchSpecialists(1, false)}
             />
           ) : (
             <EmptyState
@@ -383,13 +392,17 @@ export default function SpecialistsCatalogScreen() {
         ListFooterComponent={
           hasMore && specialists.length > 0 ? (
             <View style={styles.loadMoreBox}>
-              <Button
-                onPress={handleLoadMore}
-                variant="secondary"
-                style={styles.loadMoreBtn}
-              >
-                Загрузить ещё
-              </Button>
+              {loadingMore ? (
+                <ActivityIndicator size="small" color={Colors.brandPrimary} />
+              ) : (
+                <Button
+                  onPress={handleLoadMore}
+                  variant="secondary"
+                  style={styles.loadMoreBtn}
+                >
+                  Загрузить ещё
+                </Button>
+              )}
             </View>
           ) : null
         }

@@ -85,8 +85,19 @@ export class SpecialistsController {
     @Query('search') search?: string,
     @Query('fns') fns?: string,
     @Query('category') category?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.specialistsService.getCatalog(city, badge, sort, search, fns, category);
+    return this.specialistsService.getCatalog(
+      city,
+      badge,
+      sort,
+      search,
+      fns,
+      category,
+      parseInt(page ?? '1') || 1,
+      parseInt(limit ?? '9') || 9,
+    );
   }
 
   @Patch(':id/badges')
