@@ -1,4 +1,8 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { SpecialistsService } from './specialists.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
@@ -7,6 +11,11 @@ import { AdminGuard } from '../auth/admin.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
+
+const UPLOADS_DIR = join(__dirname, '..', '..', 'uploads', 'avatars');
+if (!existsSync(UPLOADS_DIR)) {
+  mkdirSync(UPLOADS_DIR, { recursive: true });
+}
 
 @Controller('specialists')
 export class SpecialistsController {
@@ -31,6 +40,36 @@ export class SpecialistsController {
   @Roles(Role.SPECIALIST)
   updateProfile(@Request() req: any, @Body() dto: UpdateSpecialistProfileDto) {
     return this.specialistsService.updateProfile(req.user.id, dto);
+  }
+
+  @Post('me/avatar')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SPECIALIST)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: UPLOADS_DIR,
+        filename: (_req: any, file, cb) => {
+          const userId = _req.user?.id ?? 'unknown';
+          const ext = extname(file.originalname) || '.jpg';
+          cb(null, `${userId}${ext}`);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          cb(new BadRequestException('Only image files are allowed') as any, false);
+        } else {
+          cb(null, true);
+        }
+      },
+    }),
+  )
+  async uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    const avatarUrl = `/api/uploads/avatars/${file.filename}`;
+    await this.specialistsService.updateAvatarUrl(req.user.id, avatarUrl);
+    return { avatarUrl };
   }
 
   @Get('cities')

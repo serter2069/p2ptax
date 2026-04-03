@@ -11,7 +11,10 @@ import {
   Alert,
   TextInput,
   RefreshControl,
+  Image,
+  Platform,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
@@ -29,6 +32,7 @@ interface SpecialistProfile {
   services: string[];
   badges: string[];
   contacts: string | null;
+  avatarUrl: string | null;
 }
 
 export default function SpecialistProfileScreen() {
@@ -47,6 +51,8 @@ export default function SpecialistProfileScreen() {
   const [serviceInput, setServiceInput] = useState('');
   const [services, setServices] = useState<string[]>([]);
   const [hasTaxBadge, setHasTaxBadge] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const fetchProfile = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -59,6 +65,7 @@ export default function SpecialistProfileScreen() {
       setCities(data.cities);
       setServices(data.services);
       setHasTaxBadge(data.badges.includes(BADGE_TAX));
+      setAvatarUrl(data.avatarUrl ?? null);
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         // No profile yet — will need to create one
