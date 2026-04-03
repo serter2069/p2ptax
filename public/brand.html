@@ -174,11 +174,10 @@ h1 {
   font-weight: 600;
   cursor: pointer;
   font-family: var(--font), Inter, sans-serif;
-  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 .btn-primary:hover {
   background: #2368BE;
-  transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(26,91,168,0.40);
 }
 .btn-secondary {
@@ -191,11 +190,10 @@ h1 {
   font-weight: 500;
   cursor: pointer;
   backdrop-filter: blur(4px);
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease;
 }
 .btn-secondary:hover {
   background: rgba(255,255,255,0.28);
-  transform: translateY(-1px);
 }
 .v-bottom {
   display: grid;
@@ -396,16 +394,16 @@ variants.forEach(v => {
 .ds-sp-lbl { font-size: 10px; color: #4A6080; font-family: monospace; }
 .ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
 .ds-row-lbl { font-size: 10px; color: #4A6080; font-weight: 600; width: 72px; flex-shrink: 0; letter-spacing: 0.5px; text-transform: uppercase; }
-.ds-btn { font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; padding: 9px 20px; border-radius: 5px; border: none; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; }
+.ds-btn { font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; padding: 9px 20px; border-radius: 5px; border: none; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
 .ds-btn-sm { font-size: 12px; padding: 6px 14px; }
 .ds-btn-primary { background: #1A5BA8; color: #fff; }
-.ds-btn-primary:hover { background: #2368BE; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(26,91,168,0.35); }
+.ds-btn-primary:hover { background: #2368BE; box-shadow: 0 4px 14px rgba(26,91,168,0.30); }
 .ds-btn-secondary { background: #fff; color: #0F2447; border: 1.5px solid #0F2447; }
-.ds-btn-secondary:hover { background: #EBF3FB; border-color: #1A5BA8; color: #1A5BA8; transform: translateY(-1px); }
+.ds-btn-secondary:hover { background: #EBF3FB; border-color: #1A5BA8; color: #1A5BA8; }
 .ds-btn-ghost { background: transparent; color: #1A5BA8; border: 1.5px solid #C8D8EA; }
-.ds-btn-ghost:hover { background: rgba(26,91,168,0.06); border-color: #1A5BA8; transform: translateY(-1px); }
+.ds-btn-ghost:hover { background: rgba(26,91,168,0.06); border-color: #1A5BA8; }
 .ds-btn-danger { background: #B91C1C; color: #fff; }
-.ds-btn-danger:hover { background: #991818; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(185,28,28,0.35); }
+.ds-btn-danger:hover { background: #991818; box-shadow: 0 4px 12px rgba(185,28,28,0.30); }
 .ds-btn-disabled { background: #C8D8EA; color: #4A6080; cursor: not-allowed; opacity: 0.5; }
 .ds-inputs { display: flex; flex-wrap: wrap; gap: 20px; }
 .ds-input-block { display: flex; flex-direction: column; gap: 4px; width: 240px; }
@@ -445,8 +443,8 @@ variants.forEach(v => {
   <div class="ds-section">
     <div class="ds-section-label">Color Tokens</div>
     <div class="ds-colors">
+      <div class="ds-chip"><div class="ds-swatch" style="background:#1A5BA8;"></div><div class="ds-clabel">Action</div><div class="ds-cval">#1A5BA8</div></div>
       <div class="ds-chip"><div class="ds-swatch" style="background:#0F2447;"></div><div class="ds-clabel">Primary</div><div class="ds-cval">#0F2447</div></div>
-      <div class="ds-chip"><div class="ds-swatch" style="background:#1A5BA8;"></div><div class="ds-clabel">Accent</div><div class="ds-cval">#1A5BA8</div></div>
       <div class="ds-chip"><div class="ds-swatch" style="background:#F4F8FC;"></div><div class="ds-clabel">Background</div><div class="ds-cval">#F4F8FC</div></div>
       <div class="ds-chip"><div class="ds-swatch" style="background:#4A6080;"></div><div class="ds-clabel">Text Muted</div><div class="ds-cval">#4A6080</div></div>
       <div class="ds-chip"><div class="ds-swatch" style="background:#C8D8EA;"></div><div class="ds-clabel">Border</div><div class="ds-cval">#C8D8EA</div></div>
