@@ -53,9 +53,10 @@ export class RequestsService {
     requestId: string,
     description: string,
   ): Promise<void> {
+    // #1856: Case-insensitive city matching — Prisma `has` on String[] is case-sensitive,
+    // so we fetch all profiles and filter in JS with toLowerCase()
     const cityLower = city.toLowerCase();
     const profiles = await this.prisma.specialistProfile.findMany({
-      where: { cities: { has: cityLower } },
       include: { user: { select: { email: true } } },
     });
 
@@ -69,10 +70,14 @@ export class RequestsService {
   }
 
   async findFeed(city?: string, page = 1) {
-    const where: any = { status: RequestStatus.OPEN };
-    if (city) where.city = city;
+    // #1855: Sanitize page to prevent negative skip
+    const pageNum = Math.max(1, parseInt(page as unknown as string) || 1);
 
-    const skip = (page - 1) * PAGE_SIZE;
+    const where: any = { status: RequestStatus.OPEN };
+    // #1849: Case-insensitive city filter
+    if (city) where.city = { equals: city, mode: 'insensitive' };
+
+    const skip = (pageNum - 1) * PAGE_SIZE;
 
     const [items, total] = await Promise.all([
       this.prisma.request.findMany({
@@ -88,7 +93,7 @@ export class RequestsService {
       this.prisma.request.count({ where }),
     ]);
 
-    return { items, total, page, pageSize: PAGE_SIZE };
+    return { items, total, page: pageNum, pageSize: PAGE_SIZE };
   }
 
   async findMy(clientId: string) {
