@@ -83,6 +83,13 @@ export default function SpecialistProfileScreen() {
     fetchProfile();
   }, [fetchProfile]);
 
+  // Must be before any conditional return to satisfy Rules of Hooks
+  useEffect(() => {
+    if (error === 'profile_not_found') {
+      router.replace('/(dashboard)/specialist-profile');
+    }
+  }, [error, router]);
+
   function handleRefresh() {
     setRefreshing(true);
     fetchProfile(true);
@@ -205,12 +212,6 @@ export default function SpecialistProfileScreen() {
       </SafeAreaView>
     );
   }
-
-  useEffect(() => {
-    if (error === 'profile_not_found') {
-      router.replace('/(dashboard)/specialist-profile');
-    }
-  }, [error, router]);
 
   if (error === 'profile_not_found') {
     return null;
