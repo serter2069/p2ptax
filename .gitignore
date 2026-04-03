@@ -46,6 +46,7 @@ api/.env
 # API
 api/node_modules/
 api/dist/
+api/uploads/
 
 # IDE
 .vscode/

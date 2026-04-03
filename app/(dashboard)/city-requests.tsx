@@ -54,6 +54,10 @@ export default function CityRequestsScreen() {
   const [submitting, setSubmitting] = useState(false);
   // Track already-responded request IDs optimistically
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
+  // Pagination state per city
+  const [cityPages, setCityPages] = useState<Record<string, number>>({});
+  const [cityHasMore, setCityHasMore] = useState<Record<string, boolean>>({});
+  const [loadingMoreCity, setLoadingMoreCity] = useState<string | null>(null);
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -68,20 +72,30 @@ export default function CityRequestsScreen() {
         return;
       }
 
-      // Fetch open requests for each city in parallel, deduplicate by id
+      // Fetch open requests for each city in parallel (page 1)
       const results = await Promise.all(
         cities.map((city) =>
           api
-            .get<FeedResponse>(`/requests?city=${encodeURIComponent(city)}`)
-            .then((res) => res.items)
-            .catch(() => [] as RequestItem[]),
+            .get<FeedResponse>(`/requests?city=${encodeURIComponent(city)}&page=1`)
+            .catch(() => ({ items: [], total: 0, page: 1, pageSize: 20 }) as FeedResponse),
         ),
       );
 
+      // Track pagination per city
+      const pages: Record<string, number> = {};
+      const hasMore: Record<string, boolean> = {};
+      cities.forEach((city, idx) => {
+        const res = results[idx];
+        pages[city] = 1;
+        hasMore[city] = res.total > res.pageSize;
+      });
+      setCityPages(pages);
+      setCityHasMore(hasMore);
+
       const seen = new Set<string>();
       const merged: RequestItem[] = [];
-      for (const batch of results) {
-        for (const item of batch) {
+      for (const res of results) {
+        for (const item of res.items) {
           if (!seen.has(item.id)) {
             seen.add(item.id);
             merged.push(item);
@@ -161,6 +175,29 @@ export default function CityRequestsScreen() {
       Alert.alert('Ошибка', msg);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function loadMoreForCity(city: string) {
+    const nextPage = (cityPages[city] ?? 1) + 1;
+    setLoadingMoreCity(city);
+    try {
+      const res = await api.get<FeedResponse>(
+        `/requests?city=${encodeURIComponent(city)}&page=${nextPage}`,
+      );
+      const newItems = res.items.filter(
+        (item) => !requests.some((r) => r.id === item.id),
+      );
+      setRequests((prev) => [...prev, ...newItems]);
+      setCityPages((prev) => ({ ...prev, [city]: nextPage }));
+      setCityHasMore((prev) => ({
+        ...prev,
+        [city]: nextPage * res.pageSize < res.total,
+      }));
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось загрузить ещё запросы');
+    } finally {
+      setLoadingMoreCity(null);
     }
   }
 
@@ -292,6 +329,28 @@ export default function CityRequestsScreen() {
               onRefresh={handleRefresh}
               tintColor={Colors.brandPrimary}
             />
+          }
+          ListFooterComponent={
+            myCities.some((c) => cityHasMore[c]) ? (
+              <View style={styles.loadMoreWrap}>
+                {myCities.filter((c) => cityHasMore[c]).map((city) => (
+                  <TouchableOpacity
+                    key={city}
+                    style={styles.loadMoreBtn}
+                    onPress={() => loadMoreForCity(city)}
+                    disabled={loadingMoreCity === city}
+                  >
+                    {loadingMoreCity === city ? (
+                      <ActivityIndicator size="small" color={Colors.brandPrimary} />
+                    ) : (
+                      <Text style={styles.loadMoreText}>
+                        {`Ещё запросы: ${city}`}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null
           }
         />
       )}
@@ -430,6 +489,25 @@ const styles = StyleSheet.create({
   respondedText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.statusSuccess,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  loadMoreWrap: {
+    width: '100%',
+    maxWidth: 430,
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  loadMoreBtn: {
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  loadMoreText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.medium,
   },
   // Modal

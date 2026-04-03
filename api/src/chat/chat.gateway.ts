@@ -152,7 +152,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    client.emit('message_read', { messageId: updated.id, readAt: updated.readAt });
+    // Broadcast to the whole thread room so the sender sees the read status
+    const room = `thread:${updated.threadId}`;
+    this.server.to(room).emit('message_read', { messageId: updated.id, readAt: updated.readAt });
   }
 
   /** Look up recipient email and send notification */

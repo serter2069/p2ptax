@@ -77,6 +77,24 @@ export class ReviewsService {
     });
   }
 
+  async listByClient(clientId: string) {
+    return this.prisma.review.findMany({
+      where: { clientId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        specialist: {
+          select: {
+            id: true,
+            email: true,
+            specialistProfile: {
+              select: { nick: true, displayName: true, avatarUrl: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
   async listBySpecialist(nick: string, page = 1) {
     const specialistProfile = await this.prisma.specialistProfile.findUnique({
       where: { nick },

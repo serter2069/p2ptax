@@ -167,6 +167,14 @@ export default function ThreadScreen() {
       }
     }
 
+    function onMessageRead(data: { messageId: string; readAt: string }) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === data.messageId ? { ...m, readAt: data.readAt } : m,
+        ),
+      );
+    }
+
     function onTyping(data: { threadId: string; userId: string }) {
       if (data.userId !== user?.userId) {
         setTypingVisible(true);
@@ -181,11 +189,13 @@ export default function ThreadScreen() {
 
     socket.on('connect', onConnect);
     socket.on('message_received', onMessageReceived);
+    socket.on('message_read', onMessageRead);
     socket.on('typing', onTyping);
 
     return () => {
       socket.off('connect', onConnect);
       socket.off('message_received', onMessageReceived);
+      socket.off('message_read', onMessageRead);
       socket.off('typing', onTyping);
       if (typingTimer.current) clearTimeout(typingTimer.current);
       disconnectSocket();
@@ -275,9 +285,16 @@ export default function ThreadScreen() {
             <Text style={[styles.msgText, isMe ? styles.msgTextMe : styles.msgTextOther]}>
               {item.content}
             </Text>
-            <Text style={[styles.msgTime, isMe ? styles.msgTimeMe : styles.msgTimeOther]}>
-              {formatMsgTime(item.createdAt)}
-            </Text>
+            <View style={styles.msgMeta}>
+              <Text style={[styles.msgTime, isMe ? styles.msgTimeMe : styles.msgTimeOther]}>
+                {formatMsgTime(item.createdAt)}
+              </Text>
+              {isMe && (
+                <Text style={styles.deliveryStatus}>
+                  {item.readAt ? ' \u2713\u2713' : ' \u2713'}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       </>
@@ -438,9 +455,17 @@ const styles = StyleSheet.create({
   msgTextOther: {
     color: Colors.textPrimary,
   },
+  msgMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+  },
+  deliveryStatus: {
+    fontSize: Typography.fontSize.xs,
+    color: 'rgba(255,255,255,0.65)',
+  },
   msgTime: {
     fontSize: Typography.fontSize.xs,
-    alignSelf: 'flex-end',
   },
   msgTimeMe: {
     color: 'rgba(255,255,255,0.65)',
