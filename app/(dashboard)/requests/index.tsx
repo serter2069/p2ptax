@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   tabTextActive: {
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
     fontWeight: Typography.fontWeight.semibold,
   },
   // Mobile: centered, single column

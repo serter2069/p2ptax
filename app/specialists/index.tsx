@@ -320,7 +320,10 @@ export default function SpecialistsCatalogScreen() {
                 contentContainerStyle={styles.chipsRow}
               >
                 {SPECIALIZATION_FILTERS.map((spec) => {
-                  const isActive = searchDebounced === spec.value && !searchText && spec.value !== '';
+                  const activeSpec = SPECIALIZATION_FILTERS.find(
+                    (s) => s.value !== '' && searchDebounced === s.value
+                  );
+                  const isActive = spec.value === '' ? !activeSpec : searchDebounced === spec.value;
                   return (
                     <TouchableOpacity
                       key={spec.value || '__all_spec__'}

@@ -16,6 +16,7 @@ import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Co
 import { Header } from '../../../components/Header';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
+import { useBreakpoints } from '../../../hooks/useBreakpoints';
 
 const TAX_CATEGORIES = [
   'НДС',
@@ -30,6 +31,7 @@ const TAX_CATEGORIES = [
 
 export default function CreateRequestScreen() {
   const router = useRouter();
+  const { isMobile } = useBreakpoints();
   const { specialist } = useLocalSearchParams<{ specialist?: string }>();
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
@@ -85,7 +87,7 @@ export default function CreateRequestScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.container}>
+          <View style={[styles.container, !isMobile && { maxWidth: 680 }]}>
             <Text style={styles.subtitle}>
               Опишите вашу задачу, и специалисты откликнутся
             </Text>
@@ -246,6 +248,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   chipTextActive: {
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
 });
