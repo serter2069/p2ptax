@@ -63,14 +63,19 @@ model OtpCode {
 }
 
 model SpecialistProfile {
-  id       String   @id @default(cuid())
-  userId   String   @unique
-  user     User     @relation(fields: [userId], references: [id])
-  nick     String   @unique
-  cities   String[]
-  services String[]
-  badges   String[]
-  contacts String?
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  nick        String   @unique
+  displayName String?
+  bio         String?
+  experience  Int?
+  cities      String[]
+  services    String[]
+  badges      String[]
+  fnsOffices  String[]
+  contacts    String?
+  avatarUrl   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

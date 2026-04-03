@@ -1,4 +1,4 @@
-import { IsString, IsArray, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsArray, IsOptional, IsInt, Min, MinLength, MaxLength } from 'class-validator';
 
 export class UpdateSpecialistProfileDto {
   @IsString()
@@ -6,6 +6,21 @@ export class UpdateSpecialistProfileDto {
   @MaxLength(30)
   @IsOptional()
   nick?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  displayName?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(1000)
+  bio?: string;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  experience?: number;
 
   @IsArray()
   @IsString({ each: true })
@@ -16,6 +31,11 @@ export class UpdateSpecialistProfileDto {
   @IsString({ each: true })
   @IsOptional()
   services?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  fnsOffices?: string[];
 
   @IsArray()
   @IsString({ each: true })

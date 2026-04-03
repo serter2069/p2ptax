@@ -117,7 +117,7 @@ export default function SettingsScreen() {
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Роль</Text>
               <Text style={styles.rowValue}>
-                {user?.role === 'SPECIALIST' ? 'Специалист' : 'Клиент'}
+                {user?.role === 'SPECIALIST' ? 'Специалист' : 'Заказчик'}
               </Text>
             </View>
           </View>

@@ -35,9 +35,17 @@ export default function OtpScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ email?: string; role?: string }>();
   const email = decodeURIComponent(params.email ?? '');
+  const hasExplicitRole = params.role === 'SPECIALIST' || params.role === 'CLIENT';
   const role = params.role === 'SPECIALIST' ? 'SPECIALIST' : 'CLIENT';
 
   const { login } = useAuth();
+
+  // Redirect to email screen if opened directly without email param
+  useEffect(() => {
+    if (!email) {
+      router.replace('/(auth)/email');
+    }
+  }, [email, router]);
 
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [loading, setLoading] = useState(false);
@@ -108,9 +116,14 @@ export default function OtpScreen() {
         username: res.user.username,
         isNewUser: res.isNewUser,
       });
-      // New users go to onboarding to pick a username; returning users go to dashboard
+      // New users: if no explicit role was chosen, let them pick; otherwise go to onboarding
+      // Returning users go to dashboard
       if (res.isNewUser) {
-        router.replace('/(onboarding)/username');
+        if (!hasExplicitRole) {
+          router.replace('/(auth)/role');
+        } else {
+          router.replace('/(onboarding)/username');
+        }
       } else {
         router.replace('/');
       }
@@ -173,9 +186,9 @@ export default function OtpScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Введите код</Text>
+              <Text style={styles.title}>Введите код из письма</Text>
               <Text style={styles.subtitle}>
-                Отправили код на{' '}
+                Мы отправили 6-значный код на{' '}
                 <Text style={styles.emailHighlight}>{email}</Text>
               </Text>
             </View>

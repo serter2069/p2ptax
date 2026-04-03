@@ -9,23 +9,28 @@ import {
   Alert,
   TouchableOpacity,
   TextInput,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { Card } from '../../components/Card';
-import { Badge } from '../../components/Badge';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Header } from '../../components/Header';
+import { LandingHeader } from '../../components/LandingHeader';
 import { EmptyState } from '../../components/EmptyState';
 import { Stars } from '../../components/Stars';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 interface SpecialistProfile {
   id: string;
   userId: string;
   nick: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  experience: number | null;
   cities: string[];
   services: string[];
   badges: string[];
@@ -56,10 +61,24 @@ interface Eligibility {
   eligibleRequestId: string | null;
 }
 
+function formatExperience(years: number): string {
+  if (years === 1) return '1 год опыта';
+  if (years >= 2 && years <= 4) return `${years} года опыта`;
+  return `${years} лет опыта`;
+}
+
+function getReviewerInitials(review: ReviewItem): string {
+  const name = review.client.username || review.client.email.split('@')[0];
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function SpecialistProfileScreen() {
   const { nick } = useLocalSearchParams<{ nick: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { isMobile, isDesktop } = useBreakpoints();
 
   const [profile, setProfile] = useState<SpecialistProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +127,6 @@ export default function SpecialistProfileScreen() {
     return () => { cancelled = true; };
   }, [nick]);
 
-  // Load reviews when profile is available
   const loadReviews = useCallback(async (page: number) => {
     if (!nick) return;
     setReviewsLoading(true);
@@ -122,7 +140,7 @@ export default function SpecialistProfileScreen() {
       setReviewsTotal(data.total);
       setReviewsPage(page);
     } catch {
-      // silently fail — reviews are supplementary
+      // silently fail -- reviews are supplementary
     } finally {
       setReviewsLoading(false);
     }
@@ -134,7 +152,6 @@ export default function SpecialistProfileScreen() {
     }
   }, [profile, loadReviews]);
 
-  // Check eligibility for logged-in clients
   useEffect(() => {
     if (!nick || !user || user.role !== 'CLIENT') return;
     api.get<Eligibility>(`/reviews/eligibility/${nick}`)
@@ -144,7 +161,7 @@ export default function SpecialistProfileScreen() {
 
   async function handleWrite() {
     if (!user) {
-      router.push('/(auth)/email?role=CLIENT');
+      router.push('/(auth)/email');
       return;
     }
     if (!profile || writingLoading) return;
@@ -174,7 +191,6 @@ export default function SpecialistProfileScreen() {
       setReviewComment('');
       setReviewRating(5);
       setEligibility({ canReview: false, eligibleRequestId: null });
-      // Reload reviews and profile activity
       loadReviews(1);
       const updated = await api.get<SpecialistProfile>(`/specialists/${profile.nick}`);
       setProfile(updated);
@@ -186,10 +202,19 @@ export default function SpecialistProfileScreen() {
     }
   }
 
+  function handleShare() {
+    if (!profile) return;
+    const url = `https://p2ptax.smartlaunchhub.com/specialists/${profile.nick}`;
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      Alert.alert('Ссылка скопирована');
+    }
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Header title="Профиль" showBack />
+        <LandingHeader />
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
@@ -200,9 +225,9 @@ export default function SpecialistProfileScreen() {
   if (error || !profile) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Header title="Профиль" showBack />
+        <LandingHeader />
         <EmptyState
-          icon="⚠️"
+          icon="!"
           title={error || 'Не удалось загрузить профиль'}
           ctaLabel="Назад"
           onCtaPress={() => router.back()}
@@ -211,218 +236,316 @@ export default function SpecialistProfileScreen() {
     );
   }
 
-  const hasFamiliar = profile.badges.includes('familiar');
-  const isPromoted = profile.promoted;
-
-  // Activity score: 0-100 based on responseCount (capped at 50)
-  const activityScore = Math.min(100, Math.round((profile.activity.responseCount / 50) * 100));
-
+  const isVerified = profile.badges.includes('verified');
+  const displayName = profile.displayName || `@${profile.nick}`;
   const canShowMore = reviews.length < reviewsTotal;
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <Header title="Профиль специалиста" showBack />
-
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.container}>
-          {/* Hero card */}
-          <Card style={styles.heroCard}>
-            <View style={styles.heroRow}>
-              <Avatar name={profile.nick} size="lg" />
-              <View style={styles.heroInfo}>
-                <Text style={styles.nick}>@{profile.nick}</Text>
-                {/* Badges */}
-                <View style={styles.badgesRow}>
-                  {hasFamiliar && <Badge variant="familiar" />}
-                </View>
-                {/* Star rating summary */}
-                <Stars
-                  rating={profile.activity.avgRating}
-                  reviewCount={profile.activity.reviewCount}
-                  size="md"
-                  showEmpty
-                />
-              </View>
-            </View>
-
-            {/* Cities */}
-            {profile.cities.length > 0 && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Города:</Text>
-                <Text style={styles.infoValue}>{profile.cities.join(', ')}</Text>
-              </View>
+  // --- Sidebar / Business Card ---
+  const renderSidebar = () => (
+    <View style={[
+      styles.sidebarCard,
+      isDesktop && styles.sidebarCardDesktop,
+      isMobile && styles.sidebarCardMobile,
+    ]}>
+      {/* Mobile: horizontal row; Desktop: vertical centered */}
+      {isMobile ? (
+        <View style={styles.mobileHeroRow}>
+          <Avatar name={displayName} imageUri={profile.avatarUrl || undefined} size="xl" />
+          <View style={styles.mobileHeroInfo}>
+            <Text style={styles.sidebarName}>{displayName}</Text>
+            {profile.services.length > 0 && (
+              <Text style={styles.sidebarSpecialization}>{profile.services[0]}</Text>
             )}
-          </Card>
-
-          {/* Activity */}
-          <Card>
-            <Text style={styles.sectionTitle}>Активность</Text>
-            <View style={styles.activityRow}>
-              <View style={styles.activityBar}>
-                <View
-                  style={[
-                    styles.activityFill,
-                    { width: `${activityScore}%` as `${number}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.activityLabel}>{activityScore}/100</Text>
+            {profile.cities.length > 0 && (
+              <Text style={styles.sidebarCity}>{profile.cities.join(', ')}</Text>
+            )}
+            <View style={styles.sidebarRatingRow}>
+              <Stars
+                rating={profile.activity.avgRating}
+                reviewCount={profile.activity.reviewCount}
+                size="sm"
+                showEmpty
+              />
             </View>
-            <Text style={styles.activityHint}>
-              Откликов на запросы: {profile.activity.responseCount}
-            </Text>
-          </Card>
-
-          {/* Services */}
-          {profile.services.length > 0 && (
-            <Card>
-              <Text style={styles.sectionTitle}>Услуги</Text>
-              <View style={styles.servicesList}>
-                {profile.services.map((svc, idx) => (
-                  <View key={idx} style={styles.serviceItem}>
-                    <Text style={styles.serviceBullet}>•</Text>
-                    <Text style={styles.serviceText}>{svc}</Text>
-                  </View>
-                ))}
-              </View>
-            </Card>
-          )}
-
-          {/* Contacts */}
-          {profile.contacts ? (
-            <Card>
-              <Text style={styles.sectionTitle}>Контакты</Text>
-              <Text style={styles.contactsText}>{profile.contacts}</Text>
-            </Card>
-          ) : null}
-
-          {/* Write button */}
-          <Button
-            onPress={handleWrite}
-            variant="primary"
-            loading={writingLoading}
-            disabled={writingLoading}
-            style={styles.writeBtn}
-          >
-            {user ? 'Написать' : 'Написать (войдите)'}
-          </Button>
-
-          {!user && (
-            <Text style={styles.guestHint}>
-              Для связи со специалистом необходимо войти или зарегистрироваться
-            </Text>
-          )}
-
-          {/* Reviews section */}
-          <Card>
-            <View style={styles.reviewsHeader}>
-              <Text style={styles.sectionTitle}>
-                Отзывы {reviewsTotal > 0 ? `(${reviewsTotal})` : ''}
-              </Text>
-              {eligibility?.canReview && !showReviewForm && (
-                <TouchableOpacity
-                  onPress={() => setShowReviewForm(true)}
-                  style={styles.leaveReviewBtn}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.leaveReviewBtnText}>Оставить отзыв</Text>
-                </TouchableOpacity>
+            <View style={styles.sidebarMetaRow}>
+              {isVerified && (
+                <View style={styles.verifiedBadge}>
+                  <Text style={styles.verifiedText}>Проверен</Text>
+                </View>
+              )}
+              {profile.experience != null && (
+                <Text style={styles.experienceTag}>{formatExperience(profile.experience)}</Text>
               )}
             </View>
-
-            {/* Review form */}
-            {showReviewForm && (
-              <View style={styles.reviewForm}>
-                <Text style={styles.reviewFormLabel}>Оценка</Text>
-                <View style={styles.starPicker}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <TouchableOpacity
-                      key={star}
-                      onPress={() => setReviewRating(star)}
-                      activeOpacity={0.7}
-                      style={styles.starBtn}
-                    >
-                      <Text style={[
-                        styles.starPickerChar,
-                        star <= reviewRating ? styles.starFilled : styles.starEmpty,
-                      ]}>
-                        {star <= reviewRating ? '★' : '☆'}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <Text style={styles.reviewFormLabel}>Комментарий (необязательно)</Text>
-                <TextInput
-                  style={styles.reviewInput}
-                  value={reviewComment}
-                  onChangeText={setReviewComment}
-                  placeholder="Расскажите о своём опыте..."
-                  placeholderTextColor={Colors.textMuted}
-                  multiline
-                  numberOfLines={3}
-                />
-                <View style={styles.reviewFormActions}>
-                  <TouchableOpacity
-                    onPress={() => { setShowReviewForm(false); setReviewComment(''); setReviewRating(5); }}
-                    style={styles.cancelBtn}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.cancelBtnText}>Отмена</Text>
-                  </TouchableOpacity>
-                  <Button
-                    onPress={handleSubmitReview}
-                    variant="primary"
-                    loading={submitLoading}
-                    disabled={submitLoading}
-                    style={styles.submitBtn}
-                  >
-                    Отправить
-                  </Button>
-                </View>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.desktopHeroCol}>
+          <View style={styles.desktopAvatarWrap}>
+            <Avatar name={displayName} imageUri={profile.avatarUrl || undefined} size="xl" />
+          </View>
+          <Text style={styles.sidebarNameDesktop}>{displayName}</Text>
+          {profile.services.length > 0 && (
+            <Text style={styles.sidebarSpecialization}>{profile.services[0]}</Text>
+          )}
+          {profile.cities.length > 0 && (
+            <Text style={styles.sidebarCity}>{profile.cities.join(', ')}</Text>
+          )}
+          <View style={styles.sidebarRatingRow}>
+            <Stars
+              rating={profile.activity.avgRating}
+              reviewCount={profile.activity.reviewCount}
+              size="md"
+              showEmpty
+            />
+          </View>
+          <View style={styles.sidebarMetaRow}>
+            {isVerified && (
+              <View style={styles.verifiedBadge}>
+                <Text style={styles.verifiedText}>Проверен</Text>
               </View>
             )}
+            {profile.experience != null && (
+              <Text style={styles.experienceTag}>{formatExperience(profile.experience)}</Text>
+            )}
+          </View>
+        </View>
+      )}
 
-            {/* Reviews list */}
-            {reviews.length === 0 && !reviewsLoading ? (
-              <Text style={styles.noReviewsText}>Отзывов пока нет</Text>
-            ) : (
-              <View style={styles.reviewsList}>
-                {reviews.map((review) => (
-                  <View key={review.id} style={styles.reviewItem}>
-                    <View style={styles.reviewItemHeader}>
-                      <Text style={styles.reviewAuthor}>
-                        {review.client.username ? `@${review.client.username}` : review.client.email.split('@')[0]}
-                      </Text>
-                      <Stars rating={review.rating} size="sm" />
-                    </View>
-                    {review.comment ? (
-                      <Text style={styles.reviewComment}>{review.comment}</Text>
-                    ) : null}
+      {/* Write button */}
+      <TouchableOpacity
+        onPress={handleWrite}
+        disabled={writingLoading}
+        style={[styles.writeBtn, writingLoading && styles.writeBtnDisabled]}
+        activeOpacity={0.8}
+      >
+        {writingLoading ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <Text style={styles.writeBtnText}>
+            {user ? 'Написать запрос' : 'Войти и написать'}
+          </Text>
+        )}
+      </TouchableOpacity>
+
+      {!user && (
+        <Text style={styles.guestHint}>
+          Для связи со специалистом необходимо войти или зарегистрироваться
+        </Text>
+      )}
+
+      {/* Share button */}
+      <TouchableOpacity onPress={handleShare} style={styles.shareBtn} activeOpacity={0.7}>
+        <Text style={styles.shareBtnText}>Поделиться профилем</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // --- Content sections ---
+  const renderContent = () => (
+    <View style={styles.contentSections}>
+      {/* About */}
+      {profile.bio && (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>О специалисте</Text>
+          <Text style={styles.bioText}>{profile.bio}</Text>
+        </View>
+      )}
+
+      {/* Services & prices */}
+      {profile.services.length > 0 && (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Услуги и цены</Text>
+          <View style={styles.servicesList}>
+            {profile.services.map((svc, idx) => (
+              <View key={idx} style={styles.serviceCard}>
+                <Text style={styles.serviceText}>{svc}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Experience */}
+      {profile.experience != null && (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Опыт работы</Text>
+          <View style={styles.experienceBlock}>
+            <Text style={styles.experienceNumber}>{profile.experience}</Text>
+            <Text style={styles.experienceLabel}>
+              {profile.experience === 1 ? 'год' : profile.experience >= 2 && profile.experience <= 4 ? 'года' : 'лет'} опыта
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Cities */}
+      {profile.cities.length > 0 && (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Города работы</Text>
+          <View style={styles.citiesTags}>
+            {profile.cities.map((city, idx) => (
+              <View key={idx} style={styles.cityTag}>
+                <Text style={styles.cityTagText}>{city}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Contacts */}
+      {profile.contacts && (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Связаться</Text>
+          <Text style={styles.contactsText}>{profile.contacts}</Text>
+        </View>
+      )}
+
+      {/* Reviews */}
+      <View style={styles.sectionCard}>
+        <View style={styles.reviewsHeader}>
+          <Text style={styles.sectionTitle}>
+            Отзывы{reviewsTotal > 0 ? ` (${reviewsTotal})` : ''}
+          </Text>
+          {eligibility?.canReview && !showReviewForm && (
+            <TouchableOpacity
+              onPress={() => setShowReviewForm(true)}
+              style={styles.leaveReviewBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.leaveReviewBtnText}>Оставить отзыв</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Review form */}
+        {showReviewForm && (
+          <View style={styles.reviewForm}>
+            <Text style={styles.reviewFormLabel}>Оценка</Text>
+            <View style={styles.starPicker}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setReviewRating(star)}
+                  activeOpacity={0.7}
+                  style={styles.starBtn}
+                >
+                  <Text style={[
+                    styles.starPickerChar,
+                    star <= reviewRating ? styles.starFilled : styles.starEmpty,
+                  ]}>
+                    {star <= reviewRating ? '\u2605' : '\u2606'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.reviewFormLabel}>Комментарий (необязательно)</Text>
+            <TextInput
+              style={styles.reviewInput}
+              value={reviewComment}
+              onChangeText={setReviewComment}
+              placeholder="Расскажите о своём опыте..."
+              placeholderTextColor={Colors.textMuted}
+              multiline
+              numberOfLines={3}
+            />
+            <View style={styles.reviewFormActions}>
+              <TouchableOpacity
+                onPress={() => { setShowReviewForm(false); setReviewComment(''); setReviewRating(5); }}
+                style={styles.cancelBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.cancelBtnText}>Отмена</Text>
+              </TouchableOpacity>
+              <Button
+                onPress={handleSubmitReview}
+                variant="primary"
+                loading={submitLoading}
+                disabled={submitLoading}
+                style={styles.submitBtn}
+              >
+                Отправить
+              </Button>
+            </View>
+          </View>
+        )}
+
+        {/* Reviews list */}
+        {reviews.length === 0 && !reviewsLoading ? (
+          <Text style={styles.noReviewsText}>Отзывов пока нет</Text>
+        ) : (
+          <View style={styles.reviewsList}>
+            {reviews.map((review) => (
+              <View key={review.id} style={styles.reviewCard}>
+                <View style={styles.reviewCardHeader}>
+                  <View style={styles.reviewerAvatar}>
+                    <Text style={styles.reviewerInitials}>
+                      {getReviewerInitials(review)}
+                    </Text>
+                  </View>
+                  <View style={styles.reviewerInfo}>
+                    <Text style={styles.reviewAuthor}>
+                      {review.client.username ? `@${review.client.username}` : review.client.email.split('@')[0]}
+                    </Text>
                     <Text style={styles.reviewDate}>
                       {new Date(review.createdAt).toLocaleDateString('ru-RU')}
                     </Text>
                   </View>
-                ))}
+                  <Stars rating={review.rating} size="sm" />
+                </View>
+                {review.comment ? (
+                  <Text style={styles.reviewComment}>{review.comment}</Text>
+                ) : null}
               </View>
-            )}
+            ))}
+          </View>
+        )}
 
-            {reviewsLoading && (
-              <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.reviewsLoader} />
-            )}
+        {reviewsLoading && (
+          <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.reviewsLoader} />
+        )}
 
-            {canShowMore && !reviewsLoading && (
-              <TouchableOpacity
-                onPress={() => loadReviews(reviewsPage + 1)}
-                style={styles.loadMoreBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.loadMoreText}>Показать ещё</Text>
-              </TouchableOpacity>
-            )}
-          </Card>
+        {canShowMore && !reviewsLoading && (
+          <TouchableOpacity
+            onPress={() => loadReviews(reviewsPage + 1)}
+            style={styles.loadMoreBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.loadMoreText}>Показать ещё</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <LandingHeader />
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[
+          styles.pageContainer,
+          isDesktop && styles.pageContainerDesktop,
+        ]}>
+          {isDesktop ? (
+            // Desktop: two-column layout
+            <View style={styles.desktopRow}>
+              <View style={styles.desktopLeft}>
+                {renderSidebar()}
+              </View>
+              <View style={styles.desktopRight}>
+                {renderContent()}
+              </View>
+            </View>
+          ) : (
+            // Mobile/Tablet: single column
+            <View style={styles.mobileColumn}>
+              {renderSidebar()}
+              {renderContent()}
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -432,255 +555,401 @@ export default function SpecialistProfileScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.bgPrimary,
+    backgroundColor: '#F4FBFC',
   },
   scroll: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingBottom: Spacing['3xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    gap: Spacing.md,
+    paddingBottom: 48,
   },
   centerBox: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroCard: {
-    gap: Spacing.md,
+
+  // Page container
+  pageContainer: {
+    width: '100%',
+    maxWidth: 430,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
   },
-  heroRow: {
+  pageContainerDesktop: {
+    maxWidth: 1100,
+    paddingHorizontal: 32,
+    paddingTop: 24,
+  },
+
+  // Desktop two-column
+  desktopRow: {
     flexDirection: 'row',
-    gap: Spacing.lg,
+    gap: 24,
     alignItems: 'flex-start',
   },
-  heroInfo: {
-    flex: 1,
-    gap: Spacing.sm,
-    paddingTop: Spacing.xs,
+  desktopLeft: {
+    width: '30%',
+    ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 24 } : {}),
   },
-  nick: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  badgesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  infoLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  infoValue: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
+  desktopRight: {
     flex: 1,
   },
-  sectionTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
+
+  // Mobile single column
+  mobileColumn: {
+    gap: Spacing.md,
   },
-  activityRow: {
+
+  // --- Sidebar card ---
+  sidebarCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#C0D0EA',
+    borderRadius: 12,
+    padding: 20,
+    gap: 16,
+    ...Shadows.sm,
+  },
+  sidebarCardDesktop: {
+    alignItems: 'center',
+  },
+  sidebarCardMobile: {},
+
+  // Mobile hero: horizontal
+  mobileHeroRow: {
+    flexDirection: 'row',
+    gap: 16,
+    alignItems: 'flex-start',
+  },
+  mobileHeroInfo: {
+    flex: 1,
+    gap: 4,
+  },
+
+  // Desktop hero: vertical centered
+  desktopHeroCol: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  desktopAvatarWrap: {
+    marginBottom: 4,
+  },
+
+  sidebarName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F2447',
+  },
+  sidebarNameDesktop: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0F2447',
+    textAlign: 'center',
+  },
+  sidebarSpecialization: {
+    fontSize: 14,
+    color: '#4A6B88',
+  },
+  sidebarCity: {
+    fontSize: 13,
+    color: '#4A6B88',
+  },
+  sidebarRatingRow: {
+    marginTop: 4,
+  },
+  sidebarMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 8,
+    flexWrap: 'wrap',
+    marginTop: 4,
   },
-  activityBar: {
-    flex: 1,
-    height: 8,
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
+  verifiedBadge: {
+    backgroundColor: '#E8F5ED',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 4,
   },
-  activityFill: {
-    height: '100%',
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.full,
+  verifiedText: {
+    fontSize: 12,
+    color: '#1A7848',
+    fontWeight: '500',
   },
-  activityLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    width: 48,
-    textAlign: 'right',
+  experienceTag: {
+    fontSize: 12,
+    color: '#4A6B88',
   },
-  activityHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: Spacing.sm,
-  },
-  servicesList: {
-    gap: Spacing.sm,
-  },
-  serviceItem: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    alignItems: 'flex-start',
-  },
-  serviceBullet: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-    lineHeight: 22,
-  },
-  serviceText: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  contactsText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
+
+  // Write button
   writeBtn: {
+    backgroundColor: '#1A5BA8',
+    height: 52,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
     width: '100%',
-    marginTop: Spacing.sm,
+  },
+  writeBtnDisabled: {
+    opacity: 0.5,
+  },
+  writeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   guestHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
+    fontSize: 12,
+    color: '#4A6B88',
     textAlign: 'center',
     lineHeight: 18,
   },
-  // Reviews section
+
+  // Share
+  shareBtn: {
+    borderWidth: 1,
+    borderColor: '#C0D0EA',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    width: '100%',
+  },
+  shareBtnText: {
+    fontSize: 13,
+    color: '#1A5BA8',
+    fontWeight: '500',
+  },
+
+  // --- Content sections ---
+  contentSections: {
+    gap: Spacing.md,
+  },
+
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#C0D0EA',
+    borderRadius: 12,
+    padding: 20,
+    ...Shadows.sm,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F2447',
+    marginBottom: 12,
+  },
+  bioText: {
+    fontSize: 15,
+    color: '#4A6B88',
+    lineHeight: 24,
+  },
+
+  // Services
+  servicesList: {
+    gap: 8,
+  },
+  serviceCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#C0D0EA',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  serviceText: {
+    fontSize: 15,
+    color: '#4A6B88',
+    lineHeight: 22,
+  },
+
+  // Experience
+  experienceBlock: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  experienceNumber: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#1A5BA8',
+  },
+  experienceLabel: {
+    fontSize: 16,
+    color: '#4A6B88',
+  },
+
+  // Cities
+  citiesTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  cityTag: {
+    backgroundColor: '#EBF3FB',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  cityTagText: {
+    fontSize: 14,
+    color: '#1A5BA8',
+    fontWeight: '500',
+  },
+
+  // Contacts
+  contactsText: {
+    fontSize: 15,
+    color: '#4A6B88',
+    lineHeight: 22,
+  },
+
+  // Reviews header
   reviewsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: 12,
   },
   leaveReviewBtn: {
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.brandPrimary,
+    borderColor: '#1A5BA8',
   },
   leaveReviewBtnText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
+    fontSize: 13,
+    color: '#1A5BA8',
+    fontWeight: '500',
   },
   noReviewsText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
+    fontSize: 14,
+    color: '#4A6B88',
     textAlign: 'center',
-    paddingVertical: Spacing.md,
+    paddingVertical: 16,
   },
+
+  // Review cards
   reviewsList: {
-    gap: Spacing.md,
+    gap: 12,
   },
-  reviewItem: {
-    gap: Spacing.xs,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  reviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#C0D0EA',
+    borderRadius: 10,
+    padding: 16,
+    gap: 10,
   },
-  reviewItemHeader: {
+  reviewCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 10,
+  },
+  reviewerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1A5BA8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewerInitials: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  reviewerInfo: {
+    flex: 1,
+    gap: 2,
   },
   reviewAuthor: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-  },
-  reviewComment: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F2447',
   },
   reviewDate: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
+    fontSize: 12,
+    color: '#4A6B88',
   },
-  reviewsLoader: {
-    marginTop: Spacing.md,
+  reviewComment: {
+    fontSize: 14,
+    color: '#4A6B88',
+    lineHeight: 21,
   },
-  loadMoreBtn: {
-    marginTop: Spacing.md,
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  loadMoreText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
+
   // Review form
   reviewForm: {
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-    padding: Spacing.md,
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.md,
+    gap: 10,
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#EBF3FB',
+    borderRadius: 10,
   },
   reviewFormLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
+    fontSize: 13,
+    color: '#4A6B88',
+    fontWeight: '500',
   },
   starPicker: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: 8,
   },
   starBtn: {
-    padding: Spacing.xs,
+    padding: 4,
   },
   starPickerChar: {
-    fontSize: Typography.fontSize['2xl'],
+    fontSize: 24,
     lineHeight: 32,
   },
   starFilled: {
-    color: Colors.brandPrimary,
+    color: '#1A5BA8',
   },
   starEmpty: {
-    color: Colors.border,
+    color: '#C0D0EA',
   },
   reviewInput: {
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    color: Colors.textPrimary,
-    fontSize: Typography.fontSize.sm,
-    backgroundColor: Colors.bgCard,
+    borderColor: '#C0D0EA',
+    borderRadius: 8,
+    padding: 12,
+    color: '#0F2447',
+    fontSize: 14,
+    backgroundColor: '#FFFFFF',
     minHeight: 72,
     textAlignVertical: 'top',
   },
   reviewFormActions: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: 12,
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
   cancelBtn: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   cancelBtnText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
+    fontSize: 14,
+    color: '#4A6B88',
   },
   submitBtn: {
     flex: 1,
     maxWidth: 160,
+  },
+
+  // Loaders
+  reviewsLoader: {
+    marginTop: 12,
+  },
+  loadMoreBtn: {
+    marginTop: 12,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    color: '#1A5BA8',
+    fontWeight: '600',
   },
 });

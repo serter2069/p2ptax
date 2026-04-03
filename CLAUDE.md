@@ -9,9 +9,16 @@ Secrets: **Doppler** (workspace: Sergei MSP, project: `p2ptax`, config: `dev`)
 ```bash
 doppler login      # один раз на машину
 doppler setup --project p2ptax --config dev --no-interactive
+
+# API (терминал 1)
 cd api && doppler run -- npm run dev
-npx expo start --web
+
+# Frontend (терминал 2) — ОБЯЗАТЕЛЬНО через doppler run
+doppler run -- npx expo start --web
 ```
+
+> ВАЖНО: Frontend запускать только через `doppler run` — иначе EXPO_PUBLIC_API_URL не подхватится
+> и все запросы к API будут уходить на продакшн-сервер.
 
 Управление секретами:
 ```bash
@@ -33,8 +40,8 @@ doppler secrets set KEY=value --project p2ptax --config dev
 
 ## Development
 ```bash
-npx expo start --web
-cd api && npm run dev
+cd api && doppler run -- npm run dev
+doppler run -- npx expo start --web
 ```
 
 ## Database

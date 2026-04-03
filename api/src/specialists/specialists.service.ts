@@ -18,6 +18,9 @@ export class SpecialistsService {
       data: {
         userId,
         nick: dto.nick,
+        displayName: dto.displayName,
+        bio: dto.bio,
+        experience: dto.experience,
         cities: dto.cities,
         services: dto.services,
         badges: dto.badges ?? [],
@@ -74,11 +77,31 @@ export class SpecialistsService {
     return Array.from(citySet).sort((a, b) => a.localeCompare(b, 'ru'));
   }
 
-  async getCatalog(city?: string, badge?: string, sort?: string) {
+  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string) {
     const now = new Date();
-    const where: any = {};
-    if (city) where.cities = { has: city };
+    const where: any = { displayName: { not: null } };
+    if (city) {
+      // Support comma-separated list of cities (multi-select)
+      const cityList = city.split(',').map((c) => c.trim()).filter(Boolean);
+      if (cityList.length === 1) {
+        where.cities = { has: cityList[0] };
+      } else if (cityList.length > 1) {
+        where.cities = { hasSome: cityList };
+      }
+    }
     if (badge) where.badges = { has: badge };
+    if (fns) where.fnsOffices = { has: fns };
+
+    // Search filter: match against displayName, nick, services, cities, bio
+    if (search && search.trim()) {
+      const term = search.trim();
+      where.OR = [
+        { displayName: { contains: term, mode: 'insensitive' } },
+        { nick: { contains: term, mode: 'insensitive' } },
+        { bio: { contains: term, mode: 'insensitive' } },
+        { services: { hasSome: [term] } },
+      ];
+    }
 
     const profiles = await this.prisma.specialistProfile.findMany({
       where,
@@ -124,8 +147,8 @@ export class SpecialistsService {
 
     // Build result with promotion rank and activity
     const result = profiles.map((profile) => {
-      // contacts excluded from public list response (security: phone leak)
-      const { contacts: _contacts, ...rest } = profile;
+      // contacts and bio excluded from public list response
+      const { contacts: _contacts, bio: _bio, ...rest } = profile;
       const ratingData = ratingMap.get(rest.userId);
       return {
         ...rest,

@@ -1,7 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'https://p2ptax.smartlaunchhub.com/api';
+  process.env.EXPO_PUBLIC_API_URL ??
+  (__DEV__ ? 'http://localhost:3812/api' : 'https://p2ptax.smartlaunchhub.com/api');
 
 // Derive WebSocket base from API URL (strip /api suffix)
 const WS_BASE = BASE_URL.replace(/\/api$/, '');

@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
   },
   primaryLabel: {
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
   secondaryLabel: {
     color: Colors.textPrimary,
@@ -102,6 +102,6 @@ const styles = StyleSheet.create({
     color: Colors.brandPrimary,
   },
   dangerLabel: {
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
 });

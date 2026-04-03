@@ -1,0 +1,386 @@
+import { PrismaClient, Role } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+interface SpecialistSeedData {
+  email: string;
+  nick: string;
+  displayName: string;
+  avatarUrl: string;
+  bio: string;
+  experience: number;
+  cities: string[];
+  fnsOffices?: string[];
+  services: string[];
+  badges: string[];
+  contacts: string;
+  reviews: { rating: number; comment: string }[];
+}
+
+const specialists: SpecialistSeedData[] = [
+  {
+    email: 'ivan.petrov@seed.local',
+    nick: 'ivan-petrov',
+    displayName: 'Иван Петров',
+    avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face',
+    bio: 'Специализируюсь на разрешении налоговых споров с ФНС. Успешно представлял клиентов в арбитражных судах по делам о доначислениях, штрафах и пенях. Помогаю минимизировать налоговые риски для бизнеса.',
+    experience: 12,
+    cities: ['Москва'],
+    fnsOffices: ['Инспекция ФНС России № 1 по г.Москве', 'Инспекция ФНС России № 9 по г.Москве', 'Инспекция ФНС России № 15 по г. Москве'],
+    services: ['Налоговые споры', 'Представительство в суде', 'Досудебное обжалование', 'Налоговый аудит'],
+    badges: ['verified'],
+    contacts: 'Telegram: @ivan_petrov_tax',
+    reviews: [
+      { rating: 5, comment: 'Блестяще провёл дело в арбитраже. Доначисление в 2.5 млн отменено полностью.' },
+      { rating: 5, comment: 'Профессионал высокого уровня. Решил спор с ФНС за 3 месяца.' },
+      { rating: 5, comment: 'Очень грамотный юрист, рекомендую всем кто столкнулся с налоговой.' },
+      { rating: 4, comment: 'Хороший специалист, помог разобраться с требованиями инспекции.' },
+      { rating: 5, comment: 'Спасибо за оперативную работу! Штраф отменён.' },
+    ],
+  },
+  {
+    email: 'elena.sokolova@seed.local',
+    nick: 'elena-sokolova',
+    displayName: 'Елена Соколова',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face',
+    bio: 'Помогаю физическим лицам с декларациями 3-НДФЛ: налоговые вычеты при покупке жилья, лечении, обучении. Заполню и подам декларацию за вас, проконтролирую получение возврата.',
+    experience: 8,
+    cities: ['Санкт-Петербург'],
+    fnsOffices: ['Межрайонная ИФНС России № 16 по Санкт-Петербургу', 'Межрайонная ИФНС России № 20 по Санкт-Петербургу'],
+    services: ['Декларации 3-НДФЛ', 'Имущественный вычет', 'Социальный вычет', 'Возврат налога'],
+    badges: ['verified'],
+    contacts: 'WhatsApp: +7 (921) 555-00-01',
+    reviews: [
+      { rating: 5, comment: 'Елена помогла получить вычет за квартиру. Всё сделала быстро и чётко.' },
+      { rating: 5, comment: 'Подала 3-НДФЛ за меня — вернули 260 тысяч. Спасибо!' },
+      { rating: 4, comment: 'Хорошая работа, но пришлось немного подождать.' },
+      { rating: 5, comment: 'Рекомендую! Очень внимательная и ответственная.' },
+    ],
+  },
+  {
+    email: 'dmitry.volkov@seed.local',
+    nick: 'dmitry-volkov',
+    displayName: 'Дмитрий Волков',
+    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face',
+    bio: 'Налоговый консультант для бизнеса. 15 лет опыта в оптимизации налогообложения для ООО и ИП. Помогаю выбрать оптимальную систему налогообложения и легально снизить налоговую нагрузку.',
+    experience: 15,
+    cities: ['Екатеринбург'],
+    fnsOffices: ['Межрайонная ИФНС России № 25 по Свердловской области', 'Межрайонная ИФНС России № 32 по Свердловской области'],
+    services: ['Оптимизация налогов', 'Выбор системы налогообложения', 'Налоговое планирование', 'Консультации для бизнеса'],
+    badges: ['verified'],
+    contacts: 'Email: volkov.tax@mail.ru',
+    reviews: [
+      { rating: 5, comment: 'Дмитрий сэкономил нашей компании более 3 млн рублей в год. Гений оптимизации.' },
+      { rating: 5, comment: 'Перевёл нас на УСН и настроил учёт — налоги снизились вдвое.' },
+      { rating: 5, comment: 'Лучший налоговый консультант в Екатеринбурге!' },
+      { rating: 4, comment: 'Знает своё дело. Немного дороговат, но результат того стоит.' },
+      { rating: 5, comment: 'Работаем уже 5 лет — ни одной проблемы с налоговой.' },
+    ],
+  },
+  {
+    email: 'maria.novikova@seed.local',
+    nick: 'maria-novikova',
+    displayName: 'Мария Новикова',
+    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=face',
+    bio: 'Помогу зарегистрировать ИП или ООО под ключ: подготовка документов, подача в ФНС, выбор ОКВЭД и системы налогообложения. Также консультирую по реорганизации и ликвидации.',
+    experience: 5,
+    cities: ['Казань'],
+    services: ['Регистрация ИП', 'Регистрация ООО', 'Выбор ОКВЭД', 'Ликвидация бизнеса'],
+    badges: ['verified'],
+    contacts: 'Telegram: @maria_novikova_biz',
+    reviews: [
+      { rating: 5, comment: 'Зарегистрировала ООО за 3 дня. Всё чётко и без лишних вопросов.' },
+      { rating: 5, comment: 'Помогла выбрать правильные ОКВЭД. Очень благодарна!' },
+      { rating: 4, comment: 'Хороший специалист, быстро работает.' },
+    ],
+  },
+  {
+    email: 'alexey.kuznetsov@seed.local',
+    nick: 'alexey-kuznetsov',
+    displayName: 'Алексей Кузнецов',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+    bio: 'Эксперт по налоговым вычетам для физических лиц. Помогу вернуть НДФЛ за покупку жилья, лечение, обучение, инвестиции (ИИС). Работаю дистанционно по всей России.',
+    experience: 10,
+    cities: ['Москва'],
+    fnsOffices: ['Инспекция ФНС России № 20 по г.Москве', 'Инспекция ФНС России № 21 по г.Москве', 'Инспекция ФНС России № 22 по г. Москве'],
+    services: ['Налоговые вычеты', 'Инвестиционный вычет ИИС', 'Возврат НДФЛ', 'Консультации по налогам'],
+    badges: ['verified'],
+    contacts: 'Email: kuznetsov.tax@gmail.com',
+    reviews: [
+      { rating: 5, comment: 'Вернул мне 520 тысяч за квартиру + ИИС. Профессионал!' },
+      { rating: 5, comment: 'Работает дистанционно — очень удобно. Всё объясняет понятно.' },
+      { rating: 4, comment: 'Хороший специалист, но долго отвечал на сообщения.' },
+      { rating: 5, comment: 'Помог с вычетом за обучение ребёнка. Спасибо!' },
+    ],
+  },
+  {
+    email: 'olga.morozova@seed.local',
+    nick: 'olga-morozova',
+    displayName: 'Ольга Морозова',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face',
+    bio: 'Юрист-налоговик с опытом работы в ФНС. Знаю систему изнутри и помогаю клиентам защищать свои права при проверках и доначислениях. Специализируюсь на спорах с налоговой.',
+    experience: 7,
+    cities: ['Новосибирск'],
+    services: ['Споры с ФНС', 'Сопровождение проверок', 'Обжалование решений ФНС', 'Налоговые консультации'],
+    badges: [],
+    contacts: 'Telegram: @morozova_tax',
+    reviews: [
+      { rating: 5, comment: 'Ольга бывший сотрудник ФНС — знает все нюансы. Помогла снять доначисление.' },
+      { rating: 4, comment: 'Грамотный юрист, хорошо представляла в суде.' },
+      { rating: 5, comment: 'Спасибо за помощь с камеральной проверкой!' },
+    ],
+  },
+  {
+    email: 'sergey.lebedev@seed.local',
+    nick: 'sergey-lebedev',
+    displayName: 'Сергей Лебедев',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face',
+    bio: 'Бухгалтер-консультант с фокусом на НДС. Помогаю компаниям правильно вести учёт НДС, готовить декларации и проходить камеральные проверки без доначислений.',
+    experience: 9,
+    cities: ['Краснодар'],
+    services: ['НДС', 'Бухучёт', 'Камеральные проверки', 'Декларации по НДС'],
+    badges: ['verified'],
+    contacts: 'WhatsApp: +7 (861) 200-00-01',
+    reviews: [
+      { rating: 5, comment: 'Сергей настроил учёт НДС — прошли проверку без единого замечания.' },
+      { rating: 4, comment: 'Хороший бухгалтер, знает тему НДС отлично.' },
+      { rating: 5, comment: 'Работаем уже 3 года. Никаких проблем с декларациями.' },
+      { rating: 5, comment: 'Рекомендую! Всегда на связи и всё делает в срок.' },
+    ],
+  },
+  {
+    email: 'anna.kozlova@seed.local',
+    nick: 'anna-kozlova',
+    displayName: 'Анна Козлова',
+    avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face',
+    bio: 'Консультирую самозанятых по налогам и регистрации. Помогу разобраться с приложением "Мой налог", оптимизировать доход и избежать ошибок при работе с платформами.',
+    experience: 4,
+    cities: ['Санкт-Петербург'],
+    services: ['Налоги для самозанятых', 'Регистрация самозанятости', 'Приложение "Мой налог"', 'Консультации'],
+    badges: ['verified'],
+    contacts: 'Telegram: @anna_samozanyatye',
+    reviews: [
+      { rating: 5, comment: 'Анна помогла мне стать самозанятым и настроить всё за один день!' },
+      { rating: 5, comment: 'Отличный консультант! Объяснила все нюансы работы с маркетплейсами.' },
+      { rating: 5, comment: 'Быстро, понятно, недорого. Рекомендую!' },
+      { rating: 5, comment: 'Помогла разобраться с налогами при работе на Wildberries.' },
+      { rating: 4, comment: 'Хороший специалист для начинающих самозанятых.' },
+    ],
+  },
+  {
+    email: 'victor.smirnov@seed.local',
+    nick: 'victor-smirnov',
+    displayName: 'Виктор Смирнов',
+    avatarUrl: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=200&h=200&fit=crop&crop=face',
+    bio: 'Специалист по международному налогообложению. Консультирую по вопросам ВЭД, двойного налогообложения, валютного контроля и работы с иностранными контрагентами.',
+    experience: 11,
+    cities: ['Ростов-на-Дону'],
+    services: ['Международное налогообложение', 'ВЭД', 'Валютный контроль', 'Двойное налогообложение'],
+    badges: ['verified'],
+    contacts: 'Email: smirnov.international@tax.ru',
+    reviews: [
+      { rating: 5, comment: 'Виктор помог структурировать ВЭД-операции. Экономия на налогах — существенная.' },
+      { rating: 5, comment: 'Разобрался с двойным налогообложением за неделю. Профи!' },
+      { rating: 4, comment: 'Знает тему международных налогов как никто другой.' },
+      { rating: 5, comment: 'Помог с валютным контролем — всё прошло гладко.' },
+    ],
+  },
+  {
+    email: 'tatiana.ivanova@seed.local',
+    nick: 'tatiana-ivanova',
+    displayName: 'Татьяна Иванова',
+    avatarUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=200&h=200&fit=crop&crop=face',
+    bio: 'Аудитор с 14-летним стажем. Провожу налоговый аудит для компаний любого масштаба: от ИП до крупного бизнеса. Выявляю риски до того, как их найдёт налоговая.',
+    experience: 14,
+    cities: ['Москва'],
+    fnsOffices: ['Инспекция ФНС России № 28 по г. Москве', 'Инспекция ФНС России № 29 по г. Москве', 'Инспекция ФНС России № 30 по г. Москве'],
+    services: ['Налоговый аудит', 'Due diligence', 'Оценка налоговых рисков', 'Подготовка к проверкам'],
+    badges: ['verified'],
+    contacts: 'Telegram: @ivanova_audit',
+    reviews: [
+      { rating: 5, comment: 'Татьяна нашла ошибки в учёте, которые могли бы стоить нам миллионы.' },
+      { rating: 5, comment: 'Провела аудит за 2 недели — очень оперативно для нашего объёма.' },
+      { rating: 5, comment: 'Профессионал экстра-класса. Работаем уже 4 года.' },
+      { rating: 4, comment: 'Отличный аудитор, помогла подготовиться к выездной проверке.' },
+      { rating: 5, comment: 'Рекомендую всем кому нужен качественный налоговый аудит.' },
+    ],
+  },
+];
+
+async function main() {
+  console.log('Seeding specialists...');
+
+  for (const spec of specialists) {
+    // Upsert user
+    const user = await prisma.user.upsert({
+      where: { email: spec.email },
+      update: { role: Role.SPECIALIST },
+      create: {
+        email: spec.email,
+        username: spec.nick,
+        role: Role.SPECIALIST,
+      },
+    });
+
+    // Upsert specialist profile
+    await prisma.specialistProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        nick: spec.nick,
+        displayName: spec.displayName,
+        bio: spec.bio,
+        experience: spec.experience,
+        cities: spec.cities,
+        fnsOffices: spec.fnsOffices ?? [],
+        services: spec.services,
+        badges: spec.badges,
+        contacts: spec.contacts,
+        avatarUrl: spec.avatarUrl,
+      },
+      create: {
+        userId: user.id,
+        nick: spec.nick,
+        displayName: spec.displayName,
+        bio: spec.bio,
+        experience: spec.experience,
+        cities: spec.cities,
+        fnsOffices: spec.fnsOffices ?? [],
+        services: spec.services,
+        badges: spec.badges,
+        contacts: spec.contacts,
+        avatarUrl: spec.avatarUrl,
+      },
+    });
+
+    // Create a dummy request from a client to enable reviews
+    // Find or create a dummy client
+    const client = await prisma.user.upsert({
+      where: { email: 'seed-client@seed.local' },
+      update: {},
+      create: {
+        email: 'seed-client@seed.local',
+        username: 'seed-client',
+        role: Role.CLIENT,
+      },
+    });
+
+    // Create a request if not exists
+    const existingRequests = await prisma.request.findMany({
+      where: { clientId: client.id, description: `Seed request for ${spec.nick}` },
+    });
+    let request = existingRequests[0];
+    if (!request) {
+      request = await prisma.request.create({
+        data: {
+          clientId: client.id,
+          description: `Seed request for ${spec.nick}`,
+          city: spec.cities[0],
+          status: 'CLOSED',
+        },
+      });
+    }
+
+    // Create a response from the specialist for this request
+    await prisma.response.upsert({
+      where: {
+        specialistId_requestId: {
+          specialistId: user.id,
+          requestId: request.id,
+        },
+      },
+      update: {},
+      create: {
+        specialistId: user.id,
+        requestId: request.id,
+        message: 'Seed response',
+      },
+    });
+
+    // Create reviews (delete existing seed reviews first to avoid duplicates)
+    const existingReviews = await prisma.review.findMany({
+      where: { specialistId: user.id, clientId: client.id },
+    });
+    if (existingReviews.length === 0 && spec.reviews.length > 0) {
+      // We need separate clients for separate reviews since unique constraint is [clientId, specialistId, requestId]
+      for (let i = 0; i < spec.reviews.length; i++) {
+        const reviewerEmail = `seed-reviewer-${i}@seed.local`;
+        const reviewer = await prisma.user.upsert({
+          where: { email: reviewerEmail },
+          update: {},
+          create: {
+            email: reviewerEmail,
+            username: `reviewer-${i}`,
+            role: Role.CLIENT,
+          },
+        });
+
+        // Each reviewer needs their own request
+        const reviewerRequests = await prisma.request.findMany({
+          where: { clientId: reviewer.id, description: `Seed review request for ${spec.nick}` },
+        });
+        let reviewerRequest = reviewerRequests[0];
+        if (!reviewerRequest) {
+          reviewerRequest = await prisma.request.create({
+            data: {
+              clientId: reviewer.id,
+              description: `Seed review request for ${spec.nick}`,
+              city: spec.cities[0],
+              status: 'CLOSED',
+            },
+          });
+        }
+
+        // Response from specialist
+        await prisma.response.upsert({
+          where: {
+            specialistId_requestId: {
+              specialistId: user.id,
+              requestId: reviewerRequest.id,
+            },
+          },
+          update: {},
+          create: {
+            specialistId: user.id,
+            requestId: reviewerRequest.id,
+            message: 'Seed response for review',
+          },
+        });
+
+        // Create review
+        const existing = await prisma.review.findUnique({
+          where: {
+            clientId_specialistId_requestId: {
+              clientId: reviewer.id,
+              specialistId: user.id,
+              requestId: reviewerRequest.id,
+            },
+          },
+        });
+        if (!existing) {
+          await prisma.review.create({
+            data: {
+              clientId: reviewer.id,
+              specialistId: user.id,
+              requestId: reviewerRequest.id,
+              rating: spec.reviews[i].rating,
+              comment: spec.reviews[i].comment,
+            },
+          });
+        }
+      }
+    }
+
+    console.log(`  Created specialist: ${spec.displayName} (@${spec.nick})`);
+  }
+
+  console.log('Seeding complete!');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

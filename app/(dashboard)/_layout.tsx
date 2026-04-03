@@ -34,7 +34,7 @@ export default function DashboardLayout() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.replace('/(auth)/email?role=CLIENT');
+      router.replace('/(auth)/email');
     }
   }, [user, isLoading, router]);
 

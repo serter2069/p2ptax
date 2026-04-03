@@ -17,10 +17,11 @@ import { useAuth } from '../../stores/authStore';
 
 export default function ServicesScreen() {
   const router = useRouter();
-  const { cities: citiesParam } = useLocalSearchParams<{ cities: string }>();
+  const { cities: citiesParam, fnsOffices: fnsParam } = useLocalSearchParams<{ cities: string; fnsOffices: string }>();
   const { completeOnboarding, user } = useAuth();
 
   const cities: string[] = citiesParam ? (JSON.parse(citiesParam) as string[]) : [];
+  const fnsOffices: string[] = fnsParam ? (JSON.parse(fnsParam) as string[]) : [];
 
   const [services, setServices] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,7 @@ export default function ServicesScreen() {
     try {
       await api.patch('/users/me/specialist-profile', {
         cities,
+        fnsOffices,
         services: trimmed,
       });
       // Mark onboarding complete — sets isNewUser=false in store + AsyncStorage
@@ -78,8 +80,10 @@ export default function ServicesScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
-            {/* Progress indicator */}
+            {/* Progress indicator — 4 steps */}
             <View style={styles.progressRow}>
+              <View style={[styles.progressDot, styles.progressDotDone]} />
+              <View style={styles.progressLine} />
               <View style={[styles.progressDot, styles.progressDotDone]} />
               <View style={styles.progressLine} />
               <View style={[styles.progressDot, styles.progressDotDone]} />
@@ -89,7 +93,7 @@ export default function ServicesScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.step}>Шаг 3 из 3</Text>
+              <Text style={styles.step}>Шаг 4 из 4</Text>
               <Text style={styles.title}>Ваши услуги</Text>
               <Text style={styles.subtitle}>
                 Расскажите, что вы умеете делать. Клиенты увидят это в вашем профиле.
@@ -133,7 +137,7 @@ export default function ServicesScreen() {
                 disabled={loading || services.trim().length === 0}
                 style={styles.btn}
               >
-                Завершить регистрацию
+                Завершить настройку
               </Button>
             </View>
           </View>

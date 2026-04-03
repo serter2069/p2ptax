@@ -15,6 +15,7 @@ import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
+import { LandingHeader } from '../../components/LandingHeader';
 import { Button } from '../../components/Button';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
@@ -159,6 +160,7 @@ export default function RequestsFeedScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <LandingHeader />
       <Header title="Лента запросов" />
 
       {/* key={numColumns} forces FlatList remount when columns change on resize */}

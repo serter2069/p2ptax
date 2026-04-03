@@ -10,17 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Button } from '../../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-
-const GEORGIAN_CITIES = [
-  'Тбилиси',
-  'Батуми',
-  'Кутаиси',
-  'Рустави',
-  'Гори',
-  'Зугдиди',
-  'Поти',
-  'Сухуми',
-];
+import { RUSSIAN_CITIES } from '../../constants/Cities';
 
 export default function CitiesScreen() {
   const router = useRouter();
@@ -34,7 +24,7 @@ export default function CitiesScreen() {
 
   function handleContinue() {
     router.push({
-      pathname: '/(onboarding)/services',
+      pathname: '/(onboarding)/fns',
       params: { cities: JSON.stringify(selected) },
     });
   }
@@ -46,27 +36,29 @@ export default function CitiesScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.container}>
-          {/* Progress indicator */}
+          {/* Progress indicator — 4 steps */}
           <View style={styles.progressRow}>
             <View style={[styles.progressDot, styles.progressDotDone]} />
             <View style={styles.progressLine} />
             <View style={[styles.progressDot, styles.progressDotActive]} />
             <View style={styles.progressLine} />
             <View style={styles.progressDot} />
+            <View style={styles.progressLine} />
+            <View style={styles.progressDot} />
           </View>
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.step}>Шаг 2 из 3</Text>
+            <Text style={styles.step}>Шаг 2 из 4</Text>
             <Text style={styles.title}>Выберите города</Text>
             <Text style={styles.subtitle}>
-              В каких городах Грузии вы оказываете услуги?
+              В каких городах России вы оказываете услуги?
             </Text>
           </View>
 
           {/* City chips */}
           <View style={styles.chipsGrid}>
-            {GEORGIAN_CITIES.map((city) => {
+            {RUSSIAN_CITIES.map((city) => {
               const isSelected = selected.includes(city);
               return (
                 <TouchableOpacity

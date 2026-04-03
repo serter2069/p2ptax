@@ -1,0 +1,148 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { api, ApiError } from '../../lib/api';
+import { useAuth } from '../../stores/authStore';
+
+export default function RoleScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  async function handleSelect(role: 'CLIENT' | 'SPECIALIST') {
+    setLoading(true);
+    try {
+      await api.patch('/users/me', { role });
+      // Navigate to onboarding for specialists, dashboard for clients
+      if (role === 'SPECIALIST') {
+        router.replace('/(onboarding)/username');
+      } else {
+        router.replace('/(dashboard)');
+      }
+    } catch (err) {
+      // If PATCH fails, still navigate — role can be changed later
+      if (role === 'SPECIALIST') {
+        router.replace('/(onboarding)/username');
+      } else {
+        router.replace('/(dashboard)');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Кто вы?</Text>
+          <Text style={styles.subtitle}>
+            Выберите роль, чтобы мы настроили платформу под вас
+          </Text>
+        </View>
+
+        <View style={styles.cards}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => handleSelect('CLIENT')}
+            activeOpacity={0.8}
+            disabled={loading}
+          >
+            <Text style={styles.cardIcon}>{'\u{1F50D}'}</Text>
+            <Text style={styles.cardTitle}>Я ищу специалиста</Text>
+            <Text style={styles.cardDesc}>
+              Опубликую запрос и получу предложения от налоговых консультантов
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.card, styles.cardSpecialist]}
+            onPress={() => handleSelect('SPECIALIST')}
+            activeOpacity={0.8}
+            disabled={loading}
+          >
+            <Text style={styles.cardIcon}>{'\u{1F4BC}'}</Text>
+            <Text style={styles.cardTitle}>Я специалист</Text>
+            <Text style={styles.cardDesc}>
+              Буду получать заявки от клиентов и предлагать свои услуги
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.bgPrimary,
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+    maxWidth: 430,
+    width: '100%',
+    alignSelf: 'center',
+    gap: Spacing['3xl'],
+  },
+  header: {
+    gap: Spacing.sm,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    lineHeight: 22,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
+  cards: {
+    width: '100%',
+    gap: Spacing.lg,
+  },
+  card: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing['2xl'],
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  cardSpecialist: {
+    borderColor: '#1A5BA8',
+    backgroundColor: '#F0F6FC',
+  },
+  cardIcon: {
+    fontSize: 36,
+    marginBottom: Spacing.xs,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+    color: '#0F2447',
+    textAlign: 'center',
+  },
+  cardDesc: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+});

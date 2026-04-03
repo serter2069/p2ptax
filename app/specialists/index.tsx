@@ -9,21 +9,26 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { Card } from '../../components/Card';
-import { Badge } from '../../components/Badge';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
+import { LandingHeader } from '../../components/LandingHeader';
 import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { RUSSIAN_CITIES } from '../../constants/Cities';
+import { getFNSForCities, FNSOffice } from '../../constants/FNS';
 
 interface SpecialistItem {
   id: string;
   nick: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  experience: number | null;
   cities: string[];
   services: string[];
   badges: string[];
@@ -33,9 +38,19 @@ interface SpecialistItem {
 }
 
 const SORT_OPTIONS: { label: string; value: string }[] = [
-  { label: 'По новизне', value: 'newest' },
-  { label: 'По активности', value: 'responses' },
   { label: 'По рейтингу', value: 'rating' },
+  { label: 'По новизне', value: 'newest' },
+];
+
+const SPECIALIZATION_FILTERS = [
+  { label: 'Все', value: '' },
+  { label: 'Декларации', value: 'Декларации' },
+  { label: 'Споры с ФНС', value: 'Споры' },
+  { label: 'Оптимизация', value: 'Оптимизация' },
+  { label: 'Вычеты', value: 'Вычеты' },
+  { label: 'Регистрация бизнеса', value: 'Регистрация' },
+  { label: 'НДС', value: 'НДС' },
+  { label: 'Аудит', value: 'Аудит' },
 ];
 
 export default function SpecialistsCatalogScreen() {
@@ -47,24 +62,62 @@ export default function SpecialistsCatalogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const [cityFilter, setCityFilter] = useState('');
-  const [availableCities, setAvailableCities] = useState<string[]>([]);
-  const [badgeFilter, setBadgeFilter] = useState(false);
-  const [sort, setSort] = useState('newest');
+  const [searchText, setSearchText] = useState('');
+  const [searchDebounced, setSearchDebounced] = useState('');
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [fnsFilter, setFnsFilter] = useState('');
+  const [sort, setSort] = useState('rating');
 
-  // Load available cities once on mount
+  // Debounce search input
   useEffect(() => {
-    api.get<string[]>('/specialists/cities').then(setAvailableCities).catch(() => {});
-  }, []);
+    const timer = setTimeout(() => setSearchDebounced(searchText), 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const [fnsSearch, setFnsSearch] = useState('');
+
+  // FNS offices for selected cities
+  const fnsForSelectedCities = getFNSForCities(selectedCities);
+  const hasFnsOptions = selectedCities.length > 0 && fnsForSelectedCities.length > 0;
+
+  // Filtered FNS list based on search
+  const filteredFns = fnsSearch.trim()
+    ? fnsForSelectedCities.filter((o) =>
+        o.name.toLowerCase().includes(fnsSearch.trim().toLowerCase()),
+      )
+    : fnsForSelectedCities;
+
+  // Group FNS by city when multiple cities selected
+  const fnsByCity: Record<string, FNSOffice[]> = {};
+  for (const office of filteredFns) {
+    if (!fnsByCity[office.city]) fnsByCity[office.city] = [];
+    fnsByCity[office.city].push(office);
+  }
+
+  // Reset FNS filter when selected cities change and current FNS no longer applies
+  useEffect(() => {
+    if (fnsFilter && !fnsForSelectedCities.find((o) => o.name === fnsFilter)) {
+      setFnsFilter('');
+    }
+  }, [selectedCities]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function toggleCity(city: string) {
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city],
+    );
+  }
+
+  const cityFilterParam = selectedCities.join(',');
 
   const fetchSpecialists = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     setError('');
     try {
       const params = new URLSearchParams();
-      if (cityFilter.trim()) params.set('city', cityFilter.trim());
-      if (badgeFilter) params.set('badge', 'familiar');
-      if (sort === 'responses') params.set('sort', 'responses');
+      if (cityFilterParam) params.set('city', cityFilterParam);
+      if (fnsFilter) params.set('fns', fnsFilter);
+      if (sort) params.set('sort', sort);
+      if (searchDebounced.trim()) params.set('search', searchDebounced.trim());
 
       const query = params.toString();
       const data = await api.get<SpecialistItem[]>(
@@ -81,64 +134,88 @@ export default function SpecialistsCatalogScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [cityFilter, badgeFilter, sort]);
+  }, [cityFilterParam, fnsFilter, sort, searchDebounced]);
 
   useEffect(() => {
     fetchSpecialists();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cityFilter, badgeFilter, sort]);
+  }, [cityFilterParam, fnsFilter, sort, searchDebounced]);
 
   function handleRefresh() {
     setRefreshing(true);
     fetchSpecialists(true);
   }
 
+  function formatExperience(years: number): string {
+    if (years === 1) return '1 год опыта';
+    if (years >= 2 && years <= 4) return `${years} года опыта`;
+    return `${years} лет опыта`;
+  }
+
   function renderSpecialist({ item }: { item: SpecialistItem }) {
-    const hasFamiliar = item.badges.includes('familiar');
+    const isVerified = item.badges.includes('verified');
+    const displayName = item.displayName || `@${item.nick}`;
 
     return (
       <TouchableOpacity
         onPress={() => router.push(`/specialists/${item.nick}`)}
         activeOpacity={0.8}
-        // On mobile: full-width with maxWidth 430 (via listContent alignItems center)
-        // On multi-column: flex: 1 so columns fill evenly, with margin for gutter
         style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
       >
-        <Card padding={Spacing.lg}>
+        <View style={styles.card}>
+          {/* Top row: avatar + name/spec/city */}
           <View style={styles.cardHeader}>
-            <Avatar name={item.nick} size="md" />
+            <Avatar name={displayName} imageUri={item.avatarUrl || undefined} size="lg" />
             <View style={styles.cardInfo}>
-              <View style={styles.nickRow}>
-                <Text style={styles.nick} numberOfLines={1}>
-                  @{item.nick}
+              <View style={styles.nameRow}>
+                <Text style={styles.displayName} numberOfLines={1}>
+                  {displayName}
                 </Text>
+                {isVerified && (
+                  <View style={styles.verifiedBadge}>
+                    <Text style={styles.verifiedText}>Проверен</Text>
+                  </View>
+                )}
               </View>
+              {item.services.length > 0 && (
+                <Text style={styles.specialization} numberOfLines={1}>
+                  {item.services[0]}
+                </Text>
+              )}
               {item.cities.length > 0 && (
-                <Text style={styles.cities} numberOfLines={1}>
+                <Text style={styles.cityText} numberOfLines={1}>
                   {item.cities.join(', ')}
                 </Text>
               )}
             </View>
           </View>
 
-          {/* Badges row */}
-          {hasFamiliar && (
-            <View style={styles.badgesRow}>
-              <Badge variant="familiar" />
-            </View>
-          )}
+          {/* Rating + Experience on one line */}
+          <View style={styles.metaRow}>
+            <Stars
+              rating={item.activity.avgRating}
+              reviewCount={item.activity.reviewCount}
+              size="sm"
+              showEmpty={false}
+            />
+            {item.experience != null && (
+              <Text style={styles.experienceText}>
+                {formatExperience(item.experience)}
+              </Text>
+            )}
+          </View>
 
-          {/* Services preview */}
-          {item.services.length > 0 && (
+          {/* Services chips */}
+          {item.services.length > 1 && (
             <View style={styles.servicesRow}>
-              {item.services.slice(0, 2).map((svc, idx) => (
+              {item.services.slice(1, 4).map((svc, idx) => (
                 <Text key={idx} style={styles.serviceChip} numberOfLines={1}>
                   {svc}
                 </Text>
               ))}
-              {item.services.length > 2 && (
+              {item.services.length > 4 && (
                 <Text style={styles.serviceMore}>
-                  +{item.services.length - 2}
+                  +{item.services.length - 4}
                 </Text>
               )}
             </View>
@@ -146,32 +223,26 @@ export default function SpecialistsCatalogScreen() {
 
           {/* Footer */}
           <View style={styles.cardFooter}>
-            <View style={styles.footerLeft}>
-              <Stars
-                rating={item.activity.avgRating}
-                reviewCount={item.activity.reviewCount}
-                size="sm"
-                showEmpty={false}
-              />
-              <Text style={styles.activityText}>
-                Откликов: {item.activity.responseCount}
-              </Text>
-            </View>
-            <Text style={styles.writeLink}>Написать →</Text>
+            <TouchableOpacity
+              onPress={() => router.push(`/specialists/${item.nick}`)}
+              style={styles.detailsBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.detailsBtnText}>Подробнее</Text>
+            </TouchableOpacity>
           </View>
-        </Card>
+        </View>
       </TouchableOpacity>
     );
   }
 
-  // Filters bar — width adapts to breakpoint
   const filtersMaxWidth = isMobile ? 430 : (contentMaxWidth as number);
 
   return (
     <SafeAreaView style={styles.safe}>
+      <LandingHeader />
       <Header title="Каталог специалистов" />
 
-      {/* key={numColumns} forces FlatList remount when columns change on resize */}
       <FlatList
         key={numColumns}
         data={specialists}
@@ -193,50 +264,139 @@ export default function SpecialistsCatalogScreen() {
         }
         ListHeaderComponent={
           <View style={[styles.filters, { maxWidth: filtersMaxWidth }]}>
-            {/* City filter chips */}
-            {availableCities.length > 0 && (
-              <View>
-                <Text style={styles.filterLabel}>Город</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.cityChipsRow}
+            {/* Search input */}
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder="Найти специалиста или услугу..."
+                placeholderTextColor={Colors.textMuted}
+              />
+            </View>
+
+            {/* City filter chips (multi-select) */}
+            <View>
+              <Text style={styles.filterLabel}>Город</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
+              >
+                <TouchableOpacity
+                  key="__all__"
+                  onPress={() => setSelectedCities([])}
+                  style={[styles.chip, selectedCities.length === 0 && styles.chipActive]}
+                  activeOpacity={0.7}
                 >
-                  {['', ...availableCities].map((city) => {
-                    const isAll = city === '';
-                    const isActive = cityFilter === city;
-                    return (
+                  <Text style={[styles.chipText, selectedCities.length === 0 && styles.chipTextActive]}>
+                    Все города
+                  </Text>
+                </TouchableOpacity>
+                {RUSSIAN_CITIES.map((city) => {
+                  const isActive = selectedCities.includes(city);
+                  return (
+                    <TouchableOpacity
+                      key={city}
+                      onPress={() => toggleCity(city)}
+                      style={[styles.chip, isActive && styles.chipActive]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                        {city}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* FNS filter — shown only when cities are selected */}
+            {hasFnsOptions && (
+              <View style={styles.fnsSection}>
+                <Text style={styles.filterLabel}>Налоговая инспекция (ИФНС)</Text>
+
+                {/* FNS search input */}
+                <TextInput
+                  style={styles.fnsSearchInput}
+                  value={fnsSearch}
+                  onChangeText={setFnsSearch}
+                  placeholder="Поиск по инспекции..."
+                  placeholderTextColor={Colors.textMuted}
+                />
+
+                {/* FNS chips grouped by city */}
+                {Object.entries(fnsByCity).map(([city, offices]) => (
+                  <View key={city}>
+                    {selectedCities.length > 1 && (
+                      <Text style={styles.fnsCityLabel}>{city}</Text>
+                    )}
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.chipsRow}
+                    >
                       <TouchableOpacity
-                        key={isAll ? '__all__' : city}
-                        onPress={() => setCityFilter(city)}
-                        style={[styles.cityChip, isActive && styles.cityChipActive]}
+                        onPress={() => setFnsFilter('')}
+                        style={[styles.chip, fnsFilter === '' && styles.chipActive]}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.cityChipText, isActive && styles.cityChipTextActive]}>
-                          {isAll ? 'Все города' : city}
+                        <Text style={[styles.chipText, fnsFilter === '' && styles.chipTextActive]}>
+                          Все
                         </Text>
                       </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
+                      {offices.map((office) => {
+                        const isActive = fnsFilter === office.name;
+                        return (
+                          <TouchableOpacity
+                            key={office.code}
+                            onPress={() => setFnsFilter(isActive ? '' : office.name)}
+                            style={[styles.chip, isActive && styles.chipActive]}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                              {office.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                ))}
               </View>
             )}
 
-            {/* Badge filter toggle */}
-            <TouchableOpacity
-              onPress={() => setBadgeFilter((v) => !v)}
-              style={[styles.badgeToggle, badgeFilter && styles.badgeToggleActive]}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.badgeToggleText,
-                  badgeFilter && styles.badgeToggleTextActive,
-                ]}
+            {/* Specialization filter chips */}
+            <View>
+              <Text style={styles.filterLabel}>Специализация</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
               >
-                Знакомый в налоговой
-              </Text>
-            </TouchableOpacity>
+                {SPECIALIZATION_FILTERS.map((spec) => {
+                  const isActive = searchDebounced === spec.value && !searchText && spec.value !== '';
+                  return (
+                    <TouchableOpacity
+                      key={spec.value || '__all_spec__'}
+                      onPress={() => {
+                        if (spec.value === '') {
+                          setSearchText('');
+                        } else {
+                          setSearchText(spec.value);
+                        }
+                      }}
+                      style={[styles.chip, isActive && styles.chipActive]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                        {spec.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
             {/* Sort tabs */}
             <View style={styles.sortRow}>
@@ -270,7 +430,7 @@ export default function SpecialistsCatalogScreen() {
             </View>
           ) : error ? (
             <EmptyState
-              icon="⚠️"
+              icon="!"
               title="Ошибка загрузки"
               subtitle={error}
               ctaLabel="Повторить"
@@ -278,7 +438,7 @@ export default function SpecialistsCatalogScreen() {
             />
           ) : (
             <EmptyState
-              icon="🔍"
+              icon="?"
               title="Специалистов не найдено"
               subtitle="Попробуйте изменить фильтры"
             />
@@ -294,17 +454,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bgPrimary,
   },
-  // Mobile: centered single column
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing['3xl'],
     alignItems: 'center',
   },
-  // Wide (tablet/desktop): align to start so grid fills from left
   listContentWide: {
     alignItems: 'stretch',
   },
-  // Grid column spacing
   columnWrapper: {
     gap: Spacing.md,
     marginBottom: Spacing.md,
@@ -321,12 +478,25 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
     marginBottom: Spacing.sm,
   },
-  cityChipsRow: {
+  searchContainer: {
+    width: '100%',
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.bgCard,
+  },
+  chipsRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
     paddingRight: Spacing.sm,
   },
-  cityChip: {
+  chip: {
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.full,
@@ -334,37 +504,17 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.bgCard,
   },
-  cityChipActive: {
+  chipActive: {
     backgroundColor: Colors.brandPrimary,
     borderColor: Colors.brandPrimary,
   },
-  cityChipText: {
+  chipText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textSecondary,
     fontWeight: Typography.fontWeight.medium,
   },
-  cityChipTextActive: {
-    color: Colors.textPrimary,
-  },
-  badgeToggle: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignSelf: 'flex-start',
-  },
-  badgeToggleActive: {
-    backgroundColor: Colors.statusBg.familiar,
-    borderColor: Colors.textFamiliar,
-  },
-  badgeToggleText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  badgeToggleTextActive: {
-    color: Colors.textFamiliar,
+  chipTextActive: {
+    color: '#FFFFFF',
   },
   sortRow: {
     flexDirection: 'row',
@@ -388,91 +538,133 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   sortTabTextActive: {
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
-  // Mobile card: centered single column, maxWidth 430
+  // Card styles
   cardWrapperMobile: {
     width: '100%',
     maxWidth: 430,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
-  // Grid card: flex 1 fills column evenly (gutter handled by columnWrapper gap)
   cardWrapperGrid: {
     flex: 1,
+  },
+  card: {
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: '#C0D0EA',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    ...Shadows.sm,
   },
   cardHeader: {
     flexDirection: 'row',
     gap: Spacing.md,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   cardInfo: {
     flex: 1,
-    gap: Spacing.xs,
+    gap: 2,
   },
-  nickRow: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    flexWrap: 'wrap',
   },
-  nick: {
+  displayName: {
     fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.bold,
+    color: '#0F2447',
   },
-  cities: {
+  specialization: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
+    color: '#4A6B88',
+    marginTop: 1,
   },
-  badgesRow: {
+  cityText: {
+    fontSize: Typography.fontSize.xs,
+    color: '#4A6B88',
+    marginTop: 1,
+  },
+  metaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: Spacing.sm,
+  },
+  experienceText: {
+    fontSize: Typography.fontSize.xs,
+    color: '#4A6B88',
+  },
+  verifiedBadge: {
+    backgroundColor: '#E8F5ED',
+    paddingVertical: 1,
+    paddingHorizontal: 6,
+    borderRadius: BorderRadius.sm,
+  },
+  verifiedText: {
+    fontSize: 10,
+    color: '#1A7848',
+    fontWeight: Typography.fontWeight.medium,
   },
   servicesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.xs,
+    gap: 4,
     marginTop: Spacing.sm,
   },
   serviceChip: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    fontSize: 11,
+    color: '#4A6B88',
+    backgroundColor: '#F0F4FA',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    overflow: 'hidden',
   },
   serviceMore: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    fontSize: 11,
+    color: '#4A6B88',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
   cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    marginTop: Spacing.sm,
+    alignItems: 'flex-end',
   },
-  footerLeft: {
-    flex: 1,
-    gap: Spacing.xxs,
+  detailsBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: '#1A5BA8',
+    backgroundColor: 'transparent',
   },
-  activityText: {
+  detailsBtnText: {
+    fontSize: Typography.fontSize.sm,
+    color: '#1A5BA8',
+    fontWeight: Typography.fontWeight.medium,
+  },
+  fnsSection: {
+    gap: Spacing.sm,
+  },
+  fnsSearchInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.bgCard,
+  },
+  fnsCityLabel: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
-  },
-  writeLink: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
+    fontWeight: Typography.fontWeight.semibold,
+    marginBottom: Spacing.xs,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
   loadingBox: {
     paddingTop: Spacing['4xl'],

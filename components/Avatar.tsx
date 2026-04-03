@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { Colors, Typography } from '../constants/Colors';
 
-export type AvatarSize = 'sm' | 'md' | 'lg';
+export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
 
 interface AvatarProps {
   name?: string;
@@ -14,6 +14,7 @@ const SIZE_MAP: Record<AvatarSize, { container: number; font: number }> = {
   sm: { container: 32, font: 12 },
   md: { container: 44, font: 16 },
   lg: { container: 64, font: 22 },
+  xl: { container: 80, font: 28 },
 };
 
 function getInitials(name: string): string {
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandPrimary,
   },
   initials: {
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
     fontWeight: Typography.fontWeight.bold,
   },
 });

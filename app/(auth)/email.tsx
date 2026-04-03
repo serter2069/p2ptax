@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { LandingHeader } from '../../components/LandingHeader';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
@@ -22,13 +23,12 @@ function isValidEmail(email: string): boolean {
 export default function EmailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ role?: string }>();
+  const hasExplicitRole = params.role === 'SPECIALIST' || params.role === 'CLIENT';
   const role = params.role === 'SPECIALIST' ? 'SPECIALIST' : 'CLIENT';
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const roleLabel = role === 'SPECIALIST' ? 'специалиста' : 'заказчика';
 
   async function handleSubmit() {
     const trimmed = email.trim();
@@ -40,8 +40,9 @@ export default function EmailScreen() {
     setLoading(true);
     try {
       await api.post('/auth/request-otp', { email: trimmed });
+      const roleParam = hasExplicitRole ? `&role=${role}` : '';
       router.push(
-        `/(auth)/otp?email=${encodeURIComponent(trimmed)}&role=${role}`,
+        `/(auth)/otp?email=${encodeURIComponent(trimmed)}${roleParam}`,
       );
     } catch (err) {
       if (err instanceof ApiError) {
@@ -56,6 +57,7 @@ export default function EmailScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <LandingHeader />
       <KeyboardAvoidingView
         style={styles.kav}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -73,9 +75,9 @@ export default function EmailScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Войти как {roleLabel}</Text>
+              <Text style={styles.title}>Введите email</Text>
               <Text style={styles.subtitle}>
-                Введите email — мы отправим код подтверждения
+                Мы отправим вам код для входа. Если вы новый пользователь — аккаунт создастся автоматически.
               </Text>
             </View>
 
@@ -105,7 +107,7 @@ export default function EmailScreen() {
             </View>
 
             <Text style={styles.hint}>
-              Нет аккаунта? Он создастся автоматически.
+              Вход и регистрация — одно действие. Просто введите email.
             </Text>
           </View>
         </ScrollView>

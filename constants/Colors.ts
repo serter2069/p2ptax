@@ -1,42 +1,42 @@
 export const Colors = {
   // Backgrounds
-  bgPrimary: '#FFFFFF',
-  bgSecondary: '#F4F8FC',
+  bgPrimary: '#F4FBFC',
+  bgSecondary: '#EBF3FB',
   bgSurface: '#EBF3FB',
-  bgCard: '#F8FBFE',
+  bgCard: '#FFFFFF',
 
   // Text
   textPrimary: '#0F2447',
-  textSecondary: '#4A6080',
-  textMuted: '#6B7280',
-  textAccent: '#a78bfa',
+  textSecondary: '#4A6B88',
+  textMuted: '#4A6B88',
+  textAccent: '#1A5BA8',
 
   // Brand
-  brandPrimary: '#6366f1',
-  brandSecondary: '#8b5cf6',
+  brandPrimary: '#1A5BA8',
+  brandSecondary: '#1E3A6E',
 
   // Status
-  statusSuccess: '#4CAF50',
+  statusSuccess: '#1A7848',
   statusWarning: '#f59e0b',
-  statusError: '#ef4444',
-  statusInfo: '#3b82f6',
+  statusError: '#B91C1C',
+  statusInfo: '#1A5BA8',
 
   // Status background tints (for badges)
   statusBg: {
-    success: '#1a3a1e',
-    warning: '#3a2c10',
-    error: '#3a1414',
-    info: '#132240',
-    accent: '#2a1f4a',
-    familiar: '#2a2070',
+    success: '#e6f4ed',
+    warning: '#fef3cd',
+    error: '#fde8e8',
+    info: '#e0ecf8',
+    accent: '#dce8f5',
+    familiar: '#dce8f5',
   },
 
   // Extended text
-  textFamiliar: '#a5b4fc',
+  textFamiliar: '#2E74CC',
 
   // Borders
-  border: '#C8D8EA',
-  borderLight: '#3d3d5c',
+  border: '#C0D0EA',
+  borderLight: '#C0D0EA',
 } as const;
 
 export const Spacing = {

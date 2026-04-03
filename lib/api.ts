@@ -1,7 +1,8 @@
 import { secureStorage } from '../stores/storage';
 
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'https://p2ptax.smartlaunchhub.com/api';
+  process.env.EXPO_PUBLIC_API_URL ??
+  (__DEV__ ? 'http://localhost:3812/api' : 'https://p2ptax.smartlaunchhub.com/api');
 
 const TOKEN_KEY = '@p2ptax_token';
 
