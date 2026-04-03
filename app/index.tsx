@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,158 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
+  TextInput,
   Platform,
   Image,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
-import { Typography, BorderRadius } from '../constants/Colors';
+import { Typography, BorderRadius, Colors, Spacing } from '../constants/Colors';
+import { secureStorage } from '../stores/storage';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { LandingHeader } from '../components/LandingHeader';
 
 // ---- Components ----
+
+const QUICK_REQUEST_CITIES = [
+  'Москва',
+  'Санкт-Петербург',
+  'Новосибирск',
+  'Екатеринбург',
+  'Казань',
+  'Нижний Новгород',
+  'Челябинск',
+  'Самара',
+  'Уфа',
+  'Ростов-на-Дону',
+];
+
+function QuickRequestForm() {
+  const router = useRouter();
+  const [description, setDescription] = useState('');
+  const [city, setCity] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (description.trim().length < 3) {
+      setError('Описание слишком короткое');
+      return;
+    }
+    if (!city) {
+      setError('Выберите город');
+      return;
+    }
+    setError('');
+    await secureStorage.setItem(
+      'p2ptax_pending_request',
+      JSON.stringify({ description: description.trim().slice(0, 500), city })
+    );
+    router.push('/(auth)/email');
+  };
+
+  return (
+    <View style={qrf.container}>
+      <Text style={qrf.title}>Опишите задачу</Text>
+      <TextInput
+        style={qrf.input}
+        placeholder="Нужна помощь с налоговой декларацией..."
+        placeholderTextColor={Colors.textMuted}
+        value={description}
+        onChangeText={setDescription}
+        multiline
+        numberOfLines={3}
+        maxLength={500}
+      />
+      <View style={qrf.cityRow}>
+        {QUICK_REQUEST_CITIES.slice(0, 5).map((c) => (
+          <TouchableOpacity
+            key={c}
+            style={[qrf.cityChip, city === c && qrf.cityChipSelected]}
+            onPress={() => setCity(c)}
+          >
+            <Text style={[qrf.cityChipText, city === c && qrf.cityChipTextSelected]}>{c}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {error ? <Text style={qrf.error}>{error}</Text> : null}
+      <TouchableOpacity style={qrf.btn} onPress={handleSubmit} activeOpacity={0.85}>
+        <Text style={qrf.btnText}>Найти специалиста →</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const qrf = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginVertical: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  title: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.bgPrimary,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: Spacing.sm,
+    fontSize: Typography.fontSize.base,
+  },
+  cityRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: Spacing.sm,
+  },
+  cityChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgPrimary,
+  },
+  cityChipSelected: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  cityChipText: {
+    color: Colors.textSecondary,
+    fontSize: Typography.fontSize.sm,
+  },
+  cityChipTextSelected: {
+    color: '#fff',
+  },
+  error: {
+    color: Colors.statusError,
+    fontSize: Typography.fontSize.sm,
+    marginBottom: Spacing.xs,
+  },
+  btn: {
+    backgroundColor: Colors.brandPrimary,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  btnText: {
+    color: '#fff',
+    fontWeight: Typography.fontWeight.semibold,
+    fontSize: Typography.fontSize.base,
+  },
+});
 
 function LandingButton({
   onPress,
@@ -153,8 +293,10 @@ export default function LandingScreen() {
                 {'\u041F\u0440\u043E\u0431\u043B\u0435\u043C\u044B \u0441 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u043E\u0439?\n\u041D\u0430\u0439\u0434\u0451\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430 \u0437\u0430 1 \u0447\u0430\u0441'}
               </Text>
               <Text style={[styles.heroSubtitle, isWide && styles.heroSubtitleWide]}>
-                {'\u042E\u0440\u0438\u0441\u0442\u044B \u0438 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0435 \u043A\u043E\u043D\u0441\u0443\u043B\u044C\u0442\u0430\u043D\u0442\u044B \u0432 \u0432\u0430\u0448\u0435\u043C \u0433\u043E\u0440\u043E\u0434\u0435. \u041E\u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0439\u0442\u0435 \u0437\u0430\u043F\u0440\u043E\u0441 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E \u2014 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u043E\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0445 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}
+                {'\u042E\u0440\u0438\u0441\u0442\u044B \u0438 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0435 \u043A\u043E\u043D\u0441\u0443\u043B\u044C\u0442\u0430\u043D\u0442\u044B \u0432 \u0432\u0430\u0448\u0435\u043C \u0433\u043E\u0440\u043E\u0434\u0435. \u041E\u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0439\u0442\u0065 \u0437\u0430\u043F\u0440\u043E\u0441 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E \u2014 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u043E\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0445 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}
               </Text>
+
+              <QuickRequestForm />
 
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
                 <LandingButton
