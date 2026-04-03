@@ -126,8 +126,8 @@ export default function SpecialistProfileScreen() {
     setServiceInput('');
   }
 
-  function removeService(svc: string) {
-    setServices((prev) => prev.filter((s) => s !== svc));
+  function removeService(idx: number) {
+    setServices((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function pickAvatar() {
@@ -370,7 +370,7 @@ export default function SpecialistProfileScreen() {
               {services.map((svc, idx) => (
                 <View key={`${svc}-${idx}`} style={styles.serviceRow}>
                   <Text style={styles.serviceText} numberOfLines={2}>{svc}</Text>
-                  <TouchableOpacity onPress={() => removeService(svc)} hitSlop={8}>
+                  <TouchableOpacity onPress={() => removeService(idx)} hitSlop={8}>
                     <Text style={styles.tagRemove}>{'×'}</Text>
                   </TouchableOpacity>
                 </View>
