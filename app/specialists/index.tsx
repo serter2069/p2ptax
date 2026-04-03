@@ -275,26 +275,28 @@ export default function SpecialistsCatalogScreen() {
                   ))}
                 </View>
               )}
-              {selectedFns.length > 0 && (
-                <View style={styles.fnsChipsRow}>
-                  {selectedFns.map((office) => (
-                    <TouchableOpacity
-                      key={office.code}
-                      onPress={() =>
-                        setSelectedFns((prev) => prev.filter((o) => o.code !== office.code))
-                      }
-                      style={styles.fnsChip}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.fnsChipText} numberOfLines={1}>
-                        {shortFnsLabel(office)}
-                      </Text>
-                      <Text style={styles.fnsChipRemove}>×</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
             </View>
+
+            {/* Selected ИФНС chips */}
+            {selectedFns.length > 0 && (
+              <View style={styles.fnsChipsRow}>
+                {selectedFns.map((office) => (
+                  <TouchableOpacity
+                    key={office.code}
+                    onPress={() =>
+                      setSelectedFns((prev) => prev.filter((o) => o.code !== office.code))
+                    }
+                    style={styles.fnsChip}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.fnsChipText} numberOfLines={1}>
+                      {shortFnsLabel(office)}
+                    </Text>
+                    <Text style={styles.fnsChipRemove}>×</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             {/* Specialization filter chips */}
             <View>
@@ -405,8 +407,7 @@ const styles = StyleSheet.create({
   },
   searchSection: {
     position: 'relative',
-    zIndex: 10,
-    gap: Spacing.sm,
+    zIndex: 20,
   },
   searchInput: {
     borderWidth: 1,
@@ -419,6 +420,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard,
   },
   fnsDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 4,
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,
