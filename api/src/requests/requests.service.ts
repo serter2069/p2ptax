@@ -57,11 +57,12 @@ export class RequestsService {
     // so we fetch all profiles and filter in JS with toLowerCase()
     const cityLower = city.toLowerCase();
     const profiles = await this.prisma.specialistProfile.findMany({
-      include: { user: { select: { email: true } } },
+      include: { user: { select: { email: true, emailNotifications: true } } },
     });
 
     const emails = profiles
       .filter((p) => p.cities.some((c) => c.toLowerCase() === cityLower))
+      .filter((p) => p.user.emailNotifications)
       .map((p) => p.user.email);
 
     if (emails.length > 0) {
@@ -148,7 +149,7 @@ export class RequestsService {
     // Check request exists and is open
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
-      include: { client: { select: { id: true, email: true } } },
+      include: { client: { select: { id: true, email: true, emailNotifications: true } } },
     });
     if (!request) throw new NotFoundException('Request not found');
     if (request.status !== RequestStatus.OPEN) {
@@ -203,7 +204,9 @@ export class RequestsService {
     });
 
     // Notify client about new response — fire-and-forget
-    this.emailService.notifyNewResponse(request.client.email, requestId, specialistId);
+    if (request.client.emailNotifications) {
+      this.emailService.notifyNewResponse(request.client.email, requestId, specialistId);
+    }
 
     return result;
   }
