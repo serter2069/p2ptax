@@ -87,8 +87,8 @@ export default function ServicesScreen() {
 
   async function handleSubmit() {
     const trimmed = services.trim();
-    const combined = [...selectedChips, ...(trimmed ? [trimmed] : [])].join(', ');
-    if (!combined) {
+    const combined = [...selectedChips, ...(trimmed ? [trimmed] : [])];
+    if (combined.length === 0) {
       setError('Расскажите о своих услугах');
       return;
     }

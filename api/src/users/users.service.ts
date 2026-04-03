@@ -64,7 +64,7 @@ export class UsersService {
   async setupSpecialistProfile(
     userId: string,
     cities: string[],
-    services: string,
+    services: string[],
     fnsOffices?: string[],
   ): Promise<{ ok: true }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -79,8 +79,8 @@ export class UsersService {
 
     if (!user.username) throw new BadRequestException('Username must be set before creating specialist profile');
 
-    const trimmedServices = services.trim();
-    if (!trimmedServices) throw new BadRequestException('Services description cannot be empty');
+    const trimmedServices = services.map((s) => s.trim()).filter(Boolean);
+    if (trimmedServices.length === 0) throw new BadRequestException('Services description cannot be empty');
 
     const trimmedCities = cities.map((c) => c.trim()).filter(Boolean);
     if (trimmedCities.length === 0) throw new BadRequestException('At least one city must be selected');
@@ -97,7 +97,7 @@ export class UsersService {
           where: { userId },
           data: {
             cities: trimmedCities,
-            services: [trimmedServices],
+            services: trimmedServices,
             ...(trimmedFnsOffices.length > 0 && { fnsOffices: trimmedFnsOffices }),
           },
         }),
@@ -117,7 +117,7 @@ export class UsersService {
             userId,
             nick: user.username,
             cities: trimmedCities,
-            services: [trimmedServices],
+            services: trimmedServices,
             fnsOffices: trimmedFnsOffices,
             badges: [],
           },

@@ -372,12 +372,18 @@ export default function SpecialistProfileScreen() {
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Услуги и цены</Text>
           <View style={styles.servicesList}>
-            {profile.services.map((svc, idx) => (
-              <View key={idx} style={styles.serviceCard}>
-                <Text style={styles.serviceCheckmark}>{'\u2713'}</Text>
-                <Text style={styles.serviceText}>{svc}</Text>
-              </View>
-            ))}
+            {profile.services.map((svc, idx) => {
+              const separatorMatch = svc.match(/^(.+?)\s*(?:—|-{1,3})\s*(.+)$/);
+              const name = separatorMatch ? separatorMatch[1].trim() : svc.trim();
+              const price = separatorMatch ? separatorMatch[2].trim() : undefined;
+              return (
+                <View key={idx} style={styles.serviceCard}>
+                  <Text style={styles.serviceCheckmark}>{'\u2713'}</Text>
+                  <Text style={styles.serviceText}>{name}</Text>
+                  {price ? <Text style={styles.servicePrice}>{price}</Text> : null}
+                </View>
+              );
+            })}
           </View>
         </View>
       )}
@@ -810,6 +816,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#4A6B88',
     lineHeight: 22,
+  },
+  servicePrice: {
+    fontSize: 14,
+    color: '#1A5BA8',
+    fontWeight: '600',
+    flexShrink: 0,
   },
 
   // Experience
