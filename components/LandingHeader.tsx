@@ -8,10 +8,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useBreakpoints } from '../hooks/useBreakpoints';
+import { useAuth } from '../stores/authStore';
 
 export function LandingHeader() {
   const router = useRouter();
   const { isMobile } = useBreakpoints();
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -62,6 +64,16 @@ export function LandingHeader() {
             <View style={styles.burgerLine} />
             <View style={styles.burgerLine} />
           </TouchableOpacity>
+        ) : user ? (
+          <View style={styles.rightButtons}>
+            <TouchableOpacity
+              onPress={() => router.push('/(dashboard)')}
+              activeOpacity={0.8}
+              style={styles.btnRegister}
+            >
+              <Text style={styles.btnRegisterLabel}>Кабинет</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.rightButtons}>
             <TouchableOpacity
@@ -104,20 +116,32 @@ export function LandingHeader() {
           >
             <Text style={styles.mobileMenuText}>Как работает</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { setMenuOpen(false); router.push('/(auth)/email'); }}
-            activeOpacity={0.8}
-            style={[styles.btnLogin, { alignSelf: 'stretch', marginTop: 8 }]}
-          >
-            <Text style={styles.btnLoginLabel}>Войти</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { setMenuOpen(false); router.push('/(auth)/email?role=SPECIALIST'); }}
-            activeOpacity={0.8}
-            style={[styles.btnRegister, { alignSelf: 'stretch', marginTop: 4 }]}
-          >
-            <Text style={styles.btnRegisterLabel}>Для специалистов</Text>
-          </TouchableOpacity>
+          {user ? (
+            <TouchableOpacity
+              onPress={() => { setMenuOpen(false); router.push('/(dashboard)'); }}
+              activeOpacity={0.8}
+              style={[styles.btnRegister, { alignSelf: 'stretch', marginTop: 8 }]}
+            >
+              <Text style={styles.btnRegisterLabel}>Кабинет</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={() => { setMenuOpen(false); router.push('/(auth)/email'); }}
+                activeOpacity={0.8}
+                style={[styles.btnLogin, { alignSelf: 'stretch', marginTop: 8 }]}
+              >
+                <Text style={styles.btnLoginLabel}>Войти</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { setMenuOpen(false); router.push('/(auth)/email?role=SPECIALIST'); }}
+                activeOpacity={0.8}
+                style={[styles.btnRegister, { alignSelf: 'stretch', marginTop: 4 }]}
+              >
+                <Text style={styles.btnRegisterLabel}>Для специалистов</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
     </View>

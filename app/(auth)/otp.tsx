@@ -33,8 +33,9 @@ interface VerifyOtpResponse {
 
 export default function OtpScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ email?: string; role?: string }>();
+  const params = useLocalSearchParams<{ email?: string; role?: string; redirectTo?: string }>();
   const email = decodeURIComponent(params.email ?? '');
+  const redirectTo = params.redirectTo as string | undefined;
   const hasExplicitRole = params.role === 'SPECIALIST' || params.role === 'CLIENT';
   const role = params.role === 'SPECIALIST' ? 'SPECIALIST' : 'CLIENT';
 
@@ -125,7 +126,7 @@ export default function OtpScreen() {
           router.replace('/(onboarding)/username');
         }
       } else {
-        router.replace('/(dashboard)');
+        router.replace((redirectTo || '/(dashboard)') as any);
       }
     } catch (err) {
       if (err instanceof ApiError) {

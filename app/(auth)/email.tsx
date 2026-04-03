@@ -22,9 +22,10 @@ function isValidEmail(email: string): boolean {
 
 export default function EmailScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ role?: string }>();
+  const params = useLocalSearchParams<{ role?: string; redirectTo?: string }>();
   const hasExplicitRole = params.role === 'SPECIALIST' || params.role === 'CLIENT';
   const role = params.role === 'SPECIALIST' ? 'SPECIALIST' : 'CLIENT';
+  const redirectTo = params.redirectTo as string | undefined;
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,8 +42,9 @@ export default function EmailScreen() {
     try {
       await api.post('/auth/request-otp', { email: trimmed });
       const roleParam = hasExplicitRole ? `&role=${role}` : '';
+      const redirectParam = redirectTo ? `&redirectTo=${encodeURIComponent(redirectTo)}` : '';
       router.push(
-        `/(auth)/otp?email=${encodeURIComponent(trimmed)}${roleParam}`,
+        `/(auth)/otp?email=${encodeURIComponent(trimmed)}${roleParam}${redirectParam}`,
       );
     } catch (err) {
       if (err instanceof ApiError) {
