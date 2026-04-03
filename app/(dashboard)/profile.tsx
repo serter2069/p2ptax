@@ -114,6 +114,43 @@ export default function SpecialistProfileScreen() {
     setServices((prev) => prev.filter((s) => s !== svc));
   }
 
+  async function pickAvatar() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    const asset = result.assets[0];
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      const uri = asset.uri;
+      const filename = uri.split('/').pop() || 'avatar.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      if (Platform.OS === 'web') {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        formData.append('file', blob, filename);
+      } else {
+        formData.append('file', { uri, name: filename, type } as any);
+      }
+
+      const data = await api.upload<{ avatarUrl: string }>('/specialists/me/avatar', formData);
+      setAvatarUrl(data.avatarUrl);
+      Alert.alert('Готово', 'Аватар обновлён');
+    } catch (err) {
+      Alert.alert('Ошибка', err instanceof ApiError ? err.message : 'Не удалось загрузить фото');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   async function handleSave() {
     if (!nick.trim()) {
       Alert.alert('Ошибка', 'Ник не может быть пустым');
@@ -195,6 +232,26 @@ export default function SpecialistProfileScreen() {
         }
       >
         <View style={styles.container}>
+          {/* Avatar */}
+          <View style={[styles.section, styles.avatarSection]}>
+            <TouchableOpacity onPress={pickAvatar} disabled={uploadingAvatar} style={styles.avatarWrap}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Text style={styles.avatarPlaceholderText}>
+                    {nick ? nick[0].toUpperCase() : '?'}
+                  </Text>
+                </View>
+              )}
+              {uploadingAvatar ? (
+                <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.avatarOverlay} />
+              ) : (
+                <Text style={styles.changeAvatarText}>Изменить фото</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
           {/* Nick */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Основное</Text>
@@ -472,5 +529,37 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: Spacing.md,
     marginBottom: Spacing['3xl'],
+  },
+  avatarSection: {
+    alignItems: 'center',
+  },
+  avatarWrap: {
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarPlaceholder: {
+    backgroundColor: Colors.bgSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarPlaceholderText: {
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textMuted,
+  },
+  avatarOverlay: {
+    marginTop: 4,
+  },
+  changeAvatarText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
   },
 });

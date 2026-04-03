@@ -175,9 +175,6 @@ export class UsersService {
       // Specialist profile
       this.prisma.specialistProfile.deleteMany({ where: { userId } }),
 
-      // Legacy chat messages
-      this.prisma.chatMessage.deleteMany({ where: { userId } }),
-
       // Finally, the user
       this.prisma.user.delete({ where: { id: userId } }),
     ]);

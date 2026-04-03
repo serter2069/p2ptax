@@ -26,6 +26,12 @@ export class ReviewsController {
     return this.reviewsService.create(req.user.id, dto);
   }
 
+  @Get('my')
+  @UseGuards(JwtAuthGuard)
+  getMyReviews(@Request() req: any) {
+    return this.reviewsService.listByClient(req.user.id);
+  }
+
   @Get('specialist/:nick')
   listBySpecialist(
     @Param('nick') nick: string,

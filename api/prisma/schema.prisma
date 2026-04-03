@@ -33,10 +33,7 @@ model User {
   createdAt          DateTime  @default(now())
   lastLoginAt        DateTime?
 
-  // legacy chat (preserved for ChatGateway until task #1530)
-  chatMessages        ChatMessage[]
-
-  // new relations
+  // relations
   specialistProfile   SpecialistProfile?
   requests            Request[]
   responses           Response[]
@@ -189,17 +186,6 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
-model ChatMessage {
-  id        String   @id @default(cuid())
-  room      String
-  text      String
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-
-  @@index([room])
-  @@map("chat_messages")
-}
 
 model Review {
   id           String   @id @default(cuid())

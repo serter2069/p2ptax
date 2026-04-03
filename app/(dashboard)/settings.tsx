@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,18 @@ import { isAdmin } from '../../lib/adminEmails';
 import { Header } from '../../components/Header';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 
+interface MyReview {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  specialist: {
+    id: string;
+    email: string;
+    specialistProfile: { nick: string; displayName: string | null; avatarUrl: string | null } | null;
+  };
+}
+
 const NOTIF_KEY = '@p2ptax_email_notif';
 
 export default function SettingsScreen() {
@@ -27,6 +39,19 @@ export default function SettingsScreen() {
   const [emailNotif, setEmailNotif] = useState(true);
   const [notifLoading, setNotifLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [myReviews, setMyReviews] = useState<MyReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  // Load my reviews for CLIENT role
+  useEffect(() => {
+    if (user?.role === 'CLIENT') {
+      setReviewsLoading(true);
+      api.get<MyReview[]>('/reviews/my')
+        .then(setMyReviews)
+        .catch(() => {})
+        .finally(() => setReviewsLoading(false));
+    }
+  }, [user?.role]);
 
   // Load notification preference from API, fallback to AsyncStorage
   useEffect(() => {
@@ -152,6 +177,51 @@ export default function SettingsScreen() {
               )}
             </View>
           </View>
+
+          {/* My Reviews — CLIENT only */}
+          {user?.role === 'CLIENT' && (
+            <>
+              <Text style={styles.sectionTitle}>Мои отзывы</Text>
+              <View style={styles.card}>
+                {reviewsLoading ? (
+                  <View style={styles.row}>
+                    <ActivityIndicator size="small" color={Colors.brandPrimary} />
+                  </View>
+                ) : myReviews.length === 0 ? (
+                  <View style={styles.row}>
+                    <Text style={styles.rowLabel}>Вы пока не оставляли отзывов</Text>
+                  </View>
+                ) : (
+                  myReviews.map((review, idx) => {
+                    const specName =
+                      review.specialist.specialistProfile?.displayName ??
+                      review.specialist.specialistProfile?.nick ??
+                      review.specialist.email.split('@')[0];
+                    const stars = Array.from({ length: 5 }, (_, i) => (i < review.rating ? '*' : '-')).join('');
+                    return (
+                      <View key={review.id}>
+                        {idx > 0 && <View style={styles.divider} />}
+                        <View style={styles.reviewRow}>
+                          <View style={styles.reviewHeader}>
+                            <Text style={styles.reviewSpecialist} numberOfLines={1}>{specName}</Text>
+                            <Text style={styles.reviewRating}>{stars} {review.rating}/5</Text>
+                          </View>
+                          {review.comment ? (
+                            <Text style={styles.reviewComment} numberOfLines={3}>{review.comment}</Text>
+                          ) : null}
+                          <Text style={styles.reviewDate}>
+                            {new Date(review.createdAt).toLocaleDateString('ru-RU', {
+                              day: 'numeric', month: 'short', year: 'numeric',
+                            })}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            </>
+          )}
 
           {/* Admin section — visible only for admin emails */}
           {isAdmin(user?.email) ? (
@@ -294,5 +364,37 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     paddingHorizontal: Spacing.xs,
     marginTop: Spacing.xs,
+  },
+  reviewRow: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    gap: 4,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reviewSpecialist: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textPrimary,
+    flex: 1,
+  },
+  reviewRating: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+    marginLeft: Spacing.sm,
+  },
+  reviewComment: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  reviewDate: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
   },
 });
