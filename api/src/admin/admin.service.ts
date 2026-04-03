@@ -43,6 +43,7 @@ export class AdminService {
         id: true,
         email: true,
         role: true,
+        isBlocked: true,
         createdAt: true,
         lastLoginAt: true,
         specialistProfile: {
@@ -60,6 +61,14 @@ export class AdminService {
           select: { id: true, email: true, createdAt: true, lastLoginAt: true },
         },
       },
+    });
+  }
+
+  async blockUser(id: string, isBlocked: boolean) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { isBlocked },
+      select: { id: true, email: true, isBlocked: true },
     });
   }
 

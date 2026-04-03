@@ -29,6 +29,7 @@ model User {
   email       String    @unique
   username    String?   @unique
   role               Role      @default(CLIENT)
+  isBlocked          Boolean   @default(false)
   emailNotifications Boolean   @default(true)
   createdAt          DateTime  @default(now())
   lastLoginAt        DateTime?
