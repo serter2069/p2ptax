@@ -15,6 +15,25 @@ export class UsersService {
     return { id: user.id, email: user.email, role: user.role, username: user.username };
   }
 
+  /**
+   * Set role for a new user (onboarding step 1).
+   * Only allowed when role is null (user has not yet picked a role).
+   */
+  async updateRole(userId: string, role: string): Promise<{ id: string; email: string; role: string }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.role !== null) {
+      throw new BadRequestException('Role already assigned. Cannot change role via this endpoint.');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: role as Role },
+    });
+
+    return { id: updated.id, email: updated.email, role: updated.role };
+  }
+
   /** Set username for a user. 3-20 chars, alphanumeric + underscore, globally unique. */
   async setUsername(userId: string, username: string): Promise<{ id: string; email: string; role: string; username: string }> {
     if (username.length < 3 || username.length > 20) {
@@ -46,6 +65,7 @@ export class UsersService {
     userId: string,
     cities: string[],
     services: string,
+    fnsOffices?: string[],
   ): Promise<{ ok: true }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -68,12 +88,18 @@ export class UsersService {
     // Check for existing profile (idempotent — allow re-submission)
     const existing = await this.prisma.specialistProfile.findUnique({ where: { userId } });
 
+    const trimmedFnsOffices = (fnsOffices ?? []).map((f) => f.trim()).filter(Boolean);
+
     if (existing) {
       // Update existing profile and ensure role is SPECIALIST
       await this.prisma.$transaction([
         this.prisma.specialistProfile.update({
           where: { userId },
-          data: { cities: trimmedCities, services: [trimmedServices] },
+          data: {
+            cities: trimmedCities,
+            services: [trimmedServices],
+            ...(trimmedFnsOffices.length > 0 && { fnsOffices: trimmedFnsOffices }),
+          },
         }),
         this.prisma.user.update({
           where: { id: userId },
@@ -92,6 +118,7 @@ export class UsersService {
             nick: user.username,
             cities: trimmedCities,
             services: [trimmedServices],
+            fnsOffices: trimmedFnsOffices,
             badges: [],
           },
         }),
