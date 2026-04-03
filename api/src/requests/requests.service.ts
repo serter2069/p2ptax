@@ -122,7 +122,7 @@ export class RequestsService {
     });
   }
 
-  async findById(requestId: string, userId: string) {
+  async findById(requestId: string, userId: string | null) {
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
       include: {
@@ -141,8 +141,14 @@ export class RequestsService {
       },
     });
     if (!request) throw new NotFoundException('Request not found');
-    if (request.clientId !== userId) throw new ForbiddenException('Not your request');
-    return request;
+
+    // Owner gets full data; everyone else gets public fields only (no clientId, no responses)
+    if (userId !== null && userId === request.clientId) {
+      return request;
+    }
+
+    const { clientId: _omit, responses: _resp, ...publicFields } = request;
+    return publicFields;
   }
 
   async respond(specialistId: string, requestId: string, dto: RespondRequestDto) {
