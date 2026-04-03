@@ -122,23 +122,14 @@ export class ReviewsService {
     }
     const specialistId = specialistProfile.userId;
 
-    // Find closed requests from this client that this specialist responded to
-    const responses = await this.prisma.response.findMany({
-      where: { specialistId },
-      select: { requestId: true },
-    });
-    const respondedRequestIds = responses.map((r) => r.requestId);
-
-    if (respondedRequestIds.length === 0) {
-      return { canReview: false, eligibleRequestId: null };
-    }
-
-    // Find closed requests belonging to this client among responded ones
+    // Find a closed request from this client that this specialist responded to
     const closedRequest = await this.prisma.request.findFirst({
       where: {
-        id: { in: respondedRequestIds },
         clientId,
         status: RequestStatus.CLOSED,
+        responses: {
+          some: { specialistId },
+        },
       },
       select: { id: true },
     });

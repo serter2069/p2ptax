@@ -1,15 +1,13 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 
-// Admin emails are comma-separated in ADMIN_EMAILS env var.
-// No ADMIN role in DB yet, so we check email directly.
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? '').split(',').filter(Boolean);
-
 @Injectable()
 export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const { user } = context.switchToHttp().getRequest();
+    // Read on every call so env changes take effect without restart
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
-    if (!ADMIN_EMAILS.includes(user?.email)) {
+    if (!adminEmails.includes(user?.email)) {
       throw new ForbiddenException('Admin access required');
     }
 

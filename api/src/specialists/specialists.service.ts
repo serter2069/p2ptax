@@ -81,6 +81,7 @@ export class SpecialistsService {
   async getAvailableCities(): Promise<string[]> {
     const profiles = await this.prisma.specialistProfile.findMany({
       select: { cities: true },
+      take: 500,
     });
     const citySet = new Set<string>();
     for (const profile of profiles) {
@@ -130,8 +131,14 @@ export class SpecialistsService {
     });
 
     // Get active promotions to rank promoted specialists first
+    // When city filter is active, only show promoted badge for that city
+    const promotionWhere: any = { expiresAt: { gt: now } };
+    if (city) {
+      const cityList = city.split(',').map((c) => c.trim()).filter(Boolean);
+      promotionWhere.city = cityList.length === 1 ? cityList[0] : { in: cityList };
+    }
     const promoted = await this.prisma.promotion.findMany({
-      where: { expiresAt: { gt: now } },
+      where: promotionWhere,
       select: { specialistId: true, tier: true },
     });
 
