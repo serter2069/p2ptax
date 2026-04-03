@@ -1,8 +1,9 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional, IsInt, Min } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, MinLength, IsOptional, IsInt, Min } from 'class-validator';
 
 export class CreateRequestDto {
   @IsString()
   @IsNotEmpty()
+  @MinLength(3)
   @MaxLength(2000)
   description!: string;
 

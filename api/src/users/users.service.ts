@@ -49,6 +49,14 @@ export class UsersService {
   ): Promise<{ ok: true }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
+
+    // #1896: Block privilege escalation — only allow during onboarding (no role yet).
+    // Users who already completed onboarding (role = CLIENT or SPECIALIST) cannot
+    // use this endpoint to switch their role.
+    if (user.role === Role.CLIENT) {
+      throw new BadRequestException('Role already assigned. Cannot change role via this endpoint.');
+    }
+
     if (!user.username) throw new BadRequestException('Username must be set before creating specialist profile');
 
     const trimmedServices = services.trim();
