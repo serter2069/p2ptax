@@ -10,13 +10,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '../../components/Button';
+import { shortFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
-
-function shortLabel(office: FNSOffice): string {
-  const match = office.name.match(/№\s*(\d+)/);
-  return match ? `ИФНС №${match[1]} · ${office.city}` : office.city;
-}
 
 export default function FNSScreen() {
   const router = useRouter();
@@ -60,7 +56,7 @@ export default function FNSScreen() {
     });
   }
 
-  // Progress: step 2 of 3 (username → fns → services)
+  // Progress: step 3 of 4 (username → cities → fns → services)
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -69,8 +65,10 @@ export default function FNSScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
-          {/* Progress — 3 steps */}
+          {/* Progress — 4 steps */}
           <View style={styles.progressRow}>
+            <View style={[styles.progressDot, styles.progressDotDone]} />
+            <View style={styles.progressLine} />
             <View style={[styles.progressDot, styles.progressDotDone]} />
             <View style={styles.progressLine} />
             <View style={[styles.progressDot, styles.progressDotActive]} />
@@ -79,7 +77,7 @@ export default function FNSScreen() {
           </View>
 
           <View style={styles.header}>
-            <Text style={styles.step}>Шаг 2 из 3</Text>
+            <Text style={styles.step}>Шаг 3 из 4</Text>
             <Text style={styles.title}>Выберите ИФНС</Text>
             <Text style={styles.subtitle}>
               Укажите инспекции ФНС, с которыми вы работаете
@@ -130,7 +128,7 @@ export default function FNSScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.chipText} numberOfLines={1}>
-                      {shortLabel(office)}
+                      {shortFnsLabel(office.name, office.city)}
                     </Text>
                     <Text style={styles.chipRemove}>×</Text>
                   </TouchableOpacity>
