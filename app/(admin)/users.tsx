@@ -19,6 +19,7 @@ interface UserItem {
   id: string;
   email: string;
   role: 'CLIENT' | 'SPECIALIST';
+  isBlocked: boolean;
   createdAt: string;
   lastLoginAt: string | null;
   specialistProfile: { nick: string; cities: string[]; services: string[] } | null;
@@ -43,6 +44,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [blockingId, setBlockingId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async (role: RoleFilter, isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -67,8 +69,32 @@ export default function AdminUsers() {
 
   const handleRefresh = () => { setRefreshing(true); fetchUsers(filter, true); };
 
-  const handleBlock = () => {
-    Alert.alert('Скоро', 'Блокировка пользователей будет доступна в следующей версии.');
+  const handleBlock = async (user: UserItem) => {
+    if (blockingId) return;
+    const nextBlocked = !user.isBlocked;
+    const label = nextBlocked ? 'заблокировать' : 'разблокировать';
+    Alert.alert(
+      nextBlocked ? 'Блокировка' : 'Разблокировка',
+      `${label.charAt(0).toUpperCase() + label.slice(1)} пользователя ${user.email}?`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: nextBlocked ? 'Заблокировать' : 'Разблокировать',
+          style: nextBlocked ? 'destructive' : 'default',
+          onPress: async () => {
+            setBlockingId(user.id);
+            try {
+              await api.patch(`/admin/users/${user.id}`, { isBlocked: nextBlocked });
+              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isBlocked: nextBlocked } : u));
+            } catch (e: any) {
+              Alert.alert('Ошибка', e?.message ?? 'Не удалось обновить статус');
+            } finally {
+              setBlockingId(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -107,13 +133,18 @@ export default function AdminUsers() {
           ) : (
             <View style={styles.list}>
               {users.map((u) => (
-                <View key={u.id} style={styles.card}>
+                <View key={u.id} style={[styles.card, u.isBlocked && styles.cardBlocked]}>
                   <View style={styles.cardHeader}>
                     <Text style={styles.email} numberOfLines={1}>{u.email}</Text>
-                    <Badge
-                      variant={u.role === 'SPECIALIST' ? 'accent' : 'info'}
-                      label={u.role === 'SPECIALIST' ? 'Исполнитель' : 'Клиент'}
-                    />
+                    <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+                      {u.isBlocked && (
+                        <Badge variant="error" label="Заблокирован" />
+                      )}
+                      <Badge
+                        variant={u.role === 'SPECIALIST' ? 'accent' : 'info'}
+                        label={u.role === 'SPECIALIST' ? 'Исполнитель' : 'Клиент'}
+                      />
+                    </View>
                   </View>
                   {u.specialistProfile ? (
                     <Text style={styles.cardMeta} numberOfLines={1}>
@@ -123,8 +154,19 @@ export default function AdminUsers() {
                   <View style={styles.cardFooter}>
                     <Text style={styles.cardDate}>Рег: {formatDate(u.createdAt)}</Text>
                     <Text style={styles.cardDate}>Вход: {formatDate(u.lastLoginAt)}</Text>
-                    <TouchableOpacity onPress={handleBlock} style={styles.blockBtn} activeOpacity={0.75}>
-                      <Text style={styles.blockBtnText}>Блок</Text>
+                    <TouchableOpacity
+                      onPress={() => handleBlock(u)}
+                      style={[styles.blockBtn, u.isBlocked && styles.unblockBtn]}
+                      activeOpacity={0.75}
+                      disabled={blockingId === u.id}
+                    >
+                      {blockingId === u.id ? (
+                        <ActivityIndicator size="small" color={u.isBlocked ? Colors.brandPrimary : Colors.statusError} />
+                      ) : (
+                        <Text style={[styles.blockBtnText, u.isBlocked && styles.unblockBtnText]}>
+                          {u.isBlocked ? 'Разблок' : 'Блок'}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -231,6 +273,10 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
   },
+  cardBlocked: {
+    borderColor: Colors.statusError,
+    opacity: 0.85,
+  },
   blockBtn: {
     marginLeft: 'auto',
     paddingHorizontal: Spacing.md,
@@ -238,10 +284,19 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
     borderColor: Colors.statusError,
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   blockBtnText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.statusError,
     fontWeight: Typography.fontWeight.medium,
+  },
+  unblockBtn: {
+    borderColor: Colors.brandPrimary,
+  },
+  unblockBtnText: {
+    color: Colors.brandPrimary,
   },
 });

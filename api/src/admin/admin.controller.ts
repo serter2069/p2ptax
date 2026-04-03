@@ -1,6 +1,9 @@
 import {
   Controller,
   Get,
+  Patch,
+  Param,
+  Body,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -24,6 +27,13 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   getUsers(@Query('role') role?: string) {
     return this.adminService.getUsers(role);
+  }
+
+  /** PATCH /admin/users/:id — block or unblock a user */
+  @Patch('users/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  blockUser(@Param('id') id: string, @Body('isBlocked') isBlocked: boolean) {
+    return this.adminService.blockUser(id, isBlocked);
   }
 
   /** GET /admin/specialists — all specialist profiles */
