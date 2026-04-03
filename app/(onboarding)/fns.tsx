@@ -8,40 +8,41 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Button } from '../../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { getFNSForCities, FNSOffice } from '../../constants/FNS';
+import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
+
+function shortLabel(office: FNSOffice): string {
+  const match = office.name.match(/№\s*(\d+)/);
+  return match ? `ИФНС №${match[1]} · ${office.city}` : office.city;
+}
 
 export default function FNSScreen() {
   const router = useRouter();
-  const { cities: citiesParam } = useLocalSearchParams<{ cities: string }>();
-
-  const cities: string[] = citiesParam ? (JSON.parse(citiesParam) as string[]) : [];
-  const allOffices: FNSOffice[] = getFNSForCities(cities);
-
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<FNSOffice[]>([]);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
 
-  const filtered = search.trim()
-    ? allOffices.filter((o) =>
-        o.name.toLowerCase().includes(search.trim().toLowerCase()),
-      )
-    : allOffices;
+  const selectedNames = new Set(selected.map((o) => o.name));
 
-  // Group by city when multiple cities
-  const byCity: Record<string, FNSOffice[]> = {};
-  for (const office of filtered) {
-    if (!byCity[office.city]) byCity[office.city] = [];
-    byCity[office.city].push(office);
+  const searchTerms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const suggestions = searchTerms.length > 0
+    ? FNS_OFFICES.filter((o) => {
+        if (selectedNames.has(o.name)) return false;
+        const text = `${o.name} ${o.city}`.toLowerCase();
+        return searchTerms.every((t) => text.includes(t));
+      }).slice(0, 8)
+    : [];
+
+  function addOffice(office: FNSOffice) {
+    setSelected((prev) => [...prev, office]);
+    setSearch('');
+    setError('');
   }
 
-  function toggleOffice(name: string) {
-    setError('');
-    setSelected((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
-    );
+  function removeOffice(name: string) {
+    setSelected((prev) => prev.filter((o) => o.name !== name));
   }
 
   function handleContinue() {
@@ -49,20 +50,17 @@ export default function FNSScreen() {
       setError('Выберите хотя бы одну ИФНС');
       return;
     }
+    const cities = [...new Set(selected.map((o) => o.city))];
     router.push({
       pathname: '/(onboarding)/services',
       params: {
-        cities: citiesParam ?? JSON.stringify([]),
-        fnsOffices: JSON.stringify(selected),
+        cities: JSON.stringify(cities),
+        fnsOffices: JSON.stringify(selected.map((o) => o.name)),
       },
     });
   }
 
-  function handleBack() {
-    router.back();
-  }
-
-  // Progress: step 3 of 4 (username → cities → fns → services)
+  // Progress: step 2 of 3 (username → fns → services)
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -71,10 +69,8 @@ export default function FNSScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
-          {/* Progress indicator — 4 steps */}
+          {/* Progress — 3 steps */}
           <View style={styles.progressRow}>
-            <View style={[styles.progressDot, styles.progressDotDone]} />
-            <View style={styles.progressLine} />
             <View style={[styles.progressDot, styles.progressDotDone]} />
             <View style={styles.progressLine} />
             <View style={[styles.progressDot, styles.progressDotActive]} />
@@ -82,71 +78,75 @@ export default function FNSScreen() {
             <View style={styles.progressDot} />
           </View>
 
-          {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.step}>Шаг 3 из 4</Text>
-            <Text style={styles.title}>Выберите инспекции ФНС</Text>
+            <Text style={styles.step}>Шаг 2 из 3</Text>
+            <Text style={styles.title}>Выберите ИФНС</Text>
             <Text style={styles.subtitle}>
-              Укажите ИФНС, с которыми вы работаете
+              Укажите инспекции ФНС, с которыми вы работаете
             </Text>
           </View>
 
-          {/* Search */}
-          <TextInput
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Поиск по инспекции..."
-            placeholderTextColor={Colors.textMuted}
-          />
+          {/* Search with dropdown */}
+          <View style={styles.searchWrap}>
+            <TextInput
+              style={styles.searchInput}
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Поиск по номеру или городу..."
+              placeholderTextColor={Colors.textMuted}
+              autoCorrect={false}
+            />
+            {suggestions.length > 0 && (
+              <View style={styles.dropdown}>
+                {suggestions.map((office) => (
+                  <TouchableOpacity
+                    key={office.code}
+                    onPress={() => addOffice(office)}
+                    style={styles.dropdownItem}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.dropdownName} numberOfLines={2}>
+                      {office.name}
+                    </Text>
+                    <Text style={styles.dropdownCity}>{office.city}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
 
-          {/* No cities selected warning */}
-          {cities.length === 0 && (
-            <Text style={styles.warningText}>
-              Города не выбраны — вернитесь на предыдущий шаг
-            </Text>
-          )}
-
-          {/* FNS list grouped by city */}
-          {Object.entries(byCity).map(([city, offices]) => (
-            <View key={city} style={styles.cityGroup}>
-              {cities.length > 1 && (
-                <Text style={styles.cityLabel}>{city}</Text>
-              )}
-              <View style={styles.chipsGrid}>
-                {offices.map((office) => {
-                  const isSelected = selected.includes(office.name);
-                  return (
-                    <TouchableOpacity
-                      key={office.code}
-                      onPress={() => toggleOffice(office.name)}
-                      style={[styles.chip, isSelected && styles.chipSelected]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                        {office.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+          {/* Selected chips */}
+          {selected.length > 0 && (
+            <View style={styles.selectedWrap}>
+              <Text style={styles.selectedLabel}>
+                Выбрано: {selected.length}
+              </Text>
+              <View style={styles.chipsWrap}>
+                {selected.map((office) => (
+                  <TouchableOpacity
+                    key={office.code}
+                    onPress={() => removeOffice(office.name)}
+                    style={styles.chip}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.chipText} numberOfLines={1}>
+                      {shortLabel(office)}
+                    </Text>
+                    <Text style={styles.chipRemove}>×</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
-          ))}
-
-          {filtered.length === 0 && allOffices.length > 0 && (
-            <Text style={styles.emptyText}>Инспекций не найдено по запросу</Text>
-          )}
-
-          {selected.length > 0 && (
-            <Text style={styles.selectedHint}>
-              Выбрано: {selected.length} инспекц{selected.length === 1 ? 'ия' : selected.length <= 4 ? 'ии' : 'ий'}
-            </Text>
           )}
 
           {!!error && <Text style={styles.errorText}>{error}</Text>}
 
           <View style={styles.buttons}>
-            <TouchableOpacity onPress={handleBack} style={styles.backBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backBtn}
+              activeOpacity={0.7}
+            >
               <Text style={styles.backBtnText}>Назад</Text>
             </TouchableOpacity>
             <Button
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   progressLine: {
-    width: 28,
+    width: 40,
     height: 2,
     backgroundColor: Colors.border,
     marginHorizontal: Spacing.xs,
@@ -224,6 +224,10 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 22,
   },
+  searchWrap: {
+    position: 'relative',
+    zIndex: 10,
+  },
   searchInput: {
     borderWidth: 1,
     borderColor: Colors.border,
@@ -234,55 +238,72 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     backgroundColor: Colors.bgCard,
   },
-  warningText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    marginTop: 4,
+    zIndex: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  cityGroup: {
+  dropdownItem: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.bgSecondary,
+  },
+  dropdownName: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  dropdownCity: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    marginTop: 2,
+  },
+  selectedWrap: {
     gap: Spacing.sm,
   },
-  cityLabel: {
+  selectedLabel: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.semibold,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
+    fontWeight: Typography.fontWeight.medium,
   },
-  chipsGrid: {
+  chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
   },
   chip: {
-    paddingVertical: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  chipSelected: {
     borderColor: Colors.brandPrimary,
     backgroundColor: Colors.statusBg.accent,
   },
   chipText: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  chipTextSelected: {
     color: Colors.textAccent,
-    fontWeight: Typography.fontWeight.semibold,
+    fontWeight: Typography.fontWeight.medium,
+    maxWidth: 200,
   },
-  emptyText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  selectedHint: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
+  chipRemove: {
+    fontSize: 16,
+    color: Colors.textAccent,
     lineHeight: 18,
   },
   errorText: {

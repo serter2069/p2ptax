@@ -90,7 +90,10 @@ export class SpecialistsService {
       }
     }
     if (badge) where.badges = { has: badge };
-    if (fns) where.fnsOffices = { has: fns };
+    if (fns) {
+      const fnsList = fns.split(',').map((f) => f.trim()).filter(Boolean);
+      where.fnsOffices = fnsList.length === 1 ? { has: fnsList[0] } : { hasSome: fnsList };
+    }
 
     // Search filter: match against displayName, nick, services, cities, bio
     if (search && search.trim()) {

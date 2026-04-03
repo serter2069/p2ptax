@@ -20,8 +20,12 @@ import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
 import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
-import { RUSSIAN_CITIES } from '../../constants/Cities';
-import { getFNSForCities, FNSOffice } from '../../constants/FNS';
+import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
+
+function shortFnsLabel(office: FNSOffice): string {
+  const match = office.name.match(/№\s*(\d+)/);
+  return match ? `ИФНС №${match[1]} · ${office.city}` : office.city;
+}
 
 interface SpecialistItem {
   id: string;
@@ -64,8 +68,8 @@ export default function SpecialistsCatalogScreen() {
 
   const [searchText, setSearchText] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [fnsFilter, setFnsFilter] = useState('');
+  const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
+  const [fnsSearch, setFnsSearch] = useState('');
   const [sort, setSort] = useState('rating');
 
   // Debounce search input
@@ -74,48 +78,24 @@ export default function SpecialistsCatalogScreen() {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  const [fnsSearch, setFnsSearch] = useState('');
+  const selectedFnsCodes = new Set(selectedFns.map((o) => o.code));
+  const fnsTerms = fnsSearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const fnsDropdownResults = fnsTerms.length > 0
+    ? FNS_OFFICES.filter((o) => {
+        if (selectedFnsCodes.has(o.code)) return false;
+        const text = `${o.name} ${o.city}`.toLowerCase();
+        return fnsTerms.every((t) => text.includes(t));
+      }).slice(0, 8)
+    : [];
 
-  // FNS offices for selected cities
-  const fnsForSelectedCities = getFNSForCities(selectedCities);
-  const hasFnsOptions = selectedCities.length > 0 && fnsForSelectedCities.length > 0;
-
-  // Filtered FNS list based on search
-  const filteredFns = fnsSearch.trim()
-    ? fnsForSelectedCities.filter((o) =>
-        o.name.toLowerCase().includes(fnsSearch.trim().toLowerCase()),
-      )
-    : fnsForSelectedCities;
-
-  // Group FNS by city when multiple cities selected
-  const fnsByCity: Record<string, FNSOffice[]> = {};
-  for (const office of filteredFns) {
-    if (!fnsByCity[office.city]) fnsByCity[office.city] = [];
-    fnsByCity[office.city].push(office);
-  }
-
-  // Reset FNS filter when selected cities change and current FNS no longer applies
-  useEffect(() => {
-    if (fnsFilter && !fnsForSelectedCities.find((o) => o.name === fnsFilter)) {
-      setFnsFilter('');
-    }
-  }, [selectedCities]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function toggleCity(city: string) {
-    setSelectedCities((prev) =>
-      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city],
-    );
-  }
-
-  const cityFilterParam = selectedCities.join(',');
+  const fnsFilterParam = selectedFns.map((o) => o.name).join(',');
 
   const fetchSpecialists = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     setError('');
     try {
       const params = new URLSearchParams();
-      if (cityFilterParam) params.set('city', cityFilterParam);
-      if (fnsFilter) params.set('fns', fnsFilter);
+      if (fnsFilterParam) params.set('fns', fnsFilterParam);
       if (sort) params.set('sort', sort);
       if (searchDebounced.trim()) params.set('search', searchDebounced.trim());
 
@@ -134,12 +114,12 @@ export default function SpecialistsCatalogScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [cityFilterParam, fnsFilter, sort, searchDebounced]);
+  }, [fnsFilterParam, sort, searchDebounced]);
 
   useEffect(() => {
     fetchSpecialists();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cityFilterParam, fnsFilter, sort, searchDebounced]);
+  }, [fnsFilterParam, sort, searchDebounced]);
 
   function handleRefresh() {
     setRefreshing(true);
@@ -275,96 +255,59 @@ export default function SpecialistsCatalogScreen() {
               />
             </View>
 
-            {/* City filter chips (multi-select) */}
-            <View>
-              <Text style={styles.filterLabel}>Город</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                <TouchableOpacity
-                  key="__all__"
-                  onPress={() => setSelectedCities([])}
-                  style={[styles.chip, selectedCities.length === 0 && styles.chipActive]}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.chipText, selectedCities.length === 0 && styles.chipTextActive]}>
-                    Все города
-                  </Text>
-                </TouchableOpacity>
-                {RUSSIAN_CITIES.map((city) => {
-                  const isActive = selectedCities.includes(city);
-                  return (
-                    <TouchableOpacity
-                      key={city}
-                      onPress={() => toggleCity(city)}
-                      style={[styles.chip, isActive && styles.chipActive]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                        {city}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* FNS filter — shown only when cities are selected */}
-            {hasFnsOptions && (
-              <View style={styles.fnsSection}>
-                <Text style={styles.filterLabel}>Налоговая инспекция (ИФНС)</Text>
-
-                {/* FNS search input */}
+            {/* ИФНС filter — autocomplete search + selected chips */}
+            <View style={styles.fnsSection}>
+              <Text style={styles.filterLabel}>Налоговая инспекция (ИФНС)</Text>
+              <View style={styles.fnsSearchWrap}>
                 <TextInput
                   style={styles.fnsSearchInput}
                   value={fnsSearch}
                   onChangeText={setFnsSearch}
-                  placeholder="Поиск по инспекции..."
+                  placeholder="Поиск по номеру или городу..."
                   placeholderTextColor={Colors.textMuted}
+                  autoCorrect={false}
                 />
-
-                {/* FNS chips grouped by city */}
-                {Object.entries(fnsByCity).map(([city, offices]) => (
-                  <View key={city}>
-                    {selectedCities.length > 1 && (
-                      <Text style={styles.fnsCityLabel}>{city}</Text>
-                    )}
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.chipsRow}
-                    >
+                {fnsDropdownResults.length > 0 && (
+                  <View style={styles.fnsDropdown}>
+                    {fnsDropdownResults.map((office) => (
                       <TouchableOpacity
-                        onPress={() => setFnsFilter('')}
-                        style={[styles.chip, fnsFilter === '' && styles.chipActive]}
+                        key={office.code}
+                        onPress={() => {
+                          setSelectedFns((prev) => [...prev, office]);
+                          setFnsSearch('');
+                        }}
+                        style={styles.fnsDropdownItem}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.chipText, fnsFilter === '' && styles.chipTextActive]}>
-                          Все
+                        <Text style={styles.fnsDropdownName} numberOfLines={2}>
+                          {office.name}
                         </Text>
+                        <Text style={styles.fnsDropdownCity}>{office.city}</Text>
                       </TouchableOpacity>
-                      {offices.map((office) => {
-                        const isActive = fnsFilter === office.name;
-                        return (
-                          <TouchableOpacity
-                            key={office.code}
-                            onPress={() => setFnsFilter(isActive ? '' : office.name)}
-                            style={[styles.chip, isActive && styles.chipActive]}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                              {office.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
+                    ))}
                   </View>
-                ))}
+                )}
               </View>
-            )}
+              {selectedFns.length > 0 && (
+                <View style={styles.fnsChipsRow}>
+                  {selectedFns.map((office) => (
+                    <TouchableOpacity
+                      key={office.code}
+                      onPress={() =>
+                        setSelectedFns((prev) => prev.filter((o) => o.code !== office.code))
+                      }
+                      style={styles.fnsChip}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.fnsChipText} numberOfLines={1}>
+                        {shortFnsLabel(office)}
+                      </Text>
+                      <Text style={styles.fnsChipRemove}>×</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
             {/* Specialization filter chips */}
             <View>
@@ -491,30 +434,83 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     backgroundColor: Colors.bgCard,
   },
-  chipsRow: {
-    flexDirection: 'row',
+  fnsSection: {
     gap: Spacing.sm,
-    paddingRight: Spacing.sm,
+    zIndex: 10,
   },
-  chip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.full,
+  fnsSearchWrap: {
+    position: 'relative',
+    zIndex: 20,
+  },
+  fnsSearchInput: {
     borderWidth: 1,
     borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
     backgroundColor: Colors.bgCard,
   },
-  chipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
+  fnsDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    marginTop: 4,
+    zIndex: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 10,
   },
-  chipText: {
+  fnsDropdownItem: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.bgSecondary,
+  },
+  fnsDropdownName: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
+    color: Colors.textPrimary,
     fontWeight: Typography.fontWeight.medium,
   },
-  chipTextActive: {
-    color: '#FFFFFF',
+  fnsDropdownCity: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    marginTop: 2,
+  },
+  fnsChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  fnsChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
+    backgroundColor: Colors.statusBg.accent,
+  },
+  fnsChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textAccent,
+    fontWeight: Typography.fontWeight.medium,
+    maxWidth: 160,
+  },
+  fnsChipRemove: {
+    fontSize: 14,
+    color: Colors.textAccent,
+    lineHeight: 16,
   },
   sortRow: {
     flexDirection: 'row',
