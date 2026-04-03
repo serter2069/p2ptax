@@ -226,7 +226,7 @@ export class RequestsService {
   async updateFields(
     clientId: string,
     requestId: string,
-    dto: { description?: string; city?: string; budget?: number; category?: string },
+    dto: { description?: string; city?: string; budget?: number | null; category?: string | null },
   ) {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');

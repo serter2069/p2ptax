@@ -57,9 +57,11 @@ export default function DashboardHub() {
   const [recentRequests, setRecentRequests] = useState<MyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
+    setLoadError('');
     try {
       const [requests, threads] = await Promise.all([
         api.get<MyRequest[]>('/requests/my'),
@@ -69,8 +71,9 @@ export default function DashboardHub() {
       setActiveCount(requests.filter((r) => r.status === 'OPEN').length);
       setThreadCount(Array.isArray(threads) ? threads.length : 0);
       setRecentRequests(requests.slice(0, 3));
-    } catch {
-      // silently fail, show 0
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Не удалось загрузить данные. Проверьте соединение.';
+      setLoadError(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -242,6 +245,13 @@ export default function DashboardHub() {
 
             {loading ? (
               <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginTop: Spacing['3xl'] }} />
+            ) : loadError ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorBoxText}>{loadError}</Text>
+                <TouchableOpacity onPress={() => fetchData()} style={styles.retryBtn}>
+                  <Text style={styles.retryBtnText}>Повторить</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <>
                 {statsSection}
@@ -281,6 +291,13 @@ export default function DashboardHub() {
 
           {loading ? (
             <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginTop: Spacing['3xl'] }} />
+          ) : loadError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorBoxText}>{loadError}</Text>
+              <TouchableOpacity onPress={() => fetchData()} style={styles.retryBtn}>
+                <Text style={styles.retryBtnText}>Повторить</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <>
               {statsSection}
@@ -592,6 +609,32 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.statusError,
     fontWeight: Typography.fontWeight.medium,
+  },
+  errorBox: {
+    marginTop: Spacing['2xl'],
+    padding: Spacing.xl,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  errorBoxText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.statusError,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: Colors.brandPrimary,
+    borderRadius: BorderRadius.md,
+  },
+  retryBtnText: {
+    fontSize: Typography.fontSize.sm,
+    color: '#FFFFFF',
+    fontWeight: Typography.fontWeight.semibold,
   },
   // Desktop / tablet
   scrollWide: {

@@ -99,7 +99,7 @@ export default function EditRequestScreen() {
       if (budget.trim()) {
         body.budget = Number(budget.trim());
       } else {
-        body.budget = 0;
+        body.budget = null;
       }
       body.category = category || null;
       await api.patch(`/requests/${id}`, body);
