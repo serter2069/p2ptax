@@ -39,12 +39,6 @@ export function LandingHeader() {
               <Text style={styles.navLink}>Специалисты</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push('/requests')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navLink}>Запросы</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               onPress={() => {
                 if (Platform.OS === 'web') {
                   document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
@@ -97,13 +91,6 @@ export function LandingHeader() {
             style={styles.mobileMenuItem}
           >
             <Text style={styles.mobileMenuText}>Специалисты</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { setMenuOpen(false); router.push('/requests'); }}
-            activeOpacity={0.7}
-            style={styles.mobileMenuItem}
-          >
-            <Text style={styles.mobileMenuText}>Запросы</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {

@@ -255,38 +255,40 @@ export default function SpecialistsCatalogScreen() {
               />
             </View>
 
-            {/* ИФНС filter — autocomplete search + selected chips */}
+            {/* ИФНС filter — compact inline row + selected chips */}
             <View style={styles.fnsSection}>
-              <Text style={styles.filterLabel}>Налоговая инспекция (ИФНС)</Text>
-              <View style={styles.fnsSearchWrap}>
-                <TextInput
-                  style={styles.fnsSearchInput}
-                  value={fnsSearch}
-                  onChangeText={setFnsSearch}
-                  placeholder="Поиск по номеру или городу..."
-                  placeholderTextColor={Colors.textMuted}
-                  autoCorrect={false}
-                />
-                {fnsDropdownResults.length > 0 && (
-                  <View style={styles.fnsDropdown}>
-                    {fnsDropdownResults.map((office) => (
-                      <TouchableOpacity
-                        key={office.code}
-                        onPress={() => {
-                          setSelectedFns((prev) => [...prev, office]);
-                          setFnsSearch('');
-                        }}
-                        style={styles.fnsDropdownItem}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.fnsDropdownName} numberOfLines={2}>
-                          {office.name}
-                        </Text>
-                        <Text style={styles.fnsDropdownCity}>{office.city}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
+              <View style={styles.fnsRow}>
+                <Text style={styles.fnsRowLabel}>ИФНС</Text>
+                <View style={[styles.fnsSearchWrap, { flex: 1 }]}>
+                  <TextInput
+                    style={styles.fnsSearchInput}
+                    value={fnsSearch}
+                    onChangeText={setFnsSearch}
+                    placeholder="Поиск по номеру или городу"
+                    placeholderTextColor={Colors.textMuted}
+                    autoCorrect={false}
+                  />
+                  {fnsDropdownResults.length > 0 && (
+                    <View style={styles.fnsDropdown}>
+                      {fnsDropdownResults.map((office) => (
+                        <TouchableOpacity
+                          key={office.code}
+                          onPress={() => {
+                            setSelectedFns((prev) => [...prev, office]);
+                            setFnsSearch('');
+                          }}
+                          style={styles.fnsDropdownItem}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.fnsDropdownName} numberOfLines={2}>
+                            {office.name}
+                          </Text>
+                          <Text style={styles.fnsDropdownCity}>{office.city}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
               </View>
               {selectedFns.length > 0 && (
                 <View style={styles.fnsChipsRow}>
@@ -341,24 +343,16 @@ export default function SpecialistsCatalogScreen() {
               </ScrollView>
             </View>
 
-            {/* Sort tabs */}
+            {/* Sort */}
             <View style={styles.sortRow}>
+              <Text style={styles.sortLabel}>Сортировка:</Text>
               {SORT_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
                   onPress={() => setSort(opt.value)}
-                  style={[
-                    styles.sortTab,
-                    sort === opt.value && styles.sortTabActive,
-                  ]}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.sortTabText,
-                      sort === opt.value && styles.sortTabTextActive,
-                    ]}
-                  >
+                  <Text style={[styles.sortOption, sort === opt.value && styles.sortOptionActive]}>
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
@@ -435,8 +429,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard,
   },
   fnsSection: {
-    gap: Spacing.sm,
+    gap: Spacing.xs,
     zIndex: 10,
+  },
+  fnsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  fnsRowLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
+    width: 44,
   },
   fnsSearchWrap: {
     position: 'relative',
@@ -445,9 +450,9 @@ const styles = StyleSheet.create({
   fnsSearchInput: {
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
     fontSize: Typography.fontSize.sm,
     color: Colors.textPrimary,
     backgroundColor: Colors.bgCard,
@@ -514,27 +519,20 @@ const styles = StyleSheet.create({
   },
   sortRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  sortTab: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
     alignItems: 'center',
+    gap: Spacing.md,
   },
-  sortTabActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  sortTabText: {
+  sortLabel: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textMuted,
   },
-  sortTabTextActive: {
-    color: '#FFFFFF',
+  sortOption: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+  },
+  sortOptionActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.semibold,
   },
   // Card styles
   cardWrapperMobile: {
@@ -641,26 +639,29 @@ const styles = StyleSheet.create({
     color: '#1A5BA8',
     fontWeight: Typography.fontWeight.medium,
   },
-  fnsSection: {
+  chipsRow: {
+    flexDirection: 'row',
     gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
   },
-  fnsSearchInput: {
+  chip: {
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
     backgroundColor: Colors.bgCard,
   },
-  fnsCityLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.semibold,
-    marginBottom: Spacing.xs,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
+  chipActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  chipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  chipTextActive: {
+    color: '#FFFFFF',
   },
   loadingBox: {
     paddingTop: Spacing['4xl'],
