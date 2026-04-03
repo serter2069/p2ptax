@@ -40,6 +40,7 @@ interface ThreadParticipant {
   id: string;
   email: string;
   role: string;
+  name?: string;
 }
 
 interface ThreadItem {
@@ -63,11 +64,14 @@ export default function ThreadScreen() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [otherEmail, setOtherEmail] = useState('');
+  const [otherName, setOtherName] = useState('');
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [typingVisible, setTypingVisible] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const flatListRef = useRef<FlatList<Message>>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -84,7 +88,18 @@ export default function ThreadScreen() {
         api.get<ThreadItem[]>('/threads'),
       ]);
 
-      setMessages(msgData.messages ?? []);
+      const totalPages = msgData.pages ?? 1;
+      // If more than 1 page, load the last page first (newest messages)
+      if (totalPages > 1) {
+        const lastPageData = await api.get<MessagesResponse>(`/threads/${threadId}/messages?page=${totalPages}`);
+        setMessages(lastPageData.messages ?? []);
+        setPage(totalPages);
+        setHasMore(totalPages > 1);
+      } else {
+        setMessages(msgData.messages ?? []);
+        setPage(1);
+        setHasMore(false);
+      }
 
       const thread = threads.find((t) => t.id === threadId);
       if (thread && user) {
@@ -92,7 +107,7 @@ export default function ThreadScreen() {
           thread.participant1.id === user.userId
             ? thread.participant2
             : thread.participant1;
-        setOtherEmail(other.email);
+        setOtherName(other.name || other.email.split('@')[0]);
       }
     } catch {
       setLoadError(true);
@@ -104,6 +119,30 @@ export default function ThreadScreen() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Load older messages when scrolling up (previous page)
+  const loadMoreMessages = useCallback(async () => {
+    if (!threadId || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const prevPage = page - 1;
+      const msgData = await api.get<MessagesResponse>(`/threads/${threadId}/messages?page=${prevPage}`);
+      const older = msgData.messages ?? [];
+      if (older.length > 0) {
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMsgs = older.filter((m) => !existingIds.has(m.id));
+          return [...newMsgs, ...prev];
+        });
+        setPage(prevPage);
+      }
+      setHasMore(prevPage > 1);
+    } catch {
+      // silently fail — user can retry by scrolling up again
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [threadId, page, hasMore, loadingMore]);
 
   // WebSocket setup
   useEffect(() => {
@@ -247,7 +286,7 @@ export default function ThreadScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title={otherEmail || 'Диалог'} showBack />
+      <Header title={otherName || 'Диалог'} showBack />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -273,6 +312,19 @@ export default function ThreadScreen() {
             renderItem={renderMessage}
             contentContainerStyle={styles.msgList}
             onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            onScroll={({ nativeEvent }) => {
+              if (nativeEvent.contentOffset.y < 50 && hasMore && !loadingMore) {
+                loadMoreMessages();
+              }
+            }}
+            scrollEventThrottle={200}
+            ListHeaderComponent={
+              loadingMore ? (
+                <View style={styles.loadingMoreWrap}>
+                  <ActivityIndicator size="small" color={Colors.brandPrimary} />
+                </View>
+              ) : null
+            }
           />
         )}
 
@@ -328,6 +380,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
+  },
+  loadingMoreWrap: {
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    width: '100%',
   },
   dateBadgeWrap: {
     alignItems: 'center',

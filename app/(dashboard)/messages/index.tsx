@@ -21,6 +21,7 @@ interface ThreadParticipant {
   id: string;
   email: string;
   role: string;
+  name?: string;
 }
 
 interface LastMessage {
@@ -40,15 +41,15 @@ interface ThreadItem {
 }
 
 function getDisplayName(participant: ThreadParticipant): string {
-  // Extract readable name from email
+  // Backend returns name = displayName || nick || email prefix
+  if (participant.name) return participant.name;
   const local = participant.email.split('@')[0] ?? '';
-  // Capitalize first letter
   return local.charAt(0).toUpperCase() + local.slice(1);
 }
 
 function getInitials(participant: ThreadParticipant): string {
-  const local = participant.email.split('@')[0] ?? '';
-  return local.slice(0, 2).toUpperCase();
+  const displayName = participant.name || participant.email.split('@')[0] || '';
+  return displayName.slice(0, 2).toUpperCase();
 }
 
 function formatTime(dateStr: string): string {
