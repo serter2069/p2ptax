@@ -19,10 +19,16 @@ import { EmptyState } from '../../../components/EmptyState';
 import { useBreakpoints } from '../../../hooks/useBreakpoints';
 import { useAuth } from '../../../stores/authStore';
 
+interface SpecialistProfile {
+  nick?: string;
+  displayName?: string;
+  avatarUrl?: string;
+}
+
 interface ResponseItem {
   id: string;
   message: string;
-  specialist: { id: string; email: string };
+  specialist: { id: string; email: string; specialistProfile?: SpecialistProfile | null };
   createdAt: string;
 }
 
