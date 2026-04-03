@@ -5,6 +5,7 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
@@ -13,7 +14,7 @@ import { useAuth } from '../../stores/authStore';
 
 export default function RoleScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  useAuth();
   const [loading, setLoading] = useState(false);
 
   async function handleSelect(role: 'CLIENT' | 'SPECIALIST') {
@@ -26,13 +27,8 @@ export default function RoleScreen() {
       } else {
         router.replace('/(dashboard)');
       }
-    } catch (err) {
-      // If PATCH fails, still navigate — role can be changed later
-      if (role === 'SPECIALIST') {
-        router.replace('/(onboarding)/username');
-      } else {
-        router.replace('/(dashboard)');
-      }
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось сохранить роль. Попробуйте снова.');
     } finally {
       setLoading(false);
     }

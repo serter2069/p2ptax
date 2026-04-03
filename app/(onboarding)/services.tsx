@@ -20,8 +20,15 @@ export default function ServicesScreen() {
   const { cities: citiesParam, fnsOffices: fnsParam } = useLocalSearchParams<{ cities: string; fnsOffices: string }>();
   const { completeOnboarding, user } = useAuth();
 
-  const cities: string[] = citiesParam ? (JSON.parse(citiesParam) as string[]) : [];
-  const fnsOffices: string[] = fnsParam ? (JSON.parse(fnsParam) as string[]) : [];
+  let cities: string[] = [];
+  let fnsOffices: string[] = [];
+  try {
+    cities = citiesParam ? (JSON.parse(citiesParam) as string[]) : [];
+    fnsOffices = fnsParam ? (JSON.parse(fnsParam) as string[]) : [];
+  } catch {
+    cities = [];
+    fnsOffices = [];
+  }
 
   const [services, setServices] = useState('');
   const [loading, setLoading] = useState(false);
