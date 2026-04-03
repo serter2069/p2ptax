@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
 
+const ALLOWED_BADGES = ['verified', 'familiar'];
+
 @Injectable()
 export class SpecialistsService {
   constructor(private prisma: PrismaService) {}
@@ -23,7 +25,7 @@ export class SpecialistsService {
         experience: dto.experience,
         cities: dto.cities,
         services: dto.services,
-        badges: dto.badges ?? [],
+        badges: (dto.badges ?? []).filter((b) => ALLOWED_BADGES.includes(b)),
         contacts: dto.contacts,
       },
     });
@@ -48,9 +50,15 @@ export class SpecialistsService {
       if (nickTaken) throw new ConflictException('Nick already taken');
     }
 
+    // Validate badges against allowed list
+    const data = { ...dto };
+    if (data.badges) {
+      data.badges = data.badges.filter((b) => ALLOWED_BADGES.includes(b));
+    }
+
     return this.prisma.specialistProfile.update({
       where: { userId },
-      data: dto,
+      data,
     });
   }
 
@@ -61,7 +69,12 @@ export class SpecialistsService {
     if (!profile) throw new NotFoundException('Specialist not found');
 
     const activity = await this.computeActivity(profile.userId);
-    return { ...profile, activity };
+    return {
+      ...profile,
+      activity,
+      rating: activity.avgRating,
+      reviewCount: activity.reviewCount,
+    };
   }
 
   async getAvailableCities(): Promise<string[]> {

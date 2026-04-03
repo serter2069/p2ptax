@@ -15,8 +15,18 @@ export class ChatService {
         ],
       },
       include: {
-        participant1: { select: { id: true, email: true, role: true } },
-        participant2: { select: { id: true, email: true, role: true } },
+        participant1: {
+          select: {
+            id: true, email: true, role: true,
+            specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+          },
+        },
+        participant2: {
+          select: {
+            id: true, email: true, role: true,
+            specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+          },
+        },
         messages: {
           orderBy: { createdAt: 'desc' },
           take: 1,
@@ -32,10 +42,18 @@ export class ChatService {
       return bDate.getTime() - aDate.getTime();
     });
 
+    const withName = (user: typeof threads[0]['participant1']) => {
+      const profile = user.specialistProfile;
+      return {
+        ...user,
+        name: profile?.displayName || profile?.nick || user.email.split('@')[0],
+      };
+    };
+
     return threads.map((t) => ({
       id: t.id,
-      participant1: t.participant1,
-      participant2: t.participant2,
+      participant1: withName(t.participant1),
+      participant2: withName(t.participant2),
       lastMessage: t.messages[0] ?? null,
       createdAt: t.createdAt,
     }));

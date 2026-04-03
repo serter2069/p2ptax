@@ -99,12 +99,40 @@ export class RequestsService {
         _count: { select: { responses: true } },
         responses: {
           include: {
-            specialist: { select: { id: true, email: true } },
+            specialist: {
+              select: {
+                id: true, email: true,
+                specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
       },
     });
+  }
+
+  async findById(requestId: string, userId: string) {
+    const request = await this.prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        _count: { select: { responses: true } },
+        responses: {
+          include: {
+            specialist: {
+              select: {
+                id: true, email: true,
+                specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.clientId !== userId) throw new ForbiddenException('Not your request');
+    return request;
   }
 
   async respond(specialistId: string, requestId: string, dto: RespondRequestDto) {
