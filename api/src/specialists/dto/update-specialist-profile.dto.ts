@@ -1,4 +1,4 @@
-import { IsString, IsArray, IsOptional, IsInt, Min, MaxLength } from 'class-validator';
+import { IsString, IsArray, IsOptional, IsInt, Min, MaxLength, ArrayMaxSize } from 'class-validator';
 
 export class UpdateSpecialistProfileDto {
   @IsString()
@@ -23,6 +23,7 @@ export class UpdateSpecialistProfileDto {
 
   @IsArray()
   @IsString({ each: true })
+  @ArrayMaxSize(20)
   @IsOptional()
   services?: string[];
 
