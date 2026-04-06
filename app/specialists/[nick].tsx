@@ -98,6 +98,12 @@ export default function SpecialistProfileScreen() {
   const [reviewComment, setReviewComment] = useState('');
   const [submitLoading, setSubmitLoading] = useState(false);
 
+  // Complaint form state
+  const [showComplaintForm, setShowComplaintForm] = useState(false);
+  const [complaintReason, setComplaintReason] = useState<'spam' | 'fraud' | 'inappropriate' | 'other'>('spam');
+  const [complaintDescription, setComplaintDescription] = useState('');
+  const [complaintLoading, setComplaintLoading] = useState(false);
+
   useEffect(() => {
     if (!nick) return;
     let cancelled = false;
@@ -216,6 +222,27 @@ export default function SpecialistProfileScreen() {
       } catch {
         // user cancelled or share unavailable — ignore silently
       }
+    }
+  }
+
+  async function handleSubmitComplaint() {
+    if (!profile || complaintLoading) return;
+    setComplaintLoading(true);
+    try {
+      await api.post('/complaints', {
+        targetUserId: profile.userId,
+        reason: complaintReason,
+        description: complaintDescription.trim() || undefined,
+      });
+      setShowComplaintForm(false);
+      setComplaintDescription('');
+      setComplaintReason('spam');
+      Alert.alert('Жалоба отправлена', 'Мы рассмотрим её в течение 24 часов.');
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Не удалось отправить жалобу';
+      Alert.alert('Ошибка', msg);
+    } finally {
+      setComplaintLoading(false);
     }
   }
 
@@ -352,6 +379,65 @@ export default function SpecialistProfileScreen() {
         <View style={styles.copyToast}>
           <Text style={styles.copyToastText}>Ссылка скопирована</Text>
         </View>
+      )}
+
+      {/* Report button — only for authenticated users viewing someone else's profile */}
+      {user && profile && user.userId !== profile.userId && (
+        <>
+          <TouchableOpacity
+            onPress={() => setShowComplaintForm(!showComplaintForm)}
+            style={styles.reportBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.reportBtnText}>Пожаловаться</Text>
+          </TouchableOpacity>
+
+          {/* Complaint form */}
+          {showComplaintForm && (
+            <View style={styles.complaintForm}>
+              <Text style={styles.complaintFormTitle}>Причина жалобы</Text>
+              {(['spam', 'fraud', 'inappropriate', 'other'] as const).map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  onPress={() => setComplaintReason(r)}
+                  style={[styles.reasonOption, complaintReason === r && styles.reasonOptionActive]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.reasonOptionText, complaintReason === r && styles.reasonOptionTextActive]}>
+                    {r === 'spam' ? 'Спам' : r === 'fraud' ? 'Мошенничество' : r === 'inappropriate' ? 'Неприемлемый контент' : 'Другое'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TextInput
+                style={styles.complaintInput}
+                value={complaintDescription}
+                onChangeText={setComplaintDescription}
+                placeholder="Подробности (необязательно)"
+                placeholderTextColor={Colors.textMuted}
+                multiline
+                numberOfLines={3}
+              />
+              <View style={styles.complaintFormActions}>
+                <TouchableOpacity
+                  onPress={() => { setShowComplaintForm(false); setComplaintDescription(''); setComplaintReason('spam'); }}
+                  style={styles.cancelBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.cancelBtnText}>Отмена</Text>
+                </TouchableOpacity>
+                <Button
+                  onPress={handleSubmitComplaint}
+                  variant="primary"
+                  loading={complaintLoading}
+                  disabled={complaintLoading}
+                  style={styles.submitBtn}
+                >
+                  Отправить
+                </Button>
+              </View>
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -1053,5 +1139,70 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1A5BA8',
     fontWeight: '600',
+  },
+
+  // Report / Complaint
+  reportBtn: {
+    paddingVertical: 8,
+    alignItems: 'center',
+    width: '100%',
+  },
+  reportBtnText: {
+    fontSize: 12,
+    color: '#8A9BB0',
+    textDecorationLine: 'underline',
+  },
+  complaintForm: {
+    gap: 8,
+    padding: 14,
+    backgroundColor: '#FFF5F5',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  complaintFormTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F2447',
+    marginBottom: 4,
+  },
+  reasonOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C0D0EA',
+    backgroundColor: '#FFFFFF',
+  },
+  reasonOptionActive: {
+    borderColor: '#C0322D',
+    backgroundColor: '#FFF5F5',
+  },
+  reasonOptionText: {
+    fontSize: 13,
+    color: '#4A6B88',
+  },
+  reasonOptionTextActive: {
+    color: '#C0322D',
+    fontWeight: '600',
+  },
+  complaintInput: {
+    borderWidth: 1,
+    borderColor: '#C0D0EA',
+    borderRadius: 8,
+    padding: 10,
+    color: '#0F2447',
+    fontSize: 13,
+    backgroundColor: '#FFFFFF',
+    minHeight: 60,
+    textAlignVertical: 'top',
+    marginTop: 4,
+  },
+  complaintFormActions: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 4,
   },
 });

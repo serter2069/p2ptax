@@ -11,6 +11,7 @@ import { PromotionsModule } from './promotions/promotions.module';
 import { UsersModule } from './users/users.module';
 import { AdminModule } from './admin/admin.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { ComplaintsModule } from './complaints/complaints.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     UsersModule,
     AdminModule,
     ReviewsModule,
+    ComplaintsModule,
   ],
   controllers: [AppController],
 })
