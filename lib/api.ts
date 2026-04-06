@@ -162,6 +162,11 @@ async function request<T>(
   }
 
   if (!response.ok) {
+    // 429 Too Many Requests — throttler fires a raw "ThrottlerException: Too Many Requests"
+    // message that is not user-friendly. Replace it here centrally for all screens.
+    if (response.status === 429) {
+      throw new ApiError(429, 'Слишком много попыток. Попробуйте через 5 минут.');
+    }
     let message = `HTTP ${response.status}`;
     try {
       const json = await response.json();
