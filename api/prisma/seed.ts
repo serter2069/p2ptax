@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, PromotionTier } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -207,6 +207,171 @@ const specialists: SpecialistSeedData[] = [
   },
 ];
 
+// --- Seed clients ---
+interface ClientSeedData {
+  email: string;
+  username: string;
+}
+
+const seedClients: ClientSeedData[] = [
+  { email: 'anna.client@seed.local', username: 'anna-client' },
+  { email: 'boris.client@seed.local', username: 'boris-client' },
+  { email: 'vera.client@seed.local', username: 'vera-client' },
+];
+
+// --- Seed open requests ---
+interface RequestSeedData {
+  clientEmail: string;
+  description: string;
+  city: string;
+  budget?: number;
+  category?: string;
+}
+
+const seedRequests: RequestSeedData[] = [
+  {
+    clientEmail: 'anna.client@seed.local',
+    description: 'Нужна помощь с декларацией 3-НДФЛ за 2025 год, имущественный вычет',
+    city: 'Москва',
+    budget: 5000,
+    category: 'Декларации 3-НДФЛ',
+  },
+  {
+    clientEmail: 'anna.client@seed.local',
+    description: 'Консультация по налогам при продаже квартиры, владение менее 5 лет',
+    city: 'Москва',
+    budget: 3000,
+    category: 'Налоговые консультации',
+  },
+  {
+    clientEmail: 'boris.client@seed.local',
+    description: 'Регистрация ООО под ключ с выбором системы налогообложения',
+    city: 'Казань',
+    budget: 15000,
+    category: 'Регистрация бизнеса',
+  },
+  {
+    clientEmail: 'boris.client@seed.local',
+    description: 'Спор с ФНС по доначислению НДС за 2024 год, нужен представитель в суде',
+    city: 'Екатеринбург',
+    budget: 50000,
+    category: 'Налоговые споры',
+  },
+  {
+    clientEmail: 'vera.client@seed.local',
+    description: 'Оптимизация налогообложения для ИП на УСН, годовой оборот 10 млн',
+    city: 'Краснодар',
+    budget: 20000,
+    category: 'Оптимизация налогов',
+  },
+];
+
+// --- Seed promotions ---
+interface PromotionSeedData {
+  specialistEmail: string;
+  city: string;
+  tier: PromotionTier;
+  daysFromNow: number;
+}
+
+const seedPromotions: PromotionSeedData[] = [
+  { specialistEmail: 'ivan.petrov@seed.local', city: 'Москва', tier: 'TOP', daysFromNow: 30 },
+  { specialistEmail: 'elena.sokolova@seed.local', city: 'Санкт-Петербург', tier: 'FEATURED', daysFromNow: 14 },
+  { specialistEmail: 'dmitry.volkov@seed.local', city: 'Екатеринбург', tier: 'BASIC', daysFromNow: 7 },
+];
+
+// --- Seed chat threads with messages ---
+interface ThreadSeedData {
+  email1: string;
+  email2: string;
+  messages: { senderEmail: string; content: string }[];
+}
+
+const seedThreads: ThreadSeedData[] = [
+  {
+    email1: 'anna.client@seed.local',
+    email2: 'ivan.petrov@seed.local',
+    messages: [
+      { senderEmail: 'anna.client@seed.local', content: 'Здравствуйте! Увидела ваш профиль, нужна помощь с налоговым спором.' },
+      { senderEmail: 'ivan.petrov@seed.local', content: 'Добрый день! Расскажите подробнее о ситуации — какая инспекция, сумма доначисления?' },
+      { senderEmail: 'anna.client@seed.local', content: 'ИФНС №9 по Москве, доначислили 1.2 млн за 2023 год. Считаю что незаконно.' },
+      { senderEmail: 'ivan.petrov@seed.local', content: 'Понял, давайте запланируем встречу. Предварительно — шансы на отмену хорошие.' },
+    ],
+  },
+  {
+    email1: 'boris.client@seed.local',
+    email2: 'maria.novikova@seed.local',
+    messages: [
+      { senderEmail: 'boris.client@seed.local', content: 'Мария, хочу зарегистрировать ООО в Казани. Сколько времени займёт?' },
+      { senderEmail: 'maria.novikova@seed.local', content: 'Обычно 3-5 рабочих дней. Подготовлю все документы, вам нужно будет только подписать.' },
+      { senderEmail: 'boris.client@seed.local', content: 'Отлично, давайте начнём. Какие документы от меня нужны?' },
+    ],
+  },
+  {
+    email1: 'vera.client@seed.local',
+    email2: 'sergey.lebedev@seed.local',
+    messages: [
+      { senderEmail: 'vera.client@seed.local', content: 'Сергей, нужна консультация по НДС для моего ИП.' },
+      { senderEmail: 'sergey.lebedev@seed.local', content: 'Конечно! ИП на общей системе или УСН? Какой оборот?' },
+    ],
+  },
+];
+
+// --- Seed responses from specialists to requests ---
+interface ResponseSeedData {
+  specialistEmail: string;
+  requestDescription: string;
+  message: string;
+}
+
+const seedResponses: ResponseSeedData[] = [
+  {
+    specialistEmail: 'ivan.petrov@seed.local',
+    requestDescription: 'Спор с ФНС по доначислению НДС за 2024 год, нужен представитель в суде',
+    message: 'Имею большой опыт в подобных делах. Готов взяться, предварительно оцениваю шансы как высокие.',
+  },
+  {
+    specialistEmail: 'elena.sokolova@seed.local',
+    requestDescription: 'Нужна помощь с декларацией 3-НДФЛ за 2025 год, имущественный вычет',
+    message: 'Специализируюсь именно на 3-НДФЛ и вычетах. Подготовлю и подам за вас в течение 2 дней.',
+  },
+  {
+    specialistEmail: 'maria.novikova@seed.local',
+    requestDescription: 'Регистрация ООО под ключ с выбором системы налогообложения',
+    message: 'Регистрирую ООО под ключ за 3-5 дней. Помогу выбрать оптимальную систему налогообложения.',
+  },
+];
+
+// Helper: find or create request by description match
+async function findOrCreateRequest(
+  clientId: string,
+  description: string,
+  city: string,
+  budget?: number,
+  category?: string,
+) {
+  const existing = await prisma.request.findMany({
+    where: { clientId, description },
+  });
+  if (existing[0]) return existing[0];
+  return prisma.request.create({
+    data: { clientId, description, city, budget, category, status: 'OPEN' },
+  });
+}
+
+// Helper: create thread with correct participant ordering
+async function findOrCreateThread(userId1: string, userId2: string) {
+  // Enforce participant1Id < participant2Id (application-level constraint)
+  const [p1, p2] = userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
+  const existing = await prisma.thread.findUnique({
+    where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
+  });
+  if (existing) return existing;
+  return prisma.thread.create({
+    data: { participant1Id: p1, participant2Id: p2 },
+  });
+}
+
 async function main() {
   console.log('Seeding specialists...');
 
@@ -371,6 +536,93 @@ async function main() {
     }
 
     console.log(`  Created specialist: ${spec.displayName} (@${spec.nick})`);
+  }
+
+  // --- Seed additional clients ---
+  console.log('Seeding clients...');
+  const clientMap: Record<string, { id: string }> = {};
+  for (const c of seedClients) {
+    const user = await prisma.user.upsert({
+      where: { email: c.email },
+      update: {},
+      create: { email: c.email, username: c.username, role: Role.CLIENT },
+    });
+    clientMap[c.email] = user;
+    console.log(`  Created client: ${c.username}`);
+  }
+
+  // --- Seed open requests ---
+  console.log('Seeding requests...');
+  for (const r of seedRequests) {
+    const client = clientMap[r.clientEmail];
+    if (!client) continue;
+    const req = await findOrCreateRequest(client.id, r.description, r.city, r.budget, r.category);
+    console.log(`  Request: "${r.description.slice(0, 50)}..." (${req.id})`);
+  }
+
+  // --- Seed promotions ---
+  console.log('Seeding promotions...');
+  for (const p of seedPromotions) {
+    const specialist = await prisma.user.findUnique({ where: { email: p.specialistEmail } });
+    if (!specialist) continue;
+    const expiresAt = new Date(Date.now() + p.daysFromNow * 24 * 60 * 60 * 1000);
+    // Check if active promotion already exists for this specialist+city+tier
+    const existing = await prisma.promotion.findFirst({
+      where: { specialistId: specialist.id, city: p.city, tier: p.tier, expiresAt: { gt: new Date() } },
+    });
+    if (!existing) {
+      await prisma.promotion.create({
+        data: { specialistId: specialist.id, city: p.city, tier: p.tier, expiresAt },
+      });
+    }
+    console.log(`  Promotion: ${p.specialistEmail} — ${p.tier} in ${p.city}`);
+  }
+
+  // --- Seed chat threads with messages ---
+  console.log('Seeding chat threads...');
+  for (const t of seedThreads) {
+    const user1 = await prisma.user.findUnique({ where: { email: t.email1 } });
+    const user2 = await prisma.user.findUnique({ where: { email: t.email2 } });
+    if (!user1 || !user2) continue;
+
+    const thread = await findOrCreateThread(user1.id, user2.id);
+
+    // Check if messages already exist for this thread
+    const msgCount = await prisma.message.count({ where: { threadId: thread.id } });
+    if (msgCount === 0) {
+      for (let i = 0; i < t.messages.length; i++) {
+        const sender = t.messages[i].senderEmail === t.email1 ? user1 : user2;
+        await prisma.message.create({
+          data: {
+            threadId: thread.id,
+            senderId: sender.id,
+            content: t.messages[i].content,
+            createdAt: new Date(Date.now() - (t.messages.length - i) * 60000), // stagger by 1 min
+          },
+        });
+      }
+    }
+    console.log(`  Thread: ${t.email1} <-> ${t.email2} (${t.messages.length} messages)`);
+  }
+
+  // --- Seed responses from specialists to open requests ---
+  console.log('Seeding specialist responses...');
+  for (const r of seedResponses) {
+    const specialist = await prisma.user.findUnique({ where: { email: r.specialistEmail } });
+    if (!specialist) continue;
+
+    // Find the request by description
+    const request = await prisma.request.findFirst({ where: { description: r.requestDescription } });
+    if (!request) continue;
+
+    await prisma.response.upsert({
+      where: {
+        specialistId_requestId: { specialistId: specialist.id, requestId: request.id },
+      },
+      update: {},
+      create: { specialistId: specialist.id, requestId: request.id, message: r.message },
+    });
+    console.log(`  Response: ${r.specialistEmail} -> "${r.requestDescription.slice(0, 40)}..."`);
   }
 
   console.log('Seeding complete!');
