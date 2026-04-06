@@ -604,6 +604,10 @@ export default function LandingScreen() {
                 <Text style={styles.footerLink}>{'\u0417\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
               </TouchableOpacity>
               <Text style={styles.footerDot}>{'\u00B7'}</Text>
+              <TouchableOpacity onPress={() => router.push('/pricing')} activeOpacity={0.7}>
+                <Text style={styles.footerLink}>{'\u0422\u0430\u0440\u0438\u0444\u044B'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.footerDot}>{'\u00B7'}</Text>
               <TouchableOpacity
                 onPress={() => {
                   if (Platform.OS === 'web') {
