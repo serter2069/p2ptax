@@ -382,7 +382,7 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== SECTION 4: Typical tasks ===== */}
-        <View style={[styles.section, { backgroundColor: '#F4FBFC' }]}>
+        <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle}>{'\u0422\u0438\u043F\u0438\u0447\u043D\u044B\u0435 \u0437\u0430\u0434\u0430\u0447\u0438'}</Text>
             <Text style={styles.sectionSubtitle}>{'\u0427\u0442\u043E \u0440\u0435\u0448\u0430\u0435\u0442 \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0430'}</Text>
@@ -462,7 +462,7 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== SECTION 6: Trust ===== */}
-        <View style={[styles.section, { backgroundColor: '#EBF3FB' }]}>
+        <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle}>{'\u041A\u0430\u043A \u043C\u044B \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
 
@@ -518,7 +518,7 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== SECTION 8: FAQ ===== */}
-        <View style={[styles.section, { backgroundColor: '#F4FBFC' }]}>
+        <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle}>{'\u0427\u0430\u0441\u0442\u043E \u0437\u0430\u0434\u0430\u0432\u0430\u0435\u043C\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B'}</Text>
 
@@ -630,7 +630,7 @@ export default function LandingScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#F4FBFC',
+    backgroundColor: Colors.bgPrimary,
   },
   scroll: {
     flexGrow: 1,
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 80,
     alignItems: 'center',
-    backgroundColor: '#F4FBFC',
+    backgroundColor: Colors.bgPrimary,
   },
   heroContent: {
     width: '100%',
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   // ---- Stats Bar ----
   statsSection: {
     width: '100%',
-    backgroundColor: '#EBF3FB',
+    backgroundColor: Colors.bgSecondary,
     paddingVertical: 32,
     alignItems: 'center',
   },
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
-    backgroundColor: '#F4FBFC',
+    backgroundColor: Colors.bgPrimary,
   },
   forWhomCardWide: {},
   forWhomImage: {
