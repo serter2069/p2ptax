@@ -246,7 +246,7 @@ export default function RequestsFeedScreen() {
               label="Город"
               value={cityFilter}
               onChangeText={setCityFilter}
-              placeholder="Например, Тбилиси"
+              placeholder="Например, Москва"
               autoCapitalize="words"
             />
 
