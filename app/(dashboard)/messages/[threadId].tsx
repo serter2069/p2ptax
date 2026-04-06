@@ -36,11 +36,17 @@ interface MessagesResponse {
   pages: number;
 }
 
+interface SpecialistProfile {
+  nick: string;
+  displayName: string | null;
+}
+
 interface ThreadParticipant {
   id: string;
   email: string;
   role: string;
   name?: string;
+  specialistProfile?: SpecialistProfile | null;
 }
 
 interface ThreadItem {
@@ -107,7 +113,8 @@ export default function ThreadScreen() {
           thread.participant1.id === user.userId
             ? thread.participant2
             : thread.participant1;
-        setOtherName(other.name || other.email.split('@')[0]);
+        const profile = other.specialistProfile;
+        setOtherName(profile?.nick || profile?.displayName || other.email.split('@')[0]);
       }
     } catch {
       setLoadError(true);
