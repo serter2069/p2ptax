@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { Typography, BorderRadius, Colors, Spacing } from '../constants/Colors';
 import { secureStorage } from '../stores/storage';
+import { api } from '../lib/api';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { useBreakpoints } from '../hooks/useBreakpoints';
@@ -250,6 +251,15 @@ export default function LandingScreen() {
   const router = useRouter();
   const { isMobile, isTablet, isDesktop } = useBreakpoints();
   const [heroImageError, setHeroImageError] = React.useState(false);
+  const [featuredSpecialists, setFeaturedSpecialists] = useState<any[]>([]);
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
+  const [popularCities, setPopularCities] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch(() => {});
+    api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch(() => {});
+    api.get<any[]>('/specialists/cities/popular?limit=10').then(setPopularCities).catch(() => {});
+  }, []);
 
   const isWide = !isMobile;
   const sectionMaxWidth: number | '100%' = isDesktop ? 1200 : isTablet ? 900 : '100%';

@@ -100,6 +100,16 @@ export class SpecialistsController {
     );
   }
 
+  @Get('featured')
+  getFeatured(@Query('limit') limit?: string) {
+    return this.specialistsService.getFeatured(parseInt(limit ?? '8') || 8);
+  }
+
+  @Get('cities/popular')
+  getPopularCities(@Query('limit') limit?: string) {
+    return this.specialistsService.getPopularCities(parseInt(limit ?? '10') || 10);
+  }
+
   @Patch(':id/badges')
   @UseGuards(JwtAuthGuard, AdminGuard)
   updateBadges(@Param('id') id: string, @Body('badges') badges: string[]) {
