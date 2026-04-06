@@ -9,7 +9,6 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -20,8 +19,6 @@ import { api, ApiError } from '../../lib/api';
 import { isAdmin } from '../../lib/adminEmails';
 import { Header } from '../../components/Header';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-
-type EmailChangeStep = 'viewing' | 'enterEmail' | 'enterOtp';
 
 interface MyReview {
   id: string;
@@ -39,20 +36,13 @@ const NOTIF_KEY = '@p2ptax_email_notif';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, logout, updateEmail } = useAuth();
+  const { user, logout } = useAuth();
 
   const [emailNotif, setEmailNotif] = useState(true);
   const [notifLoading, setNotifLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [myReviews, setMyReviews] = useState<MyReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-
-  // Email change state machine
-  const [emailChangeStep, setEmailChangeStep] = useState<EmailChangeStep>('viewing');
-  const [newEmailInput, setNewEmailInput] = useState('');
-  const [otpInput, setOtpInput] = useState('');
-  const [emailChangeLoading, setEmailChangeLoading] = useState(false);
-  const [emailChangeError, setEmailChangeError] = useState<string | null>(null);
 
   // Load my reviews for CLIENT role
   useEffect(() => {
@@ -91,66 +81,6 @@ export default function SettingsScreen() {
     } catch {
       // Revert on failure
       setEmailNotif(!value);
-    }
-  }
-
-  function handleStartEmailChange() {
-    setNewEmailInput('');
-    setOtpInput('');
-    setEmailChangeError(null);
-    setEmailChangeStep('enterEmail');
-  }
-
-  function handleCancelEmailChange() {
-    setEmailChangeStep('viewing');
-    setNewEmailInput('');
-    setOtpInput('');
-    setEmailChangeError(null);
-  }
-
-  async function handleRequestOtp() {
-    const trimmed = newEmailInput.trim().toLowerCase();
-    if (!trimmed || !trimmed.includes('@')) {
-      setEmailChangeError('Введите корректный email');
-      return;
-    }
-    setEmailChangeError(null);
-    setEmailChangeLoading(true);
-    try {
-      await api.post('/users/me/change-email/request', { newEmail: trimmed });
-      setEmailChangeStep('enterOtp');
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Не удалось отправить код. Попробуйте позже.';
-      setEmailChangeError(msg);
-    } finally {
-      setEmailChangeLoading(false);
-    }
-  }
-
-  async function handleConfirmOtp() {
-    const trimmedEmail = newEmailInput.trim().toLowerCase();
-    const trimmedCode = otpInput.trim();
-    if (trimmedCode.length !== 6) {
-      setEmailChangeError('Введите 6-значный код');
-      return;
-    }
-    setEmailChangeError(null);
-    setEmailChangeLoading(true);
-    try {
-      const result = await api.post<{ accessToken: string; refreshToken: string; email: string }>(
-        '/users/me/change-email/confirm',
-        { newEmail: trimmedEmail, code: trimmedCode },
-      );
-      await updateEmail(result.email, result.accessToken, result.refreshToken);
-      setEmailChangeStep('viewing');
-      setNewEmailInput('');
-      setOtpInput('');
-      Alert.alert('Готово', 'Email успешно изменён');
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Неверный код или истёк срок действия.';
-      setEmailChangeError(msg);
-    } finally {
-      setEmailChangeLoading(false);
     }
   }
 
@@ -217,103 +147,25 @@ export default function SettingsScreen() {
           {/* Account section */}
           <Text style={styles.sectionTitle}>Аккаунт</Text>
           <View style={styles.card}>
-            {/* Email row — collapses into edit form when changing */}
-            {emailChangeStep === 'viewing' && (
+            {/* Email row — readonly display */}
+            <View style={styles.row}>
+              <View style={styles.rowTextBlock}>
+                <Text style={styles.rowLabel}>Email</Text>
+                <Text style={styles.rowHint} numberOfLines={1}>{user?.email ?? '—'}</Text>
+              </View>
+            </View>
+            <View style={styles.emailChangeBtnRow}>
               <TouchableOpacity
-                style={styles.row}
-                onPress={handleStartEmailChange}
-                activeOpacity={0.7}
+                style={[styles.emailChangeDisabledBtn]}
+                disabled
+                activeOpacity={1}
               >
-                <View style={styles.rowTextBlock}>
-                  <Text style={styles.rowLabel}>Email</Text>
-                  <Text style={styles.rowHint} numberOfLines={1}>{user?.email ?? '—'}</Text>
-                </View>
-                <Text style={styles.changeLink}>Изменить</Text>
+                <Text style={styles.emailChangeDisabledText}>Изменить email</Text>
               </TouchableOpacity>
-            )}
-
-            {emailChangeStep === 'enterEmail' && (
-              <View style={styles.emailChangeBlock}>
-                <Text style={styles.emailChangeTitle}>Новый email</Text>
-                <TextInput
-                  style={styles.emailInput}
-                  value={newEmailInput}
-                  onChangeText={setNewEmailInput}
-                  placeholder="new@example.com"
-                  placeholderTextColor={Colors.textMuted}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoFocus
-                  editable={!emailChangeLoading}
-                />
-                {emailChangeError ? (
-                  <Text style={styles.emailChangeError}>{emailChangeError}</Text>
-                ) : null}
-                <View style={styles.emailChangeActions}>
-                  <TouchableOpacity
-                    style={[styles.emailChangeBtn, styles.emailChangeBtnSecondary]}
-                    onPress={handleCancelEmailChange}
-                    disabled={emailChangeLoading}
-                  >
-                    <Text style={styles.emailChangeBtnSecondaryText}>Отмена</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.emailChangeBtn, styles.emailChangeBtnPrimary, emailChangeLoading && styles.emailChangeBtnDisabled]}
-                    onPress={handleRequestOtp}
-                    disabled={emailChangeLoading}
-                  >
-                    {emailChangeLoading
-                      ? <ActivityIndicator size="small" color="#fff" />
-                      : <Text style={styles.emailChangeBtnPrimaryText}>Отправить код</Text>
-                    }
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {emailChangeStep === 'enterOtp' && (
-              <View style={styles.emailChangeBlock}>
-                <Text style={styles.emailChangeTitle}>Код из письма</Text>
-                <Text style={styles.emailChangeHint}>
-                  Код отправлен на {newEmailInput.trim().toLowerCase()}
-                </Text>
-                <TextInput
-                  style={styles.emailInput}
-                  value={otpInput}
-                  onChangeText={setOtpInput}
-                  placeholder="000000"
-                  placeholderTextColor={Colors.textMuted}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  autoFocus
-                  editable={!emailChangeLoading}
-                />
-                {emailChangeError ? (
-                  <Text style={styles.emailChangeError}>{emailChangeError}</Text>
-                ) : null}
-                <View style={styles.emailChangeActions}>
-                  <TouchableOpacity
-                    style={[styles.emailChangeBtn, styles.emailChangeBtnSecondary]}
-                    onPress={handleCancelEmailChange}
-                    disabled={emailChangeLoading}
-                  >
-                    <Text style={styles.emailChangeBtnSecondaryText}>Отмена</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.emailChangeBtn, styles.emailChangeBtnPrimary, emailChangeLoading && styles.emailChangeBtnDisabled]}
-                    onPress={handleConfirmOtp}
-                    disabled={emailChangeLoading}
-                  >
-                    {emailChangeLoading
-                      ? <ActivityIndicator size="small" color="#fff" />
-                      : <Text style={styles.emailChangeBtnPrimaryText}>Подтвердить</Text>
-                    }
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
+              <Text style={styles.emailChangeCaption}>
+                Будет доступно в следующей версии
+              </Text>
+            </View>
             <View style={styles.divider} />
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Роль</Text>
@@ -330,7 +182,9 @@ export default function SettingsScreen() {
               <View style={styles.rowTextBlock}>
                 <Text style={styles.rowLabel}>Email-уведомления</Text>
                 <Text style={styles.rowHint}>
-                  Получать уведомления о новых сообщениях
+                  {user?.role === 'SPECIALIST'
+                    ? 'Новые запросы в ваших городах и сообщения'
+                    : 'Отклики специалистов и сообщения'}
                 </Text>
               </View>
               {notifLoading ? (
@@ -566,72 +420,28 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 2,
   },
-  changeLink: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-    marginLeft: Spacing.sm,
-  },
-  emailChangeBlock: {
+  emailChangeBtnRow: {
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
-    gap: Spacing.sm,
+    paddingBottom: Spacing.lg,
+    gap: 4,
   },
-  emailChangeTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
+  emailChangeDisabledBtn: {
+    backgroundColor: Colors.bgSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    opacity: 0.5,
   },
-  emailChangeHint: {
+  emailChangeDisabledText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textMuted,
-  },
-  emailInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgPrimary,
-  },
-  emailChangeError: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-  },
-  emailChangeActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  emailChangeBtn: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-  },
-  emailChangeBtnPrimary: {
-    backgroundColor: Colors.brandPrimary,
-  },
-  emailChangeBtnPrimaryText: {
-    color: '#fff',
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  emailChangeBtnSecondary: {
-    backgroundColor: Colors.bgPrimary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  emailChangeBtnSecondaryText: {
-    color: Colors.textSecondary,
-    fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.medium,
   },
-  emailChangeBtnDisabled: {
-    opacity: 0.6,
+  emailChangeCaption: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
 });
