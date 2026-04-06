@@ -58,17 +58,23 @@ export class PromotionsService {
       );
     }
 
-    const price = await this.getPrice(dto.city, dto.tier);
+    const months = dto.periodMonths ?? 1;
+    const basePrice = await this.getPrice(dto.city, dto.tier);
+
+    // Apply multi-month discount: 3 months = -10%, 6 months = -20%
+    const DISCOUNT: Record<number, number> = { 1: 0, 3: 0.1, 6: 0.2 };
+    const discount = DISCOUNT[months] ?? 0;
+    const price = Math.round(basePrice * months * (1 - discount));
 
     // TODO: Integrate Stripe when STRIPE_SECRET_KEY is added to Doppler
     // For now, mock payment: log and proceed
     this.logger.log(
-      `MOCK PAYMENT: user=${userId} city=${dto.city} tier=${dto.tier} amount=${price} RUB`,
+      `MOCK PAYMENT: user=${userId} city=${dto.city} tier=${dto.tier} months=${months} amount=${price} RUB`,
     );
 
-    // Create promotion: 30 days from now
+    // Set expiry based on requested period (calendar months from now)
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    expiresAt.setMonth(expiresAt.getMonth() + months);
 
     const promotion = await this.prisma.promotion.create({
       data: {
