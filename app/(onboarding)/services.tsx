@@ -203,7 +203,7 @@ export default function ServicesScreen() {
                 <TextInput
                   value={services}
                   onChangeText={handleChange}
-                  placeholder="Опишите ваши услуги..."
+                  placeholder="Например: Консультации по НДС, 3-НДФЛ, 2000 руб/час"
                   placeholderTextColor={Colors.textMuted}
                   multiline
                   numberOfLines={5}
@@ -218,6 +218,7 @@ export default function ServicesScreen() {
                   ]}
                 />
                 {!!error && <Text style={styles.errorText}>{error}</Text>}
+                <Text style={styles.inputHint}>Описывайте услуги на русском языке</Text>
               </View>
 
               <Button
@@ -347,6 +348,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.statusError,
+    marginTop: 2,
+  },
+  inputHint: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
     marginTop: 2,
   },
   chipsContainer: {
