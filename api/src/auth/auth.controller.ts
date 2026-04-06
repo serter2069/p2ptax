@@ -4,6 +4,7 @@ import { IsEmail, IsString, Length, IsOptional, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { AuthService } from './auth.service';
 import { EmailThrottlerGuard } from './email-throttler.guard';
+import { IpThrottlerGuard } from './ip-throttler.guard';
 
 class RequestOtpDto {
   @IsEmail()
@@ -33,8 +34,11 @@ class RefreshDto {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @UseGuards(EmailThrottlerGuard)
-  @Throttle({ default: { ttl: 300000, limit: 3 } })
+  @UseGuards(EmailThrottlerGuard, IpThrottlerGuard)
+  @Throttle({
+    'email-otp': { ttl: 900000, limit: 3 },
+    'ip-otp': { ttl: 900000, limit: 10 },
+  })
   @Post('request-otp')
   requestOtp(@Body() body: RequestOtpDto) {
     return this.authService.requestOtp(body.email);

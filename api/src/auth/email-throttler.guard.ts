@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { ExecutionContext } from '@nestjs/common';
 
 /**
- * #1897: Custom throttle guard for auth endpoints.
+ * #1897/#2253: Custom throttle guard for auth endpoints.
  * Uses the email from the request body as the rate-limit key instead of IP.
- * This prevents bypass via X-Forwarded-For spoofing — the key is tied to
- * the email address being authenticated, not the client IP.
+ * Targets the 'email-otp' named throttler (3 req/15min per email).
  */
 @Injectable()
 export class EmailThrottlerGuard extends ThrottlerGuard {
