@@ -28,72 +28,94 @@ export class PromotionsService {
    * Currently uses mock payment (no Stripe key configured).
    */
   async purchase(userId: string, dto: PurchasePromotionDto) {
-    // Verify user has a specialist profile
-    const profile = await this.prisma.specialistProfile.findUnique({
-      where: { userId },
-    });
-    if (!profile) {
-      throw new NotFoundException('Specialist profile not found. Create a profile first.');
+    // Idempotency: if the client sent a key and a promotion with that key already exists, return it
+    if (dto.idempotencyKey) {
+      const idempotent = await this.prisma.promotion.findUnique({
+        where: { idempotencyKey: dto.idempotencyKey },
+      });
+      if (idempotent) {
+        return {
+          promotion: idempotent,
+          payment: {
+            status: 'mock_paid',
+            amount: 0,
+            currency: 'RUB',
+            note: 'Duplicate request — returning existing promotion.',
+          },
+        };
+      }
     }
 
-    // Check specialist operates in the requested city
-    if (!profile.cities.includes(dto.city)) {
-      throw new BadRequestException(
-        `You don't have city "${dto.city}" in your profile. Add it first.`,
+    // Wrap the entire purchase in a transaction to prevent TOCTOU race conditions
+    return this.prisma.$transaction(async (tx) => {
+      // Verify user has a specialist profile
+      const profile = await tx.specialistProfile.findUnique({
+        where: { userId },
+      });
+      if (!profile) {
+        throw new NotFoundException('Specialist profile not found. Create a profile first.');
+      }
+
+      // Check specialist operates in the requested city
+      if (!profile.cities.includes(dto.city)) {
+        throw new BadRequestException(
+          `You don't have city "${dto.city}" in your profile. Add it first.`,
+        );
+      }
+
+      // Check for existing active promotion in same city+tier
+      const existing = await tx.promotion.findFirst({
+        where: {
+          specialistId: userId,
+          city: dto.city,
+          tier: dto.tier,
+          expiresAt: { gt: new Date() },
+        },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          `You already have an active ${dto.tier} promotion in ${dto.city} until ${existing.expiresAt.toISOString()}`,
+        );
+      }
+
+      const months = dto.periodMonths ?? 1;
+      const basePrice = await this.getPrice(dto.city, dto.tier);
+
+      // Apply multi-month discount: 3 months = -10%, 6 months = -20%
+      const DISCOUNT: Record<number, number> = { 1: 0, 3: 0.1, 6: 0.2 };
+      const discount = DISCOUNT[months] ?? 0;
+      const price = Math.round(basePrice * months * (1 - discount));
+
+      // TODO: Integrate Stripe when STRIPE_SECRET_KEY is added to Doppler
+      // For now, mock payment: log and proceed
+      this.logger.log(
+        `MOCK PAYMENT: user=${userId} city=${dto.city} tier=${dto.tier} months=${months} amount=${price} RUB`,
       );
-    }
 
-    // Check for existing active promotion in same city+tier
-    const existing = await this.prisma.promotion.findFirst({
-      where: {
-        specialistId: userId,
-        city: dto.city,
-        tier: dto.tier,
-        expiresAt: { gt: new Date() },
-      },
-    });
-    if (existing) {
-      throw new BadRequestException(
-        `You already have an active ${dto.tier} promotion in ${dto.city} until ${existing.expiresAt.toISOString()}`,
-      );
-    }
+      // Set expiry based on requested period (calendar months from now)
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + months);
 
-    const months = dto.periodMonths ?? 1;
-    const basePrice = await this.getPrice(dto.city, dto.tier);
+      const promotion = await tx.promotion.create({
+        data: {
+          specialistId: userId,
+          city: dto.city,
+          tier: dto.tier,
+          expiresAt,
+          ...(dto.idempotencyKey ? { idempotencyKey: dto.idempotencyKey } : {}),
+        },
+      });
 
-    // Apply multi-month discount: 3 months = -10%, 6 months = -20%
-    const DISCOUNT: Record<number, number> = { 1: 0, 3: 0.1, 6: 0.2 };
-    const discount = DISCOUNT[months] ?? 0;
-    const price = Math.round(basePrice * months * (1 - discount));
-
-    // TODO: Integrate Stripe when STRIPE_SECRET_KEY is added to Doppler
-    // For now, mock payment: log and proceed
-    this.logger.log(
-      `MOCK PAYMENT: user=${userId} city=${dto.city} tier=${dto.tier} months=${months} amount=${price} RUB`,
-    );
-
-    // Set expiry based on requested period (calendar months from now)
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + months);
-
-    const promotion = await this.prisma.promotion.create({
-      data: {
-        specialistId: userId,
-        city: dto.city,
-        tier: dto.tier,
-        expiresAt,
-      },
-    });
-
-    return {
-      promotion,
-      payment: {
-        status: 'mock_paid',
-        amount: price,
-        currency: 'RUB',
-        note: 'Stripe integration pending. Payment simulated.',
-      },
-    };
+      return {
+        promotion,
+        payment: {
+          status: 'mock_paid',
+          amount: price,
+          currency: 'RUB',
+          note: 'Stripe integration pending. Payment simulated.',
+        },
+      };
+    }, { timeout: 10000 });
   }
 
   /** Get promotions for the authenticated user */

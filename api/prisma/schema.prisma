@@ -155,8 +155,9 @@ model Promotion {
   city         String
   tier         PromotionTier
   expiresAt    DateTime
-  reminderSent Boolean       @default(false)
-  createdAt    DateTime      @default(now())
+  reminderSent   Boolean       @default(false)
+  idempotencyKey String?       @unique
+  createdAt      DateTime      @default(now())
 
   @@index([city, tier, expiresAt])
   @@index([specialistId])

@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsIn, IsUUID } from 'class-validator';
 import { PromotionTier } from '@prisma/client';
 
 export class PurchasePromotionDto {
@@ -13,4 +13,9 @@ export class PurchasePromotionDto {
   @IsOptional()
   @IsIn([1, 3, 6])
   periodMonths?: 1 | 3 | 6 = 1;
+
+  // Client-generated idempotency key to prevent duplicate purchases on retry
+  @IsOptional()
+  @IsUUID()
+  idempotencyKey?: string;
 }
