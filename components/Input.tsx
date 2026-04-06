@@ -22,6 +22,8 @@ interface InputProps {
   autoFocus?: boolean;
   editable?: boolean;
   maxLength?: number;
+  onSubmitEditing?: () => void;
+  returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send';
 }
 
 export function Input({
@@ -38,6 +40,8 @@ export function Input({
   autoFocus = false,
   editable = true,
   maxLength,
+  onSubmitEditing,
+  returnKeyType,
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
@@ -58,6 +62,8 @@ export function Input({
         maxLength={maxLength}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
+        onSubmitEditing={onSubmitEditing}
+        returnKeyType={returnKeyType}
         style={[
           styles.input,
           focused && styles.inputFocused,
