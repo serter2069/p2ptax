@@ -16,7 +16,11 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60000, limit: 60 },
+      { name: 'email-otp', ttl: 900000, limit: 3 },
+      { name: 'ip-otp', ttl: 900000, limit: 10 },
+    ]),
     ScheduleModule.forRoot(),
     PrismaModule,
     NotificationsModule,
