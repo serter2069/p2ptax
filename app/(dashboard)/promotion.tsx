@@ -9,6 +9,8 @@ import {
   Alert,
   RefreshControl,
   TouchableOpacity,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
@@ -23,6 +25,9 @@ interface PromotionItem {
   active: boolean;
 }
 
+type Tier = 'BASIC' | 'FEATURED' | 'TOP';
+type PeriodMonths = 1 | 3 | 6;
+
 const TIER_LABELS: Record<string, string> = {
   BASIC: 'Базовое',
   FEATURED: 'Выделенное',
@@ -34,6 +39,18 @@ const TIER_COLORS: Record<string, string> = {
   FEATURED: '#8B5CF6',
   TOP: '#D97706',
 };
+
+const TIER_PRICES: Record<Tier, string> = {
+  BASIC: '500\u20BD/мес',
+  FEATURED: '1500\u20BD/мес',
+  TOP: '3000\u20BD/мес',
+};
+
+const PERIOD_OPTIONS: { value: PeriodMonths; label: string }[] = [
+  { value: 1, label: '1 мес' },
+  { value: 3, label: '3 мес (-10%)' },
+  { value: 6, label: '6 мес (-20%)' },
+];
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -53,6 +70,15 @@ export default function PromotionScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
+  // Purchase modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<Tier>('BASIC');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodMonths>(1);
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState('');
+  const [profileCities, setProfileCities] = useState<string[]>([]);
+
   const fetchPromotions = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     setError('');
@@ -67,6 +93,21 @@ export default function PromotionScreen() {
     }
   }, []);
 
+  // Fetch specialist profile cities on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const profile = await api.get<{ cities?: string[] }>('/specialists/me');
+        const cities = profile.cities && profile.cities.length > 0 ? profile.cities : ['Москва'];
+        setProfileCities(cities);
+        setSelectedCity(cities[0]);
+      } catch {
+        setProfileCities(['Москва']);
+        setSelectedCity('Москва');
+      }
+    })();
+  }, []);
+
   useEffect(() => { fetchPromotions(); }, [fetchPromotions]);
 
   function handleRefresh() {
@@ -75,11 +116,32 @@ export default function PromotionScreen() {
   }
 
   function handlePurchase() {
-    Alert.alert(
-      'Подключить продвижение',
-      'Оплата временно недоступна. Для подключения продвижения свяжитесь с нами через чат поддержки.',
-      [{ text: 'Понятно', style: 'cancel' }],
-    );
+    setPurchaseError('');
+    setSelectedTier('BASIC');
+    setSelectedPeriod(1);
+    if (profileCities.length > 0) setSelectedCity(profileCities[0]);
+    setModalVisible(true);
+  }
+
+  async function handleConfirmPurchase() {
+    setPurchasing(true);
+    setPurchaseError('');
+    try {
+      const idempotencyKey = Math.random().toString(36).slice(2) + Date.now();
+      await api.post<{ promotion: unknown; payment: unknown }>('/promotions/purchase', {
+        city: selectedCity,
+        tier: selectedTier,
+        periodMonths: selectedPeriod,
+        idempotencyKey,
+      });
+      setModalVisible(false);
+      fetchPromotions();
+      Alert.alert('Продвижение подключено!');
+    } catch (err) {
+      setPurchaseError(err instanceof ApiError ? err.message : 'Ошибка при покупке');
+    } finally {
+      setPurchasing(false);
+    }
   }
 
   const activePromotions = promotions.filter((p) => !isExpired(p.expiresAt));
@@ -189,6 +251,84 @@ export default function PromotionScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* Purchase Modal */}
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+          <Pressable style={styles.modalCard} onPress={() => { /* prevent close on card tap */ }}>
+            <Text style={styles.modalTitle}>Подключить продвижение</Text>
+
+            {/* City selector */}
+            <Text style={styles.modalLabel}>Город</Text>
+            <View style={styles.chipRow}>
+              {profileCities.map((city) => (
+                <TouchableOpacity
+                  key={city}
+                  style={[styles.chip, selectedCity === city && styles.chipActive]}
+                  onPress={() => setSelectedCity(city)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, selectedCity === city && styles.chipTextActive]}>{city}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Tier selector */}
+            <Text style={styles.modalLabel}>Тариф</Text>
+            <View style={styles.chipRow}>
+              {(['BASIC', 'FEATURED', 'TOP'] as Tier[]).map((tier) => (
+                <TouchableOpacity
+                  key={tier}
+                  style={[styles.chip, selectedTier === tier && styles.chipActive]}
+                  onPress={() => setSelectedTier(tier)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, selectedTier === tier && styles.chipTextActive]}>
+                    {TIER_LABELS[tier]} ({TIER_PRICES[tier]})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Period selector */}
+            <Text style={styles.modalLabel}>Период</Text>
+            <View style={styles.chipRow}>
+              {PERIOD_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[styles.chip, selectedPeriod === opt.value && styles.chipActive]}
+                  onPress={() => setSelectedPeriod(opt.value)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, selectedPeriod === opt.value && styles.chipTextActive]}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Error */}
+            {purchaseError ? <Text style={styles.modalError}>{purchaseError}</Text> : null}
+
+            {/* CTA */}
+            <TouchableOpacity
+              style={[styles.modalCta, purchasing && styles.modalCtaDisabled]}
+              onPress={handleConfirmPurchase}
+              activeOpacity={0.85}
+              disabled={purchasing}
+            >
+              {purchasing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.modalCtaText}>Подключить (бесплатно)</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Cancel */}
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCancel} activeOpacity={0.7}>
+              <Text style={styles.modalCancelText}>Отмена</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -377,5 +517,89 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 430,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    gap: Spacing.md,
+    ...Shadows.sm,
+  },
+  modalTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  modalLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgSecondary,
+  },
+  chipActive: {
+    borderColor: Colors.brandPrimary,
+    backgroundColor: Colors.brandPrimary + '15',
+  },
+  chipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  chipTextActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  modalError: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.statusError,
+    textAlign: 'center',
+  },
+  modalCta: {
+    height: 48,
+    backgroundColor: Colors.brandPrimary,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.sm,
+  },
+  modalCtaDisabled: {
+    opacity: 0.7,
+  },
+  modalCtaText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: '#FFFFFF',
+  },
+  modalCancel: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  modalCancelText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
   },
 });
