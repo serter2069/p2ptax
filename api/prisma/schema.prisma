@@ -45,6 +45,8 @@ model User {
   reviewsGiven        Review[]          @relation("ReviewClient")
   reviewsReceived     Review[]          @relation("ReviewSpecialist")
   refreshTokens       RefreshToken[]
+  complaintsGiven     Complaint[]       @relation("ComplaintReporter")
+  complaintsReceived  Complaint[]       @relation("ComplaintTarget")
 
   @@map("users")
 }
@@ -206,4 +208,26 @@ model Review {
   @@index([specialistId])
   @@index([clientId])
   @@map("reviews")
+}
+
+enum ComplaintReason {
+  spam
+  fraud
+  inappropriate
+  other
+}
+
+model Complaint {
+  id           String          @id @default(cuid())
+  reporterId   String
+  reporter     User            @relation("ComplaintReporter", fields: [reporterId], references: [id])
+  targetUserId String
+  target       User            @relation("ComplaintTarget", fields: [targetUserId], references: [id])
+  reason       ComplaintReason
+  description  String?
+  createdAt    DateTime        @default(now())
+
+  @@index([targetUserId])
+  @@index([reporterId])
+  @@map("complaints")
 }
