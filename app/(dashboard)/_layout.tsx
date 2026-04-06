@@ -10,6 +10,7 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 const CLIENT_NAV_ITEMS: SidebarNavItem[] = [
   { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
   { label: 'Мои запросы', icon: 'document-text-outline', route: '/(dashboard)/requests', segment: 'requests' },
+  { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'feed' },
   { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
   { label: 'Специалисты', icon: 'search-outline', route: '/specialists', segment: 'specialists' },
   { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
