@@ -47,6 +47,12 @@ export class RequestsController {
     return this.requestsService.findMyResponses(req.user.id);
   }
 
+  // GET /requests/recent — public, recent open requests for landing page
+  @Get('recent')
+  getRecent(@Query('limit') limit?: string) {
+    return this.requestsService.findRecent(parseInt(limit ?? '5') || 5);
+  }
+
   // GET /requests — public feed accessible without authentication
   @Get()
   @UseGuards(OptionalJwtAuthGuard)

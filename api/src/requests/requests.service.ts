@@ -23,6 +23,23 @@ export class RequestsService {
     private emailService: EmailService,
   ) {}
 
+  async findRecent(limit = 5) {
+    return this.prisma.request.findMany({
+      where: { status: RequestStatus.OPEN },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        description: true,
+        city: true,
+        category: true,
+        budget: true,
+        createdAt: true,
+        _count: { select: { responses: true } },
+      },
+    });
+  }
+
   async create(clientId: string, dto: CreateRequestDto) {
     const openCount = await this.prisma.request.count({
       where: { clientId, status: RequestStatus.OPEN },

@@ -242,6 +242,42 @@ export class SpecialistsService {
     });
   }
 
+  async getFeatured(limit = 8) {
+    const profiles = await this.prisma.specialistProfile.findMany({
+      where: { displayName: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        nick: true,
+        displayName: true,
+        avatarUrl: true,
+        cities: true,
+        services: true,
+        badges: true,
+        experience: true,
+      },
+    });
+    return profiles;
+  }
+
+  async getPopularCities(limit = 10) {
+    const profiles = await this.prisma.specialistProfile.findMany({
+      select: { cities: true },
+      take: 1000,
+    });
+    const cityCount = new Map<string, number>();
+    for (const profile of profiles) {
+      for (const city of profile.cities) {
+        const trimmed = city?.trim();
+        if (trimmed) cityCount.set(trimmed, (cityCount.get(trimmed) ?? 0) + 1);
+      }
+    }
+    return Array.from(cityCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([city, count]) => ({ city, count }));
+  }
+
   private async computeActivity(userId: string) {
     const [responseCount, ratingAgg] = await Promise.all([
       this.prisma.response.count({ where: { specialistId: userId } }),
