@@ -200,7 +200,7 @@ export default function OtpScreen() {
         >
           <View style={styles.container}>
             {/* Back */}
-            <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
               <Text style={styles.backText}>← Назад</Text>
             </TouchableOpacity>
 
@@ -267,6 +267,9 @@ export default function OtpScreen() {
                 <TouchableOpacity
                   onPress={handleResend}
                   disabled={resending}
+                  accessibilityRole="button"
+                  accessibilityLabel="Отправить код повторно"
+                  accessibilityState={{ disabled: resending }}
                 >
                   <Text style={styles.resendText}>
                     {resending ? 'Отправляем...' : 'Отправить код повторно'}

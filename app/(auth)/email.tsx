@@ -71,7 +71,7 @@ export default function EmailScreen() {
         >
           <View style={styles.container}>
             {/* Back */}
-            <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back}>
+            <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
               <Text style={styles.backText}>← Назад</Text>
             </TouchableOpacity>
 
@@ -97,6 +97,8 @@ export default function EmailScreen() {
                 autoCapitalize="none"
                 autoFocus
                 error={error}
+                onSubmitEditing={handleSubmit}
+                returnKeyType="go"
               />
               <Button
                 onPress={handleSubmit}
@@ -114,6 +116,8 @@ export default function EmailScreen() {
 
             {role === 'SPECIALIST' ? (
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Войти как клиент"
                 onPress={() => {
                   const redirectParam = redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : '';
                   router.replace(`/(auth)/email${redirectParam}`);
@@ -126,6 +130,8 @@ export default function EmailScreen() {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Зарегистрироваться как специалист"
                 onPress={() => {
                   const redirectParam = redirectTo ? `&redirectTo=${encodeURIComponent(redirectTo)}` : '';
                   router.replace(`/(auth)/email?role=SPECIALIST${redirectParam}`);

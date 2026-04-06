@@ -66,6 +66,8 @@ export function Button({
         style,
       ]}
       activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       dataSet={{ hoverManaged: '1' }}
       {...(webProps as any)}
     >
