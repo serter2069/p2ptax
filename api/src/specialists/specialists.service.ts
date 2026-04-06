@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
@@ -112,14 +113,21 @@ export class SpecialistsService {
       profileWhere.services = { hasSome: [category.trim()] };
     }
 
-    // Search filter: match against displayName, nick, services, cities, bio
+    // Search filter: match against displayName, nick, services (partial ILIKE), cities, bio
     if (search && search.trim()) {
       const term = search.trim();
+
+      // Find userIds whose services array contains a partial match via PostgreSQL unnest + ILIKE
+      const serviceMatchIds = await this.prisma.$queryRaw<{ userId: string }[]>(
+        Prisma.sql`SELECT "userId" FROM "SpecialistProfile" WHERE EXISTS (SELECT 1 FROM unnest(services) AS s WHERE s ILIKE ${`%${term}%`})`,
+      );
+      const serviceUserIds = serviceMatchIds.map((r) => r.userId);
+
       profileWhere.OR = [
         { displayName: { contains: term, mode: 'insensitive' } },
         { nick: { contains: term, mode: 'insensitive' } },
         { bio: { contains: term, mode: 'insensitive' } },
-        { services: { hasSome: [term] } },
+        ...(serviceUserIds.length > 0 ? [{ userId: { in: serviceUserIds } }] : []),
       ];
     }
 
