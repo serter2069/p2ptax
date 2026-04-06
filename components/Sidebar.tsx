@@ -51,7 +51,7 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
             <TouchableOpacity
               key={item.route}
               style={[styles.navItem, active && styles.navItemActive]}
-              onPress={() => router.replace(item.route as any)}
+              onPress={() => router.push(item.route as any)}
               activeOpacity={0.75}
             >
               <Ionicons name={item.icon} size={18} color={active ? Colors.brandPrimary : Colors.textMuted} />
