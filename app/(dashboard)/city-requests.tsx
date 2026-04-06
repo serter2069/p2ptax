@@ -5,6 +5,7 @@ import {
   StyleSheet,
   SafeAreaView,
   FlatList,
+  ScrollView,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
@@ -30,6 +31,7 @@ interface RequestItem {
   id: string;
   description: string;
   city: string;
+  category: string | null;
   status: string;
   createdAt: string;
   client: { id: string };
@@ -57,6 +59,8 @@ export default function CityRequestsScreen() {
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
   // Track seen request IDs (persisted in AsyncStorage)
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  // Category filter (client-side)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   // Pagination state per city
   const [cityPages, setCityPages] = useState<Record<string, number>>({});
   const [cityHasMore, setCityHasMore] = useState<Record<string, boolean>>({});
@@ -184,6 +188,13 @@ export default function CityRequestsScreen() {
     // Load seen IDs in parallel with data fetch so first render has correct state
     loadSeenIds();
     fetchData();
+
+    // Poll for new requests every 30 seconds
+    const intervalId = setInterval(() => {
+      fetchData(true);
+    }, 30_000);
+
+    return () => clearInterval(intervalId);
   }, [fetchData, loadSeenIds]);
 
   function handleRefresh() {
@@ -288,6 +299,11 @@ export default function CityRequestsScreen() {
               <View style={styles.cityChip}>
                 <Text style={styles.cityText}>{item.city}</Text>
               </View>
+              {item.category ? (
+                <View style={styles.categoryChip}>
+                  <Text style={styles.categoryText}>{item.category}</Text>
+                </View>
+              ) : null}
               {isNew && (
                 <View style={styles.newBadge}>
                   <Text style={styles.newBadgeText}>Новый</Text>
@@ -297,7 +313,9 @@ export default function CityRequestsScreen() {
             <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
           </View>
           <Text style={styles.description} numberOfLines={4}>
-            {item.description}
+            {item.description.length > 200
+              ? item.description.slice(0, 200) + '...'
+              : item.description}
           </Text>
           <View style={styles.footer}>
             <Text style={styles.responsesText}>Откликов: {item._count.responses}</Text>
@@ -374,6 +392,21 @@ export default function CityRequestsScreen() {
     return null;
   };
 
+  // Unique categories from loaded requests (client-side filter)
+  const uniqueCategories = React.useMemo(() => {
+    const cats = new Set<string>();
+    for (const r of requests) {
+      if (r.category) cats.add(r.category);
+    }
+    return Array.from(cats).sort();
+  }, [requests]);
+
+  // Filtered requests by selected category
+  const filteredRequests = React.useMemo(() => {
+    if (!selectedCategory) return requests;
+    return requests.filter((r) => r.category === selectedCategory);
+  }, [requests, selectedCategory]);
+
   const content = renderContent();
 
   return (
@@ -393,11 +426,58 @@ export default function CityRequestsScreen() {
         </View>
       )}
 
+      {/* Category filter chips */}
+      {uniqueCategories.length > 0 && !loading && !error && (
+        <View style={styles.categoryBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+          >
+            <TouchableOpacity
+              style={[
+                styles.categoryFilterChip,
+                !selectedCategory && styles.categoryFilterChipActive,
+              ]}
+              onPress={() => setSelectedCategory(null)}
+            >
+              <Text
+                style={[
+                  styles.categoryFilterText,
+                  !selectedCategory && styles.categoryFilterTextActive,
+                ]}
+              >
+                Все
+              </Text>
+            </TouchableOpacity>
+            {uniqueCategories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.categoryFilterChip,
+                  selectedCategory === cat && styles.categoryFilterChipActive,
+                ]}
+                onPress={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+              >
+                <Text
+                  style={[
+                    styles.categoryFilterText,
+                    selectedCategory === cat && styles.categoryFilterTextActive,
+                  ]}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       {content ? (
         <View style={styles.contentFlex}>{content}</View>
       ) : (
         <FlatList
-          data={requests}
+          data={filteredRequests}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
@@ -549,6 +629,49 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.statusInfo,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  categoryBar: {
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.bgPrimary,
+  },
+  categoryScroll: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  categoryFilterChip: {
+    backgroundColor: Colors.bgSecondary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  categoryFilterChipActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  categoryFilterText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  categoryFilterTextActive: {
+    color: '#fff',
+  },
+  categoryChip: {
+    backgroundColor: Colors.bgSecondary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  categoryText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
   },
   cityChip: {
     backgroundColor: Colors.bgSecondary,
