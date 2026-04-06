@@ -46,11 +46,6 @@ export class SpecialistsService {
     const profile = await this.prisma.specialistProfile.findUnique({ where: { userId } });
     if (!profile) throw new NotFoundException('Profile not found');
 
-    if (dto.nick && dto.nick !== profile.nick) {
-      const nickTaken = await this.prisma.specialistProfile.findUnique({ where: { nick: dto.nick } });
-      if (nickTaken) throw new ConflictException('Nick already taken');
-    }
-
     // Validate badges against allowed list
     const data = { ...dto };
     if (data.badges) {
