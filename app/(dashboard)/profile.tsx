@@ -44,7 +44,6 @@ export default function SpecialistProfileScreen() {
   const [error, setError] = useState('');
 
   // Editable fields
-  const [nick, setNick] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [contacts, setContacts] = useState('');
   const [cityInput, setCityInput] = useState('');
@@ -62,7 +61,6 @@ export default function SpecialistProfileScreen() {
     try {
       const data = await api.get<SpecialistProfile>('/specialists/me');
       setProfile(data);
-      setNick(data.nick);
       setDisplayName(data.displayName ?? '');
       setContacts(data.contacts ?? '');
       setCities(data.cities);
@@ -162,14 +160,9 @@ export default function SpecialistProfileScreen() {
   }
 
   async function handleSave() {
-    if (!nick.trim()) {
-      Alert.alert('Ошибка', 'Ник не может быть пустым');
-      return;
-    }
     setSaving(true);
     try {
       const updated = await api.patch<SpecialistProfile>('/specialists/me', {
-        nick: nick.trim(),
         displayName: displayName.trim() || undefined,
         contacts: contacts.trim() || null,
         cities,
@@ -246,7 +239,7 @@ export default function SpecialistProfileScreen() {
               ) : (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
                   <Text style={styles.avatarPlaceholderText}>
-                    {nick ? nick[0].toUpperCase() : '?'}
+                    {profile?.nick ? profile.nick[0].toUpperCase() : '?'}
                   </Text>
                 </View>
               )}
@@ -261,13 +254,10 @@ export default function SpecialistProfileScreen() {
           {/* Nick */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Основное</Text>
-            <Input
-              label="Ник (уникальный)"
-              value={nick}
-              onChangeText={setNick}
-              placeholder="moi_nik"
-              autoCapitalize="none"
-            />
+            <View style={styles.readonlyField}>
+              <Text style={styles.readonlyLabel}>Ник</Text>
+              <Text style={styles.readonlyValue}>{profile?.nick ?? ''}</Text>
+            </View>
             <Input
               label="Отображаемое имя (необязательно)"
               value={displayName}
@@ -628,5 +618,23 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.medium,
+  },
+  readonlyField: {
+    gap: 4,
+  },
+  readonlyLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  readonlyValue: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
 });
