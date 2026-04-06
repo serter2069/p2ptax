@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { Role } from '@prisma/client';
 
-const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const OTP_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const DEV_OTP = '000000';
 
 function generateOtp(): string {
@@ -85,7 +85,7 @@ export class AuthService {
         email: normalizedEmail,
         usedAt: null,
         expiresAt: { gt: new Date() },
-        attempts: { gte: 3 },
+        attempts: { gte: 5 },
       },
     });
     if (lockedOtp) {
@@ -131,7 +131,7 @@ export class AuthService {
     }
 
     // Check attempt counter BEFORE verifying the code
-    if (otpRecord.attempts >= 3) {
+    if (otpRecord.attempts >= 5) {
       throw new HttpException('Too many OTP attempts', HttpStatus.TOO_MANY_REQUESTS);
     }
 
