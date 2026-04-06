@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
@@ -69,6 +69,15 @@ export class AuthService {
 
   async requestOtp(email: string): Promise<{ message: string }> {
     const normalizedEmail = email.toLowerCase();
+
+    // #2266: Block OTP request for suspended users
+    const blockedUser = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { isBlocked: true },
+    });
+    if (blockedUser?.isBlocked) {
+      throw new ForbiddenException('Аккаунт заблокирован');
+    }
 
     // #1860: Block new OTP if there is an active one with >= 3 failed attempts
     const lockedOtp = await this.prisma.otpCode.findFirst({
@@ -145,6 +154,11 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
+
+    // #2266: Block login for suspended users (new users cannot be blocked)
+    if (existingUser?.isBlocked) {
+      throw new ForbiddenException('Аккаунт заблокирован');
+    }
 
     const isNewUser = !existingUser;
 
