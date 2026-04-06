@@ -18,6 +18,20 @@ export class ComplaintsService {
       throw new BadRequestException('You cannot report yourself');
     }
 
+    // Rate limit: max 5 complaints per reporter per 24 hours
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentCount = await this.prisma.complaint.count({
+      where: {
+        reporterId,
+        createdAt: { gte: since },
+      },
+    });
+    if (recentCount >= 5) {
+      throw new BadRequestException(
+        'Превышен лимит жалоб. Максимум 5 жалоб в сутки.',
+      );
+    }
+
     // Verify target user exists
     const target = await this.prisma.user.findUnique({
       where: { id: dto.targetUserId },
