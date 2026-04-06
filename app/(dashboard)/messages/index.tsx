@@ -105,6 +105,8 @@ export default function MessagesScreen() {
 
   useEffect(() => {
     fetchThreads();
+    const intervalId = setInterval(fetchThreads, 30_000);
+    return () => clearInterval(intervalId);
   }, [fetchThreads]);
 
   function getOtherParticipant(thread: ThreadItem): ThreadParticipant {
