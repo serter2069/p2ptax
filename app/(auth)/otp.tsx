@@ -136,8 +136,8 @@ export default function OtpScreen() {
           try {
             await secureStorage.removeItem('p2ptax_pending_request'); // remove BEFORE post (race condition guard)
             const pendingData = JSON.parse(pendingRaw);
-            const created = await api.post('/requests', pendingData);
-            router.replace(`/(dashboard)/requests/${(created as any).data.id}` as any);
+            const created = await api.post<{ id: string }>('/requests', pendingData);
+            router.replace(`/(dashboard)/requests/${created.id}` as any);
             return;
           } catch {
             // POST failed — fall through to normal dashboard redirect
