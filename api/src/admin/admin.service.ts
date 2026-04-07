@@ -30,38 +30,58 @@ export class AdminService {
     };
   }
 
-  async getUsers(role?: string) {
+  async getUsers(role?: string, page = 1, limit = 50) {
     const where: any = {};
     if (role === 'CLIENT' || role === 'SPECIALIST') {
       where.role = role;
     }
 
-    return this.prisma.user.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        isBlocked: true,
-        createdAt: true,
-        lastLoginAt: true,
-        specialistProfile: {
-          select: { nick: true, cities: true, services: true },
+    const take = Math.min(limit, 200);
+    const skip = (page - 1) * take;
+
+    const [items, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          isBlocked: true,
+          createdAt: true,
+          lastLoginAt: true,
+          specialistProfile: {
+            select: { nick: true, cities: true, services: true },
+          },
         },
-      },
-    });
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { items, total, page, pages: Math.ceil(total / take) };
   }
 
-  async getSpecialists() {
-    return this.prisma.specialistProfile.findMany({
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        user: {
-          select: { id: true, email: true, createdAt: true, lastLoginAt: true },
+  async getSpecialists(page = 1, limit = 50) {
+    const take = Math.min(limit, 200);
+    const skip = (page - 1) * take;
+
+    const [items, total] = await Promise.all([
+      this.prisma.specialistProfile.findMany({
+        orderBy: { updatedAt: 'desc' },
+        take,
+        skip,
+        include: {
+          user: {
+            select: { id: true, email: true, createdAt: true, lastLoginAt: true },
+          },
         },
-      },
-    });
+      }),
+      this.prisma.specialistProfile.count(),
+    ]);
+
+    return { items, total, page, pages: Math.ceil(total / take) };
   }
 
   async blockUser(id: string, isBlocked: boolean) {
@@ -77,13 +97,23 @@ export class AdminService {
     });
   }
 
-  async getAllRequests() {
-    return this.prisma.request.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        client: { select: { id: true, email: true } },
-        _count: { select: { responses: true } },
-      },
-    });
+  async getAllRequests(page = 1, limit = 50) {
+    const take = Math.min(limit, 200);
+    const skip = (page - 1) * take;
+
+    const [items, total] = await Promise.all([
+      this.prisma.request.findMany({
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        include: {
+          client: { select: { id: true, email: true } },
+          _count: { select: { responses: true } },
+        },
+      }),
+      this.prisma.request.count(),
+    ]);
+
+    return { items, total, page, pages: Math.ceil(total / take) };
   }
 }
