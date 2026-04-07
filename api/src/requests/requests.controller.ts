@@ -3,6 +3,8 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
+  HttpCode,
   Param,
   Body,
   Query,
@@ -81,5 +83,13 @@ export class RequestsController {
     @Body() dto: UpdateRequestStatusDto,
   ) {
     return this.requestsService.updateStatus(req.user.id, id, dto.status);
+  }
+
+  // DELETE /requests/:id — client deletes own OPEN request
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  deleteRequest(@Request() req: any, @Param('id') id: string) {
+    return this.requestsService.deleteRequest(req.user.id, id);
   }
 }
