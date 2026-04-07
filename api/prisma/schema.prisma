@@ -28,6 +28,10 @@ model User {
   id          String    @id @default(cuid())
   email       String    @unique
   role        Role      @default(CLIENT)
+  displayName String?
+  city        String?
+  phone       String?
+  bio         String?
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?
 
