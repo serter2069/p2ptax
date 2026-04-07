@@ -20,6 +20,7 @@ export default function FNSScreen() {
   const [selected, setSelected] = useState<FNSOffice[]>([]);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const selectedNames = new Set(selected.map((o) => o.name));
 
@@ -47,18 +48,23 @@ export default function FNSScreen() {
       setError('Выберите хотя бы одну ИФНС');
       return;
     }
-    const cities = [...new Set(selected.map((o) => o.city))];
-    const fnsNames = selected.map((o) => o.name);
-    // Persist to AsyncStorage for refresh/deep-link resilience
-    await AsyncStorage.setItem('onboarding_cities', JSON.stringify(cities));
-    await AsyncStorage.setItem('onboarding_fns', JSON.stringify(fnsNames));
-    router.push({
-      pathname: '/(onboarding)/services',
-      params: {
-        cities: JSON.stringify(cities),
-        fnsOffices: JSON.stringify(fnsNames),
-      },
-    });
+    setIsLoading(true);
+    try {
+      const cities = [...new Set(selected.map((o) => o.city))];
+      const fnsNames = selected.map((o) => o.name);
+      // Persist to AsyncStorage for refresh/deep-link resilience
+      await AsyncStorage.setItem('onboarding_cities', JSON.stringify(cities));
+      await AsyncStorage.setItem('onboarding_fns', JSON.stringify(fnsNames));
+      router.push({
+        pathname: '/(onboarding)/services',
+        params: {
+          cities: JSON.stringify(cities),
+          fnsOffices: JSON.stringify(fnsNames),
+        },
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   // Progress: step 3 of 4 (username → cities → fns → services)
@@ -155,6 +161,7 @@ export default function FNSScreen() {
             <Button
               onPress={handleContinue}
               disabled={selected.length === 0}
+              loading={isLoading}
               style={styles.continueBtn}
             >
               Далее

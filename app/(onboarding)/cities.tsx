@@ -16,6 +16,7 @@ import { RUSSIAN_CITIES } from '../../constants/Cities';
 export default function CitiesScreen() {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   function toggleCity(city: string) {
     setSelected((prev) =>
@@ -24,12 +25,17 @@ export default function CitiesScreen() {
   }
 
   async function handleContinue() {
-    // Save cities to AsyncStorage so they survive refresh/deep links
-    await AsyncStorage.setItem('onboarding_cities', JSON.stringify(selected));
-    router.push({
-      pathname: '/(onboarding)/fns',
-      params: { cities: JSON.stringify(selected) },
-    });
+    setIsLoading(true);
+    try {
+      // Save cities to AsyncStorage so they survive refresh/deep links
+      await AsyncStorage.setItem('onboarding_cities', JSON.stringify(selected));
+      router.push({
+        pathname: '/(onboarding)/fns',
+        params: { cities: JSON.stringify(selected) },
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -92,6 +98,7 @@ export default function CitiesScreen() {
           <Button
             onPress={handleContinue}
             disabled={selected.length === 0}
+            loading={isLoading}
             style={styles.btn}
           >
             Продолжить
