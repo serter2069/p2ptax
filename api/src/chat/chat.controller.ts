@@ -51,7 +51,7 @@ export class ChatController {
   // POST /threads/:id/messages — send a message via REST (fallback when WebSocket unavailable)
   @Post(':id/messages')
   async sendMessage(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: { id: string; email: string } },
     @Param('id') threadId: string,
     @Body() dto: SendMessageDto,
   ) {
@@ -62,11 +62,24 @@ export class ChatController {
 
     const message = await this.chatService.createMessage(threadId, req.user.id, dto.content.trim());
 
+    const room = `thread:${threadId}`;
+
     // Notify connected participants in real time via WebSocket (same as gateway)
     try {
-      this.chatGateway.server.to(`thread:${threadId}`).emit('message_received', message);
+      this.chatGateway.server.to(room).emit('message_received', message);
     } catch {
       // Non-blocking — WS emit failure must not fail the REST response
+    }
+
+    // Email notification for offline recipient — fire-and-forget (same logic as gateway)
+    const recipientId =
+      thread.participant1Id === req.user.id
+        ? thread.participant2Id
+        : thread.participant1Id;
+
+    const recipientOnline = this.chatGateway.isUserInRoom(recipientId, room);
+    if (!recipientOnline) {
+      this.chatGateway.notifyRecipientAsync(recipientId, req.user.email, threadId).catch(() => {});
     }
 
     return message;
