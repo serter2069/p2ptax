@@ -59,6 +59,7 @@ export default function OtpScreen() {
   const MAX_ATTEMPTS = 3;
 
   const inputs = useRef<(TextInput | null)[]>([]);
+  const submittedRef = useRef(false);
 
   // Countdown timer
   useEffect(() => {
@@ -99,8 +100,11 @@ export default function OtpScreen() {
   }
 
   const handleVerify = useCallback(async () => {
+    if (loading || submittedRef.current) return;
+    submittedRef.current = true;
     if (code.length < CODE_LENGTH) {
       setError('Введите все 6 цифр кода');
+      submittedRef.current = false;
       return;
     }
     setError('');
@@ -146,6 +150,7 @@ export default function OtpScreen() {
         router.replace((redirectTo || '/(dashboard)') as any);
       }
     } catch (err) {
+      submittedRef.current = false;
       setAttemptsUsed((prev) => prev + 1);
       if (err instanceof ApiError) {
         setError(err.message);
@@ -155,7 +160,7 @@ export default function OtpScreen() {
     } finally {
       setLoading(false);
     }
-  }, [code, email, role, login, router]);
+  }, [code, email, role, login, router, loading]);
 
   // Auto-submit when all digits filled
   useEffect(() => {
@@ -168,6 +173,7 @@ export default function OtpScreen() {
   async function handleResend() {
     setResending(true);
     setError('');
+    submittedRef.current = false;
     try {
       await api.post('/auth/request-otp', { email });
       setDigits(Array(CODE_LENGTH).fill(''));
