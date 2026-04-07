@@ -145,7 +145,7 @@ export default function EditRequestScreen() {
               <TextInput
                 value={description}
                 onChangeText={(t) => {
-                  if (t.length <= 1000) setDescription(t);
+                  if (t.length <= 2000) setDescription(t);
                   if (errors.description) setErrors((e) => ({ ...e, description: undefined }));
                 }}
                 placeholder="Опишите вашу задачу подробно..."
@@ -153,7 +153,7 @@ export default function EditRequestScreen() {
                 autoCapitalize="sentences"
                 multiline={true}
                 numberOfLines={4}
-                maxLength={1000}
+                maxLength={2000}
                 style={[
                   styles.descriptionInput,
                   errors.description ? styles.descriptionInputError : null,
@@ -164,7 +164,7 @@ export default function EditRequestScreen() {
                 {errors.description ? (
                   <Text style={styles.errorText}>{errors.description}</Text>
                 ) : <View />}
-                <Text style={styles.charCounter}>{description.length}/1000</Text>
+                <Text style={styles.charCounter}>{description.length}/2000</Text>
               </View>
             </View>
 
