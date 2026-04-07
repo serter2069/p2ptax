@@ -116,7 +116,7 @@ export class ReviewsService {
           rating: true,
           comment: true,
           createdAt: true,
-          client: { select: { id: true, username: true, email: true } },
+          client: { select: { id: true, username: true } },
         },
       }),
       this.prisma.review.count({ where: { specialistId } }),
