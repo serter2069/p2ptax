@@ -26,7 +26,15 @@ export class RequestsService {
     });
   }
 
-  async findFeed(city?: string, page = 1, status?: string, search?: string) {
+  async findFeed(
+    city?: string,
+    page = 1,
+    status?: string,
+    search?: string,
+    category?: string,
+    budgetMin?: number,
+    budgetMax?: number,
+  ) {
     // Default to OPEN if no status provided; validate against known statuses
     const allowedStatuses = Object.values(RequestStatus);
     const resolvedStatus =
@@ -38,6 +46,9 @@ export class RequestsService {
     if (search && search.trim()) {
       where.description = { contains: search.trim(), mode: 'insensitive' };
     }
+    if (category) where.category = category;
+    if (budgetMin != null) where.budget = { ...(where.budget || {}), gte: budgetMin };
+    if (budgetMax != null) where.budget = { ...(where.budget || {}), lte: budgetMax };
 
     const skip = (page - 1) * PAGE_SIZE;
 
