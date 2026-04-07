@@ -141,7 +141,7 @@ const qrf = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
   },
   cityChipTextSelected: {
-    color: '#fff',
+    color: Colors.white,
   },
   error: {
     color: Colors.statusError,
@@ -155,7 +155,7 @@ const qrf = StyleSheet.create({
     alignItems: 'center',
   },
   btnText: {
-    color: '#fff',
+    color: Colors.white,
     fontWeight: Typography.fontWeight.semibold,
     fontSize: Typography.fontSize.base,
   },
@@ -369,7 +369,7 @@ export default function LandingScreen() {
         )}
 
         {/* ===== SECTION 3: How it works ===== */}
-        <View nativeID="how-it-works" style={[styles.section, { backgroundColor: '#FFFFFF' }]}>
+        <View nativeID="how-it-works" style={[styles.section, { backgroundColor: Colors.bgCard }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle}>{'\u041A\u0430\u043A \u044D\u0442\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442'}</Text>
 
@@ -417,7 +417,7 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== SECTION 5: For whom ===== */}
-        <View style={[styles.section, { backgroundColor: '#FFFFFF' }]}>
+        <View style={[styles.section, { backgroundColor: Colors.bgCard }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle}>{'\u0414\u043B\u044F \u043A\u043E\u0433\u043E'}</Text>
 
@@ -495,7 +495,7 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== SECTION 7: Reviews ===== */}
-        <View style={[styles.section, { backgroundColor: '#FFFFFF' }]}>
+        <View style={[styles.section, { backgroundColor: Colors.bgCard }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle}>{'\u041E\u0442\u0437\u044B\u0432\u044B \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432'}</Text>
 
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#0F2447',
+    color: Colors.textPrimary,
     lineHeight: 42,
     letterSpacing: -0.5,
   },
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
   },
   heroSubtitle: {
     fontSize: 17,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     lineHeight: 26,
     maxWidth: 520,
   },
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web'
       ? { boxShadow: '0 8px 30px rgba(15, 36, 71, 0.12)' }
       : {
-          shadowColor: '#0F2447',
+          shadowColor: Colors.textPrimary,
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.12,
           shadowRadius: 30,
@@ -729,9 +729,9 @@ const styles = StyleSheet.create({
     height: 400,
   },
   heroImageFallback: {
-    backgroundColor: '#1A5BA8',
+    backgroundColor: Colors.brandPrimary,
     ...(Platform.OS === 'web'
-      ? { background: 'linear-gradient(135deg, #1A5BA8 0%, #2368BE 100%)' } as any
+      ? { background: `linear-gradient(135deg, ${Colors.brandPrimary} 0%, ${Colors.brandPrimaryHover} 100%)` } as any
       : {}),
   },
 
@@ -743,14 +743,14 @@ const styles = StyleSheet.create({
   },
   launchBannerText: {
     fontSize: 17,
-    color: '#0F2447',
+    color: Colors.textPrimary,
     fontWeight: '600',
     textAlign: 'center',
   },
   launchBannerBtn: {
     height: 44,
     borderRadius: 8,
-    backgroundColor: '#1A5BA8',
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
   launchBannerBtnLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
 
   // ---- Stats Bar ----
@@ -794,17 +794,17 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0F2447',
+    color: Colors.textPrimary,
   },
   statLabel: {
     fontSize: 14,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#C0D0EA',
+    backgroundColor: Colors.border,
   },
 
   // ---- Sections ----
@@ -821,13 +821,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#0F2447',
+    color: Colors.textPrimary,
     textAlign: 'center',
     letterSpacing: -0.3,
   },
   sectionSubtitle: {
     fontSize: 16,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     maxWidth: 550,
@@ -859,14 +859,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1A5BA8',
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepNumberText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   stepTextBlock: {
     gap: 4,
@@ -874,11 +874,11 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0F2447',
+    color: Colors.textPrimary,
   },
   stepDesc: {
     fontSize: 15,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     lineHeight: 22,
   },
 
@@ -898,9 +898,9 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     width: '31%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
-    borderColor: '#C0D0EA',
+    borderColor: Colors.border,
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
   taskCardText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#0F2447',
+    color: Colors.textPrimary,
     textAlign: 'center',
   },
 
@@ -944,11 +944,11 @@ const styles = StyleSheet.create({
   forWhomTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0F2447',
+    color: Colors.textPrimary,
   },
   forWhomSubtitle: {
     fontSize: 15,
-    color: '#1A5BA8',
+    color: Colors.brandPrimary,
     fontWeight: '500',
     marginBottom: 4,
   },
@@ -959,13 +959,13 @@ const styles = StyleSheet.create({
   },
   forWhomBullet: {
     fontSize: 16,
-    color: '#1A5BA8',
+    color: Colors.brandPrimary,
     fontWeight: '700',
     marginTop: 1,
   },
   forWhomText: {
     fontSize: 15,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     lineHeight: 22,
     flex: 1,
   },
@@ -988,19 +988,19 @@ const styles = StyleSheet.create({
   trustItemWide: {},
   trustCheck: {
     fontSize: 28,
-    color: '#1A5BA8',
+    color: Colors.brandPrimary,
     fontWeight: '700',
     marginBottom: 4,
   },
   trustTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0F2447',
+    color: Colors.textPrimary,
     textAlign: 'center',
   },
   trustDesc: {
     fontSize: 15,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     lineHeight: 22,
     textAlign: 'center',
   },
@@ -1020,14 +1020,14 @@ const styles = StyleSheet.create({
   },
   reviewCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     borderRadius: BorderRadius.md,
     padding: 24,
     gap: 8,
     ...(Platform.OS === 'web'
       ? { boxShadow: '0 2px 12px rgba(15, 36, 71, 0.06)' }
       : {
-          shadowColor: '#0F2447',
+          shadowColor: Colors.textPrimary,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.06,
           shadowRadius: 12,
@@ -1040,30 +1040,30 @@ const styles = StyleSheet.create({
   },
   reviewQuote: {
     fontSize: 48,
-    color: '#C0D0EA',
+    color: Colors.border,
     lineHeight: 48,
     fontWeight: '700',
   },
   reviewText: {
     fontSize: 15,
-    color: '#0F2447',
+    color: Colors.textPrimary,
     lineHeight: 23,
   },
   reviewStars: {
     fontSize: 16,
-    color: '#1A5BA8',
+    color: Colors.brandPrimary,
     letterSpacing: 2,
     marginTop: 4,
   },
   reviewName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F2447',
+    color: Colors.textPrimary,
     marginTop: 4,
   },
   reviewCity: {
     fontSize: 14,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
   },
 
   // ---- FAQ ----
@@ -1078,16 +1078,16 @@ const styles = StyleSheet.create({
   },
   faqItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#C0D0EA',
+    borderBottomColor: Colors.border,
   },
   faqQ: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#0F2447',
+    color: Colors.textPrimary,
   },
   faqA: {
     fontSize: 15,
-    color: '#4A6B88',
+    color: Colors.textSecondary,
     lineHeight: 23,
   },
 
@@ -1096,7 +1096,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 80,
     alignItems: 'center',
-    backgroundColor: '#0F2447',
+    backgroundColor: Colors.textPrimary,
   },
   ctaContent: {
     width: '100%',
@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
   ctaTitle: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     textAlign: 'center',
     letterSpacing: -0.3,
   },
@@ -1131,7 +1131,7 @@ const styles = StyleSheet.create({
   // ---- Footer ----
   footer: {
     width: '100%',
-    backgroundColor: '#0F2447',
+    backgroundColor: Colors.textPrimary,
     paddingVertical: 24,
     alignItems: 'center',
     borderTopWidth: 1,
@@ -1157,19 +1157,19 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#1A5BA8',
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footerLogoInitial: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   footerLogo: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   footerLinks: {
     flexDirection: 'row',
