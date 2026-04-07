@@ -44,8 +44,19 @@ export class RequestsController {
     @Query('page') page?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('category') category?: string,
+    @Query('budgetMin') budgetMin?: string,
+    @Query('budgetMax') budgetMax?: string,
   ) {
-    return this.requestsService.findFeed(city, page ? parseInt(page, 10) : 1, status, search);
+    return this.requestsService.findFeed(
+      city,
+      page ? parseInt(page, 10) : 1,
+      status,
+      search,
+      category,
+      budgetMin != null ? parseInt(budgetMin, 10) : undefined,
+      budgetMax != null ? parseInt(budgetMax, 10) : undefined,
+    );
   }
 
   // POST /requests/:id/respond — specialist responds to a request
