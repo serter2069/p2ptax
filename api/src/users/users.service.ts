@@ -289,7 +289,14 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
+    // Capture email before transaction for OTP cleanup (keyed by email, not userId)
+    const userEmail = user.email;
+
     await this.prisma.$transaction([
+      // Complaints filed by or against this user
+      this.prisma.complaint.deleteMany({ where: { reporterId: userId } }),
+      this.prisma.complaint.deleteMany({ where: { targetUserId: userId } }),
+
       // Reviews given by user
       this.prisma.review.deleteMany({ where: { clientId: userId } }),
 
@@ -332,6 +339,12 @@ export class UsersService {
 
       // Specialist profile
       this.prisma.specialistProfile.deleteMany({ where: { userId } }),
+
+      // Refresh tokens
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+
+      // OTP codes (keyed by email, no FK to User)
+      this.prisma.otpCode.deleteMany({ where: { email: userEmail } }),
 
       // Finally, the user
       this.prisma.user.delete({ where: { id: userId } }),
