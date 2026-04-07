@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../notifications/email.service';
 import { PurchasePromotionDto } from './dto/purchase-promotion.dto';
 import { UpdatePricesDto } from './dto/update-prices.dto';
 import { PromotionTier } from '@prisma/client';
@@ -21,7 +22,10 @@ const DEFAULT_PRICES: Record<PromotionTier, number> = {
 export class PromotionsService {
   private readonly logger = new Logger(PromotionsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   /**
    * Purchase a promotion for the authenticated specialist.
@@ -186,11 +190,49 @@ export class PromotionsService {
     return result;
   }
 
-  /** Hourly cron: deactivate expired promotions by deleting them */
+  /**
+   * Hourly cron: send reminder emails for promotions expiring within 3 days,
+   * then delete promotions that have already expired.
+   * Emails are sent BEFORE deletion so data is still available.
+   */
   @Cron(CronExpression.EVERY_HOUR)
   async deactivateExpired() {
+    const now = new Date();
+
+    // Step 1: Send reminder emails for promotions expiring within 3 days (but not yet expired)
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const expiringSoon = await this.prisma.promotion.findMany({
+      where: {
+        expiresAt: { gt: now, lte: threeDaysFromNow },
+        reminderSent: false,
+      },
+      include: {
+        specialist: { select: { email: true } },
+      },
+    });
+
+    for (const promo of expiringSoon) {
+      if (promo.specialist.email) {
+        await this.emailService.notifyPromotionExpiringSoon(
+          promo.specialist.email,
+          promo.city,
+        ).catch((err) =>
+          this.logger.error(`Failed to send expiry reminder for promotion ${promo.id}`, err),
+        );
+        await this.prisma.promotion.update({
+          where: { id: promo.id },
+          data: { reminderSent: true },
+        }).catch(() => {});
+      }
+    }
+
+    if (expiringSoon.length > 0) {
+      this.logger.log(`Sent ${expiringSoon.length} promotion expiry reminder(s)`);
+    }
+
+    // Step 2: Delete promotions that have already expired
     const { count } = await this.prisma.promotion.deleteMany({
-      where: { expiresAt: { lte: new Date() } },
+      where: { expiresAt: { lte: now } },
     });
     if (count > 0) {
       this.logger.log(`Deactivated ${count} expired promotion(s)`);
