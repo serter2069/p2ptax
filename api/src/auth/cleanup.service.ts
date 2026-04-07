@@ -13,11 +13,12 @@ export class CleanupService {
   ) {}
 
   // Runs every hour at minute 0. All times are UTC.
+  // Keeps OTP records for 24h after expiry to allow post-mortem debugging (UC-070).
   @Cron('0 * * * *')
   async cleanupExpiredOtpCodes(): Promise<void> {
     const { count: otpCount } = await this.prisma.otpCode.deleteMany({
       where: {
-        expiresAt: { lt: new Date() },
+        expiresAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
       },
     });
 
@@ -25,14 +26,13 @@ export class CleanupService {
   }
 
   // Runs every day at 03:00 UTC.
+  // Keeps revoked/expired tokens for 7 days after expiry to allow post-mortem debugging (UC-070).
   @Cron('0 3 * * *')
   async cleanupRevokedRefreshTokens(): Promise<void> {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const { count: tokenCount } = await this.prisma.refreshToken.deleteMany({
       where: {
-        OR: [
-          { revoked: true },
-          { expiresAt: { lt: new Date() } },
-        ],
+        expiresAt: { lt: cutoff },
       },
     });
 
