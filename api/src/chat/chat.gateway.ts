@@ -107,6 +107,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new WsException('Not authenticated');
     }
 
+    // Validate content length to prevent oversized payload attacks
+    const MAX_CONTENT_LENGTH = 10000;
+    if (data.content && data.content.length > MAX_CONTENT_LENGTH) {
+      client.emit('error', { message: 'Message too long' });
+      return;
+    }
+
+    // Validate attachment URL length
+    const MAX_URL_LENGTH = 2048;
+    if (data.attachmentUrl && data.attachmentUrl.length > MAX_URL_LENGTH) {
+      client.emit('error', { message: 'Attachment URL too long' });
+      return;
+    }
+
     // Allow empty content if attachment is present
     const hasAttachment = !!(data.attachmentUrl && data.attachmentType && data.attachmentName);
     if (!data.content?.trim() && !hasAttachment) {
