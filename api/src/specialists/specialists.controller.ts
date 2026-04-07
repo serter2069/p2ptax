@@ -7,6 +7,7 @@ import { SpecialistsService } from './specialists.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -117,7 +118,8 @@ export class SpecialistsController {
   }
 
   @Get(':nick')
-  getProfile(@Param('nick') nick: string) {
-    return this.specialistsService.getProfile(nick);
+  @UseGuards(OptionalJwtAuthGuard)
+  getProfile(@Param('nick') nick: string, @Request() req: any) {
+    return this.specialistsService.getProfile(nick, req.user ?? null);
   }
 }
