@@ -13,6 +13,7 @@ import {
   Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
 import { formatExperience } from '../../lib/format';
 import { useAuth } from '../../stores/authStore';
@@ -70,6 +71,8 @@ function getReviewerInitials(review: ReviewItem): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 
 export default function PublicSpecialistProfileScreen() {
   const { nick } = useLocalSearchParams<{ nick: string }>();
@@ -650,9 +653,26 @@ export default function PublicSpecialistProfileScreen() {
     </View>
   );
 
+  const pageTitle = `${displayName} — налоговый консультант`;
+  const pageDescription = profile.bio
+    ? profile.bio.slice(0, 160)
+    : profile.cities.length > 0
+    ? `Налоговый консультант в ${profile.cities.join(', ')}. Опишите задачу бесплатно и получите предложение.`
+    : 'Налоговый консультант на платформе Налоговик. Опишите задачу бесплатно.';
+  const pageUrl = `${APP_URL}/specialists/${nick}`;
+
   return (
     <SafeAreaView style={styles.safe}>
-      <Stack.Screen options={{ title: `${displayName} — Налоговик` }} />
+      <Stack.Screen options={{ title: pageTitle }} />
+      {/* TODO: add og:image when CDN/static image is available */}
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:type" content="profile" />
+      </Head>
       <LandingHeader />
       <ScrollView
         contentContainerStyle={styles.scroll}
