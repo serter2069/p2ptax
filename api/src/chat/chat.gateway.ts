@@ -46,6 +46,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         secret: process.env.JWT_SECRET!,
       });
 
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { isBlocked: true },
+      });
+      if (!user || user.isBlocked) {
+        client.emit('error', { message: 'Account blocked' });
+        client.disconnect();
+        return;
+      }
+
       client.data.userId = payload.sub;
       client.data.email = payload.email;
       client.data.role = payload.role;
