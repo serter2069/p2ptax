@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { useAuth } from '../stores/authStore';
+import { Colors } from '../constants/Colors';
 
 export function LandingHeader() {
   const router = useRouter();
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     height: 64,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     zIndex: 100,
     ...Platform.select({
       web: {
@@ -223,19 +224,19 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#1A5BA8',
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoInitial: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   logoText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0F2447',
+    color: Colors.textPrimary,
     letterSpacing: 0.2,
   },
   navLinks: {
@@ -246,7 +247,7 @@ const styles = StyleSheet.create({
   navLink: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#4A6B88',
+    color: Colors.textSecondary,
   },
   rightButtons: {
     flexDirection: 'row',
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#1A5BA8',
+    borderColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
@@ -265,12 +266,12 @@ const styles = StyleSheet.create({
   btnLoginLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1A5BA8',
+    color: Colors.brandPrimary,
   },
   btnRegister: {
     height: 38,
     borderRadius: 8,
-    backgroundColor: '#1A5BA8',
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
   btnRegisterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   burgerBtn: {
     padding: 8,
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
   burgerLine: {
     width: 22,
     height: 2,
-    backgroundColor: '#0F2447',
+    backgroundColor: Colors.textPrimary,
     borderRadius: 1,
   },
   menuOverlay: {
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
     top: 64,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     padding: 16,
     zIndex: 200,
     ...Platform.select({
@@ -328,6 +329,6 @@ const styles = StyleSheet.create({
   mobileMenuText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#4A6B88',
+    color: Colors.textSecondary,
   },
 });
