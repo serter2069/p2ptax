@@ -24,12 +24,16 @@ export class UsersService {
 
   /**
    * Set role for a new user (onboarding step 1).
-   * Only allowed when role is null (user has not yet picked a role).
+   * Allowed when user's role is still CLIENT (schema default = "not yet chosen").
+   * Blocked only when user already completed specialist onboarding (role = SPECIALIST).
    */
   async updateRole(userId: string, role: string): Promise<{ id: string; email: string; role: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    if (user.role !== null) {
+    // The Prisma schema sets role = CLIENT by default (not null), so checking !== null
+    // would always block. Instead, block only when role was explicitly set to SPECIALIST
+    // (i.e., the user completed specialist onboarding).
+    if (user.role === Role.SPECIALIST) {
       throw new BadRequestException('Role already assigned. Cannot change role via this endpoint.');
     }
 
