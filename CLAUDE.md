@@ -35,8 +35,7 @@ doppler secrets set KEY=value --project p2ptax --config dev
 ## URLs
 - Staging: https://p2ptax.smartlaunchhub.com
 - API: https://p2ptax.smartlaunchhub.com/api
-- Local frontend: http://localhost:8081
-- Local API: http://localhost:3812
+- Local ports → see `~/.claude/guides/projects.md`
 
 ## Development
 ```bash
