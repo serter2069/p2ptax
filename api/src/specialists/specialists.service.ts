@@ -61,11 +61,14 @@ export class SpecialistsService {
     return { ...profile, activity };
   }
 
-  async getCatalog(city?: string, badge?: string, sort?: string) {
+  async getCatalog(city?: string, badge?: string, sort?: string, services?: string) {
     const now = new Date();
     const where: any = {};
     if (city) where.cities = { has: city };
     if (badge) where.badges = { has: badge };
+    if (services && services.trim()) {
+      where.services = { has: services.trim() };
+    }
 
     const profiles = await this.prisma.specialistProfile.findMany({
       where,

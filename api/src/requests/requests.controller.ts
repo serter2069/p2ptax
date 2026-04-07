@@ -39,8 +39,13 @@ export class RequestsController {
 
   // GET /requests — public feed (specialists browse)
   @Get()
-  getFeed(@Query('city') city?: string, @Query('page') page?: string) {
-    return this.requestsService.findFeed(city, page ? parseInt(page, 10) : 1);
+  getFeed(
+    @Query('city') city?: string,
+    @Query('page') page?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.requestsService.findFeed(city, page ? parseInt(page, 10) : 1, status, search);
   }
 
   // POST /requests/:id/respond — specialist responds to a request

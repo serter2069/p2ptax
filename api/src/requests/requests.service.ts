@@ -26,9 +26,18 @@ export class RequestsService {
     });
   }
 
-  async findFeed(city?: string, page = 1) {
-    const where: any = { status: RequestStatus.OPEN };
+  async findFeed(city?: string, page = 1, status?: string, search?: string) {
+    // Default to OPEN if no status provided; validate against known statuses
+    const allowedStatuses = Object.values(RequestStatus);
+    const resolvedStatus =
+      status && allowedStatuses.includes(status as RequestStatus)
+        ? (status as RequestStatus)
+        : RequestStatus.OPEN;
+    const where: any = { status: resolvedStatus };
     if (city) where.city = city;
+    if (search && search.trim()) {
+      where.description = { contains: search.trim(), mode: 'insensitive' };
+    }
 
     const skip = (page - 1) * PAGE_SIZE;
 
