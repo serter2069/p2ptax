@@ -10,6 +10,7 @@ import {
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
+import { BlockUserDto } from './dto/block-user.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -32,8 +33,8 @@ export class AdminController {
   /** PATCH /admin/users/:id — block or unblock a user */
   @Patch('users/:id')
   @UseGuards(JwtAuthGuard, AdminGuard)
-  blockUser(@Param('id') id: string, @Body('isBlocked') isBlocked: boolean) {
-    return this.adminService.blockUser(id, isBlocked);
+  blockUser(@Param('id') id: string, @Body() dto: BlockUserDto) {
+    return this.adminService.blockUser(id, dto.isBlocked);
   }
 
   /** GET /admin/specialists — all specialist profiles */
