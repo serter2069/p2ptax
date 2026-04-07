@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { SpecialistsService } from './specialists.service';
@@ -52,14 +52,10 @@ export class SpecialistsController {
   @Roles(Role.SPECIALIST)
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: UPLOADS_DIR,
-        filename: (_req: any, file, cb) => {
-          const userId = _req.user?.id ?? 'unknown';
-          const ext = extname(file.originalname) || '.jpg';
-          cb(null, `${userId}${ext}`);
-        },
-      }),
+      // Use memory storage so the buffer is available directly in the handler.
+      // For S3 uploads this avoids writing to disk and re-reading it back.
+      // For local disk fallback the handler writes the buffer once itself.
+      storage: memoryStorage(),
       limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
       fileFilter: (_req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
@@ -73,21 +69,20 @@ export class SpecialistsController {
   async uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file uploaded');
 
+    const ext = extname(file.originalname) || '.jpg';
     let avatarUrl: string;
 
     if (this.storageService.isS3Enabled) {
-      // Re-read file that diskStorage saved to disk, upload to S3/MinIO
-      const { readFile, unlink } = await import('fs/promises');
-      const filePath = join(UPLOADS_DIR, file.filename);
-      const buffer = await readFile(filePath);
-      const ext = extname(file.originalname) || '.jpg';
+      // Buffer is already in memory — upload directly to S3/MinIO without touching disk
       const s3Key = `avatars/${req.user.id}${ext}`;
-      avatarUrl = await this.storageService.uploadBuffer(s3Key, buffer, file.mimetype);
-      // Remove temp local file after successful S3 upload
-      await unlink(filePath).catch(() => {/* ignore */});
+      avatarUrl = await this.storageService.uploadBuffer(s3Key, file.buffer, file.mimetype);
     } else {
-      // Local disk fallback — served via static assets
-      avatarUrl = `/api/uploads/avatars/${file.filename}`;
+      // Local disk fallback — write buffer to disk once, serve via static assets
+      const { writeFile } = await import('fs/promises');
+      const filename = `${req.user.id}${ext}`;
+      const filePath = join(UPLOADS_DIR, filename);
+      await writeFile(filePath, file.buffer);
+      avatarUrl = `/api/uploads/avatars/${filename}`;
     }
 
     await this.specialistsService.updateAvatarUrl(req.user.id, avatarUrl);
