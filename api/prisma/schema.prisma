@@ -135,14 +135,17 @@ model Thread {
 }
 
 model Message {
-  id        String    @id @default(cuid())
-  threadId  String
-  thread    Thread    @relation(fields: [threadId], references: [id])
-  senderId  String
-  sender    User      @relation(fields: [senderId], references: [id])
-  content   String
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
+  id             String    @id @default(cuid())
+  threadId       String
+  thread         Thread    @relation(fields: [threadId], references: [id])
+  senderId       String
+  sender         User      @relation(fields: [senderId], references: [id])
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+  attachmentUrl  String?
+  attachmentType String?   // "IMAGE" | "DOCUMENT"
+  attachmentName String?
 
   @@index([threadId])
   @@map("messages")

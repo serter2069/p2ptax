@@ -83,6 +83,9 @@ export class ChatService {
           content: true,
           readAt: true,
           createdAt: true,
+          attachmentUrl: true,
+          attachmentType: true,
+          attachmentName: true,
         },
       }),
       this.prisma.message.count({ where: { threadId } }),
@@ -123,9 +126,23 @@ export class ChatService {
   }
 
   /** Save a message to DB */
-  async createMessage(threadId: string, senderId: string, content: string) {
+  async createMessage(
+    threadId: string,
+    senderId: string,
+    content: string,
+    attachment?: { url: string; type: string; name: string },
+  ) {
     return this.prisma.message.create({
-      data: { threadId, senderId, content },
+      data: {
+        threadId,
+        senderId,
+        content,
+        ...(attachment && {
+          attachmentUrl: attachment.url,
+          attachmentType: attachment.type,
+          attachmentName: attachment.name,
+        }),
+      },
       select: {
         id: true,
         threadId: true,
@@ -133,6 +150,9 @@ export class ChatService {
         content: true,
         readAt: true,
         createdAt: true,
+        attachmentUrl: true,
+        attachmentType: true,
+        attachmentName: true,
       },
     });
   }
@@ -160,6 +180,9 @@ export class ChatService {
         content: true,
         readAt: true,
         createdAt: true,
+        attachmentUrl: true,
+        attachmentType: true,
+        attachmentName: true,
       },
     });
   }

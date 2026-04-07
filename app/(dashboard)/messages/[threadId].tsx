@@ -10,8 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../stores/authStore';
 import { api } from '../../../lib/api';
 import { getSocket, disconnectSocket } from '../../../lib/socket';
@@ -20,6 +24,12 @@ import { EmptyState } from '../../../components/EmptyState';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import type { Socket } from 'socket.io-client';
 
+interface Attachment {
+  url: string;
+  type: string;   // "IMAGE" | "DOCUMENT"
+  name: string;
+}
+
 interface Message {
   id: string;
   threadId: string;
@@ -27,6 +37,9 @@ interface Message {
   content: string;
   readAt: string | null;
   createdAt: string;
+  attachmentUrl?: string | null;
+  attachmentType?: string | null;
+  attachmentName?: string | null;
 }
 
 interface MessagesResponse {
@@ -78,6 +91,8 @@ export default function ThreadScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<Attachment | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const flatListRef = useRef<FlatList<Message>>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -226,14 +241,116 @@ export default function ThreadScreen() {
     }
   }
 
+  /** Upload a file (web: File object, native: { uri, name, mimeType }) */
+  async function uploadAttachment(fileData: { uri: string; name: string; mimeType: string }) {
+    if (!threadId) return;
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+
+      if (Platform.OS === 'web') {
+        // On web, uri is a blob: URL — fetch it and append as Blob
+        const response = await fetch(fileData.uri);
+        const blob = await response.blob();
+        formData.append('file', blob, fileData.name);
+      } else {
+        // On native, use the RN FormData file append format
+        formData.append('file', {
+          uri: fileData.uri,
+          name: fileData.name,
+          type: fileData.mimeType,
+        } as unknown as Blob);
+      }
+
+      const result = await api.upload<Attachment>(`/threads/${threadId}/upload`, formData);
+      setPendingAttachment(result);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Ошибка загрузки файла';
+      Alert.alert('Ошибка', msg);
+    } finally {
+      setUploadingFile(false);
+    }
+  }
+
+  async function handleAttachPress() {
+    if (Platform.OS === 'web') {
+      // Web: use file input element
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        const uri = URL.createObjectURL(file);
+        await uploadAttachment({ uri, name: file.name, mimeType: file.type });
+      };
+      input.click();
+      return;
+    }
+
+    // Native: show action sheet style
+    Alert.alert('Прикрепить файл', 'Выберите тип', [
+      {
+        text: 'Фото из галереи',
+        onPress: async () => {
+          const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!perm.granted) {
+            Alert.alert('Нет доступа', 'Разрешите доступ к галерее в настройках');
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.85,
+          });
+          if (!result.canceled && result.assets[0]) {
+            const asset = result.assets[0];
+            const name = asset.fileName ?? `photo_${Date.now()}.jpg`;
+            const mimeType = asset.mimeType ?? 'image/jpeg';
+            await uploadAttachment({ uri: asset.uri, name, mimeType });
+          }
+        },
+      },
+      {
+        text: 'Камера',
+        onPress: async () => {
+          const perm = await ImagePicker.requestCameraPermissionsAsync();
+          if (!perm.granted) {
+            Alert.alert('Нет доступа', 'Разрешите доступ к камере в настройках');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            quality: 0.85,
+          });
+          if (!result.canceled && result.assets[0]) {
+            const asset = result.assets[0];
+            const name = asset.fileName ?? `photo_${Date.now()}.jpg`;
+            const mimeType = asset.mimeType ?? 'image/jpeg';
+            await uploadAttachment({ uri: asset.uri, name, mimeType });
+          }
+        },
+      },
+      { text: 'Отмена', style: 'cancel' },
+    ]);
+  }
+
+  function clearAttachment() {
+    setPendingAttachment(null);
+  }
+
   async function handleSend() {
     const content = input.trim();
-    if (!content || !threadId || sending) return;
+    const hasAttachment = !!pendingAttachment;
+
+    if (!content && !hasAttachment) return;
+    if (!threadId || sending) return;
 
     setInput('');
+    const attachmentToSend = pendingAttachment;
+    setPendingAttachment(null);
     setSending(true);
 
-    // Optimistic update: add message to local state immediately
+    // Optimistic update
     const optimisticMsg: Message = {
       id: `optimistic-${Date.now()}`,
       threadId: threadId!,
@@ -241,30 +358,78 @@ export default function ThreadScreen() {
       content,
       readAt: null,
       createdAt: new Date().toISOString(),
+      attachmentUrl: attachmentToSend?.url ?? null,
+      attachmentType: attachmentToSend?.type ?? null,
+      attachmentName: attachmentToSend?.name ?? null,
     };
     setMessages((prev) => [...prev, optimisticMsg]);
 
     try {
       if (socketRef.current?.connected) {
-        // Primary path: send via WebSocket — gateway broadcasts message_received to room
-        socketRef.current.emit('send_message', { threadId, content });
+        // Primary path: WebSocket
+        socketRef.current.emit('send_message', {
+          threadId,
+          content,
+          ...(attachmentToSend && {
+            attachmentUrl: attachmentToSend.url,
+            attachmentType: attachmentToSend.type,
+            attachmentName: attachmentToSend.name,
+          }),
+        });
       } else {
-        // Fallback: WebSocket unavailable — send via REST, which also emits to WS room
-        const message = await api.post<Message>(`/threads/${threadId}/messages`, { content });
-        // Append locally so sender sees the message immediately without waiting for WS event
+        // Fallback: REST
+        const message = await api.post<Message>(`/threads/${threadId}/messages`, {
+          content,
+          ...(attachmentToSend && {
+            attachmentUrl: attachmentToSend.url,
+            attachmentType: attachmentToSend.type,
+            attachmentName: attachmentToSend.name,
+          }),
+        });
         setMessages((prev) => {
           if (prev.some((m) => m.id === message.id)) return prev;
           return [...prev, message];
         });
       }
     } catch {
-      // Restore input on failure so user can retry
+      // Restore on failure
       setInput(content);
-      // Remove optimistic message on error
+      if (attachmentToSend) setPendingAttachment(attachmentToSend);
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
     } finally {
       setSending(false);
     }
+  }
+
+  function renderAttachmentContent(item: Message, isMe: boolean) {
+    if (!item.attachmentUrl) return null;
+
+    if (item.attachmentType === 'IMAGE') {
+      return (
+        <Image
+          source={{ uri: item.attachmentUrl }}
+          style={styles.attachImage}
+          resizeMode="cover"
+        />
+      );
+    }
+
+    // DOCUMENT
+    return (
+      <View style={[styles.docRow, isMe ? styles.docRowMe : styles.docRowOther]}>
+        <Ionicons
+          name="document-outline"
+          size={20}
+          color={isMe ? 'rgba(255,255,255,0.9)' : Colors.textMuted}
+        />
+        <Text
+          style={[styles.docName, isMe ? styles.docNameMe : styles.docNameOther]}
+          numberOfLines={1}
+        >
+          {item.attachmentName ?? 'Файл'}
+        </Text>
+      </View>
+    );
   }
 
   function renderMessage({ item, index }: { item: Message; index: number }) {
@@ -289,9 +454,12 @@ export default function ThreadScreen() {
         )}
         <View style={[styles.msgRow, isMe ? styles.msgRowMe : styles.msgRowOther]}>
           <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
-            <Text style={[styles.msgText, isMe ? styles.msgTextMe : styles.msgTextOther]}>
-              {item.content}
-            </Text>
+            {renderAttachmentContent(item, isMe)}
+            {!!item.content && (
+              <Text style={[styles.msgText, isMe ? styles.msgTextMe : styles.msgTextOther]}>
+                {item.content}
+              </Text>
+            )}
             <View style={styles.msgMeta}>
               <Text style={[styles.msgTime, isMe ? styles.msgTimeMe : styles.msgTimeOther]}>
                 {formatMsgTime(item.createdAt)}
@@ -307,6 +475,8 @@ export default function ThreadScreen() {
       </>
     );
   }
+
+  const canSend = !!(input.trim() || pendingAttachment);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -358,7 +528,41 @@ export default function ThreadScreen() {
           </View>
         )}
 
+        {/* Attachment preview above input */}
+        {pendingAttachment && (
+          <View style={styles.attachPreview}>
+            {pendingAttachment.type === 'IMAGE' ? (
+              <Image source={{ uri: pendingAttachment.url }} style={styles.attachPreviewImg} />
+            ) : (
+              <View style={styles.attachPreviewDoc}>
+                <Ionicons name="document-outline" size={20} color={Colors.textMuted} />
+                <Text style={styles.attachPreviewName} numberOfLines={1}>
+                  {pendingAttachment.name}
+                </Text>
+              </View>
+            )}
+            <TouchableOpacity onPress={clearAttachment} style={styles.attachRemoveBtn} hitSlop={8}>
+              <Ionicons name="close-circle" size={20} color={Colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.inputBar}>
+          {/* Attach button */}
+          <TouchableOpacity
+            style={styles.attachBtn}
+            onPress={handleAttachPress}
+            disabled={uploadingFile || sending}
+            activeOpacity={0.7}
+            hitSlop={6}
+          >
+            {uploadingFile ? (
+              <ActivityIndicator size="small" color={Colors.textMuted} />
+            ) : (
+              <Ionicons name="attach" size={22} color={Colors.textMuted} />
+            )}
+          </TouchableOpacity>
+
           <TextInput
             style={styles.textInput}
             value={input}
@@ -370,9 +574,9 @@ export default function ThreadScreen() {
             returnKeyType="default"
           />
           <TouchableOpacity
-            style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
+            style={[styles.sendBtn, (!canSend || sending) && styles.sendBtnDisabled]}
             onPress={handleSend}
-            disabled={!input.trim() || sending}
+            disabled={!canSend || sending}
             activeOpacity={0.7}
           >
             {sending ? (
@@ -480,6 +684,61 @@ const styles = StyleSheet.create({
   msgTimeOther: {
     color: Colors.textMuted,
   },
+  // Attachment inside message bubble
+  attachImage: {
+    width: 200,
+    height: 150,
+    borderRadius: BorderRadius.md,
+    marginBottom: 4,
+  },
+  docRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  docRowMe: {},
+  docRowOther: {},
+  docName: {
+    fontSize: Typography.fontSize.sm,
+    flex: 1,
+  },
+  docNameMe: {
+    color: 'rgba(255,255,255,0.9)',
+  },
+  docNameOther: {
+    color: Colors.textPrimary,
+  },
+  // Attachment preview above input
+  attachPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    backgroundColor: Colors.bgSecondary,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  attachPreviewImg: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.sm,
+  },
+  attachPreviewDoc: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 6,
+  },
+  attachPreviewName: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+  },
+  attachRemoveBtn: {
+    padding: 2,
+  },
   typingWrap: {
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.xs,
@@ -498,6 +757,12 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
     backgroundColor: Colors.bgSecondary,
     gap: Spacing.sm,
+  },
+  attachBtn: {
+    width: 36,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textInput: {
     flex: 1,
