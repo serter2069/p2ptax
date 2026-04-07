@@ -30,6 +30,11 @@ export class UsersService {
   async updateRole(userId: string, role: string): Promise<{ id: string; email: string; role: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
+    // Block direct assignment to SPECIALIST — must go through specialist setup flow.
+    if (role === Role.SPECIALIST) {
+      throw new BadRequestException('Use specialist setup flow to become a specialist');
+    }
+
     // The Prisma schema sets role = CLIENT by default (not null), so checking !== null
     // would always block. Instead, block only when role was explicitly set to SPECIALIST
     // (i.e., the user completed specialist onboarding).
@@ -81,11 +86,9 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    // #1896: Block privilege escalation — only allow during onboarding (no role yet).
-    // Users who already completed onboarding (role = CLIENT or SPECIALIST) cannot
-    // use this endpoint to switch their role.
-    if (user.role === Role.CLIENT) {
-      throw new BadRequestException('Role already assigned. Cannot change role via this endpoint.');
+    // Block re-submission when user is already a specialist.
+    if (user.role === Role.SPECIALIST) {
+      throw new BadRequestException('Already a specialist');
     }
 
     if (!user.username) throw new BadRequestException('Username must be set before creating specialist profile');
