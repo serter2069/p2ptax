@@ -10,7 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
-import { RequestStatus } from '@prisma/client';
+import { RequestStatus, Prisma } from '@prisma/client';
 
 const PAGE_SIZE = 20;
 
@@ -70,17 +70,22 @@ export class RequestsService {
     requestId: string,
     description: string,
   ): Promise<void> {
-    // #1856: Case-insensitive city matching — Prisma `has` on String[] is case-sensitive,
-    // so we fetch all profiles and filter in JS with toLowerCase()
+    // #176: Filter by city at DB level using PostgreSQL lower() + unnest() for case-insensitive
+    // array match — avoids full table scan that was done previously with JS filtering
     const cityLower = city.toLowerCase();
-    const profiles = await this.prisma.specialistProfile.findMany({
-      include: { user: { select: { email: true, emailNotifications: true } } },
-    });
+    const rows = await this.prisma.$queryRaw<{ email: string }[]>(
+      Prisma.sql`
+        SELECT u.email
+        FROM specialist_profiles sp
+        JOIN users u ON u.id = sp."userId"
+        WHERE EXISTS (
+          SELECT 1 FROM unnest(sp.cities) c WHERE lower(c) = ${cityLower}
+        )
+        AND u."emailNotifications" = true
+      `,
+    );
 
-    const emails = profiles
-      .filter((p) => p.cities.some((c) => c.toLowerCase() === cityLower))
-      .filter((p) => p.user.emailNotifications)
-      .map((p) => p.user.email);
+    const emails = rows.map((r) => r.email);
 
     if (emails.length > 0) {
       this.emailService.notifyNewRequestInCity(emails, city, description);
