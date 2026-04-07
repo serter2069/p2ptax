@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
@@ -41,6 +42,8 @@ function formatDate(iso: string) {
     minute: '2-digit',
   });
 }
+
+const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 
 export default function PublicRequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -106,8 +109,24 @@ export default function PublicRequestDetailScreen() {
 
   const isOpen = request.status === 'OPEN';
 
+  const pageTitle = request.category
+    ? `${request.category} — запрос в ${request.city} | Налоговик`
+    : `Налоговый запрос в ${request.city} | Налоговик`;
+  const pageDescription = request.description.slice(0, 160);
+  const pageUrl = `${APP_URL}/requests/${id}`;
+
   return (
     <SafeAreaView style={styles.safe}>
+      <Stack.Screen options={{ title: pageTitle }} />
+      {/* TODO: add og:image when CDN/static image is available */}
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:type" content="article" />
+      </Head>
       <LandingHeader />
       <Header title="Детали запроса" />
 
