@@ -11,9 +11,13 @@ import { CleanupService } from './cleanup.service';
 @Module({
   imports: [
     PassportModule,
-    JwtModule.register({
-      // No global expiresIn — each jwt.sign call specifies its own expiry
-      secret: process.env.JWT_SECRET!,
+    JwtModule.registerAsync({
+      // useFactory defers env access until runtime (after Doppler/process.env is populated),
+      // avoiding the issue where process.env.JWT_SECRET is read at module-import time.
+      useFactory: () => ({
+        // No global expiresIn — each jwt.sign call specifies its own expiry
+        secret: process.env.JWT_SECRET,
+      }),
     }),
   ],
   controllers: [AuthController],
