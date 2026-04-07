@@ -19,6 +19,7 @@ import { api } from '../lib/api';
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { LandingHeader } from '../components/LandingHeader';
+import { Button } from '../components/Button';
 
 // ---- Components ----
 
@@ -160,90 +161,6 @@ const qrf = StyleSheet.create({
   },
 });
 
-function LandingButton({
-  onPress,
-  label,
-  variant = 'primary',
-  style,
-}: {
-  onPress: () => void;
-  label: string;
-  variant?: 'primary' | 'outline' | 'white' | 'outline-white';
-  style?: any;
-}) {
-  const isPrimary = variant === 'primary';
-  const isWhite = variant === 'white';
-  const isOutlineWhite = variant === 'outline-white';
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
-      style={[
-        btnStyles.base,
-        isPrimary && btnStyles.primary,
-        variant === 'outline' && btnStyles.outline,
-        isWhite && btnStyles.white,
-        isOutlineWhite && btnStyles.outlineWhite,
-        style,
-      ]}
-    >
-      <Text
-        style={[
-          btnStyles.label,
-          isPrimary && btnStyles.primaryLabel,
-          variant === 'outline' && btnStyles.outlineLabel,
-          isWhite && btnStyles.whiteLabel,
-          isOutlineWhite && btnStyles.outlineWhiteLabel,
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-const btnStyles = StyleSheet.create({
-  base: {
-    height: 52,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  primary: {
-    backgroundColor: '#1A5BA8',
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#1A5BA8',
-  },
-  white: {
-    backgroundColor: '#FFFFFF',
-  },
-  outlineWhite: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  label: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  primaryLabel: {
-    color: '#FFFFFF',
-  },
-  outlineLabel: {
-    color: '#1A5BA8',
-  },
-  whiteLabel: {
-    color: '#1A5BA8',
-  },
-  outlineWhiteLabel: {
-    color: '#FFFFFF',
-  },
-});
 
 // ---- Main ----
 
@@ -309,24 +226,21 @@ export default function LandingScreen() {
               <QuickRequestForm />
 
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
-                <LandingButton
+                <Button
                   onPress={() => router.push('/specialists')}
-                  label={'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}
                   variant="primary"
                   style={isWide ? { minWidth: 220 } : { width: '100%' as any }}
-                />
-                <LandingButton
+                >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
+                <Button
                   onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Frequests%2Fnew')}
-                  label={'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}
                   variant="outline"
                   style={isWide ? { minWidth: 200 } : { width: '100%' as any }}
-                />
-                <LandingButton
+                >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
+                <Button
                   onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-                  label={'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}
                   variant="outline"
                   style={isWide ? { minWidth: 200 } : { width: '100%' as any }}
-                />
+                >{'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
               </View>
             </View>
 
@@ -568,24 +482,21 @@ export default function LandingScreen() {
               {'\u0422\u044B\u0441\u044F\u0447\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432 \u0433\u043E\u0442\u043E\u0432\u044B \u043F\u043E\u043C\u043E\u0447\u044C \u0441 \u0432\u0430\u0448\u0435\u0439 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u043E\u0439 \u0437\u0430\u0434\u0430\u0447\u0435\u0439'}
             </Text>
             <View style={[styles.ctaButtons, isWide && styles.ctaButtonsWide]}>
-              <LandingButton
+              <Button
                 onPress={() => router.push('/specialists')}
-                label={'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}
                 variant="white"
                 style={{ minWidth: 200 }}
-              />
-              <LandingButton
+              >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
+              <Button
                 onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Frequests%2Fnew')}
-                label={'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}
                 variant="outline-white"
                 style={{ minWidth: 200 }}
-              />
-              <LandingButton
+              >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
+              <Button
                 onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-                label={'\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F \u043A\u0430\u043A \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}
                 variant="outline-white"
                 style={{ minWidth: 200 }}
-              />
+              >{'\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F \u043A\u0430\u043A \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
             </View>
           </View>
         </View>

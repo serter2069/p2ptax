@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography } from '../constants/Colors';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'white' | 'outline-white';
 
 interface ButtonProps {
   onPress: () => void;
@@ -27,6 +27,9 @@ const hoverBg: Record<string, string> = {
   secondary: Colors.bgPrimary,
   ghost: 'rgba(26,91,168,0.06)',
   danger: '#991818',
+  outline: 'rgba(26,91,168,0.06)',
+  white: '#F0F4FA',
+  'outline-white': 'rgba(255,255,255,0.15)',
 };
 
 const webTransition = Platform.OS === 'web'
@@ -109,6 +112,19 @@ const styles = StyleSheet.create({
   danger: {
     backgroundColor: Colors.statusError,
   },
+  outline: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#1A5BA8',
+  },
+  white: {
+    backgroundColor: '#FFFFFF',
+  },
+  'outline-white': {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
   disabled: {
     opacity: 0.45,
   },
@@ -130,6 +146,15 @@ const styles = StyleSheet.create({
     color: Colors.brandPrimary,
   },
   dangerLabel: {
+    color: '#FFFFFF',
+  },
+  outlineLabel: {
+    color: '#1A5BA8',
+  },
+  whiteLabel: {
+    color: '#1A5BA8',
+  },
+  'outline-whiteLabel': {
     color: '#FFFFFF',
   },
 });
