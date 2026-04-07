@@ -37,8 +37,9 @@ export class SpecialistsController {
     @Query('city') city?: string,
     @Query('badge') badge?: string,
     @Query('sort') sort?: string,
+    @Query('services') services?: string,
   ) {
-    return this.specialistsService.getCatalog(city, badge, sort);
+    return this.specialistsService.getCatalog(city, badge, sort, services);
   }
 
   @Get(':nick')
