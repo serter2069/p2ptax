@@ -535,9 +535,11 @@ export default function CityRequestsScreen() {
               placeholderTextColor={Colors.textMuted}
               multiline
               numberOfLines={4}
+              maxLength={500}
               style={styles.messageInput}
               autoFocus
             />
+            <Text style={styles.charCounter}>{message.length}/500</Text>
             <View style={styles.modalBtns}>
               <Button onPress={closeModal} variant="ghost" style={styles.modalBtn}>
                 Отмена
@@ -775,6 +777,12 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     minHeight: 100,
     textAlignVertical: 'top',
+  },
+  charCounter: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'right',
+    marginTop: -Spacing.xs,
   },
   modalBtns: {
     flexDirection: 'row',
