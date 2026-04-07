@@ -158,7 +158,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /** Look up recipient email and send notification */
-  private async notifyRecipientAsync(
+  async notifyRecipientAsync(
     recipientId: string,
     senderEmail: string,
     threadId: string,
@@ -173,7 +173,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /** Check if a user has any socket in a given room */
-  private isUserInRoom(userId: string, room: string): boolean {
+  isUserInRoom(userId: string, room: string): boolean {
     const adapter = this.server.adapter as any;
     const roomSockets: Set<string> | undefined = adapter.rooms?.get(room);
     if (!roomSockets) return false;
