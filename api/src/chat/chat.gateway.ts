@@ -85,14 +85,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { threadId: string; content: string },
+    @MessageBody() data: {
+      threadId: string;
+      content: string;
+      attachmentUrl?: string;
+      attachmentType?: string;
+      attachmentName?: string;
+    },
   ) {
     if (!client.data?.userId) {
       throw new WsException('Not authenticated');
     }
 
-    if (!data.content?.trim()) {
-      client.emit('error', { message: 'Content is required' });
+    // Allow empty content if attachment is present
+    const hasAttachment = !!(data.attachmentUrl && data.attachmentType && data.attachmentName);
+    if (!data.content?.trim() && !hasAttachment) {
+      client.emit('error', { message: 'Content or attachment is required' });
       return;
     }
 
@@ -102,10 +110,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    const attachment = hasAttachment
+      ? { url: data.attachmentUrl!, type: data.attachmentType!, name: data.attachmentName! }
+      : undefined;
+
     const message = await this.chatService.createMessage(
       data.threadId,
       client.data.userId,
-      data.content.trim(),
+      data.content?.trim() ?? '',
+      attachment,
     );
 
     const room = `thread:${data.threadId}`;
