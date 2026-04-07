@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -40,6 +40,7 @@ export default function CreateRequestScreen() {
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ description?: string; city?: string; budget?: string }>({});
+  const scrollViewRef = useRef<ScrollView>(null);
 
   function validate(): boolean {
     const e: typeof errors = {};
@@ -53,6 +54,9 @@ export default function CreateRequestScreen() {
       e.budget = 'Введите целое число';
     }
     setErrors(e);
+    if (Object.keys(e).length > 0) {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }
     return Object.keys(e).length === 0;
   }
 
@@ -84,6 +88,7 @@ export default function CreateRequestScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
