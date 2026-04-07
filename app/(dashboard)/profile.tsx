@@ -54,6 +54,7 @@ export default function MySpecialistProfileScreen() {
   const [fnsSearch, setFnsSearch] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
 
   const fetchProfile = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -159,6 +160,33 @@ export default function MySpecialistProfileScreen() {
     }
   }
 
+  async function handleDeleteAvatar() {
+    if (!avatarUrl) return;
+    Alert.alert(
+      'Удалить фото',
+      'Вы уверены, что хотите удалить аватар?',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAvatar(true);
+            try {
+              await api.del('/specialists/me/avatar');
+              setAvatarUrl(null);
+              Alert.alert('Готово', 'Аватар удалён');
+            } catch (err) {
+              Alert.alert('Ошибка', err instanceof ApiError ? err.message : 'Не удалось удалить фото');
+            } finally {
+              setDeletingAvatar(false);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
@@ -233,7 +261,7 @@ export default function MySpecialistProfileScreen() {
         <View style={styles.container}>
           {/* Avatar */}
           <View style={[styles.section, styles.avatarSection]}>
-            <TouchableOpacity onPress={pickAvatar} disabled={uploadingAvatar} style={styles.avatarWrap}>
+            <TouchableOpacity onPress={pickAvatar} disabled={uploadingAvatar || deletingAvatar} style={styles.avatarWrap}>
               {avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} />
               ) : (
@@ -249,6 +277,19 @@ export default function MySpecialistProfileScreen() {
                 <Text style={styles.changeAvatarText}>Изменить фото</Text>
               )}
             </TouchableOpacity>
+            {avatarUrl && (
+              <TouchableOpacity
+                onPress={handleDeleteAvatar}
+                disabled={deletingAvatar || uploadingAvatar}
+                style={styles.deleteAvatarBtn}
+              >
+                {deletingAvatar ? (
+                  <ActivityIndicator size="small" color={Colors.statusError} />
+                ) : (
+                  <Text style={styles.deleteAvatarText}>Удалить фото</Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Nick */}
@@ -617,6 +658,16 @@ const styles = StyleSheet.create({
   changeAvatarText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  deleteAvatarBtn: {
+    marginTop: Spacing.xs,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.md,
+  },
+  deleteAvatarText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.statusError,
     fontWeight: Typography.fontWeight.medium,
   },
   readonlyField: {

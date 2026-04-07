@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -71,6 +71,13 @@ export class SpecialistsController {
     const avatarUrl = `/api/uploads/avatars/${file.filename}`;
     await this.specialistsService.updateAvatarUrl(req.user.id, avatarUrl);
     return { avatarUrl };
+  }
+
+  @Delete('me/avatar')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SPECIALIST)
+  deleteAvatar(@Request() req: any) {
+    return this.specialistsService.deleteAvatar(req.user.id);
   }
 
   @Get('cities')

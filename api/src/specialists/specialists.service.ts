@@ -1,5 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
@@ -240,6 +243,33 @@ export class SpecialistsService {
       where: { userId },
       data: { avatarUrl },
     });
+  }
+
+  async deleteAvatar(userId: string) {
+    const profile = await this.prisma.specialistProfile.findUnique({ where: { userId } });
+    if (!profile) throw new NotFoundException('Profile not found');
+
+    // If no avatar, nothing to do
+    if (!profile.avatarUrl) return { message: 'No avatar to delete' };
+
+    // Derive absolute file path from avatarUrl like "/api/uploads/avatars/filename.jpg"
+    // File lives at <project>/api/uploads/avatars/filename.jpg
+    const filename = profile.avatarUrl.split('/').pop();
+    if (filename) {
+      const filePath = join(__dirname, '..', '..', 'uploads', 'avatars', filename);
+      if (existsSync(filePath)) {
+        await unlink(filePath).catch(() => {
+          // Ignore errors if file already gone — still clear DB
+        });
+      }
+    }
+
+    await this.prisma.specialistProfile.update({
+      where: { userId },
+      data: { avatarUrl: null },
+    });
+
+    return { message: 'Avatar deleted' };
   }
 
   async adminUpdateBadges(specialistId: string, badges: string[]) {
