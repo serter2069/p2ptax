@@ -59,17 +59,18 @@ export class SpecialistsService {
     });
   }
 
-  async getProfile(nick: string) {
+  async getProfile(nick: string, requestingUser: { id: string } | null = null) {
     const profile = await this.prisma.specialistProfile.findUnique({
       where: { nick },
     });
     if (!profile) throw new NotFoundException('Specialist not found');
 
     const activity = await this.computeActivity(profile.userId);
-    // Strip internal IDs and contacts from public profile response
-    const { id: _id, userId: _userId, contacts: _contacts, ...publicProfile } = profile;
+    // Strip internal IDs from public profile response; contacts only for authenticated users
+    const { id: _id, userId: _userId, contacts, ...publicProfile } = profile;
     return {
       ...publicProfile,
+      ...(requestingUser ? { contacts } : {}),
       activity,
       rating: activity.avgRating,
       reviewCount: activity.reviewCount,
