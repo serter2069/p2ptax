@@ -19,6 +19,10 @@ jobs:
         working-directory: ./api
         run: npm ci
 
+      - name: Generate Prisma client
+        working-directory: ./api
+        run: npx prisma generate
+
       - name: Build API (type check)
         working-directory: ./api
         run: npm run build
@@ -45,13 +49,13 @@ jobs:
         working-directory: ./api
         run: npm ci
 
-      - name: Build API
-        working-directory: ./api
-        run: npm run build
-
       - name: Generate Prisma client
         working-directory: ./api
         run: npx prisma generate
+
+      - name: Build API
+        working-directory: ./api
+        run: npm run build
 
       - name: Run DB migrations
         working-directory: ./api
