@@ -35,7 +35,7 @@ interface SpecialistProfile {
   fnsOffices: string[];
 }
 
-export default function SpecialistProfileScreen() {
+export default function MySpecialistProfileScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<SpecialistProfile | null>(null);
   const [loading, setLoading] = useState(true);

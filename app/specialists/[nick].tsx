@@ -71,7 +71,7 @@ function getReviewerInitials(review: ReviewItem): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function SpecialistProfileScreen() {
+export default function PublicSpecialistProfileScreen() {
   const { nick } = useLocalSearchParams<{ nick: string }>();
   const router = useRouter();
   const { user } = useAuth();

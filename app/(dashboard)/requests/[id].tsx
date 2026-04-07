@@ -48,7 +48,7 @@ interface RequestDetail {
   responses: ResponseItem[];
 }
 
-export default function RequestDetailScreen() {
+export default function MyRequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();

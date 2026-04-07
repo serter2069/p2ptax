@@ -42,7 +42,7 @@ function formatDate(iso: string) {
   });
 }
 
-export default function RequestDetailScreen() {
+export default function PublicRequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
