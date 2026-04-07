@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, UnauthorizedException, Logger } from '@nestjs/common';
 import { Role, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService, TokenPair } from '../auth/auth.service';
@@ -9,6 +9,8 @@ const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
@@ -201,7 +203,7 @@ export class UsersService {
     });
 
     if (isDev) {
-      console.log(`[DEV] Email change OTP for ${normalizedEmail}: ${code}`);
+      this.logger.debug(`[DEV] Email change OTP for ${normalizedEmail}: ${code}`);
     } else {
       await this.emailService.sendOtp(normalizedEmail, code);
     }

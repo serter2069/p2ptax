@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import helmet from 'helmet';
 import { join } from 'path';
 import { AppModule } from './app.module';
@@ -34,7 +34,7 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3812;
   await app.listen(port);
-  console.log(`P2PTax API running on port ${port}`);
+  Logger.log(`P2PTax API running on port ${port}`, 'Bootstrap');
 }
 
 bootstrap();
