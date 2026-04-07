@@ -148,10 +148,12 @@ export class PromotionsService {
    */
   async updatePrices(dto: UpdatePricesDto) {
     const cityValue = dto.city ?? null;
-    // Use upsert with compound unique key. Prisma accepts null for nullable fields at runtime.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Use upsert with compound unique key.
+    // Prisma's generated type for the compound unique input requires `city: string`, but the
+    // column is nullable and Prisma handles null at runtime. Cast through `as string` instead
+    // of the previous `as any` to preserve type-safety while still satisfying the TS signature.
     await this.prisma.promotionPrice.upsert({
-      where: { city_tier: { city: cityValue as any, tier: dto.tier } },
+      where: { city_tier: { city: cityValue as string, tier: dto.tier } },
       update: { price: dto.price },
       create: { city: cityValue, tier: dto.tier, price: dto.price },
     });
