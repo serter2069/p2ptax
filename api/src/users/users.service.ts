@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService, TokenPair } from '../auth/auth.service';
 import { EmailService } from '../notifications/email.service';
@@ -253,23 +253,30 @@ export class UsersService {
       throw new UnauthorizedException('Invalid OTP');
     }
 
-    // Mark OTP as used
-    await this.prisma.otpCode.update({
-      where: { id: otpRecord.id },
-      data: { usedAt: new Date() },
-    });
-
-    // Trap #3: re-check email uniqueness to guard against race condition
-    const takenNow = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (takenNow) {
-      throw new ConflictException('Email was just registered by another user. Please try a different email.');
+    // Atomically: mark OTP as used AND update email only if the new email is still unclaimed.
+    // Using $transaction eliminates the TOCTOU race between the uniqueness check and the UPDATE.
+    // updateMany with a NOT-EXISTS-style where clause returns count=0 if the email was taken
+    // by another user between OTP verification and this point.
+    let updatedUser: User;
+    try {
+      [, updatedUser] = await this.prisma.$transaction([
+        this.prisma.otpCode.update({
+          where: { id: otpRecord.id },
+          data: { usedAt: new Date() },
+        }),
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { email: normalizedEmail },
+        }),
+      ]);
+    } catch (err: unknown) {
+      // P2002 = Prisma unique constraint violation — the email was taken concurrently
+      const prismaErr = err as { code?: string };
+      if (prismaErr?.code === 'P2002') {
+        throw new ConflictException('Email was just registered by another user. Please try a different email.');
+      }
+      throw err;
     }
-
-    // Update user email in DB
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: { email: normalizedEmail },
-    });
 
     // Revoke all existing refresh tokens for this user (forces re-auth with new identity)
     await this.prisma.refreshToken.updateMany({
