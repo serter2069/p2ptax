@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
+import { secureStorage } from '../../stores/storage';
 
 export default function RoleScreen() {
   const router = useRouter();
@@ -28,6 +29,19 @@ export default function RoleScreen() {
       if (role === 'SPECIALIST') {
         router.replace('/(onboarding)/username');
       } else {
+        // Check for pending quick request saved from landing page before auth
+        const pendingRaw = await secureStorage.getItem('p2ptax_pending_request');
+        if (pendingRaw) {
+          try {
+            await secureStorage.removeItem('p2ptax_pending_request'); // remove BEFORE post (race condition guard)
+            const pendingData = JSON.parse(pendingRaw);
+            const created = await api.post<{ id: string }>('/requests', pendingData);
+            router.replace(`/(dashboard)/requests/${created.id}` as any);
+            return;
+          } catch {
+            // POST failed — fall through to normal dashboard redirect
+          }
+        }
         router.replace('/(dashboard)');
       }
     } catch {
