@@ -280,6 +280,94 @@ export default function LandingScreen() {
           </View>
         </View>
 
+        {/* ===== SECTION 2b: Featured Specialists ===== */}
+        {featuredSpecialists.length > 0 && (
+          <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <Text style={styles.sectionTitle}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B'}</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={dyn.specialistsRow}
+              >
+                {featuredSpecialists.map((s: any) => (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={dyn.specialistCard}
+                    activeOpacity={0.8}
+                    onPress={() => router.push(`/specialists/${s.nick}` as any)}
+                  >
+                    <Text style={dyn.specialistName} numberOfLines={1}>{s.name || s.nick}</Text>
+                    {s.city ? <Text style={dyn.specialistCity} numberOfLines={1}>{s.city}</Text> : null}
+                    {s.specialization ? (
+                      <View style={dyn.specialistChip}>
+                        <Text style={dyn.specialistChipText} numberOfLines={1}>{s.specialization}</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <TouchableOpacity onPress={() => router.push('/specialists')} activeOpacity={0.8} style={dyn.seeAllBtn}>
+                <Text style={dyn.seeAllText}>{'\u0421\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0432\u0441\u0435\u0445 \u2192'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ===== SECTION 2c: Recent Requests ===== */}
+        {recentRequests.length > 0 && (
+          <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <Text style={styles.sectionTitle}>{'\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
+              <View style={dyn.requestsList}>
+                {recentRequests.map((req: any) => (
+                  <TouchableOpacity
+                    key={req.id}
+                    style={dyn.requestItem}
+                    activeOpacity={0.8}
+                    onPress={() => router.push(`/requests/${req.id}` as any)}
+                  >
+                    <View style={dyn.requestLeft}>
+                      <Text style={dyn.requestTitle} numberOfLines={2}>{req.title || req.description}</Text>
+                      {req.city ? <Text style={dyn.requestCity}>{req.city}</Text> : null}
+                    </View>
+                    {req.budget ? (
+                      <Text style={dyn.requestBudget}>{req.budget.toLocaleString('ru-RU')}{' \u20BD'}</Text>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity onPress={() => router.push('/requests')} activeOpacity={0.8} style={dyn.seeAllBtn}>
+                <Text style={dyn.seeAllText}>{'\u0421\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0432\u0441\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B \u2192'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ===== SECTION 2d: Popular Cities ===== */}
+        {popularCities.length > 0 && (
+          <View style={[styles.section, { backgroundColor: '#FFFFFF' }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <Text style={styles.sectionTitle}>{'\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u044B\u0435 \u0433\u043E\u0440\u043E\u0434\u0430'}</Text>
+              <View style={dyn.citiesRow}>
+                {popularCities.map((item: any) => {
+                  const cityName = typeof item === 'string' ? item : (item.city || item.name || String(item));
+                  return (
+                    <TouchableOpacity
+                      key={cityName}
+                      style={dyn.cityChip}
+                      activeOpacity={0.75}
+                      onPress={() => router.push(`/specialists?city=${encodeURIComponent(cityName)}` as any)}
+                    >
+                      <Text style={dyn.cityChipText}>{cityName}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* ===== SECTION 3: How it works ===== */}
         <View nativeID="how-it-works" style={[styles.section, { backgroundColor: '#FFFFFF' }]}>
           <View style={[styles.sectionInner, innerStyle]}>
@@ -1103,5 +1191,106 @@ const styles = StyleSheet.create({
   footerCopy: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.35)',
+  },
+});
+
+// ---- Dynamic section styles ----
+
+const dyn = StyleSheet.create({
+  specialistsRow: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    gap: 12,
+    flexDirection: 'row',
+  },
+  specialistCard: {
+    width: 160,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    gap: 6,
+  },
+  specialistName: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  specialistCity: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  specialistChip: {
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+  },
+  specialistChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+  },
+  requestsList: {
+    width: '100%',
+    gap: 0,
+  },
+  requestItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: 12,
+  },
+  requestLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  requestTitle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  requestCity: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  requestBudget: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.brandPrimary,
+    flexShrink: 0,
+  },
+  citiesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  cityChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgPrimary,
+  },
+  cityChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  seeAllBtn: {
+    marginTop: 8,
+    alignSelf: 'center',
+  },
+  seeAllText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.semibold,
   },
 });
