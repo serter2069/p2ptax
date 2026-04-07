@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -36,6 +36,8 @@ export interface VerifyOtpResult extends TokenPair {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -110,7 +112,7 @@ export class AuthService {
 
     // In dev mode: log code to console. In prod: send email via EmailService
     if (process.env.DEV_AUTH === 'true') {
-      console.log(`[DEV] OTP for ${normalizedEmail}: ${code}`);
+      this.logger.debug(`[DEV] OTP for ${normalizedEmail}: ${code}`);
     } else {
       await this.emailService.sendOtp(normalizedEmail, code);
     }

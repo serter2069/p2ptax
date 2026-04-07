@@ -8,6 +8,7 @@ import {
   ConnectedSocket,
   WsException,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -25,6 +26,8 @@ interface AuthenticatedSocket extends Socket {
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
+
+  private readonly logger = new Logger(ChatGateway.name);
 
   constructor(
     private readonly jwtService: JwtService,
@@ -60,7 +63,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.data.email = payload.email;
       client.data.role = payload.role;
 
-      console.log(`[Chat] Authenticated: ${client.data.email} (${client.id})`);
+      this.logger.log(`Authenticated: ${client.data.email} (${client.id})`);
     } catch {
       client.emit('error', { message: 'Invalid token' });
       client.disconnect();
@@ -68,7 +71,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: AuthenticatedSocket) {
-    console.log(`[Chat] Disconnected: ${client.data?.email ?? client.id}`);
+    this.logger.log(`Disconnected: ${client.data?.email ?? client.id}`);
   }
 
   @SubscribeMessage('join_thread')
@@ -89,7 +92,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const room = `thread:${data.threadId}`;
     client.join(room);
     client.emit('joined_thread', { threadId: data.threadId });
-    console.log(`[Chat] ${client.data.email} joined ${room}`);
+    this.logger.log(`${client.data.email} joined ${room}`);
   }
 
   @SubscribeMessage('send_message')
