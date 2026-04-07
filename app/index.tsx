@@ -256,9 +256,9 @@ export default function LandingScreen() {
   const [popularCities, setPopularCities] = useState<any[]>([]);
 
   useEffect(() => {
-    api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch(() => {});
-    api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch(() => {});
-    api.get<any[]>('/specialists/cities/popular?limit=10').then(setPopularCities).catch(() => {});
+    api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err));
+    api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err));
+    api.get<any[]>('/specialists/cities/popular?limit=10').then(setPopularCities).catch((err) => console.warn('Landing section failed (popular cities):', err));
   }, []);
 
   const isWide = !isMobile;
