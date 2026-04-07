@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { Role } from '@prisma/client';
@@ -12,6 +13,10 @@ function generateOtp(): string {
     return DEV_OTP;
   }
   return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
 }
 
 function mapRole(role?: string): Role {
@@ -55,11 +60,11 @@ export class AuthService {
       },
     );
 
-    // Store refresh token in DB for rotation tracking
+    // Store SHA-256 hash of refresh token in DB — never store plain text (#123)
     await this.prisma.refreshToken.create({
       data: {
         userId: user.id,
-        token: refreshToken,
+        token: hashToken(refreshToken),
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       },
     });
@@ -195,8 +200,9 @@ export class AuthService {
     }
 
     // #1841: Check token exists in DB and is not revoked
+    // Compare against stored SHA-256 hash (#123)
     const storedToken = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+      where: { token: hashToken(refreshToken) },
     });
     if (!storedToken || storedToken.revoked) {
       throw new UnauthorizedException('Refresh token has been revoked');
