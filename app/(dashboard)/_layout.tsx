@@ -23,6 +23,7 @@ const SPECIALIST_NAV_ITEMS: SidebarNavItem[] = [
   { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
   { label: 'Запросы города', icon: 'location-outline', route: '/(dashboard)/city-requests', segment: 'city-requests' },
   { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'requests' },
+  { label: 'Продвижение', icon: 'rocket-outline', route: '/(dashboard)/promotion', segment: 'promotion' },
   { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
 ];
 
