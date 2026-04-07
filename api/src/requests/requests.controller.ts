@@ -12,8 +12,7 @@ import {
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
-import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
-import { UpdateRequestDto } from './dto/update-request.dto';
+import { PatchRequestDto } from './dto/patch-request.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -96,7 +95,7 @@ export class RequestsController {
   update(
     @Request() req: any,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: PatchRequestDto,
   ) {
     // If body contains status field, use status-update logic
     if (dto.status) {
