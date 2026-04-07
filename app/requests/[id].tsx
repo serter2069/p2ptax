@@ -151,7 +151,7 @@ export default function RequestDetailScreen() {
                 <View style={styles.metaItem}>
                   <Text style={styles.metaLabel}>Бюджет</Text>
                   <Text style={styles.metaValue}>
-                    {request.budget.toLocaleString('ru-RU')} rub.
+                    {request.budget.toLocaleString('ru-RU')} руб.
                   </Text>
                 </View>
               )}
