@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { Role } from '@prisma/client';
 
-const OTP_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes (UC-001)
 const DEV_OTP = '000000';
 
 function generateOtp(): string {
@@ -79,13 +79,13 @@ export class AuthService {
       throw new ForbiddenException('Аккаунт заблокирован');
     }
 
-    // #1860: Block new OTP if there is an active one with >= 3 failed attempts
+    // #1860: Block new OTP if there is an active one with >= 3 failed attempts (UC-001)
     const lockedOtp = await this.prisma.otpCode.findFirst({
       where: {
         email: normalizedEmail,
         usedAt: null,
         expiresAt: { gt: new Date() },
-        attempts: { gte: 5 },
+        attempts: { gte: 3 },
       },
     });
     if (lockedOtp) {
@@ -130,8 +130,8 @@ export class AuthService {
       throw new BadRequestException('OTP not found or expired');
     }
 
-    // Check attempt counter BEFORE verifying the code
-    if (otpRecord.attempts >= 5) {
+    // Check attempt counter BEFORE verifying the code (UC-001: max 3 attempts)
+    if (otpRecord.attempts >= 3) {
       throw new HttpException('Too many OTP attempts', HttpStatus.TOO_MANY_REQUESTS);
     }
 
