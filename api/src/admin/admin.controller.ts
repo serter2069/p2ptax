@@ -23,11 +23,15 @@ export class AdminController {
     return this.adminService.getStats();
   }
 
-  /** GET /admin/users — all users, optional ?role=CLIENT|SPECIALIST */
+  /** GET /admin/users — all users, optional ?role=CLIENT|SPECIALIST&page=1&limit=50 */
   @Get('users')
   @UseGuards(JwtAuthGuard, AdminGuard)
-  getUsers(@Query('role') role?: string) {
-    return this.adminService.getUsers(role);
+  getUsers(
+    @Query('role') role?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getUsers(role, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
   }
 
   /** PATCH /admin/users/:id — block or unblock a user */
@@ -37,17 +41,23 @@ export class AdminController {
     return this.adminService.blockUser(id, dto.isBlocked);
   }
 
-  /** GET /admin/specialists — all specialist profiles */
+  /** GET /admin/specialists — all specialist profiles, optional ?page=1&limit=50 */
   @Get('specialists')
   @UseGuards(JwtAuthGuard, AdminGuard)
-  getSpecialists() {
-    return this.adminService.getSpecialists();
+  getSpecialists(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getSpecialists(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
   }
 
-  /** GET /admin/requests — all platform requests */
+  /** GET /admin/requests — all platform requests, optional ?page=1&limit=50 */
   @Get('requests')
   @UseGuards(JwtAuthGuard, AdminGuard)
-  getAllRequests() {
-    return this.adminService.getAllRequests();
+  getAllRequests(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getAllRequests(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
   }
 }
