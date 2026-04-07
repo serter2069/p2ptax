@@ -1,9 +1,10 @@
 import { IsString, IsOptional, MaxLength, IsIn, IsUrl } from 'class-validator';
 
 export class SendMessageDto {
+  @IsOptional()
   @IsString()
   @MaxLength(2000)
-  content!: string;
+  content?: string;
 
   @IsOptional()
   @IsString()

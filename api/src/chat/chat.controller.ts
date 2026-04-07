@@ -128,10 +128,15 @@ export class ChatController {
         ? { url: dto.attachmentUrl, type: dto.attachmentType, name: dto.attachmentName }
         : undefined;
 
+    // Validate: must have content or attachment
+    if (!dto.content?.trim() && !attachment) {
+      throw new BadRequestException('Content or attachment is required');
+    }
+
     const message = await this.chatService.createMessage(
       threadId,
       req.user.id,
-      dto.content.trim(),
+      dto.content?.trim() ?? '',
       attachment,
     );
 
