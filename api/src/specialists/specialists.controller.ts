@@ -12,6 +12,7 @@ import { AdminGuard } from '../auth/admin.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
+import { StorageService } from '../storage/storage.service';
 
 const UPLOADS_DIR = join(__dirname, '..', '..', 'uploads', 'avatars');
 if (!existsSync(UPLOADS_DIR)) {
@@ -20,7 +21,10 @@ if (!existsSync(UPLOADS_DIR)) {
 
 @Controller('specialists')
 export class SpecialistsController {
-  constructor(private readonly specialistsService: SpecialistsService) {}
+  constructor(
+    private readonly specialistsService: SpecialistsService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @Post('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -68,7 +72,24 @@ export class SpecialistsController {
   )
   async uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file uploaded');
-    const avatarUrl = `/api/uploads/avatars/${file.filename}`;
+
+    let avatarUrl: string;
+
+    if (this.storageService.isS3Enabled) {
+      // Re-read file that diskStorage saved to disk, upload to S3/MinIO
+      const { readFile, unlink } = await import('fs/promises');
+      const filePath = join(UPLOADS_DIR, file.filename);
+      const buffer = await readFile(filePath);
+      const ext = extname(file.originalname) || '.jpg';
+      const s3Key = `avatars/${req.user.id}${ext}`;
+      avatarUrl = await this.storageService.uploadBuffer(s3Key, buffer, file.mimetype);
+      // Remove temp local file after successful S3 upload
+      await unlink(filePath).catch(() => {/* ignore */});
+    } else {
+      // Local disk fallback — served via static assets
+      avatarUrl = `/api/uploads/avatars/${file.filename}`;
+    }
+
     await this.specialistsService.updateAvatarUrl(req.user.id, avatarUrl);
     return { avatarUrl };
   }
@@ -77,7 +98,7 @@ export class SpecialistsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SPECIALIST)
   deleteAvatar(@Request() req: any) {
-    return this.specialistsService.deleteAvatar(req.user.id);
+    return this.specialistsService.deleteAvatar(req.user.id, this.storageService);
   }
 
   @Get('cities')

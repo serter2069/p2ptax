@@ -6,6 +6,7 @@ import { existsSync } from 'fs';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
+import { StorageService } from '../storage/storage.service';
 
 // Specialists cannot self-assign badges — all badges are admin-only
 const ALLOWED_BADGES: string[] = [];
@@ -245,22 +246,29 @@ export class SpecialistsService {
     });
   }
 
-  async deleteAvatar(userId: string) {
+  async deleteAvatar(userId: string, storageService?: StorageService) {
     const profile = await this.prisma.specialistProfile.findUnique({ where: { userId } });
     if (!profile) throw new NotFoundException('Profile not found');
 
     // If no avatar, nothing to do
     if (!profile.avatarUrl) return { message: 'No avatar to delete' };
 
-    // Derive absolute file path from avatarUrl like "/api/uploads/avatars/filename.jpg"
-    // File lives at <project>/api/uploads/avatars/filename.jpg
-    const filename = profile.avatarUrl.split('/').pop();
-    if (filename) {
-      const filePath = join(__dirname, '..', '..', 'uploads', 'avatars', filename);
-      if (existsSync(filePath)) {
-        await unlink(filePath).catch(() => {
-          // Ignore errors if file already gone — still clear DB
-        });
+    const avatarUrl = profile.avatarUrl;
+
+    if (storageService?.isS3Enabled && avatarUrl.startsWith('http')) {
+      // S3/MinIO avatar — delete from bucket
+      const key = storageService.extractKey(avatarUrl);
+      await storageService.deleteFile(key);
+    } else if (avatarUrl.startsWith('/api/uploads/')) {
+      // Local disk avatar — delete the file
+      const filename = avatarUrl.split('/').pop();
+      if (filename) {
+        const filePath = join(__dirname, '..', '..', 'uploads', 'avatars', filename);
+        if (existsSync(filePath)) {
+          await unlink(filePath).catch(() => {
+            // Ignore errors if file already gone — still clear DB
+          });
+        }
       }
     }
 
