@@ -123,8 +123,9 @@ export class SpecialistsService {
       const term = search.trim();
 
       // Find userIds whose services array contains a partial match via PostgreSQL unnest + ILIKE
+      const pattern = `%${term}%`;
       const serviceMatchIds = await this.prisma.$queryRaw<{ userId: string }[]>(
-        Prisma.sql`SELECT "userId" FROM "SpecialistProfile" WHERE EXISTS (SELECT 1 FROM unnest(services) AS s WHERE s ILIKE ${`%${term}%`})`,
+        Prisma.sql`SELECT "userId" FROM specialist_profiles WHERE EXISTS (SELECT 1 FROM unnest(services) AS s WHERE s ILIKE ${pattern})`,
       );
       const serviceUserIds = serviceMatchIds.map((r) => r.userId);
 
