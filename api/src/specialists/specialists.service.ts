@@ -137,9 +137,21 @@ export class SpecialistsService {
       ];
     }
 
+    // Determine DB-level orderBy for sorts that map directly to profile columns.
+    // Cross-table sorts (rating, responses) and promotion-tier re-ordering are handled in JS
+    // after fetching aggregates, but DB pre-sort reduces JS comparison work.
+    let dbOrderBy: any;
+    if (sort === 'experience') {
+      dbOrderBy = [{ experience: 'desc' }, { createdAt: 'desc' }];
+    } else {
+      // Default and rating/responses: pre-sort by newest; JS will re-rank by aggregates
+      dbOrderBy = { createdAt: 'desc' };
+    }
+
     // PASS 1: Fetch all filtered profiles (lightweight — only fields needed for sorting)
     const allProfiles = await this.prisma.specialistProfile.findMany({
       where: profileWhere,
+      orderBy: dbOrderBy,
       select: { userId: true, experience: true, createdAt: true },
     });
 
@@ -185,23 +197,29 @@ export class SpecialistsService {
       ]),
     );
 
-    // Sort all profiles in-memory: promoted first (by tier desc), then by sort param
-    allProfiles.sort((a, b) => {
-      const aTier = promotionMap.get(a.userId) ?? 0;
-      const bTier = promotionMap.get(b.userId) ?? 0;
-      if (bTier !== aTier) return bTier - aTier;
-      if (sort === 'responses') {
-        return (countMap.get(b.userId) ?? 0) - (countMap.get(a.userId) ?? 0);
-      }
-      if (sort === 'experience') return (b.experience ?? 0) - (a.experience ?? 0);
-      if (sort === 'rating') {
-        const aRating = ratingMap.get(a.userId)?.avgRating ?? 0;
-        const bRating = ratingMap.get(b.userId)?.avgRating ?? 0;
-        return bRating - aRating;
-      }
-      // Default: newest first
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    });
+    // Re-sort in-memory only when promotions are present (promoted profiles bubble up)
+    // or when sort requires cross-table aggregates (rating, responses).
+    // For experience/newest with no promotions, DB orderBy already produced the correct order.
+    const hasPromotions = promotionMap.size > 0;
+    const needsJsSort = hasPromotions || sort === 'rating' || sort === 'responses';
+    if (needsJsSort) {
+      allProfiles.sort((a, b) => {
+        const aTier = promotionMap.get(a.userId) ?? 0;
+        const bTier = promotionMap.get(b.userId) ?? 0;
+        if (bTier !== aTier) return bTier - aTier;
+        if (sort === 'responses') {
+          return (countMap.get(b.userId) ?? 0) - (countMap.get(a.userId) ?? 0);
+        }
+        if (sort === 'experience') return (b.experience ?? 0) - (a.experience ?? 0);
+        if (sort === 'rating') {
+          const aRating = ratingMap.get(a.userId)?.avgRating ?? 0;
+          const bRating = ratingMap.get(b.userId)?.avgRating ?? 0;
+          return bRating - aRating;
+        }
+        // Default: newest first (already sorted by DB, preserve order)
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+    }
 
     const total = allProfiles.length;
     const pages = Math.ceil(total / limit);
