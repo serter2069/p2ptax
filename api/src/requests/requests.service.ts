@@ -151,4 +151,12 @@ export class RequestsService {
       data: { status },
     });
   }
+
+  async deleteRequest(userId: string, requestId: string) {
+    const req = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!req) throw new NotFoundException('Request not found');
+    if (req.clientId !== userId) throw new ForbiddenException('Not your request');
+    if (req.status !== RequestStatus.OPEN) throw new BadRequestException('Cannot delete a request that has been responded to');
+    await this.prisma.request.delete({ where: { id: requestId } });
+  }
 }
