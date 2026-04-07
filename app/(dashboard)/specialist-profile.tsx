@@ -60,6 +60,14 @@ export default function SpecialistProfileSetupScreen() {
       Alert.alert('Ошибка', 'Ник должен быть не менее 3 символов');
       return;
     }
+    if (cities.length === 0) {
+      Alert.alert('Укажите хотя бы один город', 'Добавьте город для работы');
+      return;
+    }
+    if (services.length === 0) {
+      Alert.alert('Укажите хотя бы одну услугу', 'Добавьте услугу которую вы предоставляете');
+      return;
+    }
     setSaving(true);
     try {
       await api.post('/specialists/profile', {
