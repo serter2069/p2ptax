@@ -9,6 +9,7 @@ import { ChatModule } from './chat/chat.module';
 import { SpecialistsModule } from './specialists/specialists.module';
 import { RequestsModule } from './requests/requests.module';
 import { PromotionsModule } from './promotions/promotions.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PromotionsModule } from './promotions/promotions.module';
     SpecialistsModule,
     RequestsModule,
     PromotionsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
