@@ -84,7 +84,7 @@ export class SpecialistsService {
   async getAvailableCities(): Promise<string[]> {
     const profiles = await this.prisma.specialistProfile.findMany({
       select: { cities: true },
-      take: 500,
+      take: 5000,
     });
     const citySet = new Set<string>();
     for (const profile of profiles) {
@@ -326,10 +326,10 @@ export class SpecialistsService {
     return profiles;
   }
 
-  async getPopularCities(limit = 10) {
+  async getPopularCities(limit = 50) {
     const profiles = await this.prisma.specialistProfile.findMany({
       select: { cities: true },
-      take: 1000,
+      take: 5000,
     });
     const cityCount = new Map<string, number>();
     for (const profile of profiles) {

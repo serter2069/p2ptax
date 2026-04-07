@@ -136,7 +136,7 @@ export class SpecialistsController {
 
   @Get('cities/popular')
   getPopularCities(@Query('limit') limit?: string) {
-    return this.specialistsService.getPopularCities(parseInt(limit ?? '10') || 10);
+    return this.specialistsService.getPopularCities(parseInt(limit ?? '50') || 50);
   }
 
   @Patch(':id/badges')
