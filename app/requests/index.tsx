@@ -9,6 +9,11 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
@@ -77,6 +82,63 @@ export default function RequestsFeedScreen() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [maxBudget, setMaxBudget] = useState(0);
   const [activeOnly, setActiveOnly] = useState(true);
+
+  // Respond modal state
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [respondMessage, setRespondMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  function openRespondModal(id: string) {
+    setRespondingId(id);
+    setRespondMessage('');
+    setModalVisible(true);
+  }
+
+  function closeRespondModal() {
+    setModalVisible(false);
+    setRespondingId(null);
+    setRespondMessage('');
+  }
+
+  async function submitResponse() {
+    if (!respondingId) return;
+    const trimmed = respondMessage.trim();
+    if (!trimmed) {
+      if (Platform.OS === 'web') {
+        alert('Введите сообщение для отклика');
+      } else {
+        Alert.alert('Ошибка', 'Введите сообщение для отклика');
+      }
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.post(`/requests/${respondingId}/respond`, { message: trimmed });
+      closeRespondModal();
+      if (Platform.OS === 'web') {
+        alert('Отклик отправлен! Клиент получит уведомление.');
+      } else {
+        Alert.alert('Отклик отправлен', 'Клиент получит уведомление.');
+      }
+      // Refresh feed to update response count
+      fetchFeed({ replace: true });
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.status === 409
+            ? 'Вы уже откликались на этот запрос.'
+            : err.message
+          : 'Ошибка при отправке отклика';
+      if (Platform.OS === 'web') {
+        alert(msg);
+      } else {
+        Alert.alert('Ошибка', msg);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const fetchFeed = useCallback(
     async (opts: { pageNum?: number; replace?: boolean; isRefresh?: boolean } = {}) => {
@@ -200,7 +262,7 @@ export default function RequestsFeedScreen() {
             <TouchableOpacity
               onPress={(e) => {
                 e.stopPropagation();
-                router.push(`/specialist/respond/${item.id}` as any);
+                openRespondModal(item.id);
               }}
               activeOpacity={0.8}
               style={styles.respondBtn}
@@ -402,6 +464,50 @@ export default function RequestsFeedScreen() {
           </>
         }
       />
+
+      {/* Respond modal */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={closeRespondModal}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Ваш отклик</Text>
+            <Text style={styles.modalHint}>Кратко опишите, как вы можете помочь</Text>
+            <TextInput
+              value={respondMessage}
+              onChangeText={setRespondMessage}
+              placeholder="Здравствуйте! Я специалист по..."
+              placeholderTextColor={Colors.textMuted}
+              multiline
+              numberOfLines={4}
+              maxLength={500}
+              style={styles.messageInput}
+              autoFocus
+            />
+            <Text style={styles.charCounter}>{respondMessage.length}/500</Text>
+            <View style={styles.modalBtns}>
+              <Button onPress={closeRespondModal} variant="ghost" style={styles.modalBtn}>
+                Отмена
+              </Button>
+              <Button
+                onPress={submitResponse}
+                variant="primary"
+                loading={submitting}
+                disabled={submitting || !respondMessage.trim()}
+                style={styles.modalBtn}
+              >
+                Отправить
+              </Button>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -638,5 +744,56 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: Colors.bgCard,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing['2xl'],
+    gap: Spacing.md,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 430,
+  },
+  modalTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  modalHint: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    marginTop: -Spacing.xs,
+  },
+  messageInput: {
+    backgroundColor: Colors.bgSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  charCounter: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'right',
+    marginTop: -Spacing.xs,
+  },
+  modalBtns: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  modalBtn: {
+    flex: 1,
   },
 });
