@@ -17,7 +17,7 @@ const CLIENT_NAV_ITEMS: SidebarNavItem[] = [
 ];
 
 const SPECIALIST_NAV_ITEMS: SidebarNavItem[] = [
-  { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
+  { label: 'Главная', icon: 'home-outline', route: '/specialist/dashboard', segment: 'specialist-dashboard' },
   { label: 'Мой профиль', icon: 'person-outline', route: '/(dashboard)/profile', segment: 'profile' },
   { label: 'Мои отклики', icon: 'checkmark-circle-outline', route: '/(dashboard)/responses', segment: 'responses' },
   { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },

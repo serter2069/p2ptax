@@ -80,21 +80,10 @@ export default function DashboardHub() {
     }
   }, []);
 
-  // Check if SPECIALIST has filled their profile; redirect to profile setup if not.
+  // SPECIALIST home is /specialist/dashboard (UC-12); redirect there.
   useEffect(() => {
     if (!user || user.role !== 'SPECIALIST') return;
-
-    async function checkSpecialistProfile() {
-      try {
-        await api.get('/specialists/me');
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 404) {
-          router.replace('/(dashboard)/specialist-profile');
-        }
-      }
-    }
-
-    checkSpecialistProfile();
+    router.replace('/specialist/dashboard');
   }, [user, router]);
 
   useEffect(() => {
