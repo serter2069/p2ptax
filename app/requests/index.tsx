@@ -194,6 +194,20 @@ export default function RequestsFeedScreen() {
               </Text>
             </View>
           </View>
+
+          {/* Respond button for specialists */}
+          {user && user.role === 'SPECIALIST' && item.status === 'OPEN' && (
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push(`/specialist/respond/${item.id}` as any);
+              }}
+              activeOpacity={0.8}
+              style={styles.respondBtn}
+            >
+              <Text style={styles.respondBtnText}>Откликнуться</Text>
+            </TouchableOpacity>
+          )}
         </Card>
       </TouchableOpacity>
     );
@@ -611,6 +625,18 @@ const styles = StyleSheet.create({
   ctaBannerBtnText: {
     color: Colors.white,
     fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  respondBtn: {
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.brandPrimary,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  respondBtnText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
   },
 });
