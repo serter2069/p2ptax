@@ -351,6 +351,19 @@ export default function SettingsScreen() {
                 {user?.role === 'SPECIALIST' ? 'Специалист' : 'Заказчик'}
               </Text>
             </View>
+            {user?.role === 'SPECIALIST' && (
+              <>
+                <View style={styles.divider} />
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() => router.push('/(dashboard)/profile')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.rowLabel}>Редактировать профиль</Text>
+                  <Text style={styles.rowArrow}>{'>'}</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
 
           {/* Notifications section */}
