@@ -51,8 +51,8 @@ export default function AdminUsers() {
     setError(null);
     try {
       const path = role === 'ALL' ? '/admin/users' : `/admin/users?role=${role}`;
-      const data = await api.get<UserItem[]>(path);
-      setUsers(data);
+      const data = await api.get<{ items: UserItem[]; total: number }>(path);
+      setUsers(data.items);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load users');
     } finally {
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   filterTabTextActive: {
-    color: Colors.textPrimary,
+    color: Colors.white,
   },
   loader: {
     marginVertical: Spacing['2xl'],

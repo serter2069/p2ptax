@@ -49,8 +49,8 @@ export default function AdminModeration() {
     if (!isRefresh) setLoading(true);
     setError(null);
     try {
-      const data = await api.get<SpecialistItem[]>('/admin/specialists');
-      setSpecialists(data);
+      const data = await api.get<{ items: SpecialistItem[]; total: number }>('/admin/specialists');
+      setSpecialists(data.items);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load specialists');
     } finally {

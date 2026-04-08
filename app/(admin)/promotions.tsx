@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   tierBtnTextActive: {
-    color: Colors.textPrimary,
+    color: Colors.white,
   },
   saveBtn: {
     height: 44,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
+    color: Colors.white,
   },
   priceTable: {
     backgroundColor: Colors.bgCard,
