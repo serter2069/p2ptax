@@ -120,7 +120,7 @@ export class SpecialistsController {
       fns,
       category,
       parseInt(page ?? '1') || 1,
-      parseInt(limit ?? '9') || 9,
+      Math.min(parseInt(limit ?? '20') || 20, 50),
     );
   }
 

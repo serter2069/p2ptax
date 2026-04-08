@@ -96,7 +96,7 @@ export default function SpecialistsCatalogScreen() {
 
   const fnsFilterParam = selectedFns.map((o) => o.name).join(',');
 
-  const PAGE_SIZE = 9;
+  const PAGE_SIZE = 20;
 
   const fetchSpecialists = useCallback(async (pageNum: number, append = false) => {
     if (append) {
