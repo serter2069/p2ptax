@@ -77,17 +77,17 @@ function RootNavigator() {
     const isPublicRoute =
       segments[0] === 'specialists' || segments[0] === 'requests' || segments[0] === 'pricing';
 
-    // New user must complete onboarding before accessing anything else
-    if (user && user.isNewUser && !inOnboardingGroup) {
-      router.replace('/(onboarding)/username');
+    // New user must pick a role (auth/role) or complete onboarding before accessing anything else
+    if (user && user.isNewUser && !inOnboardingGroup && !inAuthGroup) {
+      router.replace('/(auth)/role');
       return;
     }
 
     if (!user && !inAuthGroup && !isPublicRoute && !inSpecialistOnboarding && segments[0] !== undefined) {
       // Not authenticated and trying to access a protected route → landing
       router.replace('/');
-    } else if (user && inAuthGroup) {
-      // Already authenticated and still in auth group → dashboard
+    } else if (user && inAuthGroup && !user.isNewUser) {
+      // Already authenticated (and onboarded) still in auth group → dashboard
       router.replace('/(dashboard)');
     } else if (user && !inDashboardGroup && !isPublicRoute && segments[0] === undefined) {
       // Authenticated user on landing → redirect to dashboard
