@@ -629,15 +629,15 @@ async function main() {
   // Email must match ADMIN_EMAILS env var used by AdminGuard
   console.log('Seeding admin user...');
   await prisma.user.upsert({
-    where: { email: 'dev@p2ptax.ru' },
+    where: { email: 'admin@p2ptax.ru' },
     update: {},
     create: {
-      email: 'dev@p2ptax.ru',
+      email: 'admin@p2ptax.ru',
       username: 'admin',
       role: Role.CLIENT,
     },
   });
-  console.log('  Created admin user: dev@p2ptax.ru (OTP 000000 in dev mode)');
+  console.log('  Created admin user: admin@p2ptax.ru (OTP 000000 in dev mode)');
 
   console.log('Seeding complete!');
 }
