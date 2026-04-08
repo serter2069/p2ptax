@@ -84,6 +84,13 @@ export default function SpecialistDashboard() {
     fetchData();
   }, [fetchData]);
 
+  // Redirect to onboarding wizard if specialist has no profile
+  useEffect(() => {
+    if (hasProfile === false) {
+      router.replace('/specialist/onboarding');
+    }
+  }, [hasProfile, router]);
+
   function handleRefresh() {
     setRefreshing(true);
     fetchData(true);
