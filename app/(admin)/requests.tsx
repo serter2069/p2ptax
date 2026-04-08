@@ -49,8 +49,8 @@ export default function AdminRequests() {
     if (!isRefresh) setLoading(true);
     setError(null);
     try {
-      const data = await api.get<RequestItem[]>('/admin/requests');
-      setRequests(data);
+      const data = await api.get<{ items: RequestItem[]; total: number }>('/admin/requests');
+      setRequests(data.items);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load requests');
     } finally {
