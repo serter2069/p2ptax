@@ -185,7 +185,7 @@ export default function PublicRequestDetailScreen() {
           {/* CTA for authenticated specialists */}
           {user && user.role === 'SPECIALIST' && isOpen && (
             <Button
-              onPress={() => router.push(`/(dashboard)/requests/${request.id}` as any)}
+              onPress={() => router.push(`/specialist/respond/${request.id}` as any)}
               variant="primary"
               style={styles.respondBtn}
             >
