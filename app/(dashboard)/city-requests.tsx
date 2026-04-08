@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -13,7 +14,6 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '../../lib/api';
@@ -206,21 +206,10 @@ export default function CityRequestsScreen() {
   function openRespond(id: string) {
     // Mark as seen when specialist opens the respond dialog
     markAsSeen(id);
-    Alert.alert(
-      'Подтверждение',
-      'Откликнуться на этот запрос?',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Откликнуться',
-          onPress: () => {
-            setRespondingId(id);
-            setMessage('');
-            setModalVisible(true);
-          },
-        },
-      ],
-    );
+    // Alert.alert does not work on React Native Web — open modal directly
+    setRespondingId(id);
+    setMessage('');
+    setModalVisible(true);
   }
 
   function closeModal() {
