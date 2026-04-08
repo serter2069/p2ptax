@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   verifiedBadge: {
-    backgroundColor: '#E8F5ED',
+    backgroundColor: Colors.statusBg.success,
     paddingVertical: 2,
     paddingHorizontal: 8,
     borderRadius: 4,
@@ -966,14 +966,14 @@ const styles = StyleSheet.create({
 
   // FNS offices
   fnsTag: {
-    backgroundColor: '#FEF3E2',
+    backgroundColor: Colors.statusBg.warning,
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 20,
   },
   fnsTagText: {
     fontSize: 14,
-    color: '#B8860B',
+    color: Colors.statusWarning,
     fontWeight: '500',
   },
 
@@ -1169,16 +1169,16 @@ const styles = StyleSheet.create({
   },
   reportBtnText: {
     fontSize: 12,
-    color: '#8A9BB0',
+    color: Colors.textMuted,
     textDecorationLine: 'underline',
   },
   complaintForm: {
     gap: 8,
     padding: 14,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: Colors.statusBg.error,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: Colors.statusBg.error,
   },
   complaintFormTitle: {
     fontSize: 13,
@@ -1195,8 +1195,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   reasonOptionActive: {
-    borderColor: '#C0322D',
-    backgroundColor: '#FFF5F5',
+    borderColor: Colors.statusError,
+    backgroundColor: Colors.statusBg.error,
   },
   reasonOptionText: {
     fontSize: 13,

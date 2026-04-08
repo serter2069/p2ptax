@@ -346,7 +346,7 @@ export default function LandingScreen() {
 
         {/* ===== SECTION 2d: Popular Cities ===== */}
         {popularCities.length > 0 && (
-          <View style={[styles.section, { backgroundColor: '#FFFFFF' }]}>
+          <View style={[styles.section, { backgroundColor: Colors.white }]}>
             <View style={[styles.sectionInner, innerStyle]}>
               <Text style={styles.sectionTitle}>{'\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u044B\u0435 \u0433\u043E\u0440\u043E\u0434\u0430'}</Text>
               <View style={dyn.citiesRow}>
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     maxWidth: 520,
   },
   heroSubtitleWide: {
-    fontSize: 18,
+    fontSize: Typography.fontSize.lg,
     lineHeight: 28,
   },
   heroCtas: {
@@ -744,7 +744,7 @@ const styles = StyleSheet.create({
   launchBannerText: {
     fontSize: 17,
     color: Colors.textPrimary,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     textAlign: 'center',
   },
   launchBannerBtn: {
@@ -756,8 +756,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   launchBannerBtnLabel: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
     color: Colors.white,
   },
 
@@ -793,11 +793,11 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: Typography.fontSize.sm,
     color: Colors.textSecondary,
     marginTop: 4,
   },
@@ -820,13 +820,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
     textAlign: 'center',
     letterSpacing: -0.3,
   },
   sectionSubtitle: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.md,
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
@@ -864,20 +864,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepNumberText: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.white,
   },
   stepTextBlock: {
     gap: 4,
   },
   stepTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
   },
   stepDesc: {
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     color: Colors.textSecondary,
     lineHeight: 22,
   },
@@ -911,8 +911,8 @@ const styles = StyleSheet.create({
     width: '47%',
   },
   taskCardText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
     color: Colors.textPrimary,
     textAlign: 'center',
   },
@@ -942,14 +942,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   forWhomTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: Typography.fontSize.title,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
   },
   forWhomSubtitle: {
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     color: Colors.brandPrimary,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
     marginBottom: 4,
   },
   forWhomItem: {
@@ -958,13 +958,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   forWhomBullet: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.md,
     color: Colors.brandPrimary,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     marginTop: 1,
   },
   forWhomText: {
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     color: Colors.textSecondary,
     lineHeight: 22,
     flex: 1,
@@ -989,17 +989,17 @@ const styles = StyleSheet.create({
   trustCheck: {
     fontSize: 28,
     color: Colors.brandPrimary,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     marginBottom: 4,
   },
   trustTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
     textAlign: 'center',
   },
   trustDesc: {
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     color: Colors.textSecondary,
     lineHeight: 22,
     textAlign: 'center',
@@ -1039,30 +1039,30 @@ const styles = StyleSheet.create({
     flex: undefined as any,
   },
   reviewQuote: {
-    fontSize: 48,
+    fontSize: Typography.fontSize.jumbo,
     color: Colors.border,
     lineHeight: 48,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
   },
   reviewText: {
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
     lineHeight: 23,
   },
   reviewStars: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.md,
     color: Colors.brandPrimary,
     letterSpacing: 2,
     marginTop: 4,
   },
   reviewName: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
     marginTop: 4,
   },
   reviewCity: {
-    fontSize: 14,
+    fontSize: Typography.fontSize.sm,
     color: Colors.textSecondary,
   },
 
@@ -1082,11 +1082,11 @@ const styles = StyleSheet.create({
   },
   faqQ: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
   },
   faqA: {
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     color: Colors.textSecondary,
     lineHeight: 23,
   },
@@ -1104,8 +1104,8 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   ctaTitle: {
-    fontSize: 36,
-    fontWeight: '700',
+    fontSize: Typography.fontSize.display,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.white,
     textAlign: 'center',
     letterSpacing: -0.3,
@@ -1162,13 +1162,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   footerLogoInitial: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.white,
   },
   footerLogo: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.white,
   },
   footerLinks: {
@@ -1180,16 +1180,16 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   footerLink: {
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     color: 'rgba(255,255,255,0.65)',
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
   },
   footerDot: {
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     color: 'rgba(255,255,255,0.35)',
   },
   footerCopy: {
-    fontSize: 13,
+    fontSize: Typography.fontSize.sm,
     color: 'rgba(255,255,255,0.35)',
   },
 });

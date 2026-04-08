@@ -364,8 +364,8 @@ const styles = StyleSheet.create({
     ...Shadows.sm,
   },
   statusActive: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#6EE7B7',
+    backgroundColor: Colors.statusBg.success,
+    borderColor: Colors.statusSuccess,
   },
   statusInactive: {
     backgroundColor: Colors.bgCard,
