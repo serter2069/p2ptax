@@ -455,6 +455,15 @@ export default function MySpecialistProfileScreen() {
           >
             Сохранить профиль
           </Button>
+
+          {/* Promotion navigation (UC-024) */}
+          <Button
+            onPress={() => router.push('/(dashboard)/promotion')}
+            variant="outline"
+            style={styles.promotionBtn}
+          >
+            Продвинуть профиль
+          </Button>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -626,6 +635,9 @@ const styles = StyleSheet.create({
   saveBtn: {
     width: '100%',
     marginTop: Spacing.md,
+  },
+  promotionBtn: {
+    width: '100%',
     marginBottom: Spacing['3xl'],
   },
   avatarSection: {
