@@ -95,7 +95,10 @@ export class SpecialistsService {
     return Array.from(citySet).sort((a, b) => a.localeCompare(b, 'ru'));
   }
 
-  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string, page: number = 1, limit: number = 9) {
+  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string, page: number = 1, limit: number = 20) {
+    // Cap limit to prevent abuse
+    if (limit > 50) limit = 50;
+    if (limit < 1) limit = 1;
     const now = new Date();
     const profileWhere: any = { displayName: { not: null } };
     if (city) {
