@@ -65,6 +65,8 @@ export class RequestsService {
         clientId,
         description,
         city,
+        ifnsId: dto.ifnsId ?? null,
+        ifnsName: dto.ifnsName ?? null,
         budget: dto.budget ?? null,
         category,
       },

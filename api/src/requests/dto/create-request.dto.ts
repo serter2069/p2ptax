@@ -20,6 +20,16 @@ export class CreateRequestDto {
   @MaxLength(100)
   city?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  ifnsId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  ifnsName?: string;
+
   // Alias: spec says "serviceType", maps to category
   @IsOptional()
   @IsString()
