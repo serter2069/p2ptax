@@ -144,6 +144,28 @@ export class RequestsService {
     });
   }
 
+  async findResponses(requestId: string, userId: string) {
+    const request = await this.prisma.request.findUnique({
+      where: { id: requestId },
+      select: { clientId: true },
+    });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.clientId !== userId) throw new ForbiddenException('Only the request owner can view responses');
+
+    return this.prisma.response.findMany({
+      where: { requestId },
+      include: {
+        specialist: {
+          select: {
+            id: true, email: true,
+            specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findById(requestId: string, userId: string | null) {
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
