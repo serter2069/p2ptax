@@ -34,7 +34,7 @@ async function bootstrap() {
   app.use(helmet({ contentSecurityPolicy: false }));
 
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['https://p2ptax.smartlaunchhub.com'];
-  app.enableCors({ origin: allowedOrigins });
+  app.enableCors({ origin: allowedOrigins, credentials: true });
 
   const port = process.env.PORT ?? 3812;
   await app.listen(port);
