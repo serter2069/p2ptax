@@ -110,6 +110,27 @@ export class AdminService {
     });
   }
 
+  async getPromotions(page = 1, limit = 50) {
+    const take = Math.min(limit, 200);
+    const skip = (page - 1) * take;
+
+    const [items, total] = await Promise.all([
+      this.prisma.promotion.findMany({
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        include: {
+          specialist: {
+            select: { id: true, email: true, role: true },
+          },
+        },
+      }),
+      this.prisma.promotion.count(),
+    ]);
+
+    return { items, total, page, pages: Math.ceil(total / take) };
+  }
+
   async getAllRequests(page = 1, limit = 50) {
     const take = Math.min(limit, 200);
     const skip = (page - 1) * take;
