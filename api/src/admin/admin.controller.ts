@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -79,5 +80,29 @@ export class AdminController {
     @Query('limit') limit?: string,
   ) {
     return this.adminService.getPromotions(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
+  }
+
+  /** GET /admin/reviews — all reviews, optional ?page=1&limit=20 */
+  @Get('reviews')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getReviews(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getReviews(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  }
+
+  /** GET /admin/reviews/:id — single review */
+  @Get('reviews/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getReview(@Param('id') id: string) {
+    return this.adminService.getReview(id);
+  }
+
+  /** DELETE /admin/reviews/:id — delete review (UC-071) */
+  @Delete('reviews/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  deleteReview(@Param('id') id: string) {
+    return this.adminService.deleteReview(id);
   }
 }

@@ -131,6 +131,51 @@ export class AdminService {
     return { items, total, page, pages: Math.ceil(total / take) };
   }
 
+  async getReviews(page = 1, limit = 20) {
+    const take = Math.min(limit, 200);
+    const skip = (page - 1) * take;
+
+    const [items, total] = await Promise.all([
+      this.prisma.review.findMany({
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        include: {
+          client: { select: { id: true, email: true } },
+          specialist: { select: { id: true, email: true } },
+          request: { select: { id: true, description: true } },
+        },
+      }),
+      this.prisma.review.count(),
+    ]);
+
+    return { items, total, page, pages: Math.ceil(total / take) };
+  }
+
+  async getReview(id: string) {
+    const review = await this.prisma.review.findUnique({
+      where: { id },
+      include: {
+        client: { select: { id: true, email: true } },
+        specialist: { select: { id: true, email: true } },
+        request: { select: { id: true, description: true } },
+      },
+    });
+    if (!review) {
+      throw new NotFoundException(`Review ${id} not found`);
+    }
+    return review;
+  }
+
+  async deleteReview(id: string) {
+    const review = await this.prisma.review.findUnique({ where: { id } });
+    if (!review) {
+      throw new NotFoundException(`Review ${id} not found`);
+    }
+    await this.prisma.review.delete({ where: { id } });
+    return { deleted: true, id };
+  }
+
   async getAllRequests(page = 1, limit = 50) {
     const take = Math.min(limit, 200);
     const skip = (page - 1) * take;
