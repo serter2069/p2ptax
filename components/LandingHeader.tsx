@@ -22,15 +22,6 @@ interface NavLinkConfig {
 const NAV_LINKS: NavLinkConfig[] = [
   { label: 'Специалисты', route: '/specialists', segment: 'specialists' },
   { label: 'Лента запросов', route: '/requests', segment: 'requests' },
-  { label: 'Тарифы', route: '/pricing', segment: 'pricing' },
-  {
-    label: 'Как работает',
-    onPress: () => {
-      if (Platform.OS === 'web') {
-        document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-      }
-    },
-  },
 ];
 
 export function LandingHeader() {

@@ -24,6 +24,7 @@ import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
+import { Footer } from '../../components/Footer';
 import { Button } from '../../components/Button';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
@@ -112,6 +113,8 @@ export default function RequestsFeedScreen() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [maxBudget, setMaxBudget] = useState(0);
   const [activeOnly, setActiveOnly] = useState(true);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'date' | 'budget'>('date');
 
   // IFNS filter state
   const [ifnsQuery, setIfnsQuery] = useState('');
@@ -288,6 +291,7 @@ export default function RequestsFeedScreen() {
   function renderItem({ item }: { item: RequestItem }) {
     const catColor = item.category ? getCategoryColor(item.category) : null;
     const itemIsNew = isNew(item.createdAt);
+    const isHot = item._count.responses >= 3 && item.status === 'OPEN';
 
     return (
       <TouchableOpacity
@@ -296,13 +300,25 @@ export default function RequestsFeedScreen() {
         style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
       >
         <Card padding={Spacing.lg} variant="elevated">
-          {/* New badge */}
-          {itemIsNew && (
-            <View style={styles.newBadge}>
-              <View style={styles.newDot} />
-              <Text style={styles.newBadgeText}>новый</Text>
+          {/* Top row: badges + budget */}
+          <View style={styles.topRow}>
+            <View style={styles.badgesRow}>
+              {itemIsNew && (
+                <View style={styles.newBadge}>
+                  <View style={styles.newDot} />
+                  <Text style={styles.newBadgeText}>новый</Text>
+                </View>
+              )}
+              {isHot && (
+                <View style={styles.hotBadge}>
+                  <Text style={styles.hotBadgeText}>горячий</Text>
+                </View>
+              )}
             </View>
-          )}
+            {item.budget != null && (
+              <Text style={styles.budgetProminent}>{item.budget.toLocaleString('ru-RU')} {'\u20BD'}</Text>
+            )}
+          </View>
 
           {/* City + date row */}
           <View style={styles.metaRow}>
@@ -313,11 +329,11 @@ export default function RequestsFeedScreen() {
           </View>
 
           {/* Description */}
-          <Text style={styles.description} numberOfLines={4}>
+          <Text style={styles.description} numberOfLines={3}>
             {item.description}
           </Text>
 
-          {/* Category badge + Budget + IFNS */}
+          {/* Category badge + IFNS */}
           <View style={styles.tagsRow}>
             {item.category && catColor ? (
               <View style={[styles.categoryBadge, { backgroundColor: catColor.bg }]}>
@@ -331,16 +347,11 @@ export default function RequestsFeedScreen() {
             ) : null}
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <View style={styles.footerLeft}>
-              <Text style={styles.responsesText}>
-                {item._count.responses} {item._count.responses === 1 ? 'отклик' : item._count.responses < 5 ? 'отклика' : 'откликов'}
-              </Text>
-              {item.budget != null && (
-                <Text style={styles.budgetText}>{item.budget.toLocaleString('ru-RU')} \u20BD</Text>
-              )}
-            </View>
+          {/* Bottom row: responses + status */}
+          <View style={styles.cardFooterRow}>
+            <Text style={styles.responsesText}>
+              {item._count.responses} {item._count.responses === 1 ? 'отклик' : item._count.responses < 5 ? 'отклика' : 'откликов'}
+            </Text>
             <View style={[styles.statusChip, item.status !== 'OPEN' && styles.statusChipClosed]}>
               <Text style={[styles.statusText, item.status !== 'OPEN' && styles.statusClosed]}>
                 {item.status === 'OPEN' ? 'Открыт' : item.status === 'CLOSED' ? 'Закрыт' : item.status}
@@ -368,9 +379,12 @@ export default function RequestsFeedScreen() {
 
   // Client-side filter: activeOnly toggle
   const filteredItems = useMemo(() => {
-    if (activeOnly) return items.filter((item) => item.status === 'OPEN');
-    return items;
-  }, [items, activeOnly]);
+    let result = activeOnly ? items.filter((item) => item.status === 'OPEN') : items;
+    if (sortBy === 'budget') {
+      result = [...result].sort((a, b) => (b.budget ?? 0) - (a.budget ?? 0));
+    }
+    return result;
+  }, [items, activeOnly, sortBy]);
 
   const hasMore = items.length < total;
 
@@ -418,20 +432,40 @@ export default function RequestsFeedScreen() {
                   </View>
                 )}
               </View>
-              <Text style={styles.heroSubtitle}>Найдите налогового специалиста для вашей задачи</Text>
+              <Text style={styles.heroSubtitle}>
+                Опишите ситуацию — специалисты откликнутся. Бесплатно, без обязательств.
+              </Text>
             </View>
 
-            {/* Search bar */}
-            <View style={styles.searchBar}>
-              <Text style={styles.searchIcon}>&#x1F50D;</Text>
-              <TextInput
-                style={styles.searchInput}
-                value={cityFilter}
-                onChangeText={setCityFilter}
-                placeholder="Поиск по городу..."
-                placeholderTextColor={Colors.textMuted}
-                autoCapitalize="words"
-              />
+            {/* Search bar + Sort */}
+            <View style={styles.searchAndSort}>
+              <View style={styles.searchBar}>
+                <Text style={styles.searchIcon}>&#x1F50D;</Text>
+                <TextInput
+                  style={styles.searchInput}
+                  value={cityFilter}
+                  onChangeText={setCityFilter}
+                  placeholder="Поиск по городу..."
+                  placeholderTextColor={Colors.textMuted}
+                  autoCapitalize="words"
+                />
+              </View>
+              <View style={styles.sortRow}>
+                <TouchableOpacity
+                  onPress={() => setSortBy('date')}
+                  style={[styles.sortBtn, sortBy === 'date' && styles.sortBtnActive]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.sortText, sortBy === 'date' && styles.sortTextActive]}>По дате</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setSortBy('budget')}
+                  style={[styles.sortBtn, sortBy === 'budget' && styles.sortBtnActive]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.sortText, sortBy === 'budget' && styles.sortTextActive]}>По бюджету</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Category filter chips */}
@@ -460,92 +494,7 @@ export default function RequestsFeedScreen() {
               </ScrollView>
             </View>
 
-            {/* IFNS filter + Budget in a row */}
-            <View style={styles.filterRow}>
-              {/* IFNS filter */}
-              <View style={styles.ifnsFilterContainer}>
-                <Text style={styles.filterLabel}>ИФНС</Text>
-                {selectedIfns ? (
-                  <View style={styles.ifnsSelected}>
-                    <Text style={styles.ifnsSelectedText} numberOfLines={1}>{selectedIfns.name}</Text>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setSelectedIfns(null);
-                        setIfnsQuery('');
-                      }}
-                      style={styles.ifnsClearBtn}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.ifnsClearText}>x</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={styles.ifnsInputWrapper}>
-                    <TextInput
-                      style={styles.ifnsInput}
-                      value={ifnsQuery}
-                      onChangeText={setIfnsQuery}
-                      placeholder="Номер или название..."
-                      placeholderTextColor={Colors.textMuted}
-                      autoCorrect={false}
-                    />
-                    {ifnsLoading && (
-                      <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.ifnsSpinner} />
-                    )}
-                    {showIfnsDropdown && ifnsResults.length > 0 && (
-                      <View style={styles.ifnsDropdown}>
-                        <ScrollView style={styles.ifnsDropdownScroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                          {ifnsResults.map((item) => (
-                            <TouchableOpacity
-                              key={item.id}
-                              style={styles.ifnsDropdownItem}
-                              onPress={() => {
-                                setSelectedIfns(item);
-                                setIfnsQuery('');
-                                setIfnsResults([]);
-                                setShowIfnsDropdown(false);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={styles.ifnsDropdownName} numberOfLines={1}>{item.name}</Text>
-                              <Text style={styles.ifnsDropdownCity}>{item.city.name}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Budget filter chips */}
-            <View>
-              <Text style={styles.filterLabel}>Бюджет</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                {BUDGET_FILTERS.map((b) => {
-                  const isActive = b.value === maxBudget;
-                  return (
-                    <TouchableOpacity
-                      key={b.value}
-                      onPress={() => setMaxBudget(b.value)}
-                      style={[styles.chip, isActive && styles.chipActive]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                        {b.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* Active/All toggle */}
+            {/* Active/All + More filters toggle */}
             <View style={styles.toggleRow}>
               <TouchableOpacity
                 onPress={() => setActiveOnly(true)}
@@ -565,7 +514,119 @@ export default function RequestsFeedScreen() {
                   Все
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowMoreFilters(!showMoreFilters)}
+                style={[styles.toggleBtn, showMoreFilters && styles.toggleBtnActive]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.toggleText, showMoreFilters && styles.toggleTextActive]}>
+                  Ещё фильтры
+                </Text>
+              </TouchableOpacity>
             </View>
+
+            {/* Expanded filters: IFNS + Budget */}
+            {showMoreFilters && (
+              <View style={styles.expandedFilters}>
+                {/* IFNS filter */}
+                <View style={styles.ifnsFilterContainer}>
+                  <Text style={styles.filterLabel}>ИФНС</Text>
+                  {selectedIfns ? (
+                    <View style={styles.ifnsSelected}>
+                      <Text style={styles.ifnsSelectedText} numberOfLines={1}>{selectedIfns.name}</Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedIfns(null);
+                          setIfnsQuery('');
+                        }}
+                        style={styles.ifnsClearBtn}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.ifnsClearText}>x</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.ifnsInputWrapper}>
+                      <TextInput
+                        style={styles.ifnsInput}
+                        value={ifnsQuery}
+                        onChangeText={setIfnsQuery}
+                        placeholder="Номер или название..."
+                        placeholderTextColor={Colors.textMuted}
+                        autoCorrect={false}
+                      />
+                      {ifnsLoading && (
+                        <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.ifnsSpinner} />
+                      )}
+                      {showIfnsDropdown && ifnsResults.length > 0 && (
+                        <View style={styles.ifnsDropdown}>
+                          <ScrollView style={styles.ifnsDropdownScroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                            {ifnsResults.map((item) => (
+                              <TouchableOpacity
+                                key={item.id}
+                                style={styles.ifnsDropdownItem}
+                                onPress={() => {
+                                  setSelectedIfns(item);
+                                  setIfnsQuery('');
+                                  setIfnsResults([]);
+                                  setShowIfnsDropdown(false);
+                                }}
+                                activeOpacity={0.7}
+                              >
+                                <Text style={styles.ifnsDropdownName} numberOfLines={1}>{item.name}</Text>
+                                <Text style={styles.ifnsDropdownCity}>{item.city.name}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+
+                {/* Budget filter chips */}
+                <View>
+                  <Text style={styles.filterLabel}>Бюджет</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipsRow}
+                  >
+                    {BUDGET_FILTERS.map((b) => {
+                      const isActive = b.value === maxBudget;
+                      return (
+                        <TouchableOpacity
+                          key={b.value}
+                          onPress={() => setMaxBudget(b.value)}
+                          style={[styles.chip, isActive && styles.chipActive]}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                            {b.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </View>
+            )}
+
+            {/* Specialist CTA (visible early for guests) */}
+            {!user && (
+              <View style={styles.miniCta}>
+                <Text style={styles.miniCtaText}>
+                  Вы специалист? Получайте заказы на платформе
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/(auth)/email?role=SPECIALIST' as any)}
+                  activeOpacity={0.8}
+                  style={styles.miniCtaBtn}
+                >
+                  <Text style={styles.miniCtaBtnText}>Стать специалистом</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         }
         ListEmptyComponent={
@@ -624,6 +685,7 @@ export default function RequestsFeedScreen() {
                 </TouchableOpacity>
               </View>
             )}
+            <Footer isWide={!isMobile} />
           </>
         }
       />
@@ -737,7 +799,10 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.bold,
   },
 
-  // Search bar
+  // Search + sort
+  searchAndSort: {
+    gap: Spacing.sm,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -758,6 +823,30 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
     paddingVertical: Spacing.sm,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  sortBtn: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  sortBtnActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  sortText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  sortTextActive: {
+    color: Colors.white,
   },
 
   // Filter labels
@@ -797,11 +886,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
 
-  // Filter row (IFNS)
-  filterRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
   ifnsFilterContainer: {
     flex: 1,
     position: 'relative',
@@ -925,6 +1009,45 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
 
+  // Expanded filters
+  expandedFilters: {
+    gap: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+
+  // Mini CTA for specialists
+  miniCta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+    gap: Spacing.md,
+  },
+  miniCtaText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  miniCtaBtn: {
+    backgroundColor: Colors.brandPrimary,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    flexShrink: 0,
+  },
+  miniCtaBtnText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+
   // Cards
   cardWrapperMobile: {
     width: '100%',
@@ -935,12 +1058,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // New badge
+  // New badge (no marginBottom — inside topRow)
   newBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: Spacing.sm,
   },
   newDot: {
     width: 8,
@@ -954,6 +1076,37 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+
+  // Top row (badges + budget)
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  hotBadge: {
+    backgroundColor: '#fef3cd',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+  },
+  hotBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    color: '#92400e',
+    fontWeight: Typography.fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  budgetProminent: {
+    fontSize: Typography.fontSize.lg,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.bold,
   },
 
   metaRow: {
@@ -1013,7 +1166,7 @@ const styles = StyleSheet.create({
     color: Colors.statusInfo,
     fontWeight: Typography.fontWeight.medium,
   },
-  footer: {
+  cardFooterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1021,19 +1174,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
-  footerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
   responsesText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
-  },
-  budgetText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.bold,
   },
   statusChip: {
     backgroundColor: Colors.statusBg.success,
