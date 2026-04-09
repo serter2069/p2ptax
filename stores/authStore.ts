@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { setToken, setRefreshToken, clearToken, clearRefreshToken, onUnauthorized, TOKEN_KEY, tryRefreshTokens, getToken } from '../lib/api';
+import { Platform } from 'react-native';
+import { setToken, setRefreshToken, clearToken, clearRefreshToken, onUnauthorized, TOKEN_KEY, tryRefreshTokens, getToken, getRefreshToken, api } from '../lib/api';
 import { secureStorage } from './storage';
 
 const USER_KEY = '@p2ptax_user';
+const IS_LOGGED_IN_KEY = 'isLoggedIn';
 
 export interface AuthUser {
   userId: string;
@@ -94,6 +96,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    // Web cold-start optimisation: synchronously read isLoggedIn flag so the
+    // login screen does not flash before the async restore completes.
+    if (Platform.OS === 'web') {
+      try {
+        const flag = typeof localStorage !== 'undefined' && localStorage.getItem(IS_LOGGED_IN_KEY);
+        if (flag === 'true') {
+          // Tentative — async restore will confirm or clear this
+          dispatch({ type: 'SET_LOADING', payload: true });
+        }
+      } catch {
+        // ignore (e.g. SSR context)
+      }
+    }
+
     async function restore() {
       try {
         const [token, userJson] = await Promise.all([
@@ -110,11 +126,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const freshToken = (await getToken()) ?? token;
             dispatch({ type: 'RESTORE', payload: { token: freshToken, user } });
           } else {
+            // Clear stale isLoggedIn flag if no tokens found
+            if (Platform.OS === 'web') {
+              try { localStorage.removeItem(IS_LOGGED_IN_KEY); } catch {}
+            }
             dispatch({ type: 'RESTORE', payload: null });
           }
         }
       } catch {
         if (!cancelled) {
+          if (Platform.OS === 'web') {
+            try { localStorage.removeItem(IS_LOGGED_IN_KEY); } catch {}
+          }
           dispatch({ type: 'RESTORE', payload: null });
         }
       }
@@ -127,6 +150,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Listen for 401 to auto-logout
   useEffect(() => {
     const unsubscribe = onUnauthorized(() => {
+      if (Platform.OS === 'web') {
+        try { localStorage.removeItem(IS_LOGGED_IN_KEY); } catch {}
+      }
       dispatch({ type: 'LOGOUT' });
       Promise.all([
         secureStorage.removeItem(TOKEN_KEY),
@@ -142,10 +168,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(token),
       secureStorage.setItem(USER_KEY, JSON.stringify(user)),
     ]);
+    if (Platform.OS === 'web') {
+      try { localStorage.setItem(IS_LOGGED_IN_KEY, 'true'); } catch {}
+    }
     dispatch({ type: 'LOGIN', payload: { token, user } });
   }, []);
 
   const logout = useCallback(async () => {
+    // Invalidate refresh token on backend before clearing local state
+    const rt = await getRefreshToken();
+    if (rt) {
+      try { await api.post('/auth/logout', { refreshToken: rt }); } catch {}
+    }
+    if (Platform.OS === 'web') {
+      try { localStorage.removeItem(IS_LOGGED_IN_KEY); } catch {}
+    }
     await Promise.all([
       clearToken(),
       clearRefreshToken(),

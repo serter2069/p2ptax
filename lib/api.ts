@@ -94,6 +94,9 @@ export async function tryRefreshTokens(): Promise<boolean> {
   return refreshPromise;
 }
 
+// Detect web runtime (browser) — used for cookie credentials
+const isWebRuntime = typeof window !== 'undefined' && typeof document !== 'undefined';
+
 // Core fetch helper
 async function request<T>(
   method: string,
@@ -116,6 +119,8 @@ async function request<T>(
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    // Include cookies on web so httpOnly refresh token cookie is sent automatically
+    credentials: isWebRuntime ? 'include' : 'same-origin',
   });
 
   if (response.status === 401) {
@@ -135,6 +140,7 @@ async function request<T>(
         method,
         headers: retryHeaders,
         body: body !== undefined ? JSON.stringify(body) : undefined,
+        credentials: isWebRuntime ? 'include' : 'same-origin',
       });
       if (retryResponse.status === 401) {
         await clearToken();

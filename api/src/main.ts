@@ -5,6 +5,8 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import helmet from 'helmet';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const cookieParser = require('cookie-parser');
 import { join } from 'path';
 import { AppModule } from './app.module';
 
@@ -22,6 +24,8 @@ async function bootstrap() {
 
   // Serve uploaded files (avatars etc.)
   app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/api/uploads/' });
+
+  app.use(cookieParser());
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
