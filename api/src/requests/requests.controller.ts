@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -52,6 +53,22 @@ export class RequestsController {
     return this.requestsService.findRecent(parseInt(limit ?? '5') || 5);
   }
 
+  // GET /requests/public — explicit public alias for the feed
+  @Get('public')
+  getPublicFeed(
+    @Query('city') city?: string,
+    @Query('page') page?: string,
+    @Query('category') category?: string,
+    @Query('maxBudget') maxBudget?: string,
+  ) {
+    return this.requestsService.findFeed(
+      city,
+      page ? parseInt(page, 10) : 1,
+      category,
+      maxBudget ? parseInt(maxBudget, 10) : undefined,
+    );
+  }
+
   // GET /requests — public feed accessible without authentication
   @Get()
   @UseGuards(OptionalJwtAuthGuard)
@@ -93,6 +110,26 @@ export class RequestsController {
     @Body() dto: RespondRequestDto,
   ) {
     return this.requestsService.respond(req.user.id, id, dto);
+  }
+
+  // POST /requests/:id/reviews — create review for specialist on this request
+  @Post(':id/reviews')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CLIENT)
+  createReview(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { specialistNick: string; rating: number; comment?: string },
+  ) {
+    return this.requestsService.createReviewForRequest(req.user.id, id, body);
+  }
+
+  // DELETE /requests/:id — client deletes own request (only OPEN status)
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CLIENT)
+  delete(@Request() req: any, @Param('id') id: string) {
+    return this.requestsService.deleteRequest(req.user.id, id);
   }
 
   // PATCH /requests/:id — client updates request (status or fields)

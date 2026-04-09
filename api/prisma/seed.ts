@@ -625,19 +625,24 @@ async function main() {
     console.log(`  Response: ${r.specialistEmail} -> "${r.requestDescription.slice(0, 40)}..."`);
   }
 
-  // --- Seed admin user ---
-  // Email must match ADMIN_EMAILS env var used by AdminGuard
-  console.log('Seeding admin user...');
-  await prisma.user.upsert({
-    where: { email: 'admin@p2ptax.ru' },
-    update: {},
-    create: {
-      email: 'admin@p2ptax.ru',
-      username: 'admin',
-      role: Role.CLIENT,
-    },
-  });
-  console.log('  Created admin user: admin@p2ptax.ru (OTP 000000 in dev mode)');
+  // --- Seed admin users ---
+  // Emails must match ADMIN_EMAILS env var used by AdminGuard
+  console.log('Seeding admin users...');
+  for (const adminEntry of [
+    { email: 'admin@p2ptax.ru', username: 'admin' },
+    { email: 'dev@p2ptax.ru', username: 'dev_admin' },
+  ]) {
+    await prisma.user.upsert({
+      where: { email: adminEntry.email },
+      update: {},
+      create: {
+        email: adminEntry.email,
+        username: adminEntry.username,
+        role: Role.CLIENT,
+      },
+    });
+    console.log(`  Created admin user: ${adminEntry.email} (OTP 000000 in dev mode)`);
+  }
 
   console.log('Seeding complete!');
 }

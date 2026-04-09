@@ -41,6 +41,18 @@ export class RequestsService {
   }
 
   async create(clientId: string, dto: CreateRequestDto) {
+    // Map aliases: title -> description, serviceType -> category
+    const description = dto.description || dto.title;
+    const city = dto.city;
+    const category = dto.category || dto.serviceType || null;
+
+    if (!description || description.trim().length < 3) {
+      throw new BadRequestException('description (or title) is required and must be at least 3 characters');
+    }
+    if (!city) {
+      throw new BadRequestException('city is required');
+    }
+
     const openCount = await this.prisma.request.count({
       where: { clientId, status: RequestStatus.OPEN },
     });
@@ -51,15 +63,15 @@ export class RequestsService {
     const created = await this.prisma.request.create({
       data: {
         clientId,
-        description: dto.description,
-        city: dto.city,
+        description,
+        city,
         budget: dto.budget ?? null,
-        category: dto.category ?? null,
+        category,
       },
     });
 
     // Notify specialists in this city — non-blocking, does not delay response
-    this.notifySpecialistsAsync(dto.city, created.id, created.description).catch(() => {});
+    this.notifySpecialistsAsync(city, created.id, description).catch(() => {});
 
     return created;
   }
@@ -278,6 +290,77 @@ export class RequestsService {
         },
       },
     });
+  }
+
+  /**
+   * Create a review for a specialist on a specific request.
+   * Convenience endpoint: POST /requests/:id/reviews
+   */
+  async createReviewForRequest(
+    clientId: string,
+    requestId: string,
+    body: { specialistNick: string; rating: number; comment?: string },
+  ) {
+    // Resolve specialist by nick
+    const specialistProfile = await this.prisma.specialistProfile.findUnique({
+      where: { nick: body.specialistNick },
+    });
+    if (!specialistProfile) throw new NotFoundException('Specialist not found');
+    const specialistId = specialistProfile.userId;
+
+    // Validate request belongs to client and is CLOSED
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.clientId !== clientId) throw new ForbiddenException('This request does not belong to you');
+    if (request.status !== RequestStatus.CLOSED) {
+      throw new BadRequestException('Request must be CLOSED to leave a review');
+    }
+
+    // Validate specialist responded to this request
+    const response = await this.prisma.response.findUnique({
+      where: { specialistId_requestId: { specialistId, requestId } },
+    });
+    if (!response) throw new BadRequestException('This specialist did not respond to this request');
+
+    // Check for duplicate
+    const existing = await this.prisma.review.findUnique({
+      where: { clientId_specialistId_requestId: { clientId, specialistId, requestId } },
+    });
+    if (existing) throw new ConflictException('You have already reviewed this specialist for this request');
+
+    return this.prisma.review.create({
+      data: {
+        clientId,
+        specialistId,
+        requestId,
+        rating: body.rating,
+        comment: body.comment ?? null,
+      },
+    });
+  }
+
+  /**
+   * Delete a request and all related responses/reviews.
+   * Only the owner can delete, and only OPEN requests.
+   */
+  async deleteRequest(clientId: string, requestId: string): Promise<{ deleted: true }> {
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
+    if (request.status !== RequestStatus.OPEN) {
+      throw new BadRequestException('Can only delete requests with OPEN status');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // Delete reviews for this request
+      await tx.review.deleteMany({ where: { requestId } });
+      // Delete responses for this request
+      await tx.response.deleteMany({ where: { requestId } });
+      // Delete the request itself
+      await tx.request.delete({ where: { id: requestId } });
+    });
+
+    return { deleted: true };
   }
 
   async updateFields(
