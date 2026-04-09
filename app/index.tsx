@@ -453,6 +453,11 @@ export default function LandingScreen() {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
+              {isMobile && featuredSpecialists.length > 1 && (
+                <Text style={{ color: Colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 4 }}>
+                  {'← Свайп для просмотра →'}
+                </Text>
+              )}
               <TouchableOpacity onPress={() => router.push('/specialists')} activeOpacity={0.8} style={dyn.seeAllBtn}>
                 <Text style={dyn.seeAllText}>{'\u0421\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0432\u0441\u0435\u0445 \u2192'}</Text>
               </TouchableOpacity>
@@ -785,6 +790,11 @@ export default function LandingScreen() {
               <Text style={styles.footerDot}>{'\u00B7'}</Text>
               <TouchableOpacity onPress={() => router.push('/pricing')} activeOpacity={0.7}>
                 <Text style={styles.footerLink}>{'\u0422\u0430\u0440\u0438\u0444\u044B'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.footerDot}>{'\u00B7'}</Text>
+              <Text style={styles.footerDot}>{'\u00B7'}</Text>
+              <TouchableOpacity onPress={() => router.push('/support' as any)} activeOpacity={0.7}>
+                <Text style={styles.footerLink}>{'\u041A\u043E\u043D\u0442\u0430\u043A\u0442\u044B'}</Text>
               </TouchableOpacity>
               <Text style={styles.footerDot}>{'\u00B7'}</Text>
               <TouchableOpacity
