@@ -209,6 +209,53 @@ export default function DashboardHub() {
     </View>
   );
 
+  const welcomeSection = isClient && recentRequests.length === 0 && !loading && !loadError ? (
+    <View style={styles.welcomeCard}>
+      <Text style={styles.welcomeTitle}>Добро пожаловать!</Text>
+      <Text style={styles.welcomeSubtitle}>Вот как это работает:</Text>
+
+      <View style={styles.welcomeSteps}>
+        <View style={styles.welcomeStep}>
+          <View style={styles.stepBadge}>
+            <Text style={styles.stepBadgeText}>1</Text>
+          </View>
+          <View style={styles.stepContent}>
+            <Text style={styles.stepTitle}>Опишите проблему</Text>
+            <Text style={styles.stepDesc}>Расскажите о своей налоговой ситуации</Text>
+          </View>
+        </View>
+
+        <View style={styles.welcomeStep}>
+          <View style={styles.stepBadge}>
+            <Text style={styles.stepBadgeText}>2</Text>
+          </View>
+          <View style={styles.stepContent}>
+            <Text style={styles.stepTitle}>Получите ответы</Text>
+            <Text style={styles.stepDesc}>Специалисты из вашего города предложат решения</Text>
+          </View>
+        </View>
+
+        <View style={styles.welcomeStep}>
+          <View style={styles.stepBadge}>
+            <Text style={styles.stepBadgeText}>3</Text>
+          </View>
+          <View style={styles.stepContent}>
+            <Text style={styles.stepTitle}>Выберите подходящего</Text>
+            <Text style={styles.stepDesc}>Сравните и выберите специалиста</Text>
+          </View>
+        </View>
+      </View>
+
+      <Button
+        onPress={() => router.push('/(dashboard)/my-requests/new')}
+        variant="primary"
+        style={styles.welcomeBtn}
+      >
+        Создать первый запрос
+      </Button>
+    </View>
+  ) : null;
+
   const recentSection = isClient ? (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Последние запросы</Text>
@@ -278,6 +325,7 @@ export default function DashboardHub() {
               <>
                 {statsSection}
                 {!loading && quickActions}
+                {!loading && welcomeSection}
                 {!loading && recentSection}
               </>
             )}
@@ -676,5 +724,66 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
+  },
+  // Welcome card (empty state for clients)
+  welcomeCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing['2xl'],
+    gap: Spacing.lg,
+    ...Shadows.sm,
+  },
+  welcomeTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+  },
+  welcomeSubtitle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    marginTop: -Spacing.sm,
+  },
+  welcomeSteps: {
+    gap: Spacing.lg,
+  },
+  welcomeStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  stepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.brandPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 2,
+  },
+  stepBadgeText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.bold,
+    color: '#FFFFFF',
+  },
+  stepContent: {
+    flex: 1,
+    gap: 2,
+  },
+  stepTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  stepDesc: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  welcomeBtn: {
+    width: '100%',
+    marginTop: Spacing.sm,
   },
 });

@@ -197,7 +197,7 @@ export default function SpecialistDashboard() {
       </Text>
       <TouchableOpacity
         style={styles.noProfileCtaBtn}
-        onPress={() => router.push('/specialist/onboarding')}
+        onPress={() => router.push('/(onboarding)/username')}
         activeOpacity={0.8}
       >
         <Text style={styles.noProfileCtaBtnText}>Создать профиль</Text>
