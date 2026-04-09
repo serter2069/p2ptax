@@ -325,9 +325,18 @@ export default function LandingScreen() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [isLoadingSpecialists, setIsLoadingSpecialists] = useState(true);
   const [isLoadingRequests, setIsLoadingRequests] = useState(true);
+  const [reviews, setReviews] = useState<Array<{
+    id: string;
+    rating: number;
+    comment: string | null;
+    clientName: string;
+    specialistName: string;
+    specialistNick?: string;
+  }>>([]);
   useEffect(() => {
     api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
     api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
+    api.get<any[]>('/reviews/public?limit=6').then(setReviews).catch((err) => console.warn('Landing section failed (reviews):', err));
   }, []);
 
   const isWide = !isMobile;
@@ -695,7 +704,39 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        {/* ===== SECTION 7: Reviews — hidden until real API reviews available ===== */}
+        {/* ===== SECTION 7: Reviews ===== */}
+        {reviews.length > 0 && (
+          <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041e\u0442\u0437\u044b\u0432\u044b \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432'}</Text>
+              <Text style={styles.sectionSubtitle}>{'\u0420\u0435\u0430\u043b\u044c\u043d\u044b\u0435 \u043e\u0442\u0437\u044b\u0432\u044b \u043e\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u044b\u0445 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432'}</Text>
+
+              <View style={[
+                styles.reviewsRow,
+                isWide && styles.reviewsRowDesktop,
+                isTablet && !isWide && styles.reviewsRowTablet,
+              ]}>
+                {reviews.map((review) => (
+                  <View
+                    key={review.id}
+                    style={[
+                      styles.reviewCard,
+                      isTablet && !isWide && styles.reviewCardTablet,
+                    ]}
+                  >
+                    <Text style={styles.reviewQuote}>{'\u201c'}</Text>
+                    <Text style={styles.reviewText}>{review.comment}</Text>
+                    <Text style={styles.reviewStars}>
+                      {'\u2605'.repeat(review.rating)}{'\u2606'.repeat(5 - review.rating)}
+                    </Text>
+                    <Text style={styles.reviewName}>{review.clientName}</Text>
+                    <Text style={styles.reviewCity}>{'\u0421\u043f\u0435\u0446\u0438\u0430\u043b\u0438\u0441\u0442: '}{review.specialistName}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* ===== SECTION 8: FAQ ===== */}
         <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>

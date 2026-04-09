@@ -157,6 +157,40 @@ export class ReviewsService {
     return { success: true };
   }
 
+  /** GET /reviews/public — last N reviews with specialist name, for landing page */
+  async listPublic(limit = 6) {
+    const items = await this.prisma.review.findMany({
+      where: { comment: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        client: { select: { username: true } },
+        specialist: {
+          select: {
+            specialistProfile: { select: { displayName: true, nick: true } },
+          },
+        },
+      },
+    });
+
+    return items.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt,
+      clientName: r.client?.username || 'Клиент',
+      specialistName:
+        r.specialist?.specialistProfile?.displayName ||
+        r.specialist?.specialistProfile?.nick ||
+        'Специалист',
+      specialistNick: r.specialist?.specialistProfile?.nick,
+    }));
+  }
+
   /**
    * Check if a client can review a specialist:
    * - has a CLOSED request that the specialist responded to
