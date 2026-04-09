@@ -129,7 +129,7 @@ export default function MyRequestDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Header title="Запрос" showBack />
+        <Header title="Запрос" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Запрос' }]} />
         <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
@@ -140,7 +140,7 @@ export default function MyRequestDetailScreen() {
   if (error || !request) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Header title="Запрос" showBack />
+        <Header title="Запрос" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Запрос' }]} />
         <EmptyState
           icon="alert-circle-outline"
           title="Ошибка"
@@ -154,7 +154,7 @@ export default function MyRequestDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Запрос" showBack />
+      <Header title="Запрос" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Запрос' }]} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
