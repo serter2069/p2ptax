@@ -69,9 +69,9 @@ export class RequestsController {
     );
   }
 
-  // GET /requests — public feed accessible without authentication
+  // GET /requests — requires authentication (#313: was public, exposed personal data)
   @Get()
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   getFeed(
     @Query('city') city?: string,
     @Query('page') page?: string,
