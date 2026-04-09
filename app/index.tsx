@@ -10,6 +10,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { Typography, BorderRadius, Colors, Spacing } from '../constants/Colors';
@@ -525,11 +526,9 @@ export default function LandingScreen() {
             <View style={[styles.forWhomRow, isWide && styles.forWhomRowWide]}>
               {/* Clients */}
               <View style={[styles.forWhomCard, isWide && styles.forWhomCardWide]}>
-                <Image
-                  source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80' }}
-                  style={styles.forWhomImage}
-                  resizeMode="cover"
-                />
+                <View style={styles.forWhomIconContainer}>
+                  <Ionicons name="person-outline" size={48} color={Colors.brandPrimary} />
+                </View>
                 <View style={styles.forWhomContent}>
                   <Text style={styles.forWhomTitle}>{'\u0417\u0430\u043A\u0430\u0437\u0447\u0438\u043A\u0430\u043C'}</Text>
                   <Text style={styles.forWhomSubtitle}>{'\u0424\u0438\u0437\u043B\u0438\u0446\u0430, \u0418\u041F \u0438 \u043A\u043E\u043C\u043F\u0430\u043D\u0438\u0438'}</Text>
@@ -549,11 +548,9 @@ export default function LandingScreen() {
 
               {/* Specialists */}
               <View style={[styles.forWhomCard, isWide && styles.forWhomCardWide]}>
-                <Image
-                  source={{ uri: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80' }}
-                  style={styles.forWhomImage}
-                  resizeMode="cover"
-                />
+                <View style={styles.forWhomIconContainer}>
+                  <Ionicons name="briefcase-outline" size={48} color={Colors.brandPrimary} />
+                </View>
                 <View style={styles.forWhomContent}>
                   <Text style={styles.forWhomTitle}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430\u043C'}</Text>
                   <Text style={styles.forWhomSubtitle}>{'\u042E\u0440\u0438\u0441\u0442\u044B \u0438 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0435 \u043A\u043E\u043D\u0441\u0443\u043B\u044C\u0442\u0430\u043D\u0442\u044B'}</Text>
@@ -581,12 +578,12 @@ export default function LandingScreen() {
 
             <View style={[styles.trustRow, isWide && styles.trustRowWide]}>
               {[
-                { title: '\u0412\u0435\u0440\u0438\u0444\u0438\u043A\u0430\u0446\u0438\u044F \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u043E\u0432', desc: '\u041F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0434\u0438\u043F\u043B\u043E\u043C\u044B \u0438 \u043B\u0438\u0446\u0435\u043D\u0437\u0438\u0438' },
-                { title: '\u0420\u0435\u0430\u043B\u044C\u043D\u044B\u0435 \u043E\u0442\u0437\u044B\u0432\u044B', desc: '\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043D\u043D\u044B\u0445 \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432' },
-                { title: '\u0411\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u0430\u044F \u043E\u043F\u043B\u0430\u0442\u0430', desc: '\u0421\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u043F\u0435\u0440\u0435\u0432\u043E\u0434\u044F\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F \u0440\u0430\u0431\u043E\u0442\u044B' },
+                { title: '\u0412\u0435\u0440\u0438\u0444\u0438\u043A\u0430\u0446\u0438\u044F \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u043E\u0432', desc: '\u041F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0434\u0438\u043F\u043B\u043E\u043C\u044B \u0438 \u043B\u0438\u0446\u0435\u043D\u0437\u0438\u0438', icon: 'document-text-outline' as const },
+                { title: '\u0420\u0435\u0430\u043B\u044C\u043D\u044B\u0435 \u043E\u0442\u0437\u044B\u0432\u044B', desc: '\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043D\u043D\u044B\u0445 \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432', icon: 'star-outline' as const },
+                { title: '\u0411\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u0430\u044F \u043E\u043F\u043B\u0430\u0442\u0430', desc: '\u0421\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u043F\u0435\u0440\u0435\u0432\u043E\u0434\u044F\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F \u0440\u0430\u0431\u043E\u0442\u044B', icon: 'shield-checkmark-outline' as const },
               ].map((item) => (
                 <View key={item.title} style={[styles.trustItem, isWide && styles.trustItemWide]}>
-                  <Text style={styles.trustCheck}>{'\u2713'}</Text>
+                  <Ionicons name={item.icon} size={36} color={Colors.brandPrimary} />
                   <Text style={styles.trustTitle}>{item.title}</Text>
                   <Text style={styles.trustDesc}>{item.desc}</Text>
                 </View>
@@ -600,8 +597,8 @@ export default function LandingScreen() {
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041E\u0442\u0437\u044B\u0432\u044B \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432'}</Text>
 
-            <View style={[styles.reviewsRow, isDesktop && styles.reviewsRowDesktop, isTablet && styles.reviewsRowTablet]}>
-              {[
+            {(() => {
+              const reviews = [
                 {
                   text: '\u041F\u043E\u043C\u043E\u0433\u043B\u0438 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u0442\u044C\u0441\u044F \u0441 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u043C \u0432\u044B\u0447\u0435\u0442\u043E\u043C, \u0431\u044B\u0441\u0442\u0440\u043E \u0438 \u043F\u043E\u043D\u044F\u0442\u043D\u043E. \u0412\u0435\u0440\u043D\u0443\u043B\u0438 260 \u0442\u044B\u0441\u044F\u0447 \u0437\u0430 \u043A\u0432\u0430\u0440\u0442\u0438\u0440\u0443!',
                   name: '\u0410\u043D\u043D\u0430 \u041A.',
@@ -617,16 +614,26 @@ export default function LandingScreen() {
                   name: '\u041C\u0430\u0440\u0438\u043D\u0430 \u0421.',
                   city: '\u041A\u0430\u0437\u0430\u043D\u044C',
                 },
-              ].map((review) => (
-                <View key={review.name} style={[styles.reviewCard, isTablet && styles.reviewCardTablet]}>
+              ];
+              const renderReviewCard = (review: typeof reviews[0]) => (
+                <View key={review.name} style={[styles.reviewCard, !isMobile && isTablet && styles.reviewCardTablet, isMobile && { width: 280, flex: undefined as any }]}>
                   <Text style={styles.reviewQuote}>{'\u201C'}</Text>
                   <Text style={styles.reviewText}>{review.text}</Text>
                   <Text style={styles.reviewStars}>{'\u2605\u2605\u2605\u2605\u2605'}</Text>
                   <Text style={styles.reviewName}>{review.name}</Text>
                   <Text style={styles.reviewCity}>{review.city}</Text>
                 </View>
-              ))}
-            </View>
+              );
+              return isMobile ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingVertical: 4 }}>
+                  {reviews.map(renderReviewCard)}
+                </ScrollView>
+              ) : (
+                <View style={[styles.reviewsRow, isDesktop && styles.reviewsRowDesktop, isTablet && styles.reviewsRowTablet]}>
+                  {reviews.map(renderReviewCard)}
+                </View>
+              );
+            })()}
           </View>
         </View>
 
@@ -1044,9 +1051,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgPrimary,
   },
   forWhomCardWide: {},
-  forWhomImage: {
-    width: '100%',
-    height: 200,
+  forWhomIconContainer: {
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingBottom: 8,
   },
   forWhomContent: {
     padding: 24,
