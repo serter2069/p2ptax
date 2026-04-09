@@ -120,10 +120,9 @@ export function LandingHeader() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-              activeOpacity={0.8}
-              style={styles.btnRegister}
+              activeOpacity={0.7}
             >
-              <Text style={styles.btnRegisterLabel}>Для специалистов</Text>
+              <Text style={styles.specialistLink}>Для специалистов</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -346,5 +345,11 @@ const styles = StyleSheet.create({
   mobileMenuTextActive: {
     color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  specialistLink: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    textDecorationLine: 'underline',
   },
 });

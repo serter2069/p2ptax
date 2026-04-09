@@ -919,32 +919,6 @@ const styles = StyleSheet.create({
       : {}),
   },
 
-  // ---- Launch Banner (replaces fake stats) ----
-  launchBanner: {
-    alignItems: 'center',
-    gap: 16,
-    paddingVertical: 8,
-  },
-  launchBannerText: {
-    fontSize: 17,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-    textAlign: 'center',
-  },
-  launchBannerBtn: {
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  launchBannerBtnLabel: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-
   // ---- Stats Bar ----
   statsSection: {
     width: '100%',
@@ -1064,41 +1038,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.textSecondary,
     lineHeight: 22,
-  },
-
-  // ---- Tasks Grid ----
-  tasksGrid: {
-    width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 8,
-  },
-  tasksGridDesktop: {
-    gap: 16,
-  },
-  tasksGridTablet: {
-    gap: 14,
-  },
-  taskCard: {
-    width: '31%',
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-  },
-  taskCardMobile: {
-    width: '47%',
-  },
-  taskCardText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-    textAlign: 'center',
   },
 
   // ---- For whom ----
@@ -1488,35 +1427,6 @@ const dyn = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.semibold,
-  },
-});
-
-const pricingStyles = StyleSheet.create({
-  card: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing['2xl'],
-    gap: Spacing.md,
-  },
-  cardTitle: {
-    fontSize: Typography.fontSize.title,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  rowText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    flex: 1,
   },
 });
 // dev-sync test Thu Apr  9 08:47:11 PDT 2026

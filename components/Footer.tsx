@@ -45,6 +45,14 @@ export function Footer({ isWide = false }: FooterProps) {
           <TouchableOpacity onPress={() => router.push('/support' as any)} activeOpacity={0.7}>
             <Text style={styles.footerLink}>Контакты</Text>
           </TouchableOpacity>
+          <Text style={styles.footerDot}>·</Text>
+          <TouchableOpacity activeOpacity={0.7}>
+            <Text style={styles.footerLink}>Политика конфиденциальности</Text>
+          </TouchableOpacity>
+          <Text style={styles.footerDot}>·</Text>
+          <TouchableOpacity activeOpacity={0.7}>
+            <Text style={styles.footerLink}>Пользовательское соглашение</Text>
+          </TouchableOpacity>
         </View>
         <Text style={styles.footerCopy}>
           {`\u00A9 ${new Date().getFullYear()} Налоговик`}
