@@ -376,7 +376,7 @@ export default function LandingScreen() {
                 {'\u041F\u0440\u043E\u0431\u043B\u0435\u043C\u044B \u0441 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u043E\u0439?\n\u041D\u0430\u0439\u0434\u0451\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430 \u0437\u0430 1 \u0447\u0430\u0441'}
               </Text>
               <Text style={[styles.heroSubtitle, isWide && styles.heroSubtitleWide]}>
-                {'\u042E\u0440\u0438\u0441\u0442\u044B \u0438 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0435 \u043A\u043E\u043D\u0441\u0443\u043B\u044C\u0442\u0430\u043D\u0442\u044B \u0432 \u0432\u0430\u0448\u0435\u043C \u0433\u043E\u0440\u043E\u0434\u0435. \u041E\u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0439\u0442\u0065 \u0437\u0430\u043F\u0440\u043E\u0441 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E \u2014 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u043E\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0445 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}
+                {'Получили требование от ФНС? Штраф? Не знаете как сделать вычет? Опишите ситуацию — в течение часа отзовутся специалисты из вашего города'}
               </Text>
 
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
@@ -789,7 +789,7 @@ export default function LandingScreen() {
           <View style={[styles.ctaContent, innerStyle]}>
             <Text style={styles.ctaTitle}>{'\u041D\u0430\u0447\u043D\u0438\u0442\u0435 \u043F\u0440\u044F\u043C\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u2014 \u044D\u0442\u043E \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E'}</Text>
             <Text style={styles.ctaSubtitle}>
-              {'\u0422\u044B\u0441\u044F\u0447\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432 \u0433\u043E\u0442\u043E\u0432\u044B \u043F\u043E\u043C\u043E\u0447\u044C \u0441 \u0432\u0430\u0448\u0435\u0439 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u043E\u0439 \u0437\u0430\u0434\u0430\u0447\u0435\u0439'}
+              {'Специалисты по всей России готовы откликнуться на вашу задачу'}
             </Text>
             <View style={[styles.ctaButtons, isWide && styles.ctaButtonsWide]}>
               <Button
@@ -838,7 +838,6 @@ export default function LandingScreen() {
               <TouchableOpacity onPress={() => router.push('/pricing')} activeOpacity={0.7}>
                 <Text style={styles.footerLink}>{'\u0422\u0430\u0440\u0438\u0444\u044B'}</Text>
               </TouchableOpacity>
-              <Text style={styles.footerDot}>{'\u00B7'}</Text>
               <Text style={styles.footerDot}>{'\u00B7'}</Text>
               <TouchableOpacity onPress={() => router.push('/support' as any)} activeOpacity={0.7}>
                 <Text style={styles.footerLink}>{'\u041A\u043E\u043D\u0442\u0430\u043A\u0442\u044B'}</Text>
