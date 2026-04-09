@@ -21,6 +21,7 @@ import { Button } from '../../components/Button';
 import { LandingHeader } from '../../components/LandingHeader';
 import { EmptyState } from '../../components/EmptyState';
 import { Stars } from '../../components/Stars';
+import { Ionicons } from '@expo/vector-icons';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 // Brand tokens
@@ -330,16 +331,19 @@ export default function PublicSpecialistProfileScreen() {
       <View style={styles.badgesRow}>
         {isVerified && (
           <View style={[styles.badge, styles.badgeSuccess]}>
-            <Text style={styles.badgeSuccessText}>✓ Проверен</Text>
+            <Ionicons name="shield-checkmark" size={14} color={B.success} />
+            <Text style={styles.badgeSuccessText}>Проверен</Text>
           </View>
         )}
         {profile.experience != null && (
           <View style={[styles.badge, styles.badgeAction]}>
-            <Text style={styles.badgeActionText}>⏱ {profile.experience} {profile.experience === 1 ? 'год' : profile.experience >= 2 && profile.experience <= 4 ? 'года' : 'лет'} опыта</Text>
+            <Ionicons name="briefcase-outline" size={14} color={B.action} />
+            <Text style={styles.badgeActionText}>{profile.experience} {profile.experience === 1 ? 'год' : profile.experience >= 2 && profile.experience <= 4 ? 'года' : 'лет'} опыта</Text>
           </View>
         )}
         <View style={[styles.badge, styles.badgeNeutral]}>
-          <Text style={styles.badgeNeutralText}>🗓 С {sinceYear} года</Text>
+          <Ionicons name="calendar-outline" size={14} color={B.muted} />
+          <Text style={styles.badgeNeutralText}>С {sinceYear} года</Text>
         </View>
       </View>
 
@@ -702,7 +706,7 @@ const styles = StyleSheet.create({
 
   // Badges
   badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  badge: { paddingVertical: 3, paddingHorizontal: 9, borderRadius: 3 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12 },
   badgeSuccess: { backgroundColor: B.bgSuccess },
   badgeSuccessText: { fontSize: 11, fontWeight: '600', color: B.success },
   badgeAction: { backgroundColor: B.bgAction },

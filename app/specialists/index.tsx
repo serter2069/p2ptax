@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
+import { Ionicons } from '@expo/vector-icons';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { api, ApiError } from '../../lib/api';
@@ -172,6 +173,7 @@ export default function SpecialistsCatalogScreen() {
                 </Text>
                 {isVerified && (
                   <View style={styles.verifiedBadge}>
+                    <Ionicons name="shield-checkmark" size={12} color="#1A7848" />
                     <Text style={styles.verifiedText}>Проверен</Text>
                   </View>
                 )}
@@ -597,10 +599,13 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     backgroundColor: '#E8F5ED',
-    paddingVertical: 1,
+    paddingVertical: 2,
     paddingHorizontal: 6,
-    borderRadius: BorderRadius.sm,
+    borderRadius: 10,
   },
   verifiedText: {
     fontSize: 10,
