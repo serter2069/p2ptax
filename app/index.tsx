@@ -293,27 +293,18 @@ export default function LandingScreen() {
                 {'\u042E\u0440\u0438\u0441\u0442\u044B \u0438 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0435 \u043A\u043E\u043D\u0441\u0443\u043B\u044C\u0442\u0430\u043D\u0442\u044B \u0432 \u0432\u0430\u0448\u0435\u043C \u0433\u043E\u0440\u043E\u0434\u0435. \u041E\u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0439\u0442\u0065 \u0437\u0430\u043F\u0440\u043E\u0441 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E \u2014 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u043E\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0445 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}
               </Text>
 
-              <QuickRequestForm />
-
-              {isWide && (
-                <View style={[styles.heroCtas, styles.heroCtasWide]}>
-                  <Button
-                    onPress={() => router.push('/specialists')}
-                    variant="primary"
-                    style={{ minWidth: 220 }}
-                  >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
-                  <Button
-                    onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
-                    variant="outline"
-                    style={{ minWidth: 200 }}
-                  >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
-                  <Button
-                    onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-                    variant="outline"
-                    style={{ minWidth: 200 }}
-                  >{'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
-                </View>
-              )}
+              <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
+                <Button
+                  onPress={() => router.push('/specialists')}
+                  variant="primary"
+                  style={{ minWidth: 220 }}
+                >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
+                <Button
+                  onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
+                  variant="outline"
+                  style={{ minWidth: 200 }}
+                >{'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
+              </View>
             </View>
 
             {isWide ? (
