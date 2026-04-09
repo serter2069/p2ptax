@@ -155,7 +155,9 @@ export default function RequestsFeedScreen() {
         if (selectedCategory) params.set('category', selectedCategory);
         if (maxBudget > 0) params.set('maxBudget', String(maxBudget));
         params.set('page', String(pageNum));
-        const data = await api.get<FeedResponse>(`/requests?${params.toString()}`);
+        // Use /requests/public for unauthenticated users (#313: /requests now requires JWT)
+        const endpoint = user ? '/requests' : '/requests/public';
+        const data = await api.get<FeedResponse>(`${endpoint}?${params.toString()}`);
 
         if (replace || isRefresh) {
           setItems(data.items);
