@@ -121,21 +121,25 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  googleAuth() {
-    // Guard initiates Google OAuth redirect
+  googleAuth(
+    @Req() req: ExpressRequest,
+    @Res({ passthrough: false }) res: Response,
+  ) {
+    // Guard will handle redirect — this is a placeholder
+    // The `state` query param is automatically forwarded by Passport
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(
-    @Req() req: ExpressRequest & { user: { accessToken: string; refreshToken: string; isNewUser: boolean; user: { userId: string; email: string; role: string; username: string | null } } },
+    @Req() req: ExpressRequest & { user: { accessToken: string; refreshToken: string; isNewUser: boolean; frontendOrigin: string; user: { userId: string; email: string; role: string; username: string | null } } },
     @Res({ passthrough: false }) res: Response,
   ) {
-    const { accessToken, refreshToken, isNewUser, user } = req.user;
+    const { accessToken, refreshToken, isNewUser, frontendOrigin, user } = req.user;
     this.setTokenCookies(res, accessToken, refreshToken);
 
-    // Redirect to frontend with tokens in query params (for native/web)
-    const frontendUrl = process.env.FRONTEND_URL ?? '/';
+    // Use origin from state param if provided, otherwise fallback to FRONTEND_URL
+    const baseUrl = frontendOrigin || process.env.FRONTEND_URL || '/';
     const params = new URLSearchParams({
       accessToken,
       refreshToken,
@@ -146,6 +150,6 @@ export class AuthController {
       username: user.username ?? '',
     });
 
-    res.redirect(`${frontendUrl}/auth/google-callback?${params.toString()}`);
+    res.redirect(`${baseUrl}/auth/google-callback?${params.toString()}`);
   }
 }

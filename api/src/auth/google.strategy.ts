@@ -15,10 +15,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
       callbackURL: process.env.GOOGLE_CALLBACK_URL ?? '/api/auth/google/callback',
       scope: ['email', 'profile'],
+      passReqToCallback: true,
     });
   }
 
   async validate(
+    req: { query?: { state?: string } },
     _accessToken: string,
     _refreshToken: string,
     profile: { emails?: { value: string }[]; name?: { givenName?: string; familyName?: string } },
@@ -33,7 +35,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const firstName = profile.name?.givenName;
     const lastName = profile.name?.familyName;
 
-    // Upsert user — same as OTP flow
+    // Pass through the state param (contains frontend origin)
+    const state = req.query?.state ?? '';
+
     const isNewUser = !(await this.prisma.user.findUnique({ where: { email } }));
 
     const user = await this.prisma.user.upsert({
@@ -52,6 +56,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done(null, {
       ...tokens,
       isNewUser,
+      frontendOrigin: state,
       user: {
         userId: user.id,
         email: user.email,

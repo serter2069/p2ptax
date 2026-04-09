@@ -114,7 +114,8 @@ export default function EmailScreen() {
               style={styles.googleBtn}
               onPress={() => {
                 // Redirect to backend Google OAuth
-                window.location.href = `${API_BASE}/auth/google`;
+                const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                window.location.href = `${API_BASE}/auth/google?state=${encodeURIComponent(origin)}`;
               }}
               activeOpacity={0.8}
               accessibilityRole="button"
