@@ -3,12 +3,20 @@ import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography } from '../constants/Colors';
 
 export type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'accent' | 'familiar';
+export type BadgeSize = 'xs' | 'sm' | 'md';
 
 interface BadgeProps {
   variant?: BadgeVariant;
   label?: string;
+  size?: BadgeSize;
   style?: ViewStyle;
 }
+
+const SIZE_STYLES: Record<BadgeSize, { fontSize: number; paddingH: number; paddingV: number }> = {
+  xs: { fontSize: 10, paddingH: 4, paddingV: 2 },
+  sm: { fontSize: 12, paddingH: 6, paddingV: 3 },
+  md: { fontSize: 14, paddingH: 8, paddingV: 4 },
+};
 
 const VARIANT_COLORS: Record<BadgeVariant, { bg: string; text: string }> = {
   success: { bg: Colors.statusBg.success, text: Colors.statusSuccess },
@@ -19,14 +27,15 @@ const VARIANT_COLORS: Record<BadgeVariant, { bg: string; text: string }> = {
   familiar: { bg: Colors.statusBg.familiar, text: Colors.textFamiliar },
 };
 
-export function Badge({ variant = 'accent', label, style }: BadgeProps) {
+export function Badge({ variant = 'accent', label, size, style }: BadgeProps) {
   const isFamiliar = variant === 'familiar';
   const displayLabel = isFamiliar ? 'Знакомый в налоговой' : (label ?? variant);
   const colors = VARIANT_COLORS[variant];
+  const sizeStyle = size ? SIZE_STYLES[size] : undefined;
 
   return (
-    <View style={[styles.badge, { backgroundColor: colors.bg }, style]}>
-      <Text style={[styles.label, { color: colors.text }]}>
+    <View style={[styles.badge, { backgroundColor: colors.bg }, sizeStyle && { paddingHorizontal: sizeStyle.paddingH, paddingVertical: sizeStyle.paddingV }, style]}>
+      <Text style={[styles.label, { color: colors.text }, sizeStyle && { fontSize: sizeStyle.fontSize }]}>
         {displayLabel}
       </Text>
     </View>

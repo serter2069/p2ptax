@@ -60,6 +60,10 @@ export default function PublicRequestDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Eligibility state
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
+  const [alreadyResponded, setAlreadyResponded] = useState(false);
+
   // Respond modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [respondMessage, setRespondMessage] = useState('');
@@ -91,6 +95,19 @@ export default function PublicRequestDetailScreen() {
     load();
     return () => { cancelled = true; };
   }, [id]);
+
+  // Check eligibility for specialists
+  useEffect(() => {
+    if (!id || !user || user.role !== 'SPECIALIST' || !request || request.status !== 'OPEN') return;
+    setEligibilityLoading(true);
+    api.get<{ responses?: any[] }>(`/requests/${id}`)
+      .then((data) => {
+        const myResponse = data.responses?.find((r: any) => r.specialistId === user.userId);
+        setAlreadyResponded(!!myResponse);
+      })
+      .catch(() => {})
+      .finally(() => setEligibilityLoading(false));
+  }, [id, user, request]);
 
   function openRespondModal() {
     setRespondMessage('');
@@ -241,13 +258,21 @@ export default function PublicRequestDetailScreen() {
 
           {/* CTA for authenticated specialists */}
           {user && user.role === 'SPECIALIST' && isOpen && (
-            <Button
-              onPress={openRespondModal}
-              variant="primary"
-              style={styles.respondBtn}
-            >
-              Откликнуться
-            </Button>
+            eligibilityLoading ? (
+              <ActivityIndicator size="small" color={Colors.brandPrimary} style={{ marginVertical: Spacing.md }} />
+            ) : alreadyResponded ? (
+              <View style={styles.ctaBox}>
+                <Text style={styles.ctaText}>Вы уже откликались на этот запрос</Text>
+              </View>
+            ) : (
+              <Button
+                onPress={openRespondModal}
+                variant="primary"
+                style={styles.respondBtn}
+              >
+                Откликнуться
+              </Button>
+            )
           )}
 
           {/* CTA for unauthenticated */}

@@ -179,6 +179,8 @@ const qrf = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.bgPrimary,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   cityChipSelected: {
     backgroundColor: Colors.brandPrimary,
@@ -297,12 +299,12 @@ export default function LandingScreen() {
                 <Button
                   onPress={() => router.push('/specialists')}
                   variant="primary"
-                  style={{ minWidth: 220 }}
+                  style={{ minWidth: 220, maxWidth: 260 }}
                 >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
                 <Button
                   onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
                   variant="outline"
-                  style={{ minWidth: 200 }}
+                  style={{ minWidth: 200, maxWidth: 260 }}
                 >{'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
               </View>
             </View>
@@ -817,8 +819,9 @@ const styles = StyleSheet.create({
   },
   heroCtasWide: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     alignItems: 'center',
+    gap: 12,
   },
   heroImage: {
     width: '100%',
@@ -1400,6 +1403,8 @@ const dyn = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.bgPrimary,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   cityChipText: {
     fontSize: Typography.fontSize.sm,

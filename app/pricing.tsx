@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
@@ -84,6 +85,19 @@ export default function PricingScreen() {
   const { isMobile } = useBreakpoints();
   const [selectedCity, setSelectedCity] = useState<CityKey>('moscow');
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>(1);
+  const [priceLoading, setPriceLoading] = useState(false);
+
+  function handleCityChange(key: CityKey) {
+    setPriceLoading(true);
+    setSelectedCity(key);
+    setTimeout(() => setPriceLoading(false), 300);
+  }
+
+  function handlePeriodChange(months: PeriodKey) {
+    setPriceLoading(true);
+    setSelectedPeriod(months);
+    setTimeout(() => setPriceLoading(false), 300);
+  }
 
   const currentDiscount = PERIODS.find((p) => p.months === selectedPeriod)?.discount ?? 0;
 
@@ -120,7 +134,7 @@ export default function PricingScreen() {
                 <TouchableOpacity
                   key={city.key}
                   style={[styles.chip, selectedCity === city.key && styles.chipSelected]}
-                  onPress={() => setSelectedCity(city.key)}
+                  onPress={() => handleCityChange(city.key)}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.chipText, selectedCity === city.key && styles.chipTextSelected]}>
@@ -139,7 +153,7 @@ export default function PricingScreen() {
                 <TouchableOpacity
                   key={period.months}
                   style={[styles.chip, selectedPeriod === period.months && styles.chipSelected]}
-                  onPress={() => setSelectedPeriod(period.months)}
+                  onPress={() => handlePeriodChange(period.months)}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.chipText, selectedPeriod === period.months && styles.chipTextSelected]}>
@@ -175,12 +189,18 @@ export default function PricingScreen() {
                     {tier.name}
                   </Text>
                   <View style={styles.priceRow}>
-                    <Text style={[styles.priceAmount, isFeatured && styles.priceAmountFeatured]}>
-                      {formatPrice(price)}
-                    </Text>
-                    <Text style={[styles.pricePeriod, isFeatured && styles.pricePeriodFeatured]}>
-                      /мес
-                    </Text>
+                    {priceLoading ? (
+                      <ActivityIndicator size="small" color={isFeatured ? Colors.white : Colors.brandPrimary} />
+                    ) : (
+                      <>
+                        <Text style={[styles.priceAmount, isFeatured && styles.priceAmountFeatured]}>
+                          {formatPrice(price)}
+                        </Text>
+                        <Text style={[styles.pricePeriod, isFeatured && styles.pricePeriodFeatured]}>
+                          /мес
+                        </Text>
+                      </>
+                    )}
                   </View>
                   {currentDiscount > 0 && (
                     <Text style={[styles.originalPrice, isFeatured && styles.originalPriceFeatured]}>

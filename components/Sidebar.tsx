@@ -38,7 +38,7 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
   return (
     <View style={[styles.sidebar, { width }]}>
       {/* Logo / App name */}
-      <View style={styles.brand}>
+      <View style={styles.brand} accessibilityLabel="Логотип Налоговик">
         <Ionicons name="scale-outline" size={22} color={Colors.brandPrimary} />
         <Text style={styles.brandName}>Налоговик</Text>
       </View>
@@ -53,6 +53,7 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
               style={[styles.navItem, active && styles.navItemActive]}
               onPress={() => router.push(item.route as any)}
               activeOpacity={0.75}
+              accessibilityLabel={item.label}
             >
               <Ionicons name={item.icon} size={18} color={active ? Colors.brandPrimary : Colors.textMuted} />
               <Text style={[styles.navLabel, active && styles.navLabelActive]}>
