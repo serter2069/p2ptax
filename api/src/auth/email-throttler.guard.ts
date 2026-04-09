@@ -1,20 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ExecutionContext } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
+const LOCALHOST_IPS = new Set(['::1', '127.0.0.1', '::ffff:127.0.0.1']);
+
 /**
- * #1897/#2253: Custom throttle guard for auth endpoints.
- * Uses the email from the request body as the rate-limit key instead of IP.
- * Targets the 'email-otp' named throttler (3 req/15min per email).
+ * Custom throttle guard for auth endpoints.
+ * Uses email from request body as the rate-limit key (3 req/15min per email).
+ * Localhost is exempt for local development testing.
  */
 @Injectable()
 export class EmailThrottlerGuard extends ThrottlerGuard {
+  protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest();
+    const ip: string = req.ip ?? '';
+    if (LOCALHOST_IPS.has(ip)) return true;
+    return super.shouldSkip(context);
+  }
+
   protected async getTracker(req: Record<string, any>): Promise<string> {
     const email: string | undefined = req.body?.email;
     if (email && typeof email === 'string') {
-      // Normalize email to prevent trivial bypass (Foo@Bar.com vs foo@bar.com)
       return `email:${email.toLowerCase().trim()}`;
     }
-    // Fallback to IP for endpoints without email in body
     return req.ip as string;
   }
 }
