@@ -97,6 +97,19 @@ export class AdminService {
     });
   }
 
+  async updateSpecialistBadges(specialistProfileId: string, badges: string[]) {
+    const profile = await this.prisma.specialistProfile.findUnique({
+      where: { userId: specialistProfileId },
+    });
+    if (!profile) {
+      throw new NotFoundException(`Specialist profile ${specialistProfileId} not found`);
+    }
+    return this.prisma.specialistProfile.update({
+      where: { userId: specialistProfileId },
+      data: { badges },
+    });
+  }
+
   async getAllRequests(page = 1, limit = 50) {
     const take = Math.min(limit, 200);
     const skip = (page - 1) * take;

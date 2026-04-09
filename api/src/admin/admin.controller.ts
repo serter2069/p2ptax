@@ -51,6 +51,16 @@ export class AdminController {
     return this.adminService.getSpecialists(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
   }
 
+  /** PATCH /admin/specialists/:id/badges — update specialist badges */
+  @Patch('specialists/:id/badges')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  updateSpecialistBadges(
+    @Param('id') id: string,
+    @Body('badges') badges: string[],
+  ) {
+    return this.adminService.updateSpecialistBadges(id, badges);
+  }
+
   /** GET /admin/requests — all platform requests, optional ?page=1&limit=50 */
   @Get('requests')
   @UseGuards(JwtAuthGuard, AdminGuard)
