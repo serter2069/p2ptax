@@ -115,7 +115,7 @@ export default function EditRequestScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Header title="Редактирование" showBack />
+        <Header title="Редактирование" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Редактирование' }]} />
         <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>

@@ -480,7 +480,7 @@ export default function ThreadScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title={otherName || 'Диалог'} showBack />
+      <Header title={otherName || 'Диалог'} showBack breadcrumbs={[{ label: 'Сообщения', route: '/(dashboard)/messages' }, { label: otherName || 'Диалог' }]} />
 
       <KeyboardAvoidingView
         style={styles.flex}
