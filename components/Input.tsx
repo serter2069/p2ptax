@@ -15,6 +15,7 @@ interface InputProps {
   secureTextEntry?: boolean;
   label?: string;
   error?: string;
+  hint?: string;
   style?: ViewStyle;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoCorrect?: boolean;
@@ -33,6 +34,7 @@ export function Input({
   secureTextEntry = false,
   label,
   error,
+  hint,
   style,
   autoCapitalize = 'none',
   autoCorrect,
@@ -72,6 +74,7 @@ export function Input({
         ]}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {hint && !error ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -108,6 +111,11 @@ const styles = StyleSheet.create({
   error: {
     fontSize: Typography.fontSize.xs,
     color: Colors.statusError,
+    marginTop: 2,
+  },
+  hint: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
     marginTop: 2,
   },
 });

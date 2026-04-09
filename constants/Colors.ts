@@ -8,7 +8,7 @@ export const Colors = {
   // Text
   textPrimary: '#0F2447',
   textSecondary: '#4A6B88',
-  textMuted: '#6A80A0',
+  textMuted: '#4A6080',
   textAccent: '#1A5BA8',
 
   // Brand
@@ -113,10 +113,11 @@ export const Typography = {
 } as const;
 
 export const BorderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
+  sm: 3,
+  md: 6,
+  lg: 10,
+  xl: 16,
+  xxl: 24,
   full: 9999,
 } as const;
 

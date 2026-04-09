@@ -435,8 +435,24 @@ export default function SpecialistsCatalogScreen() {
         }
         ListEmptyComponent={
           loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color={Colors.brandPrimary} />
+            <View style={styles.skeletonContainer}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <View key={i} style={[styles.card, isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid, { overflow: 'hidden' }]}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.skeletonAvatar} />
+                    <View style={styles.cardInfo}>
+                      <View style={styles.skeletonLine} />
+                      <View style={[styles.skeletonLine, { width: '60%' }]} />
+                      <View style={[styles.skeletonLine, { width: '40%' }]} />
+                    </View>
+                  </View>
+                  <View style={[styles.skeletonLine, { width: '80%', marginTop: Spacing.sm }]} />
+                  <View style={{ flexDirection: 'row', gap: 4, marginTop: Spacing.sm }}>
+                    <View style={[styles.skeletonChip]} />
+                    <View style={[styles.skeletonChip, { width: 60 }]} />
+                  </View>
+                </View>
+              ))}
             </View>
           ) : error ? (
             <EmptyState
@@ -749,6 +765,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.bgCard,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   chipActive: {
     backgroundColor: Colors.brandPrimary,
@@ -764,6 +782,30 @@ const styles = StyleSheet.create({
   loadingBox: {
     paddingTop: Spacing['4xl'],
     alignItems: 'center',
+  },
+  skeletonContainer: {
+    width: '100%',
+    maxWidth: 430,
+    gap: Spacing.sm,
+  },
+  skeletonAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.bgSecondary,
+  },
+  skeletonLine: {
+    height: 12,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.bgSecondary,
+    width: '100%',
+    marginBottom: 4,
+  },
+  skeletonChip: {
+    width: 80,
+    height: 20,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.bgSecondary,
   },
   loadMoreBox: {
     width: '100%',

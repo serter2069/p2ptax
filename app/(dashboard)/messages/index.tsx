@@ -200,8 +200,11 @@ export default function MessagesScreen() {
               />
             ) : (
               <EmptyState
+                icon="chatbubble-outline"
                 title="Нет диалогов"
-                subtitle="У вас пока нет диалогов. Напишите специалисту!"
+                subtitle="Начните диалог с специалистом — откликнитесь на запрос или напишите напрямую."
+                ctaLabel="Найти специалиста"
+                onCtaPress={() => router.push('/specialists' as any)}
               />
             )
           }
