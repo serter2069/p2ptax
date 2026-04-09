@@ -107,7 +107,7 @@ export default function DashboardHub() {
     <View style={styles.statsRow}>
       <TouchableOpacity
         style={styles.statCard}
-        onPress={() => router.push('/(dashboard)/requests')}
+        onPress={() => router.push('/(dashboard)/my-requests')}
         activeOpacity={0.7}
       >
         <Text style={styles.statValue}>{requestCount}</Text>
@@ -115,7 +115,7 @@ export default function DashboardHub() {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.statCard}
-        onPress={() => router.push('/(dashboard)/requests')}
+        onPress={() => router.push('/(dashboard)/my-requests')}
         activeOpacity={0.7}
       >
         <Text style={styles.statValue}>{activeCount}</Text>
@@ -140,7 +140,7 @@ export default function DashboardHub() {
           <>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => router.push('/(dashboard)/requests/new')}
+              onPress={() => router.push('/(dashboard)/my-requests/new')}
               activeOpacity={0.7}
             >
               <View style={styles.actionIconWrap}>
@@ -204,7 +204,7 @@ export default function DashboardHub() {
         <View style={styles.emptyRecent}>
           <Text style={styles.emptyRecentText}>Создайте первый запрос</Text>
           <Button
-            onPress={() => router.push('/(dashboard)/requests/new')}
+            onPress={() => router.push('/(dashboard)/my-requests/new')}
             variant="primary"
             style={styles.emptyBtn}
           >
@@ -216,7 +216,7 @@ export default function DashboardHub() {
           <TouchableOpacity
             key={req.id}
             style={styles.recentCard}
-            onPress={() => router.push(`/(dashboard)/requests/${req.id}`)}
+            onPress={() => router.push(`/(dashboard)/my-requests/${req.id}`)}
             activeOpacity={0.7}
           >
             <View style={styles.recentTop}>
@@ -322,7 +322,7 @@ export default function DashboardHub() {
 
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => router.push('/(dashboard)/requests')}
+                  onPress={() => router.push('/(dashboard)/my-requests')}
                   activeOpacity={0.75}
                 >
                   <View style={styles.cardIcon}>

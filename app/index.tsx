@@ -233,7 +233,7 @@ export default function LandingScreen() {
                   style={isWide ? { minWidth: 220 } : { width: '100%' as any }}
                 >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
                 <Button
-                  onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Frequests%2Fnew')}
+                  onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
                   variant="outline"
                   style={isWide ? { minWidth: 200 } : { width: '100%' as any }}
                 >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
@@ -577,7 +577,7 @@ export default function LandingScreen() {
                 style={{ minWidth: 200 }}
               >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
               <Button
-                onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Frequests%2Fnew')}
+                onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
                 variant="outline-white"
                 style={{ minWidth: 200 }}
               >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
