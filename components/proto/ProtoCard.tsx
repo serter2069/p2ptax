@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-import type { ProtoPage } from '../../constants/protoRegistry';
+import type { PageEntry } from '../../constants/pageRegistry';
 
 interface ProtoCardProps {
-  page: ProtoPage;
+  page: PageEntry;
 }
 
 const GROUP_COLORS: Record<string, string> = {
@@ -17,7 +17,7 @@ const GROUP_COLORS: Record<string, string> = {
 };
 
 // File path mapping for copy-to-clipboard
-function getFilePath(page: ProtoPage): string {
+function getFilePath(page: PageEntry): string {
   const stateFile = page.id
     .split('-')
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -25,7 +25,7 @@ function getFilePath(page: ProtoPage): string {
   return `components/proto/states/${stateFile}States.tsx`;
 }
 
-function buildCopyText(page: ProtoPage): string {
+function buildCopyText(page: PageEntry): string {
   return [
     `Page: ${page.title}`,
     `Route: ${page.route}`,

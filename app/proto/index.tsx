@@ -2,8 +2,8 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet, Platform, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { protoRegistry, PROTO_GROUPS } from '../../constants/protoRegistry';
-import type { ProtoPage } from '../../constants/protoRegistry';
+import { pageRegistry, PAGE_GROUPS } from '../../constants/pageRegistry';
+import type { PageEntry } from '../../constants/pageRegistry';
 
 const GROUP_LABELS: Record<string, string> = {
   Auth: 'Авторизация',
@@ -31,7 +31,7 @@ const PRESET_WIDTHS = [
   { label: 'Full', value: 0 },
 ];
 
-function getFilePath(page: ProtoPage): string {
+function getFilePath(page: PageEntry): string {
   const stateFile = page.id
     .split('-')
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -39,7 +39,7 @@ function getFilePath(page: ProtoPage): string {
   return `components/proto/states/${stateFile}States.tsx`;
 }
 
-function buildCopyText(page: ProtoPage): string {
+function buildCopyText(page: PageEntry): string {
   return [
     `Page: ${page.title}`,
     `Route: ${page.route}`,
@@ -53,30 +53,30 @@ function buildCopyText(page: ProtoPage): string {
 
 export default function ProtoIndex() {
   const [search, setSearch] = useState('');
-  const [selectedPage, setSelectedPage] = useState<ProtoPage | null>(null);
+  const [selectedPage, setSelectedPage] = useState<PageEntry | null>(null);
   const [previewWidth, setPreviewWidth] = useState(430); // default mobile
   const [copied, setCopied] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<View>(null);
   const previewAreaRef = useRef<View>(null);
 
-  const totalStates = protoRegistry.reduce((s, p) => s + p.stateCount, 0);
+  const totalStates = pageRegistry.reduce((s, p) => s + p.stateCount, 0);
 
   // Landing always first, then grouped
-  const landingPage = protoRegistry.find((p) => p.id === 'landing');
-  const otherPages = protoRegistry.filter((p) => p.id !== 'landing');
+  const landingPage = pageRegistry.find((p) => p.id === 'landing');
+  const otherPages = pageRegistry.filter((p) => p.id !== 'landing');
 
   const filtered = useMemo(() => {
     if (!search.trim()) return null;
     const q = search.toLowerCase();
-    return protoRegistry.filter(
+    return pageRegistry.filter(
       (p) => p.title.toLowerCase().includes(q) || p.id.toLowerCase().includes(q) || p.route.toLowerCase().includes(q)
     );
   }, [search]);
 
   const displayPages = filtered || undefined;
 
-  const handleCopy = useCallback((page: ProtoPage) => {
+  const handleCopy = useCallback((page: PageEntry) => {
     if (Platform.OS === 'web') {
       navigator.clipboard.writeText(buildCopyText(page)).then(() => {
         setCopied(page.id);
@@ -85,7 +85,7 @@ export default function ProtoIndex() {
     }
   }, []);
 
-  const handleOpenNewTab = useCallback((page: ProtoPage) => {
+  const handleOpenNewTab = useCallback((page: PageEntry) => {
     if (Platform.OS === 'web') {
       window.open(`/proto/states/${page.id}`, '_blank');
     }
@@ -134,7 +134,7 @@ export default function ProtoIndex() {
   }, [previewWidth]);
 
   // Sidebar item renderer
-  const renderSidebarItem = (page: ProtoPage, isLanding = false) => {
+  const renderSidebarItem = (page: PageEntry, isLanding = false) => {
     const isActive = selectedPage?.id === page.id;
     const groupColor = GROUP_COLORS[page.group] || Colors.brandPrimary;
 
@@ -173,7 +173,7 @@ export default function ProtoIndex() {
       <View style={styles.sidebar}>
         <View style={styles.sidebarHeader}>
           <Text style={styles.logoText}>P2PTax Proto</Text>
-          <Text style={styles.statsText}>{protoRegistry.length} стр / {totalStates} сост</Text>
+          <Text style={styles.statsText}>{pageRegistry.length} стр / {totalStates} сост</Text>
         </View>
 
         <View style={styles.searchWrap}>
@@ -203,7 +203,7 @@ export default function ProtoIndex() {
               )}
 
               {/* Grouped pages */}
-              {PROTO_GROUPS.map((group) => {
+              {PAGE_GROUPS.map((group) => {
                 const pages = otherPages.filter((p) => p.group === group);
                 if (pages.length === 0) return null;
                 return (

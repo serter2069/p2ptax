@@ -1,24 +1,24 @@
-export type ProtoGroup = 'Brand' | 'Auth' | 'Onboarding' | 'Dashboard' | 'Specialist' | 'Public' | 'Admin';
+export type PageGroup = 'Brand' | 'Auth' | 'Onboarding' | 'Dashboard' | 'Specialist' | 'Public' | 'Admin';
 export type NavVariant = 'public' | 'auth' | 'client' | 'specialist' | 'admin';
 
-export interface ProtoNote {
+export interface PageNote {
   date: string;
   state?: string;
   text: string;
 }
 
-export interface ProtoPage {
+export interface PageEntry {
   id: string;
   title: string;
-  group: ProtoGroup;
+  group: PageGroup;
   route: string;
   stateCount: number;
   nav: NavVariant;
   activeTab?: string;
-  notes?: ProtoNote[];
+  notes?: PageNote[];
 }
 
-export const PROTO_GROUPS: ProtoGroup[] = [
+export const PAGE_GROUPS: PageGroup[] = [
   'Brand',
   'Auth',
   'Onboarding',
@@ -28,7 +28,7 @@ export const PROTO_GROUPS: ProtoGroup[] = [
   'Admin',
 ];
 
-export const protoRegistry: ProtoPage[] = [
+export const pageRegistry: PageEntry[] = [
   // Brand
   { id: 'brand-style', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'public' },
 
@@ -43,10 +43,10 @@ export const protoRegistry: ProtoPage[] = [
     { date: '2026-04-09', state: 'INTERACTIVE', text: 'Услуги: Выездная проверка, Отдел оперативного контроля, Камеральная проверка' },
   ] },
   { id: 'onboarding-fns', title: 'Привязка ФНС', group: 'Onboarding', route: '/(onboarding)/fns', stateCount: 3, nav: 'auth', notes: [
-    { date: '2026-04-09', state: 'DEFAULT', text: 'Онбординг для специалиста. ИНН не нужен. Специалист выбирает ФНС по городу + категории услуг при каждой ФНС. Например: Москва ФНС №5 — такие услуги, Питер ФНС №3 — другие. Объединить логику с выбором услуг.' },
+    { date: '2026-04-09', state: 'DEFAULT', text: 'Онбординг для специалиста. ИНН не нужен. Специалист выбирает ФНС по городу + категории услуг при каждой ФНС.' },
   ] },
   { id: 'onboarding-profile', title: 'Заполнение профиля', group: 'Onboarding', route: '/(onboarding)/profile', stateCount: 2, nav: 'auth', notes: [
-    { date: '2026-04-09', state: 'DEFAULT', text: 'Иконка профиля вместо фото если нет фото. Убрать "Опыт работы" — не нужен.' },
+    { date: '2026-04-09', state: 'DEFAULT', text: 'Иконка профиля вместо фото если нет фото. Убрать Опыт работы.' },
   ] },
 
   // Dashboard (Client)
@@ -67,7 +67,7 @@ export const protoRegistry: ProtoPage[] = [
 
   // Public
   { id: 'landing', title: 'Лендинг', group: 'Public', route: '/', stateCount: 4, nav: 'public', notes: [
-    { date: '2026-04-09', text: 'Графический дизайн, картинки. Карусель специалистов обязательна. Форма заявки на лендинге: выбор города -> ФНС по городу -> свободное описание + контакты. Email + имя -> верификация OTP -> после верификации отправляется заявка.' },
+    { date: '2026-04-09', text: 'Карусель специалистов. Форма заявки: город -> ФНС -> описание + email/имя -> OTP верификация -> отправка.' },
   ] },
   { id: 'public-requests', title: 'Лента заявок', group: 'Public', route: '/requests', stateCount: 3, nav: 'public' },
   { id: 'public-request-detail', title: 'Детали заявки (публ.)', group: 'Public', route: '/requests/1', stateCount: 2, nav: 'public' },
@@ -83,19 +83,18 @@ export const protoRegistry: ProtoPage[] = [
   { id: 'admin-promotions', title: 'Админ — Промо', group: 'Admin', route: '/(admin)/promotions', stateCount: 1, nav: 'admin', activeTab: 'promotions' },
 ];
 
-export function getPageById(id: string): ProtoPage | undefined {
-  return protoRegistry.find((p) => p.id === id);
+export function getPageById(id: string): PageEntry | undefined {
+  return pageRegistry.find((p) => p.id === id);
 }
 
-export function getPagesByGroup(group: ProtoGroup): ProtoPage[] {
-  return protoRegistry.filter((p) => p.group === group);
+export function getPagesByGroup(group: PageGroup): PageEntry[] {
+  return pageRegistry.filter((p) => p.group === group);
 }
 
-export function getPageNotes(id: string): ProtoNote[] {
-  const page = getPageById(id);
-  return page?.notes || [];
+export function getPageNotes(id: string): PageNote[] {
+  return getPageById(id)?.notes || [];
 }
 
-export function getNotesForState(id: string, state: string): ProtoNote[] {
+export function getNotesForState(id: string, state: string): PageNote[] {
   return getPageNotes(id).filter((n) => n.state === state);
 }
