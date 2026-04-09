@@ -24,7 +24,8 @@ type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'RESTORE'; payload: { token: string; user: AuthUser } | null }
   | { type: 'SET_USERNAME'; payload: string }
-  | { type: 'SET_EMAIL'; payload: { email: string; token: string } };
+  | { type: 'SET_EMAIL'; payload: { email: string; token: string } }
+  | { type: 'CLEAR_NEW_USER' };
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
@@ -58,6 +59,12 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         token: action.payload.token,
         user: { ...state.user, email: action.payload.email },
       };
+    case 'CLEAR_NEW_USER':
+      if (!state.user) return state;
+      return {
+        ...state,
+        user: { ...state.user, isNewUser: false },
+      };
     default:
       return state;
   }
@@ -73,6 +80,7 @@ interface AuthContextValue extends AuthState {
   login: (token: string, user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
   setLoading: (loading: boolean) => void;
+  clearNewUser: () => Promise<void>;
   completeOnboarding: (username: string) => Promise<void>;
   updateEmail: (email: string, accessToken: string, refreshToken: string) => Promise<void>;
 }
@@ -150,6 +158,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_LOADING', payload: loading });
   }, []);
 
+  // Called after role selection (CLIENT) — clears isNewUser flag to prevent redirect loop (#323)
+  const clearNewUser = useCallback(async () => {
+    dispatch({ type: 'CLEAR_NEW_USER' });
+    const userJson = await secureStorage.getItem(USER_KEY);
+    if (userJson) {
+      const existing = JSON.parse(userJson) as AuthUser;
+      const updated: AuthUser = { ...existing, isNewUser: false };
+      await secureStorage.setItem(USER_KEY, JSON.stringify(updated));
+    }
+  }, []);
+
   // Called after onboarding completes — clears isNewUser flag and stores username
   const completeOnboarding = useCallback(async (username: string) => {
     dispatch({ type: 'SET_USERNAME', payload: username });
@@ -183,6 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     setLoading,
+    clearNewUser,
     completeOnboarding,
     updateEmail,
   };
