@@ -324,24 +324,11 @@ export default function LandingScreen() {
     specialistNick?: string;
   }>>([]);
   const carouselRef = useRef<ScrollView>(null);
-  const carouselOffsetRef = useRef(0);
 
   useEffect(() => {
     api.get<any[]>('/specialists/featured?limit=50').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
     api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
     api.get<any[]>('/reviews/public?limit=6').then(setReviews).catch((err) => console.warn('Landing section failed (reviews):', err));
-  }, []);
-
-  // Auto-scroll carousel every 3 seconds
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const CARD_WIDTH = 200; // card width + gap
-    const interval = setInterval(() => {
-      if (!carouselRef.current) return;
-      carouselOffsetRef.current += CARD_WIDTH;
-      (carouselRef.current as any).scrollTo({ x: carouselOffsetRef.current, animated: true });
-    }, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const isWide = !isMobile;
@@ -387,24 +374,28 @@ export default function LandingScreen() {
                 accessibilityRole="header"
                 aria-level={1}
               >
-                {'Решаем налоговый вопрос — доводим до результата'}
+                {'Штраф от ФНС? Налоговый спор?\nНайдём специалиста под вашу ИФНС'}
               </Text>
               <Text style={[styles.heroSubtitle, isWide && styles.heroSubtitleWide]}>
-                {'Подбираем специалиста по вашей ИФНС и конкретной ситуации. Выездная проверка, камеральная, вычеты, споры — только тот, кто знает именно ваш вопрос'}
+                {'Первая консультация — бесплатно. Отклики за 1–2 часа. Безопасная оплата после результата.'}
               </Text>
 
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
                 <Button
                   onPress={() => router.push('/specialists')}
                   variant="primary"
-                  style={!isWide ? { width: '100%', minHeight: 52 } : { minWidth: 220, maxWidth: 260 }}
+                  style={!isWide ? { width: '100%', minHeight: 52 } : { minWidth: 260, maxWidth: 320 }}
                 >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
-                <Button
-                  onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-                  variant="outline"
-                  style={!isWide ? { alignSelf: 'center' } : { minWidth: 200, maxWidth: 260 }}
-                >{'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
               </View>
+              <TouchableOpacity
+                onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
+                activeOpacity={0.7}
+                style={{ marginTop: 8 }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>
+                  {'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442 \u2014 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {isWide ? (
@@ -429,31 +420,6 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        {/* ===== Quick Request Form Section ===== */}
-        <View style={[styles.section, { backgroundColor: Colors.bgSecondary, paddingVertical: 48 }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <QuickRequestForm />
-          </View>
-        </View>
-
-        {/* ===== SECTION 2: Early launch banner ===== */}
-        <View style={styles.statsSection}>
-          <View style={[styles.statsInner, innerStyle]}>
-            <View style={styles.launchBanner}>
-              <Text style={styles.launchBannerText}>
-                {'Первые специалисты уже на платформе \u2014 присоединяйтесь!'}
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push('/specialists')}
-                activeOpacity={0.8}
-                style={styles.launchBannerBtn}
-              >
-                <Text style={styles.launchBannerBtnLabel}>{'\u041F\u043E\u0441\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
         {/* ===== SECTION 2b: Featured Specialists ===== */}
         {isLoadingSpecialists && (
           <View style={[styles.section, { backgroundColor: Colors.bgPrimary, paddingVertical: 40 }]}>
@@ -475,16 +441,7 @@ export default function LandingScreen() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={dyn.specialistsRow}
-                onScroll={(e) => {
-                  const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-                  // Reset to beginning when near the end
-                  if (contentOffset.x + layoutMeasurement.width >= contentSize.width - 10) {
-                    carouselOffsetRef.current = 0;
-                    (carouselRef.current as any)?.scrollTo({ x: 0, animated: false });
-                  } else {
-                    carouselOffsetRef.current = contentOffset.x;
-                  }
-                }}
+                onScroll={() => {}}
                 scrollEventThrottle={16}
               >
                 {featuredSpecialists.map((s: any, idx: number) => {
@@ -533,11 +490,6 @@ export default function LandingScreen() {
                   );
                 })}
               </ScrollView>
-              {isMobile && featuredSpecialists.length > 1 && (
-                <Text style={{ color: Colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 4 }}>
-                  {'← Свайп для просмотра →'}
-                </Text>
-              )}
               <TouchableOpacity onPress={() => router.push('/specialists')} activeOpacity={0.8} style={dyn.seeAllBtn}>
                 <Text style={dyn.seeAllText}>{'\u0421\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0432\u0441\u0435\u0445 \u2192'}</Text>
               </TouchableOpacity>
@@ -670,38 +622,7 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        {/* ===== SECTION 4: Typical tasks ===== */}
-        <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0422\u0438\u043F\u0438\u0447\u043D\u044B\u0435 \u0437\u0430\u0434\u0430\u0447\u0438'}</Text>
-            <Text style={styles.sectionSubtitle}>{'\u0427\u0442\u043E \u0440\u0435\u0448\u0430\u0435\u0442 \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0430'}</Text>
-
-            <View style={[styles.tasksGrid, isDesktop && styles.tasksGridDesktop, isTablet && styles.tasksGridTablet]}>
-              {[
-                '\u0414\u0435\u043A\u043B\u0430\u0440\u0430\u0446\u0438\u044F 3-\u041D\u0414\u0424\u041B',
-                '\u0421\u043F\u043E\u0440 \u0441 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u043E\u0439 \u0438\u043D\u0441\u043F\u0435\u043A\u0446\u0438\u0435\u0439',
-                '\u041E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044F \u043D\u0430\u043B\u043E\u0433\u043E\u043E\u0431\u043B\u043E\u0436\u0435\u043D\u0438\u044F',
-                '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u0418\u041F \u0438\u043B\u0438 \u041E\u041E\u041E',
-                '\u041D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0439 \u0432\u044B\u0447\u0435\u0442',
-                '\u041F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0445 \u0440\u0438\u0441\u043A\u043E\u0432',
-              ].map((task) => (
-                <TouchableOpacity
-                  key={task}
-                  style={[styles.taskCard, isMobile && styles.taskCardMobile, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
-                  activeOpacity={0.75}
-                  onPress={async () => {
-                    await secureStorage.setItem('p2ptax_pending_service_type', task);
-                    router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew');
-                  }}
-                >
-                  <Text style={styles.taskCardText}>{task}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* ===== SECTION 5: For whom ===== */}
+        {/* ===== SECTION 4: For whom ===== */}
         <View style={[styles.section, { backgroundColor: Colors.bgCard }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0414\u043B\u044F \u043A\u043E\u0433\u043E'}</Text>
@@ -782,6 +703,13 @@ export default function LandingScreen() {
           </View>
         </View>
 
+        {/* ===== Quick Request Form ===== */}
+        <View style={[styles.section, { backgroundColor: Colors.bgSecondary, paddingVertical: 48 }]}>
+          <View style={[styles.sectionInner, innerStyle]}>
+            <QuickRequestForm />
+          </View>
+        </View>
+
         {/* ===== SECTION 7: Reviews ===== */}
         {reviews.length > 0 && (
           <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
@@ -855,51 +783,6 @@ export default function LandingScreen() {
                 </View>
               ))}
             </View>
-          </View>
-        </View>
-
-        {/* ===== SECTION 8b: Transparent Pricing ===== */}
-        <View style={[styles.section, { backgroundColor: Colors.bgCard }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>
-              {'\u041F\u0440\u043E\u0437\u0440\u0430\u0447\u043D\u043E\u0435 \u0446\u0435\u043D\u043E\u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u0438\u0435'}
-            </Text>
-
-            <View style={[styles.forWhomRow, isWide && styles.forWhomRowWide]}>
-              {/* For clients */}
-              <View style={pricingStyles.card}>
-                <Text style={pricingStyles.cardTitle}>{'\u0414\u043B\u044F \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432'}</Text>
-                {[
-                  '\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441 \u2014 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E',
-                  '\u041E\u043F\u0438\u0441\u0430\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0443 \u2014 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E',
-                  '\u041F\u043B\u0430\u0442\u0438\u0442\u0435 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u043C\u0443 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0443',
-                ].map((item) => (
-                  <View key={item} style={pricingStyles.row}>
-                    <Ionicons name="checkmark-circle" size={20} color={Colors.statusSuccess} />
-                    <Text style={pricingStyles.rowText}>{item}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* For specialists */}
-              <View style={pricingStyles.card}>
-                <Text style={pricingStyles.cardTitle}>{'\u0414\u043B\u044F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
-                {[
-                  '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u2014 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E',
-                  '\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u0438\u043A\u043E\u0432 \u2014 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E',
-                  '\u041A\u043E\u043C\u0438\u0441\u0441\u0438\u044F \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u044B \u2014 0%',
-                ].map((item) => (
-                  <View key={item} style={pricingStyles.row}>
-                    <Ionicons name="checkmark-circle" size={20} color={Colors.statusSuccess} />
-                    <Text style={pricingStyles.rowText}>{item}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <TouchableOpacity onPress={() => router.push('/pricing')} activeOpacity={0.7} style={{ marginTop: Spacing.md }}>
-              <Text style={dyn.seeAllText}>{'\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u0435\u0435 \u043E \u0442\u0430\u0440\u0438\u0444\u0430\u0445 \u2192'}</Text>
-            </TouchableOpacity>
           </View>
         </View>
 

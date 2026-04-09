@@ -238,6 +238,20 @@ export default function FNSScreen() {
             >
               Далее
             </Button>
+
+            <TouchableOpacity
+              onPress={async () => {
+                // Skip FNS — save empty data
+                await AsyncStorage.setItem('onboarding_cities', JSON.stringify([]));
+                await AsyncStorage.setItem('onboarding_fns', JSON.stringify([]));
+                await AsyncStorage.setItem('onboarding_fns_data', JSON.stringify([]));
+                router.push('/(onboarding)/services');
+              }}
+              style={styles.skipBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.skipBtnText}>Заполнить позже</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -454,5 +468,16 @@ const styles = StyleSheet.create({
   },
   continueBtn: {
     flex: 2,
+  },
+  skipBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skipBtnText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textMuted,
   },
 });

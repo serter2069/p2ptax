@@ -203,6 +203,18 @@ export default function ServicesScreen() {
               >
                 Продолжить
               </Button>
+
+              <TouchableOpacity
+                onPress={async () => {
+                  // Skip services — save empty and go to profile
+                  await AsyncStorage.setItem('onboarding_services', JSON.stringify([]));
+                  router.push('/(onboarding)/profile');
+                }}
+                style={styles.skipBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.skipBtnText}>Заполнить позже</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -365,5 +377,13 @@ const styles = StyleSheet.create({
   btn: {
     width: '100%',
     marginTop: Spacing.sm,
+  },
+  skipBtn: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  skipBtnText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textMuted,
   },
 });

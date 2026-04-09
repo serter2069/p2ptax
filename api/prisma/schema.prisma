@@ -28,6 +28,8 @@ model User {
   id          String    @id @default(cuid())
   email       String    @unique
   username    String?   @unique
+  firstName   String?
+  lastName    String?
   role               Role      @default(CLIENT)
   isBlocked          Boolean   @default(false)
   emailNotifications Boolean   @default(true)
@@ -81,6 +83,7 @@ model SpecialistProfile {
   fnsDepartmentsData Json?
   contacts    String?
   avatarUrl   String?
+  profileComplete Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

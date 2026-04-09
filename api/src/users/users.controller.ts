@@ -10,6 +10,14 @@ class SetUsernameDto {
   @Length(3, 20)
   @Matches(/^[a-zA-Z0-9_]+$/, { message: 'username can only contain letters, numbers, and underscores' })
   username!: string;
+
+  @IsString()
+  @IsOptional()
+  firstName?: string;
+
+  @IsString()
+  @IsOptional()
+  lastName?: string;
 }
 
 class UpdateSettingsDto {
@@ -100,13 +108,13 @@ export class UsersController {
     return result;
   }
 
-  /** PATCH /users/me/username — set or update username */
+  /** PATCH /users/me/username — set or update username + name */
   @Patch('me/username')
   setUsername(
     @Request() req: { user: { id: string } },
     @Body() body: SetUsernameDto,
   ) {
-    return this.usersService.setUsername(req.user.id, body.username);
+    return this.usersService.setUsername(req.user.id, body.username, body.firstName, body.lastName);
   }
 
   /**

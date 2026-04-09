@@ -39,10 +39,9 @@ export default function OtpScreen() {
   const params = useLocalSearchParams<{ email?: string; role?: string; redirectTo?: string }>();
   const email = decodeURIComponent(params.email ?? '');
   const redirectTo = params.redirectTo as string | undefined;
-  const hasExplicitRole = params.role === 'SPECIALIST' || params.role === 'CLIENT';
   const role = params.role === 'SPECIALIST' ? 'SPECIALIST' : 'CLIENT';
 
-  const { login } = useAuth();
+  const { login, clearNewUser } = useAuth();
 
   // Redirect to email screen if opened directly without email param
   useEffect(() => {
@@ -126,13 +125,28 @@ export default function OtpScreen() {
         username: res.user.username,
         isNewUser: res.isNewUser,
       });
-      // New users: if no explicit role was chosen, let them pick; otherwise go to onboarding
+      // New users: specialist → onboarding, client → dashboard
       // Returning users go to dashboard
       if (res.isNewUser) {
-        if (!hasExplicitRole) {
-          router.replace('/(auth)/role');
-        } else {
+        if (res.user.role === 'SPECIALIST') {
           router.replace('/(onboarding)/username');
+        } else {
+          // Client: clear isNewUser flag and go to dashboard
+          await clearNewUser();
+          // Check for pending quick request
+          const pendingRaw = await secureStorage.getItem('p2ptax_pending_request');
+          if (pendingRaw) {
+            try {
+              await secureStorage.removeItem('p2ptax_pending_request');
+              const pendingData = JSON.parse(pendingRaw);
+              const created = await api.post<{ id: string }>('/requests', pendingData);
+              router.replace(`/(dashboard)/my-requests/${created.id}` as any);
+              return;
+            } catch {
+              // POST failed — fall through to dashboard
+            }
+          }
+          router.replace('/(dashboard)');
         }
       } else {
         // Check for pending quick request saved before login

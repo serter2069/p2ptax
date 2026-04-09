@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError } from '../../lib/api';
+import { generateUsername } from '../../lib/transliterate';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
@@ -26,28 +27,60 @@ function validateUsername(value: string): string | null {
 export default function UsernameScreen() {
   const router = useRouter();
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [usernameEdited, setUsernameEdited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  function handleChange(value: string) {
+  // Auto-generate username from firstName + lastName
+  const suggestedUsername = useMemo(
+    () => generateUsername(firstName, lastName),
+    [firstName, lastName],
+  );
+
+  useEffect(() => {
+    if (!usernameEdited) {
+      setUsername(suggestedUsername);
+    }
+  }, [suggestedUsername, usernameEdited]);
+
+  function handleUsernameChange(value: string) {
     setUsername(value);
+    setUsernameEdited(true);
+    if (error) setError('');
+  }
+
+  function handleNameChange() {
     if (error) setError('');
   }
 
   async function handleSubmit() {
-    const trimmed = username.trim();
-    const validationError = validateUsername(trimmed);
+    const trimmedUsername = username.trim();
+    const validationError = validateUsername(trimmedUsername);
     if (validationError) {
       setError(validationError);
+      return;
+    }
+    if (!firstName.trim()) {
+      setError('Введите имя');
+      return;
+    }
+    if (!lastName.trim()) {
+      setError('Введите фамилию');
       return;
     }
 
     setError('');
     setLoading(true);
     try {
-      await api.patch('/users/me/username', { username: trimmed });
-      // Do NOT call completeOnboarding here — onboarding continues in cities + fns + services steps
+      // Save username + name in one patch
+      await api.patch('/users/me/username', {
+        username: trimmedUsername,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      });
       router.replace('/(onboarding)/cities');
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
@@ -55,12 +88,15 @@ export default function UsernameScreen() {
       } else if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError('Не удалось сохранить ник. Попробуйте снова.');
+        setError('Не удалось сохранить. Попробуйте снова.');
       }
     } finally {
       setLoading(false);
     }
   }
+
+  const usernameValidationError = validateUsername(username.trim());
+  const canSubmit = !usernameValidationError && firstName.trim().length > 0 && lastName.trim().length > 0;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -90,36 +126,48 @@ export default function UsernameScreen() {
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.step}>Шаг 1 из 5</Text>
-              <Text style={styles.title}>Придумайте ник</Text>
+              <Text style={styles.title}>Представьтесь</Text>
               <Text style={styles.subtitle}>
-                Это ваш публичный псевдоним на платформе. Можно изменить позже.
-              </Text>
-            </View>
-
-            {/* Rules hint */}
-            <View style={styles.rulesBox}>
-              <Text style={styles.rulesText}>
-                3–20 символов: буквы, цифры, знак подчёркивания (_)
+                Ваши имя и фамилия. Ник сгенерируется автоматически — можно изменить.
               </Text>
             </View>
 
             {/* Form */}
             <View style={styles.form}>
               <Input
-                label="Ник"
+                label="Имя"
+                value={firstName}
+                onChangeText={(t) => { setFirstName(t); handleNameChange(); }}
+                placeholder="Иван"
+                autoCapitalize="words"
+                autoFocus
+              />
+              <Input
+                label="Фамилия"
+                value={lastName}
+                onChangeText={(t) => { setLastName(t); handleNameChange(); }}
+                placeholder="Иванов"
+                autoCapitalize="words"
+              />
+              <Input
+                label="Ник (уникальный)"
                 value={username}
-                onChangeText={handleChange}
-                placeholder="например: ivan_petrov"
+                onChangeText={handleUsernameChange}
+                placeholder="ivan_ivanov"
                 autoCapitalize="none"
                 autoCorrect={false}
-                autoFocus
                 error={error}
                 maxLength={20}
               />
+              {suggestedUsername && !usernameEdited && (
+                <Text style={styles.hint}>
+                  Автоматически: {suggestedUsername}
+                </Text>
+              )}
               <Button
                 onPress={handleSubmit}
                 loading={loading}
-                disabled={loading || validateUsername(username.trim()) !== null}
+                disabled={loading || !canSubmit}
                 style={styles.btn}
               >
                 Продолжить
@@ -195,20 +243,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 22,
   },
-  rulesBox: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  rulesText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
   form: {
     gap: Spacing.lg,
+  },
+  hint: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
   },
   btn: {
     width: '100%',
