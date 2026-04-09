@@ -214,6 +214,46 @@ model Review {
   @@map("reviews")
 }
 
+model City {
+  id     String @id @default(cuid())
+  name   String @unique
+  region String?
+
+  ifnsOffices Ifns[]
+
+  @@map("cities")
+}
+
+model Ifns {
+  id     String @id @default(cuid())
+  code   String @unique
+  name   String
+  cityId String
+  city   City   @relation(fields: [cityId], references: [id])
+
+  @@index([cityId])
+  @@map("ifns")
+}
+
+enum ContactMethodType {
+  PHONE
+  TELEGRAM
+  WHATSAPP
+  EMAIL
+  OTHER
+}
+
+model ContactMethod {
+  id           String            @id @default(cuid())
+  type         ContactMethodType
+  value        String
+  specialistId String
+  createdAt    DateTime          @default(now())
+
+  @@index([specialistId])
+  @@map("contact_methods")
+}
+
 enum ComplaintReason {
   spam
   fraud
