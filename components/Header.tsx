@@ -9,14 +9,20 @@ import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography } from '../constants/Colors';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 
+export interface BreadcrumbItem {
+  label: string;
+  route?: string;
+}
+
 interface HeaderProps {
   title: string;
   showBack?: boolean;
   rightAction?: React.ReactNode;
   onBackPress?: () => void;
+  breadcrumbs?: BreadcrumbItem[];
 }
 
-export function Header({ title, showBack = false, rightAction, onBackPress }: HeaderProps) {
+export function Header({ title, showBack = false, rightAction, onBackPress, breadcrumbs }: HeaderProps) {
   const router = useRouter();
   const { isMobile } = useBreakpoints();
 
@@ -28,8 +34,6 @@ export function Header({ title, showBack = false, rightAction, onBackPress }: He
     }
   };
 
-  // On desktop/tablet, align title left (sidebar handles branding)
-  // On mobile, keep centered layout
   const titleStyle = isMobile ? styles.titleCentered : styles.titleLeft;
 
   return (
@@ -62,9 +66,29 @@ export function Header({ title, showBack = false, rightAction, onBackPress }: He
             </TouchableOpacity>
           )}
 
-          <Text style={titleStyle} numberOfLines={1}>
-            {title}
-          </Text>
+          <View style={styles.titleArea}>
+            {breadcrumbs && breadcrumbs.length > 0 ? (
+              <View style={styles.breadcrumbRow}>
+                {breadcrumbs.map((crumb, i) => (
+                  <React.Fragment key={i}>
+                    {i > 0 ? (
+                      <Text style={styles.breadcrumbSep}>{' / '}</Text>
+                    ) : null}
+                    {crumb.route ? (
+                      <TouchableOpacity onPress={() => router.push(crumb.route as any)} activeOpacity={0.7}>
+                        <Text style={styles.breadcrumbLink}>{crumb.label}</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <Text style={styles.breadcrumbCurrent}>{crumb.label}</Text>
+                    )}
+                  </React.Fragment>
+                ))}
+              </View>
+            ) : null}
+            <Text style={titleStyle} numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
 
           <View style={styles.rightWide}>
             {rightAction ?? null}
@@ -85,7 +109,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  // Mobile layout pieces
   left: {
     width: 48,
     alignItems: 'flex-start',
@@ -94,12 +117,9 @@ const styles = StyleSheet.create({
     width: 48,
     alignItems: 'flex-end',
   },
-  // Wide layout: pushes actions to the far right
-  rightWide: {
-    marginLeft: 'auto' as any,
-    alignItems: 'flex-end',
+  titleArea: {
+    flex: 1,
   },
-  // Title variants
   titleCentered: {
     flex: 1,
     textAlign: 'center',
@@ -108,12 +128,35 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   titleLeft: {
-    flex: 1,
     textAlign: 'left',
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
     marginLeft: Spacing.sm,
+  },
+  breadcrumbRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+    marginLeft: Spacing.sm,
+  },
+  breadcrumbLink: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textAccent,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  breadcrumbSep: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+  },
+  breadcrumbCurrent: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  rightWide: {
+    marginLeft: 'auto' as any,
+    alignItems: 'flex-end',
   },
   backBtn: {
     padding: Spacing.xs,
