@@ -60,12 +60,14 @@ export class RequestsController {
     @Query('page') page?: string,
     @Query('category') category?: string,
     @Query('maxBudget') maxBudget?: string,
+    @Query('ifnsId') ifnsId?: string,
   ) {
     return this.requestsService.findFeed(
       city,
       page ? parseInt(page, 10) : 1,
       category,
       maxBudget ? parseInt(maxBudget, 10) : undefined,
+      ifnsId,
     );
   }
 
@@ -77,12 +79,14 @@ export class RequestsController {
     @Query('page') page?: string,
     @Query('category') category?: string,
     @Query('maxBudget') maxBudget?: string,
+    @Query('ifnsId') ifnsId?: string,
   ) {
     return this.requestsService.findFeed(
       city,
       page ? parseInt(page, 10) : 1,
       category,
       maxBudget ? parseInt(maxBudget, 10) : undefined,
+      ifnsId,
     );
   }
 

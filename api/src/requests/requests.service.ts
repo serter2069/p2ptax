@@ -106,7 +106,7 @@ export class RequestsService {
     }
   }
 
-  async findFeed(city?: string, page = 1, category?: string, maxBudget?: number) {
+  async findFeed(city?: string, page = 1, category?: string, maxBudget?: number, ifnsId?: string) {
     // #1855: Sanitize page to prevent negative skip
     const pageNum = Math.max(1, parseInt(page as unknown as string) || 1);
 
@@ -117,6 +117,8 @@ export class RequestsService {
     if (category) where.category = { contains: category, mode: 'insensitive' };
     // #1801: Max budget filter
     if (maxBudget && maxBudget > 0) where.budget = { lte: maxBudget };
+    // IFNS filter
+    if (ifnsId) where.ifnsId = ifnsId;
 
     const skip = (pageNum - 1) * PAGE_SIZE;
 

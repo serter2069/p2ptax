@@ -19,9 +19,8 @@ import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Card } from '../../components/Card';
-import { Input } from '../../components/Input';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
@@ -30,6 +29,9 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 const CATEGORY_FILTERS = [
   { label: 'Все', value: '' },
+  { label: 'Выездная проверка', value: 'Выездная проверка' },
+  { label: 'Камеральная проверка', value: 'Камеральная проверка' },
+  { label: 'Отдел оперативного контроля', value: 'Отдел оперативного контроля' },
   { label: 'НДФЛ', value: 'НДФЛ' },
   { label: 'НДС', value: 'НДС' },
   { label: 'Споры', value: 'Споры' },
@@ -41,12 +43,38 @@ const CATEGORY_FILTERS = [
 
 const BUDGET_FILTERS = [
   { label: 'Любой', value: 0 },
-  { label: 'до 5 000 ₽', value: 5000 },
-  { label: 'до 10 000 ₽', value: 10000 },
-  { label: 'до 50 000 ₽', value: 50000 },
+  { label: 'до 5 000 \u20BD', value: 5000 },
+  { label: 'до 10 000 \u20BD', value: 10000 },
+  { label: 'до 50 000 \u20BD', value: 50000 },
 ];
 
+// Color mapping for category badges on cards
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+  'Выездная проверка': { bg: '#fde8e8', text: '#B91C1C' },
+  'Камеральная проверка': { bg: '#fef3cd', text: '#92400e' },
+  'Отдел оперативного контроля': { bg: '#fde8e8', text: '#B91C1C' },
+  'НДФЛ': { bg: '#e0ecf8', text: '#1A5BA8' },
+  'НДС': { bg: '#e0ecf8', text: '#1A5BA8' },
+  'Споры': { bg: '#fef3cd', text: '#92400e' },
+  'Декларации': { bg: '#e6f4ed', text: '#1A7848' },
+  'Оптимизация': { bg: '#e6f4ed', text: '#1A7848' },
+  'Вычеты': { bg: '#dce8f5', text: '#2E74CC' },
+  'Аудит': { bg: '#dce8f5', text: '#2E74CC' },
+};
+
+const DEFAULT_CATEGORY_COLOR = { bg: Colors.bgSecondary, text: Colors.brandPrimary };
+
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
+
+interface IfnsItem {
+  id: string;
+  code: string;
+  name: string;
+  slug: string;
+  address: string | null;
+  searchAliases: string | null;
+  city: { id: string; name: string; slug: string; region: string | null };
+}
 
 interface RequestItem {
   id: string;
@@ -54,6 +82,8 @@ interface RequestItem {
   city: string;
   budget?: number | null;
   category?: string | null;
+  ifnsId?: string | null;
+  ifnsName?: string | null;
   status: string;
   createdAt: string;
   client: { id: string };
@@ -82,6 +112,13 @@ export default function RequestsFeedScreen() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [maxBudget, setMaxBudget] = useState(0);
   const [activeOnly, setActiveOnly] = useState(true);
+
+  // IFNS filter state
+  const [ifnsQuery, setIfnsQuery] = useState('');
+  const [ifnsResults, setIfnsResults] = useState<IfnsItem[]>([]);
+  const [selectedIfns, setSelectedIfns] = useState<IfnsItem | null>(null);
+  const [ifnsLoading, setIfnsLoading] = useState(false);
+  const [showIfnsDropdown, setShowIfnsDropdown] = useState(false);
 
   // Respond modal state
   const [respondingId, setRespondingId] = useState<string | null>(null);
@@ -121,7 +158,6 @@ export default function RequestsFeedScreen() {
       } else {
         Alert.alert('Отклик отправлен', 'Клиент получит уведомление.');
       }
-      // Refresh feed to update response count
       fetchFeed({ replace: true });
     } catch (err) {
       const msg =
@@ -140,6 +176,29 @@ export default function RequestsFeedScreen() {
     }
   }
 
+  // IFNS search debounce
+  useEffect(() => {
+    if (!ifnsQuery.trim()) {
+      setIfnsResults([]);
+      setShowIfnsDropdown(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIfnsLoading(true);
+      try {
+        const data = await api.get<IfnsItem[]>(`/ifns/search?q=${encodeURIComponent(ifnsQuery.trim())}`);
+        setIfnsResults(data);
+        setShowIfnsDropdown(data.length > 0);
+      } catch {
+        setIfnsResults([]);
+        setShowIfnsDropdown(false);
+      } finally {
+        setIfnsLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [ifnsQuery]);
+
   const fetchFeed = useCallback(
     async (opts: { pageNum?: number; replace?: boolean; isRefresh?: boolean } = {}) => {
       const { pageNum = 1, replace = true, isRefresh = false } = opts;
@@ -151,11 +210,10 @@ export default function RequestsFeedScreen() {
       try {
         const params = new URLSearchParams();
         if (cityFilter.trim()) params.set('city', cityFilter.trim());
-        // #1801: Pass category and maxBudget to API for server-side filtering
         if (selectedCategory) params.set('category', selectedCategory);
         if (maxBudget > 0) params.set('maxBudget', String(maxBudget));
+        if (selectedIfns) params.set('ifnsId', selectedIfns.id);
         params.set('page', String(pageNum));
-        // Use /requests/public for unauthenticated users (#313: /requests now requires JWT)
         const endpoint = user ? '/requests' : '/requests/public';
         const data = await api.get<FeedResponse>(`${endpoint}?${params.toString()}`);
 
@@ -178,7 +236,7 @@ export default function RequestsFeedScreen() {
         setRefreshing(false);
       }
     },
-    [cityFilter, selectedCategory, maxBudget],
+    [cityFilter, selectedCategory, maxBudget, selectedIfns],
   );
 
   // Debounce city filter; reset page on any filter change
@@ -187,10 +245,10 @@ export default function RequestsFeedScreen() {
     return () => clearTimeout(timer);
   }, [fetchFeed, cityFilter]);
 
-  // Immediately refetch when category or budget changes
+  // Immediately refetch when category, budget, or IFNS changes
   useEffect(() => {
     fetchFeed({ replace: true });
-  }, [selectedCategory, maxBudget]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedCategory, maxBudget, selectedIfns]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRefresh() {
     setRefreshing(true);
@@ -204,22 +262,48 @@ export default function RequestsFeedScreen() {
 
   function formatDate(iso: string) {
     const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffHours < 1) return 'только что';
+    if (diffHours < 24) return `${diffHours} ч. назад`;
+    if (diffDays < 7) return `${diffDays} дн. назад`;
     return d.toLocaleDateString('ru-RU', {
       day: 'numeric',
       month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   }
 
+  function isNew(iso: string) {
+    const diffMs = new Date().getTime() - new Date(iso).getTime();
+    return diffMs < 24 * 60 * 60 * 1000; // less than 24h
+  }
+
+  function getCategoryColor(cat: string) {
+    return CATEGORY_COLORS[cat] || DEFAULT_CATEGORY_COLOR;
+  }
+
   function renderItem({ item }: { item: RequestItem }) {
+    const catColor = item.category ? getCategoryColor(item.category) : null;
+    const itemIsNew = isNew(item.createdAt);
+
     return (
       <TouchableOpacity
         onPress={() => router.push(`/requests/${item.id}` as any)}
         activeOpacity={0.8}
         style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
       >
-        <Card padding={Spacing.lg}>
+        <Card padding={Spacing.lg} variant="elevated">
+          {/* New badge */}
+          {itemIsNew && (
+            <View style={styles.newBadge}>
+              <View style={styles.newDot} />
+              <Text style={styles.newBadgeText}>новый</Text>
+            </View>
+          )}
+
           {/* City + date row */}
           <View style={styles.metaRow}>
             <View style={styles.cityChip}>
@@ -233,26 +317,31 @@ export default function RequestsFeedScreen() {
             {item.description}
           </Text>
 
-          {/* Budget + Category */}
-          {(item.budget != null || item.category) ? (
-            <View style={styles.tagsRow}>
-              {item.category ? (
-                <View style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>{item.category}</Text>
-                </View>
-              ) : null}
-              {item.budget != null ? (
-                <Text style={styles.budgetText}>{item.budget.toLocaleString('ru-RU')} ₽</Text>
-              ) : null}
-            </View>
-          ) : null}
+          {/* Category badge + Budget + IFNS */}
+          <View style={styles.tagsRow}>
+            {item.category && catColor ? (
+              <View style={[styles.categoryBadge, { backgroundColor: catColor.bg }]}>
+                <Text style={[styles.categoryBadgeText, { color: catColor.text }]}>{item.category}</Text>
+              </View>
+            ) : null}
+            {item.ifnsName ? (
+              <View style={styles.ifnsBadge}>
+                <Text style={styles.ifnsBadgeText} numberOfLines={1}>{item.ifnsName}</Text>
+              </View>
+            ) : null}
+          </View>
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.responsesText}>
-              Откликов: {item._count.responses}
-            </Text>
-            <View style={styles.statusChip}>
+            <View style={styles.footerLeft}>
+              <Text style={styles.responsesText}>
+                {item._count.responses} {item._count.responses === 1 ? 'отклик' : item._count.responses < 5 ? 'отклика' : 'откликов'}
+              </Text>
+              {item.budget != null && (
+                <Text style={styles.budgetText}>{item.budget.toLocaleString('ru-RU')} \u20BD</Text>
+              )}
+            </View>
+            <View style={[styles.statusChip, item.status !== 'OPEN' && styles.statusChipClosed]}>
               <Text style={[styles.statusText, item.status !== 'OPEN' && styles.statusClosed]}>
                 {item.status === 'OPEN' ? 'Открыт' : item.status === 'CLOSED' ? 'Закрыт' : item.status}
               </Text>
@@ -277,7 +366,7 @@ export default function RequestsFeedScreen() {
     );
   }
 
-  // Client-side filter: activeOnly toggle (API returns OPEN only; toggle shows all when disabled)
+  // Client-side filter: activeOnly toggle
   const filteredItems = useMemo(() => {
     if (activeOnly) return items.filter((item) => item.status === 'OPEN');
     return items;
@@ -298,7 +387,6 @@ export default function RequestsFeedScreen() {
       <LandingHeader />
       <Header title="Лента запросов" />
 
-      {/* key={numColumns} forces FlatList remount when columns change on resize */}
       <FlatList
         key={numColumns}
         data={filteredItems}
@@ -320,13 +408,31 @@ export default function RequestsFeedScreen() {
         }
         ListHeaderComponent={
           <View style={[styles.filtersBox, !isMobile && styles.filtersBoxWide]}>
-            <Input
-              label="Город"
-              value={cityFilter}
-              onChangeText={setCityFilter}
-              placeholder="Например, Москва"
-              autoCapitalize="words"
-            />
+            {/* Hero section */}
+            <View style={styles.heroSection}>
+              <View style={styles.heroTitleRow}>
+                <Text style={styles.heroTitle}>Лента запросов</Text>
+                {total > 0 && (
+                  <View style={styles.totalBadge}>
+                    <Text style={styles.totalBadgeText}>{total}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.heroSubtitle}>Найдите налогового специалиста для вашей задачи</Text>
+            </View>
+
+            {/* Search bar */}
+            <View style={styles.searchBar}>
+              <Text style={styles.searchIcon}>&#x1F50D;</Text>
+              <TextInput
+                style={styles.searchInput}
+                value={cityFilter}
+                onChangeText={setCityFilter}
+                placeholder="Поиск по городу..."
+                placeholderTextColor={Colors.textMuted}
+                autoCapitalize="words"
+              />
+            </View>
 
             {/* Category filter chips */}
             <View>
@@ -352,6 +458,65 @@ export default function RequestsFeedScreen() {
                   );
                 })}
               </ScrollView>
+            </View>
+
+            {/* IFNS filter + Budget in a row */}
+            <View style={styles.filterRow}>
+              {/* IFNS filter */}
+              <View style={styles.ifnsFilterContainer}>
+                <Text style={styles.filterLabel}>ИФНС</Text>
+                {selectedIfns ? (
+                  <View style={styles.ifnsSelected}>
+                    <Text style={styles.ifnsSelectedText} numberOfLines={1}>{selectedIfns.name}</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedIfns(null);
+                        setIfnsQuery('');
+                      }}
+                      style={styles.ifnsClearBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.ifnsClearText}>x</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.ifnsInputWrapper}>
+                    <TextInput
+                      style={styles.ifnsInput}
+                      value={ifnsQuery}
+                      onChangeText={setIfnsQuery}
+                      placeholder="Номер или название..."
+                      placeholderTextColor={Colors.textMuted}
+                      autoCorrect={false}
+                    />
+                    {ifnsLoading && (
+                      <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.ifnsSpinner} />
+                    )}
+                    {showIfnsDropdown && ifnsResults.length > 0 && (
+                      <View style={styles.ifnsDropdown}>
+                        <ScrollView style={styles.ifnsDropdownScroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                          {ifnsResults.map((item) => (
+                            <TouchableOpacity
+                              key={item.id}
+                              style={styles.ifnsDropdownItem}
+                              onPress={() => {
+                                setSelectedIfns(item);
+                                setIfnsQuery('');
+                                setIfnsResults([]);
+                                setShowIfnsDropdown(false);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.ifnsDropdownName} numberOfLines={1}>{item.name}</Text>
+                              <Text style={styles.ifnsDropdownCity}>{item.city.name}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Budget filter chips */}
@@ -401,12 +566,6 @@ export default function RequestsFeedScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {filteredItems.length > 0 && (
-              <Text style={styles.totalText}>
-                Найдено {filteredItems.length} запросов
-              </Text>
-            )}
           </View>
         }
         ListEmptyComponent={
@@ -521,13 +680,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bgPrimary,
   },
-  // Mobile: centered, single column
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing['3xl'],
     alignItems: 'center',
   },
-  // Wide: stretch to fill, grid takes over
   listContentWide: {
     alignItems: 'stretch',
   },
@@ -538,33 +695,90 @@ const styles = StyleSheet.create({
   filtersBox: {
     width: '100%',
     maxWidth: 430,
-    gap: Spacing.sm,
+    gap: Spacing.md,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
   },
   filtersBoxWide: {
     maxWidth: 600,
   },
-  totalText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
+
+  // Hero section
+  heroSection: {
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
+  heroTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  heroTitle: {
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+  },
+  heroSubtitle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    lineHeight: 22,
+  },
+  totalBadge: {
+    backgroundColor: Colors.brandPrimary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  totalBadgeText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
+  },
+
+  // Search bar
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.xl,
+    paddingHorizontal: Spacing.lg,
+    minHeight: 48,
+    ...Shadows.sm,
+  },
+  searchIcon: {
+    fontSize: 16,
+    marginRight: Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    paddingVertical: Spacing.sm,
+  },
+
+  // Filter labels
   filterLabel: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textMuted,
     fontWeight: Typography.fontWeight.medium,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
+
+  // Chips
   chipsRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.xxs,
   },
   chip: {
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.full,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     backgroundColor: Colors.bgCard,
     minHeight: 44,
@@ -577,10 +791,115 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
   },
   chipTextActive: {
     color: Colors.white,
   },
+
+  // Filter row (IFNS)
+  filterRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  ifnsFilterContainer: {
+    flex: 1,
+    position: 'relative',
+    zIndex: 20,
+  },
+  ifnsInputWrapper: {
+    position: 'relative',
+  },
+  ifnsInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.bgCard,
+    minHeight: 40,
+  },
+  ifnsSpinner: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+  },
+  ifnsDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 4,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    zIndex: 30,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 4px 16px rgba(15, 36, 71, 0.12)' }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+          elevation: 10,
+        }),
+  },
+  ifnsDropdownScroll: {
+    maxHeight: 200,
+  },
+  ifnsDropdownItem: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.bgSecondary,
+  },
+  ifnsDropdownName: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  ifnsDropdownCity: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    marginTop: 2,
+  },
+  ifnsSelected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgSecondary,
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    gap: Spacing.sm,
+    minHeight: 40,
+  },
+  ifnsSelectedText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  ifnsClearBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ifnsClearText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: Typography.fontWeight.bold,
+    lineHeight: 14,
+  },
+
+  // Toggle
   toggleRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -605,16 +924,38 @@ const styles = StyleSheet.create({
   toggleTextActive: {
     color: Colors.white,
   },
-  // Mobile: centered single column, maxWidth 430
+
+  // Cards
   cardWrapperMobile: {
     width: '100%',
     maxWidth: 430,
     marginBottom: Spacing.md,
   },
-  // Grid: flex 1 fills column, gutter from columnWrapper
   cardWrapperGrid: {
     flex: 1,
   },
+
+  // New badge
+  newBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: Spacing.sm,
+  },
+  newDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+  },
+  newBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    color: '#22c55e',
+    fontWeight: Typography.fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -644,6 +985,34 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: Spacing.md,
   },
+  tagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+    marginBottom: Spacing.sm,
+  },
+  categoryBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.full,
+  },
+  categoryBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  ifnsBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.statusBg.info,
+    maxWidth: 200,
+  },
+  ifnsBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.statusInfo,
+    fontWeight: Typography.fontWeight.medium,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -652,9 +1021,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
+  footerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
   responsesText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
+  },
+  budgetText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.bold,
   },
   statusChip: {
     backgroundColor: Colors.statusBg.success,
@@ -662,37 +1041,16 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxs,
     borderRadius: BorderRadius.full,
   },
+  statusChipClosed: {
+    backgroundColor: Colors.statusBg.error,
+  },
   statusText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.statusSuccess,
     fontWeight: Typography.fontWeight.medium,
   },
   statusClosed: {
-    color: Colors.textMuted,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  categoryChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  categoryText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  budgetText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
+    color: Colors.statusError,
   },
   loadingBox: {
     paddingTop: Spacing['4xl'],
@@ -713,13 +1071,14 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 600,
     alignSelf: 'center',
-    backgroundColor: '#EBF3FB',
-    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
     alignItems: 'center',
     gap: Spacing.md,
     marginTop: Spacing.xl,
     marginBottom: Spacing.lg,
+    ...Shadows.sm,
   },
   ctaBannerText: {
     fontSize: Typography.fontSize.base,
@@ -732,7 +1091,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandPrimary,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
   },
   ctaBannerBtnText: {
     color: Colors.white,
