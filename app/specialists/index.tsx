@@ -10,8 +10,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
-  Share,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
@@ -25,8 +23,10 @@ import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
 import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
+// APP_URL used in Head meta tags
 
 interface SpecialistItem {
   nick: string;
@@ -44,34 +44,15 @@ interface SpecialistItem {
   activity: { responseCount: number; avgRating: number | null; reviewCount: number };
 }
 
-const SORT_OPTIONS: { label: string; value: string }[] = [
-  { label: 'По рейтингу', value: 'rating' },
-  { label: 'По новизне', value: 'newest' },
-  { label: 'По опыту', value: 'experience' },
-  { label: 'По откликам', value: 'responses' },
-];
-
-interface FnsResult {
-  id: string;
-  code: string;
-  name: string;
-  city: { name: string };
-}
-
-const SPECIALIZATION_FILTERS = [
-  { label: 'Все', value: '' },
-  { label: 'Декларации', value: 'Декларации' },
-  { label: 'Споры с ФНС', value: 'Споры' },
-  { label: 'Оптимизация', value: 'Оптимизация' },
-  { label: 'Вычеты', value: 'Вычеты' },
-  { label: 'Регистрация бизнеса', value: 'Регистрация' },
-  { label: 'НДС', value: 'НДС' },
-  { label: 'Аудит', value: 'Аудит' },
+const SERVICE_CATEGORIES = [
+  { label: 'Выездная проверка', value: 'Выездная проверка' },
+  { label: 'Камеральная проверка', value: 'Камеральная проверка' },
+  { label: 'Оперативный контроль', value: 'Отдел оперативного контроля' },
 ];
 
 export default function SpecialistsCatalogScreen() {
   const router = useRouter();
-  const { isMobile, numColumns, contentMaxWidth } = useBreakpoints();
+  const { isMobile, contentMaxWidth } = useBreakpoints();
 
   const [items, setItems] = useState<SpecialistItem[]>([]);
   const [page, setPage] = useState(1);
@@ -81,36 +62,24 @@ export default function SpecialistsCatalogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const [searchText, setSearchText] = useState('');
-  const [searchDebounced, setSearchDebounced] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedFns, setSelectedFns] = useState<FnsResult[]>([]);
-  const [sort, setSort] = useState('rating');
-  const [fnsDropdownResults, setFnsDropdownResults] = useState<FnsResult[]>([]);
+  const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
+  const [fnsQuery, setFnsQuery] = useState('');
+  const [fnsDropdown, setFnsDropdown] = useState<FNSOffice[]>([]);
 
-  // Debounce search input
+  // Local FNS dropdown filtering
   useEffect(() => {
-    const timer = setTimeout(() => setSearchDebounced(searchText), 400);
-    return () => clearTimeout(timer);
-  }, [searchText]);
-
-  // Fetch FNS results from API when search text changes
-  useEffect(() => {
-    if (!searchText.trim()) {
-      setFnsDropdownResults([]);
+    if (fnsQuery.trim().length < 2) {
+      setFnsDropdown([]);
       return;
     }
-    const timer = setTimeout(async () => {
-      try {
-        const results = await api.get<FnsResult[]>(`/ifns/search?q=${encodeURIComponent(searchText.trim())}`);
-        const selectedCodes = new Set(selectedFns.map((o) => o.code));
-        setFnsDropdownResults(results.filter((r) => !selectedCodes.has(r.code)).slice(0, 6));
-      } catch {
-        setFnsDropdownResults([]);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchText, selectedFns]);
+    const q = fnsQuery.trim().toLowerCase();
+    const selectedCodes = new Set(selectedFns.map((o) => o.code));
+    const results = FNS_OFFICES.filter(
+      (o) => !selectedCodes.has(o.code) && (o.name.toLowerCase().includes(q) || o.city.toLowerCase().includes(q))
+    ).slice(0, 8);
+    setFnsDropdown(results);
+  }, [fnsQuery, selectedFns]);
 
   const fnsFilterParam = selectedFns.map((o) => o.name).join(',');
 
@@ -126,8 +95,6 @@ export default function SpecialistsCatalogScreen() {
     try {
       const params = new URLSearchParams();
       if (fnsFilterParam) params.set('fns', fnsFilterParam);
-      if (sort) params.set('sort', sort);
-      if (searchDebounced.trim()) params.set('search', searchDebounced.trim());
       if (selectedCategory) params.set('category', selectedCategory);
       params.set('page', String(pageNum));
       params.set('limit', String(PAGE_SIZE));
@@ -149,12 +116,12 @@ export default function SpecialistsCatalogScreen() {
       setLoadingMore(false);
       setRefreshing(false);
     }
-  }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
+  }, [fnsFilterParam, selectedCategory]);
 
   useEffect(() => {
     fetchSpecialists(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
+  }, [fnsFilterParam, selectedCategory]);
 
   function handleRefresh() {
     setRefreshing(true);
@@ -169,19 +136,6 @@ export default function SpecialistsCatalogScreen() {
 
   const specialists = items;
 
-  async function handleShare(nick: string, displayName: string) {
-    const url = `${APP_URL}/specialists/${nick}`;
-    try {
-      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({ title: displayName, url });
-      } else {
-        await Share.share({ message: `${displayName} - ${url}`, url });
-      }
-    } catch {
-      // user cancelled
-    }
-  }
-
   function renderSpecialist({ item }: { item: SpecialistItem }) {
     const isVerified = item.badges.includes('verified');
     const displayName = item.displayName || `@${item.nick}`;
@@ -190,10 +144,10 @@ export default function SpecialistsCatalogScreen() {
       <TouchableOpacity
         onPress={() => router.push(`/specialists/${item.nick}`)}
         activeOpacity={0.8}
-        style={styles.cardWrapperMobile}
+        style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
       >
         <View style={[styles.card, isMobile && styles.cardMobile]}>
-          {/* Top row: avatar + name/spec/city */}
+          {/* Top row: avatar + name/headline/city */}
           <View style={styles.cardHeader}>
             <Avatar name={displayName} imageUri={item.avatarUrl || undefined} size="lg" />
             <View style={styles.cardInfo}>
@@ -209,7 +163,7 @@ export default function SpecialistsCatalogScreen() {
                 )}
               </View>
               {item.headline && (
-                <Text style={styles.headline} numberOfLines={1}>
+                <Text style={styles.headline} numberOfLines={2}>
                   {item.headline}
                 </Text>
               )}
@@ -219,18 +173,6 @@ export default function SpecialistsCatalogScreen() {
                 {item.memberSince ? `на сайте с ${item.memberSince}` : ''}
               </Text>
             </View>
-            {/* Share button */}
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation?.();
-                handleShare(item.nick, displayName);
-              }}
-              hitSlop={8}
-              style={styles.shareBtn}
-              activeOpacity={0.6}
-            >
-              <Ionicons name="share-outline" size={18} color={Colors.textMuted} />
-            </TouchableOpacity>
           </View>
 
           {/* Rating */}
@@ -283,7 +225,9 @@ export default function SpecialistsCatalogScreen() {
         data={specialists}
         keyExtractor={(item) => item.nick}
         renderItem={renderSpecialist}
-        numColumns={1}
+        numColumns={isMobile ? 1 : 2}
+        key={isMobile ? 'single' : 'double'}
+        columnWrapperStyle={isMobile ? undefined : { gap: 16 }}
         contentContainerStyle={[
           styles.listContent,
           !isMobile && styles.listContentWide,
@@ -298,26 +242,60 @@ export default function SpecialistsCatalogScreen() {
         }
         ListHeaderComponent={
           <View style={[styles.filters, { maxWidth: filtersMaxWidth }]}>
-            {/* Unified search — finds specialists, ИФНС offices, or services */}
+            {/* Service category chips */}
+            <View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
+              >
+                <TouchableOpacity
+                  onPress={() => setSelectedCategory('')}
+                  style={[styles.chip, selectedCategory === '' && styles.chipActive]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, selectedCategory === '' && styles.chipTextActive]}>
+                    Все
+                  </Text>
+                </TouchableOpacity>
+                {SERVICE_CATEGORIES.map((cat) => {
+                  const isActive = cat.value === selectedCategory;
+                  return (
+                    <TouchableOpacity
+                      key={cat.value}
+                      onPress={() => setSelectedCategory(cat.value)}
+                      style={[styles.chip, isActive && styles.chipActive]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* FNS search */}
             <View style={styles.searchSection}>
               <TextInput
                 style={styles.searchInput}
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholder="Найти специалиста, ИФНС или услугу..."
+                value={fnsQuery}
+                onChangeText={setFnsQuery}
+                placeholder="Ваша ИФНС..."
                 placeholderTextColor={Colors.textMuted}
                 autoCorrect={false}
               />
-              {fnsDropdownResults.length > 0 && (
+              {fnsDropdown.length > 0 && (
                 <View style={styles.fnsDropdown}>
                   <Text style={styles.fnsDropdownHeader}>Инспекции ФНС</Text>
-                  {fnsDropdownResults.map((office) => (
+                  {fnsDropdown.map((office) => (
                     <TouchableOpacity
                       key={office.code}
                       onPress={() => {
                         setSelectedFns((prev) => [...prev, office]);
-                        setSearchText('');
-                        setFnsDropdownResults([]);
+                        setFnsQuery('');
+                        setFnsDropdown([]);
                       }}
                       style={styles.fnsDropdownItem}
                       activeOpacity={0.7}
@@ -325,7 +303,7 @@ export default function SpecialistsCatalogScreen() {
                       <Text style={styles.fnsDropdownName} numberOfLines={2}>
                         {office.name}
                       </Text>
-                      <Text style={styles.fnsDropdownCity}>{office.city.name}</Text>
+                      <Text style={styles.fnsDropdownCity}>{office.city}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -345,55 +323,13 @@ export default function SpecialistsCatalogScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.fnsChipText} numberOfLines={1}>
-                      {office.name} ({office.city.name})
+                      {office.name} ({office.city})
                     </Text>
                     <Text style={styles.fnsChipRemove}>x</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
-
-            {/* Specialization filter chips */}
-            <View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={true}
-                contentContainerStyle={styles.chipsRow}
-              >
-                {SPECIALIZATION_FILTERS.map((spec) => {
-                  const isActive = spec.value === selectedCategory;
-                  return (
-                    <TouchableOpacity
-                      key={spec.value || '__all_spec__'}
-                      onPress={() => setSelectedCategory(spec.value)}
-                      style={[styles.chip, isActive && styles.chipActive]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                        {spec.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* Sort */}
-            <View style={styles.sortRow}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 12 }}>
-                {SORT_OPTIONS.map((opt) => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    onPress={() => setSort(opt.value)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.sortOption, sort === opt.value && styles.sortOptionActive]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
           </View>
         }
         ListEmptyComponent={
@@ -571,23 +507,6 @@ const styles = StyleSheet.create({
     color: Colors.textAccent,
     lineHeight: 16,
   },
-  sortRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sortLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  sortOption: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  sortOptionActive: {
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-  },
   // Card styles
   cardWrapperMobile: {
     width: '100%',
@@ -596,6 +515,7 @@ const styles = StyleSheet.create({
   },
   cardWrapperGrid: {
     flex: 1,
+    marginBottom: Spacing.sm,
   },
   card: {
     backgroundColor: Colors.bgCard,
@@ -672,10 +592,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.medium,
-  },
-  shareBtn: {
-    padding: Spacing.xs,
-    marginLeft: 'auto',
   },
   servicesRow: {
     flexDirection: 'row',
