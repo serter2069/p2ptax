@@ -288,6 +288,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.sm,
     justifyContent: 'center',
+    alignSelf: 'center',
   },
   otpBox: {
     width: 44,
