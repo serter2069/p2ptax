@@ -91,7 +91,7 @@ export default function MyResponsesScreen() {
     const req = item.request;
     const isOpen = req.status === 'OPEN';
     return (
-      <TouchableOpacity style={styles.cardWrapper} activeOpacity={0.8} onPress={() => router.push(`/(dashboard)/requests/${item.request.id}`)}>
+      <TouchableOpacity style={styles.cardWrapper} activeOpacity={0.8} onPress={() => router.push(`/(dashboard)/my-requests/${item.request.id}`)}>
         <Card padding={Spacing.lg}>
           {/* Request meta */}
           <View style={styles.metaRow}>

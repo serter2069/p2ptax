@@ -71,7 +71,7 @@ export default function CreateRequestScreen() {
       if (budget.trim()) body.budget = Number(budget.trim());
       if (category) body.category = category;
       await api.post('/requests', body);
-      router.replace('/(dashboard)/requests');
+      router.replace('/(dashboard)/my-requests');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Не удалось создать запрос';
       Alert.alert('Ошибка', msg);

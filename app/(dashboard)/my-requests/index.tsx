@@ -117,7 +117,7 @@ export default function MyRequestsScreen() {
     return (
       <TouchableOpacity
         style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
-        onPress={() => router.push(`/(dashboard)/requests/${item.id}`)}
+        onPress={() => router.push(`/(dashboard)/my-requests/${item.id}`)}
         activeOpacity={0.75}
       >
         <Card padding={Spacing.lg}>
@@ -152,7 +152,7 @@ export default function MyRequestsScreen() {
           <View style={styles.footer}>
             <TouchableOpacity
               style={styles.responsesBtn}
-              onPress={() => router.push(`/(dashboard)/requests/${item.id}`)}
+              onPress={() => router.push(`/(dashboard)/my-requests/${item.id}`)}
               activeOpacity={0.7}
             >
               <Text style={styles.responsesBtnText}>
@@ -234,7 +234,7 @@ export default function MyRequestsScreen() {
               title={tab === 'active' ? 'Нет активных запросов' : 'Нет закрытых запросов'}
               subtitle={tab === 'active' && isClient ? 'Создайте свой первый запрос' : undefined}
               ctaLabel={tab === 'active' && isClient ? 'Создать запрос' : undefined}
-              onCtaPress={tab === 'active' && isClient ? () => router.push('/(dashboard)/requests/new') : undefined}
+              onCtaPress={tab === 'active' && isClient ? () => router.push('/(dashboard)/my-requests/new') : undefined}
             />
           )
         }
@@ -242,7 +242,7 @@ export default function MyRequestsScreen() {
           !loading && filtered.length > 0 && isClient ? (
             <View style={[styles.footerBtn, !isMobile && styles.footerBtnWide]}>
               <Button
-                onPress={() => router.push('/(dashboard)/requests/new')}
+                onPress={() => router.push('/(dashboard)/my-requests/new')}
                 variant="primary"
                 style={styles.createBtn}
               >

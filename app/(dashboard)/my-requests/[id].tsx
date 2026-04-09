@@ -200,7 +200,7 @@ export default function MyRequestDetailScreen() {
             {request.status === 'OPEN' && user?.userId === request.clientId && (
               <View style={styles.actionRow}>
                 <Button
-                  onPress={() => router.push(`/(dashboard)/requests/edit/${request.id}`)}
+                  onPress={() => router.push(`/(dashboard)/my-requests/edit/${request.id}`)}
                   variant="secondary"
                   style={styles.actionBtn}
                 >
