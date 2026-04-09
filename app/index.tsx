@@ -122,8 +122,6 @@ function QuickRequestForm() {
 
   return (
     <View style={qrf.container}>
-      <Text style={qrf.title}>Быстрый запрос</Text>
-
       <Text style={qrf.label}>Что случилось?</Text>
       <View style={qrf.cityRow}>
         {categories.map((cat) => (
@@ -168,17 +166,8 @@ function QuickRequestForm() {
 const qrf = StyleSheet.create({
   container: {
     backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginVertical: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  title: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+    borderRadius: 16,
+    padding: 32,
   },
   input: {
     borderWidth: 1,
@@ -244,8 +233,9 @@ const qrf = StyleSheet.create({
   btn: {
     backgroundColor: Colors.brandPrimary,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    padding: 16,
     alignItems: 'center',
+    width: '100%',
   },
   btnSecondary: {
     backgroundColor: 'transparent',
@@ -448,6 +438,21 @@ export default function LandingScreen() {
                   {!isMobile && idx < arr.length - 1 && <View style={styles.statDivider} />}
                 </React.Fragment>
               ))}
+            </View>
+          </View>
+        </View>
+
+        {/* ===== Quick Request Form (prominent) ===== */}
+        <View style={styles.quickFormSection}>
+          <View style={[styles.sectionInner, innerStyle]}>
+            <Text style={styles.quickFormHeading}>
+              {'Опишите вашу ситуацию — мы найдём специалиста'}
+            </Text>
+            <Text style={styles.quickFormSubheading}>
+              {'Бесплатно. Отклики за 1-2 часа.'}
+            </Text>
+            <View style={styles.quickFormCard}>
+              <QuickRequestForm />
             </View>
           </View>
         </View>
@@ -718,13 +723,6 @@ export default function LandingScreen() {
                 </View>
               ))}
             </View>
-          </View>
-        </View>
-
-        {/* ===== Quick Request Form ===== */}
-        <View style={[styles.section, { backgroundColor: Colors.bgSecondary, paddingVertical: 48 }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <QuickRequestForm />
           </View>
         </View>
 
@@ -1011,6 +1009,46 @@ const styles = StyleSheet.create({
     width: 1,
     height: 40,
     backgroundColor: Colors.border,
+  },
+
+  // ---- Quick Form Section ----
+  quickFormSection: {
+    width: '100%',
+    paddingVertical: 56,
+    alignItems: 'center',
+    ...(Platform.OS === 'web'
+      ? { background: `linear-gradient(135deg, ${Colors.brandPrimary} 0%, ${Colors.brandPrimaryHover} 100%)` } as any
+      : { backgroundColor: Colors.brandPrimary }),
+  },
+  quickFormHeading: {
+    fontSize: 28,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.white,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+    marginBottom: 8,
+  },
+  quickFormSubheading: {
+    fontSize: Typography.fontSize.md,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  quickFormCard: {
+    width: '100%',
+    maxWidth: 600,
+    borderRadius: 16,
+    backgroundColor: Colors.bgCard,
+    padding: 0,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)' }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.15,
+          shadowRadius: 30,
+          elevation: 10,
+        }),
   },
 
   // ---- Sections ----
