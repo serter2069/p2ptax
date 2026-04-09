@@ -10,7 +10,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
+  Share,
+  Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 
@@ -48,6 +51,16 @@ const SORT_OPTIONS: { label: string; value: string }[] = [
   { label: 'По откликам', value: 'responses' },
 ];
 
+const CITY_FILTERS = [
+  { label: 'Все', value: '' },
+  { label: 'Москва', value: 'Москва' },
+  { label: 'Санкт-Петербург', value: 'Санкт-Петербург' },
+  { label: 'Екатеринбург', value: 'Екатеринбург' },
+  { label: 'Новосибирск', value: 'Новосибирск' },
+  { label: 'Казань', value: 'Казань' },
+  { label: 'Краснодар', value: 'Краснодар' },
+];
+
 const SPECIALIZATION_FILTERS = [
   { label: 'Все', value: '' },
   { label: 'Декларации', value: 'Декларации' },
@@ -73,6 +86,7 @@ export default function SpecialistsCatalogScreen() {
 
   const [searchText, setSearchText] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
   const [sort, setSort] = useState('rating');
@@ -107,6 +121,7 @@ export default function SpecialistsCatalogScreen() {
     setError('');
     try {
       const params = new URLSearchParams();
+      if (selectedCity) params.set('city', selectedCity);
       if (fnsFilterParam) params.set('fns', fnsFilterParam);
       if (sort) params.set('sort', sort);
       if (searchDebounced.trim()) params.set('search', searchDebounced.trim());
@@ -131,12 +146,12 @@ export default function SpecialistsCatalogScreen() {
       setLoadingMore(false);
       setRefreshing(false);
     }
-  }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
+  }, [selectedCity, fnsFilterParam, sort, searchDebounced, selectedCategory]);
 
   useEffect(() => {
     fetchSpecialists(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
+  }, [selectedCity, fnsFilterParam, sort, searchDebounced, selectedCategory]);
 
   function handleRefresh() {
     setRefreshing(true);
@@ -150,6 +165,19 @@ export default function SpecialistsCatalogScreen() {
   }
 
   const specialists = items;
+
+  async function handleShare(nick: string, displayName: string) {
+    const url = `${APP_URL}/specialists/${nick}`;
+    try {
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: displayName, url });
+      } else {
+        await Share.share({ message: `${displayName} - ${url}`, url });
+      }
+    } catch {
+      // user cancelled
+    }
+  }
 
   function renderSpecialist({ item }: { item: SpecialistItem }) {
     const isVerified = item.badges.includes('verified');
@@ -175,6 +203,13 @@ export default function SpecialistsCatalogScreen() {
                     <Text style={styles.verifiedText}>Проверен</Text>
                   </View>
                 )}
+                {item.experience != null && item.experience > 0 && (
+                  <View style={styles.tenureBadge}>
+                    <Text style={styles.tenureBadgeText}>
+                      {formatExperience(item.experience)}
+                    </Text>
+                  </View>
+                )}
               </View>
               {item.services.length > 0 && (
                 <Text style={styles.specialization} numberOfLines={1}>
@@ -187,6 +222,18 @@ export default function SpecialistsCatalogScreen() {
                 </Text>
               )}
             </View>
+            {/* Share button */}
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation?.();
+                handleShare(item.nick, displayName);
+              }}
+              hitSlop={8}
+              style={styles.shareBtn}
+              activeOpacity={0.6}
+            >
+              <Ionicons name="share-outline" size={18} color={Colors.textMuted} />
+            </TouchableOpacity>
           </View>
 
           {/* Rating + Experience on one line */}
@@ -314,6 +361,32 @@ export default function SpecialistsCatalogScreen() {
                 ))}
               </View>
             )}
+
+            {/* City filter chips */}
+            <View>
+              <Text style={styles.filterLabel}>Город</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
+              >
+                {CITY_FILTERS.map((city) => {
+                  const isActive = city.value === selectedCity;
+                  return (
+                    <TouchableOpacity
+                      key={city.value || '__all_city__'}
+                      onPress={() => setSelectedCity(city.value)}
+                      style={[styles.chip, isActive && styles.chipActive]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                        {city.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
             {/* Specialization filter chips */}
             <View>
@@ -606,6 +679,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#1A7848',
     fontWeight: Typography.fontWeight.medium,
+  },
+  tenureBadge: {
+    backgroundColor: '#EDF4FF',
+    paddingVertical: 1,
+    paddingHorizontal: 6,
+    borderRadius: BorderRadius.sm,
+  },
+  tenureBadgeText: {
+    fontSize: 10,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  shareBtn: {
+    padding: Spacing.xs,
+    marginLeft: 'auto',
   },
   servicesRow: {
     flexDirection: 'row',
