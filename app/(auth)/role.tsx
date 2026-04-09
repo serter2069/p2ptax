@@ -13,6 +13,7 @@ import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Color
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { secureStorage } from '../../stores/storage';
+import { AuthProgress } from '../../components/AuthProgress';
 
 export default function RoleScreen() {
   const router = useRouter();
@@ -57,6 +58,8 @@ export default function RoleScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
+        <AuthProgress step={3} />
+
         <View style={styles.header}>
           <Text style={styles.title}>Кто вы?</Text>
           <Text style={styles.subtitle}>
