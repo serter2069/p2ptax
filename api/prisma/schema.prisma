@@ -287,6 +287,18 @@ model PaymentRecord {
   @@map("payment_records")
 }
 
+model ServiceCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  icon      String?  // emoji or SVG code
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("service_categories")
+}
+
 enum ComplaintReason {
   spam
   fraud

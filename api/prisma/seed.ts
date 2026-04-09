@@ -384,6 +384,28 @@ async function findOrCreateThread(userId1: string, userId2: string) {
 }
 
 async function main() {
+  // --- Seed service categories ---
+  console.log('Seeding service categories...');
+  const categories = [
+    { name: 'Выездная проверка', slug: 'vyezdnaya-proverka', icon: '🔍', sortOrder: 1 },
+    { name: 'Камеральная проверка', slug: 'kameralnaya-proverka', icon: '📋', sortOrder: 2 },
+    { name: 'Отдел оперативного контроля', slug: 'operativny-kontrol', icon: '⚡', sortOrder: 3 },
+    { name: 'Декларация 3-НДФЛ', slug: 'deklaraciya-3ndfl', icon: '📄', sortOrder: 4 },
+    { name: 'Налоговые вычеты', slug: 'nalogovye-vychety', icon: '💰', sortOrder: 5 },
+    { name: 'Споры с ФНС', slug: 'spory-s-fns', icon: '⚖️', sortOrder: 6 },
+    { name: 'Регистрация бизнеса', slug: 'registraciya-biznesa', icon: '🏢', sortOrder: 7 },
+    { name: 'Оптимизация налогов', slug: 'optimizaciya-nalogov', icon: '📊', sortOrder: 8 },
+    { name: 'Другое', slug: 'drugoe', icon: '💬', sortOrder: 9 },
+  ];
+  for (const cat of categories) {
+    await prisma.serviceCategory.upsert({
+      where: { slug: cat.slug },
+      update: {},
+      create: cat,
+    });
+  }
+  console.log(`  Seeded ${categories.length} categories`);
+
   console.log('Seeding specialists...');
 
   for (const spec of specialists) {
