@@ -47,6 +47,7 @@ model User {
   refreshTokens       RefreshToken[]
   complaintsGiven     Complaint[]       @relation("ComplaintReporter")
   complaintsReceived  Complaint[]       @relation("ComplaintTarget")
+  paymentRecords      PaymentRecord[]
 
   @@map("users")
 }
@@ -262,6 +263,28 @@ model ContactMethod {
 
   @@index([specialistId])
   @@map("contact_methods")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model PaymentRecord {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  amount    Int           // in kopecks
+  currency  String        @default("RUB")
+  status    PaymentStatus @default(PENDING)
+  provider  String        @default("stub") // TODO: replace with "yukassa"
+  metadata  Json?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId])
+  @@map("payment_records")
 }
 
 enum ComplaintReason {
