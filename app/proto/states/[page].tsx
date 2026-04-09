@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { ProtoLayout } from '../../../components/proto/ProtoLayout';
 import { PageIdProvider } from '../../../components/proto/StateSection';
-import { getPageById } from '../../../constants/protoRegistry';
+import { getPageById } from '../../../constants/pageRegistry';
 import { Colors, Typography, Spacing } from '../../../constants/Colors';
 
 // State components

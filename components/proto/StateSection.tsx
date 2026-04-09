@@ -2,7 +2,7 @@ import React, { useState, useCallback, createContext, useContext } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { getPageById, getNotesForState, getPageNotes } from '../../constants/protoRegistry';
+import { getPageById, getNotesForState, getPageNotes } from '../../constants/pageRegistry';
 import { ProtoNavHeader, ProtoNavFooter } from './ProtoNav';
 
 // Context so all StateSections get pageId without prop drilling
