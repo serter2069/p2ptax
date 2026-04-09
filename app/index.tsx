@@ -319,7 +319,6 @@ function SkeletonChip() {
 export default function LandingScreen() {
   const router = useRouter();
   const { isMobile, isTablet, isDesktop } = useBreakpoints();
-  const [heroImageError, setHeroImageError] = React.useState(false);
   const [featuredSpecialists, setFeaturedSpecialists] = useState<any[]>([]);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -419,31 +418,21 @@ export default function LandingScreen() {
 
             {isWide ? (
               <View style={[styles.heroRight, styles.heroRightWide]}>
-                {heroImageError ? (
-                  <View style={[styles.heroImage, styles.heroImageWide, styles.heroImageFallback]} />
-                ) : (
-                  <Image
-                    source={{ uri: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80' }}
-                    style={[styles.heroImage, styles.heroImageWide]}
-                    resizeMode="cover"
-                    onError={() => setHeroImageError(true)}
-                    accessibilityLabel="Налоговый консультант за работой"
-                  />
-                )}
+                <Image
+                  source={require('../assets/images/hero-specialist.png')}
+                  style={[styles.heroImage, styles.heroImageWide]}
+                  resizeMode="contain"
+                  accessibilityLabel="Налоговый консультант за работой"
+                />
               </View>
             ) : (
               <View style={styles.heroRight}>
-                {heroImageError ? (
-                  <View style={[styles.heroImage, styles.heroImageFallback]} />
-                ) : (
-                  <Image
-                    source={{ uri: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80' }}
-                    style={styles.heroImage}
-                    resizeMode="cover"
-                    onError={() => setHeroImageError(true)}
-                    accessibilityLabel="Налоговый консультант за работой"
-                  />
-                )}
+                <Image
+                  source={require('../assets/images/hero-specialist.png')}
+                  style={styles.heroImage}
+                  resizeMode="contain"
+                  accessibilityLabel="Налоговый консультант за работой"
+                />
               </View>
             )}
           </View>
@@ -627,6 +616,13 @@ export default function LandingScreen() {
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041A\u0430\u043A \u044D\u0442\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442'}</Text>
 
+            <Image
+              source={require('../assets/images/how-it-works-icons.png')}
+              style={{ width: '100%', height: 120, maxWidth: 600 }}
+              resizeMode="contain"
+              accessibilityLabel="Как работает платформа"
+            />
+
             <View style={[styles.stepsRow, isWide && styles.stepsRowWide]}>
               {[
                 { num: '1', icon: '✍️', title: 'Опишите ситуацию', desc: 'Расскажите что произошло: требование ФНС, проверка, штраф или нужна помощь с декларацией' },
@@ -772,6 +768,13 @@ export default function LandingScreen() {
         <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041A\u0430\u043A \u043C\u044B \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
+
+            <Image
+              source={require('../assets/images/trust-icons.png')}
+              style={{ width: '100%', height: 100, maxWidth: 500 }}
+              resizeMode="contain"
+              accessibilityLabel="Верификация специалистов"
+            />
 
             <View style={[styles.trustRow, isWide && styles.trustRowWide]}>
               {[
