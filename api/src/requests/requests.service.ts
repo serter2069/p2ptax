@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { CreateRequestDto } from './dto/create-request.dto';
+import { CreateQuickRequestDto } from './dto/create-quick-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
 import { RequestStatus, Prisma } from '@prisma/client';
 
@@ -37,6 +38,19 @@ export class RequestsService {
         createdAt: true,
         _count: { select: { responses: true } },
       },
+    });
+  }
+
+  async createQuick(dto: CreateQuickRequestDto) {
+    return this.prisma.quickRequest.create({
+      data: {
+        description: dto.description.trim().slice(0, 500),
+        serviceType: dto.serviceType,
+        city: dto.city ?? null,
+        ifnsId: dto.ifnsId ?? null,
+        ifnsName: dto.ifnsName ?? null,
+      },
+      select: { id: true, status: true },
     });
   }
 

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
+import { CreateQuickRequestDto } from './dto/create-quick-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
 import { PatchRequestDto } from './dto/patch-request.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -23,6 +24,12 @@ import { Role } from '@prisma/client';
 @Controller('requests')
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
+
+  // POST /requests/quick — anonymous quick request from landing page
+  @Post('quick')
+  createQuick(@Body() dto: CreateQuickRequestDto) {
+    return this.requestsService.createQuick(dto);
+  }
 
   // POST /requests — client creates a request
   @Post()
