@@ -344,11 +344,11 @@ const styles = StyleSheet.create({
   otpRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    justifyContent: 'center',
+    alignSelf: 'stretch',
   },
   otpBox: {
-    width: 44,
-    height: 52,
+    flex: 1,
+    height: 56,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.bgCard,
     borderWidth: 1.5,
