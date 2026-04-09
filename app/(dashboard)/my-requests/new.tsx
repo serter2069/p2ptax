@@ -17,6 +17,7 @@ import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Co
 import { Header } from '../../../components/Header';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
+import { IfnsSearch } from '../../../components/IfnsSearch';
 import { useBreakpoints } from '../../../hooks/useBreakpoints';
 
 const TAX_CATEGORIES = [
@@ -36,6 +37,7 @@ export default function CreateRequestScreen() {
   const { specialist } = useLocalSearchParams<{ specialist?: string }>();
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
+  const [selectedIfns, setSelectedIfns] = useState<any>(null);
   const [budget, setBudget] = useState('');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
@@ -47,8 +49,8 @@ export default function CreateRequestScreen() {
     if (description.trim().length < 3) {
       e.description = 'Минимум 3 символа';
     }
-    if (!city.trim()) {
-      e.city = 'Укажите город';
+    if (!city.trim() && !selectedIfns) {
+      e.city = 'Укажите город или выберите ИФНС';
     }
     if (budget.trim() && (isNaN(Number(budget)) || Number(budget) < 0 || !Number.isInteger(Number(budget)))) {
       e.budget = 'Введите целое число';
@@ -64,10 +66,15 @@ export default function CreateRequestScreen() {
     if (!validate()) return;
     setLoading(true);
     try {
+      const effectiveCity = selectedIfns ? selectedIfns.city.name : city.trim();
       const body: Record<string, unknown> = {
         description: description.trim(),
-        city: city.trim(),
+        city: effectiveCity,
       };
+      if (selectedIfns) {
+        body.ifnsId = selectedIfns.id;
+        body.ifnsName = selectedIfns.name;
+      }
       if (budget.trim()) body.budget = Number(budget.trim());
       if (category) body.category = category;
       await api.post('/requests', body);
@@ -132,11 +139,27 @@ export default function CreateRequestScreen() {
               </View>
             </View>
 
+            <View style={styles.field}>
+              <Text style={styles.label}>Налоговая инспекция</Text>
+              <IfnsSearch
+                selected={selectedIfns}
+                onSelect={(ifns) => {
+                  setSelectedIfns(ifns);
+                  if (ifns) {
+                    setCity(ifns.city.name);
+                    if (errors.city) setErrors((e) => ({ ...e, city: undefined }));
+                  }
+                }}
+                placeholder="Введите номер или название ИФНС..."
+              />
+            </View>
+
             <Input
               label="Город"
-              value={city}
+              value={selectedIfns ? selectedIfns.city.name : city}
               onChangeText={(t) => {
                 setCity(t);
+                if (selectedIfns) setSelectedIfns(null);
                 if (errors.city) setErrors((e) => ({ ...e, city: undefined }));
               }}
               placeholder="Например, Москва"

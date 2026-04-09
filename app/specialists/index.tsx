@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
-import { formatExperience, shortFnsLabel as formatFnsLabel } from '../../lib/format';
+import { formatExperience } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
@@ -26,7 +26,6 @@ import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
 import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
-import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 
@@ -50,15 +49,12 @@ const SORT_OPTIONS: { label: string; value: string }[] = [
   { label: 'По откликам', value: 'responses' },
 ];
 
-const CITY_FILTERS = [
-  { label: 'Все', value: '' },
-  { label: 'Москва', value: 'Москва' },
-  { label: 'Санкт-Петербург', value: 'Санкт-Петербург' },
-  { label: 'Екатеринбург', value: 'Екатеринбург' },
-  { label: 'Новосибирск', value: 'Новосибирск' },
-  { label: 'Казань', value: 'Казань' },
-  { label: 'Краснодар', value: 'Краснодар' },
-];
+interface FnsResult {
+  id: string;
+  code: string;
+  name: string;
+  city: { name: string };
+}
 
 const SPECIALIZATION_FILTERS = [
   { label: 'Все', value: '' },
@@ -85,10 +81,10 @@ export default function SpecialistsCatalogScreen() {
 
   const [searchText, setSearchText] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
+  const [selectedFns, setSelectedFns] = useState<FnsResult[]>([]);
   const [sort, setSort] = useState('rating');
+  const [fnsDropdownResults, setFnsDropdownResults] = useState<FnsResult[]>([]);
 
   // Debounce search input
   useEffect(() => {
@@ -96,16 +92,23 @@ export default function SpecialistsCatalogScreen() {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  const selectedFnsCodes = new Set(selectedFns.map((o) => o.code));
-  // Use same searchText to suggest FNS offices in dropdown
-  const fnsTerms = searchText.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const fnsDropdownResults = fnsTerms.length > 0
-    ? FNS_OFFICES.filter((o) => {
-        if (selectedFnsCodes.has(o.code)) return false;
-        const text = `${o.name} ${o.city}`.toLowerCase();
-        return fnsTerms.every((t) => text.includes(t));
-      }).slice(0, 6)
-    : [];
+  // Fetch FNS results from API when search text changes
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFnsDropdownResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const results = await api.get<FnsResult[]>(`/ifns/search?q=${encodeURIComponent(searchText.trim())}`);
+        const selectedCodes = new Set(selectedFns.map((o) => o.code));
+        setFnsDropdownResults(results.filter((r) => !selectedCodes.has(r.code)).slice(0, 6));
+      } catch {
+        setFnsDropdownResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText, selectedFns]);
 
   const fnsFilterParam = selectedFns.map((o) => o.name).join(',');
 
@@ -120,7 +123,6 @@ export default function SpecialistsCatalogScreen() {
     setError('');
     try {
       const params = new URLSearchParams();
-      if (selectedCity) params.set('city', selectedCity);
       if (fnsFilterParam) params.set('fns', fnsFilterParam);
       if (sort) params.set('sort', sort);
       if (searchDebounced.trim()) params.set('search', searchDebounced.trim());
@@ -145,12 +147,12 @@ export default function SpecialistsCatalogScreen() {
       setLoadingMore(false);
       setRefreshing(false);
     }
-  }, [selectedCity, fnsFilterParam, sort, searchDebounced, selectedCategory]);
+  }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
 
   useEffect(() => {
     fetchSpecialists(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCity, fnsFilterParam, sort, searchDebounced, selectedCategory]);
+  }, [fnsFilterParam, sort, searchDebounced, selectedCategory]);
 
   function handleRefresh() {
     setRefreshing(true);
@@ -327,6 +329,7 @@ export default function SpecialistsCatalogScreen() {
                       onPress={() => {
                         setSelectedFns((prev) => [...prev, office]);
                         setSearchText('');
+                        setFnsDropdownResults([]);
                       }}
                       style={styles.fnsDropdownItem}
                       activeOpacity={0.7}
@@ -334,7 +337,7 @@ export default function SpecialistsCatalogScreen() {
                       <Text style={styles.fnsDropdownName} numberOfLines={2}>
                         {office.name}
                       </Text>
-                      <Text style={styles.fnsDropdownCity}>{office.city}</Text>
+                      <Text style={styles.fnsDropdownCity}>{office.city.name}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -354,39 +357,13 @@ export default function SpecialistsCatalogScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.fnsChipText} numberOfLines={1}>
-                      {formatFnsLabel(office.name, office.city)}
+                      {office.name} ({office.city.name})
                     </Text>
-                    <Text style={styles.fnsChipRemove}>×</Text>
+                    <Text style={styles.fnsChipRemove}>x</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
-
-            {/* City filter chips */}
-            <View>
-              <Text style={styles.filterLabel}>Город</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                {CITY_FILTERS.map((city) => {
-                  const isActive = city.value === selectedCity;
-                  return (
-                    <TouchableOpacity
-                      key={city.value || '__all_city__'}
-                      onPress={() => setSelectedCity(city.value)}
-                      style={[styles.chip, isActive && styles.chipActive]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                        {city.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
 
             {/* Specialization filter chips */}
             <View>
