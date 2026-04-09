@@ -91,6 +91,8 @@ model Request {
   client      User          @relation(fields: [clientId], references: [id])
   description String
   city        String
+  ifnsId      String?
+  ifnsName    String?
   budget      Int?
   category    String?
   status      RequestStatus @default(OPEN)
@@ -215,8 +217,9 @@ model Review {
 }
 
 model City {
-  id     String @id @default(cuid())
-  name   String @unique
+  id     String  @id @default(cuid())
+  name   String  @unique
+  slug   String  @unique @default("")
   region String?
 
   ifnsOffices Ifns[]
@@ -225,13 +228,18 @@ model City {
 }
 
 model Ifns {
-  id     String @id @default(cuid())
-  code   String @unique
-  name   String
-  cityId String
-  city   City   @relation(fields: [cityId], references: [id])
+  id            String  @id @default(cuid())
+  code          String  @unique
+  name          String
+  slug          String  @unique @default("")
+  address       String?
+  searchAliases String?
+  cityId        String
+  city          City    @relation(fields: [cityId], references: [id])
 
   @@index([cityId])
+  @@index([name])
+  @@index([code])
   @@map("ifns")
 }
 

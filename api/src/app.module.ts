@@ -14,6 +14,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { StorageModule } from './storage/storage.module';
+import { IfnsModule } from './ifns/ifns.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { StorageModule } from './storage/storage.module';
     AdminModule,
     ReviewsModule,
     ComplaintsModule,
+    IfnsModule,
   ],
   controllers: [AppController],
 })
