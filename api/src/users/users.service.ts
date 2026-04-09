@@ -294,73 +294,78 @@ export class UsersService {
 
   /**
    * Delete a user and all related records.
-   * Order matters: delete dependent records first, then the user.
-   * (No ON DELETE CASCADE defined in Prisma schema, so we do it manually.)
+   * Uses interactive transaction with sequential awaits to guarantee
+   * FK-safe deletion order. Nested relation filters are replaced with
+   * explicit requestId/threadId lookups to avoid issues inside transactions.
    */
   async deleteUser(userId: string): Promise<{ deleted: true }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    // Capture email before transaction for OTP cleanup (keyed by email, not userId)
     const userEmail = user.email;
 
-    await this.prisma.$transaction([
-      // Complaints filed by or against this user
-      this.prisma.complaint.deleteMany({ where: { reporterId: userId } }),
-      this.prisma.complaint.deleteMany({ where: { targetUserId: userId } }),
+    await this.prisma.$transaction(async (tx) => {
+      // Collect IDs of user's requests up front (needed for cascade deletes below)
+      const userRequests = await tx.request.findMany({
+        where: { clientId: userId },
+        select: { id: true },
+      });
+      const requestIds = userRequests.map((r) => r.id);
 
-      // Reviews given by user
-      this.prisma.review.deleteMany({ where: { clientId: userId } }),
-
-      // Reviews received by user
-      this.prisma.review.deleteMany({ where: { specialistId: userId } }),
-
-      // Reviews on user's requests (from other clients)
-      this.prisma.review.deleteMany({ where: { request: { clientId: userId } } }),
-
-      // Messages sent by user
-      this.prisma.message.deleteMany({ where: { senderId: userId } }),
-
-      // Messages in threads where user is a participant (other participant's messages)
-      this.prisma.message.deleteMany({
-        where: {
-          thread: {
-            OR: [{ participant1Id: userId }, { participant2Id: userId }],
-          },
-        },
-      }),
-
-      // Threads
-      this.prisma.thread.deleteMany({
+      // Collect IDs of threads where user participates (needed for message cleanup)
+      const userThreads = await tx.thread.findMany({
         where: { OR: [{ participant1Id: userId }, { participant2Id: userId }] },
-      }),
+        select: { id: true },
+      });
+      const threadIds = userThreads.map((t) => t.id);
 
-      // Responses by user
-      this.prisma.response.deleteMany({ where: { specialistId: userId } }),
+      // 1. Complaints (reference User directly)
+      await tx.complaint.deleteMany({ where: { reporterId: userId } });
+      await tx.complaint.deleteMany({ where: { targetUserId: userId } });
 
-      // Responses to user's requests
-      this.prisma.response.deleteMany({
-        where: { request: { clientId: userId } },
-      }),
+      // 2. Reviews (reference User and Request)
+      await tx.review.deleteMany({ where: { clientId: userId } });
+      await tx.review.deleteMany({ where: { specialistId: userId } });
+      if (requestIds.length > 0) {
+        await tx.review.deleteMany({ where: { requestId: { in: requestIds } } });
+      }
 
-      // Requests
-      this.prisma.request.deleteMany({ where: { clientId: userId } }),
+      // 3. Messages (reference Thread and User; delete all in user's threads)
+      if (threadIds.length > 0) {
+        await tx.message.deleteMany({ where: { threadId: { in: threadIds } } });
+      }
 
-      // Promotions
-      this.prisma.promotion.deleteMany({ where: { specialistId: userId } }),
+      // 4. Threads
+      if (threadIds.length > 0) {
+        await tx.thread.deleteMany({ where: { id: { in: threadIds } } });
+      }
 
-      // Specialist profile
-      this.prisma.specialistProfile.deleteMany({ where: { userId } }),
+      // 5. Responses by user (specialist responding to others' requests)
+      await tx.response.deleteMany({ where: { specialistId: userId } });
 
-      // Refresh tokens
-      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      // 6. Responses to user's own requests (from other specialists)
+      if (requestIds.length > 0) {
+        await tx.response.deleteMany({ where: { requestId: { in: requestIds } } });
+      }
 
-      // OTP codes (keyed by email, no FK to User)
-      this.prisma.otpCode.deleteMany({ where: { email: userEmail } }),
+      // 7. Requests
+      await tx.request.deleteMany({ where: { clientId: userId } });
 
-      // Finally, the user
-      this.prisma.user.delete({ where: { id: userId } }),
-    ]);
+      // 8. Promotions
+      await tx.promotion.deleteMany({ where: { specialistId: userId } });
+
+      // 9. Specialist profile
+      await tx.specialistProfile.deleteMany({ where: { userId } });
+
+      // 10. Refresh tokens
+      await tx.refreshToken.deleteMany({ where: { userId } });
+
+      // 11. OTP codes (no FK, keyed by email)
+      await tx.otpCode.deleteMany({ where: { email: userEmail } });
+
+      // 12. User
+      await tx.user.delete({ where: { id: userId } });
+    });
 
     return { deleted: true };
   }
