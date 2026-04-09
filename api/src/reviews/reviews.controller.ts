@@ -56,6 +56,12 @@ export class ReviewsController {
     return this.reviewsService.listBySpecialist(nick, page ? parseInt(page, 10) : 1);
   }
 
+  /** GET /reviews/public?limit=N — recent reviews for landing page (no auth) */
+  @Get('public')
+  listPublic(@Query('limit') limit?: string) {
+    return this.reviewsService.listPublic(limit ? parseInt(limit, 10) : 6);
+  }
+
   @Get('eligibility/:nick')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CLIENT)
