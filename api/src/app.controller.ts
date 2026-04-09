@@ -6,7 +6,6 @@ export class AppController {
   health() {
     return {
       status: 'ok',
-      project: 'p2ptax',
       timestamp: new Date().toISOString(),
     };
   }
