@@ -28,6 +28,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server!: Server;
 
   private readonly logger = new Logger(ChatGateway.name);
+  private readonly rateLimits = new Map<string, { count: number; resetAt: number }>();
+
+  private checkRateLimit(userId: string, key: string, maxPerMin: number): boolean {
+    const mapKey = `${userId}:${key}`;
+    const now = Date.now();
+    const entry = this.rateLimits.get(mapKey);
+    if (!entry || now > entry.resetAt) {
+      this.rateLimits.set(mapKey, { count: 1, resetAt: now + 60_000 });
+      return true;
+    }
+    if (entry.count >= maxPerMin) return false;
+    entry.count++;
+    return true;
+  }
 
   constructor(
     private readonly jwtService: JwtService,
@@ -110,6 +124,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new WsException('Not authenticated');
     }
 
+    if (!this.checkRateLimit(client.data.userId, 'send_message', 30)) {
+      client.emit('error', { message: 'Rate limit exceeded. Try again later.' });
+      return;
+    }
+
     // Validate content length to prevent oversized payload attacks
     const MAX_CONTENT_LENGTH = 10000;
     if (data.content && data.content.length > MAX_CONTENT_LENGTH) {
@@ -159,7 +178,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const recipientOnline = this.isUserInRoom(recipientId, room);
     if (!recipientOnline) {
-      this.notifyRecipientAsync(recipientId, client.data.email, data.threadId).catch(() => {});
+      this.notifyRecipientAsync(recipientId, client.data.email, data.threadId).catch((err) => this.logger.error('Failed to send offline notification', err?.message));
     }
   }
 
@@ -169,6 +188,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { threadId: string },
   ) {
     if (!client.data?.userId) return;
+
+    if (!this.checkRateLimit(client.data.userId, 'typing', 60)) {
+      client.emit('error', { message: 'Rate limit exceeded. Try again later.' });
+      return;
+    }
 
     const room = `thread:${data.threadId}`;
     client.to(room).emit('typing', {
