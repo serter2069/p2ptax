@@ -287,12 +287,6 @@ export default function OtpScreen() {
               )}
             </View>
 
-            {/* Dev hint */}
-            {__DEV__ && (
-              <View style={styles.devHint}>
-                <Text style={styles.devHintText}>DEV: код — 000000</Text>
-              </View>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -393,17 +387,5 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.medium,
-  },
-  devHint: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.sm,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.statusWarning,
-  },
-  devHintText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusWarning,
   },
 });
