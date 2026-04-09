@@ -110,7 +110,11 @@ export default function DashboardHub() {
         onPress={() => router.push('/(dashboard)/my-requests')}
         activeOpacity={0.7}
       >
-        <Text style={styles.statValue}>{requestCount}</Text>
+        {loading ? (
+          <View style={styles.statSkeleton} />
+        ) : (
+          <Text style={styles.statValue}>{requestCount}</Text>
+        )}
         <Text style={styles.statLabel}>Всего запросов</Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -118,7 +122,11 @@ export default function DashboardHub() {
         onPress={() => router.push('/(dashboard)/my-requests')}
         activeOpacity={0.7}
       >
-        <Text style={styles.statValue}>{activeCount}</Text>
+        {loading ? (
+          <View style={styles.statSkeleton} />
+        ) : (
+          <Text style={styles.statValue}>{activeCount}</Text>
+        )}
         <Text style={styles.statLabel}>Активных</Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -126,7 +134,11 @@ export default function DashboardHub() {
         onPress={() => router.push('/(dashboard)/messages')}
         activeOpacity={0.7}
       >
-        <Text style={styles.statValue}>{threadCount}</Text>
+        {loading ? (
+          <View style={styles.statSkeleton} />
+        ) : (
+          <Text style={styles.statValue}>{threadCount}</Text>
+        )}
         <Text style={styles.statLabel}>Диалогов</Text>
       </TouchableOpacity>
     </View>
@@ -255,9 +267,7 @@ export default function DashboardHub() {
               {`\u0414\u043E\u0431\u0440\u043E \u043F\u043E\u0436\u0430\u043B\u043E\u0432\u0430\u0442\u044C, ${displayName}`}
             </Text>
 
-            {loading ? (
-              <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginTop: Spacing['3xl'] }} />
-            ) : loadError ? (
+            {loadError ? (
               <View style={styles.errorBox}>
                 <Text style={styles.errorBoxText}>{loadError}</Text>
                 <TouchableOpacity onPress={() => fetchData()} style={styles.retryBtn}>
@@ -267,8 +277,8 @@ export default function DashboardHub() {
             ) : (
               <>
                 {statsSection}
-                {quickActions}
-                {recentSection}
+                {!loading && quickActions}
+                {!loading && recentSection}
               </>
             )}
           </View>
@@ -301,9 +311,7 @@ export default function DashboardHub() {
             {`\u0414\u043E\u0431\u0440\u043E \u043F\u043E\u0436\u0430\u043B\u043E\u0432\u0430\u0442\u044C, ${displayName}`}
           </Text>
 
-          {loading ? (
-            <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginTop: Spacing['3xl'] }} />
-          ) : loadError ? (
+          {loadError ? (
             <View style={styles.errorBox}>
               <Text style={styles.errorBoxText}>{loadError}</Text>
               <TouchableOpacity onPress={() => fetchData()} style={styles.retryBtn}>
@@ -313,8 +321,8 @@ export default function DashboardHub() {
           ) : (
             <>
               {statsSection}
-              {quickActions}
-              {recentSection}
+              {!loading && quickActions}
+              {!loading && recentSection}
 
               {/* Navigation cards — mobile only */}
               <View style={styles.section}>
@@ -479,6 +487,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
     color: Colors.brandPrimary,
+  },
+  statSkeleton: {
+    width: 32,
+    height: 24,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.bgSecondary,
   },
   statLabel: {
     fontSize: Typography.fontSize.xs,

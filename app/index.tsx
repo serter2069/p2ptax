@@ -57,6 +57,7 @@ function QuickRequestForm() {
   const [customCity, setCustomCity] = useState('');
   const [serviceType, setServiceType] = useState('');
   const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
   const effectiveCity = city || customCity.trim();
 
@@ -78,8 +79,37 @@ function QuickRequestForm() {
       'p2ptax_pending_request',
       JSON.stringify({ description: description.trim().slice(0, 500), city: effectiveCity, serviceType })
     );
-    router.push('/(auth)/email');
+    setSubmitted(true);
   };
+
+  function handleNewRequest() {
+    setDescription('');
+    setCity('');
+    setCustomCity('');
+    setServiceType('');
+    setError('');
+    setSubmitted(false);
+  }
+
+  if (submitted) {
+    return (
+      <View style={qrf.container}>
+        <View style={qrf.successContainer}>
+          <Ionicons name="checkmark-circle" size={48} color={Colors.statusSuccess} />
+          <Text style={qrf.successTitle}>Заявка отправлена!</Text>
+          <Text style={qrf.successText}>Специалисты свяжутся с вами в ближайшее время.</Text>
+          <View style={qrf.successButtons}>
+            <TouchableOpacity style={qrf.btn} onPress={() => router.push('/(auth)/email')} activeOpacity={0.85}>
+              <Text style={qrf.btnText}>Войти и отслеживать</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[qrf.btn, qrf.btnSecondary]} onPress={handleNewRequest} activeOpacity={0.85}>
+              <Text style={[qrf.btnText, qrf.btnTextSecondary]}>Подать новую заявку</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={qrf.container}>
@@ -179,6 +209,8 @@ const qrf = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.bgPrimary,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   cityChipSelected: {
     backgroundColor: Colors.brandPrimary,
@@ -219,10 +251,40 @@ const qrf = StyleSheet.create({
     padding: Spacing.md,
     alignItems: 'center',
   },
+  btnSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
+  },
   btnText: {
     color: Colors.white,
     fontWeight: Typography.fontWeight.semibold,
     fontSize: Typography.fontSize.base,
+  },
+  btnTextSecondary: {
+    color: Colors.brandPrimary,
+  },
+  successContainer: {
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.xl,
+  },
+  successTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  successText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  successButtons: {
+    width: '100%',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
 });
 

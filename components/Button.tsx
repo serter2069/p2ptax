@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -8,6 +8,7 @@ import {
   TextStyle,
   View,
   Platform,
+  Animated,
 } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography } from '../constants/Colors';
 
@@ -33,7 +34,7 @@ const hoverBg: Record<string, string> = {
 };
 
 const webTransition = Platform.OS === 'web'
-  ? ({ transition: 'background-color 0.15s ease, box-shadow 0.15s ease' } as any)
+  ? ({ transition: 'background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease' } as any)
   : {};
 
 export function Button({
@@ -46,6 +47,7 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const [hovered, setHovered] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const hoverStyle: ViewStyle = (hovered && !isDisabled && Platform.OS === 'web')
     ? { backgroundColor: hoverBg[variant] }
@@ -56,9 +58,30 @@ export function Button({
     onMouseLeave: () => setHovered(false),
   } : {};
 
+  function handlePressIn() {
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  }
+
+  function handlePressOut() {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  }
+
   return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
     <TouchableOpacity
       onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={isDisabled}
       style={[
         styles.base,
@@ -68,7 +91,7 @@ export function Button({
         hoverStyle,
         style,
       ]}
-      activeOpacity={0.75}
+      activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       dataSet={{ hoverManaged: '1' }}
@@ -78,7 +101,7 @@ export function Button({
         <View style={styles.loadingRow}>
           <ActivityIndicator
             size="small"
-            color={variant === 'ghost' ? Colors.brandPrimary : Colors.textPrimary}
+            color={variant === 'primary' || variant === 'danger' || variant === 'outline-white' ? '#FFFFFF' : variant === 'ghost' || variant === 'outline' ? Colors.brandPrimary : Colors.textPrimary}
           />
         </View>
       ) : (
@@ -87,6 +110,7 @@ export function Button({
         </Text>
       )}
     </TouchableOpacity>
+    </Animated.View>
   );
 }
 

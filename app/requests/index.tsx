@@ -429,8 +429,10 @@ export default function RequestsFeedScreen() {
               subtitle={
                 cityFilter
                   ? `Нет открытых запросов в городе "${cityFilter}"`
-                  : 'Нет открытых запросов. Проверьте позже.'
+                  : 'Нет открытых запросов. Создайте свой первый запрос!'
               }
+              ctaLabel="Создать запрос"
+              onCtaPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
             />
           )
         }
@@ -565,6 +567,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.bgCard,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   chipActive: {
     backgroundColor: Colors.brandPrimary,

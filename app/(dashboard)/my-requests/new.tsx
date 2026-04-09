@@ -174,6 +174,10 @@ export default function CreateRequestScreen() {
               </View>
             </View>
 
+          </View>
+        </ScrollView>
+        <View style={styles.stickyBottom}>
+          <View style={[styles.stickyInner, !isMobile && { maxWidth: 680 }]}>
             <Button
               onPress={handleSubmit}
               variant="primary"
@@ -184,7 +188,7 @@ export default function CreateRequestScreen() {
               Отправить запрос
             </Button>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -255,9 +259,20 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
   },
+  stickyBottom: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.bgPrimary,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
+  },
+  stickyInner: {
+    width: '100%',
+    maxWidth: 430,
+  },
   submitBtn: {
     width: '100%',
-    marginTop: Spacing.md,
   },
   chipsRow: {
     flexDirection: 'row',
