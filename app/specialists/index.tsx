@@ -16,8 +16,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
-
-const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { api, ApiError } from '../../lib/api';
 import { formatExperience, shortFnsLabel as formatFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
@@ -30,6 +28,7 @@ import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 
+const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 
 interface SpecialistItem {
   nick: string;
