@@ -56,6 +56,8 @@ function QuickRequestForm() {
     });
   }, []);
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async () => {
     if (!serviceType) {
       setError('Выберите тип услуги');
@@ -75,8 +77,19 @@ function QuickRequestForm() {
       pending.ifnsId = selectedIfns.id;
       pending.ifnsName = selectedIfns.name;
     }
+    // Save to localStorage as backup (for restore after auth redirect)
     await secureStorage.setItem('p2ptax_pending_request', JSON.stringify(pending));
-    setSubmitted(true);
+
+    // Send to server
+    setSubmitting(true);
+    try {
+      await api.post('/requests/quick', pending);
+      setSubmitted(true);
+    } catch (e: any) {
+      setError(e?.message || 'Не удалось отправить заявку. Попробуйте позже.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   function handleNewRequest() {
@@ -145,8 +158,8 @@ function QuickRequestForm() {
       />
 
       {error ? <Text style={qrf.error}>{error}</Text> : null}
-      <TouchableOpacity testID="quick-request-submit" style={qrf.btn} onPress={handleSubmit} activeOpacity={0.85}>
-        <Text style={qrf.btnText}>Найти специалиста →</Text>
+      <TouchableOpacity testID="quick-request-submit" style={[qrf.btn, submitting && { opacity: 0.6 }]} onPress={handleSubmit} activeOpacity={0.85} disabled={submitting}>
+        <Text style={qrf.btnText}>{submitting ? 'Отправка...' : 'Найти специалиста →'}</Text>
       </TouchableOpacity>
     </View>
   );

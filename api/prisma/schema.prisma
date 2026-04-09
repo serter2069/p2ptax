@@ -302,6 +302,19 @@ model ServiceCategory {
   @@map("service_categories")
 }
 
+model QuickRequest {
+  id          String   @id @default(cuid())
+  description String
+  serviceType String
+  city        String?
+  ifnsId      String?
+  ifnsName    String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+
+  @@map("quick_requests")
+}
+
 enum ComplaintReason {
   spam
   fraud
