@@ -399,7 +399,7 @@ export default function LandingScreen() {
                   <View style={[styles.heroImage, styles.heroImageWide, styles.heroImageFallback]} />
                 ) : (
                   <Image
-                    source={{ uri: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80' }}
+                    source={{ uri: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80' }}
                     style={[styles.heroImage, styles.heroImageWide]}
                     resizeMode="cover"
                     onError={() => setHeroImageError(true)}
@@ -413,7 +413,7 @@ export default function LandingScreen() {
                   <View style={[styles.heroImage, styles.heroImageFallback]} />
                 ) : (
                   <Image
-                    source={{ uri: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80' }}
+                    source={{ uri: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80' }}
                     style={styles.heroImage}
                     resizeMode="cover"
                     onError={() => setHeroImageError(true)}
