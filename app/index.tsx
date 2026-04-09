@@ -120,7 +120,7 @@ function QuickRequestForm() {
     <View style={qrf.container}>
       <Text style={qrf.title}>Быстрый запрос</Text>
 
-      <Text style={qrf.label}>Тип услуги</Text>
+      <Text style={qrf.label}>Что случилось?</Text>
       <View style={qrf.cityRow}>
         {SERVICE_TYPES.map((st) => (
           <TouchableOpacity
@@ -137,7 +137,7 @@ function QuickRequestForm() {
       <TextInput
         testID="quick-request-description"
         style={qrf.input}
-        placeholder="Нужна помощь с налоговой декларацией..."
+        placeholder="Опишите вашу ситуацию..."
         placeholderTextColor={Colors.textMuted}
         value={description}
         onChangeText={setDescription}
@@ -355,9 +355,9 @@ export default function LandingScreen() {
       <Stack.Screen options={{ title: 'Налоговик — найдите налогового специалиста' }} />
       <Head>
         <title>Налоговик — найдите налогового специалиста</title>
-        <meta name="description" content="Налоговые консультанты и юристы в вашем городе. Опишите задачу бесплатно и получите предложения от проверенных специалистов." />
+        <meta name="description" content="Подбираем специалиста по вашей ИФНС и конкретной ситуации. Выездная проверка, камеральная, вычеты, споры — только тот, кто знает именно ваш вопрос." />
         <meta property="og:title" content="Налоговик — найдите налогового специалиста" />
-        <meta property="og:description" content="Налоговые консультанты и юристы в вашем городе. Опишите задачу бесплатно и получите предложения от проверенных специалистов." />
+        <meta property="og:description" content="Подбираем специалиста по вашей ИФНС и конкретной ситуации. Выездная проверка, камеральная, вычеты, споры — только тот, кто знает именно ваш вопрос." />
         <meta property="og:url" content={APP_URL} />
       </Head>
       <ScrollView
@@ -382,10 +382,10 @@ export default function LandingScreen() {
                 accessibilityRole="header"
                 aria-level={1}
               >
-                {'\u041F\u0440\u043E\u0431\u043B\u0435\u043C\u044B \u0441 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u043E\u0439?\n\u041D\u0430\u0439\u0434\u0451\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430 \u0437\u0430 1 \u0447\u0430\u0441'}
+                {'Решаем налоговый вопрос — доводим до результата'}
               </Text>
               <Text style={[styles.heroSubtitle, isWide && styles.heroSubtitleWide]}>
-                {'Получили требование от ФНС? Штраф? Не знаете как сделать вычет? Опишите ситуацию — в течение часа отзовутся специалисты из вашего города'}
+                {'Подбираем специалиста по вашей ИФНС и конкретной ситуации. Выездная проверка, камеральная, вычеты, споры — только тот, кто знает именно ваш вопрос'}
               </Text>
 
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
@@ -573,9 +573,9 @@ export default function LandingScreen() {
 
             <View style={[styles.stepsRow, isWide && styles.stepsRowWide]}>
               {[
-                { num: '1', title: '\u041E\u043F\u0438\u0448\u0438\u0442\u0435 \u0437\u0430\u0434\u0430\u0447\u0443', desc: '\u0427\u0442\u043E \u043D\u0443\u0436\u043D\u043E \u0441\u0434\u0435\u043B\u0430\u0442\u044C, \u0441\u0440\u043E\u043A, \u0431\u044E\u0434\u0436\u0435\u0442' },
-                { num: '2', title: '\u041F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u043E\u0442\u043A\u043B\u0438\u043A\u0438', desc: '\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B \u0438\u0437 \u0432\u0430\u0448\u0435\u0433\u043E \u0433\u043E\u0440\u043E\u0434\u0430 \u043F\u0440\u0438\u0448\u043B\u044E\u0442 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F' },
-                { num: '3', title: '\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438 \u043F\u043B\u0430\u0442\u0438\u0442\u0435', desc: '\u0411\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u0430\u044F \u0441\u0434\u0435\u043B\u043A\u0430, \u0434\u0435\u043D\u044C\u0433\u0438 \u043F\u0435\u0440\u0435\u0445\u043E\u0434\u044F\u0442 \u043F\u043E\u0441\u043B\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F' },
+                { num: '1', icon: '✍️', title: 'Опишите ситуацию', desc: 'Расскажите что произошло: требование ФНС, проверка, штраф или нужна помощь с декларацией' },
+                { num: '2', icon: '🔍', title: 'Подбираем по ИФНС', desc: 'Ищем специалистов, которые работали именно с вашей инспекцией и знают её практику' },
+                { num: '3', icon: '✅', title: 'Получите решение', desc: 'Специалист не просто сопровождает — он ведёт ваш вопрос до закрытия' },
               ].map((step, idx, arr) => (
                 <React.Fragment key={step.num}>
                   {idx > 0 && isWide && (
@@ -585,7 +585,7 @@ export default function LandingScreen() {
                   )}
                   <View style={[styles.stepItem, isWide && styles.stepItemWide]}>
                     <View style={styles.stepNumberCircle}>
-                      <Text style={styles.stepNumberText}>{step.num}</Text>
+                      <Text style={styles.stepNumberText}>{step.icon}</Text>
                     </View>
                     <View style={styles.stepTextBlock}>
                       <Text style={[styles.stepTitle, !isWide && { textAlign: 'center' as const }]}>{step.title}</Text>
@@ -595,6 +595,35 @@ export default function LandingScreen() {
                 </React.Fragment>
               ))}
             </View>
+          </View>
+        </View>
+
+        {/* ===== SECTION 3b: Our Principle ===== */}
+        <View style={[styles.section, { backgroundColor: '#1A3A6C', paddingVertical: 64 }]}>
+          <View style={[styles.sectionInner, innerStyle]}>
+            <Text style={[styles.sectionTitle, { color: '#FFFFFF' }]} accessibilityRole="header" aria-level={2}>
+              {'Не решения — результаты'}
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: 'rgba(255,255,255,0.80)', maxWidth: 620 }]}>
+              {'Обычные сервисы дают совет. Мы находим того, кто доведёт ваш вопрос до результата: закроет проверку, снимет штраф, подаст декларацию, выиграет спор.'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/specialists')}
+              activeOpacity={0.85}
+              style={{
+                marginTop: 8,
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.4)',
+                borderRadius: 8,
+                paddingHorizontal: 28,
+                paddingVertical: 14,
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>
+                {'Найти специалиста под мою задачу →'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -830,7 +859,7 @@ export default function LandingScreen() {
           <View style={[styles.ctaContent, innerStyle]}>
             <Text style={styles.ctaTitle}>{'\u041D\u0430\u0447\u043D\u0438\u0442\u0435 \u043F\u0440\u044F\u043C\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u2014 \u044D\u0442\u043E \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E'}</Text>
             <Text style={styles.ctaSubtitle}>
-              {'Специалисты по всей России готовы откликнуться на вашу задачу'}
+              {'Специалисты по всей России готовы довести ваш вопрос до результата'}
             </Text>
             <View style={[styles.ctaButtons, isWide && styles.ctaButtonsWide]}>
               <Button
