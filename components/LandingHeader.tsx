@@ -7,17 +7,23 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { useAuth } from '../stores/authStore';
-import { Colors } from '../constants/Colors';
+import { Colors, Typography } from '../constants/Colors';
 
 export function LandingHeader() {
   const router = useRouter();
+  const segments = useSegments();
   const { isDesktop } = useBreakpoints();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuAnim = useRef(new Animated.Value(0)).current;
+
+  // Auto-close burger menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [segments]);
 
   useEffect(() => {
     Animated.timing(menuAnim, {
@@ -26,6 +32,12 @@ export function LandingHeader() {
       useNativeDriver: true,
     }).start();
   }, [menuOpen, menuAnim]);
+
+  // Check if a nav link is active by matching segments
+  function isNavLinkActive(route: string): boolean {
+    const segment = route.startsWith('/') ? route.slice(1) : route;
+    return segments.some((s) => segment.startsWith(s) || s.startsWith(segment));
+  }
 
   return (
     <View style={styles.container}>
@@ -49,19 +61,28 @@ export function LandingHeader() {
               onPress={() => router.push('/specialists')}
               activeOpacity={0.7}
             >
-              <Text style={styles.navLink}>Специалисты</Text>
+              <Text style={[
+                styles.navLink,
+                isNavLinkActive('/specialists') && styles.navLinkActive,
+              ]}>Специалисты</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push('/requests')}
               activeOpacity={0.7}
             >
-              <Text style={styles.navLink}>Лента запросов</Text>
+              <Text style={[
+                styles.navLink,
+                isNavLinkActive('/requests') && styles.navLinkActive,
+              ]}>Лента запросов</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push('/pricing')}
               activeOpacity={0.7}
             >
-              <Text style={styles.navLink}>Тарифы</Text>
+              <Text style={[
+                styles.navLink,
+                isNavLinkActive('/pricing') && styles.navLinkActive,
+              ]}>Тарифы</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
@@ -134,21 +155,30 @@ export function LandingHeader() {
             activeOpacity={0.7}
             style={styles.mobileMenuItem}
           >
-            <Text style={styles.mobileMenuText}>Специалисты</Text>
+            <Text style={[
+              styles.mobileMenuText,
+              isNavLinkActive('/specialists') && styles.mobileMenuTextActive,
+            ]}>Специалисты</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setMenuOpen(false); router.push('/requests'); }}
             activeOpacity={0.7}
             style={styles.mobileMenuItem}
           >
-            <Text style={styles.mobileMenuText}>Лента запросов</Text>
+            <Text style={[
+              styles.mobileMenuText,
+              isNavLinkActive('/requests') && styles.mobileMenuTextActive,
+            ]}>Лента запросов</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setMenuOpen(false); router.push('/pricing'); }}
             activeOpacity={0.7}
             style={styles.mobileMenuItem}
           >
-            <Text style={styles.mobileMenuText}>Тарифы</Text>
+            <Text style={[
+              styles.mobileMenuText,
+              isNavLinkActive('/pricing') && styles.mobileMenuTextActive,
+            ]}>Тарифы</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -259,6 +289,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Colors.textSecondary,
   },
+  navLinkActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.semibold as any,
+  },
   rightButtons: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -340,5 +374,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: Colors.textSecondary,
+  },
+  mobileMenuTextActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.semibold as any,
   },
 });

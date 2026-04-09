@@ -15,13 +15,25 @@ export interface SidebarNavItem {
   route: string;
   /** Segment to match for active state, e.g. "index" or "requests" */
   segment?: string;
+  /** Unread count badge, e.g. for messages */
+  badgeCount?: number;
+}
+
+export interface NavGroup {
+  /** Optional group label rendered above items */
+  label?: string;
+  items: SidebarNavItem[];
 }
 
 interface SidebarProps {
-  items: SidebarNavItem[];
+  items: SidebarNavItem[] | NavGroup[];
   userEmail?: string;
   onLogout?: () => void;
   width: number;
+}
+
+function isGrouped(items: SidebarNavItem[] | NavGroup[]): items is NavGroup[] {
+  return items.length > 0 && 'items' in items[0];
 }
 
 export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
@@ -29,39 +41,63 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
   const segments = useSegments();
 
   function isActive(item: SidebarNavItem): boolean {
-    // Match by segment presence anywhere in the route segments
-    // This ensures /messages/123 still highlights "messages"
     const target = item.segment ?? item.route.split('/').pop() ?? '';
     return segments.includes(target as any);
   }
 
+  const groups: NavGroup[] = isGrouped(items) ? items : [{ items }];
+
+  function renderNavItem(item: SidebarNavItem) {
+    const active = isActive(item);
+    return (
+      <TouchableOpacity
+        key={item.route}
+        style={[styles.navItem, active && styles.navItemActive]}
+        onPress={() => router.push(item.route as any)}
+        activeOpacity={0.75}
+        accessibilityLabel={item.label}
+      >
+        <View style={styles.navItemIconWrapper}>
+          <Ionicons name={item.icon} size={18} color={active ? Colors.brandPrimary : Colors.textMuted} />
+          {item.badgeCount != null && item.badgeCount > 0 ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {item.badgeCount > 99 ? '99+' : item.badgeCount}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+          {item.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <View style={[styles.sidebar, { width }]}>
-      {/* Logo / App name */}
-      <View style={styles.brand} accessibilityLabel="Логотип Налоговик">
+      {/* Logo / App name — clickable */}
+      <TouchableOpacity
+        style={styles.brand}
+        onPress={() => router.push('/(dashboard)' as any)}
+        activeOpacity={0.7}
+        accessibilityLabel="Перейти на главную"
+      >
         <Ionicons name="scale-outline" size={22} color={Colors.brandPrimary} />
         <Text style={styles.brandName}>Налоговик</Text>
-      </View>
+      </TouchableOpacity>
 
-      {/* Nav items */}
+      {/* Nav groups */}
       <View style={styles.nav}>
-        {items.map((item) => {
-          const active = isActive(item);
-          return (
-            <TouchableOpacity
-              key={item.route}
-              style={[styles.navItem, active && styles.navItemActive]}
-              onPress={() => router.push(item.route as any)}
-              activeOpacity={0.75}
-              accessibilityLabel={item.label}
-            >
-              <Ionicons name={item.icon} size={18} color={active ? Colors.brandPrimary : Colors.textMuted} />
-              <Text style={[styles.navLabel, active && styles.navLabelActive]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        {groups.map((group, gi) => (
+          <View key={gi}>
+            {gi > 0 ? <View style={styles.divider} /> : null}
+            {group.label ? (
+              <Text style={styles.groupLabel}>{group.label}</Text>
+            ) : null}
+            {group.items.map(renderNavItem)}
+          </View>
+        ))}
       </View>
 
       {/* Bottom: user info + logout */}
@@ -107,6 +143,22 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.xs,
   },
+  groupLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: Spacing.sm,
+    marginHorizontal: Spacing.sm,
+  },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -116,9 +168,33 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   navItemActive: {
-    backgroundColor: Colors.brandPrimary + '22', // 13% opacity tint
+    backgroundColor: Colors.brandPrimary + '22',
     borderWidth: 1,
     borderColor: Colors.brandPrimary + '44',
+  },
+  navItemIconWrapper: {
+    position: 'relative',
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -10,
+    backgroundColor: Colors.statusError,
+    borderRadius: BorderRadius.full,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: Colors.white,
+    fontSize: 9,
+    fontWeight: Typography.fontWeight.bold,
   },
   navLabel: {
     fontSize: Typography.fontSize.sm,

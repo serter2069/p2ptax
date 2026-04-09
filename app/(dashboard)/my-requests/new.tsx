@@ -92,7 +92,7 @@ export default function CreateRequestScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Новый запрос" showBack />
+      <Header title="Новый запрос" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Новый запрос' }]} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
