@@ -330,7 +330,7 @@ export default function SpecialistsCatalogScreen() {
               <Text style={styles.filterLabel}>Специализация</Text>
               <ScrollView
                 horizontal
-                showsHorizontalScrollIndicator={false}
+                showsHorizontalScrollIndicator={true}
                 contentContainerStyle={styles.chipsRow}
               >
                 {SPECIALIZATION_FILTERS.map((spec) => {
@@ -439,6 +439,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontWeight: Typography.fontWeight.medium,
     marginBottom: Spacing.sm,
+    paddingLeft: Spacing.xs,
   },
   searchSection: {
     position: 'relative',

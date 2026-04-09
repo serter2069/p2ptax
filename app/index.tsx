@@ -227,11 +227,13 @@ export default function LandingScreen() {
               <QuickRequestForm />
 
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
-                <Button
-                  onPress={() => router.push('/specialists')}
-                  variant="primary"
-                  style={isWide ? { minWidth: 220 } : { width: '100%' as any }}
-                >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
+                {isWide && (
+                  <Button
+                    onPress={() => router.push('/specialists')}
+                    variant="primary"
+                    style={{ minWidth: 220 }}
+                  >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
+                )}
                 <Button
                   onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
                   variant="outline"
@@ -245,7 +247,7 @@ export default function LandingScreen() {
               </View>
             </View>
 
-            {isWide && (
+            {isWide ? (
               <View style={[styles.heroRight, styles.heroRightWide]}>
                 {heroImageError ? (
                   <View style={[styles.heroImage, styles.heroImageWide, styles.heroImageFallback]} />
@@ -253,6 +255,20 @@ export default function LandingScreen() {
                   <Image
                     source={{ uri: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80' }}
                     style={[styles.heroImage, styles.heroImageWide]}
+                    resizeMode="cover"
+                    onError={() => setHeroImageError(true)}
+                    accessibilityLabel="Налоговый консультант за работой"
+                  />
+                )}
+              </View>
+            ) : (
+              <View style={styles.heroRight}>
+                {heroImageError ? (
+                  <View style={[styles.heroImage, styles.heroImageFallback]} />
+                ) : (
+                  <Image
+                    source={{ uri: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80' }}
+                    style={styles.heroImage}
                     resizeMode="cover"
                     onError={() => setHeroImageError(true)}
                     accessibilityLabel="Налоговый консультант за работой"
