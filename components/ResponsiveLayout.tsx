@@ -1,30 +1,43 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useBreakpoints } from '../hooks/useBreakpoints';
-import { Sidebar, SidebarNavItem } from './Sidebar';
-import { Colors } from '../constants/Colors';
+import { Sidebar, SidebarNavItem, NavGroup } from './Sidebar';
+import { BottomTabBar, BottomTabItem } from './BottomTabBar';
+import { Colors, Spacing } from '../constants/Colors';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
-  navItems: SidebarNavItem[];
+  navItems: SidebarNavItem[] | NavGroup[];
+  /** Tab items for mobile bottom bar */
+  tabItems?: BottomTabItem[];
   userEmail?: string;
   onLogout?: () => void;
 }
 
 /**
  * Wraps content with a sidebar on tablet/desktop.
- * On mobile, renders children directly without sidebar.
+ * On mobile, renders children with a bottom tab bar.
  */
 export function ResponsiveLayout({
   children,
   navItems,
+  tabItems,
   userEmail,
   onLogout,
 }: ResponsiveLayoutProps) {
   const { isMobile, sidebarWidth } = useBreakpoints();
 
   if (isMobile) {
-    return <>{children}</>;
+    return (
+      <View style={styles.mobileContainer}>
+        <View style={styles.mobileContent}>
+          {children}
+        </View>
+        {tabItems && tabItems.length > 0 ? (
+          <BottomTabBar items={tabItems} />
+        ) : null}
+      </View>
+    );
   }
 
   return (
@@ -51,5 +64,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     overflow: 'hidden' as any,
+  },
+  mobileContainer: {
+    flex: 1,
+    backgroundColor: Colors.bgPrimary,
+  },
+  mobileContent: {
+    flex: 1,
   },
 });

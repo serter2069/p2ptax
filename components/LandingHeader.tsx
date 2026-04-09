@@ -7,17 +7,44 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { useAuth } from '../stores/authStore';
-import { Colors } from '../constants/Colors';
+import { Colors, Typography } from '../constants/Colors';
+
+interface NavLinkConfig {
+  label: string;
+  route?: string;
+  segment?: string;
+  onPress?: () => void;
+}
+
+const NAV_LINKS: NavLinkConfig[] = [
+  { label: 'Специалисты', route: '/specialists', segment: 'specialists' },
+  { label: 'Лента запросов', route: '/requests', segment: 'requests' },
+  { label: 'Тарифы', route: '/pricing', segment: 'pricing' },
+  {
+    label: 'Как работает',
+    onPress: () => {
+      if (Platform.OS === 'web') {
+        document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    },
+  },
+];
 
 export function LandingHeader() {
   const router = useRouter();
+  const segments = useSegments();
   const { isDesktop } = useBreakpoints();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuAnim = useRef(new Animated.Value(0)).current;
+
+  // Auto-close burger menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [segments]);
 
   useEffect(() => {
     Animated.timing(menuAnim, {
@@ -26,6 +53,11 @@ export function LandingHeader() {
       useNativeDriver: true,
     }).start();
   }, [menuOpen, menuAnim]);
+
+  function isLinkActive(link: NavLinkConfig): boolean {
+    if (!link.segment) return false;
+    return segments.includes(link.segment as any);
+  }
 
   return (
     <View style={styles.container}>
@@ -45,34 +77,23 @@ export function LandingHeader() {
         {/* Center: Nav links (desktop only) */}
         {isDesktop && (
           <View style={styles.navLinks}>
-            <TouchableOpacity
-              onPress={() => router.push('/specialists')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navLink}>Специалисты</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push('/requests')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navLink}>Лента запросов</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push('/pricing')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navLink}>Тарифы</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                if (Platform.OS === 'web') {
-                  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navLink}>Как работает</Text>
-            </TouchableOpacity>
+            {NAV_LINKS.map((link) => {
+              const active = isLinkActive(link);
+              return (
+                <TouchableOpacity
+                  key={link.label}
+                  onPress={() => {
+                    if (link.onPress) link.onPress();
+                    else if (link.route) router.push(link.route as any);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.navLink, active && styles.navLinkActive]}>
+                    {link.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -129,39 +150,25 @@ export function LandingHeader() {
       {/* Mobile dropdown menu */}
       {!isDesktop && menuOpen && (
         <Animated.View style={[styles.mobileMenu, { opacity: menuAnim, transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }] }]}>
-          <TouchableOpacity
-            onPress={() => { setMenuOpen(false); router.push('/specialists'); }}
-            activeOpacity={0.7}
-            style={styles.mobileMenuItem}
-          >
-            <Text style={styles.mobileMenuText}>Специалисты</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { setMenuOpen(false); router.push('/requests'); }}
-            activeOpacity={0.7}
-            style={styles.mobileMenuItem}
-          >
-            <Text style={styles.mobileMenuText}>Лента запросов</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { setMenuOpen(false); router.push('/pricing'); }}
-            activeOpacity={0.7}
-            style={styles.mobileMenuItem}
-          >
-            <Text style={styles.mobileMenuText}>Тарифы</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              setMenuOpen(false);
-              if (Platform.OS === 'web') {
-                document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-            activeOpacity={0.7}
-            style={styles.mobileMenuItem}
-          >
-            <Text style={styles.mobileMenuText}>Как работает</Text>
-          </TouchableOpacity>
+          {NAV_LINKS.map((link) => {
+            const active = isLinkActive(link);
+            return (
+              <TouchableOpacity
+                key={link.label}
+                onPress={() => {
+                  setMenuOpen(false);
+                  if (link.onPress) link.onPress();
+                  else if (link.route) router.push(link.route as any);
+                }}
+                activeOpacity={0.7}
+                style={styles.mobileMenuItem}
+              >
+                <Text style={[styles.mobileMenuText, active && styles.mobileMenuTextActive]}>
+                  {link.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
           {user ? (
             <TouchableOpacity
               onPress={() => { setMenuOpen(false); router.push('/(dashboard)'); }}
@@ -259,6 +266,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Colors.textSecondary,
   },
+  navLinkActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
   rightButtons: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -340,5 +351,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: Colors.textSecondary,
+  },
+  mobileMenuTextActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.semibold,
   },
 });

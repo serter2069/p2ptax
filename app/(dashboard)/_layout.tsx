@@ -4,27 +4,68 @@ import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
 import { Colors } from '../../constants/Colors';
 import { ResponsiveLayout } from '../../components/ResponsiveLayout';
-import { SidebarNavItem } from '../../components/Sidebar';
+import { NavGroup, SidebarNavItem } from '../../components/Sidebar';
+import { BottomTabItem } from '../../components/BottomTabBar';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
-const CLIENT_NAV_ITEMS: SidebarNavItem[] = [
+const CLIENT_NAV_GROUPS: NavGroup[] = [
+  {
+    items: [
+      { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
+      { label: 'Мои запросы', icon: 'document-text-outline', route: '/(dashboard)/my-requests', segment: 'my-requests' },
+      { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'feed' },
+    ],
+  },
+  {
+    items: [
+      { label: 'Специалисты', icon: 'search-outline', route: '/specialists', segment: 'specialists' },
+    ],
+  },
+  {
+    label: 'Личное',
+    items: [
+      { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages', badgeCount: 0 },
+      { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
+    ],
+  },
+];
+
+const SPECIALIST_NAV_GROUPS: NavGroup[] = [
+  {
+    items: [
+      { label: 'Главная', icon: 'home-outline', route: '/specialist/dashboard', segment: 'specialist-dashboard' },
+      { label: 'Запросы города', icon: 'location-outline', route: '/(dashboard)/city-requests', segment: 'city-requests' },
+      { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'requests' },
+    ],
+  },
+  {
+    items: [
+      { label: 'Мои отклики', icon: 'checkmark-circle-outline', route: '/(dashboard)/responses', segment: 'responses' },
+      { label: 'Мой профиль', icon: 'person-outline', route: '/(dashboard)/profile', segment: 'profile' },
+      { label: 'Продвижение', icon: 'rocket-outline', route: '/(dashboard)/promotion', segment: 'promotion' },
+    ],
+  },
+  {
+    label: 'Личное',
+    items: [
+      { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages', badgeCount: 0 },
+      { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
+    ],
+  },
+];
+
+const CLIENT_TAB_ITEMS: BottomTabItem[] = [
   { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
-  { label: 'Мои запросы', icon: 'document-text-outline', route: '/(dashboard)/my-requests', segment: 'my-requests' },
-  { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'feed' },
+  { label: 'Запросы', icon: 'newspaper-outline', route: '/(dashboard)/my-requests', segment: 'my-requests' },
   { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
-  { label: 'Специалисты', icon: 'search-outline', route: '/specialists', segment: 'specialists' },
   { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
 ];
 
-const SPECIALIST_NAV_ITEMS: SidebarNavItem[] = [
+const SPECIALIST_TAB_ITEMS: BottomTabItem[] = [
   { label: 'Главная', icon: 'home-outline', route: '/specialist/dashboard', segment: 'specialist-dashboard' },
-  { label: 'Мой профиль', icon: 'person-outline', route: '/(dashboard)/profile', segment: 'profile' },
-  { label: 'Мои отклики', icon: 'checkmark-circle-outline', route: '/(dashboard)/responses', segment: 'responses' },
+  { label: 'Запросы', icon: 'location-outline', route: '/(dashboard)/city-requests', segment: 'city-requests' },
   { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
-  { label: 'Запросы города', icon: 'location-outline', route: '/(dashboard)/city-requests', segment: 'city-requests' },
-  { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'requests' },
-  { label: 'Продвижение', icon: 'rocket-outline', route: '/(dashboard)/promotion', segment: 'promotion' },
-  { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
+  { label: 'Профиль', icon: 'person-outline', route: '/(dashboard)/profile', segment: 'profile' },
 ];
 
 export default function DashboardLayout() {
@@ -52,7 +93,9 @@ export default function DashboardLayout() {
     );
   }
 
-  const navItems = user.role === 'SPECIALIST' ? SPECIALIST_NAV_ITEMS : CLIENT_NAV_ITEMS;
+  const isSpecialist = user.role === 'SPECIALIST';
+  const navGroups = isSpecialist ? SPECIALIST_NAV_GROUPS : CLIENT_NAV_GROUPS;
+  const tabItems = isSpecialist ? SPECIALIST_TAB_ITEMS : CLIENT_TAB_ITEMS;
 
   const stack = (
     <Stack
@@ -66,7 +109,8 @@ export default function DashboardLayout() {
 
   return (
     <ResponsiveLayout
-      navItems={navItems}
+      navItems={navGroups}
+      tabItems={tabItems}
       userEmail={user.username || user.email.split('@')[0]}
       onLogout={handleLogout}
     >
