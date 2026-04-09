@@ -13,7 +13,7 @@ import { Colors } from '../constants/Colors';
 
 export function LandingHeader() {
   const router = useRouter();
-  const { isMobile } = useBreakpoints();
+  const { isDesktop } = useBreakpoints();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -32,8 +32,8 @@ export function LandingHeader() {
           <Text style={styles.logoText}>Налоговик</Text>
         </TouchableOpacity>
 
-        {/* Center: Nav links (desktop/tablet only) */}
-        {!isMobile && (
+        {/* Center: Nav links (desktop only) */}
+        {isDesktop && (
           <View style={styles.navLinks}>
             <TouchableOpacity
               onPress={() => router.push('/specialists')}
@@ -66,8 +66,8 @@ export function LandingHeader() {
           </View>
         )}
 
-        {/* Right: Auth buttons (desktop/tablet) or burger (mobile) */}
-        {isMobile ? (
+        {/* Right: Auth buttons (desktop only) or burger (tablet + mobile) */}
+        {!isDesktop ? (
           <TouchableOpacity
             onPress={() => setMenuOpen((v) => !v)}
             activeOpacity={0.7}
@@ -108,7 +108,7 @@ export function LandingHeader() {
       </View>
 
       {/* Mobile menu overlay — closes menu on outside tap */}
-      {isMobile && menuOpen && (
+      {!isDesktop && menuOpen && (
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setMenuOpen(false)}
@@ -117,7 +117,7 @@ export function LandingHeader() {
       )}
 
       {/* Mobile dropdown menu */}
-      {isMobile && menuOpen && (
+      {!isDesktop && menuOpen && (
         <View style={styles.mobileMenu}>
           <TouchableOpacity
             onPress={() => { setMenuOpen(false); router.push('/specialists'); }}
