@@ -16,7 +16,7 @@ import { secureStorage } from '../../stores/storage';
 
 export default function RoleScreen() {
   const router = useRouter();
-  useAuth();
+  const { clearNewUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
@@ -25,6 +25,8 @@ export default function RoleScreen() {
     setSelectedRole(role);
     try {
       await api.patch('/users/me', { role });
+      // Clear isNewUser flag to prevent redirect loop (#323)
+      await clearNewUser();
       // Navigate to onboarding for specialists, dashboard for clients
       if (role === 'SPECIALIST') {
         router.replace('/(onboarding)/username');
