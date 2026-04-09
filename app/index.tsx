@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   Platform,
   Image,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
@@ -289,6 +290,39 @@ const qrf = StyleSheet.create({
 });
 
 
+// ---- Skeleton Components ----
+
+function SkeletonPulse({ children }: { children: React.ReactNode }) {
+  const opacity = useRef(new Animated.Value(0.15)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.35, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.15, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+  return <Animated.View style={{ opacity }}>{children}</Animated.View>;
+}
+
+function SkeletonCard({ width, height }: { width: number | string; height: number }) {
+  return (
+    <SkeletonPulse>
+      <View style={{ width: width as any, height, backgroundColor: Colors.textMuted, borderRadius: 8 }} />
+    </SkeletonPulse>
+  );
+}
+
+function SkeletonChip() {
+  return (
+    <SkeletonPulse>
+      <View style={{ width: 80, height: 32, backgroundColor: Colors.textMuted, borderRadius: 16 }} />
+    </SkeletonPulse>
+  );
+}
+
 // ---- Main ----
 
 export default function LandingScreen() {
@@ -299,11 +333,14 @@ export default function LandingScreen() {
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [popularCities, setPopularCities] = useState<any[]>([]);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [isLoadingSpecialists, setIsLoadingSpecialists] = useState(true);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
+  const [isLoadingCities, setIsLoadingCities] = useState(true);
 
   useEffect(() => {
-    api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err));
-    api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err));
-    api.get<any[]>('/specialists/cities/popular?limit=10').then(setPopularCities).catch((err) => console.warn('Landing section failed (popular cities):', err));
+    api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
+    api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
+    api.get<any[]>('/specialists/cities/popular?limit=10').then(setPopularCities).catch((err) => console.warn('Landing section failed (popular cities):', err)).finally(() => setIsLoadingCities(false));
   }, []);
 
   const isWide = !isMobile;
@@ -427,7 +464,18 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== SECTION 2b: Featured Specialists ===== */}
-        {featuredSpecialists.length > 0 && (
+        {isLoadingSpecialists && (
+          <View style={[styles.section, { backgroundColor: Colors.bgPrimary, paddingVertical: 40 }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, flexDirection: 'row' }}>
+                <SkeletonCard width={160} height={100} />
+                <SkeletonCard width={160} height={100} />
+                <SkeletonCard width={160} height={100} />
+              </ScrollView>
+            </View>
+          </View>
+        )}
+        {!isLoadingSpecialists && featuredSpecialists.length > 0 && (
           <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
             <View style={[styles.sectionInner, innerStyle]}>
               <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B'}</Text>
@@ -466,7 +514,17 @@ export default function LandingScreen() {
         )}
 
         {/* ===== SECTION 2c: Recent Requests ===== */}
-        {recentRequests.length > 0 && (
+        {isLoadingRequests && (
+          <View style={[styles.section, { backgroundColor: Colors.bgSecondary, paddingVertical: 40 }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <View style={{ width: '100%', gap: 12 }}>
+                <SkeletonCard width="100%" height={60} />
+                <SkeletonCard width="100%" height={60} />
+              </View>
+            </View>
+          </View>
+        )}
+        {!isLoadingRequests && recentRequests.length > 0 && (
           <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
             <View style={[styles.sectionInner, innerStyle]}>
               <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
@@ -496,7 +554,16 @@ export default function LandingScreen() {
         )}
 
         {/* ===== SECTION 2d: Popular Cities ===== */}
-        {popularCities.length > 0 && (
+        {isLoadingCities && (
+          <View style={[styles.section, { backgroundColor: Colors.white, paddingVertical: 40 }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                <SkeletonChip /><SkeletonChip /><SkeletonChip /><SkeletonChip /><SkeletonChip />
+              </View>
+            </View>
+          </View>
+        )}
+        {!isLoadingCities && popularCities.length > 0 && (
           <View style={[styles.section, { backgroundColor: Colors.white }]}>
             <View style={[styles.sectionInner, innerStyle]}>
               <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u044B\u0435 \u0433\u043E\u0440\u043E\u0434\u0430'}</Text>
