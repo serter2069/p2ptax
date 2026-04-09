@@ -49,7 +49,16 @@ export class ChatController {
     return this.chatService.getThreads(req.user.id);
   }
 
-  // POST /threads/start — upsert thread between current user and otherUserId
+  // POST /threads — create/upsert thread (UC-030)
+  @Post()
+  createThread(
+    @Request() req: { user: { id: string } },
+    @Body() dto: StartThreadDto,
+  ) {
+    return this.chatService.startThread(req.user.id, dto.otherUserId);
+  }
+
+  // POST /threads/start — upsert thread (legacy alias)
   @Post('start')
   startThread(
     @Request() req: { user: { id: string } },

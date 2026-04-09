@@ -19,9 +19,15 @@ class UpdateSettingsDto {
 }
 
 class UpdateMeDto {
+  @IsOptional()
   @IsString()
   @IsIn(['CLIENT', 'SPECIALIST'])
-  role!: string;
+  role?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(3, 20)
+  username?: string;
 }
 
 class SetupSpecialistProfileDto {
@@ -67,15 +73,31 @@ export class UsersController {
   }
 
   /**
-   * PATCH /users/me — set role for new users (isNewUser / role=null).
-   * Only allowed when the user has not yet picked a role.
+   * PATCH /users/me — update user profile fields.
+   * role: set role for new users (onboarding). Optional.
+   * username: update username. Optional.
    */
   @Patch('me')
-  updateMe(
+  async updateMe(
     @Request() req: { user: { id: string } },
     @Body() body: UpdateMeDto,
   ) {
-    return this.usersService.updateRole(req.user.id, body.role);
+    let result: any = {};
+
+    if (body.role) {
+      result = await this.usersService.updateRole(req.user.id, body.role);
+    }
+
+    if (body.username) {
+      result = await this.usersService.setUsername(req.user.id, body.username);
+    }
+
+    // If nothing was provided, just return current profile
+    if (!body.role && !body.username) {
+      result = await this.usersService.getMe(req.user.id);
+    }
+
+    return result;
   }
 
   /** PATCH /users/me/username — set or update username */
