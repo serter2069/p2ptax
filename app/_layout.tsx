@@ -74,7 +74,7 @@ function RootNavigator() {
     const inOnboardingGroup = segments[0] === '(onboarding)';
     // Public routes that guests can access freely
     const isPublicRoute =
-      segments[0] === 'specialists' || segments[0] === 'requests' || segments[0] === 'pricing';
+      segments[0] === 'specialists' || segments[0] === 'requests' || segments[0] === 'pricing' || segments[0] === 'v2';
 
     // New user must complete onboarding (specialist) or goes to dashboard (client)
     if (user && user.isNewUser && !inOnboardingGroup && !inAuthGroup) {
