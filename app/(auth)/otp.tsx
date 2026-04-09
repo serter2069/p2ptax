@@ -343,11 +343,12 @@ const styles = StyleSheet.create({
   },
   otpRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    justifyContent: 'space-between',
     alignSelf: 'stretch',
   },
   otpBox: {
     flex: 1,
+    maxWidth: 56,
     height: 56,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.bgCard,
