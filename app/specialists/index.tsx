@@ -16,7 +16,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
-import { Ionicons } from '@expo/vector-icons';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { api, ApiError } from '../../lib/api';
