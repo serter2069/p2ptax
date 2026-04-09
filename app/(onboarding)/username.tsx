@@ -194,16 +194,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   rulesBox: {
-    backgroundColor: Colors.bgCard,
+    backgroundColor: Colors.bgSecondary,
     borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.brandPrimary,
   },
   rulesText: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
+    lineHeight: 18,
   },
   form: {
     gap: Spacing.lg,
