@@ -318,6 +318,7 @@ export default function LandingScreen() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [isLoadingSpecialists, setIsLoadingSpecialists] = useState(true);
   const [isLoadingRequests, setIsLoadingRequests] = useState(true);
+  const [landingStats, setLandingStats] = useState<{ specialistsCount: number; ifnsCount: number; requestsCount: number } | null>(null);
   const [reviews, setReviews] = useState<Array<{
     id: string;
     rating: number;
@@ -332,6 +333,7 @@ export default function LandingScreen() {
     api.get<any[]>('/specialists/featured?limit=50').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
     api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
     api.get<any[]>('/reviews/public?limit=6').then(setReviews).catch((err) => console.warn('Landing section failed (reviews):', err));
+    api.get<{ specialistsCount: number; ifnsCount: number; requestsCount: number }>('/stats/landing').then(setLandingStats).catch((err) => console.warn('Landing section failed (stats):', err));
   }, []);
 
   const isWide = !isMobile;
@@ -421,26 +423,27 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== Stats Bar ===== */}
-        <View style={styles.statsSection}>
-          <View style={[styles.statsInner, innerStyle]}>
-            <View style={[isMobile ? styles.statsRowMobile : styles.statsRow]}>
-              {[
-                { number: '200+', label: 'ИФНС в базе' },
-                { number: '500+', label: 'Специалистов' },
-                { number: '1-2 часа', label: 'Время первого отклика' },
-                { number: 'Бесплатно', label: 'Размещение запроса' },
-              ].map((stat, idx, arr) => (
-                <React.Fragment key={stat.label}>
-                  <View style={[styles.statItem, isMobile && styles.statItemMobile]}>
-                    <Text style={styles.statNumber}>{stat.number}</Text>
-                    <Text style={styles.statLabel}>{stat.label}</Text>
-                  </View>
-                  {!isMobile && idx < arr.length - 1 && <View style={styles.statDivider} />}
-                </React.Fragment>
-              ))}
+        {landingStats && (
+          <View style={styles.statsSection}>
+            <View style={[styles.statsInner, innerStyle]}>
+              <View style={[isMobile ? styles.statsRowMobile : styles.statsRow]}>
+                {[
+                  { number: String(landingStats.specialistsCount), label: 'Специалистов' },
+                  { number: String(landingStats.ifnsCount), label: 'ИФНС в базе' },
+                  { number: String(landingStats.requestsCount), label: 'Решённых запросов' },
+                ].map((stat, idx, arr) => (
+                  <React.Fragment key={stat.label}>
+                    <View style={[styles.statItem, isMobile && styles.statItemMobile]}>
+                      <Text style={styles.statNumber}>{stat.number}</Text>
+                      <Text style={styles.statLabel}>{stat.label}</Text>
+                    </View>
+                    {!isMobile && idx < arr.length - 1 && <View style={styles.statDivider} />}
+                  </React.Fragment>
+                ))}
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* ===== Quick Request Form (prominent) ===== */}
         <View style={styles.quickFormSection}>
