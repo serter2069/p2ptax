@@ -16,6 +16,7 @@ import { Input } from '../../components/Input';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError } from '../../lib/api';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { AuthProgress } from '../../components/AuthProgress';
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -72,6 +73,8 @@ export default function EmailScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.container, !isMobile && styles.containerWide]}>
+            <AuthProgress step={1} />
+
             {/* Back */}
             <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
               <Text style={styles.backText}>← Назад</Text>

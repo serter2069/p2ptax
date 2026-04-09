@@ -17,6 +17,7 @@ import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Color
 import { api, ApiError, setRefreshToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { secureStorage } from '../../stores/storage';
+import { AuthProgress } from '../../components/AuthProgress';
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -205,6 +206,8 @@ export default function OtpScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
+            <AuthProgress step={2} />
+
             {/* Back */}
             <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
               <Text style={styles.backText}>← Назад</Text>
