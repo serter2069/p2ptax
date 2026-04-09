@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_SPECIALISTS } from '../../../constants/protoMockData';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function SpecialistCard({ name, city, services, rating, reviews, experience, completedOrders }: {
   name: string; city: string; services: string[]; rating: number; reviews: number; experience: string; completedOrders: number;
@@ -11,7 +12,7 @@ function SpecialistCard({ name, city, services, rating, reviews, experience, com
   return (
     <View style={s.card}>
       <View style={s.cardTop}>
-        <View style={s.avatar}><Text style={s.avatarText}>{name.split(' ').map(n => n[0]).join('')}</Text></View>
+        <ProtoPlaceholderImage type="avatar" height={48} />
         <View style={s.info}>
           <Text style={s.name}>{name}</Text>
           <Text style={s.city}>{city}</Text>

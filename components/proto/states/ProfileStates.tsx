@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -35,7 +36,7 @@ function InteractiveProfile() {
     return (
       <View style={s.container}>
         <View style={s.profileHeader}>
-          <View style={s.avatar}><Text style={s.avatarText}>{name.split(' ').map(n => n[0]).join('')}</Text></View>
+          <ProtoPlaceholderImage type="avatar" height={64} />
           <Pressable><Text style={s.changePhoto}>Изменить фото</Text></Pressable>
         </View>
         <View style={s.form}>
@@ -64,7 +65,7 @@ function InteractiveProfile() {
   return (
     <View style={s.container}>
       <View style={s.profileHeader}>
-        <View style={s.avatar}><Text style={s.avatarText}>{savedName.split(' ').map(n => n[0]).join('')}</Text></View>
+        <ProtoPlaceholderImage type="avatar" height={64} />
         <View>
           <Text style={s.nameText}>{savedName}</Text>
           <Text style={s.role}>Клиент</Text>

@@ -8,7 +8,7 @@ import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 function UserRow({ name, email, role, city }: { name: string; email: string; role: string; city: string }) {
   return (
     <View style={s.userRow}>
-      <View style={s.avatar}><Text style={s.avatarText}>{name.split(' ').map(n => n[0]).join('')}</Text></View>
+      <ProtoPlaceholderImage type="avatar" height={40} />
       <View style={s.userInfo}>
         <Text style={s.userName}>{name}</Text>
         <Text style={s.userEmail}>{email}</Text>
