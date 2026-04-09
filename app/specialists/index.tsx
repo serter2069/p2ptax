@@ -161,7 +161,7 @@ export default function SpecialistsCatalogScreen() {
         activeOpacity={0.8}
         style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
       >
-        <View style={styles.card}>
+        <View style={[styles.card, isMobile && styles.cardMobile]}>
           {/* Top row: avatar + name/spec/city */}
           <View style={styles.cardHeader}>
             <Avatar name={displayName} imageUri={item.avatarUrl || undefined} size="lg" />
@@ -220,16 +220,6 @@ export default function SpecialistsCatalogScreen() {
             </View>
           )}
 
-          {/* Footer */}
-          <View style={styles.cardFooter}>
-            <TouchableOpacity
-              onPress={() => router.push(`/specialists/${item.nick}`)}
-              style={styles.detailsBtn}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.detailsBtnText}>Подробнее</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </TouchableOpacity>
     );
@@ -354,17 +344,19 @@ export default function SpecialistsCatalogScreen() {
             {/* Sort */}
             <View style={styles.sortRow}>
               <Text style={styles.sortLabel}>Сортировка:</Text>
-              {SORT_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => setSort(opt.value)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.sortOption, sort === opt.value && styles.sortOptionActive]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 12 }}>
+                {SORT_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => setSort(opt.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.sortOption, sort === opt.value && styles.sortOptionActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           </View>
         }
@@ -530,7 +522,7 @@ const styles = StyleSheet.create({
   sortRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 8,
   },
   sortLabel: {
     fontSize: Typography.fontSize.sm,
@@ -560,6 +552,10 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     ...Shadows.sm,
+  },
+  cardMobile: {
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.brandPrimary,
   },
   cardHeader: {
     flexDirection: 'row',
