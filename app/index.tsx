@@ -29,39 +29,75 @@ const QUICK_REQUEST_CITIES = [
   'Новосибирск',
   'Екатеринбург',
   'Казань',
-  'Нижний Новгород',
-  'Челябинск',
-  'Самара',
-  'Уфа',
-  'Ростов-на-Дону',
 ];
+
+const SERVICE_TYPES = [
+  'Декларация 3-НДФЛ',
+  'Спор с ФНС',
+  'Налоговый вычет',
+  'Оптимизация налогов',
+  'Регистрация бизнеса',
+  'Другое',
+];
+
+const TASK_SERVICE_TYPE_MAP: Record<string, string> = {
+  'Декларация 3-НДФЛ': 'declaration',
+  'Спор с налоговой инспекцией': 'dispute',
+  'Оптимизация налогообложения': 'optimization',
+  'Регистрация ИП или ООО': 'registration',
+  'Налоговый вычет': 'deduction',
+  'Проверка налоговых рисков': 'risk_check',
+};
 
 function QuickRequestForm() {
   const router = useRouter();
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
+  const [customCity, setCustomCity] = useState('');
+  const [serviceType, setServiceType] = useState('');
   const [error, setError] = useState('');
 
+  const effectiveCity = city || customCity.trim();
+
   const handleSubmit = async () => {
+    if (!serviceType) {
+      setError('Выберите тип услуги');
+      return;
+    }
     if (description.trim().length < 3) {
       setError('Описание слишком короткое');
       return;
     }
-    if (!city) {
-      setError('Выберите город');
+    if (!effectiveCity) {
+      setError('Выберите или введите город');
       return;
     }
     setError('');
     await secureStorage.setItem(
       'p2ptax_pending_request',
-      JSON.stringify({ description: description.trim().slice(0, 500), city })
+      JSON.stringify({ description: description.trim().slice(0, 500), city: effectiveCity, serviceType })
     );
     router.push('/(auth)/email');
   };
 
   return (
     <View style={qrf.container}>
-      <Text style={qrf.title}>Опишите задачу</Text>
+      <Text style={qrf.title}>Быстрый запрос</Text>
+
+      <Text style={qrf.label}>Тип услуги</Text>
+      <View style={qrf.cityRow}>
+        {SERVICE_TYPES.map((st) => (
+          <TouchableOpacity
+            key={st}
+            style={[qrf.cityChip, serviceType === st && qrf.cityChipSelected]}
+            onPress={() => setServiceType(st)}
+          >
+            <Text style={[qrf.cityChipText, serviceType === st && qrf.cityChipTextSelected]}>{st}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={qrf.label}>Описание</Text>
       <TextInput
         testID="quick-request-description"
         style={qrf.input}
@@ -73,17 +109,27 @@ function QuickRequestForm() {
         numberOfLines={3}
         maxLength={500}
       />
+
+      <Text style={qrf.label}>Город</Text>
       <View style={qrf.cityRow}>
-        {QUICK_REQUEST_CITIES.slice(0, 5).map((c) => (
+        {QUICK_REQUEST_CITIES.map((c) => (
           <TouchableOpacity
             key={c}
             style={[qrf.cityChip, city === c && qrf.cityChipSelected]}
-            onPress={() => setCity(c)}
+            onPress={() => { setCity(c); setCustomCity(''); }}
           >
             <Text style={[qrf.cityChipText, city === c && qrf.cityChipTextSelected]}>{c}</Text>
           </TouchableOpacity>
         ))}
       </View>
+      <TextInput
+        style={qrf.customCityInput}
+        placeholder="Другой город"
+        placeholderTextColor={Colors.textMuted}
+        value={customCity}
+        onChangeText={(text) => { setCustomCity(text); if (text.trim()) setCity(''); }}
+      />
+
       {error ? <Text style={qrf.error}>{error}</Text> : null}
       <TouchableOpacity testID="quick-request-submit" style={qrf.btn} onPress={handleSubmit} activeOpacity={0.85}>
         <Text style={qrf.btnText}>Найти специалиста →</Text>
@@ -144,6 +190,23 @@ const qrf = StyleSheet.create({
   cityChipTextSelected: {
     color: Colors.white,
   },
+  label: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+    marginTop: Spacing.sm,
+  },
+  customCityInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.bgPrimary,
+    fontSize: Typography.fontSize.base,
+    marginBottom: Spacing.sm,
+  },
   error: {
     color: Colors.statusError,
     fontSize: Typography.fontSize.sm,
@@ -172,6 +235,7 @@ export default function LandingScreen() {
   const [featuredSpecialists, setFeaturedSpecialists] = useState<any[]>([]);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [popularCities, setPopularCities] = useState<any[]>([]);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   useEffect(() => {
     api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err));
@@ -224,26 +288,17 @@ export default function LandingScreen() {
                 {'\u042E\u0440\u0438\u0441\u0442\u044B \u0438 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0435 \u043A\u043E\u043D\u0441\u0443\u043B\u044C\u0442\u0430\u043D\u0442\u044B \u0432 \u0432\u0430\u0448\u0435\u043C \u0433\u043E\u0440\u043E\u0434\u0435. \u041E\u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0439\u0442\u0065 \u0437\u0430\u043F\u0440\u043E\u0441 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E \u2014 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u043E\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0445 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}
               </Text>
 
-              <QuickRequestForm />
-
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
-                {isWide && (
-                  <Button
-                    onPress={() => router.push('/specialists')}
-                    variant="primary"
-                    style={{ minWidth: 220 }}
-                  >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
-                )}
+                <Button
+                  onPress={() => router.push('/specialists')}
+                  variant="primary"
+                  style={isWide ? { minWidth: 220 } : { width: '100%' as any }}
+                >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
                 <Button
                   onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
                   variant="outline"
                   style={isWide ? { minWidth: 200 } : { width: '100%' as any }}
                 >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
-                <Button
-                  onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-                  variant="outline"
-                  style={isWide ? { minWidth: 200 } : { width: '100%' as any }}
-                >{'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
               </View>
             </View>
 
@@ -276,6 +331,13 @@ export default function LandingScreen() {
                 )}
               </View>
             )}
+          </View>
+        </View>
+
+        {/* ===== Quick Request Form Section ===== */}
+        <View style={[styles.section, { backgroundColor: Colors.bgSecondary, paddingVertical: 48 }]}>
+          <View style={[styles.sectionInner, innerStyle]}>
+            <QuickRequestForm />
           </View>
         </View>
 
@@ -425,9 +487,18 @@ export default function LandingScreen() {
                 '\u041D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0439 \u0432\u044B\u0447\u0435\u0442',
                 '\u041F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0445 \u0440\u0438\u0441\u043A\u043E\u0432',
               ].map((task) => (
-                <View key={task} style={[styles.taskCard, isMobile && styles.taskCardMobile]}>
+                <TouchableOpacity
+                  key={task}
+                  style={[styles.taskCard, isMobile && styles.taskCardMobile, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
+                  activeOpacity={0.75}
+                  onPress={async () => {
+                    const serviceType = TASK_SERVICE_TYPE_MAP[task] || 'other';
+                    await secureStorage.setItem('p2ptax_pending_service_type', serviceType);
+                    router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew');
+                  }}
+                >
                   <Text style={styles.taskCardText}>{task}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           </View>
@@ -571,8 +642,17 @@ export default function LandingScreen() {
                 },
               ].map((item, index) => (
                 <View key={item.q} style={[styles.faqItem, index < 3 && styles.faqItemBorder]}>
-                  <Text style={styles.faqQ}>{item.q}</Text>
-                  <Text style={styles.faqA}>{item.a}</Text>
+                  <TouchableOpacity
+                    style={styles.faqQuestionRow}
+                    activeOpacity={0.7}
+                    onPress={() => setExpandedFaq(expandedFaq === index ? null : index)}
+                  >
+                    <Text style={styles.faqQ}>{item.q}</Text>
+                    <Text style={styles.faqChevron}>{expandedFaq === index ? '\u25B2' : '\u25BC'}</Text>
+                  </TouchableOpacity>
+                  {expandedFaq === index && (
+                    <Text style={styles.faqA}>{item.a}</Text>
+                  )}
                 </View>
               ))}
             </View>
@@ -1097,10 +1177,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  faqQuestionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}),
+  },
   faqQ: {
     fontSize: 17,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
+    flex: 1,
+  },
+  faqChevron: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    marginLeft: 12,
   },
   faqA: {
     fontSize: Typography.fontSize.base,
