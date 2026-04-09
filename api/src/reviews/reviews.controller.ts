@@ -28,6 +28,12 @@ export class ReviewsController {
     return this.reviewsService.create(req.user.id, dto);
   }
 
+  /** GET /reviews/recent — public, recent reviews with comments for landing page */
+  @Get('recent')
+  getRecent(@Query('limit') limit?: string) {
+    return this.reviewsService.findRecent(limit ? parseInt(limit, 10) : 6);
+  }
+
   @Get('my')
   @UseGuards(JwtAuthGuard)
   getMyReviews(@Request() req: any) {

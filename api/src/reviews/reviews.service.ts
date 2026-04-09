@@ -15,6 +15,30 @@ const PAGE_SIZE = 20;
 export class ReviewsService {
   constructor(private prisma: PrismaService) {}
 
+  async findRecent(limit = 6) {
+    return this.prisma.review.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      where: { comment: { not: null } },
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        specialist: {
+          select: {
+            specialistProfile: {
+              select: { displayName: true, cities: true },
+            },
+          },
+        },
+        client: {
+          select: { username: true },
+        },
+      },
+    });
+  }
+
   async create(clientId: string, dto: CreateReviewDto) {
     // Resolve specialist by nick
     const specialistProfile = await this.prisma.specialistProfile.findUnique({

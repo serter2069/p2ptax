@@ -322,12 +322,14 @@ export default function LandingScreen() {
   const [heroImageError, setHeroImageError] = React.useState(false);
   const [featuredSpecialists, setFeaturedSpecialists] = useState<any[]>([]);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
+  const [recentReviews, setRecentReviews] = useState<any[]>([]);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [isLoadingSpecialists, setIsLoadingSpecialists] = useState(true);
   const [isLoadingRequests, setIsLoadingRequests] = useState(true);
   useEffect(() => {
     api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
     api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
+    api.get<any[]>('/reviews/recent?limit=6').then(setRecentReviews).catch((err) => console.warn('Landing section failed (recent reviews):', err));
   }, []);
 
   const isWide = !isMobile;
@@ -695,7 +697,31 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        {/* ===== SECTION 7: Reviews — hidden until real API reviews available ===== */}
+        {/* ===== SECTION 7: Reviews ===== */}
+        {recentReviews.length > 0 && (
+          <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'Отзывы клиентов'}</Text>
+              <View style={[styles.reviewsRow, isDesktop && styles.reviewsRowDesktop, isTablet && styles.reviewsRowTablet]}>
+                {recentReviews.slice(0, isDesktop ? 3 : isTablet ? 4 : 3).map((review: any) => {
+                  const profile = review.specialist?.specialistProfile;
+                  const displayName = profile?.displayName ?? 'Специалист';
+                  const city = profile?.cities?.[0] ?? null;
+                  const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+                  return (
+                    <View key={review.id} style={[styles.reviewCard, isTablet && !isDesktop && styles.reviewCardTablet]}>
+                      <Text style={styles.reviewQuote}>{'"'}</Text>
+                      <Text style={styles.reviewText} numberOfLines={5}>{review.comment}</Text>
+                      <Text style={styles.reviewStars}>{stars}</Text>
+                      <Text style={styles.reviewName}>{displayName}</Text>
+                      {city ? <Text style={styles.reviewCity}>{city}</Text> : null}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* ===== SECTION 8: FAQ ===== */}
         <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
