@@ -26,24 +26,6 @@ import { IfnsSearch } from '../components/IfnsSearch';
 
 // ---- Components ----
 
-const SERVICE_TYPES = [
-  'Декларация 3-НДФЛ',
-  'Спор с ФНС',
-  'Налоговый вычет',
-  'Оптимизация налогов',
-  'Регистрация бизнеса',
-  'Другое',
-];
-
-const TASK_SERVICE_TYPE_MAP: Record<string, string> = {
-  'Декларация 3-НДФЛ': 'declaration',
-  'Спор с налоговой инспекцией': 'dispute',
-  'Оптимизация налогообложения': 'optimization',
-  'Регистрация ИП или ООО': 'registration',
-  'Налоговый вычет': 'deduction',
-  'Проверка налоговых рисков': 'risk_check',
-};
-
 function QuickRequestForm() {
   const router = useRouter();
   const [description, setDescription] = useState('');
@@ -51,6 +33,14 @@ function QuickRequestForm() {
   const [serviceType, setServiceType] = useState('');
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [categories, setCategories] = useState<{ name: string; slug: string }[]>([]);
+
+  useEffect(() => {
+    fetch(`${process.env.EXPO_PUBLIC_API_URL || ''}/api/categories`)
+      .then((r) => r.json())
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   // Restore saved form data after auth redirect
   useEffect(() => {
@@ -122,13 +112,13 @@ function QuickRequestForm() {
 
       <Text style={qrf.label}>Что случилось?</Text>
       <View style={qrf.cityRow}>
-        {SERVICE_TYPES.map((st) => (
+        {categories.map((cat) => (
           <TouchableOpacity
-            key={st}
-            style={[qrf.cityChip, serviceType === st && qrf.cityChipSelected]}
-            onPress={() => setServiceType(st)}
+            key={cat.slug}
+            style={[qrf.cityChip, serviceType === cat.name && qrf.cityChipSelected]}
+            onPress={() => setServiceType(cat.name)}
           >
-            <Text style={[qrf.cityChipText, serviceType === st && qrf.cityChipTextSelected]}>{st}</Text>
+            <Text style={[qrf.cityChipText, serviceType === cat.name && qrf.cityChipTextSelected]}>{cat.name}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -699,8 +689,7 @@ export default function LandingScreen() {
                   style={[styles.taskCard, isMobile && styles.taskCardMobile, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
                   activeOpacity={0.75}
                   onPress={async () => {
-                    const serviceType = TASK_SERVICE_TYPE_MAP[task] || 'other';
-                    await secureStorage.setItem('p2ptax_pending_service_type', serviceType);
+                    await secureStorage.setItem('p2ptax_pending_service_type', task);
                     router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew');
                   }}
                 >
