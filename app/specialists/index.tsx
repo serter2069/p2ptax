@@ -21,6 +21,7 @@ import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
+import { Footer } from '../../components/Footer';
 import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
@@ -379,21 +380,24 @@ export default function SpecialistsCatalogScreen() {
           )
         }
         ListFooterComponent={
-          hasMore && specialists.length > 0 ? (
-            <View style={styles.loadMoreBox}>
-              {loadingMore ? (
-                <ActivityIndicator size="small" color={Colors.brandPrimary} />
-              ) : (
-                <Button
-                  onPress={handleLoadMore}
-                  variant="secondary"
-                  style={styles.loadMoreBtn}
-                >
-                  Загрузить ещё
-                </Button>
-              )}
-            </View>
-          ) : null
+          <>
+            {hasMore && specialists.length > 0 ? (
+              <View style={styles.loadMoreBox}>
+                {loadingMore ? (
+                  <ActivityIndicator size="small" color={Colors.brandPrimary} />
+                ) : (
+                  <Button
+                    onPress={handleLoadMore}
+                    variant="secondary"
+                    style={styles.loadMoreBtn}
+                  >
+                    Загрузить ещё
+                  </Button>
+                )}
+              </View>
+            ) : null}
+            <Footer isWide={!isMobile} />
+          </>
         }
       />
     </SafeAreaView>

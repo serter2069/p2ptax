@@ -14,6 +14,7 @@ import Head from 'expo-router/head';
 import { Typography, BorderRadius, Colors, Spacing } from '../constants/Colors';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { LandingHeader } from '../components/LandingHeader';
+import { Footer } from '../components/Footer';
 
 // ---- Pricing data ----
 
@@ -248,6 +249,8 @@ export default function PricingScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        <Footer isWide={!isMobile} />
       </ScrollView>
     </SafeAreaView>
   );

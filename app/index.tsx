@@ -23,6 +23,7 @@ import { useBreakpoints } from '../hooks/useBreakpoints';
 import { LandingHeader } from '../components/LandingHeader';
 import { Button } from '../components/Button';
 import { IfnsSearch } from '../components/IfnsSearch';
+import { Footer } from '../components/Footer';
 
 // ---- Components ----
 
@@ -930,53 +931,7 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== SECTION 10: Footer ===== */}
-        <View style={styles.footer}>
-          <View
-            style={[
-              styles.footerInner,
-              innerStyle,
-              isWide && styles.footerInnerWide,
-            ]}
-          >
-            <View style={styles.footerLogoRow}>
-              <View style={styles.footerLogoCircle}>
-                <Text style={styles.footerLogoInitial}>{'\u041D'}</Text>
-              </View>
-              <Text style={styles.footerLogo}>{'\u041D\u0430\u043B\u043E\u0433\u043E\u0432\u0438\u043A'}</Text>
-            </View>
-            <View style={[styles.footerLinks, isWide && styles.footerLinksWide]}>
-              <TouchableOpacity onPress={() => router.push('/specialists')} activeOpacity={0.7}>
-                <Text style={styles.footerLink}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B'}</Text>
-              </TouchableOpacity>
-              <Text style={styles.footerDot}>{'\u00B7'}</Text>
-              <TouchableOpacity onPress={() => router.push('/requests')} activeOpacity={0.7}>
-                <Text style={styles.footerLink}>{'\u0417\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
-              </TouchableOpacity>
-              <Text style={styles.footerDot}>{'\u00B7'}</Text>
-              <TouchableOpacity onPress={() => router.push('/pricing')} activeOpacity={0.7}>
-                <Text style={styles.footerLink}>{'\u0422\u0430\u0440\u0438\u0444\u044B'}</Text>
-              </TouchableOpacity>
-              <Text style={styles.footerDot}>{'\u00B7'}</Text>
-              <TouchableOpacity onPress={() => router.push('/support' as any)} activeOpacity={0.7}>
-                <Text style={styles.footerLink}>{'\u041A\u043E\u043D\u0442\u0430\u043A\u0442\u044B'}</Text>
-              </TouchableOpacity>
-              <Text style={styles.footerDot}>{'\u00B7'}</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  if (Platform.OS === 'web') {
-                    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.footerLink}>{'\u041E \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0435'}</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.footerCopy}>
-              {`\u00A9 ${new Date().getFullYear()} \u041D\u0430\u043B\u043E\u0433\u043E\u0432\u0438\u043A`}
-            </Text>
-          </View>
-        </View>
+        <Footer isWide={isWide} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -1487,70 +1442,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ---- Footer ----
-  footer: {
-    width: '100%',
-    backgroundColor: Colors.textPrimary,
-    paddingVertical: 24,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-  },
-  footerInner: {
-    width: '100%',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 16,
-  },
-  footerInnerWide: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  footerLogoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  footerLogoCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerLogoInitial: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  footerLogo: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  footerLinksWide: {
-    gap: 16,
-  },
-  footerLink: {
-    fontSize: Typography.fontSize.base,
-    color: 'rgba(255,255,255,0.65)',
-    fontWeight: Typography.fontWeight.medium,
-  },
-  footerDot: {
-    fontSize: Typography.fontSize.base,
-    color: 'rgba(255,255,255,0.35)',
-  },
-  footerCopy: {
-    fontSize: Typography.fontSize.sm,
-    color: 'rgba(255,255,255,0.35)',
-  },
 });
 
 // ---- Dynamic section styles ----
