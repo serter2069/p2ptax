@@ -22,16 +22,9 @@ const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhu
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { LandingHeader } from '../components/LandingHeader';
 import { Button } from '../components/Button';
+import { IfnsSearch } from '../components/IfnsSearch';
 
 // ---- Components ----
-
-const QUICK_REQUEST_CITIES = [
-  'Москва',
-  'Санкт-Петербург',
-  'Новосибирск',
-  'Екатеринбург',
-  'Казань',
-];
 
 const SERVICE_TYPES = [
   'Декларация 3-НДФЛ',
@@ -40,14 +33,6 @@ const SERVICE_TYPES = [
   'Оптимизация налогов',
   'Регистрация бизнеса',
   'Другое',
-];
-
-const DEFAULT_CITIES = [
-  '\u041C\u043E\u0441\u043A\u0432\u0430',
-  '\u0421\u0430\u043D\u043A\u0442-\u041F\u0435\u0442\u0435\u0440\u0431\u0443\u0440\u0433',
-  '\u0415\u043A\u0430\u0442\u0435\u0440\u0438\u043D\u0431\u0443\u0440\u0433',
-  '\u041D\u043E\u0432\u043E\u0441\u0438\u0431\u0438\u0440\u0441\u043A',
-  '\u041A\u0430\u0437\u0430\u043D\u044C',
 ];
 
 const TASK_SERVICE_TYPE_MAP: Record<string, string> = {
@@ -62,8 +47,7 @@ const TASK_SERVICE_TYPE_MAP: Record<string, string> = {
 function QuickRequestForm() {
   const router = useRouter();
   const [description, setDescription] = useState('');
-  const [city, setCity] = useState('');
-  const [customCity, setCustomCity] = useState('');
+  const [selectedIfns, setSelectedIfns] = useState<any>(null);
   const [serviceType, setServiceType] = useState('');
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -73,16 +57,13 @@ function QuickRequestForm() {
     secureStorage.getItem('p2ptax_pending_request').then(saved => {
       if (saved) {
         try {
-          const { description: d, city: c, serviceType: s } = JSON.parse(saved);
+          const { description: d, serviceType: s } = JSON.parse(saved);
           if (d) setDescription(d);
-          if (c) setCity(c);
           if (s) setServiceType(s);
         } catch {}
       }
     });
   }, []);
-
-  const effectiveCity = city || customCity.trim();
 
   const handleSubmit = async () => {
     if (!serviceType) {
@@ -93,22 +74,23 @@ function QuickRequestForm() {
       setError('Описание слишком короткое');
       return;
     }
-    if (!effectiveCity) {
-      setError('Выберите или введите город');
-      return;
-    }
     setError('');
-    await secureStorage.setItem(
-      'p2ptax_pending_request',
-      JSON.stringify({ description: description.trim().slice(0, 500), city: effectiveCity, serviceType })
-    );
+    const pending: Record<string, string> = {
+      description: description.trim().slice(0, 500),
+      serviceType,
+      city: selectedIfns?.city?.name || '',
+    };
+    if (selectedIfns) {
+      pending.ifnsId = selectedIfns.id;
+      pending.ifnsName = selectedIfns.name;
+    }
+    await secureStorage.setItem('p2ptax_pending_request', JSON.stringify(pending));
     setSubmitted(true);
   };
 
   function handleNewRequest() {
     setDescription('');
-    setCity('');
-    setCustomCity('');
+    setSelectedIfns(null);
     setServiceType('');
     setError('');
     setSubmitted(false);
@@ -164,24 +146,11 @@ function QuickRequestForm() {
         maxLength={500}
       />
 
-      <Text style={qrf.label}>Город</Text>
-      <View style={qrf.cityRow}>
-        {QUICK_REQUEST_CITIES.map((c) => (
-          <TouchableOpacity
-            key={c}
-            style={[qrf.cityChip, city === c && qrf.cityChipSelected]}
-            onPress={() => { setCity(c); setCustomCity(''); }}
-          >
-            <Text style={[qrf.cityChipText, city === c && qrf.cityChipTextSelected]}>{c}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <TextInput
-        style={qrf.customCityInput}
-        placeholder="Другой город"
-        placeholderTextColor={Colors.textMuted}
-        value={customCity}
-        onChangeText={(text) => { setCustomCity(text); if (text.trim()) setCity(''); }}
+      <Text style={qrf.label}>Налоговая инспекция (необязательно)</Text>
+      <IfnsSearch
+        selected={selectedIfns}
+        onSelect={setSelectedIfns}
+        placeholder="Введите номер или название ИФНС..."
       />
 
       {error ? <Text style={qrf.error}>{error}</Text> : null}
@@ -353,16 +322,12 @@ export default function LandingScreen() {
   const [heroImageError, setHeroImageError] = React.useState(false);
   const [featuredSpecialists, setFeaturedSpecialists] = useState<any[]>([]);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
-  const [popularCities, setPopularCities] = useState<any[]>([]);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [isLoadingSpecialists, setIsLoadingSpecialists] = useState(true);
   const [isLoadingRequests, setIsLoadingRequests] = useState(true);
-  const [isLoadingCities, setIsLoadingCities] = useState(true);
-
   useEffect(() => {
     api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
     api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
-    api.get<any[]>('/specialists/cities/popular?limit=10').then(setPopularCities).catch((err) => console.warn('Landing section failed (popular cities):', err)).finally(() => setIsLoadingCities(false));
   }, []);
 
   const isWide = !isMobile;
@@ -590,38 +555,7 @@ export default function LandingScreen() {
           </View>
         )}
 
-        {/* ===== SECTION 2d: Popular Cities ===== */}
-        {isLoadingCities && (
-          <View style={[styles.section, { backgroundColor: Colors.white, paddingVertical: 40 }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                <SkeletonChip /><SkeletonChip /><SkeletonChip /><SkeletonChip /><SkeletonChip />
-              </View>
-            </View>
-          </View>
-        )}
-        {!isLoadingCities && (
-          <View style={[styles.section, { backgroundColor: Colors.white }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u044B\u0435 \u0433\u043E\u0440\u043E\u0434\u0430'}</Text>
-              <View style={dyn.citiesRow}>
-                {(popularCities.length > 0 ? popularCities : DEFAULT_CITIES).map((item: any) => {
-                  const cityName = typeof item === 'string' ? item : (item.city || item.name || String(item));
-                  return (
-                    <TouchableOpacity
-                      key={cityName}
-                      style={dyn.cityChip}
-                      activeOpacity={0.75}
-                      onPress={() => router.push(`/specialists?city=${encodeURIComponent(cityName)}` as any)}
-                    >
-                      <Text style={dyn.cityChipText}>{cityName}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-        )}
+        {/* Popular Cities section removed — replaced by IFNS search */}
 
         {/* ===== SECTION 3: How it works ===== */}
         <View nativeID="how-it-works" style={[styles.section, { backgroundColor: Colors.bgCard }]}>
