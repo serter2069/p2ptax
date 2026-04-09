@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
-function Popup({ type }: { type: 'success' | 'error' }) {
+function Popup({ type, onClose }: { type: 'success' | 'error'; onClose: () => void }) {
   const isSuccess = type === 'success';
   return (
     <View style={s.overlay}>
@@ -15,18 +15,28 @@ function Popup({ type }: { type: 'success' | 'error' }) {
             ? 'Клиент получит уведомление о вашем отклике и сможет связаться с вами'
             : 'Не удалось отправить отклик. Попробуйте ещё раз.'}
         </Text>
-        <View style={[s.popupBtn, isSuccess ? null : s.popupBtnError]}>
+        <Pressable onPress={onClose} style={[s.popupBtn, isSuccess ? null : s.popupBtnError]}>
           <Text style={s.popupBtnText}>{isSuccess ? 'К моим откликам' : 'Попробовать снова'}</Text>
-        </View>
+        </Pressable>
       </View>
     </View>
   );
 }
 
-function FormScreen({ showPopup }: { showPopup?: 'success' | 'error' }) {
+function FormScreen() {
+  const [price, setPrice] = useState('4 500');
+  const [message, setMessage] = useState('Здравствуйте! Готов помочь с декларацией. Опыт — 8 лет, 200+ успешных деклараций.');
+  const [deadline, setDeadline] = useState('2 рабочих дня');
+  const [popup, setPopup] = useState<'success' | 'error' | null>(null);
+
+  const handleSubmit = () => {
+    // Simulate: randomly succeed or fail
+    setPopup(Math.random() > 0.3 ? 'success' : 'error');
+  };
+
   return (
-    <View style={[s.container, showPopup ? { minHeight: 500 } : null]}>
-      {showPopup && <Popup type={showPopup} />}
+    <View style={[s.container, popup ? { minHeight: 500 } : null]}>
+      {popup && <Popup type={popup} onClose={() => setPopup(null)} />}
       <View style={s.requestInfo}>
         <Text style={s.requestTitle}>Заполнить декларацию 3-НДФЛ за 2025 год</Text>
         <View style={s.requestMeta}>
@@ -39,18 +49,19 @@ function FormScreen({ showPopup }: { showPopup?: 'success' | 'error' }) {
         <View style={s.field}>
           <Text style={s.label}>Ваша цена *</Text>
           <TextInput
-            value="4 500"
-            editable={false}
+            value={price}
+            onChangeText={setPrice}
             placeholder="Укажите стоимость в рублях"
             placeholderTextColor={Colors.textMuted}
+            keyboardType="number-pad"
             style={s.input}
           />
         </View>
         <View style={s.field}>
           <Text style={s.label}>Сообщение клиенту *</Text>
           <TextInput
-            value="Здравствуйте! Готов помочь с декларацией. Опыт — 8 лет, 200+ успешных деклараций."
-            editable={false}
+            value={message}
+            onChangeText={setMessage}
             multiline
             style={s.textarea}
           />
@@ -58,30 +69,22 @@ function FormScreen({ showPopup }: { showPopup?: 'success' | 'error' }) {
         <View style={s.field}>
           <Text style={s.label}>Срок выполнения</Text>
           <TextInput
-            value="2 рабочих дня"
-            editable={false}
+            value={deadline}
+            onChangeText={setDeadline}
             style={s.input}
           />
         </View>
       </View>
-      <View style={s.btn}><Text style={s.btnText}>Отправить отклик</Text></View>
+      <Pressable onPress={handleSubmit} style={s.btn}><Text style={s.btnText}>Отправить отклик</Text></Pressable>
     </View>
   );
 }
 
 export function SpecialistRespondStates() {
   return (
-    <>
-      <StateSection title="FORM">
-        <FormScreen />
-      </StateSection>
-      <StateSection title="SUCCESS_POPUP">
-        <FormScreen showPopup="success" />
-      </StateSection>
-      <StateSection title="ERROR_POPUP">
-        <FormScreen showPopup="error" />
-      </StateSection>
-    </>
+    <StateSection title="INTERACTIVE_FORM">
+      <FormScreen />
+    </StateSection>
   );
 }
 

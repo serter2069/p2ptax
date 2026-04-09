@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_RESPONSES } from '../../../constants/protoMockData';
 
-function ResponseItem({ name, price, message, rating, reviews }: {
+function ResponseItem({ name, price, message, rating, reviews, onAccept, onDecline }: {
   name: string; price: string; message: string; rating: number; reviews: number;
+  onAccept: () => void; onDecline: () => void;
 }) {
   const stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
   return (
@@ -23,14 +24,14 @@ function ResponseItem({ name, price, message, rating, reviews }: {
       </View>
       <Text style={s.message} numberOfLines={2}>{message}</Text>
       <View style={s.actions}>
-        <View style={s.btnAccept}><Text style={s.btnAcceptText}>Принять</Text></View>
-        <View style={s.btnDecline}><Text style={s.btnDeclineText}>Отклонить</Text></View>
+        <Pressable onPress={onAccept} style={s.btnAccept}><Text style={s.btnAcceptText}>Принять</Text></Pressable>
+        <Pressable onPress={onDecline} style={s.btnDecline}><Text style={s.btnDeclineText}>Отклонить</Text></Pressable>
       </View>
     </View>
   );
 }
 
-function Popup({ type }: { type: 'accept' | 'decline' }) {
+function Popup({ type, name, onConfirm, onCancel }: { type: 'accept' | 'decline'; name: string; onConfirm: () => void; onCancel: () => void }) {
   const isAccept = type === 'accept';
   return (
     <View style={s.overlay}>
@@ -39,16 +40,46 @@ function Popup({ type }: { type: 'accept' | 'decline' }) {
         <Text style={s.popupTitle}>{isAccept ? 'Принять отклик?' : 'Отклонить отклик?'}</Text>
         <Text style={s.popupText}>
           {isAccept
-            ? 'Специалист Алексей Петров будет назначен исполнителем вашей заявки'
-            : 'Отклик от Алексея Петрова будет отклонён'}
+            ? `Специалист ${name} будет назначен исполнителем вашей заявки`
+            : `Отклик от ${name} будет отклонён`}
         </Text>
         <View style={s.popupActions}>
-          <View style={[s.popupBtn, isAccept ? s.popupBtnAccept : s.popupBtnDecline]}>
+          <Pressable onPress={onConfirm} style={[s.popupBtn, isAccept ? s.popupBtnAccept : s.popupBtnDecline]}>
             <Text style={s.popupBtnPrimaryText}>{isAccept ? 'Подтвердить' : 'Отклонить'}</Text>
-          </View>
-          <View style={s.popupBtnCancel}><Text style={s.popupBtnCancelText}>Отмена</Text></View>
+          </Pressable>
+          <Pressable onPress={onCancel} style={s.popupBtnCancel}><Text style={s.popupBtnCancelText}>Отмена</Text></Pressable>
         </View>
       </View>
+    </View>
+  );
+}
+
+function InteractiveResponses() {
+  const [popupState, setPopupState] = useState<{ type: 'accept' | 'decline'; name: string } | null>(null);
+
+  return (
+    <View style={[s.container, popupState ? { minHeight: 500 } : null]}>
+      <Text style={s.pageTitle}>Отклики ({MOCK_RESPONSES.length})</Text>
+      {MOCK_RESPONSES.map((r) => (
+        <ResponseItem
+          key={r.id}
+          name={r.specialistName}
+          price={r.price}
+          message={r.message}
+          rating={r.rating}
+          reviews={r.reviewCount}
+          onAccept={() => setPopupState({ type: 'accept', name: r.specialistName })}
+          onDecline={() => setPopupState({ type: 'decline', name: r.specialistName })}
+        />
+      ))}
+      {popupState && (
+        <Popup
+          type={popupState.type}
+          name={popupState.name}
+          onConfirm={() => setPopupState(null)}
+          onCancel={() => setPopupState(null)}
+        />
+      )}
     </View>
   );
 }
@@ -56,6 +87,9 @@ function Popup({ type }: { type: 'accept' | 'decline' }) {
 export function ResponsesStates() {
   return (
     <>
+      <StateSection title="INTERACTIVE">
+        <InteractiveResponses />
+      </StateSection>
       <StateSection title="EMPTY">
         <View style={s.container}>
           <Text style={s.pageTitle}>Отклики</Text>
@@ -63,28 +97,6 @@ export function ResponsesStates() {
             <Text style={s.emptyTitle}>Нет откликов</Text>
             <Text style={s.emptyText}>Специалисты ещё не откликнулись на ваши заявки</Text>
           </View>
-        </View>
-      </StateSection>
-      <StateSection title="LIST">
-        <View style={s.container}>
-          <Text style={s.pageTitle}>Отклики (3)</Text>
-          {MOCK_RESPONSES.map((r) => (
-            <ResponseItem key={r.id} name={r.specialistName} price={r.price} message={r.message} rating={r.rating} reviews={r.reviewCount} />
-          ))}
-        </View>
-      </StateSection>
-      <StateSection title="ACCEPT_POPUP">
-        <View style={[s.container, { minHeight: 400 }]}>
-          <Text style={s.pageTitle}>Отклики (3)</Text>
-          <ResponseItem name="Алексей Петров" price="4 500 ₽" message="Готов помочь с декларацией." rating={4.8} reviews={42} />
-          <Popup type="accept" />
-        </View>
-      </StateSection>
-      <StateSection title="DECLINE_POPUP">
-        <View style={[s.container, { minHeight: 400 }]}>
-          <Text style={s.pageTitle}>Отклики (3)</Text>
-          <ResponseItem name="Алексей Петров" price="4 500 ₽" message="Готов помочь с декларацией." rating={4.8} reviews={42} />
-          <Popup type="decline" />
         </View>
       </StateSection>
     </>

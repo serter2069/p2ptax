@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_SPECIALISTS } from '../../../constants/protoMockData';
@@ -34,64 +34,59 @@ function SpecialistCard({ name, city, services, rating, reviews, experience, com
         <Text style={s.metaDot}>{'·'}</Text>
         <Text style={s.metaItem}>{completedOrders} заказов</Text>
       </View>
-      <View style={s.cardBtn}><Text style={s.cardBtnText}>Подробнее</Text></View>
+      <Pressable style={s.cardBtn}><Text style={s.cardBtnText}>Подробнее</Text></Pressable>
+    </View>
+  );
+}
+
+function InteractiveCatalog() {
+  const [search, setSearch] = useState('');
+
+  const filtered = MOCK_SPECIALISTS.filter((sp) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      sp.name.toLowerCase().includes(q) ||
+      sp.city.toLowerCase().includes(q) ||
+      sp.services.some((svc) => svc.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <View style={s.container}>
+      <Text style={s.pageTitle}>Специалисты</Text>
+      <TextInput
+        value={search}
+        onChangeText={setSearch}
+        placeholder="Поиск по имени, городу, услуге..."
+        placeholderTextColor={Colors.textMuted}
+        style={s.searchInput}
+      />
+      {search && (
+        <Text style={s.resultCount}>Найдено: {filtered.length} {filtered.length === 1 ? 'специалист' : 'специалистов'}</Text>
+      )}
+      {filtered.length === 0 ? (
+        <View style={s.emptyWrap}>
+          <Text style={s.emptyTitle}>Специалисты не найдены</Text>
+          <Text style={s.emptyText}>Попробуйте изменить параметры поиска</Text>
+        </View>
+      ) : (
+        filtered.map((sp) => (
+          <SpecialistCard
+            key={sp.id} name={sp.name} city={sp.city} services={sp.services}
+            rating={sp.rating} reviews={sp.reviewCount} experience={sp.experience} completedOrders={sp.completedOrders}
+          />
+        ))
+      )}
     </View>
   );
 }
 
 export function SpecialistsCatalogStates() {
   return (
-    <>
-      <StateSection title="LIST">
-        <View style={s.container}>
-          <Text style={s.pageTitle}>Специалисты</Text>
-          <TextInput
-            value=""
-            editable={false}
-            placeholder="Поиск по имени, городу, услуге..."
-            placeholderTextColor={Colors.textMuted}
-            style={s.searchInput}
-          />
-          {MOCK_SPECIALISTS.map((sp) => (
-            <SpecialistCard
-              key={sp.id} name={sp.name} city={sp.city} services={sp.services}
-              rating={sp.rating} reviews={sp.reviewCount} experience={sp.experience} completedOrders={sp.completedOrders}
-            />
-          ))}
-        </View>
-      </StateSection>
-      <StateSection title="SEARCH">
-        <View style={s.container}>
-          <Text style={s.pageTitle}>Специалисты</Text>
-          <TextInput
-            value="Москва 3-НДФЛ"
-            editable={false}
-            style={s.searchInput}
-          />
-          <Text style={s.resultCount}>Найдено: 2 специалиста</Text>
-          {MOCK_SPECIALISTS.filter(sp => sp.city === 'Москва').map((sp) => (
-            <SpecialistCard
-              key={sp.id} name={sp.name} city={sp.city} services={sp.services}
-              rating={sp.rating} reviews={sp.reviewCount} experience={sp.experience} completedOrders={sp.completedOrders}
-            />
-          ))}
-        </View>
-      </StateSection>
-      <StateSection title="EMPTY">
-        <View style={s.container}>
-          <Text style={s.pageTitle}>Специалисты</Text>
-          <TextInput
-            value="Якутск аудит"
-            editable={false}
-            style={s.searchInput}
-          />
-          <View style={s.emptyWrap}>
-            <Text style={s.emptyTitle}>Специалисты не найдены</Text>
-            <Text style={s.emptyText}>Попробуйте изменить параметры поиска</Text>
-          </View>
-        </View>
-      </StateSection>
-    </>
+    <StateSection title="INTERACTIVE">
+      <InteractiveCatalog />
+    </StateSection>
   );
 }
 

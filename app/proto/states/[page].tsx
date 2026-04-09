@@ -2,10 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { ProtoLayout } from '../../../components/proto/ProtoLayout';
+import { PageIdProvider } from '../../../components/proto/StateSection';
 import { getPageById } from '../../../constants/protoRegistry';
 import { Colors, Typography, Spacing } from '../../../constants/Colors';
 
 // State components
+import { BrandStyleStates } from '../../../components/proto/states/BrandStyleStates';
 import { AuthEmailStates } from '../../../components/proto/states/AuthEmailStates';
 import { AuthOtpStates } from '../../../components/proto/states/AuthOtpStates';
 import { OnboardingUsernameStates } from '../../../components/proto/states/OnboardingUsernameStates';
@@ -38,6 +40,7 @@ import { AdminReviewsStates } from '../../../components/proto/states/AdminReview
 import { AdminPromotionsStates } from '../../../components/proto/states/AdminPromotionsStates';
 
 const STATE_MAP: Record<string, React.ComponentType> = {
+  'brand-style': BrandStyleStates,
   'auth-email': AuthEmailStates,
   'auth-otp': AuthOtpStates,
   'onboarding-username': OnboardingUsernameStates,
@@ -85,9 +88,11 @@ export default function ProtoStatesPage() {
   }
 
   return (
-    <ProtoLayout title={pageData.title} route={pageData.route}>
-      <StatesComponent />
-    </ProtoLayout>
+    <PageIdProvider value={page || ''}>
+      <ProtoLayout title={pageData.title} route={pageData.route}>
+        <StatesComponent />
+      </ProtoLayout>
+    </PageIdProvider>
   );
 }
 

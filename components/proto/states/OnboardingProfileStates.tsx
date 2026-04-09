@@ -1,9 +1,13 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
-function Screen({ filled }: { filled: boolean }) {
+function Screen({ initialFilled }: { initialFilled?: boolean }) {
+  const [about, setAbout] = useState(initialFilled ? 'Налоговый консультант с опытом работы 8 лет. Специализация — НДФЛ, имущественные вычеты, регистрация ИП.' : '');
+  const [price, setPrice] = useState(initialFilled ? '2 000' : '');
+
   return (
     <View style={s.container}>
       <View style={s.progress}><View style={[s.progressBar, { width: '100%' }]} /></View>
@@ -13,15 +17,15 @@ function Screen({ filled }: { filled: boolean }) {
       <View style={s.form}>
         <View style={s.avatarRow}>
           <View style={s.avatar}>
-            <Text style={s.avatarText}>{filled ? 'АП' : '?'}</Text>
+            <Feather name="user" size={28} color={Colors.brandPrimary} />
           </View>
-          <Text style={s.avatarHint}>Загрузить фото</Text>
+          <Pressable><Text style={s.avatarHint}>Загрузить фото</Text></Pressable>
         </View>
         <View style={s.field}>
           <Text style={s.label}>О себе</Text>
           <TextInput
-            value={filled ? 'Налоговый консультант с опытом работы 8 лет. Специализация — НДФЛ, имущественные вычеты, регистрация ИП.' : ''}
-            editable={false}
+            value={about}
+            onChangeText={setAbout}
             placeholder="Расскажите о вашем опыте и специализации..."
             placeholderTextColor={Colors.textMuted}
             multiline
@@ -31,27 +35,17 @@ function Screen({ filled }: { filled: boolean }) {
         <View style={s.field}>
           <Text style={s.label}>Стоимость консультации</Text>
           <TextInput
-            value={filled ? '2 000 ₽' : ''}
-            editable={false}
-            placeholder="Например: 2 000 ₽"
-            placeholderTextColor={Colors.textMuted}
-            style={s.input}
-          />
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Опыт работы</Text>
-          <TextInput
-            value={filled ? '8 лет' : ''}
-            editable={false}
-            placeholder="Например: 5 лет"
+            value={price}
+            onChangeText={setPrice}
+            placeholder="Например: 2 000"
             placeholderTextColor={Colors.textMuted}
             style={s.input}
           />
         </View>
       </View>
-      <View style={s.btn}>
+      <Pressable style={s.btn}>
         <Text style={s.btnText}>Завершить регистрацию</Text>
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -60,10 +54,10 @@ export function OnboardingProfileStates() {
   return (
     <>
       <StateSection title="DEFAULT">
-        <Screen filled={false} />
+        <Screen />
       </StateSection>
       <StateSection title="FILLED">
-        <Screen filled />
+        <Screen initialFilled />
       </StateSection>
     </>
   );
@@ -82,7 +76,6 @@ const s = StyleSheet.create({
     width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bgSecondary,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
   avatarHint: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
   field: { gap: Spacing.xs },
   label: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },

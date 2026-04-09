@@ -1,30 +1,45 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
-import { MOCK_SERVICES } from '../../../constants/protoMockData';
 
-function ServiceItem({ name, selected }: { name: string; selected: boolean }) {
+const SERVICES = [
+  { id: '1', name: 'Выездная проверка' },
+  { id: '2', name: 'Отдел оперативного контроля' },
+  { id: '3', name: 'Камеральная проверка' },
+];
+
+function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
-    <TouchableOpacity style={[s.item, selected ? s.itemSelected : null]}>
-      <View style={[s.check, selected ? s.checkSelected : null]}>
-        {selected && <Text style={s.checkMark}>{'✓'}</Text>}
-      </View>
-      <Text style={[s.itemText, selected ? s.itemTextSelected : null]}>{name}</Text>
-    </TouchableOpacity>
+    <Pressable onPress={onPress} style={[s.chip, selected ? s.chipSelected : null]}>
+      <Text style={[s.chipText, selected ? s.chipTextSelected : null]}>{label}</Text>
+    </Pressable>
   );
 }
 
-function Screen({ selectedIds }: { selectedIds: string[] }) {
+function Screen({ initialSelectedIds }: { initialSelectedIds?: string[] }) {
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds || []);
+
+  const toggle = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
   return (
     <View style={s.container}>
       <View style={s.progress}><View style={[s.progressBar, { width: '60%' }]} /></View>
       <Text style={s.step}>Шаг 3 из 5</Text>
       <Text style={s.title}>Какие услуги вы оказываете?</Text>
       <Text style={s.subtitle}>Выберите все подходящие</Text>
-      <View style={s.list}>
-        {MOCK_SERVICES.map((svc) => (
-          <ServiceItem key={svc.id} name={svc.name} selected={selectedIds.includes(svc.id)} />
+      <View style={s.chips}>
+        {SERVICES.map((svc) => (
+          <Chip
+            key={svc.id}
+            label={svc.name}
+            selected={selectedIds.includes(svc.id)}
+            onPress={() => toggle(svc.id)}
+          />
         ))}
       </View>
       <View style={[s.btn, selectedIds.length === 0 ? s.btnDisabled : null]}>
@@ -37,11 +52,11 @@ function Screen({ selectedIds }: { selectedIds: string[] }) {
 export function OnboardingServicesStates() {
   return (
     <>
-      <StateSection title="EMPTY">
-        <Screen selectedIds={[]} />
+      <StateSection title="INTERACTIVE">
+        <Screen />
       </StateSection>
-      <StateSection title="SELECTED">
-        <Screen selectedIds={['1', '3', '5', '7']} />
+      <StateSection title="PRESELECTED">
+        <Screen initialSelectedIds={['1', '3']} />
       </StateSection>
     </>
   );
@@ -54,21 +69,15 @@ const s = StyleSheet.create({
   step: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   title: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   subtitle: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-  list: { gap: Spacing.sm },
-  item: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
-    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.md, backgroundColor: Colors.bgCard,
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  chip: {
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.full,
+    backgroundColor: Colors.bgCard,
   },
-  itemSelected: { borderColor: Colors.brandPrimary, backgroundColor: '#EBF3FB' },
-  check: {
-    width: 22, height: 22, borderWidth: 1.5, borderColor: Colors.border,
-    borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center',
-  },
-  checkSelected: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
-  checkMark: { color: '#FFF', fontSize: 14, fontWeight: Typography.fontWeight.bold },
-  itemText: { fontSize: Typography.fontSize.base, color: Colors.textPrimary },
-  itemTextSelected: { fontWeight: Typography.fontWeight.medium, color: Colors.brandPrimary },
+  chipSelected: { borderColor: Colors.brandPrimary, backgroundColor: '#EBF3FB' },
+  chipText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
+  chipTextSelected: { fontWeight: Typography.fontWeight.semibold, color: Colors.brandPrimary },
   btn: {
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',

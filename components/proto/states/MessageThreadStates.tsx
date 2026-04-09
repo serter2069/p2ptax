@@ -1,14 +1,16 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
-import { MOCK_MESSAGES } from '../../../constants/protoMockData';
+import { MOCK_MESSAGES, MockMessage } from '../../../constants/protoMockData';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function ChatHeader() {
   return (
     <View style={s.chatHeader}>
       <Text style={s.backArrow}>{'<'}</Text>
-      <View style={s.chatAvatar}><Text style={s.chatAvatarText}>А</Text></View>
+      <ProtoPlaceholderImage type="avatar" height={36} />
       <View>
         <Text style={s.chatName}>Алексей Петров</Text>
         <Text style={s.chatStatus}>Онлайн</Text>
@@ -28,19 +30,57 @@ function MessageBubble({ text, fromMe, time }: { text: string; fromMe: boolean; 
   );
 }
 
-function InputBar({ typing }: { typing?: boolean }) {
+function InteractiveChat({ initialMessages }: { initialMessages: MockMessage[] }) {
+  const [messages, setMessages] = useState<MockMessage[]>(initialMessages);
+  const [inputText, setInputText] = useState('');
+
+  const handleSend = () => {
+    if (!inputText.trim()) return;
+    const now = new Date();
+    const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: String(prev.length + 1), text: inputText.trim(), fromMe: true, time },
+    ]);
+    setInputText('');
+  };
+
   return (
-    <View style={s.inputBar}>
-      {typing && <Text style={s.typingIndicator}>Алексей печатает...</Text>}
-      <View style={s.inputRow}>
-        <TextInput
-          value=""
-          editable={false}
-          placeholder="Введите сообщение..."
-          placeholderTextColor={Colors.textMuted}
-          style={s.chatInput}
-        />
-        <View style={s.sendBtn}><Text style={s.sendText}>{'>'}</Text></View>
+    <View style={s.container}>
+      <ChatHeader />
+      <View style={s.messages}>
+        {messages.map((m, i) => (
+          <View key={m.id}>
+            <MessageBubble text={m.text} fromMe={m.fromMe} time={m.time} />
+            {i === 1 && (
+              <View style={s.attachmentWrap}>
+                <ProtoPlaceholderImage type="photo" height={100} width={160} label="Photo attachment" borderRadius={10} />
+              </View>
+            )}
+            {i === 2 && (
+              <View style={[s.attachmentWrap, { alignItems: 'flex-end' }]}>
+                <ProtoPlaceholderImage type="document" height={60} width={140} label="document.pdf" borderRadius={8} />
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
+      <View style={s.inputBar}>
+        <View style={s.inputRow}>
+          <Pressable style={s.attachBtn}>
+            <Feather name="paperclip" size={18} color={Colors.textMuted} />
+          </Pressable>
+          <TextInput
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder="Введите сообщение..."
+            placeholderTextColor={Colors.textMuted}
+            style={s.chatInput}
+            onSubmitEditing={handleSend}
+            returnKeyType="send"
+          />
+          <Pressable onPress={handleSend} style={s.sendBtn}><Text style={s.sendText}>{'>'}</Text></Pressable>
+        </View>
       </View>
     </View>
   );
@@ -49,36 +89,11 @@ function InputBar({ typing }: { typing?: boolean }) {
 export function MessageThreadStates() {
   return (
     <>
-      <StateSection title="CHAT">
-        <View style={s.container}>
-          <ChatHeader />
-          <View style={s.messages}>
-            {MOCK_MESSAGES.map((m) => (
-              <MessageBubble key={m.id} text={m.text} fromMe={m.fromMe} time={m.time} />
-            ))}
-          </View>
-          <InputBar />
-        </View>
+      <StateSection title="INTERACTIVE_CHAT">
+        <InteractiveChat initialMessages={MOCK_MESSAGES} />
       </StateSection>
       <StateSection title="EMPTY">
-        <View style={s.container}>
-          <ChatHeader />
-          <View style={s.emptyChat}>
-            <Text style={s.emptyChatText}>Начните диалог с Алексеем Петровым</Text>
-          </View>
-          <InputBar />
-        </View>
-      </StateSection>
-      <StateSection title="TYPING_INDICATOR">
-        <View style={s.container}>
-          <ChatHeader />
-          <View style={s.messages}>
-            {MOCK_MESSAGES.slice(0, 3).map((m) => (
-              <MessageBubble key={m.id} text={m.text} fromMe={m.fromMe} time={m.time} />
-            ))}
-          </View>
-          <InputBar typing />
-        </View>
+        <InteractiveChat initialMessages={[]} />
       </StateSection>
     </>
   );
@@ -107,6 +122,8 @@ const s = StyleSheet.create({
   bubbleTextMine: { color: '#FFF' },
   bubbleTime: { fontSize: 10, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
   bubbleTimeMine: { color: 'rgba(255,255,255,0.7)' },
+  attachmentWrap: { paddingHorizontal: Spacing.md, marginTop: 4, marginBottom: Spacing.xs },
+  attachBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   inputBar: { padding: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.bgCard },
   inputRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
   chatInput: {
@@ -118,7 +135,4 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   sendText: { fontSize: Typography.fontSize.md, color: '#FFF', fontWeight: Typography.fontWeight.bold },
-  typingIndicator: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, marginBottom: Spacing.xs, fontStyle: 'italic' },
-  emptyChat: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing['3xl'] },
-  emptyChatText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
 });

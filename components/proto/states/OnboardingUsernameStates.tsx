@@ -1,9 +1,20 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
-function Screen({ value, error }: { value: string; error?: string }) {
+function Screen({ initialValue, initialError }: { initialValue?: string; initialError?: string }) {
+  const [value, setValue] = useState(initialValue || '');
+  const [error, setError] = useState(initialError || '');
+
+  const handleContinue = () => {
+    if (value.length < 3) {
+      setError('Имя должно содержать минимум 3 символа');
+    } else {
+      setError('');
+    }
+  };
+
   return (
     <View style={s.container}>
       <View style={s.progress}><View style={[s.progressBar, { width: '20%' }]} /></View>
@@ -14,16 +25,16 @@ function Screen({ value, error }: { value: string; error?: string }) {
         <Text style={s.label}>Имя пользователя</Text>
         <TextInput
           value={value}
-          editable={false}
+          onChangeText={(t) => { setValue(t); if (error) setError(''); }}
           placeholder="Например: Елена Васильева"
           placeholderTextColor={Colors.textMuted}
           style={[s.input, error ? s.inputError : null]}
         />
         {error ? <Text style={s.error}>{error}</Text> : null}
       </View>
-      <View style={s.btn}>
+      <Pressable onPress={handleContinue} style={s.btn}>
         <Text style={s.btnText}>Продолжить</Text>
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -32,10 +43,10 @@ export function OnboardingUsernameStates() {
   return (
     <>
       <StateSection title="DEFAULT">
-        <Screen value="" />
+        <Screen />
       </StateSection>
       <StateSection title="VALIDATION_ERROR">
-        <Screen value="Ел" error="Имя должно содержать минимум 3 символа" />
+        <Screen initialValue="Ел" initialError="Имя должно содержать минимум 3 символа" />
       </StateSection>
     </>
   );
