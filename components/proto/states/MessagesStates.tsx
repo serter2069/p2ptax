@@ -1,15 +1,16 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_THREADS } from '../../../constants/protoMockData';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
-function ThreadItem({ name, lastMessage, time, unread }: {
-  name: string; lastMessage: string; time: string; unread: number;
+function ThreadItem({ name, lastMessage, time, unread, selected, onPress }: {
+  name: string; lastMessage: string; time: string; unread: number; selected: boolean; onPress: () => void;
 }) {
   return (
-    <View style={s.thread}>
-      <View style={s.avatar}><Text style={s.avatarText}>{name[0]}</Text></View>
+    <Pressable onPress={onPress} style={[s.thread, selected ? s.threadSelected : null]}>
+      <ProtoPlaceholderImage type="avatar" height={44} />
       <View style={s.threadBody}>
         <View style={s.threadTop}>
           <Text style={[s.threadName, unread > 0 ? s.threadNameBold : null]}>{name}</Text>
@@ -22,6 +23,32 @@ function ThreadItem({ name, lastMessage, time, unread }: {
           )}
         </View>
       </View>
+    </Pressable>
+  );
+}
+
+function InteractiveMessages() {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  return (
+    <View style={s.container}>
+      <Text style={s.pageTitle}>Сообщения</Text>
+      {MOCK_THREADS.map((t) => (
+        <ThreadItem
+          key={t.id}
+          name={t.name}
+          lastMessage={t.lastMessage}
+          time={t.time}
+          unread={t.unread}
+          selected={selectedId === t.id}
+          onPress={() => setSelectedId(selectedId === t.id ? null : t.id)}
+        />
+      ))}
+      {selectedId && (
+        <View style={s.preview}>
+          <Text style={s.previewText}>Открыт чат с: {MOCK_THREADS.find((t) => t.id === selectedId)?.name}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -29,6 +56,9 @@ function ThreadItem({ name, lastMessage, time, unread }: {
 export function MessagesStates() {
   return (
     <>
+      <StateSection title="INTERACTIVE">
+        <InteractiveMessages />
+      </StateSection>
       <StateSection title="EMPTY">
         <View style={s.container}>
           <Text style={s.pageTitle}>Сообщения</Text>
@@ -36,14 +66,6 @@ export function MessagesStates() {
             <Text style={s.emptyTitle}>Нет сообщений</Text>
             <Text style={s.emptyText}>Сообщения появятся после принятия отклика специалиста</Text>
           </View>
-        </View>
-      </StateSection>
-      <StateSection title="THREAD_LIST">
-        <View style={s.container}>
-          <Text style={s.pageTitle}>Сообщения</Text>
-          {MOCK_THREADS.map((t) => (
-            <ThreadItem key={t.id} name={t.name} lastMessage={t.lastMessage} time={t.time} unread={t.unread} />
-          ))}
         </View>
       </StateSection>
     </>
@@ -57,6 +79,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
     paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,
   },
+  threadSelected: { backgroundColor: Colors.bgSecondary, marginHorizontal: -Spacing.lg, paddingHorizontal: Spacing.lg, borderRadius: BorderRadius.md },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
   threadBody: { flex: 1, gap: 2 },
@@ -72,6 +95,10 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
   },
   unreadText: { fontSize: 11, fontWeight: Typography.fontWeight.bold, color: '#FFF' },
+  preview: {
+    backgroundColor: Colors.bgSecondary, padding: Spacing.md, borderRadius: BorderRadius.md, marginTop: Spacing.sm,
+  },
+  previewText: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
   emptyWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.sm },
   emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },

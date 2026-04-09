@@ -1,9 +1,12 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
-function ModerationCard({ name, type, date }: { name: string; type: string; date: string }) {
+function ModerationCard({ name, type, date, onApprove, onReject, onView }: {
+  name: string; type: string; date: string;
+  onApprove: () => void; onReject: () => void; onView: () => void;
+}) {
   return (
     <View style={s.card}>
       <View style={s.cardTop}>
@@ -16,49 +19,9 @@ function ModerationCard({ name, type, date }: { name: string; type: string; date
         <View style={s.pendingBadge}><Text style={s.pendingText}>Ожидает</Text></View>
       </View>
       <View style={s.cardActions}>
-        <View style={s.btnView}><Text style={s.btnViewText}>Просмотр</Text></View>
-        <View style={s.btnApprove}><Text style={s.btnApproveText}>{'✓'}</Text></View>
-        <View style={s.btnReject}><Text style={s.btnRejectText}>{'✕'}</Text></View>
-      </View>
-    </View>
-  );
-}
-
-function ApprovePopup() {
-  return (
-    <View style={s.overlay}>
-      <View style={s.popup}>
-        <Text style={s.popupIcon}>{'✓'}</Text>
-        <Text style={s.popupTitle}>Одобрить профиль?</Text>
-        <Text style={s.popupText}>Профиль специалиста Ольга Смирнова будет опубликован и виден клиентам</Text>
-        <View style={s.popupActions}>
-          <View style={s.popupBtnApprove}><Text style={s.popupBtnText}>Одобрить</Text></View>
-          <View style={s.popupBtnCancel}><Text style={s.popupBtnCancelText}>Отмена</Text></View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function RejectPopup() {
-  return (
-    <View style={s.overlay}>
-      <View style={s.popup}>
-        <Text style={s.popupIcon}>{'✕'}</Text>
-        <Text style={s.popupTitle}>Отклонить профиль?</Text>
-        <View style={s.field}>
-          <Text style={s.fieldLabel}>Причина отклонения</Text>
-          <TextInput
-            value="Неполная информация о квалификации"
-            editable={false}
-            multiline
-            style={s.textarea}
-          />
-        </View>
-        <View style={s.popupActions}>
-          <View style={s.popupBtnReject}><Text style={s.popupBtnText}>Отклонить</Text></View>
-          <View style={s.popupBtnCancel}><Text style={s.popupBtnCancelText}>Отмена</Text></View>
-        </View>
+        <Pressable onPress={onView} style={s.btnView}><Text style={s.btnViewText}>Просмотр</Text></Pressable>
+        <Pressable onPress={onApprove} style={s.btnApprove}><Text style={s.btnApproveText}>{'✓'}</Text></Pressable>
+        <Pressable onPress={onReject} style={s.btnReject}><Text style={s.btnRejectText}>{'✕'}</Text></Pressable>
       </View>
     </View>
   );
@@ -72,35 +35,75 @@ const QUEUE_ITEMS = [
   { name: 'Анна Морозова', type: 'Обновление профиля', date: '05.04.2026' },
 ];
 
+function InteractiveModeration() {
+  const [popup, setPopup] = useState<{ type: 'approve' | 'reject'; name: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const handleConfirm = () => {
+    setPopup(null);
+    setRejectReason('');
+  };
+
+  return (
+    <View style={[s.container, popup ? { minHeight: 600 } : null]}>
+      <View style={s.header}>
+        <Text style={s.pageTitle}>Модерация</Text>
+        <View style={s.countBadge}><Text style={s.countText}>{QUEUE_ITEMS.length}</Text></View>
+      </View>
+      {QUEUE_ITEMS.map((item, i) => (
+        <ModerationCard
+          key={i}
+          name={item.name}
+          type={item.type}
+          date={item.date}
+          onView={() => {}}
+          onApprove={() => setPopup({ type: 'approve', name: item.name })}
+          onReject={() => { setPopup({ type: 'reject', name: item.name }); setRejectReason(''); }}
+        />
+      ))}
+      {popup && (
+        <View style={s.overlay}>
+          <View style={s.popup}>
+            <Text style={s.popupIcon}>{popup.type === 'approve' ? '✓' : '✕'}</Text>
+            <Text style={s.popupTitle}>{popup.type === 'approve' ? 'Одобрить профиль?' : 'Отклонить профиль?'}</Text>
+            {popup.type === 'approve' ? (
+              <Text style={s.popupText}>Профиль специалиста {popup.name} будет опубликован и виден клиентам</Text>
+            ) : (
+              <View style={s.field}>
+                <Text style={s.fieldLabel}>Причина отклонения</Text>
+                <TextInput
+                  value={rejectReason}
+                  onChangeText={setRejectReason}
+                  placeholder="Укажите причину отклонения..."
+                  placeholderTextColor={Colors.textMuted}
+                  multiline
+                  style={s.textarea}
+                />
+              </View>
+            )}
+            <View style={s.popupActions}>
+              <Pressable
+                onPress={handleConfirm}
+                style={popup.type === 'approve' ? s.popupBtnApprove : s.popupBtnReject}
+              >
+                <Text style={s.popupBtnText}>{popup.type === 'approve' ? 'Одобрить' : 'Отклонить'}</Text>
+              </Pressable>
+              <Pressable onPress={() => setPopup(null)} style={s.popupBtnCancel}>
+                <Text style={s.popupBtnCancelText}>Отмена</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export function AdminModerationStates() {
   return (
-    <>
-      <StateSection title="QUEUE" maxWidth={800}>
-        <View style={s.container}>
-          <View style={s.header}>
-            <Text style={s.pageTitle}>Модерация</Text>
-            <View style={s.countBadge}><Text style={s.countText}>{QUEUE_ITEMS.length}</Text></View>
-          </View>
-          {QUEUE_ITEMS.map((item, i) => (
-            <ModerationCard key={i} name={item.name} type={item.type} date={item.date} />
-          ))}
-        </View>
-      </StateSection>
-      <StateSection title="APPROVE_POPUP" maxWidth={800}>
-        <View style={[s.container, { minHeight: 400 }]}>
-          <Text style={s.pageTitle}>Модерация</Text>
-          <ModerationCard name="Ольга Смирнова" type="Верификация специалиста" date="08.04.2026" />
-          <ApprovePopup />
-        </View>
-      </StateSection>
-      <StateSection title="REJECT_POPUP" maxWidth={800}>
-        <View style={[s.container, { minHeight: 400 }]}>
-          <Text style={s.pageTitle}>Модерация</Text>
-          <ModerationCard name="Ольга Смирнова" type="Верификация специалиста" date="08.04.2026" />
-          <RejectPopup />
-        </View>
-      </StateSection>
-    </>
+    <StateSection title="INTERACTIVE" maxWidth={800}>
+      <InteractiveModeration />
+    </StateSection>
   );
 }
 

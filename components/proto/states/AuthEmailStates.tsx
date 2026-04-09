@@ -1,9 +1,23 @@
-import React from 'react';
-import { View, Text, TextInput, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
-function AuthScreen({ email, error, loading }: { email: string; error?: string; loading?: boolean }) {
+function AuthScreen({ initialEmail, initialError, initialLoading }: { initialEmail: string; initialError?: string; initialLoading?: boolean }) {
+  const [email, setEmail] = useState(initialEmail);
+  const [error, setError] = useState(initialError || '');
+  const [loading, setLoading] = useState(!!initialLoading);
+
+  const handleSubmit = () => {
+    if (!email || !email.includes('@')) {
+      setError('Введите корректный email адрес');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    setTimeout(() => setLoading(false), 1500);
+  };
+
   return (
     <View style={s.container}>
       <View style={s.logoWrap}>
@@ -14,19 +28,21 @@ function AuthScreen({ email, error, loading }: { email: string; error?: string; 
         <Text style={s.label}>Email</Text>
         <TextInput
           value={email}
-          editable={false}
+          onChangeText={(t) => { setEmail(t); if (error) setError(''); }}
           placeholder="your@email.com"
           placeholderTextColor={Colors.textMuted}
           style={[s.input, error ? s.inputError : null]}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
         {error ? <Text style={s.error}>{error}</Text> : null}
-        <View style={[s.btn, loading ? s.btnDisabled : null]}>
+        <Pressable onPress={handleSubmit} disabled={loading} style={[s.btn, loading ? s.btnDisabled : null]}>
           {loading ? (
             <ActivityIndicator size="small" color="#FFF" />
           ) : (
             <Text style={s.btnText}>Получить код</Text>
           )}
-        </View>
+        </Pressable>
       </View>
       <Text style={s.footer}>Нажимая кнопку, вы соглашаетесь с условиями использования</Text>
     </View>
@@ -37,13 +53,13 @@ export function AuthEmailStates() {
   return (
     <>
       <StateSection title="DEFAULT">
-        <AuthScreen email="" />
+        <AuthScreen initialEmail="" />
       </StateSection>
       <StateSection title="ERROR">
-        <AuthScreen email="invalid-email" error="Введите корректный email адрес" />
+        <AuthScreen initialEmail="invalid-email" initialError="Введите корректный email адрес" />
       </StateSection>
       <StateSection title="LOADING">
-        <AuthScreen email="elena@mail.ru" loading />
+        <AuthScreen initialEmail="elena@mail.ru" initialLoading />
       </StateSection>
     </>
   );

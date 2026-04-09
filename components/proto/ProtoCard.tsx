@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import type { ProtoPage } from '../../constants/protoRegistry';
@@ -16,33 +16,80 @@ const GROUP_COLORS: Record<string, string> = {
   Admin: '#DC2626',
 };
 
+// File path mapping for copy-to-clipboard
+function getFilePath(page: ProtoPage): string {
+  const stateFile = page.id
+    .split('-')
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join('');
+  return `components/proto/states/${stateFile}States.tsx`;
+}
+
+function buildCopyText(page: ProtoPage): string {
+  return [
+    `Page: ${page.title}`,
+    `Route: ${page.route}`,
+    `Proto showcase: /proto/states/${page.id}`,
+    `File: ${getFilePath(page)}`,
+    `States: ${page.stateCount}`,
+    `Group: ${page.group}`,
+    `Project: /Users/sergei/Documents/Projects/Ruslan/p2ptax`,
+  ].join('\n');
+}
+
 export function ProtoCard({ page }: ProtoCardProps) {
   const [hovered, setHovered] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const groupColor = GROUP_COLORS[page.group] || Colors.brandPrimary;
 
-  const handlePress = () => {
+  const handleOpenNewTab = () => {
     if (Platform.OS === 'web') {
       window.open(`/proto/states/${page.id}`, '_blank');
     }
   };
+
+  const handleTogglePreview = () => {
+    setExpanded((v) => !v);
+  };
+
+  const handleCopy = useCallback(() => {
+    if (Platform.OS === 'web') {
+      navigator.clipboard.writeText(buildCopyText(page)).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      });
+    }
+  }, [page]);
 
   const webProps = Platform.OS === 'web'
     ? { onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) }
     : {};
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      activeOpacity={0.7}
-      style={[
-        styles.card,
-        hovered && styles.cardHovered,
-      ]}
+    <View
+      style={[styles.card, hovered && styles.cardHovered]}
       {...(webProps as any)}
     >
       <View style={[styles.accent, { backgroundColor: groupColor }]} />
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={2}>{page.title}</Text>
+        {/* Header row: title + action buttons */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={handleOpenNewTab} activeOpacity={0.7} style={styles.titleWrap}>
+            <Text style={styles.title} numberOfLines={2}>{page.title}</Text>
+            <Text style={styles.openIcon}>&#8599;</Text>
+          </TouchableOpacity>
+          <View style={styles.actions}>
+            <TouchableOpacity onPress={handleCopy} activeOpacity={0.7} style={styles.actionBtn}>
+              <Text style={styles.actionIcon}>{copied ? '\u2713' : '\u2398'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleTogglePreview} activeOpacity={0.7} style={styles.actionBtn}>
+              <Text style={styles.actionIcon}>{expanded ? '\u25B2' : '\u25BC'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Route + meta */}
         <Text style={styles.route} numberOfLines={1}>{page.route}</Text>
         <View style={styles.footer}>
           <View style={styles.stateBadge}>
@@ -51,9 +98,27 @@ export function ProtoCard({ page }: ProtoCardProps) {
               {page.stateCount === 1 ? 'состояние' : page.stateCount < 5 ? 'состояния' : 'состояний'}
             </Text>
           </View>
+          <Text style={styles.filePath}>{getFilePath(page)}</Text>
         </View>
+
+        {/* Iframe preview */}
+        {expanded && Platform.OS === 'web' && (
+          <View style={styles.previewWrap}>
+            <iframe
+              src={`/proto/states/${page.id}`}
+              style={{
+                width: '100%',
+                height: 480,
+                border: `1px solid ${Colors.border}`,
+                borderRadius: BorderRadius.md,
+                backgroundColor: '#fff',
+              }}
+              title={page.title}
+            />
+          </View>
+        )}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -79,10 +144,41 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     gap: Spacing.xs,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  titleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
   title: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
+  },
+  openIcon: {
+    fontSize: 14,
+    color: Colors.textMuted,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  actionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.bgSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionIcon: {
+    fontSize: 14,
+    color: Colors.textMuted,
   },
   route: {
     fontSize: Typography.fontSize.xs,
@@ -93,6 +189,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: Spacing.sm,
+    gap: Spacing.sm,
   },
   stateBadge: {
     flexDirection: 'row',
@@ -111,5 +208,14 @@ const styles = StyleSheet.create({
   stateLabel: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
+  },
+  filePath: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
+    opacity: 0.6,
+  },
+  previewWrap: {
+    marginTop: Spacing.md,
   },
 });

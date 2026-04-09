@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REVIEWS } from '../../../constants/protoMockData';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function ReviewItem({ author, rating, text, date }: { author: string; rating: number; text: string; date: string }) {
   const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
@@ -36,7 +37,7 @@ function ProfileScreen({ showReviewsPopup }: { showReviewsPopup?: boolean }) {
       )}
       <View style={s.profileCard}>
         <View style={s.profileTop}>
-          <View style={s.avatar}><Text style={s.avatarText}>АП</Text></View>
+          <ProtoPlaceholderImage type="avatar" height={80} iconSize={32} />
           <View style={s.profileInfo}>
             <Text style={s.name}>Алексей Петров</Text>
             <Text style={s.city}>Санкт-Петербург</Text>
@@ -92,6 +93,15 @@ function ProfileScreen({ showReviewsPopup }: { showReviewsPopup?: boolean }) {
         {MOCK_REVIEWS.slice(0, 2).map((r) => (
           <ReviewItem key={r.id} author={r.author} rating={r.rating} text={r.text} date={r.date} />
         ))}
+      </View>
+
+      <View style={s.section}>
+        <Text style={s.sectionTitle}>Документы и сертификаты</Text>
+        <View style={s.docsRow}>
+          <ProtoPlaceholderImage type="document" width={100} height={80} label="Диплом" borderRadius={6} />
+          <ProtoPlaceholderImage type="document" width={100} height={80} label="Сертификат" borderRadius={6} />
+          <ProtoPlaceholderImage type="document" width={100} height={80} label="Лицензия" borderRadius={6} />
+        </View>
       </View>
 
       <View style={s.contactBtn}><Text style={s.contactBtnText}>Связаться</Text></View>
@@ -157,6 +167,7 @@ const s = StyleSheet.create({
   reviewDate: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   reviewStars: { fontSize: 12, color: Colors.brandPrimary },
   reviewText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
+  docsRow: { flexDirection: 'row', gap: Spacing.sm },
   contactBtn: {
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',

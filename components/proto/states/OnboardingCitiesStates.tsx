@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { MOCK_CITIES } from '../../../constants/protoMockData';
 
 function ProgressBar() {
   return (
@@ -9,26 +10,33 @@ function ProgressBar() {
   );
 }
 
-function CityChip({ name, removable }: { name: string; removable?: boolean }) {
+function CityChip({ name, onRemove }: { name: string; onRemove: () => void }) {
   return (
     <View style={s.chip}>
       <Text style={s.chipText}>{name}</Text>
-      {removable && <Text style={s.chipRemove}>x</Text>}
+      <Pressable onPress={onRemove}><Text style={s.chipRemove}>x</Text></Pressable>
     </View>
   );
 }
 
-function SearchResult({ name }: { name: string }) {
-  return (
-    <TouchableOpacity style={s.searchItem}>
-      <Text style={s.searchText}>{name}</Text>
-      <Text style={s.searchAdd}>+</Text>
-    </TouchableOpacity>
-  );
-}
+function Screen({ initialSearch, initialSelected }: { initialSearch?: string; initialSelected?: string[] }) {
+  const [search, setSearch] = useState(initialSearch || '');
+  const [selectedCities, setSelectedCities] = useState<string[]>(initialSelected || []);
 
-function Screen({ search, selectedCities, showResults }: { search: string; selectedCities: string[]; showResults?: boolean }) {
-  const results = ['Москва', 'Московская область', 'Мытищи'];
+  const filteredCities = search.length > 0
+    ? MOCK_CITIES.filter((c) => c.toLowerCase().includes(search.toLowerCase()))
+    : [];
+
+  const toggleCity = (city: string) => {
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
+    );
+  };
+
+  const removeCity = (city: string) => {
+    setSelectedCities((prev) => prev.filter((c) => c !== city));
+  };
+
   return (
     <View style={s.container}>
       <ProgressBar />
@@ -37,19 +45,26 @@ function Screen({ search, selectedCities, showResults }: { search: string; selec
       <Text style={s.subtitle}>Выберите города, где вы можете оказывать услуги</Text>
       {selectedCities.length > 0 && (
         <View style={s.chipRow}>
-          {selectedCities.map((c) => <CityChip key={c} name={c} removable />)}
+          {selectedCities.map((c) => <CityChip key={c} name={c} onRemove={() => removeCity(c)} />)}
         </View>
       )}
       <TextInput
         value={search}
-        editable={false}
+        onChangeText={setSearch}
         placeholder="Введите название города..."
         placeholderTextColor={Colors.textMuted}
         style={s.input}
       />
-      {showResults && (
+      {filteredCities.length > 0 && (
         <View style={s.results}>
-          {results.map((r) => <SearchResult key={r} name={r} />)}
+          {filteredCities.map((city) => (
+            <Pressable key={city} style={s.searchItem} onPress={() => { toggleCity(city); setSearch(''); }}>
+              <Text style={s.searchText}>
+                {selectedCities.includes(city) ? '✓ ' : ''}{city}
+              </Text>
+              {!selectedCities.includes(city) && <Text style={s.searchAdd}>+</Text>}
+            </Pressable>
+          ))}
         </View>
       )}
       <View style={[s.btn, selectedCities.length === 0 ? s.btnDisabled : null]}>
@@ -62,14 +77,11 @@ function Screen({ search, selectedCities, showResults }: { search: string; selec
 export function OnboardingCitiesStates() {
   return (
     <>
-      <StateSection title="EMPTY">
-        <Screen search="" selectedCities={[]} />
+      <StateSection title="INTERACTIVE">
+        <Screen />
       </StateSection>
-      <StateSection title="SEARCH">
-        <Screen search="Мос" selectedCities={[]} showResults />
-      </StateSection>
-      <StateSection title="SELECTED">
-        <Screen search="" selectedCities={['Москва', 'Санкт-Петербург', 'Казань']} />
+      <StateSection title="PRESELECTED">
+        <Screen initialSelected={['Москва', 'Санкт-Петербург', 'Казань']} />
       </StateSection>
     </>
   );

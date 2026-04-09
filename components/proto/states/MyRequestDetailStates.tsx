@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_RESPONSES } from '../../../constants/protoMockData';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function ResponseCard({ name, city, rating, reviews, price, message }: {
   name: string; city: string; rating: number; reviews: number; price: string; message: string;
@@ -11,7 +12,7 @@ function ResponseCard({ name, city, rating, reviews, price, message }: {
   return (
     <View style={s.respCard}>
       <View style={s.respHeader}>
-        <View style={s.respAvatar}><Text style={s.respAvatarText}>{name[0]}</Text></View>
+        <ProtoPlaceholderImage type="avatar" height={40} />
         <View style={s.respInfo}>
           <Text style={s.respName}>{name}</Text>
           <Text style={s.respCity}>{city}</Text>
@@ -51,6 +52,11 @@ function DetailScreen({ mode }: { mode: 'responses' | 'no_responses' | 'closed' 
           <View style={s.metaItem}><Text style={s.metaLabel}>Услуга</Text><Text style={s.metaValue}>Декларация 3-НДФЛ</Text></View>
           <View style={s.metaItem}><Text style={s.metaLabel}>Бюджет</Text><Text style={s.metaValue}>3 000 — 5 000 ₽</Text></View>
           <View style={s.metaItem}><Text style={s.metaLabel}>Дата</Text><Text style={s.metaValue}>08.04.2026</Text></View>
+        </View>
+        <Text style={s.attachLabel}>Прикрепленные документы</Text>
+        <View style={s.attachRow}>
+          <ProtoPlaceholderImage type="document" width={80} height={64} label="Справка" borderRadius={6} />
+          <ProtoPlaceholderImage type="photo" width={80} height={64} label="Фото" borderRadius={6} />
         </View>
       </View>
 
@@ -111,6 +117,8 @@ const s = StyleSheet.create({
   metaItem: { flexDirection: 'row', justifyContent: 'space-between' },
   metaLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   metaValue: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
+  attachLabel: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  attachRow: { flexDirection: 'row', gap: Spacing.sm },
   sectionTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   respCard: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,

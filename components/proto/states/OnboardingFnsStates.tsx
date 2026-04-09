@@ -1,52 +1,124 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
-function Screen({ inn, status }: { inn: string; status: 'default' | 'verified' | 'error' }) {
+const SERVICES_LIST = [
+  'Выездная проверка',
+  'Отдел оперативного контроля',
+  'Камеральная проверка',
+];
+
+const CITIES_DATA: Record<string, string[]> = {
+  'Москва': ['ФНС №5', 'ФНС №12', 'ФНС №46'],
+  'Санкт-Петербург': ['ФНС №3', 'ФНС №15', 'ФНС №28'],
+};
+
+const CITY_NAMES = Object.keys(CITIES_DATA);
+
+type FnsServices = Record<string, string[]>; // "Москва:ФНС №5" -> ["Выездная проверка", ...]
+
+function Screen() {
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedFns, setSelectedFns] = useState<Set<string>>(new Set());
+  const [fnsServices, setFnsServices] = useState<FnsServices>({});
+
+  const fnsKey = (city: string, fns: string) => `${city}:${fns}`;
+
+  const toggleFns = (city: string, fns: string) => {
+    const key = fnsKey(city, fns);
+    setSelectedFns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+        setFnsServices((prev) => {
+          const copy = { ...prev };
+          delete copy[key];
+          return copy;
+        });
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const toggleService = (key: string, service: string) => {
+    setFnsServices((prev) => {
+      const current = prev[key] || [];
+      const updated = current.includes(service)
+        ? current.filter((s) => s !== service)
+        : [...current, service];
+      return { ...prev, [key]: updated };
+    });
+  };
+
+  const totalSelected = selectedFns.size;
+
   return (
     <View style={s.container}>
       <View style={s.progress}><View style={[s.progressBar, { width: '80%' }]} /></View>
       <Text style={s.step}>Шаг 4 из 5</Text>
       <Text style={s.title}>Привязка к ФНС</Text>
-      <Text style={s.subtitle}>Введите ИНН для верификации в системе</Text>
-      <View style={s.form}>
-        <Text style={s.label}>ИНН</Text>
-        <View style={s.inputRow}>
-          <TextInput
-            value={inn}
-            editable={false}
-            placeholder="123456789012"
-            placeholderTextColor={Colors.textMuted}
-            style={[
-              s.input,
-              status === 'verified' ? s.inputSuccess : null,
-              status === 'error' ? s.inputError : null,
-            ]}
-          />
-          {status === 'verified' && (
-            <View style={s.statusIcon}>
-              <Text style={s.checkIcon}>{'✓'}</Text>
-            </View>
-          )}
+      <Text style={s.subtitle}>Выберите города и налоговые инспекции, с которыми вы работаете</Text>
+
+      <View style={s.cityChips}>
+        {CITY_NAMES.map((city) => (
+          <Pressable
+            key={city}
+            onPress={() => setSelectedCity(selectedCity === city ? null : city)}
+            style={[s.cityChip, selectedCity === city ? s.cityChipActive : null]}
+          >
+            <Text style={[s.cityChipText, selectedCity === city ? s.cityChipTextActive : null]}>{city}</Text>
+            <Feather
+              name={selectedCity === city ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={selectedCity === city ? Colors.brandPrimary : Colors.textMuted}
+            />
+          </Pressable>
+        ))}
+      </View>
+
+      {selectedCity && (
+        <View style={s.fnsList}>
+          <Text style={s.fnsHeader}>Инспекции - {selectedCity}</Text>
+          {CITIES_DATA[selectedCity].map((fns) => {
+            const key = fnsKey(selectedCity, fns);
+            const isSelected = selectedFns.has(key);
+            const services = fnsServices[key] || [];
+            return (
+              <View key={fns} style={s.fnsBlock}>
+                <Pressable onPress={() => toggleFns(selectedCity, fns)} style={s.fnsRow}>
+                  <View style={[s.checkbox, isSelected ? s.checkboxSelected : null]}>
+                    {isSelected && <Feather name="check" size={14} color="#FFF" />}
+                  </View>
+                  <Text style={[s.fnsName, isSelected ? s.fnsNameSelected : null]}>{fns}</Text>
+                </Pressable>
+                {isSelected && (
+                  <View style={s.servicesList}>
+                    {SERVICES_LIST.map((svc) => {
+                      const active = services.includes(svc);
+                      return (
+                        <Pressable key={svc} onPress={() => toggleService(key, svc)} style={s.serviceRow}>
+                          <View style={[s.serviceCheck, active ? s.serviceCheckActive : null]}>
+                            {active && <Feather name="check" size={12} color="#FFF" />}
+                          </View>
+                          <Text style={[s.serviceText, active ? s.serviceTextActive : null]}>{svc}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
-        {status === 'verified' && (
-          <View style={s.verifiedBox}>
-            <Text style={s.verifiedIcon}>{'✓'}</Text>
-            <View style={s.verifiedInfo}>
-              <Text style={s.verifiedName}>ИП Петров Алексей Сергеевич</Text>
-              <Text style={s.verifiedDetails}>ИФНС №46 по г. Москве | УСН 6%</Text>
-            </View>
-          </View>
-        )}
-        {status === 'error' && (
-          <Text style={s.error}>ИНН не найден в реестре ФНС. Проверьте правильность ввода.</Text>
-        )}
+      )}
+
+      <View style={[s.btn, totalSelected === 0 ? s.btnDisabled : null]}>
+        <Text style={s.btnText}>Продолжить {totalSelected > 0 ? `(${totalSelected})` : ''}</Text>
       </View>
-      <View style={[s.btn, status !== 'verified' ? s.btnDisabled : null]}>
-        <Text style={s.btnText}>Продолжить</Text>
-      </View>
-      <Text style={s.skip}>Пропустить этот шаг</Text>
     </View>
   );
 }
@@ -55,13 +127,7 @@ export function OnboardingFnsStates() {
   return (
     <>
       <StateSection title="DEFAULT">
-        <Screen inn="" status="default" />
-      </StateSection>
-      <StateSection title="VERIFIED">
-        <Screen inn="771234567890" status="verified" />
-      </StateSection>
-      <StateSection title="ERROR">
-        <Screen inn="000000000000" status="error" />
+        <Screen />
       </StateSection>
     </>
   );
@@ -74,31 +140,49 @@ const s = StyleSheet.create({
   step: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   title: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   subtitle: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-  form: { gap: Spacing.sm },
-  label: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },
-  inputRow: { position: 'relative' },
-  input: {
-    height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.md, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary,
+  cityChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  cityChip: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.full,
+    backgroundColor: Colors.bgCard,
   },
-  inputSuccess: { borderColor: Colors.statusSuccess },
-  inputError: { borderColor: Colors.statusError },
-  statusIcon: { position: 'absolute', right: 14, top: 12 },
-  checkIcon: { fontSize: 20, color: Colors.statusSuccess },
-  verifiedBox: {
+  cityChipActive: { borderColor: Colors.brandPrimary, backgroundColor: '#EBF3FB' },
+  cityChipText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
+  cityChipTextActive: { fontWeight: Typography.fontWeight.semibold, color: Colors.brandPrimary },
+  fnsList: { gap: Spacing.sm },
+  fnsHeader: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },
+  fnsBlock: {
+    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.md,
+    backgroundColor: Colors.bgCard, overflow: 'hidden',
+  },
+  fnsRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    backgroundColor: '#e6f4ed', padding: Spacing.md, borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
   },
-  verifiedIcon: { fontSize: 20, color: Colors.statusSuccess },
-  verifiedInfo: { flex: 1, gap: 2 },
-  verifiedName: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  verifiedDetails: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  error: { fontSize: Typography.fontSize.xs, color: Colors.statusError },
+  checkbox: {
+    width: 22, height: 22, borderWidth: 1.5, borderColor: Colors.border,
+    borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center',
+  },
+  checkboxSelected: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
+  fnsName: { fontSize: Typography.fontSize.base, color: Colors.textPrimary },
+  fnsNameSelected: { fontWeight: Typography.fontWeight.medium, color: Colors.brandPrimary },
+  servicesList: {
+    paddingLeft: Spacing['2xl'] + Spacing.md, paddingBottom: Spacing.md,
+    gap: Spacing.xs,
+  },
+  serviceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  serviceCheck: {
+    width: 18, height: 18, borderWidth: 1.5, borderColor: Colors.border,
+    borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center',
+  },
+  serviceCheckActive: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
+  serviceText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
+  serviceTextActive: { fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
   btn: {
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
   btnDisabled: { opacity: 0.45 },
   btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
-  skip: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, textAlign: 'center' },
 });

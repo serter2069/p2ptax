@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REQUESTS } from '../../../constants/protoMockData';
@@ -37,33 +37,59 @@ function RequestCard({ title, service, city, status, date, responses }: {
   );
 }
 
+function InteractiveList() {
+  const [tab, setTab] = useState<'active' | 'completed'>('active');
+  const activeRequests = MOCK_REQUESTS.filter((r) => ['NEW', 'ACTIVE', 'IN_PROGRESS'].includes(r.status));
+  const completedRequests = MOCK_REQUESTS.filter((r) => ['COMPLETED', 'CANCELLED'].includes(r.status));
+  const visibleRequests = tab === 'active' ? activeRequests : completedRequests;
+
+  return (
+    <View style={s.container}>
+      <View style={s.topBar}>
+        <Text style={s.pageTitle}>Мои заявки</Text>
+        <Pressable style={s.addBtn}><Text style={s.addBtnText}>+ Новая</Text></Pressable>
+      </View>
+      <View style={s.tabs}>
+        <Pressable onPress={() => setTab('active')} style={[s.tab, tab === 'active' ? s.tabActive : null]}>
+          <Text style={[s.tabText, tab === 'active' ? s.tabTextActive : null]}>Активные ({activeRequests.length})</Text>
+        </Pressable>
+        <Pressable onPress={() => setTab('completed')} style={[s.tab, tab === 'completed' ? s.tabActive : null]}>
+          <Text style={[s.tabText, tab === 'completed' ? s.tabTextActive : null]}>Завершённые ({completedRequests.length})</Text>
+        </Pressable>
+      </View>
+      {visibleRequests.length === 0 ? (
+        <View style={s.emptyWrap}>
+          <Text style={s.emptyTitle}>Нет заявок</Text>
+          <Text style={s.emptyText}>В этой категории пока нет заявок</Text>
+        </View>
+      ) : (
+        visibleRequests.map((r) => (
+          <RequestCard
+            key={r.id} title={r.title} service={r.service}
+            city={r.city} status={r.status} date={r.createdAt} responses={r.responseCount}
+          />
+        ))
+      )}
+    </View>
+  );
+}
+
 export function MyRequestsStates() {
   return (
     <>
+      <StateSection title="INTERACTIVE_TABS">
+        <InteractiveList />
+      </StateSection>
       <StateSection title="EMPTY">
         <View style={s.container}>
           <View style={s.topBar}>
             <Text style={s.pageTitle}>Мои заявки</Text>
-            <View style={s.addBtn}><Text style={s.addBtnText}>+ Новая</Text></View>
+            <Pressable style={s.addBtn}><Text style={s.addBtnText}>+ Новая</Text></Pressable>
           </View>
           <View style={s.emptyWrap}>
             <Text style={s.emptyTitle}>Нет заявок</Text>
             <Text style={s.emptyText}>Создайте заявку, чтобы получить предложения от специалистов</Text>
           </View>
-        </View>
-      </StateSection>
-      <StateSection title="LIST">
-        <View style={s.container}>
-          <View style={s.topBar}>
-            <Text style={s.pageTitle}>Мои заявки</Text>
-            <View style={s.addBtn}><Text style={s.addBtnText}>+ Новая</Text></View>
-          </View>
-          {MOCK_REQUESTS.map((r) => (
-            <RequestCard
-              key={r.id} title={r.title} service={r.service}
-              city={r.city} status={r.status} date={r.createdAt} responses={r.responseCount}
-            />
-          ))}
         </View>
       </StateSection>
       <StateSection title="LOADING">
@@ -89,6 +115,14 @@ const s = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   addBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  tabs: { flexDirection: 'row', gap: Spacing.sm },
+  tab: {
+    flex: 1, height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.bgCard,
+  },
+  tabActive: { borderColor: Colors.brandPrimary, backgroundColor: Colors.brandPrimary },
+  tabText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, fontWeight: Typography.fontWeight.medium },
+  tabTextActive: { color: '#FFF', fontWeight: Typography.fontWeight.semibold },
   card: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
     borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,

@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
@@ -12,9 +14,9 @@ function StatCard({ label, value, color }: { label: string; value: string; color
   );
 }
 
-function RequestRow({ title, status, date, statusColor }: { title: string; status: string; date: string; statusColor: string }) {
+function RequestRow({ title, status, date, statusColor, onPress }: { title: string; status: string; date: string; statusColor: string; onPress?: () => void }) {
   return (
-    <View style={s.row}>
+    <Pressable onPress={onPress} style={s.row}>
       <View style={s.rowLeft}>
         <Text style={s.rowTitle} numberOfLines={1}>{title}</Text>
         <Text style={s.rowDate}>{date}</Text>
@@ -22,7 +24,7 @@ function RequestRow({ title, status, date, statusColor }: { title: string; statu
       <View style={[s.badge, { backgroundColor: statusColor + '20' }]}>
         <Text style={[s.badgeText, { color: statusColor }]}>{status}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -34,10 +36,10 @@ function EmptyDashboard() {
         <Text style={s.subGreeting}>Добро пожаловать в Налоговик</Text>
       </View>
       <View style={s.emptyBlock}>
-        <Text style={s.emptyIcon}>{'📋'}</Text>
+        <Feather name="file-text" size={48} color={Colors.textMuted} />
         <Text style={s.emptyTitle}>Пока нет заявок</Text>
         <Text style={s.emptyText}>Создайте первую заявку, чтобы найти налогового специалиста</Text>
-        <View style={s.btn}><Text style={s.btnText}>Создать заявку</Text></View>
+        <Pressable style={s.btn}><Text style={s.btnText}>Создать заявку</Text></Pressable>
       </View>
     </View>
   );
@@ -49,6 +51,7 @@ function WithDataDashboard() {
       <View style={s.header}>
         <Text style={s.greeting}>Добрый день, Елена!</Text>
       </View>
+      <ProtoPlaceholderImage type="banner" height={100} label="Promo banner" borderRadius={10} />
       <View style={s.statsRow}>
         <StatCard label="Активные" value="3" color={Colors.brandPrimary} />
         <StatCard label="Отклики" value="8" color={Colors.statusSuccess} />

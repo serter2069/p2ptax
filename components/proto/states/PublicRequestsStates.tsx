@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
-import { MOCK_REQUESTS } from '../../../constants/protoMockData';
+import { MOCK_REQUESTS, MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
 
 function RequestFeedCard({ title, description, city, service, budget, date }: {
   title: string; description: string; city: string; service: string; budget: string; date: string;
@@ -23,65 +23,107 @@ function RequestFeedCard({ title, description, city, service, budget, date }: {
   );
 }
 
-function FilterPanel() {
+function InteractiveRequests() {
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterCity, setFilterCity] = useState('');
+  const [filterService, setFilterService] = useState('');
+  const [filterBudget, setFilterBudget] = useState('');
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [showServicePicker, setShowServicePicker] = useState(false);
+
+  const requests = MOCK_REQUESTS.filter((r) => {
+    if (r.status === 'CANCELLED') return false;
+    if (filterCity && r.city !== filterCity) return false;
+    if (filterService && r.service !== filterService) return false;
+    return true;
+  });
+
   return (
-    <View style={s.filterPanel}>
-      <Text style={s.filterTitle}>Фильтры</Text>
-      <View style={s.filterGroup}>
-        <Text style={s.filterLabel}>Город</Text>
-        <View style={s.filterSelect}><Text style={s.filterSelectText}>Все города</Text></View>
+    <View style={s.container}>
+      <View style={s.topBar}>
+        <Text style={s.pageTitle}>Заявки</Text>
+        <Pressable onPress={() => setShowFilters(!showFilters)} style={s.filterToggle}>
+          <Text style={s.filterToggleText}>{showFilters ? 'Скрыть' : 'Фильтры'}</Text>
+        </Pressable>
       </View>
-      <View style={s.filterGroup}>
-        <Text style={s.filterLabel}>Услуга</Text>
-        <View style={s.filterSelect}><Text style={s.filterSelectText}>Все услуги</Text></View>
-      </View>
-      <View style={s.filterGroup}>
-        <Text style={s.filterLabel}>Бюджет до</Text>
-        <TextInput value="" editable={false} placeholder="Макс. сумма" placeholderTextColor={Colors.textMuted} style={s.filterInput} />
-      </View>
-      <View style={s.filterBtn}><Text style={s.filterBtnText}>Применить</Text></View>
+      {showFilters && (
+        <View style={s.filterPanel}>
+          <Text style={s.filterTitle}>Фильтры</Text>
+          <View style={s.filterGroup}>
+            <Text style={s.filterLabel}>Город</Text>
+            <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowServicePicker(false); }}>
+              <View style={s.filterSelect}>
+                <Text style={s.filterSelectText}>{filterCity || 'Все города'}</Text>
+              </View>
+            </Pressable>
+            {showCityPicker && (
+              <View style={s.pickerList}>
+                <Pressable onPress={() => { setFilterCity(''); setShowCityPicker(false); }} style={s.pickerItem}>
+                  <Text style={s.pickerText}>Все города</Text>
+                </Pressable>
+                {MOCK_CITIES.map((c) => (
+                  <Pressable key={c} onPress={() => { setFilterCity(c); setShowCityPicker(false); }} style={s.pickerItem}>
+                    <Text style={[s.pickerText, filterCity === c ? s.pickerTextActive : null]}>{c}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+          <View style={s.filterGroup}>
+            <Text style={s.filterLabel}>Услуга</Text>
+            <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); }}>
+              <View style={s.filterSelect}>
+                <Text style={s.filterSelectText}>{filterService || 'Все услуги'}</Text>
+              </View>
+            </Pressable>
+            {showServicePicker && (
+              <View style={s.pickerList}>
+                <Pressable onPress={() => { setFilterService(''); setShowServicePicker(false); }} style={s.pickerItem}>
+                  <Text style={s.pickerText}>Все услуги</Text>
+                </Pressable>
+                {MOCK_SERVICES.map((svc) => (
+                  <Pressable key={svc.id} onPress={() => { setFilterService(svc.name); setShowServicePicker(false); }} style={s.pickerItem}>
+                    <Text style={[s.pickerText, filterService === svc.name ? s.pickerTextActive : null]}>{svc.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+          <View style={s.filterGroup}>
+            <Text style={s.filterLabel}>Бюджет до</Text>
+            <TextInput
+              value={filterBudget}
+              onChangeText={setFilterBudget}
+              placeholder="Макс. сумма"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="number-pad"
+              style={s.filterInput}
+            />
+          </View>
+          <Pressable onPress={() => { setFilterCity(''); setFilterService(''); setFilterBudget(''); }} style={s.filterResetBtn}>
+            <Text style={s.filterResetText}>Сбросить фильтры</Text>
+          </Pressable>
+        </View>
+      )}
+      {requests.length === 0 ? (
+        <View style={s.emptyWrap}>
+          <Text style={s.emptyTitle}>Нет заявок по вашим фильтрам</Text>
+          <Text style={s.emptyText}>Попробуйте изменить параметры поиска</Text>
+        </View>
+      ) : (
+        requests.map((r) => (
+          <RequestFeedCard key={r.id} title={r.title} description={r.description} city={r.city} service={r.service} budget={r.budget} date={r.createdAt} />
+        ))
+      )}
     </View>
   );
 }
 
 export function PublicRequestsStates() {
   return (
-    <>
-      <StateSection title="FEED">
-        <View style={s.container}>
-          <View style={s.topBar}>
-            <Text style={s.pageTitle}>Заявки</Text>
-            <View style={s.filterToggle}><Text style={s.filterToggleText}>Фильтры</Text></View>
-          </View>
-          {MOCK_REQUESTS.filter(r => r.status !== 'CANCELLED').map((r) => (
-            <RequestFeedCard key={r.id} title={r.title} description={r.description} city={r.city} service={r.service} budget={r.budget} date={r.createdAt} />
-          ))}
-        </View>
-      </StateSection>
-      <StateSection title="FILTERS_OPEN">
-        <View style={s.container}>
-          <View style={s.topBar}>
-            <Text style={s.pageTitle}>Заявки</Text>
-          </View>
-          <FilterPanel />
-          {MOCK_REQUESTS.slice(0, 2).map((r) => (
-            <RequestFeedCard key={r.id} title={r.title} description={r.description} city={r.city} service={r.service} budget={r.budget} date={r.createdAt} />
-          ))}
-        </View>
-      </StateSection>
-      <StateSection title="EMPTY">
-        <View style={s.container}>
-          <View style={s.topBar}>
-            <Text style={s.pageTitle}>Заявки</Text>
-            <View style={s.filterToggle}><Text style={s.filterToggleText}>Фильтры</Text></View>
-          </View>
-          <View style={s.emptyWrap}>
-            <Text style={s.emptyTitle}>Нет заявок по вашим фильтрам</Text>
-            <Text style={s.emptyText}>Попробуйте изменить параметры поиска</Text>
-          </View>
-        </View>
-      </StateSection>
-    </>
+    <StateSection title="INTERACTIVE">
+      <InteractiveRequests />
+    </StateSection>
   );
 }
 
@@ -122,11 +164,21 @@ const s = StyleSheet.create({
     height: 40, backgroundColor: Colors.bgPrimary, borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md, fontSize: Typography.fontSize.sm, color: Colors.textPrimary,
   },
-  filterBtn: {
-    height: 40, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
-    alignItems: 'center', justifyContent: 'center',
+  filterResetBtn: {
+    height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.border,
   },
-  filterBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  filterResetText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  pickerList: {
+    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.md,
+    backgroundColor: Colors.bgCard, overflow: 'hidden', maxHeight: 200,
+  },
+  pickerItem: {
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,
+  },
+  pickerText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
+  pickerTextActive: { color: Colors.brandPrimary, fontWeight: Typography.fontWeight.semibold },
   emptyWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.sm },
   emptyTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },

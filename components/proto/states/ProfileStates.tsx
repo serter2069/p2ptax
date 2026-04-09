@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
@@ -12,67 +12,80 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ViewMode() {
+function InteractiveProfile() {
+  const [editMode, setEditMode] = useState(false);
+  const [name, setName] = useState('Елена Васильева');
+  const [city, setCity] = useState('Москва');
+  const [savedName, setSavedName] = useState('Елена Васильева');
+  const [savedCity, setSavedCity] = useState('Москва');
+
+  const handleSave = () => {
+    setSavedName(name);
+    setSavedCity(city);
+    setEditMode(false);
+  };
+
+  const handleCancel = () => {
+    setName(savedName);
+    setCity(savedCity);
+    setEditMode(false);
+  };
+
+  if (editMode) {
+    return (
+      <View style={s.container}>
+        <View style={s.profileHeader}>
+          <View style={s.avatar}><Text style={s.avatarText}>{name.split(' ').map(n => n[0]).join('')}</Text></View>
+          <Pressable><Text style={s.changePhoto}>Изменить фото</Text></Pressable>
+        </View>
+        <View style={s.form}>
+          <View style={s.field}>
+            <Text style={s.label}>Имя</Text>
+            <TextInput value={name} onChangeText={setName} style={s.input} />
+          </View>
+          <View style={s.field}>
+            <Text style={s.label}>Email</Text>
+            <TextInput value="elena@mail.ru" editable={false} style={[s.input, s.inputDisabled]} />
+            <Text style={s.hint}>Email нельзя изменить</Text>
+          </View>
+          <View style={s.field}>
+            <Text style={s.label}>Город</Text>
+            <TextInput value={city} onChangeText={setCity} style={s.input} />
+          </View>
+        </View>
+        <View style={s.actions}>
+          <Pressable onPress={handleSave} style={s.btnPrimary}><Text style={s.btnPrimaryText}>Сохранить</Text></Pressable>
+          <Pressable onPress={handleCancel} style={s.btnSecondary}><Text style={s.btnSecondaryText}>Отмена</Text></Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={s.container}>
       <View style={s.profileHeader}>
-        <View style={s.avatar}><Text style={s.avatarText}>ЕВ</Text></View>
+        <View style={s.avatar}><Text style={s.avatarText}>{savedName.split(' ').map(n => n[0]).join('')}</Text></View>
         <View>
-          <Text style={s.name}>Елена Васильева</Text>
+          <Text style={s.nameText}>{savedName}</Text>
           <Text style={s.role}>Клиент</Text>
         </View>
       </View>
       <View style={s.card}>
         <InfoRow label="Email" value="elena@mail.ru" />
-        <InfoRow label="Город" value="Москва" />
+        <InfoRow label="Город" value={savedCity} />
         <InfoRow label="Дата регистрации" value="15.02.2026" />
         <InfoRow label="Заявки" value="5 (3 активных)" />
       </View>
-      <View style={s.btn}><Text style={s.btnText}>Редактировать</Text></View>
-    </View>
-  );
-}
-
-function EditMode() {
-  return (
-    <View style={s.container}>
-      <View style={s.profileHeader}>
-        <View style={s.avatar}><Text style={s.avatarText}>ЕВ</Text></View>
-        <Text style={s.changePhoto}>Изменить фото</Text>
-      </View>
-      <View style={s.form}>
-        <View style={s.field}>
-          <Text style={s.label}>Имя</Text>
-          <TextInput value="Елена Васильева" editable={false} style={s.input} />
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Email</Text>
-          <TextInput value="elena@mail.ru" editable={false} style={[s.input, s.inputDisabled]} />
-          <Text style={s.hint}>Email нельзя изменить</Text>
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Город</Text>
-          <TextInput value="Москва" editable={false} style={s.input} />
-        </View>
-      </View>
-      <View style={s.actions}>
-        <View style={s.btnPrimary}><Text style={s.btnPrimaryText}>Сохранить</Text></View>
-        <View style={s.btnSecondary}><Text style={s.btnSecondaryText}>Отмена</Text></View>
-      </View>
+      <Pressable onPress={() => setEditMode(true)} style={s.btn}><Text style={s.btnText}>Редактировать</Text></Pressable>
     </View>
   );
 }
 
 export function ProfileStates() {
   return (
-    <>
-      <StateSection title="VIEW">
-        <ViewMode />
-      </StateSection>
-      <StateSection title="EDIT_MODE">
-        <EditMode />
-      </StateSection>
-    </>
+    <StateSection title="INTERACTIVE">
+      <InteractiveProfile />
+    </StateSection>
   );
 }
 
@@ -84,7 +97,7 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
-  name: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  nameText: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   role: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   changePhoto: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
   card: {
