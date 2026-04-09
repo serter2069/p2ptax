@@ -1,9 +1,13 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   /** List threads where user is participant, sorted by last message */
   async getThreads(userId: string) {
@@ -91,7 +95,20 @@ export class ChatService {
       this.prisma.message.count({ where: { threadId } }),
     ]);
 
-    return { messages, total, page, pages: Math.ceil(total / take) };
+    // Generate fresh signed URLs for attachments
+    // NOTE: existing attachmentUrl in DB are public URLs (pre-migration). After this change, only new uploads use signed URLs.
+    const enriched = await Promise.all(
+      messages.map(async (msg) => {
+        if (!msg.attachmentUrl) return msg;
+        // Legacy public URLs start with http — new uploads store only the S3 key
+        const isLegacyUrl = msg.attachmentUrl.startsWith('http');
+        if (isLegacyUrl) return msg; // keep legacy public URLs as-is
+        const signedUrl = await this.storageService.getPresignedUrl(msg.attachmentUrl);
+        return { ...msg, signedUrl };
+      }),
+    );
+
+    return { messages: enriched, total, page, pages: Math.ceil(total / take) };
   }
 
   /** Upsert thread between two users. Returns { threadId } */

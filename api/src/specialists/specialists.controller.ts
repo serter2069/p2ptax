@@ -75,7 +75,7 @@ export class SpecialistsController {
     if (this.storageService.isS3Enabled) {
       // Buffer is already in memory — upload directly to S3/MinIO without touching disk
       const s3Key = `avatars/${req.user.id}${ext}`;
-      avatarUrl = await this.storageService.uploadBuffer(s3Key, file.buffer, file.mimetype);
+      avatarUrl = await this.storageService.uploadBufferPublic(s3Key, file.buffer, file.mimetype);
     } else {
       // Local disk fallback — write buffer to disk once, serve via static assets
       const { writeFile } = await import('fs/promises');

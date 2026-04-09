@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { S3Client, DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class StorageService {
@@ -34,7 +35,27 @@ export class StorageService {
     return !!this.s3;
   }
 
+  /**
+   * Upload a file as private (no ACL). Use getPresignedUrl() to generate temporary access URLs.
+   * Returns the S3 key (not a URL) — callers must use getPresignedUrl() for access.
+   */
   async uploadBuffer(key: string, buffer: Buffer, mimeType: string): Promise<string> {
+    if (!this.s3) throw new Error('S3 not configured');
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: mimeType,
+      }),
+    );
+    return key;
+  }
+
+  /**
+   * Upload a file with public-read ACL (for avatars and other intentionally public assets).
+   */
+  async uploadBufferPublic(key: string, buffer: Buffer, mimeType: string): Promise<string> {
     if (!this.s3) throw new Error('S3 not configured');
     await this.s3.send(
       new PutObjectCommand({
@@ -45,6 +66,25 @@ export class StorageService {
         ACL: 'public-read',
       }),
     );
+    return `${this.endpoint}/${this.bucket}/${key}`;
+  }
+
+  /**
+   * Generate a presigned URL for private S3 objects (e.g. chat attachments).
+   */
+  async getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
+    if (!this.s3) throw new Error('S3 not configured');
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+    });
+    return getSignedUrl(this.s3, command, { expiresIn });
+  }
+
+  /**
+   * Get the public URL for a key (for objects uploaded with public-read ACL).
+   */
+  getPublicUrl(key: string): string {
     return `${this.endpoint}/${this.bucket}/${key}`;
   }
 
