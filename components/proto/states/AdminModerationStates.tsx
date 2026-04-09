@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function ModerationCard({ name, type, date, onApprove, onReject, onView }: {
   name: string; type: string; date: string;
@@ -10,13 +11,17 @@ function ModerationCard({ name, type, date, onApprove, onReject, onView }: {
   return (
     <View style={s.card}>
       <View style={s.cardTop}>
-        <View style={s.avatar}><Text style={s.avatarText}>{name[0]}</Text></View>
+        <ProtoPlaceholderImage type="avatar" height={40} />
         <View style={s.cardInfo}>
           <Text style={s.cardName}>{name}</Text>
           <Text style={s.cardType}>{type}</Text>
           <Text style={s.cardDate}>{date}</Text>
         </View>
         <View style={s.pendingBadge}><Text style={s.pendingText}>Ожидает</Text></View>
+      </View>
+      <View style={s.docPreviewRow}>
+        <ProtoPlaceholderImage type="document" width={60} height={48} borderRadius={4} />
+        <ProtoPlaceholderImage type="document" width={60} height={48} borderRadius={4} />
       </View>
       <View style={s.cardActions}>
         <Pressable onPress={onView} style={s.btnView}><Text style={s.btnViewText}>Просмотр</Text></Pressable>
@@ -129,6 +134,7 @@ const s = StyleSheet.create({
   cardDate: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   pendingBadge: { backgroundColor: '#fef3cd', paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full },
   pendingText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: '#D97706' },
+  docPreviewRow: { flexDirection: 'row', gap: Spacing.sm },
   cardActions: { flexDirection: 'row', gap: Spacing.sm },
   btnView: {
     flex: 1, height: 36, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',

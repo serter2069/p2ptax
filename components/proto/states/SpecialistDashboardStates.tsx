@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_REQUESTS } from '../../../constants/protoMockData';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function RequestCard({ title, city, budget, service, date }: {
   title: string; city: string; budget: string; service: string; date: string;
@@ -36,6 +37,7 @@ function InteractiveDashboard() {
   return (
     <View style={s.container}>
       <Text style={s.greeting}>Добрый день, Алексей!</Text>
+      <ProtoPlaceholderImage type="banner" height={88} label="Promo banner" borderRadius={10} />
       <View style={s.statsRow}>
         <Pressable onPress={() => setTab('new')} style={s.stat}>
           <Text style={[s.statValue, { color: Colors.brandPrimary }]}>{newRequests.length}</Text>

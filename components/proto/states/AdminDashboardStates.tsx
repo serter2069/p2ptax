@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_ADMIN_STATS } from '../../../constants/protoMockData';
+import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function StatCard({ label, value, color, trend }: { label: string; value: string | number; color: string; trend?: string }) {
   return (
@@ -54,6 +55,8 @@ export function AdminDashboardStates() {
           <Text style={s.revenueLabel}>Общий доход</Text>
           <Text style={s.revenueValue}>{st.revenue}</Text>
         </View>
+
+        <ProtoPlaceholderImage type="banner" height={80} label="Admin promo / announcement" borderRadius={10} />
 
         <ChartPlaceholder title="Регистрации за неделю" />
         <ChartPlaceholder title="Заявки за неделю" />
