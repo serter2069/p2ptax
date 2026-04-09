@@ -42,6 +42,14 @@ const SERVICE_TYPES = [
   'Другое',
 ];
 
+const DEFAULT_CITIES = [
+  '\u041C\u043E\u0441\u043A\u0432\u0430',
+  '\u0421\u0430\u043D\u043A\u0442-\u041F\u0435\u0442\u0435\u0440\u0431\u0443\u0440\u0433',
+  '\u0415\u043A\u0430\u0442\u0435\u0440\u0438\u043D\u0431\u0443\u0440\u0433',
+  '\u041D\u043E\u0432\u043E\u0441\u0438\u0431\u0438\u0440\u0441\u043A',
+  '\u041A\u0430\u0437\u0430\u043D\u044C',
+];
+
 const TASK_SERVICE_TYPE_MAP: Record<string, string> = {
   'Декларация 3-НДФЛ': 'declaration',
   'Спор с налоговой инспекцией': 'dispute',
@@ -552,6 +560,21 @@ export default function LandingScreen() {
             </View>
           </View>
         )}
+        {!isLoadingRequests && recentRequests.length === 0 && (
+          <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
+              <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, maxWidth: 400 }}>
+                {'\u0411\u0443\u0434\u044C\u0442\u0435 \u043F\u0435\u0440\u0432\u044B\u043C! \u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u043E\u0441 \u0438 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u043E\u0442\u043A\u043B\u0438\u043A\u0438 \u043E\u0442 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432.'}
+              </Text>
+              <Button
+                onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
+                variant="primary"
+                style={{ marginTop: Spacing.sm }}
+              >{'\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
+            </View>
+          </View>
+        )}
 
         {/* ===== SECTION 2d: Popular Cities ===== */}
         {isLoadingCities && (
@@ -563,12 +586,12 @@ export default function LandingScreen() {
             </View>
           </View>
         )}
-        {!isLoadingCities && popularCities.length > 0 && (
+        {!isLoadingCities && (
           <View style={[styles.section, { backgroundColor: Colors.white }]}>
             <View style={[styles.sectionInner, innerStyle]}>
               <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u044B\u0435 \u0433\u043E\u0440\u043E\u0434\u0430'}</Text>
               <View style={dyn.citiesRow}>
-                {popularCities.map((item: any) => {
+                {(popularCities.length > 0 ? popularCities : DEFAULT_CITIES).map((item: any) => {
                   const cityName = typeof item === 'string' ? item : (item.city || item.name || String(item));
                   return (
                     <TouchableOpacity
