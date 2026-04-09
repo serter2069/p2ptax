@@ -70,4 +70,14 @@ export class AdminController {
   ) {
     return this.adminService.getAllRequests(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
   }
+
+  /** GET /admin/promotions — all promotions with user info, optional ?page=1&limit=50 */
+  @Get('promotions')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getPromotions(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getPromotions(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
+  }
 }

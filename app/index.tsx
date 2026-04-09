@@ -63,6 +63,7 @@ function QuickRequestForm() {
     <View style={qrf.container}>
       <Text style={qrf.title}>Опишите задачу</Text>
       <TextInput
+        testID="quick-request-description"
         style={qrf.input}
         placeholder="Нужна помощь с налоговой декларацией..."
         placeholderTextColor={Colors.textMuted}
@@ -84,7 +85,7 @@ function QuickRequestForm() {
         ))}
       </View>
       {error ? <Text style={qrf.error}>{error}</Text> : null}
-      <TouchableOpacity style={qrf.btn} onPress={handleSubmit} activeOpacity={0.85}>
+      <TouchableOpacity testID="quick-request-submit" style={qrf.btn} onPress={handleSubmit} activeOpacity={0.85}>
         <Text style={qrf.btnText}>Найти специалиста →</Text>
       </TouchableOpacity>
     </View>
