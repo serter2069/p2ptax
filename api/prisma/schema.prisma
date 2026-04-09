@@ -71,11 +71,13 @@ model SpecialistProfile {
   nick        String   @unique
   displayName String?
   bio         String?
+  headline    String?
   experience  Int?
   cities      String[]
   services    String[]
   badges      String[]
   fnsOffices  String[]
+  fnsDepartmentsData Json?
   contacts    String?
   avatarUrl   String?
 

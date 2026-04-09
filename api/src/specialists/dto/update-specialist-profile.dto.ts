@@ -11,6 +11,14 @@ export class UpdateSpecialistProfileDto {
   @MaxLength(1000)
   bio?: string;
 
+  @IsString()
+  @IsOptional()
+  @MaxLength(150)
+  headline?: string;
+
+  @IsOptional()
+  fnsDepartmentsData?: Array<{ office: string; departments: string[] }>;
+
   @IsInt()
   @Min(0)
   @IsOptional()

@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
-import { formatExperience } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
@@ -34,11 +33,14 @@ interface SpecialistItem {
   displayName: string | null;
   avatarUrl: string | null;
   experience: number | null;
+  headline: string | null;
+  memberSince: number;
   cities: string[];
   services: string[];
   badges: string[];
   promoted: boolean;
   promotionTier: number;
+  fnsDepartmentsData: Array<{ office: string; departments: string[] }> | null;
   activity: { responseCount: number; avgRating: number | null; reviewCount: number };
 }
 
@@ -188,7 +190,7 @@ export default function SpecialistsCatalogScreen() {
       <TouchableOpacity
         onPress={() => router.push(`/specialists/${item.nick}`)}
         activeOpacity={0.8}
-        style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
+        style={styles.cardWrapperMobile}
       >
         <View style={[styles.card, isMobile && styles.cardMobile]}>
           {/* Top row: avatar + name/spec/city */}
@@ -205,24 +207,17 @@ export default function SpecialistsCatalogScreen() {
                     <Text style={styles.verifiedText}>Проверен</Text>
                   </View>
                 )}
-                {item.experience != null && item.experience > 0 && (
-                  <View style={styles.tenureBadge}>
-                    <Text style={styles.tenureBadgeText}>
-                      {formatExperience(item.experience)}
-                    </Text>
-                  </View>
-                )}
               </View>
-              {item.services.length > 0 && (
-                <Text style={styles.specialization} numberOfLines={1}>
-                  {item.services[0]}
+              {item.headline && (
+                <Text style={styles.headline} numberOfLines={1}>
+                  {item.headline}
                 </Text>
               )}
-              {item.cities.length > 0 && (
-                <Text style={styles.cityText} numberOfLines={1}>
-                  {item.cities.join(', ')}
-                </Text>
-              )}
+              <Text style={styles.cityText} numberOfLines={1}>
+                {item.cities.length > 0 ? item.cities.join(', ') : ''}
+                {item.cities.length > 0 && item.memberSince ? ' \u00B7 ' : ''}
+                {item.memberSince ? `на сайте с ${item.memberSince}` : ''}
+              </Text>
             </View>
             {/* Share button */}
             <TouchableOpacity
@@ -238,7 +233,7 @@ export default function SpecialistsCatalogScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Rating + Experience on one line */}
+          {/* Rating */}
           <View style={styles.metaRow}>
             <Stars
               rating={item.activity.avgRating}
@@ -246,17 +241,12 @@ export default function SpecialistsCatalogScreen() {
               size="sm"
               showEmpty={false}
             />
-            {item.experience != null && (
-              <Text style={styles.experienceText}>
-                {formatExperience(item.experience)}
-              </Text>
-            )}
           </View>
 
           {/* Services chips */}
-          {item.services.length > 1 && (
+          {item.services.length > 0 && (
             <View style={styles.servicesRow}>
-              {item.services.slice(1, 4).map((svc, idx) => (
+              {item.services.slice(0, 4).map((svc, idx) => (
                 <Text key={idx} style={styles.serviceChip} numberOfLines={1}>
                   {svc}
                 </Text>
@@ -290,16 +280,14 @@ export default function SpecialistsCatalogScreen() {
       <Header title="Каталог специалистов" />
 
       <FlatList
-        key={numColumns}
         data={specialists}
         keyExtractor={(item) => item.nick}
         renderItem={renderSpecialist}
-        numColumns={numColumns}
+        numColumns={1}
         contentContainerStyle={[
           styles.listContent,
           !isMobile && styles.listContentWide,
         ]}
-        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -367,7 +355,6 @@ export default function SpecialistsCatalogScreen() {
 
             {/* Specialization filter chips */}
             <View>
-              <Text style={styles.filterLabel}>Специализация</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={true}
@@ -393,7 +380,6 @@ export default function SpecialistsCatalogScreen() {
 
             {/* Sort */}
             <View style={styles.sortRow}>
-              <Text style={styles.sortLabel}>Сортировка:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 12 }}>
                 {SORT_OPTIONS.map((opt) => (
                   <TouchableOpacity
@@ -414,7 +400,7 @@ export default function SpecialistsCatalogScreen() {
           loading ? (
             <View style={styles.skeletonContainer}>
               {Array.from({ length: 6 }).map((_, i) => (
-                <View key={i} style={[styles.card, isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid, { overflow: 'hidden' }]}>
+                <View key={i} style={[styles.card, styles.cardWrapperMobile, { overflow: 'hidden' }]}>
                   <View style={styles.cardHeader}>
                     <View style={styles.skeletonAvatar} />
                     <View style={styles.cardInfo}>
@@ -642,7 +628,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
   },
-  specialization: {
+  headline: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textSecondary,
     marginTop: 1,

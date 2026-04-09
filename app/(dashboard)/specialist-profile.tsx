@@ -23,6 +23,7 @@ export default function SpecialistProfileSetupScreen() {
   const [saving, setSaving] = useState(false);
 
   const [nick, setNick] = useState('');
+  const [headline, setHeadline] = useState('');
   const [contacts, setContacts] = useState('');
   const [cityInput, setCityInput] = useState('');
   const [cities, setCities] = useState<string[]>([]);
@@ -72,6 +73,7 @@ export default function SpecialistProfileSetupScreen() {
     try {
       await api.post('/specialists/profile', {
         nick: nick.trim(),
+        headline: headline.trim() || undefined,
         contacts: contacts.trim() || undefined,
         cities,
         services,
@@ -117,6 +119,14 @@ export default function SpecialistProfileSetupScreen() {
                 onChangeText={setNick}
                 placeholder="moi_nik"
                 autoCapitalize="none"
+              />
+              <Input
+                label="Слоган / заголовок (до 150 символов)"
+                value={headline}
+                onChangeText={setHeadline}
+                placeholder="Решу ваш вопрос с ФНС быстро"
+                autoCapitalize="sentences"
+                style={styles.inputGap}
               />
               <Input
                 label="Контакты (необязательно)"

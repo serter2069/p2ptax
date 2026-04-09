@@ -14,6 +14,12 @@ import { Button } from '../../components/Button';
 import { shortFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
+import { FNS_DEPARTMENTS } from '../../constants/FNS_DEPARTMENTS';
+
+interface FnsDeptEntry {
+  office: string;
+  departments: string[];
+}
 
 export default function FNSScreen() {
   const router = useRouter();
@@ -21,6 +27,8 @@ export default function FNSScreen() {
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [departmentsMap, setDepartmentsMap] = useState<Record<string, string[]>>({});
+  const [expandedOffice, setExpandedOffice] = useState<string | null>(null);
 
   const selectedNames = new Set(selected.map((o) => o.name));
 
@@ -35,12 +43,31 @@ export default function FNSScreen() {
 
   function addOffice(office: FNSOffice) {
     setSelected((prev) => [...prev, office]);
+    setDepartmentsMap((prev) => ({ ...prev, [office.name]: [] }));
+    setExpandedOffice(office.name);
     setSearch('');
     setError('');
   }
 
   function removeOffice(name: string) {
     setSelected((prev) => prev.filter((o) => o.name !== name));
+    setDepartmentsMap((prev) => {
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+    if (expandedOffice === name) setExpandedOffice(null);
+  }
+
+  function toggleDepartment(officeName: string, dept: string) {
+    setDepartmentsMap((prev) => {
+      const current = prev[officeName] || [];
+      const has = current.includes(dept);
+      return {
+        ...prev,
+        [officeName]: has ? current.filter((d) => d !== dept) : [...current, dept],
+      };
+    });
   }
 
   async function handleContinue() {
@@ -48,13 +75,27 @@ export default function FNSScreen() {
       setError('Выберите хотя бы одну ИФНС');
       return;
     }
+    // Validate: each office must have at least 1 department
+    for (const office of selected) {
+      const deps = departmentsMap[office.name] || [];
+      if (deps.length === 0) {
+        setError(`Выберите хотя бы один отдел для ${office.name}`);
+        setExpandedOffice(office.name);
+        return;
+      }
+    }
     setIsLoading(true);
     try {
       const cities = [...new Set(selected.map((o) => o.city))];
       const fnsNames = selected.map((o) => o.name);
+      const fnsDepartmentsData: FnsDeptEntry[] = selected.map((o) => ({
+        office: o.name,
+        departments: departmentsMap[o.name] || [],
+      }));
       // Persist to AsyncStorage for refresh/deep-link resilience
       await AsyncStorage.setItem('onboarding_cities', JSON.stringify(cities));
       await AsyncStorage.setItem('onboarding_fns', JSON.stringify(fnsNames));
+      await AsyncStorage.setItem('onboarding_fns_data', JSON.stringify(fnsDepartmentsData));
       router.push({
         pathname: '/(onboarding)/services',
         params: {
@@ -124,27 +165,56 @@ export default function FNSScreen() {
             )}
           </View>
 
-          {/* Selected chips */}
+          {/* Selected offices with departments */}
           {selected.length > 0 && (
             <View style={styles.selectedWrap}>
               <Text style={styles.selectedLabel}>
                 Выбрано: {selected.length}
               </Text>
-              <View style={styles.chipsWrap}>
-                {selected.map((office) => (
-                  <TouchableOpacity
-                    key={office.code}
-                    onPress={() => removeOffice(office.name)}
-                    style={styles.chip}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.chipText} numberOfLines={1}>
-                      {shortFnsLabel(office.name, office.city)}
-                    </Text>
-                    <Text style={styles.chipRemove}>×</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {selected.map((office) => (
+                <View key={office.code} style={styles.officeBlock}>
+                  <View style={styles.officeRow}>
+                    <TouchableOpacity
+                      onPress={() => setExpandedOffice(expandedOffice === office.name ? null : office.name)}
+                      style={styles.officeExpandBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.chipText} numberOfLines={1}>
+                        {shortFnsLabel(office.name, office.city)}
+                      </Text>
+                      <Text style={styles.deptCount}>
+                        {(departmentsMap[office.name] || []).length} отд.
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => removeOffice(office.name)}
+                      style={styles.removeBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.chipRemove}>×</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {expandedOffice === office.name && (
+                    <View style={styles.deptList}>
+                      {FNS_DEPARTMENTS.map((dept) => {
+                        const isSelected = (departmentsMap[office.name] || []).includes(dept);
+                        return (
+                          <TouchableOpacity
+                            key={dept}
+                            onPress={() => toggleDepartment(office.name, dept)}
+                            style={[styles.deptChip, isSelected && styles.deptChipActive]}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.deptChipText, isSelected && styles.deptChipTextActive]}>
+                              {dept}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              ))}
             </View>
           )}
 
@@ -289,21 +359,60 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontWeight: Typography.fontWeight.medium,
   },
-  chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.full,
+  officeBlock: {
     borderWidth: 1,
     borderColor: Colors.brandPrimary,
+    borderRadius: BorderRadius.md,
     backgroundColor: Colors.statusBg.accent,
+    overflow: 'hidden',
+    marginBottom: Spacing.xs,
+  },
+  officeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+  },
+  officeExpandBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deptCount: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  removeBtn: {
+    padding: 4,
+  },
+  deptList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  deptChip: {
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  deptChipActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  deptChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
+  },
+  deptChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: Typography.fontWeight.medium,
   },
   chipText: {
     fontSize: Typography.fontSize.sm,

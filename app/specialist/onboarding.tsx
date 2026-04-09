@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
@@ -44,7 +45,8 @@ export default function SpecialistOnboardingScreen() {
   const [serviceInput, setServiceInput] = useState('');
   const [services, setServices] = useState<string[]>([]);
 
-  // Step 5: Bio + Contacts
+  // Step 5: Headline + Bio + Contacts
+  const [headline, setHeadline] = useState('');
   const [bio, setBio] = useState('');
   const [contacts, setContacts] = useState('');
 
@@ -129,13 +131,22 @@ export default function SpecialistOnboardingScreen() {
   async function handleSubmit() {
     setSaving(true);
     try {
+      // Try to load fnsDepartmentsData from AsyncStorage (saved during onboarding fns step)
+      let fnsDepartmentsData: Array<{ office: string; departments: string[] }> | undefined;
+      try {
+        const stored = await AsyncStorage.getItem('onboarding_fns_data');
+        if (stored) fnsDepartmentsData = JSON.parse(stored);
+      } catch {}
+
       await api.post('/specialists/profile', {
         nick: nick.trim(),
         displayName: displayName.trim() || undefined,
+        headline: headline.trim() || undefined,
         bio: bio.trim() || undefined,
         cities,
         services,
         fnsOffices: fnsOffices.length > 0 ? fnsOffices : undefined,
+        fnsDepartmentsData: fnsDepartmentsData || undefined,
         contacts: contacts.trim() || undefined,
         badges: [],
       });
@@ -351,6 +362,18 @@ export default function SpecialistOnboardingScreen() {
           <Text style={styles.stepSubtitle}>
             Расскажите о себе и укажите способ связи
           </Text>
+        </View>
+
+        <View style={styles.textareaWrap}>
+          <Text style={styles.fieldLabel}>Слоган / заголовок (до 150 символов)</Text>
+          <TextInput
+            value={headline}
+            onChangeText={setHeadline}
+            placeholder="Например: Решу ваш вопрос с ФНС быстро и с гарантией"
+            placeholderTextColor={Colors.textMuted}
+            style={[styles.textarea, { minHeight: 44 }]}
+            maxLength={150}
+          />
         </View>
 
         <View style={styles.textareaWrap}>

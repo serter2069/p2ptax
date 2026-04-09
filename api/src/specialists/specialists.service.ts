@@ -22,16 +22,26 @@ export class SpecialistsService {
     const nickTaken = await this.prisma.specialistProfile.findUnique({ where: { nick: dto.nick } });
     if (nickTaken) throw new ConflictException('Nick already taken');
 
+    // Sync fnsOffices from fnsDepartmentsData if provided
+    let fnsOffices = dto.fnsOffices;
+    let fnsDepartmentsData = dto.fnsDepartmentsData;
+    if (fnsDepartmentsData && fnsDepartmentsData.length > 0) {
+      fnsOffices = [...new Set(fnsDepartmentsData.map((x) => x.office))];
+    }
+
     return this.prisma.specialistProfile.create({
       data: {
         userId,
         nick: dto.nick,
         displayName: dto.displayName,
         bio: dto.bio,
+        headline: dto.headline,
         experience: dto.experience,
         cities: dto.cities,
         services: dto.services,
         badges: (dto.badges ?? []).filter((b) => ALLOWED_BADGES.includes(b)),
+        fnsOffices: fnsOffices ?? [],
+        fnsDepartmentsData: fnsDepartmentsData ?? undefined,
         contacts: dto.contacts,
       },
     });
@@ -52,9 +62,14 @@ export class SpecialistsService {
     if (!profile) throw new NotFoundException('Profile not found');
 
     // Validate badges against allowed list
-    const data = { ...dto };
+    const data: any = { ...dto };
     if (data.badges) {
-      data.badges = data.badges.filter((b) => ALLOWED_BADGES.includes(b));
+      data.badges = data.badges.filter((b: string) => ALLOWED_BADGES.includes(b));
+    }
+
+    // Sync fnsOffices from fnsDepartmentsData if provided
+    if (data.fnsDepartmentsData && Array.isArray(data.fnsDepartmentsData) && data.fnsDepartmentsData.length > 0) {
+      data.fnsOffices = [...new Set(data.fnsDepartmentsData.map((x: any) => x.office))];
     }
 
     return this.prisma.specialistProfile.update({
@@ -241,11 +256,16 @@ export class SpecialistsService {
 
     // Build result with promotion rank and activity
     const items = orderedProfiles.map((profile) => {
-      // Strip internal IDs, contacts and bio from public catalog response
-      const { contacts: _contacts, bio: _bio, id: _id, userId, ...rest } = profile;
+      // Strip internal IDs, contacts and full bio from public catalog response
+      const { contacts: _contacts, bio, id: _id, userId, ...rest } = profile;
       const ratingData = ratingMap.get(userId);
+      const memberSince = new Date(rest.createdAt).getFullYear();
+      const headline = rest.headline || (bio ? bio.slice(0, 100) : null);
       return {
         ...rest,
+        bio: undefined,
+        headline,
+        memberSince,
         promoted: promotionMap.has(userId),
         promotionTier: promotionMap.get(userId) ?? 0,
         activity: {

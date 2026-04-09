@@ -45,9 +45,11 @@ interface SpecialistProfile {
   displayName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  headline: string | null;
   experience: number | null;
   cities: string[];
   fnsOffices: string[];
+  fnsDepartmentsData: Array<{ office: string; departments: string[] }> | null;
   services: string[];
   badges: string[];
   contacts: string | null;
@@ -290,6 +292,9 @@ export default function PublicSpecialistProfileScreen() {
           <Avatar name={displayName} imageUri={profile.avatarUrl || undefined} size="xl" />
           <View style={styles.mobileHeroInfo}>
             <Text style={styles.heroName}>{displayName}</Text>
+            {profile.headline && (
+              <Text style={styles.heroHeadline}>{profile.headline}</Text>
+            )}
             {profile.services.length > 0 && (
               <Text style={styles.heroSpec}>{profile.services[0]}</Text>
             )}
@@ -310,6 +315,9 @@ export default function PublicSpecialistProfileScreen() {
         <View style={styles.desktopHeroCol}>
           <Avatar name={displayName} imageUri={profile.avatarUrl || undefined} size="xl" />
           <Text style={styles.heroNameDesktop}>{displayName}</Text>
+          {profile.headline && (
+            <Text style={styles.heroHeadline}>{profile.headline}</Text>
+          )}
           {profile.services.length > 0 && (
             <Text style={styles.heroSpec}>{profile.services[0]}</Text>
           )}
@@ -493,16 +501,26 @@ export default function PublicSpecialistProfileScreen() {
         </View>
       )}
 
-      {profile.fnsOffices && profile.fnsOffices.length > 0 && (
+      {((profile.fnsDepartmentsData as Array<{ office: string; departments: string[] }> | null) ?? (profile.fnsOffices && profile.fnsOffices.length > 0 ? profile.fnsOffices.map(o => ({ office: o, departments: [] as string[] })) : null)) && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Налоговые инспекции</Text>
-          <View style={styles.tagsRow}>
-            {profile.fnsOffices.map((office, idx) => (
-              <View key={idx} style={[styles.tag, styles.tagNeutral]}>
-                <Text style={styles.tagNeutralText}>{office}</Text>
+          <Text style={styles.sectionLabel}>Инспекции ФНС</Text>
+          {((profile.fnsDepartmentsData as Array<{ office: string; departments: string[] }> | null) ?? profile.fnsOffices.map(o => ({ office: o, departments: [] as string[] }))).map((entry, i) => (
+            <View key={i} style={styles.fnsGroup}>
+              <View style={styles.fnsOfficeBadge}>
+                <Ionicons name="business-outline" size={12} color={B.action} />
+                <Text style={styles.fnsOfficeName}>{entry.office}</Text>
               </View>
-            ))}
-          </View>
+              {entry.departments.length > 0 && (
+                <View style={styles.fnsDeptRow}>
+                  {entry.departments.map((dept, j) => (
+                    <View key={j} style={styles.fnsDeptChip}>
+                      <Text style={styles.fnsDeptText}>{dept}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))}
         </View>
       )}
 
@@ -706,6 +724,7 @@ const styles = StyleSheet.create({
 
   heroName: { fontSize: 18, fontWeight: '700', color: B.primary, letterSpacing: -0.3 },
   heroNameDesktop: { fontSize: 22, fontWeight: '700', color: B.primary, textAlign: 'center', letterSpacing: -0.5 },
+  heroHeadline: { fontSize: 15, color: B.primary, fontStyle: 'italic' as const, lineHeight: 22 },
   heroSpec: { fontSize: 14, color: B.muted },
   heroCity: { fontSize: 13, color: B.muted },
   ratingRow: { marginTop: 4 },
@@ -893,4 +912,26 @@ const styles = StyleSheet.create({
 
   loadMoreBtn: { marginTop: 12, alignItems: 'center', paddingVertical: 10 },
   loadMoreText: { fontSize: 14, color: B.action, fontWeight: '600' },
+
+  // FNS groups
+  fnsGroup: { gap: 6, marginBottom: 10 },
+  fnsOfficeBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    backgroundColor: B.bgAction,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start' as const,
+  },
+  fnsOfficeName: { fontSize: 13, color: B.action, fontWeight: '600' as const },
+  fnsDeptRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 4, paddingLeft: 18 },
+  fnsDeptChip: {
+    backgroundColor: '#EBF3FB',
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  fnsDeptText: { fontSize: 11, color: B.muted, fontWeight: '500' as const },
 });
