@@ -331,7 +331,7 @@ export class SpecialistsService {
     });
   }
 
-  async getFeatured(limit = 8) {
+  async getFeatured(limit = 50) {
     const profiles = await this.prisma.specialistProfile.findMany({
       where: { displayName: { not: null } },
       orderBy: { createdAt: 'desc' },
@@ -344,6 +344,8 @@ export class SpecialistsService {
         services: true,
         badges: true,
         experience: true,
+        headline: true,
+        createdAt: true,
       },
     });
     return profiles;

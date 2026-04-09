@@ -333,10 +333,25 @@ export default function LandingScreen() {
     specialistName: string;
     specialistNick?: string;
   }>>([]);
+  const carouselRef = useRef<ScrollView>(null);
+  const carouselOffsetRef = useRef(0);
+
   useEffect(() => {
-    api.get<any[]>('/specialists/featured?limit=8').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
+    api.get<any[]>('/specialists/featured?limit=50').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
     api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
     api.get<any[]>('/reviews/public?limit=6').then(setReviews).catch((err) => console.warn('Landing section failed (reviews):', err));
+  }, []);
+
+  // Auto-scroll carousel every 3 seconds
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const CARD_WIDTH = 200; // card width + gap
+    const interval = setInterval(() => {
+      if (!carouselRef.current) return;
+      carouselOffsetRef.current += CARD_WIDTH;
+      (carouselRef.current as any).scrollTo({ x: carouselOffsetRef.current, animated: true });
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const isWide = !isMobile;
@@ -476,26 +491,67 @@ export default function LandingScreen() {
             <View style={[styles.sectionInner, innerStyle]}>
               <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B'}</Text>
               <ScrollView
+                ref={carouselRef}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={dyn.specialistsRow}
+                onScroll={(e) => {
+                  const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+                  // Reset to beginning when near the end
+                  if (contentOffset.x + layoutMeasurement.width >= contentSize.width - 10) {
+                    carouselOffsetRef.current = 0;
+                    (carouselRef.current as any)?.scrollTo({ x: 0, animated: false });
+                  } else {
+                    carouselOffsetRef.current = contentOffset.x;
+                  }
+                }}
+                scrollEventThrottle={16}
               >
-                {featuredSpecialists.map((s: any) => (
-                  <TouchableOpacity
-                    key={s.id}
-                    style={dyn.specialistCard}
-                    activeOpacity={0.8}
-                    onPress={() => router.push(`/specialists/${s.nick}` as any)}
-                  >
-                    <Text style={dyn.specialistName} numberOfLines={1}>{s.name || s.nick}</Text>
-                    {s.city ? <Text style={dyn.specialistCity} numberOfLines={1}>{s.city}</Text> : null}
-                    {s.specialization ? (
-                      <View style={dyn.specialistChip}>
-                        <Text style={dyn.specialistChipText} numberOfLines={1}>{s.specialization}</Text>
+                {featuredSpecialists.map((s: any, idx: number) => {
+                  const displayName = s.displayName || s.nick || '';
+                  const initials = displayName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
+                  const headline = s.headline || (s.services && s.services.length > 0 ? s.services[0] : null);
+                  const city = s.cities && s.cities.length > 0 ? s.cities[0] : null;
+                  const memberYear = s.createdAt ? new Date(s.createdAt).getFullYear() : null;
+                  return (
+                    <TouchableOpacity
+                      key={`${s.nick}-${idx}`}
+                      style={dyn.specialistCard}
+                      activeOpacity={0.8}
+                      onPress={() => router.push(`/specialists/${s.nick}` as any)}
+                    >
+                      {/* Avatar */}
+                      <View style={dyn.avatarRow}>
+                        {s.avatarUrl ? (
+                          <Image source={{ uri: s.avatarUrl }} style={dyn.avatar} />
+                        ) : (
+                          <View style={dyn.avatarPlaceholder}>
+                            <Text style={dyn.avatarInitials}>{initials || '?'}</Text>
+                          </View>
+                        )}
                       </View>
-                    ) : null}
-                  </TouchableOpacity>
-                ))}
+                      {/* Name */}
+                      <Text style={dyn.specialistName} numberOfLines={2}>{displayName}</Text>
+                      {/* Headline / specialization */}
+                      {headline ? (
+                        <Text style={dyn.specialistHeadline} numberOfLines={2}>{headline}</Text>
+                      ) : null}
+                      {/* Pills row */}
+                      <View style={dyn.pillsRow}>
+                        {city ? (
+                          <View style={dyn.pill}>
+                            <Text style={dyn.pillText} numberOfLines={1}>{city}</Text>
+                          </View>
+                        ) : null}
+                        {memberYear ? (
+                          <View style={[dyn.pill, dyn.pillYear]}>
+                            <Text style={[dyn.pillText, dyn.pillTextYear]}>{`с ${memberYear}`}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
               {isMobile && featuredSpecialists.length > 1 && (
                 <Text style={{ color: Colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 4 }}>
@@ -1482,22 +1538,83 @@ const dyn = StyleSheet.create({
   specialistsRow: {
     paddingVertical: 8,
     paddingHorizontal: 4,
-    gap: 12,
+    gap: 16,
     flexDirection: 'row',
   },
   specialistCard: {
-    width: 160,
+    width: 184,
     backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: Spacing.md,
-    gap: 6,
+    gap: 8,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 2px 10px rgba(15, 36, 71, 0.07)' }
+      : {
+          shadowColor: Colors.textPrimary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.07,
+          shadowRadius: 10,
+          elevation: 3,
+        }),
+  },
+  avatarRow: {
+    alignItems: 'flex-start',
+    marginBottom: 2,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  avatarPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.brandPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitials: {
+    fontSize: 18,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.white,
   },
   specialistName: {
     fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
+    lineHeight: 20,
+  },
+  specialistHeadline: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  pillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 2,
+  },
+  pill: {
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
+  pillYear: {
+    backgroundColor: 'rgba(14, 105, 209, 0.08)',
+  },
+  pillText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  pillTextYear: {
+    color: Colors.brandPrimary,
   },
   specialistCity: {
     fontSize: Typography.fontSize.sm,
