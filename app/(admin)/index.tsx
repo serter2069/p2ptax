@@ -78,6 +78,7 @@ export default function AdminDashboard() {
     { label: 'Продвижения', route: '/(admin)/promotions' as const, icon: 'P' },
     { label: 'Запросы', route: '/(admin)/requests' as const, icon: 'R' },
     { label: 'Отзывы', route: '/(admin)/reviews' as const, icon: 'О' },
+    { label: 'Категории услуг', route: '/(admin)/categories' as const, icon: 'К' },
   ];
 
   return (

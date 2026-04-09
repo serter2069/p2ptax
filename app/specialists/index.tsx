@@ -44,16 +44,19 @@ interface SpecialistItem {
   activity: { responseCount: number; avgRating: number | null; reviewCount: number };
 }
 
-const SERVICE_CATEGORIES = [
-  { label: 'Выездная проверка', value: 'Выездная проверка' },
-  { label: 'Камеральная проверка', value: 'Камеральная проверка' },
-  { label: 'Оперативный контроль', value: 'Отдел оперативного контроля' },
-];
+interface ServiceCategory {
+  id: string;
+  name: string;
+  slug: string;
+  icon?: string | null;
+  sortOrder: number;
+}
 
 export default function SpecialistsCatalogScreen() {
   const router = useRouter();
   const { isMobile, contentMaxWidth } = useBreakpoints();
 
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [items, setItems] = useState<SpecialistItem[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -64,6 +67,12 @@ export default function SpecialistsCatalogScreen() {
 
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
+
+  useEffect(() => {
+    api.get<ServiceCategory[]>('/categories')
+      .then(data => setServiceCategories(data))
+      .catch(() => {});
+  }, []);
   const [fnsQuery, setFnsQuery] = useState('');
   const [fnsDropdown, setFnsDropdown] = useState<FNSOffice[]>([]);
 
@@ -258,17 +267,17 @@ export default function SpecialistsCatalogScreen() {
                     Все
                   </Text>
                 </TouchableOpacity>
-                {SERVICE_CATEGORIES.map((cat) => {
-                  const isActive = cat.value === selectedCategory;
+                {serviceCategories.map((cat) => {
+                  const isActive = cat.name === selectedCategory;
                   return (
                     <TouchableOpacity
-                      key={cat.value}
-                      onPress={() => setSelectedCategory(cat.value)}
+                      key={cat.id}
+                      onPress={() => setSelectedCategory(cat.name)}
                       style={[styles.chip, isActive && styles.chipActive]}
                       activeOpacity={0.7}
                     >
                       <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                        {cat.label}
+                        {cat.name}
                       </Text>
                     </TouchableOpacity>
                   );
