@@ -374,10 +374,10 @@ export default function LandingScreen() {
                 accessibilityRole="header"
                 aria-level={1}
               >
-                {'Штраф от ФНС? Налоговый спор?\nНайдём специалиста под вашу ИФНС'}
+                {'Специалист, который знает\nименно вашу ИФНС'}
               </Text>
               <Text style={[styles.heroSubtitle, isWide && styles.heroSubtitleWide]}>
-                {'Первая консультация — бесплатно. Отклики за 1–2 часа. Безопасная оплата после результата.'}
+                {'Не общие советы — а специалист, который работал с вашей инспекцией и знает её практику. Первая консультация бесплатно.'}
               </Text>
 
               <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
@@ -398,25 +398,44 @@ export default function LandingScreen() {
               </TouchableOpacity>
             </View>
 
-            {isWide ? (
+            {isWide && (
               <View style={[styles.heroRight, styles.heroRightWide]}>
-                <Image
-                  source={require('../assets/images/hero-specialist.png')}
-                  style={[styles.heroImage, styles.heroImageWide]}
-                  resizeMode="contain"
-                  accessibilityLabel="Налоговый консультант за работой"
-                />
-              </View>
-            ) : (
-              <View style={styles.heroRight}>
-                <Image
-                  source={require('../assets/images/hero-specialist.png')}
-                  style={styles.heroImage}
-                  resizeMode="contain"
-                  accessibilityLabel="Налоговый консультант за работой"
-                />
+                <View style={styles.heroCardsContainer}>
+                  {[
+                    { icon: 'search-outline' as const, label: '200+ ИФНС' },
+                    { icon: 'people-outline' as const, label: 'Проверенные специалисты' },
+                    { icon: 'checkmark-done-outline' as const, label: 'Результат, не совет' },
+                  ].map((item) => (
+                    <View key={item.label} style={styles.heroCard}>
+                      <Ionicons name={item.icon} size={28} color={Colors.brandPrimary} />
+                      <Text style={styles.heroCardText}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             )}
+          </View>
+        </View>
+
+        {/* ===== Stats Bar ===== */}
+        <View style={styles.statsSection}>
+          <View style={[styles.statsInner, innerStyle]}>
+            <View style={[isMobile ? styles.statsRowMobile : styles.statsRow]}>
+              {[
+                { number: '200+', label: 'ИФНС в базе' },
+                { number: '500+', label: 'Специалистов' },
+                { number: '1-2 часа', label: 'Время первого отклика' },
+                { number: 'Бесплатно', label: 'Размещение запроса' },
+              ].map((stat, idx, arr) => (
+                <React.Fragment key={stat.label}>
+                  <View style={[styles.statItem, isMobile && styles.statItemMobile]}>
+                    <Text style={styles.statNumber}>{stat.number}</Text>
+                    <Text style={styles.statLabel}>{stat.label}</Text>
+                  </View>
+                  {!isMobile && idx < arr.length - 1 && <View style={styles.statDivider} />}
+                </React.Fragment>
+              ))}
+            </View>
           </View>
         </View>
 
@@ -559,18 +578,11 @@ export default function LandingScreen() {
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041A\u0430\u043A \u044D\u0442\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442'}</Text>
 
-            <Image
-              source={require('../assets/images/how-it-works-icons.png')}
-              style={{ width: '100%', height: 120, maxWidth: 600 }}
-              resizeMode="contain"
-              accessibilityLabel="Как работает платформа"
-            />
-
             <View style={[styles.stepsRow, isWide && styles.stepsRowWide]}>
               {[
-                { num: '1', icon: '✍️', title: 'Опишите ситуацию', desc: 'Расскажите что произошло: требование ФНС, проверка, штраф или нужна помощь с декларацией' },
-                { num: '2', icon: '🔍', title: 'Подбираем по ИФНС', desc: 'Ищем специалистов, которые работали именно с вашей инспекцией и знают её практику' },
-                { num: '3', icon: '✅', title: 'Получите решение', desc: 'Специалист не просто сопровождает — он ведёт ваш вопрос до закрытия' },
+                { num: '1', icon: 'create-outline' as const, title: 'Опишите ситуацию', desc: 'Расскажите что произошло: требование ФНС, проверка, штраф или нужна помощь с декларацией' },
+                { num: '2', icon: 'search-outline' as const, title: 'Подбираем по ИФНС', desc: 'Ищем специалистов, которые работали именно с вашей инспекцией и знают её практику' },
+                { num: '3', icon: 'checkmark-circle-outline' as const, title: 'Получите решение', desc: 'Специалист не просто сопровождает — он ведёт ваш вопрос до закрытия' },
               ].map((step, idx, arr) => (
                 <React.Fragment key={step.num}>
                   {idx > 0 && isWide && (
@@ -580,7 +592,7 @@ export default function LandingScreen() {
                   )}
                   <View style={[styles.stepItem, isWide && styles.stepItemWide]}>
                     <View style={styles.stepNumberCircle}>
-                      <Text style={styles.stepNumberText}>{step.icon}</Text>
+                      <Ionicons name={step.icon} size={24} color={Colors.white} />
                     </View>
                     <View style={styles.stepTextBlock}>
                       <Text style={[styles.stepTitle, !isWide && { textAlign: 'center' as const }]}>{step.title}</Text>
@@ -597,10 +609,10 @@ export default function LandingScreen() {
         <View style={[styles.section, { backgroundColor: '#1A3A6C', paddingVertical: 64 }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={[styles.sectionTitle, { color: '#FFFFFF' }]} accessibilityRole="header" aria-level={2}>
-              {'Не решения — результаты'}
+              {'Специалист по вашей ИФНС — не по налогам вообще'}
             </Text>
             <Text style={[styles.sectionSubtitle, { color: 'rgba(255,255,255,0.80)', maxWidth: 620 }]}>
-              {'Обычные сервисы дают совет. Мы находим того, кто доведёт ваш вопрос до результата: закроет проверку, снимет штраф, подаст декларацию, выиграет спор.'}
+              {'Мы не даём общих советов. Каждый специалист на платформе работает с конкретными инспекциями и решает конкретные вопросы: камеральная в ИФНС №46, выездная в МРИ №5, спор с вашей районной.'}
             </Text>
             <TouchableOpacity
               onPress={() => router.push('/specialists')}
@@ -679,13 +691,6 @@ export default function LandingScreen() {
         <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
           <View style={[styles.sectionInner, innerStyle]}>
             <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041A\u0430\u043A \u043C\u044B \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
-
-            <Image
-              source={require('../assets/images/trust-icons.png')}
-              style={{ width: '100%', height: 100, maxWidth: 500 }}
-              resizeMode="contain"
-              accessibilityLabel="Верификация специалистов"
-            />
 
             <View style={[styles.trustRow, isWide && styles.trustRowWide]}>
               {[
@@ -918,6 +923,36 @@ const styles = StyleSheet.create({
       ? { background: `linear-gradient(135deg, ${Colors.brandPrimary} 0%, ${Colors.brandPrimaryHover} 100%)` } as any
       : {}),
   },
+  heroCardsContainer: {
+    gap: 16,
+    padding: 24,
+    borderRadius: BorderRadius.lg,
+    ...(Platform.OS === 'web'
+      ? { background: `linear-gradient(135deg, ${Colors.brandPrimary} 0%, ${Colors.brandPrimaryHover} 100%)` } as any
+      : { backgroundColor: Colors.brandPrimary }),
+  },
+  heroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.md,
+    padding: 16,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 2px 8px rgba(15, 36, 71, 0.10)' }
+      : {
+          shadowColor: Colors.textPrimary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 3,
+        }),
+  },
+  heroCardText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
 
   // ---- Stats Bar ----
   statsSection: {
@@ -1010,7 +1045,7 @@ const styles = StyleSheet.create({
   },
   stepItemWide: {
     flex: 1,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: 24,
   },
   stepNumberCircle: {
@@ -1054,6 +1089,17 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     backgroundColor: Colors.bgPrimary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 2px 12px rgba(15, 36, 71, 0.06)' }
+      : {
+          shadowColor: Colors.textPrimary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          elevation: 3,
+        }),
   },
   forWhomCardWide: {},
   forWhomIconContainer: {
@@ -1144,6 +1190,7 @@ const styles = StyleSheet.create({
   },
   reviewCard: {
     flex: 1,
+    minWidth: 280,
     backgroundColor: Colors.bgCard,
     borderRadius: BorderRadius.md,
     padding: 24,
