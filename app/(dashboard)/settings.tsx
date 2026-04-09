@@ -386,6 +386,7 @@ export default function SettingsScreen() {
                   onValueChange={handleNotifToggle}
                   trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
                   thumbColor={Colors.textPrimary}
+                  accessibilityLabel="Email-уведомления"
                 />
               )}
             </View>

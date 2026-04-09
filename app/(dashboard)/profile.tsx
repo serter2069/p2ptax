@@ -134,6 +134,13 @@ export default function MySpecialistProfileScreen() {
     if (result.canceled || !result.assets?.[0]) return;
 
     const asset = result.assets[0];
+
+    // Validate minimum image size
+    if (asset.width && asset.height && (asset.width < 100 || asset.height < 100)) {
+      Alert.alert('Ошибка', 'Изображение слишком маленькое (мин. 100x100)');
+      return;
+    }
+
     setUploadingAvatar(true);
     try {
       const formData = new FormData();

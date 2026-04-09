@@ -84,12 +84,7 @@ export default function SpecialistDashboard() {
     fetchData();
   }, [fetchData]);
 
-  // Redirect to onboarding wizard if specialist has no profile
-  useEffect(() => {
-    if (hasProfile === false) {
-      router.replace('/specialist/onboarding');
-    }
-  }, [hasProfile, router]);
+  // No longer auto-redirect — show CTA instead (see #361)
 
   function handleRefresh() {
     setRefreshing(true);
@@ -193,6 +188,23 @@ export default function SpecialistDashboard() {
     </View>
   );
 
+  const noProfileCta = hasProfile === false ? (
+    <View style={styles.noProfileCta}>
+      <Ionicons name="person-add-outline" size={36} color={Colors.brandPrimary} />
+      <Text style={styles.noProfileCtaTitle}>Создайте профиль специалиста</Text>
+      <Text style={styles.noProfileCtaSubtitle}>
+        Заполните профиль, чтобы клиенты могли вас найти и отправить запрос
+      </Text>
+      <TouchableOpacity
+        style={styles.noProfileCtaBtn}
+        onPress={() => router.push('/specialist/onboarding')}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.noProfileCtaBtnText}>Создать профиль</Text>
+      </TouchableOpacity>
+    </View>
+  ) : null;
+
   const content = loading ? (
     <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginTop: Spacing['3xl'] }} />
   ) : loadError ? (
@@ -204,6 +216,7 @@ export default function SpecialistDashboard() {
     </View>
   ) : (
     <>
+      {noProfileCta}
       {profileChip}
       {statsSection}
       {quickActions}
@@ -431,5 +444,40 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.md,
     color: Colors.textSecondary,
     marginTop: -Spacing.lg,
+  },
+  // No profile CTA
+  noProfileCta: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: Colors.brandPrimary,
+    padding: Spacing['2xl'],
+    alignItems: 'center',
+    gap: Spacing.md,
+    ...Shadows.md,
+  },
+  noProfileCtaTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  noProfileCtaSubtitle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  noProfileCtaBtn: {
+    backgroundColor: Colors.brandPrimary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing['2xl'],
+    marginTop: Spacing.sm,
+  },
+  noProfileCtaBtnText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.white,
   },
 });

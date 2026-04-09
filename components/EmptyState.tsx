@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, Typography } from '../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius } from '../constants/Colors';
 import { Button } from './Button';
 
 interface EmptyStateProps {
@@ -61,5 +61,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     alignSelf: 'center',
     minWidth: 160,
+    borderRadius: BorderRadius.md,
   },
 });

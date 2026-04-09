@@ -771,6 +771,7 @@ const styles = StyleSheet.create({
   chipActive: {
     backgroundColor: Colors.brandPrimary,
     borderColor: Colors.brandPrimary,
+    borderWidth: 2,
   },
   chipText: {
     fontSize: Typography.fontSize.sm,
@@ -778,6 +779,7 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: Colors.white,
+    fontWeight: Typography.fontWeight.semibold,
   },
   loadingBox: {
     paddingTop: Spacing['4xl'],

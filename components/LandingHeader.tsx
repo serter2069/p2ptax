@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useBreakpoints } from '../hooks/useBreakpoints';
@@ -16,6 +17,15 @@ export function LandingHeader() {
   const { isDesktop } = useBreakpoints();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(menuAnim, {
+      toValue: menuOpen ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [menuOpen, menuAnim]);
 
   return (
     <View style={styles.container}>
@@ -118,7 +128,7 @@ export function LandingHeader() {
 
       {/* Mobile dropdown menu */}
       {!isDesktop && menuOpen && (
-        <View style={styles.mobileMenu}>
+        <Animated.View style={[styles.mobileMenu, { opacity: menuAnim, transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }] }]}>
           <TouchableOpacity
             onPress={() => { setMenuOpen(false); router.push('/specialists'); }}
             activeOpacity={0.7}
@@ -178,7 +188,7 @@ export function LandingHeader() {
               </TouchableOpacity>
             </>
           )}
-        </View>
+        </Animated.View>
       )}
     </View>
   );

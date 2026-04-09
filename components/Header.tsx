@@ -39,7 +39,7 @@ export function Header({ title, showBack = false, rightAction, onBackPress }: He
         <>
           <View style={styles.left}>
             {showBack && (
-              <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={12}>
+              <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{top:12,bottom:12,left:12,right:12}}>
                 <Text style={styles.backIcon}>{'←'}</Text>
               </TouchableOpacity>
             )}
@@ -57,7 +57,7 @@ export function Header({ title, showBack = false, rightAction, onBackPress }: He
         // Desktop/tablet: back (if needed) | left-aligned title | right spacer + action
         <>
           {showBack && (
-            <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={12}>
+            <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{top:12,bottom:12,left:12,right:12}}>
               <Text style={styles.backIcon}>{'←'}</Text>
             </TouchableOpacity>
           )}

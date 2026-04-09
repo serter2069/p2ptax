@@ -587,27 +587,33 @@ export default function PublicSpecialistProfileScreen() {
           <Text style={styles.emptyText}>Отзывов пока нет</Text>
         ) : (
           <View style={styles.reviewsList}>
-            {reviews.map((review) => (
-              <View key={review.id} style={styles.reviewRow}>
-                <View style={styles.reviewMeta}>
-                  <View style={styles.reviewerAvatar}>
-                    <Text style={styles.reviewerInitials}>{getReviewerInitials(review)}</Text>
+            {reviews.map((review) => {
+              const isOwnReview = user && review.client.id === user.userId;
+              return (
+                <View key={review.id} style={[styles.reviewRow, isOwnReview && styles.reviewRowOwn]}>
+                  {isOwnReview && (
+                    <Text style={styles.ownReviewLabel}>Ваш отзыв</Text>
+                  )}
+                  <View style={styles.reviewMeta}>
+                    <View style={styles.reviewerAvatar}>
+                      <Text style={styles.reviewerInitials}>{getReviewerInitials(review)}</Text>
+                    </View>
+                    <View style={styles.reviewerInfo}>
+                      <Text style={styles.reviewAuthor}>
+                        {review.client.username ? `@${review.client.username}` : `Пользователь #${review.client.id.slice(0, 4)}`}
+                      </Text>
+                      <Text style={styles.reviewDate}>
+                        {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                      </Text>
+                    </View>
+                    <Stars rating={review.rating} size="sm" />
                   </View>
-                  <View style={styles.reviewerInfo}>
-                    <Text style={styles.reviewAuthor}>
-                      {review.client.username ? `@${review.client.username}` : `Пользователь #${review.client.id.slice(0, 4)}`}
-                    </Text>
-                    <Text style={styles.reviewDate}>
-                      {new Date(review.createdAt).toLocaleDateString('ru-RU')}
-                    </Text>
-                  </View>
-                  <Stars rating={review.rating} size="sm" />
+                  {review.comment ? (
+                    <Text style={styles.reviewComment}>{review.comment}</Text>
+                  ) : null}
                 </View>
-                {review.comment ? (
-                  <Text style={styles.reviewComment}>{review.comment}</Text>
-                ) : null}
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
@@ -836,6 +842,8 @@ const styles = StyleSheet.create({
 
   reviewsList: { gap: 16, marginTop: 12 },
   reviewRow: { gap: 8 },
+  reviewRowOwn: { backgroundColor: '#EBF3FB', borderRadius: 12, padding: 12 },
+  ownReviewLabel: { fontSize: 11, fontWeight: '600' as const, color: B.action, marginBottom: 2 },
   reviewMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   reviewerAvatar: {
     width: 32,

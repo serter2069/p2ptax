@@ -61,6 +61,11 @@ export default function CitiesScreen() {
             <View style={styles.progressDot} />
           </View>
 
+          {/* Progress bar */}
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: '50%' }]} />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.step}>Шаг 2 из 4</Text>
@@ -153,6 +158,17 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: Colors.border,
     marginHorizontal: Spacing.xs,
+  },
+  progressBarBg: {
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: 4,
+    backgroundColor: Colors.brandPrimary,
+    borderRadius: 2,
   },
   header: {
     gap: Spacing.xs,
