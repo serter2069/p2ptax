@@ -191,6 +191,16 @@ export class AuthService {
     };
   }
 
+  async logout(refreshToken: string): Promise<void> {
+    try {
+      await this.prisma.refreshToken.delete({
+        where: { token: hashToken(refreshToken) },
+      });
+    } catch {
+      // Token not found — already revoked or never stored, ignore silently
+    }
+  }
+
   async refresh(refreshToken: string): Promise<TokenPair> {
     let payload: { sub: string };
     try {
