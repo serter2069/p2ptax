@@ -51,3 +51,4 @@ api/uploads/
 # IDE
 .vscode/
 .idea/
+worktrees/
