@@ -110,6 +110,17 @@ export default function CitiesScreen() {
           >
             Продолжить
           </Button>
+
+          <TouchableOpacity
+            onPress={async () => {
+              await AsyncStorage.setItem('onboarding_cities', JSON.stringify([]));
+              router.push('/(onboarding)/fns');
+            }}
+            style={styles.skipBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.skipBtnText}>Заполнить позже</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -233,5 +244,13 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.medium,
+  },
+  skipBtn: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  skipBtnText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textMuted,
   },
 });

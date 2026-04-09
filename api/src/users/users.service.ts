@@ -52,8 +52,8 @@ export class UsersService {
     return { id: updated.id, email: updated.email, role: updated.role };
   }
 
-  /** Set username for a user. 3-20 chars, alphanumeric + underscore, globally unique. */
-  async setUsername(userId: string, username: string): Promise<{ id: string; email: string; role: string; username: string }> {
+  /** Set username (+ optional firstName/lastName) for a user. */
+  async setUsername(userId: string, username: string, firstName?: string, lastName?: string): Promise<{ id: string; email: string; role: string; username: string }> {
     if (username.length < 3 || username.length > 20) {
       throw new BadRequestException('Username must be between 3 and 20 characters');
     }
@@ -66,9 +66,13 @@ export class UsersService {
       throw new ConflictException('Username already taken');
     }
 
+    const data: Record<string, unknown> = { username };
+    if (firstName !== undefined) data.firstName = firstName;
+    if (lastName !== undefined) data.lastName = lastName;
+
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { username },
+      data,
     });
 
     return { id: user.id, email: user.email, role: user.role, username: user.username! };
@@ -96,10 +100,10 @@ export class UsersService {
     if (!user.username) throw new BadRequestException('Username must be set before creating specialist profile');
 
     const trimmedServices = services.map((s) => s.trim()).filter(Boolean);
-    if (trimmedServices.length === 0) throw new BadRequestException('Services description cannot be empty');
-
     const trimmedCities = cities.map((c) => c.trim()).filter(Boolean);
-    if (trimmedCities.length === 0) throw new BadRequestException('At least one city must be selected');
+
+    // Profile is complete only when cities and services are provided
+    const profileComplete = trimmedCities.length > 0 && trimmedServices.length > 0;
 
     // Check for existing profile (idempotent — allow re-submission)
     const existing = await this.prisma.specialistProfile.findUnique({ where: { userId } });
@@ -115,6 +119,7 @@ export class UsersService {
             cities: trimmedCities,
             services: trimmedServices,
             ...(trimmedFnsOffices.length > 0 && { fnsOffices: trimmedFnsOffices }),
+            profileComplete,
           },
         }),
         this.prisma.user.update({
@@ -136,6 +141,7 @@ export class UsersService {
             services: trimmedServices,
             fnsOffices: trimmedFnsOffices,
             badges: [],
+            profileComplete,
           },
         }),
         this.prisma.user.update({

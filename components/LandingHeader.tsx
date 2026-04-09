@@ -21,7 +21,7 @@ interface NavLinkConfig {
 
 const NAV_LINKS: NavLinkConfig[] = [
   { label: 'Специалисты', route: '/specialists', segment: 'specialists' },
-  { label: 'Лента запросов', route: '/requests', segment: 'requests' },
+  { label: 'Запросы', route: '/requests', segment: 'requests' },
 ];
 
 export function LandingHeader() {
