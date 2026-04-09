@@ -69,6 +69,13 @@ export class RequestsController {
     );
   }
 
+  // GET /requests/:id/responses — owner gets list of responses
+  @Get(':id/responses')
+  @UseGuards(JwtAuthGuard)
+  getResponses(@Request() req: any, @Param('id') id: string) {
+    return this.requestsService.findResponses(id, req.user.id);
+  }
+
   // GET /requests/:id — public, owner gets full data including responses
   @Get(':id')
   @UseGuards(OptionalJwtAuthGuard)

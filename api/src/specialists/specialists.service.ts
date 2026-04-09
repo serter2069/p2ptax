@@ -95,7 +95,7 @@ export class SpecialistsService {
     return Array.from(citySet).sort((a, b) => a.localeCompare(b, 'ru'));
   }
 
-  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string, page: number = 1, limit: number = 20) {
+  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string, page: number = 1, limit: number = 20, offset?: number) {
     // Cap limit to prevent abuse
     if (limit > 50) limit = 50;
     if (limit < 1) limit = 1;
@@ -226,7 +226,7 @@ export class SpecialistsService {
 
     const total = allProfiles.length;
     const pages = Math.ceil(total / limit);
-    const skip = (page - 1) * limit;
+    const skip = offset !== undefined ? offset : (page - 1) * limit;
     const pageUserIds = allProfiles.slice(skip, skip + limit).map((p) => p.userId);
 
     // PASS 2: Fetch full data only for the current page

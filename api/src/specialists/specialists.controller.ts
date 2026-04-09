@@ -111,7 +111,10 @@ export class SpecialistsController {
     @Query('category') category?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
   ) {
+    const parsedLimit = Math.min(parseInt(limit ?? '20') || 20, 50);
+    const parsedOffset = offset !== undefined ? parseInt(offset, 10) : undefined;
     return this.specialistsService.getCatalog(
       city,
       badge,
@@ -120,7 +123,8 @@ export class SpecialistsController {
       fns,
       category,
       parseInt(page ?? '1') || 1,
-      Math.min(parseInt(limit ?? '20') || 20, 50),
+      parsedLimit,
+      parsedOffset !== undefined && !isNaN(parsedOffset) ? parsedOffset : undefined,
     );
   }
 
