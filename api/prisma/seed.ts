@@ -8,6 +8,7 @@ interface SpecialistSeedData {
   displayName: string;
   avatarUrl: string;
   bio: string;
+  headline: string;
   experience: number;
   cities: string[];
   fnsOffices?: string[];
@@ -24,10 +25,11 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Иван Петров',
     avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face',
     bio: 'Специализируюсь на разрешении налоговых споров с ФНС. Успешно представлял клиентов в арбитражных судах по делам о доначислениях, штрафах и пенях. Помогаю минимизировать налоговые риски для бизнеса.',
+    headline: 'Представительство в ФНС — быстро и с результатом',
     experience: 12,
     cities: ['Москва'],
     fnsOffices: ['Инспекция ФНС России № 1 по г.Москве', 'Инспекция ФНС России № 9 по г.Москве', 'Инспекция ФНС России № 15 по г. Москве'],
-    services: ['Налоговые споры', 'Представительство в суде', 'Досудебное обжалование', 'Налоговый аудит'],
+    services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'],
     badges: ['verified'],
     contacts: 'Telegram: @ivan_petrov_tax',
     reviews: [
@@ -44,10 +46,11 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Елена Соколова',
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face',
     bio: 'Помогаю физическим лицам с декларациями 3-НДФЛ: налоговые вычеты при покупке жилья, лечении, обучении. Заполню и подам декларацию за вас, проконтролирую получение возврата.',
+    headline: 'Решу вопрос с камеральной проверкой',
     experience: 8,
     cities: ['Санкт-Петербург'],
     fnsOffices: ['Межрайонная ИФНС России № 16 по Санкт-Петербургу', 'Межрайонная ИФНС России № 20 по Санкт-Петербургу'],
-    services: ['Декларации 3-НДФЛ', 'Имущественный вычет', 'Социальный вычет', 'Возврат налога'],
+    services: ['Камеральная проверка', 'Выездная проверка'],
     badges: ['verified'],
     contacts: 'WhatsApp: +7 (921) 555-00-01',
     reviews: [
@@ -63,10 +66,11 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Дмитрий Волков',
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face',
     bio: 'Налоговый консультант для бизнеса. 15 лет опыта в оптимизации налогообложения для ООО и ИП. Помогаю выбрать оптимальную систему налогообложения и легально снизить налоговую нагрузку.',
+    headline: '15 лет работы с выездными проверками',
     experience: 15,
     cities: ['Екатеринбург'],
     fnsOffices: ['Межрайонная ИФНС России № 25 по Свердловской области', 'Межрайонная ИФНС России № 32 по Свердловской области'],
-    services: ['Оптимизация налогов', 'Выбор системы налогообложения', 'Налоговое планирование', 'Консультации для бизнеса'],
+    services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'],
     badges: ['verified'],
     contacts: 'Email: volkov.tax@mail.ru',
     reviews: [
@@ -83,9 +87,10 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Мария Новикова',
     avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=face',
     bio: 'Помогу зарегистрировать ИП или ООО под ключ: подготовка документов, подача в ФНС, выбор ОКВЭД и системы налогообложения. Также консультирую по реорганизации и ликвидации.',
+    headline: 'Сопровождение в отделе оперативного контроля ФНС',
     experience: 5,
     cities: ['Казань'],
-    services: ['Регистрация ИП', 'Регистрация ООО', 'Выбор ОКВЭД', 'Ликвидация бизнеса'],
+    services: ['Отдел оперативного контроля', 'Камеральная проверка'],
     badges: ['verified'],
     contacts: 'Telegram: @maria_novikova_biz',
     reviews: [
@@ -100,10 +105,11 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Алексей Кузнецов',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
     bio: 'Эксперт по налоговым вычетам для физических лиц. Помогу вернуть НДФЛ за покупку жилья, лечение, обучение, инвестиции (ИИС). Работаю дистанционно по всей России.',
+    headline: 'Камеральные проверки без доначислений — мой результат',
     experience: 10,
     cities: ['Москва'],
     fnsOffices: ['Инспекция ФНС России № 20 по г.Москве', 'Инспекция ФНС России № 21 по г.Москве', 'Инспекция ФНС России № 22 по г. Москве'],
-    services: ['Налоговые вычеты', 'Инвестиционный вычет ИИС', 'Возврат НДФЛ', 'Консультации по налогам'],
+    services: ['Камеральная проверка', 'Выездная проверка', 'Отдел оперативного контроля'],
     badges: ['verified'],
     contacts: 'Email: kuznetsov.tax@gmail.com',
     reviews: [
@@ -119,9 +125,10 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Ольга Морозова',
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face',
     bio: 'Юрист-налоговик с опытом работы в ФНС. Знаю систему изнутри и помогаю клиентам защищать свои права при проверках и доначислениях. Специализируюсь на спорах с налоговой.',
+    headline: 'Бывший сотрудник ФНС — знаю систему изнутри',
     experience: 7,
     cities: ['Новосибирск'],
-    services: ['Споры с ФНС', 'Сопровождение проверок', 'Обжалование решений ФНС', 'Налоговые консультации'],
+    services: ['Выездная проверка', 'Камеральная проверка'],
     badges: [],
     contacts: 'Telegram: @morozova_tax',
     reviews: [
@@ -136,9 +143,10 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Сергей Лебедев',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face',
     bio: 'Бухгалтер-консультант с фокусом на НДС. Помогаю компаниям правильно вести учёт НДС, готовить декларации и проходить камеральные проверки без доначислений.',
+    headline: 'Камеральные проверки по НДС — прохожу без замечаний',
     experience: 9,
     cities: ['Краснодар'],
-    services: ['НДС', 'Бухучёт', 'Камеральные проверки', 'Декларации по НДС'],
+    services: ['Камеральная проверка', 'Выездная проверка'],
     badges: ['verified'],
     contacts: 'WhatsApp: +7 (861) 200-00-01',
     reviews: [
@@ -154,9 +162,10 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Анна Козлова',
     avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face',
     bio: 'Консультирую самозанятых по налогам и регистрации. Помогу разобраться с приложением "Мой налог", оптимизировать доход и избежать ошибок при работе с платформами.',
+    headline: 'Оперативный контроль и самозанятость без штрафов',
     experience: 4,
     cities: ['Санкт-Петербург'],
-    services: ['Налоги для самозанятых', 'Регистрация самозанятости', 'Приложение "Мой налог"', 'Консультации'],
+    services: ['Отдел оперативного контроля', 'Камеральная проверка'],
     badges: ['verified'],
     contacts: 'Telegram: @anna_samozanyatye',
     reviews: [
@@ -173,9 +182,10 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Виктор Смирнов',
     avatarUrl: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=200&h=200&fit=crop&crop=face',
     bio: 'Специалист по международному налогообложению. Консультирую по вопросам ВЭД, двойного налогообложения, валютного контроля и работы с иностранными контрагентами.',
+    headline: 'Выездные проверки при ВЭД — защищу интересы бизнеса',
     experience: 11,
     cities: ['Ростов-на-Дону'],
-    services: ['Международное налогообложение', 'ВЭД', 'Валютный контроль', 'Двойное налогообложение'],
+    services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'],
     badges: ['verified'],
     contacts: 'Email: smirnov.international@tax.ru',
     reviews: [
@@ -191,10 +201,11 @@ const specialists: SpecialistSeedData[] = [
     displayName: 'Татьяна Иванова',
     avatarUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=200&h=200&fit=crop&crop=face',
     bio: 'Аудитор с 14-летним стажем. Провожу налоговый аудит для компаний любого масштаба: от ИП до крупного бизнеса. Выявляю риски до того, как их найдёт налоговая.',
+    headline: 'Подготовлю к выездной проверке — без сюрпризов',
     experience: 14,
     cities: ['Москва'],
     fnsOffices: ['Инспекция ФНС России № 28 по г. Москве', 'Инспекция ФНС России № 29 по г. Москве', 'Инспекция ФНС России № 30 по г. Москве'],
-    services: ['Налоговый аудит', 'Due diligence', 'Оценка налоговых рисков', 'Подготовка к проверкам'],
+    services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'],
     badges: ['verified'],
     contacts: 'Telegram: @ivanova_audit',
     reviews: [
@@ -394,6 +405,7 @@ async function main() {
         nick: spec.nick,
         displayName: spec.displayName,
         bio: spec.bio,
+        headline: spec.headline,
         experience: spec.experience,
         cities: spec.cities,
         fnsOffices: spec.fnsOffices ?? [],
@@ -407,6 +419,7 @@ async function main() {
         nick: spec.nick,
         displayName: spec.displayName,
         bio: spec.bio,
+        headline: spec.headline,
         experience: spec.experience,
         cities: spec.cities,
         fnsOffices: spec.fnsOffices ?? [],
