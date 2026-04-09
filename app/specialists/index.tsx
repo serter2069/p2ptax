@@ -444,6 +444,7 @@ const styles = StyleSheet.create({
   searchSection: {
     position: 'relative',
     zIndex: 20,
+    overflow: 'visible',
   },
   searchInput: {
     borderWidth: 1,
@@ -454,6 +455,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
     backgroundColor: Colors.bgCard,
+    width: '100%',
   },
   fnsDropdown: {
     position: 'absolute',
@@ -651,6 +653,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.sm,
     paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.xs,
   },
   chip: {
     paddingVertical: 4,

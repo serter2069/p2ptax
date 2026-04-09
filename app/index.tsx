@@ -217,7 +217,11 @@ export default function LandingScreen() {
             ]}
           >
             <View style={[styles.heroLeft, isWide && styles.heroLeftWide]}>
-              <Text style={[styles.heroTitle, isWide && styles.heroTitleWide]}>
+              <Text
+                style={[styles.heroTitle, isWide && styles.heroTitleWide]}
+                accessibilityRole="header"
+                aria-level={1}
+              >
                 {'\u041F\u0440\u043E\u0431\u043B\u0435\u043C\u044B \u0441 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u043E\u0439?\n\u041D\u0430\u0439\u0434\u0451\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430 \u0437\u0430 1 \u0447\u0430\u0441'}
               </Text>
               <Text style={[styles.heroSubtitle, isWide && styles.heroSubtitleWide]}>
@@ -226,25 +230,25 @@ export default function LandingScreen() {
 
               <QuickRequestForm />
 
-              <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
-                {isWide && (
+              {isWide && (
+                <View style={[styles.heroCtas, styles.heroCtasWide]}>
                   <Button
                     onPress={() => router.push('/specialists')}
                     variant="primary"
                     style={{ minWidth: 220 }}
                   >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
-                )}
-                <Button
-                  onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
-                  variant="outline"
-                  style={isWide ? { minWidth: 200 } : { width: '100%' as any }}
-                >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
-                <Button
-                  onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-                  variant="outline"
-                  style={isWide ? { minWidth: 200 } : { width: '100%' as any }}
-                >{'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
-              </View>
+                  <Button
+                    onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
+                    variant="outline"
+                    style={{ minWidth: 200 }}
+                  >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
+                  <Button
+                    onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
+                    variant="outline"
+                    style={{ minWidth: 200 }}
+                  >{'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
+                </View>
+              )}
             </View>
 
             {isWide ? (
@@ -301,7 +305,7 @@ export default function LandingScreen() {
         {featuredSpecialists.length > 0 && (
           <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
             <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B'}</Text>
+              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B'}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -335,7 +339,7 @@ export default function LandingScreen() {
         {recentRequests.length > 0 && (
           <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
             <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle}>{'\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
+              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
               <View style={dyn.requestsList}>
                 {recentRequests.map((req: any) => (
                   <TouchableOpacity
@@ -365,7 +369,7 @@ export default function LandingScreen() {
         {popularCities.length > 0 && (
           <View style={[styles.section, { backgroundColor: Colors.white }]}>
             <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle}>{'\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u044B\u0435 \u0433\u043E\u0440\u043E\u0434\u0430'}</Text>
+              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u044B\u0435 \u0433\u043E\u0440\u043E\u0434\u0430'}</Text>
               <View style={dyn.citiesRow}>
                 {popularCities.map((item: any) => {
                   const cityName = typeof item === 'string' ? item : (item.city || item.name || String(item));
@@ -388,7 +392,7 @@ export default function LandingScreen() {
         {/* ===== SECTION 3: How it works ===== */}
         <View nativeID="how-it-works" style={[styles.section, { backgroundColor: Colors.bgCard }]}>
           <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle}>{'\u041A\u0430\u043A \u044D\u0442\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442'}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041A\u0430\u043A \u044D\u0442\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442'}</Text>
 
             <View style={[styles.stepsRow, isWide && styles.stepsRowWide]}>
               {[
@@ -413,7 +417,7 @@ export default function LandingScreen() {
         {/* ===== SECTION 4: Typical tasks ===== */}
         <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
           <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle}>{'\u0422\u0438\u043F\u0438\u0447\u043D\u044B\u0435 \u0437\u0430\u0434\u0430\u0447\u0438'}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0422\u0438\u043F\u0438\u0447\u043D\u044B\u0435 \u0437\u0430\u0434\u0430\u0447\u0438'}</Text>
             <Text style={styles.sectionSubtitle}>{'\u0427\u0442\u043E \u0440\u0435\u0448\u0430\u0435\u0442 \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0430'}</Text>
 
             <View style={[styles.tasksGrid, isDesktop && styles.tasksGridDesktop, isTablet && styles.tasksGridTablet]}>
@@ -436,7 +440,7 @@ export default function LandingScreen() {
         {/* ===== SECTION 5: For whom ===== */}
         <View style={[styles.section, { backgroundColor: Colors.bgCard }]}>
           <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle}>{'\u0414\u043B\u044F \u043A\u043E\u0433\u043E'}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0414\u043B\u044F \u043A\u043E\u0433\u043E'}</Text>
 
             <View style={[styles.forWhomRow, isWide && styles.forWhomRowWide]}>
               {/* Clients */}
@@ -493,7 +497,7 @@ export default function LandingScreen() {
         {/* ===== SECTION 6: Trust ===== */}
         <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
           <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle}>{'\u041A\u0430\u043A \u043C\u044B \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041A\u0430\u043A \u043C\u044B \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
 
             <View style={[styles.trustRow, isWide && styles.trustRowWide]}>
               {[
@@ -514,7 +518,7 @@ export default function LandingScreen() {
         {/* ===== SECTION 7: Reviews ===== */}
         <View style={[styles.section, { backgroundColor: Colors.bgCard }]}>
           <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle}>{'\u041E\u0442\u0437\u044B\u0432\u044B \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432'}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041E\u0442\u0437\u044B\u0432\u044B \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432'}</Text>
 
             <View style={[styles.reviewsRow, isDesktop && styles.reviewsRowDesktop, isTablet && styles.reviewsRowTablet]}>
               {[
@@ -549,7 +553,7 @@ export default function LandingScreen() {
         {/* ===== SECTION 8: FAQ ===== */}
         <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
           <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle}>{'\u0427\u0430\u0441\u0442\u043E \u0437\u0430\u0434\u0430\u0432\u0430\u0435\u043C\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B'}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0427\u0430\u0441\u0442\u043E \u0437\u0430\u0434\u0430\u0432\u0430\u0435\u043C\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B'}</Text>
 
             <View style={styles.faqList}>
               {[
@@ -727,6 +731,7 @@ const styles = StyleSheet.create({
   heroCtasWide: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
   },
   heroImage: {
     width: '100%',

@@ -15,6 +15,7 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError } from '../../lib/api';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -27,6 +28,7 @@ export default function EmailScreen() {
   const role = params.role === 'SPECIALIST' ? 'SPECIALIST' : 'CLIENT';
   const redirectTo = params.redirectTo as string | undefined;
 
+  const { isMobile } = useBreakpoints();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -69,7 +71,7 @@ export default function EmailScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.container}>
+          <View style={[styles.container, !isMobile && styles.containerWide]}>
             {/* Back */}
             <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
               <Text style={styles.backText}>← Назад</Text>
@@ -168,6 +170,9 @@ const styles = StyleSheet.create({
     maxWidth: 430,
     paddingHorizontal: Spacing.xl,
     gap: Spacing['2xl'],
+  },
+  containerWide: {
+    maxWidth: 520,
   },
   back: {
     alignSelf: 'flex-start',
