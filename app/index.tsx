@@ -694,6 +694,51 @@ export default function LandingScreen() {
           </View>
         </View>
 
+        {/* ===== SECTION 8b: Transparent Pricing ===== */}
+        <View style={[styles.section, { backgroundColor: Colors.bgCard }]}>
+          <View style={[styles.sectionInner, innerStyle]}>
+            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>
+              {'\u041F\u0440\u043E\u0437\u0440\u0430\u0447\u043D\u043E\u0435 \u0446\u0435\u043D\u043E\u043E\u0431\u0440\u0430\u0437\u043E\u0432\u0430\u043D\u0438\u0435'}
+            </Text>
+
+            <View style={[styles.forWhomRow, isWide && styles.forWhomRowWide]}>
+              {/* For clients */}
+              <View style={pricingStyles.card}>
+                <Text style={pricingStyles.cardTitle}>{'\u0414\u043B\u044F \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432'}</Text>
+                {[
+                  '\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441 \u2014 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E',
+                  '\u041E\u043F\u0438\u0441\u0430\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0443 \u2014 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E',
+                  '\u041F\u043B\u0430\u0442\u0438\u0442\u0435 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u043C\u0443 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0443',
+                ].map((item) => (
+                  <View key={item} style={pricingStyles.row}>
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.statusSuccess} />
+                    <Text style={pricingStyles.rowText}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* For specialists */}
+              <View style={pricingStyles.card}>
+                <Text style={pricingStyles.cardTitle}>{'\u0414\u043B\u044F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
+                {[
+                  '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u2014 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E',
+                  '\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u0438\u043A\u043E\u0432 \u2014 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E',
+                  '\u041A\u043E\u043C\u0438\u0441\u0441\u0438\u044F \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u044B \u2014 0%',
+                ].map((item) => (
+                  <View key={item} style={pricingStyles.row}>
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.statusSuccess} />
+                    <Text style={pricingStyles.rowText}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity onPress={() => router.push('/pricing')} activeOpacity={0.7} style={{ marginTop: Spacing.md }}>
+              <Text style={dyn.seeAllText}>{'\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u0435\u0435 \u043E \u0442\u0430\u0440\u0438\u0444\u0430\u0445 \u2192'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* ===== SECTION 9: Final CTA ===== */}
         <View style={styles.ctaSection}>
           <View style={[styles.ctaContent, innerStyle]}>
@@ -1446,6 +1491,35 @@ const dyn = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.brandPrimary,
     fontWeight: Typography.fontWeight.semibold,
+  },
+});
+
+const pricingStyles = StyleSheet.create({
+  card: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing['2xl'],
+    gap: Spacing.md,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.title,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  rowText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    lineHeight: 22,
+    flex: 1,
   },
 });
 // dev-sync test Thu Apr  9 08:47:11 PDT 2026
