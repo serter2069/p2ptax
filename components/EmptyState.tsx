@@ -33,12 +33,14 @@ export function EmptyState({ icon, title, subtitle, ctaLabel, onCtaPress }: Empt
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing['4xl'],
     paddingVertical: Spacing['3xl'],
     gap: Spacing.md,
+    maxWidth: 500,
+    alignSelf: 'center',
+    width: '100%',
   },
   icon: {
     marginBottom: Spacing.sm,
