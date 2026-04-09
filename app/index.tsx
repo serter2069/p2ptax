@@ -68,6 +68,20 @@ function QuickRequestForm() {
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  // Restore saved form data after auth redirect
+  useEffect(() => {
+    secureStorage.getItem('p2ptax_pending_request').then(saved => {
+      if (saved) {
+        try {
+          const { description: d, city: c, serviceType: s } = JSON.parse(saved);
+          if (d) setDescription(d);
+          if (c) setCity(c);
+          if (s) setServiceType(s);
+        } catch {}
+      }
+    });
+  }, []);
+
   const effectiveCity = city || customCity.trim();
 
   const handleSubmit = async () => {
