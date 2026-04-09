@@ -74,9 +74,11 @@ export default function UsernameScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
-            {/* Progress — 4 steps */}
+            {/* Progress — 5 steps */}
             <View style={styles.progressRow}>
               <View style={[styles.progressDot, styles.progressDotActive]} />
+              <View style={styles.progressLine} />
+              <View style={styles.progressDot} />
               <View style={styles.progressLine} />
               <View style={styles.progressDot} />
               <View style={styles.progressLine} />
@@ -87,7 +89,7 @@ export default function UsernameScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.step}>Шаг 1 из 4</Text>
+              <Text style={styles.step}>Шаг 1 из 5</Text>
               <Text style={styles.title}>Придумайте ник</Text>
               <Text style={styles.subtitle}>
                 Это ваш публичный псевдоним на платформе. Можно изменить позже.

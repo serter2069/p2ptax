@@ -117,7 +117,7 @@ export default function FNSScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
-          {/* Progress — 4 steps */}
+          {/* Progress — 5 steps */}
           <View style={styles.progressRow}>
             <View style={[styles.progressDot, styles.progressDotDone]} />
             <View style={styles.progressLine} />
@@ -126,10 +126,12 @@ export default function FNSScreen() {
             <View style={[styles.progressDot, styles.progressDotActive]} />
             <View style={styles.progressLine} />
             <View style={styles.progressDot} />
+            <View style={styles.progressLine} />
+            <View style={styles.progressDot} />
           </View>
 
           <View style={styles.header}>
-            <Text style={styles.step}>Шаг 3 из 4</Text>
+            <Text style={styles.step}>Шаг 3 из 5</Text>
             <Text style={styles.title}>Выберите ИФНС</Text>
             <Text style={styles.subtitle}>
               Укажите инспекции ФНС, с которыми вы работаете

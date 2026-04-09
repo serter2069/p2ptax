@@ -14,14 +14,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { api, ApiError, tryRefreshTokens, getToken } from '../../lib/api';
-import { useAuth } from '../../stores/authStore';
-import { AuthUser } from '../../stores/authStore';
 
 export default function ServicesScreen() {
   const router = useRouter();
   const { cities: citiesParam, fnsOffices: fnsParam } = useLocalSearchParams<{ cities: string; fnsOffices: string }>();
-  const { completeOnboarding, login, user } = useAuth();
 
   let citiesFromParams: string[] = [];
   let fnsFromParams: string[] = [];
@@ -73,6 +69,7 @@ export default function ServicesScreen() {
   const [error, setError] = useState('');
   const [focused, setFocused] = useState(false);
 
+
   function handleChipToggle(chip: string) {
     setSelectedChips((prev) =>
       prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip],
@@ -100,36 +97,11 @@ export default function ServicesScreen() {
     setError('');
     setLoading(true);
     try {
-      await api.patch('/users/me/specialist-profile', {
-        cities,
-        fnsOffices,
-        services: combined,
-      });
-      // Refresh JWT so the new token carries SPECIALIST role (not CLIENT)
-      await tryRefreshTokens();
-      const freshToken = await getToken();
-      if (freshToken) {
-        // Fetch updated user profile (role is now SPECIALIST in DB)
-        const freshUser = await api.get<{ id: string; email: string; role: string; username: string | null }>('/users/me');
-        await login(freshToken, {
-          userId: freshUser.id,
-          email: freshUser.email,
-          role: freshUser.role,
-          username: freshUser.username,
-          isNewUser: false,
-        } as AuthUser);
-      }
-      // Mark onboarding complete — sets isNewUser=false in store + AsyncStorage
-      await completeOnboarding(user?.username ?? '');
-      router.replace('/');
+      // Save services to AsyncStorage and proceed to step 5 (profile)
+      await AsyncStorage.setItem('onboarding_services', JSON.stringify(combined));
+      router.push('/(onboarding)/profile');
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setError('Профиль уже существует. Попробуйте войти снова.');
-      } else if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError('Не удалось сохранить профиль. Попробуйте снова.');
-      }
+      setError('Не удалось сохранить данные. Попробуйте снова.');
     } finally {
       setLoading(false);
     }
@@ -147,7 +119,7 @@ export default function ServicesScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
-            {/* Progress indicator — 4 steps */}
+            {/* Progress indicator — 5 steps */}
             <View style={styles.progressRow}>
               <View style={[styles.progressDot, styles.progressDotDone]} />
               <View style={styles.progressLine} />
@@ -156,11 +128,13 @@ export default function ServicesScreen() {
               <View style={[styles.progressDot, styles.progressDotDone]} />
               <View style={styles.progressLine} />
               <View style={[styles.progressDot, styles.progressDotActive]} />
+              <View style={styles.progressLine} />
+              <View style={styles.progressDot} />
             </View>
 
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.step}>Шаг 4 из 4</Text>
+              <Text style={styles.step}>Шаг 4 из 5</Text>
               <Text style={styles.title}>Ваши услуги</Text>
               <Text style={styles.subtitle}>
                 Расскажите, что вы умеете делать. Клиенты увидят это в вашем профиле.
@@ -227,7 +201,7 @@ export default function ServicesScreen() {
                 disabled={loading || (services.trim().length === 0 && selectedChips.length === 0)}
                 style={styles.btn}
               >
-                Завершить настройку
+                Продолжить
               </Button>
             </View>
           </View>

@@ -50,11 +50,13 @@ export default function CitiesScreen() {
             <Text style={styles.backBtnText}>← Назад</Text>
           </TouchableOpacity>
 
-          {/* Progress indicator — 4 steps */}
+          {/* Progress indicator — 5 steps */}
           <View style={styles.progressRow}>
             <View style={[styles.progressDot, styles.progressDotDone]} />
             <View style={styles.progressLine} />
             <View style={[styles.progressDot, styles.progressDotActive]} />
+            <View style={styles.progressLine} />
+            <View style={styles.progressDot} />
             <View style={styles.progressLine} />
             <View style={styles.progressDot} />
             <View style={styles.progressLine} />
@@ -68,7 +70,7 @@ export default function CitiesScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.step}>Шаг 2 из 4</Text>
+            <Text style={styles.step}>Шаг 2 из 5</Text>
             <Text style={styles.title}>Выберите города</Text>
             <Text style={styles.subtitle}>
               В каких городах России вы оказываете услуги?
