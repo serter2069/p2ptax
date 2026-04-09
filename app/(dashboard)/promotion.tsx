@@ -40,11 +40,23 @@ const TIER_COLORS: Record<string, string> = {
   TOP: '#D97706',
 };
 
+const TIER_PRICES_NUM: Record<Tier, number> = {
+  BASIC: 500,
+  FEATURED: 1500,
+  TOP: 3000,
+};
+
 const TIER_PRICES: Record<Tier, string> = {
   BASIC: '500\u20BD/мес',
   FEATURED: '1500\u20BD/мес',
   TOP: '3000\u20BD/мес',
 };
+
+const DISCOUNT: Record<PeriodMonths, number> = { 1: 0, 3: 0.1, 6: 0.2 };
+
+function calcTotal(tier: Tier, period: PeriodMonths): number {
+  return Math.round(TIER_PRICES_NUM[tier] * period * (1 - DISCOUNT[period]));
+}
 
 const PERIOD_OPTIONS: { value: PeriodMonths; label: string }[] = [
   { value: 1, label: '1 мес' },
@@ -76,6 +88,7 @@ export default function PromotionScreen() {
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodMonths>(1);
   const [purchasing, setPurchasing] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchaseError, setPurchaseError] = useState('');
   const [profileCities, setProfileCities] = useState<string[]>([]);
 
@@ -117,6 +130,7 @@ export default function PromotionScreen() {
 
   function handlePurchase() {
     setPurchaseError('');
+    setPurchaseSuccess(false);
     setSelectedTier('BASIC');
     setSelectedPeriod(1);
     if (profileCities.length > 0) setSelectedCity(profileCities[0]);
@@ -126,6 +140,7 @@ export default function PromotionScreen() {
   async function handleConfirmPurchase() {
     setPurchasing(true);
     setPurchaseError('');
+    setPurchaseSuccess(false);
     try {
       const idempotencyKey = Math.random().toString(36).slice(2) + Date.now();
       await api.post<{ promotion: unknown; payment: unknown }>('/promotions/purchase', {
@@ -134,11 +149,16 @@ export default function PromotionScreen() {
         periodMonths: selectedPeriod,
         idempotencyKey,
       });
-      setModalVisible(false);
+      setPurchaseSuccess(true);
       fetchPromotions();
-      Alert.alert('Продвижение подключено!');
+      setTimeout(() => {
+        setModalVisible(false);
+        setPurchaseSuccess(false);
+      }, 1500);
     } catch (err) {
-      setPurchaseError(err instanceof ApiError ? err.message : 'Ошибка при покупке');
+      setPurchaseError(
+        err instanceof ApiError ? err.message : 'Ошибка оплаты. Попробуйте снова.',
+      );
     } finally {
       setPurchasing(false);
     }
@@ -308,17 +328,32 @@ export default function PromotionScreen() {
             {/* Error */}
             {purchaseError ? <Text style={styles.modalError}>{purchaseError}</Text> : null}
 
+            {/* Success */}
+            {purchaseSuccess ? (
+              <View style={styles.successBanner}>
+                <Text style={styles.successText}>Активировано</Text>
+              </View>
+            ) : null}
+
             {/* CTA */}
             <TouchableOpacity
-              style={[styles.modalCta, purchasing && styles.modalCtaDisabled]}
+              style={[
+                styles.modalCta,
+                (purchasing || purchaseSuccess) && styles.modalCtaDisabled,
+                purchaseSuccess && styles.modalCtaSuccess,
+              ]}
               onPress={handleConfirmPurchase}
               activeOpacity={0.85}
-              disabled={purchasing}
+              disabled={purchasing || purchaseSuccess}
             >
               {purchasing ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : purchaseSuccess ? (
+                <Text style={styles.modalCtaText}>Активировано</Text>
               ) : (
-                <Text style={styles.modalCtaText}>Подключить (бесплатно)</Text>
+                <Text style={styles.modalCtaText}>
+                  Оплатить {calcTotal(selectedTier, selectedPeriod)} \u20BD
+                </Text>
               )}
             </TouchableOpacity>
 
@@ -578,6 +613,17 @@ const styles = StyleSheet.create({
     color: Colors.statusError,
     textAlign: 'center',
   },
+  successBanner: {
+    backgroundColor: Colors.statusBg.success,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    alignItems: 'center',
+  },
+  successText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.statusSuccess,
+  },
   modalCta: {
     height: 48,
     backgroundColor: Colors.brandPrimary,
@@ -588,6 +634,10 @@ const styles = StyleSheet.create({
   },
   modalCtaDisabled: {
     opacity: 0.7,
+  },
+  modalCtaSuccess: {
+    backgroundColor: Colors.statusSuccess,
+    opacity: 1,
   },
   modalCtaText: {
     fontSize: Typography.fontSize.base,

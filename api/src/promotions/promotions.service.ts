@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { PurchasePromotionDto } from './dto/purchase-promotion.dto';
 import { UpdatePricesDto } from './dto/update-prices.dto';
-import { PromotionTier } from '@prisma/client';
+import { PromotionTier, PaymentStatus } from '@prisma/client';
 
 // Hardcoded fallback prices (rubles) used when no DB override exists.
 const DEFAULT_PRICES: Record<PromotionTier, number> = {
@@ -41,7 +41,8 @@ export class PromotionsService {
         return {
           promotion: idempotent,
           payment: {
-            status: 'mock_paid',
+            id: null,
+            status: 'COMPLETED',
             amount: 0,
             currency: 'RUB',
             note: 'Duplicate request — returning existing promotion.',
@@ -90,13 +91,31 @@ export class PromotionsService {
       const discount = DISCOUNT[months] ?? 0;
       const price = Math.round(basePrice * months * (1 - discount));
 
-      // TODO: Integrate Stripe when STRIPE_SECRET_KEY is added to Doppler
-      // For now, mock payment: log and proceed
+      // Create payment record (PENDING)
+      const amountKopecks = price * 100;
+      const payment = await tx.paymentRecord.create({
+        data: {
+          userId,
+          amount: amountKopecks,
+          currency: 'RUB',
+          status: PaymentStatus.PENDING,
+          provider: 'stub',
+          metadata: { city: dto.city, tier: dto.tier, months },
+        },
+      });
+
+      // TODO: Replace stub with YuKassa integration
+      // Stub: immediately mark as COMPLETED (real provider: wait for webhook)
+      const completedPayment = await tx.paymentRecord.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.COMPLETED },
+      });
+
       this.logger.log(
-        `MOCK PAYMENT: user=${userId} city=${dto.city} tier=${dto.tier} months=${months} amount=${price} RUB`,
+        `STUB PAYMENT: paymentId=${payment.id} user=${userId} city=${dto.city} tier=${dto.tier} months=${months} amount=${price} RUB`,
       );
 
-      // Set expiry based on requested period (calendar months from now)
+      // Create promotion only after successful payment
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + months);
 
@@ -113,10 +132,11 @@ export class PromotionsService {
       return {
         promotion,
         payment: {
-          status: 'mock_paid',
+          id: completedPayment.id,
+          status: completedPayment.status,
           amount: price,
           currency: 'RUB',
-          note: 'Stripe integration pending. Payment simulated.',
+          note: 'Payment stub — YuKassa integration pending.',
         },
       };
     }, { timeout: 10000 });
