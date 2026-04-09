@@ -179,6 +179,16 @@ export default function SpecialistDashboard() {
           </View>
           <Text style={styles.actionLabel}>Мои диалоги</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => router.push('/(dashboard)/promotion')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.actionIconWrap}>
+            <Ionicons name="rocket-outline" size={22} color={Colors.brandPrimary} />
+          </View>
+          <Text style={styles.actionLabel}>Продвижение</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
