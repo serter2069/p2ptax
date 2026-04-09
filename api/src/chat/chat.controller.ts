@@ -94,7 +94,7 @@ export class ChatController {
     @Request() req: { user: { id: string } },
     @Param('id') threadId: string,
     @UploadedFile() file: Express.Multer.File | undefined,
-  ): Promise<{ url: string; type: string; name: string }> {
+  ): Promise<{ url: string; signedUrl: string; type: string; name: string }> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -114,10 +114,13 @@ export class ChatController {
     const fileId = randomUUID();
     const key = `chat/${threadId}/${fileId}.${ext}`;
 
-    const url = await this.storageService.uploadBuffer(key, file.buffer, file.mimetype);
+    // Upload as private (no ACL) — access via presigned URL only
+    const s3Key = await this.storageService.uploadBuffer(key, file.buffer, file.mimetype);
+    const signedUrl = await this.storageService.getPresignedUrl(s3Key);
     const type = IMAGE_MIME_TYPES.has(file.mimetype) ? 'IMAGE' : 'DOCUMENT';
 
-    return { url, type, name: file.originalname };
+    // Store the S3 key in DB (not the signed URL) so we can regenerate signed URLs later
+    return { url: s3Key, signedUrl, type, name: file.originalname };
   }
 
   // POST /threads/:id/messages — send a message via REST (fallback when WebSocket unavailable)
