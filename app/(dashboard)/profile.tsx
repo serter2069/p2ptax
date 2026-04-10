@@ -22,6 +22,7 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 import { shortFnsLabel } from '../../lib/format';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 interface SpecialistProfile {
   id: string;
@@ -37,6 +38,7 @@ interface SpecialistProfile {
 
 export default function MySpecialistProfileScreen() {
   const router = useRouter();
+  const { isMobile } = useBreakpoints();
   const [profile, setProfile] = useState<SpecialistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -224,7 +226,7 @@ export default function MySpecialistProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Header title="Мой профиль" showBack />
+        {isMobile && <Header title="Мой профиль" showBack />}
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
@@ -235,7 +237,7 @@ export default function MySpecialistProfileScreen() {
   if (error && error !== 'profile_not_found') {
     return (
       <SafeAreaView style={styles.safe}>
-        <Header title="Мой профиль" showBack />
+        {isMobile && <Header title="Мой профиль" showBack />}
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <Button onPress={() => fetchProfile()} variant="ghost" style={styles.retryBtn}>
@@ -252,7 +254,7 @@ export default function MySpecialistProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Мой профиль" showBack />
+      {isMobile && <Header title="Мой профиль" showBack />}
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}

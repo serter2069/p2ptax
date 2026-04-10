@@ -87,7 +87,7 @@ const s = StyleSheet.create({
   },
   dangerCard: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md,
-    borderWidth: 1, borderColor: '#fde8e8', overflow: 'hidden',
+    borderWidth: 1, borderColor: Colors.statusBg.error, overflow: 'hidden',
   },
   row: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -104,7 +104,7 @@ const s = StyleSheet.create({
   },
   toggleOn: { backgroundColor: Colors.brandPrimary },
   toggleDot: {
-    width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFF',
+    width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.white,
   },
   toggleDotOn: { alignSelf: 'flex-end' },
 });

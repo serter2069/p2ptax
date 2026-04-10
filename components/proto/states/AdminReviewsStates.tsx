@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REVIEWS } from '../../../constants/protoMockData';
@@ -7,13 +8,16 @@ import { MOCK_REVIEWS } from '../../../constants/protoMockData';
 function ReviewRow({ author, rating, text, date, specialistName }: {
   author: string; rating: number; text: string; date: string; specialistName: string;
 }) {
-  const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
   return (
     <View style={s.reviewCard}>
       <View style={s.reviewHeader}>
         <View style={s.reviewLeft}>
           <Text style={s.reviewAuthor}>{author}</Text>
-          <Text style={s.reviewStars}>{stars}</Text>
+          <View style={s.starsRow}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Feather key={i} name="star" size={12} color={i <= rating ? Colors.brandPrimary : Colors.bgSecondary} />
+            ))}
+          </View>
         </View>
         <View style={s.reviewRight}>
           <Text style={s.reviewSpecialist}>О: {specialistName}</Text>
@@ -46,7 +50,10 @@ export function AdminReviewsStates() {
             { stars: 1, count: 2, pct: 4 },
           ].map((row) => (
             <View key={row.stars} style={s.statRow}>
-              <Text style={s.statStars}>{row.stars}{'★'}</Text>
+              <View style={s.statStarsRow}>
+                <Text style={s.statStarsNum}>{row.stars}</Text>
+                <Feather name="star" size={10} color={Colors.brandPrimary} />
+              </View>
               <View style={s.statBar}><View style={[s.statBarFill, { width: `${row.pct}%` }]} /></View>
               <Text style={s.statCount}>{row.count}</Text>
             </View>
@@ -70,7 +77,8 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
   },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  statStars: { width: 30, fontSize: Typography.fontSize.xs, color: Colors.textMuted, textAlign: 'right' },
+  statStarsRow: { width: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2 },
+  statStarsNum: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   statBar: { flex: 1, height: 8, backgroundColor: Colors.bgSecondary, borderRadius: 4 },
   statBarFill: { height: 8, backgroundColor: Colors.brandPrimary, borderRadius: 4 },
   statCount: { width: 24, fontSize: Typography.fontSize.xs, color: Colors.textMuted },
@@ -82,7 +90,7 @@ const s = StyleSheet.create({
   reviewLeft: { gap: 2 },
   reviewRight: { alignItems: 'flex-end', gap: 2 },
   reviewAuthor: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  reviewStars: { fontSize: 12, color: Colors.brandPrimary },
+  starsRow: { flexDirection: 'row', gap: 2 },
   reviewSpecialist: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   reviewDate: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   reviewText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
@@ -94,7 +102,7 @@ const s = StyleSheet.create({
   btnViewText: { fontSize: Typography.fontSize.xs, color: Colors.textPrimary },
   btnDelete: {
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: BorderRadius.md,
-    backgroundColor: '#fde8e8',
+    backgroundColor: Colors.statusBg.error,
   },
   btnDeleteText: { fontSize: Typography.fontSize.xs, color: Colors.statusError },
 });

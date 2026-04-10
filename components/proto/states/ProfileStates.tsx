@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -36,7 +35,7 @@ function InteractiveProfile() {
     return (
       <View style={s.container}>
         <View style={s.profileHeader}>
-          <ProtoPlaceholderImage type="avatar" height={64} />
+          <Image source={{ uri: 'https://picsum.photos/seed/ElenaV/64/64' }} style={{ width: 64, height: 64, borderRadius: 32 }} />
           <Pressable><Text style={s.changePhoto}>Изменить фото</Text></Pressable>
         </View>
         <View style={s.form}>
@@ -65,7 +64,7 @@ function InteractiveProfile() {
   return (
     <View style={s.container}>
       <View style={s.profileHeader}>
-        <ProtoPlaceholderImage type="avatar" height={64} />
+        <Image source={{ uri: 'https://picsum.photos/seed/ElenaV/64/64' }} style={{ width: 64, height: 64, borderRadius: 32 }} />
         <View>
           <Text style={s.nameText}>{savedName}</Text>
           <Text style={s.role}>Клиент</Text>
@@ -82,11 +81,39 @@ function InteractiveProfile() {
   );
 }
 
+function LoadingProfile() {
+  return (
+    <View style={s.container}>
+      <View style={s.profileHeader}>
+        <View style={[s.avatar, s.skeleton]} />
+        <View style={{ gap: Spacing.sm }}>
+          <View style={[s.skeleton, { width: 140, height: 18, borderRadius: BorderRadius.sm }]} />
+          <View style={[s.skeleton, { width: 60, height: 14, borderRadius: BorderRadius.sm }]} />
+        </View>
+      </View>
+      <View style={s.card}>
+        {[1, 2, 3, 4].map((i) => (
+          <View key={i} style={s.infoRow}>
+            <View style={[s.skeleton, { width: 80, height: 14, borderRadius: BorderRadius.sm }]} />
+            <View style={[s.skeleton, { width: 120, height: 14, borderRadius: BorderRadius.sm }]} />
+          </View>
+        ))}
+      </View>
+      <View style={[s.skeleton, { height: 48, borderRadius: BorderRadius.md }]} />
+    </View>
+  );
+}
+
 export function ProfileStates() {
   return (
-    <StateSection title="INTERACTIVE">
-      <InteractiveProfile />
-    </StateSection>
+    <>
+      <StateSection title="INTERACTIVE">
+        <InteractiveProfile />
+      </StateSection>
+      <StateSection title="LOADING">
+        <LoadingProfile />
+      </StateSection>
+    </>
   );
 }
 
@@ -112,7 +139,7 @@ const s = StyleSheet.create({
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   form: { gap: Spacing.lg },
   field: { gap: Spacing.xs },
   label: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },
@@ -127,10 +154,11 @@ const s = StyleSheet.create({
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  btnPrimaryText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  btnPrimaryText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   btnSecondary: {
     height: 48, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border,
   },
   btnSecondaryText: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
+  skeleton: { backgroundColor: Colors.bgSecondary },
 });

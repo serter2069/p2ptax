@@ -10,6 +10,7 @@ import { Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { Typography, Colors, Spacing } from '../constants/Colors';
 import { LandingHeader } from '../components/LandingHeader';
+import { Footer } from '../components/Footer';
 
 export default function SupportScreen() {
   return (
@@ -25,6 +26,7 @@ export default function SupportScreen() {
           <Text style={styles.email}>{'support@nalogovic.ru'}</Text>
           <Text style={styles.note}>{'Мы ответим в течение 24 часов'}</Text>
         </View>
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );
@@ -37,11 +39,11 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 48,
   },
   container: {
-    maxWidth: 480,
+    maxWidth: 430,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing['4xl'],
     width: '100%',
     alignSelf: 'center',
     gap: 16,

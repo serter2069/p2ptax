@@ -89,7 +89,7 @@ function OtpScreen({ initialCode, initialError, initialResendTimer, initialLoadi
       {error ? <Text style={s.error}>{error}</Text> : null}
       <Pressable onPress={handleSubmit} disabled={loading} style={[s.btn, loading ? s.btnDisabled : null]}>
         {loading ? (
-          <ActivityIndicator size="small" color="#FFF" />
+          <ActivityIndicator size="small" color={Colors.white} />
         ) : (
           <Text style={s.btnText}>Подтвердить</Text>
         )}
@@ -147,7 +147,7 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: 300,
   },
   btnDisabled: { opacity: 0.7 },
-  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   resend: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   resendActive: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
 });

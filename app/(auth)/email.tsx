@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LandingHeader } from '../../components/LandingHeader';
+import { Footer } from '../../components/Footer';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
@@ -71,108 +72,111 @@ export default function EmailScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={[styles.container, !isMobile && styles.containerWide]}>
-            <AuthProgress step={1} />
+          <View style={styles.formArea}>
+            <View style={[styles.container, !isMobile && styles.containerWide]}>
+              <AuthProgress step={1} />
 
-            {/* Back */}
-            <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
-              <Text style={styles.backText}>← Назад</Text>
-            </TouchableOpacity>
+              {/* Back */}
+              <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
+                <Text style={styles.backText}>← Назад</Text>
+              </TouchableOpacity>
 
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Введите email</Text>
-              <Text style={styles.subtitle}>
-                Мы отправим вам код для входа. Если вы новый пользователь — аккаунт создастся автоматически.
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={styles.title}>Введите email</Text>
+                <Text style={styles.subtitle}>
+                  Мы отправим вам код для входа. Если вы новый пользователь — аккаунт создастся автоматически.
+                </Text>
+              </View>
+
+              {/* Form */}
+              <View style={styles.form}>
+                <Input
+                  label="Email"
+                  value={email}
+                  onChangeText={(t) => {
+                    setEmail(t);
+                    if (error) setError('');
+                  }}
+                  placeholder="you@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoFocus
+                  error={error}
+                  returnKeyType="go"
+                />
+              </View>
+
+              <Text style={styles.hint}>
+                Вход и регистрация — одно действие. Просто введите email.
               </Text>
-            </View>
 
-            {/* Form */}
-            <View style={styles.form}>
-              <Input
-                label="Email"
-                value={email}
-                onChangeText={(t) => {
-                  setEmail(t);
-                  if (error) setError('');
+              {/* Google OAuth */}
+              <TouchableOpacity
+                style={styles.googleBtn}
+                onPress={() => {
+                  // Redirect to backend Google OAuth
+                  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                  window.location.href = `${API_BASE}/auth/google?state=${encodeURIComponent(origin)}`;
                 }}
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoFocus
-                error={error}
-                returnKeyType="go"
-              />
-            </View>
-
-            <Text style={styles.hint}>
-              Вход и регистрация — одно действие. Просто введите email.
-            </Text>
-
-            {/* Google OAuth */}
-            <TouchableOpacity
-              style={styles.googleBtn}
-              onPress={() => {
-                // Redirect to backend Google OAuth
-                const origin = typeof window !== 'undefined' ? window.location.origin : '';
-                window.location.href = `${API_BASE}/auth/google?state=${encodeURIComponent(origin)}`;
-              }}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Войти через Google"
-            >
-              <Text style={styles.googleBtnText}>Войти через Google</Text>
-            </TouchableOpacity>
-
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>или</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Role buttons */}
-            <View style={styles.roleButtons}>
-              <TouchableOpacity
-                style={styles.roleCard}
-                onPress={() => handleSubmit('CLIENT')}
-                disabled={loading}
                 activeOpacity={0.8}
                 accessibilityRole="button"
-                accessibilityLabel="Войти как клиент"
+                accessibilityLabel="Войти через Google"
               >
-                <Text style={styles.roleCardIcon}>{'\u{1F50D}'}</Text>
-                <Text style={styles.roleCardTitle}>Я ищу специалиста</Text>
-                <Text style={styles.roleCardDesc}>
-                  Опубликую запрос и получу предложения от консультантов
-                </Text>
-                <View style={styles.roleCardBtn}>
-                  <Text style={styles.roleCardBtnText}>
-                    {loading ? 'Отправляем...' : 'Получить код'}
-                  </Text>
-                </View>
+                <Text style={styles.googleBtnText}>Войти через Google</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.roleCard, styles.roleCardSpecialist]}
-                onPress={() => handleSubmit('SPECIALIST')}
-                disabled={loading}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Войти как специалист"
-              >
-                <Text style={styles.roleCardIcon}>{'\u{1F4BC}'}</Text>
-                <Text style={styles.roleCardTitleSpecialist}>Я специалист</Text>
-                <Text style={styles.roleCardDescSpecialist}>
-                  Буду получать заявки от клиентов и предлагать свои услуги
-                </Text>
-                <View style={[styles.roleCardBtn, styles.roleCardBtnSpecialist]}>
-                  <Text style={styles.roleCardBtnTextSpecialist}>
-                    {loading ? 'Отправляем...' : 'Получить код'}
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>или</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Role buttons */}
+              <View style={styles.roleButtons}>
+                <TouchableOpacity
+                  style={styles.roleCard}
+                  onPress={() => handleSubmit('CLIENT')}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Войти как клиент"
+                >
+                  <Text style={styles.roleCardIcon}>{'\u{1F50D}'}</Text>
+                  <Text style={styles.roleCardTitle}>Я ищу специалиста</Text>
+                  <Text style={styles.roleCardDesc}>
+                    Опубликую запрос и получу предложения от консультантов
                   </Text>
-                </View>
-              </TouchableOpacity>
+                  <View style={styles.roleCardBtn}>
+                    <Text style={styles.roleCardBtnText}>
+                      {loading ? 'Отправляем...' : 'Получить код'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.roleCard, styles.roleCardSpecialist]}
+                  onPress={() => handleSubmit('SPECIALIST')}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Войти как специалист"
+                >
+                  <Text style={styles.roleCardIcon}>{'\u{1F4BC}'}</Text>
+                  <Text style={styles.roleCardTitleSpecialist}>Я специалист</Text>
+                  <Text style={styles.roleCardDescSpecialist}>
+                    Буду получать заявки от клиентов и предлагать свои услуги
+                  </Text>
+                  <View style={[styles.roleCardBtn, styles.roleCardBtnSpecialist]}>
+                    <Text style={styles.roleCardBtnTextSpecialist}>
+                      {loading ? 'Отправляем...' : 'Получить код'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
+          <Footer />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -189,6 +193,8 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
+  },
+  formArea: {
     alignItems: 'center',
     paddingVertical: Spacing['2xl'],
   },
@@ -235,7 +241,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xl,
@@ -246,7 +252,7 @@ const styles = StyleSheet.create({
   googleBtnText: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.medium,
-    color: '#333333',
+    color: Colors.textPrimary,
   },
   dividerRow: {
     flexDirection: 'row',
@@ -275,8 +281,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   roleCardSpecialist: {
-    borderColor: '#1A5BA8',
-    backgroundColor: '#F0F6FC',
+    borderColor: Colors.brandPrimary,
+    backgroundColor: Colors.statusBg.accent,
   },
   roleCardIcon: {
     fontSize: 36,
@@ -285,13 +291,13 @@ const styles = StyleSheet.create({
   roleCardTitle: {
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.semibold,
-    color: '#0F2447',
+    color: Colors.textPrimary,
     textAlign: 'center',
   },
   roleCardTitleSpecialist: {
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.semibold,
-    color: '#1A5BA8',
+    color: Colors.brandPrimary,
     textAlign: 'center',
   },
   roleCardDesc: {
@@ -302,7 +308,7 @@ const styles = StyleSheet.create({
   },
   roleCardDescSpecialist: {
     fontSize: Typography.fontSize.sm,
-    color: '#4A7AB5',
+    color: Colors.textAccent,
     lineHeight: 20,
     textAlign: 'center',
   },
@@ -314,7 +320,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   roleCardBtnSpecialist: {
-    backgroundColor: '#1A5BA8',
+    backgroundColor: Colors.brandPrimary,
   },
   roleCardBtnText: {
     fontSize: Typography.fontSize.base,

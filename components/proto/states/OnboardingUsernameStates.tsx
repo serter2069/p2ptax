@@ -17,8 +17,8 @@ function Screen({ initialValue, initialError }: { initialValue?: string; initial
 
   return (
     <View style={s.container}>
-      <View style={s.progress}><View style={[s.progressBar, { width: '20%' }]} /></View>
-      <Text style={s.step}>Шаг 1 из 5</Text>
+      <View style={s.progress}><View style={[s.progressBar, { width: '33%' }]} /></View>
+      <Text style={s.step}>Шаг 1 из 3</Text>
       <Text style={s.title}>Как вас зовут?</Text>
       <Text style={s.subtitle}>Это имя будет отображаться в вашем профиле</Text>
       <View style={s.form}>
@@ -71,5 +71,5 @@ const s = StyleSheet.create({
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
 });

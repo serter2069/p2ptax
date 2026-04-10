@@ -6,287 +6,16 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
-  TextInput,
   Platform,
-  Animated,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
-import { secureStorage } from '../stores/storage';
+import { Colors, Typography } from '../constants/Colors';
 import { api } from '../lib/api';
 import { useBreakpoints } from '../hooks/useBreakpoints';
-import { IfnsSearch } from '../components/IfnsSearch';
+import { QuickRequestForm } from '../components/QuickRequestForm';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
-
-// ---- V2 Design Tokens ----
-const V2 = {
-  bg: '#FFFFFF',
-  bgSubtle: '#FAFBFC',
-  text: '#111827',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
-  accent: '#2563EB',
-  accentLight: '#EFF6FF',
-  border: '#E5E7EB',
-};
-
-// ---- Inline QuickRequestForm (v2 styling) ----
-
-function V2QuickRequestForm() {
-  const router = useRouter();
-  const [description, setDescription] = useState('');
-  const [selectedIfns, setSelectedIfns] = useState<any>(null);
-  const [serviceType, setServiceType] = useState('');
-  const [error, setError] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [categories, setCategories] = useState<{ name: string; slug: string }[]>([]);
-
-  useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_API_URL || ''}/api/categories`)
-      .then((r) => r.json())
-      .then((data) => setCategories(Array.isArray(data) ? data : []))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    secureStorage.getItem('p2ptax_pending_request').then(saved => {
-      if (saved) {
-        try {
-          const { description: d, serviceType: s } = JSON.parse(saved);
-          if (d) setDescription(d);
-          if (s) setServiceType(s);
-        } catch {}
-      }
-    });
-  }, []);
-
-  const handleSubmit = async () => {
-    if (!serviceType) {
-      setError('Выберите тип услуги');
-      return;
-    }
-    if (description.trim().length < 3) {
-      setError('Описание слишком короткое');
-      return;
-    }
-    setError('');
-    const pending: Record<string, string> = {
-      description: description.trim().slice(0, 500),
-      serviceType,
-      city: selectedIfns?.city?.name || '',
-    };
-    if (selectedIfns) {
-      pending.ifnsId = selectedIfns.id;
-      pending.ifnsName = selectedIfns.name;
-    }
-    await secureStorage.setItem('p2ptax_pending_request', JSON.stringify(pending));
-    setSubmitting(true);
-    try {
-      await api.post('/requests/quick', pending);
-      setSubmitted(true);
-    } catch (e: any) {
-      setError(e?.message || 'Не удалось отправить заявку. Попробуйте позже.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  function handleNewRequest() {
-    setDescription('');
-    setSelectedIfns(null);
-    setServiceType('');
-    setError('');
-    setSubmitted(false);
-  }
-
-  if (submitted) {
-    return (
-      <View style={formStyles.container}>
-        <View style={formStyles.successWrap}>
-          <Text style={formStyles.successCheck}>✓</Text>
-          <Text style={formStyles.successTitle}>Заявка отправлена</Text>
-          <Text style={formStyles.successText}>
-            Специалисты свяжутся с вами в ближайшее время.
-          </Text>
-          <TouchableOpacity
-            style={formStyles.btn}
-            onPress={() => router.push('/(auth)/email')}
-            activeOpacity={0.85}
-          >
-            <Text style={formStyles.btnText}>Войти и отслеживать</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleNewRequest} activeOpacity={0.7}>
-            <Text style={formStyles.linkText}>Подать ещё одну заявку</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  return (
-    <View style={formStyles.container}>
-      <Text style={formStyles.label}>ТИП УСЛУГИ</Text>
-      <View style={formStyles.chipsRow}>
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat.slug}
-            style={[
-              formStyles.chip,
-              serviceType === cat.name && formStyles.chipSelected,
-            ]}
-            onPress={() => setServiceType(cat.name)}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                formStyles.chipText,
-                serviceType === cat.name && formStyles.chipTextSelected,
-              ]}
-            >
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={formStyles.label}>ОПИШИТЕ СИТУАЦИЮ</Text>
-      <TextInput
-        testID="quick-request-description"
-        style={formStyles.textarea}
-        placeholder="Что произошло? С чем нужна помощь?"
-        placeholderTextColor={V2.textMuted}
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        numberOfLines={3}
-        maxLength={500}
-      />
-
-      <Text style={formStyles.label}>ИФНС (НЕОБЯЗАТЕЛЬНО)</Text>
-      <IfnsSearch
-        selected={selectedIfns}
-        onSelect={setSelectedIfns}
-        placeholder="Номер или название ИФНС..."
-      />
-
-      {error ? <Text style={formStyles.error}>{error}</Text> : null}
-
-      <TouchableOpacity
-        testID="quick-request-submit"
-        style={[formStyles.btn, submitting && { opacity: 0.6 }]}
-        onPress={handleSubmit}
-        activeOpacity={0.85}
-        disabled={submitting}
-      >
-        <Text style={formStyles.btnText}>
-          {submitting ? 'Отправка...' : 'Найти специалиста'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-const formStyles = StyleSheet.create({
-  container: {
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '500',
-    letterSpacing: 1,
-    color: V2.textMuted,
-    marginBottom: 8,
-    marginTop: 24,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: V2.border,
-    backgroundColor: V2.bg,
-  },
-  chipSelected: {
-    backgroundColor: V2.accent,
-    borderColor: V2.accent,
-  },
-  chipText: {
-    fontSize: 14,
-    color: V2.text,
-    fontWeight: '500',
-  },
-  chipTextSelected: {
-    color: '#FFFFFF',
-  },
-  textarea: {
-    borderWidth: 1,
-    borderColor: V2.border,
-    borderRadius: 8,
-    padding: 16,
-    color: V2.text,
-    backgroundColor: V2.bg,
-    minHeight: 100,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  error: {
-    color: '#DC2626',
-    fontSize: 14,
-    marginTop: 8,
-  },
-  btn: {
-    backgroundColor: V2.accent,
-    borderRadius: 8,
-    paddingVertical: 16,
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 32,
-  },
-  btnText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  linkText: {
-    color: V2.accent,
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  successWrap: {
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 48,
-  },
-  successCheck: {
-    fontSize: 48,
-    color: '#10B981',
-    fontWeight: '300',
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: V2.text,
-  },
-  successText: {
-    fontSize: 16,
-    color: V2.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 360,
-  },
-});
 
 // ---- FAQ Accordion ----
 
@@ -318,21 +47,21 @@ const faqStyles = StyleSheet.create({
     ...(Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}),
   },
   question: {
-    fontSize: 18,
+    fontSize: Typography.fontSize.lg,
     fontWeight: '500',
-    color: V2.text,
+    color: Colors.textPrimary,
     flex: 1,
     lineHeight: 28,
   },
   chevron: {
-    fontSize: 24,
-    color: V2.textMuted,
+    fontSize: Typography.fontSize['2xl'],
+    color: Colors.textMuted,
     marginLeft: 16,
     fontWeight: '300',
   },
   answer: {
-    fontSize: 16,
-    color: V2.textSecondary,
+    fontSize: Typography.fontSize.md,
+    color: Colors.textSecondary,
     lineHeight: 26,
     marginTop: 12,
   },
@@ -363,17 +92,17 @@ export default function LandingV2Screen() {
         '/stats/landing'
       )
       .then(setLandingStats)
-      .catch(() => {});
+      .catch((err) => console.warn('[v2]', err));
     api
       .get<any[]>('/reviews/public?limit=1')
       .then((data) => {
         if (data && data.length > 0) setReview(data[0]);
       })
-      .catch(() => {});
+      .catch((err) => console.warn('[v2]', err));
   }, []);
 
   const isWide = !isMobile;
-  const contentMaxWidth = isDesktop ? 1080 : 900;
+  const contentMaxWidth = isMobile ? 430 : isDesktop ? 1080 : 900;
   const sectionPx = isMobile ? 20 : 40;
 
   const inner = {
@@ -486,7 +215,7 @@ export default function LandingV2Screen() {
             <Text style={[s.sectionTitle, isMobile && s.sectionTitleMobile]}>
               Что случилось?
             </Text>
-            <V2QuickRequestForm />
+            <QuickRequestForm />
           </View>
         </View>
 
@@ -680,7 +409,7 @@ export default function LandingV2Screen() {
 const s = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: V2.bg,
+    backgroundColor: Colors.bgCard,
   },
   scroll: {
     flexGrow: 1,
@@ -690,8 +419,8 @@ const s = StyleSheet.create({
   header: {
     width: '100%',
     borderBottomWidth: 1,
-    borderBottomColor: V2.border,
-    backgroundColor: V2.bg,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.bgCard,
   },
   headerInner: {
     flexDirection: 'row',
@@ -700,9 +429,9 @@ const s = StyleSheet.create({
     paddingVertical: 16,
   },
   headerLogo: {
-    fontSize: 18,
+    fontSize: Typography.fontSize.lg,
     fontWeight: '600',
-    color: V2.text,
+    color: Colors.textPrimary,
     letterSpacing: -0.3,
   },
   headerNav: {
@@ -711,69 +440,69 @@ const s = StyleSheet.create({
     gap: 24,
   },
   headerLink: {
-    fontSize: 14,
-    color: V2.textSecondary,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
   headerBtn: {
-    backgroundColor: V2.text,
+    backgroundColor: Colors.textPrimary,
     borderRadius: 6,
     paddingHorizontal: 20,
     paddingVertical: 8,
   },
   headerBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    color: Colors.white,
+    fontSize: Typography.fontSize.sm,
     fontWeight: '500',
   },
 
   // Hero
   hero: {
     width: '100%',
-    backgroundColor: V2.bg,
+    backgroundColor: Colors.bgCard,
   },
   heroLabel: {
-    fontSize: 12,
+    fontSize: Typography.fontSize.xs,
     fontWeight: '500',
     letterSpacing: 1.5,
-    color: V2.textMuted,
+    color: Colors.textMuted,
     marginBottom: 20,
   },
   heroTitle: {
     fontSize: 56,
     fontWeight: '700',
-    color: V2.text,
+    color: Colors.textPrimary,
     letterSpacing: -1.5,
     lineHeight: 62,
     marginBottom: 20,
   },
   heroTitleMobile: {
-    fontSize: 36,
+    fontSize: Typography.fontSize.display,
     lineHeight: 42,
     letterSpacing: -0.8,
   },
   heroSub: {
-    fontSize: 18,
-    color: V2.textSecondary,
+    fontSize: Typography.fontSize.lg,
+    color: Colors.textSecondary,
     lineHeight: 30,
     maxWidth: 520,
     marginBottom: 32,
   },
   heroCta: {
-    backgroundColor: V2.accent,
+    backgroundColor: Colors.brandPrimary,
     borderRadius: 8,
     paddingHorizontal: 32,
     paddingVertical: 16,
     alignSelf: 'flex-start',
   },
   heroCtaText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: Colors.white,
+    fontSize: Typography.fontSize.md,
     fontWeight: '600',
   },
   heroSpecLink: {
-    fontSize: 14,
-    color: V2.textSecondary,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
 
@@ -782,14 +511,14 @@ const s = StyleSheet.create({
     width: '100%',
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: V2.border,
+    borderTopColor: Colors.border,
     borderBottomWidth: 1,
-    borderBottomColor: V2.border,
+    borderBottomColor: Colors.border,
     alignItems: 'center',
   },
   socialText: {
-    fontSize: 14,
-    color: V2.textMuted,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
     fontWeight: '500',
     letterSpacing: 0.3,
   },
@@ -797,17 +526,17 @@ const s = StyleSheet.create({
   // Form section
   formSection: {
     width: '100%',
-    backgroundColor: V2.bg,
+    backgroundColor: Colors.bgCard,
   },
   sectionTitle: {
     fontSize: 40,
     fontWeight: '600',
-    color: V2.text,
+    color: Colors.textPrimary,
     letterSpacing: -0.8,
     marginBottom: 40,
   },
   sectionTitleMobile: {
-    fontSize: 28,
+    fontSize: Typography.fontSize['2xl'],
     letterSpacing: -0.5,
     marginBottom: 24,
   },
@@ -815,7 +544,7 @@ const s = StyleSheet.create({
   // How it works
   howSection: {
     width: '100%',
-    backgroundColor: V2.bgSubtle,
+    backgroundColor: Colors.bgSecondary,
   },
   stepsWrap: {
     width: '100%',
@@ -830,7 +559,7 @@ const s = StyleSheet.create({
   stepNum: {
     fontSize: 72,
     fontWeight: '300',
-    color: V2.border,
+    color: Colors.border,
     lineHeight: 72,
     minWidth: 80,
   },
@@ -840,18 +569,18 @@ const s = StyleSheet.create({
     paddingTop: 8,
   },
   stepTitle: {
-    fontSize: 20,
+    fontSize: Typography.fontSize.xl,
     fontWeight: '600',
-    color: V2.text,
+    color: Colors.textPrimary,
   },
   stepDesc: {
-    fontSize: 16,
-    color: V2.textSecondary,
+    fontSize: Typography.fontSize.md,
+    color: Colors.textSecondary,
     lineHeight: 26,
   },
   stepDivider: {
     height: 1,
-    backgroundColor: V2.border,
+    backgroundColor: Colors.border,
     width: '100%',
   },
 
@@ -861,11 +590,11 @@ const s = StyleSheet.create({
     paddingVertical: 24,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: V2.border,
+    borderBottomColor: Colors.border,
   },
   trustText: {
-    fontSize: 14,
-    color: V2.textMuted,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
     fontWeight: '400',
     letterSpacing: 0.3,
   },
@@ -873,18 +602,18 @@ const s = StyleSheet.create({
   // Review
   reviewSection: {
     width: '100%',
-    backgroundColor: V2.bg,
+    backgroundColor: Colors.bgCard,
   },
   reviewQuote: {
     fontSize: 80,
-    color: V2.border,
+    color: Colors.border,
     lineHeight: 80,
     fontWeight: '400',
     marginBottom: -8,
   },
   reviewText: {
-    fontSize: 24,
-    color: V2.text,
+    fontSize: Typography.fontSize['2xl'],
+    color: Colors.textPrimary,
     lineHeight: 38,
     textAlign: 'center',
     maxWidth: 640,
@@ -892,7 +621,7 @@ const s = StyleSheet.create({
     fontStyle: 'italic',
   },
   reviewTextMobile: {
-    fontSize: 18,
+    fontSize: Typography.fontSize.lg,
     lineHeight: 30,
   },
   reviewAuthor: {
@@ -901,13 +630,13 @@ const s = StyleSheet.create({
     gap: 4,
   },
   reviewName: {
-    fontSize: 14,
+    fontSize: Typography.fontSize.sm,
     fontWeight: '600',
-    color: V2.text,
+    color: Colors.textPrimary,
   },
   reviewSpec: {
-    fontSize: 13,
-    color: V2.textMuted,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
   },
 
   // Specialists link
@@ -917,15 +646,15 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   specLinkText: {
-    fontSize: 16,
-    color: V2.accent,
+    fontSize: Typography.fontSize.md,
+    color: Colors.brandPrimary,
     fontWeight: '500',
   },
 
   // FAQ
   faqSection: {
     width: '100%',
-    backgroundColor: V2.bg,
+    backgroundColor: Colors.bgCard,
   },
   faqList: {
     width: '100%',
@@ -935,29 +664,29 @@ const s = StyleSheet.create({
   // Final CTA
   ctaSection: {
     width: '100%',
-    backgroundColor: V2.bg,
+    backgroundColor: Colors.bgCard,
   },
   ctaTitle: {
-    fontSize: 48,
+    fontSize: Typography.fontSize.jumbo,
     fontWeight: '600',
-    color: V2.text,
+    color: Colors.textPrimary,
     letterSpacing: -1,
     textAlign: 'center',
     marginBottom: 32,
   },
   ctaTitleMobile: {
-    fontSize: 32,
+    fontSize: Typography.fontSize['3xl'],
     letterSpacing: -0.5,
   },
   ctaBtn: {
-    backgroundColor: V2.accent,
+    backgroundColor: Colors.brandPrimary,
     borderRadius: 8,
     paddingHorizontal: 40,
     paddingVertical: 16,
   },
   ctaBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: Colors.white,
+    fontSize: Typography.fontSize.md,
     fontWeight: '600',
   },
 
@@ -965,9 +694,9 @@ const s = StyleSheet.create({
   footer: {
     width: '100%',
     borderTopWidth: 1,
-    borderTopColor: V2.border,
+    borderTopColor: Colors.border,
     paddingVertical: 40,
-    backgroundColor: V2.bg,
+    backgroundColor: Colors.bgCard,
   },
   footerInner: {
     width: '100%',
@@ -979,9 +708,9 @@ const s = StyleSheet.create({
     gap: 16,
   },
   footerLogo: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.md,
     fontWeight: '600',
-    color: V2.text,
+    color: Colors.textPrimary,
   },
   footerLinks: {
     flexDirection: 'row',
@@ -991,16 +720,16 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   footerLink: {
-    fontSize: 14,
-    color: V2.textSecondary,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
   },
   footerDot: {
-    fontSize: 14,
-    color: V2.border,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.border,
   },
   footerCopy: {
-    fontSize: 13,
-    color: V2.textMuted,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
     textAlign: 'center',
   },
 });

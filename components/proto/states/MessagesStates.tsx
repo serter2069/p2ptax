@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_THREADS } from '../../../constants/protoMockData';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function ThreadItem({ name, lastMessage, time, unread, selected, onPress }: {
   name: string; lastMessage: string; time: string; unread: number; selected: boolean; onPress: () => void;
 }) {
   return (
     <Pressable onPress={onPress} style={[s.thread, selected ? s.threadSelected : null]}>
-      <ProtoPlaceholderImage type="avatar" height={44} />
+      <Image source={{ uri: `https://picsum.photos/seed/${name.replace(/\s/g, '')}/44/44` }} style={{ width: 44, height: 44, borderRadius: 22 }} />
       <View style={s.threadBody}>
         <View style={s.threadTop}>
           <Text style={[s.threadName, unread > 0 ? s.threadNameBold : null]}>{name}</Text>
@@ -94,7 +93,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.brandPrimary, minWidth: 20, height: 20, borderRadius: 10,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
   },
-  unreadText: { fontSize: 11, fontWeight: Typography.fontWeight.bold, color: '#FFF' },
+  unreadText: { fontSize: 11, fontWeight: Typography.fontWeight.bold, color: Colors.white },
   preview: {
     backgroundColor: Colors.bgSecondary, padding: Spacing.md, borderRadius: BorderRadius.md, marginTop: Spacing.sm,
   },

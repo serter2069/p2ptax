@@ -6,7 +6,6 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
-  TextInput,
   Platform,
   Image,
   Animated,
@@ -15,265 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { Typography, BorderRadius, Colors, Spacing } from '../constants/Colors';
-import { secureStorage } from '../stores/storage';
 import { api } from '../lib/api';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { LandingHeader } from '../components/LandingHeader';
 import { Button } from '../components/Button';
-import { IfnsSearch } from '../components/IfnsSearch';
 import { Footer } from '../components/Footer';
-
-// ---- Components ----
-
-function QuickRequestForm() {
-  const router = useRouter();
-  const [description, setDescription] = useState('');
-  const [selectedIfns, setSelectedIfns] = useState<any>(null);
-  const [serviceType, setServiceType] = useState('');
-  const [error, setError] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [categories, setCategories] = useState<{ name: string; slug: string }[]>([]);
-
-  useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_API_URL || ''}/api/categories`)
-      .then((r) => r.json())
-      .then((data) => setCategories(Array.isArray(data) ? data : []))
-      .catch(() => {});
-  }, []);
-
-  // Restore saved form data after auth redirect
-  useEffect(() => {
-    secureStorage.getItem('p2ptax_pending_request').then(saved => {
-      if (saved) {
-        try {
-          const { description: d, serviceType: s } = JSON.parse(saved);
-          if (d) setDescription(d);
-          if (s) setServiceType(s);
-        } catch {}
-      }
-    });
-  }, []);
-
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!serviceType) {
-      setError('Выберите тип услуги');
-      return;
-    }
-    if (description.trim().length < 3) {
-      setError('Описание слишком короткое');
-      return;
-    }
-    setError('');
-    const pending: Record<string, string> = {
-      description: description.trim().slice(0, 500),
-      serviceType,
-      city: selectedIfns?.city?.name || '',
-    };
-    if (selectedIfns) {
-      pending.ifnsId = selectedIfns.id;
-      pending.ifnsName = selectedIfns.name;
-    }
-    // Save to localStorage as backup (for restore after auth redirect)
-    await secureStorage.setItem('p2ptax_pending_request', JSON.stringify(pending));
-
-    // Send to server
-    setSubmitting(true);
-    try {
-      await api.post('/requests/quick', pending);
-      setSubmitted(true);
-    } catch (e: any) {
-      setError(e?.message || 'Не удалось отправить заявку. Попробуйте позже.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  function handleNewRequest() {
-    setDescription('');
-    setSelectedIfns(null);
-    setServiceType('');
-    setError('');
-    setSubmitted(false);
-  }
-
-  if (submitted) {
-    return (
-      <View style={qrf.container}>
-        <View style={qrf.successContainer}>
-          <Ionicons name="checkmark-circle" size={48} color={Colors.statusSuccess} />
-          <Text style={qrf.successTitle}>Заявка отправлена!</Text>
-          <Text style={qrf.successText}>Специалисты свяжутся с вами в ближайшее время.</Text>
-          <View style={qrf.successButtons}>
-            <TouchableOpacity style={qrf.btn} onPress={() => router.push('/(auth)/email')} activeOpacity={0.85}>
-              <Text style={qrf.btnText}>Войти и отслеживать</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[qrf.btn, qrf.btnSecondary]} onPress={handleNewRequest} activeOpacity={0.85}>
-              <Text style={[qrf.btnText, qrf.btnTextSecondary]}>Подать новую заявку</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
-  }
-
-  return (
-    <View style={qrf.container}>
-      <Text style={qrf.label}>Что случилось?</Text>
-      <View style={qrf.cityRow}>
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat.slug}
-            style={[qrf.cityChip, serviceType === cat.name && qrf.cityChipSelected]}
-            onPress={() => setServiceType(cat.name)}
-          >
-            <Text style={[qrf.cityChipText, serviceType === cat.name && qrf.cityChipTextSelected]}>{cat.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={qrf.label}>Описание</Text>
-      <TextInput
-        testID="quick-request-description"
-        style={qrf.input}
-        placeholder="Опишите вашу ситуацию..."
-        placeholderTextColor={Colors.textMuted}
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        numberOfLines={3}
-        maxLength={500}
-      />
-
-      <Text style={qrf.label}>Налоговая инспекция (необязательно)</Text>
-      <IfnsSearch
-        selected={selectedIfns}
-        onSelect={setSelectedIfns}
-        placeholder="Введите номер или название ИФНС..."
-      />
-
-      {error ? <Text style={qrf.error}>{error}</Text> : null}
-      <TouchableOpacity testID="quick-request-submit" style={[qrf.btn, submitting && { opacity: 0.6 }]} onPress={handleSubmit} activeOpacity={0.85} disabled={submitting}>
-        <Text style={qrf.btnText}>{submitting ? 'Отправка...' : 'Найти специалиста →'}</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-const qrf = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: 16,
-    padding: 32,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgPrimary,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    marginBottom: Spacing.sm,
-    fontSize: Typography.fontSize.base,
-  },
-  cityRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: Spacing.sm,
-  },
-  cityChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgPrimary,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  cityChipSelected: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  cityChipText: {
-    color: Colors.textSecondary,
-    fontSize: Typography.fontSize.sm,
-  },
-  cityChipTextSelected: {
-    color: Colors.white,
-  },
-  label: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-    marginTop: Spacing.sm,
-  },
-  customCityInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgPrimary,
-    fontSize: Typography.fontSize.base,
-    marginBottom: Spacing.sm,
-  },
-  error: {
-    color: Colors.statusError,
-    fontSize: Typography.fontSize.sm,
-    marginBottom: Spacing.xs,
-  },
-  btn: {
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    padding: 16,
-    alignItems: 'center',
-    width: '100%',
-  },
-  btnSecondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-  },
-  btnText: {
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.semibold,
-    fontSize: Typography.fontSize.base,
-  },
-  btnTextSecondary: {
-    color: Colors.brandPrimary,
-  },
-  successContainer: {
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.xl,
-  },
-  successTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  successText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  successButtons: {
-    width: '100%',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-});
-
+import { QuickRequestForm } from '../components/QuickRequestForm';
 
 // ---- Skeleton Components ----
 
@@ -330,9 +78,13 @@ export default function LandingScreen() {
   const carouselRef = useRef<ScrollView>(null);
 
   useEffect(() => {
+    // TODO: show error state to user
     api.get<any[]>('/specialists/featured?limit=50').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
+    // TODO: show error state to user
     api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
+    // TODO: show error state to user
     api.get<any[]>('/reviews/public?limit=6').then(setReviews).catch((err) => console.warn('Landing section failed (reviews):', err));
+    // TODO: show error state to user
     api.get<{ specialistsCount: number; ifnsCount: number; requestsCount: number }>('/stats/landing').then(setLandingStats).catch((err) => console.warn('Landing section failed (stats):', err));
   }, []);
 
@@ -536,6 +288,21 @@ export default function LandingScreen() {
             </View>
           </View>
         )}
+        {!isLoadingSpecialists && featuredSpecialists.length === 0 && (
+          <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
+            <View style={[styles.sectionInner, innerStyle]}>
+              <Text style={styles.sectionTitle}>{'Специалисты'}</Text>
+              <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, maxWidth: 400 }}>
+                {'Скоро здесь появятся проверенные специалисты по вашей ИФНС.'}
+              </Text>
+              <Button
+                onPress={() => router.push('/specialists')}
+                variant="primary"
+                style={{ marginTop: Spacing.sm }}
+              >{'Смотреть всех специалистов'}</Button>
+            </View>
+          </View>
+        )}
 
         {/* ===== SECTION 2c: Recent Requests ===== */}
         {isLoadingRequests && (
@@ -627,9 +394,10 @@ export default function LandingScreen() {
         </View>
 
         {/* ===== SECTION 3b: Our Principle ===== */}
+        {/* backgroundColor '#1A3A6C' is a unique accent navy — no matching token in Colors.ts */}
         <View style={[styles.section, { backgroundColor: '#1A3A6C', paddingVertical: 64 }]}>
           <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={[styles.sectionTitle, { color: '#FFFFFF' }]} accessibilityRole="header" aria-level={2}>
+            <Text style={[styles.sectionTitle, { color: Colors.white }]} accessibilityRole="header" aria-level={2}>
               {'Специалист по вашей ИФНС — не по налогам вообще'}
             </Text>
             <Text style={[styles.sectionSubtitle, { color: 'rgba(255,255,255,0.80)', maxWidth: 620 }]}>
@@ -648,7 +416,7 @@ export default function LandingScreen() {
                 paddingVertical: 14,
               }}
             >
-              <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>
+              <Text style={{ color: Colors.white, fontSize: 16, fontWeight: '600' }}>
                 {'Найти специалиста под мою задачу →'}
               </Text>
             </TouchableOpacity>
@@ -1039,7 +807,7 @@ const styles = StyleSheet.create({
   },
   quickFormCard: {
     width: '100%',
-    maxWidth: 600,
+    maxWidth: 430,
     borderRadius: 16,
     backgroundColor: Colors.bgCard,
     padding: 0,

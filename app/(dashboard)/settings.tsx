@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { useAuth } from '../../stores/authStore';
 import { api, ApiError } from '../../lib/api';
 import { isAdmin } from '../../lib/adminEmails';
@@ -39,6 +40,7 @@ const NOTIF_KEY = '@p2ptax_email_notif';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { isMobile } = useBreakpoints();
   const { user, logout, updateEmail } = useAuth();
 
   const [emailNotif, setEmailNotif] = useState(true);
@@ -210,7 +212,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Настройки" showBack />
+      {isMobile && <Header title="Настройки" showBack />}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

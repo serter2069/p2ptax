@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   SafeAreaView,
   KeyboardAvoidingView,
@@ -13,7 +12,9 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { OnboardingProgress } from '../../components/OnboardingProgress';
 
 export default function ServicesScreen() {
   const router = useRouter();
@@ -67,7 +68,6 @@ export default function ServicesScreen() {
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [focused, setFocused] = useState(false);
 
 
   function handleChipToggle(chip: string) {
@@ -119,18 +119,7 @@ export default function ServicesScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
-            {/* Progress indicator — 5 steps */}
-            <View style={styles.progressRow}>
-              <View style={[styles.progressDot, styles.progressDotDone]} />
-              <View style={styles.progressLine} />
-              <View style={[styles.progressDot, styles.progressDotDone]} />
-              <View style={styles.progressLine} />
-              <View style={[styles.progressDot, styles.progressDotDone]} />
-              <View style={styles.progressLine} />
-              <View style={[styles.progressDot, styles.progressDotActive]} />
-              <View style={styles.progressLine} />
-              <View style={styles.progressDot} />
-            </View>
+            <OnboardingProgress currentStep={4} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -172,28 +161,18 @@ export default function ServicesScreen() {
 
             {/* Textarea */}
             <View style={styles.form}>
-              <View style={styles.textareaWrapper}>
-                <Text style={styles.inputLabel}>Описание услуг</Text>
-                <TextInput
-                  value={services}
-                  onChangeText={handleChange}
-                  placeholder="Например: Консультации по НДС, 3-НДФЛ, 2000 руб/час"
-                  placeholderTextColor={Colors.textMuted}
-                  multiline
-                  numberOfLines={5}
-                  textAlignVertical="top"
-                  autoCapitalize="sentences"
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => setFocused(false)}
-                  style={[
-                    styles.textarea,
-                    focused && styles.textareaFocused,
-                    !!error && styles.textareaError,
-                  ]}
-                />
-                {!!error && <Text style={styles.errorText}>{error}</Text>}
-                <Text style={styles.inputHint}>Описывайте услуги на русском языке</Text>
-              </View>
+              <Input
+                label="Описание услуг"
+                value={services}
+                onChangeText={handleChange}
+                placeholder="Например: Консультации по НДС, 3-НДФЛ, 2000 руб/час"
+                autoCapitalize="sentences"
+                multiline
+                numberOfLines={5}
+                minHeight={120}
+                error={error}
+                hint="Описывайте услуги на русском языке"
+              />
 
               <Button
                 onPress={handleSubmit}
@@ -243,34 +222,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     gap: Spacing['2xl'],
   },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 0,
-    marginTop: Spacing.xl,
-  },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.border,
-  },
-  progressDotDone: {
-    backgroundColor: Colors.brandSecondary,
-  },
-  progressDotActive: {
-    backgroundColor: Colors.brandPrimary,
-    width: 12,
-    height: 12,
-    borderRadius: BorderRadius.sm,
-  },
-  progressLine: {
-    width: 32,
-    height: 2,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.xs,
-  },
   header: {
     gap: Spacing.xs,
   },
@@ -305,42 +256,6 @@ const styles = StyleSheet.create({
   form: {
     gap: Spacing.lg,
   },
-  textareaWrapper: {
-    gap: Spacing.xs,
-  },
-  inputLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    marginBottom: 2,
-  },
-  textarea: {
-    minHeight: 120,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  textareaFocused: {
-    borderColor: Colors.brandPrimary,
-  },
-  textareaError: {
-    borderColor: Colors.statusError,
-  },
-  errorText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-    marginTop: 2,
-  },
-  inputHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
   chipsContainer: {
     gap: Spacing.xs,
   },
@@ -372,7 +287,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   chipTextActive: {
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   btn: {
     width: '100%',

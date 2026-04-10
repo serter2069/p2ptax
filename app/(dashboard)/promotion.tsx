@@ -13,6 +13,7 @@ import {
   Pressable,
 } from 'react-native';
 import { api, ApiError } from '../../lib/api';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 
@@ -77,6 +78,7 @@ function daysLeft(iso: string): number {
 }
 
 export default function PromotionScreen() {
+  const { isMobile } = useBreakpoints();
   const [promotions, setPromotions] = useState<PromotionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -169,7 +171,7 @@ export default function PromotionScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Продвижение" showBack />
+      {isMobile && <Header title="Продвижение" showBack />}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.brandPrimary} />

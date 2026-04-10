@@ -13,6 +13,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Button } from '../../components/Button';
 import { LandingHeader } from '../../components/LandingHeader';
+import { Footer } from '../../components/Footer';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError, setRefreshToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
@@ -219,6 +220,7 @@ export default function OtpScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.formArea}>
           <View style={styles.container}>
             <AuthProgress step={2} />
 
@@ -302,6 +304,8 @@ export default function OtpScreen() {
             </View>
 
           </View>
+          </View>
+          <Footer />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -318,6 +322,8 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
+  },
+  formArea: {
     alignItems: 'center',
     paddingVertical: Spacing['2xl'],
   },

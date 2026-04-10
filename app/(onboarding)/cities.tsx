@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { OnboardingProgress } from '../../components/OnboardingProgress';
 import { RUSSIAN_CITIES } from '../../constants/Cities';
 
 export default function CitiesScreen() {
@@ -50,18 +51,7 @@ export default function CitiesScreen() {
             <Text style={styles.backBtnText}>← Назад</Text>
           </TouchableOpacity>
 
-          {/* Progress indicator — 5 steps */}
-          <View style={styles.progressRow}>
-            <View style={[styles.progressDot, styles.progressDotDone]} />
-            <View style={styles.progressLine} />
-            <View style={[styles.progressDot, styles.progressDotActive]} />
-            <View style={styles.progressLine} />
-            <View style={styles.progressDot} />
-            <View style={styles.progressLine} />
-            <View style={styles.progressDot} />
-            <View style={styles.progressLine} />
-            <View style={styles.progressDot} />
-          </View>
+          <OnboardingProgress currentStep={2} />
 
           {/* Progress bar */}
           <View style={styles.progressBarBg}>
@@ -143,34 +133,6 @@ const styles = StyleSheet.create({
     maxWidth: 430,
     paddingHorizontal: Spacing.xl,
     gap: Spacing['2xl'],
-  },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 0,
-    marginTop: Spacing.xl,
-  },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.border,
-  },
-  progressDotDone: {
-    backgroundColor: Colors.brandSecondary,
-  },
-  progressDotActive: {
-    backgroundColor: Colors.brandPrimary,
-    width: 12,
-    height: 12,
-    borderRadius: BorderRadius.sm,
-  },
-  progressLine: {
-    width: 32,
-    height: 2,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.xs,
   },
   progressBarBg: {
     height: 4,

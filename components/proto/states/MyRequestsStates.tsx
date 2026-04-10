@@ -7,7 +7,7 @@ import { MOCK_REQUESTS } from '../../../constants/protoMockData';
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   NEW: { label: 'Новая', color: Colors.brandPrimary },
   ACTIVE: { label: 'Активная', color: Colors.statusSuccess },
-  IN_PROGRESS: { label: 'В работе', color: '#D97706' },
+  IN_PROGRESS: { label: 'В работе', color: Colors.statusWarning },
   COMPLETED: { label: 'Завершена', color: Colors.textMuted },
   CANCELLED: { label: 'Отменена', color: Colors.statusError },
 };
@@ -114,7 +114,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
   },
-  addBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  addBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   tabs: { flexDirection: 'row', gap: Spacing.sm },
   tab: {
     flex: 1, height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
@@ -122,7 +122,7 @@ const s = StyleSheet.create({
   },
   tabActive: { borderColor: Colors.brandPrimary, backgroundColor: Colors.brandPrimary },
   tabText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, fontWeight: Typography.fontWeight.medium },
-  tabTextActive: { color: '#FFF', fontWeight: Typography.fontWeight.semibold },
+  tabTextActive: { color: Colors.white, fontWeight: Typography.fontWeight.semibold },
   card: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
     borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,

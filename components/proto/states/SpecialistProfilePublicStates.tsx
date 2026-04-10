@@ -1,19 +1,28 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REVIEWS } from '../../../constants/protoMockData';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
+
+function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 1 }}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <Feather key={i} name="star" size={size} color={i <= rating ? Colors.statusWarning : Colors.border} />
+      ))}
+    </View>
+  );
+}
 
 function ReviewItem({ author, rating, text, date }: { author: string; rating: number; text: string; date: string }) {
-  const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
   return (
     <View style={s.review}>
       <View style={s.reviewTop}>
         <Text style={s.reviewAuthor}>{author}</Text>
         <Text style={s.reviewDate}>{date}</Text>
       </View>
-      <Text style={s.reviewStars}>{stars}</Text>
+      <Stars rating={rating} />
       <Text style={s.reviewText}>{text}</Text>
     </View>
   );
@@ -37,18 +46,18 @@ function ProfileScreen({ showReviewsPopup }: { showReviewsPopup?: boolean }) {
       )}
       <View style={s.profileCard}>
         <View style={s.profileTop}>
-          <ProtoPlaceholderImage type="avatar" height={80} iconSize={32} />
+          <Image source={{ uri: 'https://picsum.photos/seed/aleksei-petrov/80/80' }} style={{ width: 80, height: 80, borderRadius: 40 }} />
           <View style={s.profileInfo}>
             <Text style={s.name}>Алексей Петров</Text>
             <Text style={s.city}>Санкт-Петербург</Text>
             <View style={s.ratingRow}>
-              <Text style={s.stars}>{'★★★★★'}</Text>
+              <Stars rating={5} size={14} />
               <Text style={s.ratingText}>4.8 (42 отзыва)</Text>
             </View>
           </View>
         </View>
         <View style={s.verified}>
-          <Text style={s.verifiedIcon}>{'✓'}</Text>
+          <Feather name="check" size={16} color={Colors.statusSuccess} />
           <Text style={s.verifiedText}>Верифицирован через ФНС</Text>
         </View>
         <Text style={s.bio}>
@@ -98,9 +107,9 @@ function ProfileScreen({ showReviewsPopup }: { showReviewsPopup?: boolean }) {
       <View style={s.section}>
         <Text style={s.sectionTitle}>Документы и сертификаты</Text>
         <View style={s.docsRow}>
-          <ProtoPlaceholderImage type="document" width={100} height={80} label="Диплом" borderRadius={6} />
-          <ProtoPlaceholderImage type="document" width={100} height={80} label="Сертификат" borderRadius={6} />
-          <ProtoPlaceholderImage type="document" width={100} height={80} label="Лицензия" borderRadius={6} />
+          <Image source={{ uri: 'https://picsum.photos/seed/diploma/100/80' }} style={{ width: 100, height: 80, borderRadius: 6 }} />
+          <Image source={{ uri: 'https://picsum.photos/seed/certificate/100/80' }} style={{ width: 100, height: 80, borderRadius: 6 }} />
+          <Image source={{ uri: 'https://picsum.photos/seed/license/100/80' }} style={{ width: 100, height: 80, borderRadius: 6 }} />
         </View>
       </View>
 
@@ -135,13 +144,11 @@ const s = StyleSheet.create({
   name: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   city: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 2 },
-  stars: { fontSize: 14, color: Colors.brandPrimary },
   ratingText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   verified: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: '#e6f4ed', padding: Spacing.sm, borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.statusBg.success, padding: Spacing.sm, borderRadius: BorderRadius.sm,
   },
-  verifiedIcon: { fontSize: 16, color: Colors.statusSuccess },
   verifiedText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.medium, color: Colors.statusSuccess },
   bio: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
   section: { gap: Spacing.md },
@@ -165,14 +172,13 @@ const s = StyleSheet.create({
   reviewTop: { flexDirection: 'row', justifyContent: 'space-between' },
   reviewAuthor: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   reviewDate: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  reviewStars: { fontSize: 12, color: Colors.brandPrimary },
   reviewText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
   docsRow: { flexDirection: 'row', gap: Spacing.sm },
   contactBtn: {
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  contactBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  contactBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10, alignItems: 'center', justifyContent: 'center',

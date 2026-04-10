@@ -11,7 +11,8 @@ import {
 import { useRouter } from 'expo-router';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Colors, Spacing, Typography } from '../../constants/Colors';
+import { OnboardingProgress } from '../../components/OnboardingProgress';
 import { api, ApiError } from '../../lib/api';
 import { generateUsername } from '../../lib/transliterate';
 
@@ -110,18 +111,7 @@ export default function UsernameScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
-            {/* Progress — 5 steps */}
-            <View style={styles.progressRow}>
-              <View style={[styles.progressDot, styles.progressDotActive]} />
-              <View style={styles.progressLine} />
-              <View style={styles.progressDot} />
-              <View style={styles.progressLine} />
-              <View style={styles.progressDot} />
-              <View style={styles.progressLine} />
-              <View style={styles.progressDot} />
-              <View style={styles.progressLine} />
-              <View style={styles.progressDot} />
-            </View>
+            <OnboardingProgress currentStep={1} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -199,31 +189,6 @@ const styles = StyleSheet.create({
     maxWidth: 430,
     paddingHorizontal: Spacing.xl,
     gap: Spacing['2xl'],
-  },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 0,
-    marginTop: Spacing.xl,
-  },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.border,
-  },
-  progressDotActive: {
-    backgroundColor: Colors.brandPrimary,
-    width: 12,
-    height: 12,
-    borderRadius: BorderRadius.sm,
-  },
-  progressLine: {
-    width: 32,
-    height: 2,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.xs,
   },
   step: {
     fontSize: Typography.fontSize.sm,

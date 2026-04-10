@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   SafeAreaView,
   KeyboardAvoidingView,
@@ -13,7 +12,9 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Input } from '../../components/Input';
+import { Colors, Spacing, Typography } from '../../constants/Colors';
+import { OnboardingProgress } from '../../components/OnboardingProgress';
 import { api, ApiError, tryRefreshTokens, getToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { AuthUser } from '../../stores/authStore';
@@ -28,7 +29,6 @@ export default function ProfileScreen() {
   const [contacts, setContacts] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   async function handleSubmit() {
     setError('');
@@ -116,18 +116,7 @@ export default function ProfileScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
-            {/* Progress indicator — 5 steps */}
-            <View style={styles.progressRow}>
-              <View style={[styles.progressDot, styles.progressDotDone]} />
-              <View style={styles.progressLine} />
-              <View style={[styles.progressDot, styles.progressDotDone]} />
-              <View style={styles.progressLine} />
-              <View style={[styles.progressDot, styles.progressDotDone]} />
-              <View style={styles.progressLine} />
-              <View style={[styles.progressDot, styles.progressDotDone]} />
-              <View style={styles.progressLine} />
-              <View style={[styles.progressDot, styles.progressDotActive]} />
-            </View>
+            <OnboardingProgress currentStep={5} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -141,85 +130,49 @@ export default function ProfileScreen() {
             {/* Form */}
             <View style={styles.form}>
               {/* displayName */}
-              <View style={styles.fieldWrapper}>
-                <Text style={styles.inputLabel}>Отображаемое имя</Text>
-                <TextInput
-                  value={displayName}
-                  onChangeText={setDisplayName}
-                  placeholder="Иван Петров"
-                  placeholderTextColor={Colors.textMuted}
-                  autoCapitalize="words"
-                  onFocus={() => setFocusedField('displayName')}
-                  onBlur={() => setFocusedField(null)}
-                  style={[
-                    styles.input,
-                    focusedField === 'displayName' && styles.inputFocused,
-                  ]}
-                />
-              </View>
+              <Input
+                label="Отображаемое имя"
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder="Иван Петров"
+                autoCapitalize="words"
+              />
 
               {/* headline */}
-              <View style={styles.fieldWrapper}>
-                <Text style={styles.inputLabel}>Слоган / заголовок</Text>
-                <TextInput
-                  value={headline}
-                  onChangeText={setHeadline}
-                  placeholder="Решу ваш вопрос с ФНС быстро"
-                  placeholderTextColor={Colors.textMuted}
-                  autoCapitalize="sentences"
-                  maxLength={150}
-                  onFocus={() => setFocusedField('headline')}
-                  onBlur={() => setFocusedField(null)}
-                  style={[
-                    styles.input,
-                    focusedField === 'headline' && styles.inputFocused,
-                  ]}
-                />
-                <Text style={styles.charCount}>{headline.length}/150</Text>
-              </View>
+              <Input
+                label="Слоган / заголовок"
+                value={headline}
+                onChangeText={setHeadline}
+                placeholder="Решу ваш вопрос с ФНС быстро"
+                autoCapitalize="sentences"
+                maxLength={150}
+                showCharCount
+              />
 
               {/* bio */}
-              <View style={styles.fieldWrapper}>
-                <Text style={styles.inputLabel}>О себе</Text>
-                <TextInput
-                  value={bio}
-                  onChangeText={setBio}
-                  placeholder="Опыт работы, специализация..."
-                  placeholderTextColor={Colors.textMuted}
-                  multiline
-                  numberOfLines={5}
-                  textAlignVertical="top"
-                  autoCapitalize="sentences"
-                  maxLength={1000}
-                  onFocus={() => setFocusedField('bio')}
-                  onBlur={() => setFocusedField(null)}
-                  style={[
-                    styles.textarea,
-                    focusedField === 'bio' && styles.inputFocused,
-                  ]}
-                />
-                <Text style={styles.charCount}>{bio.length}/1000</Text>
-              </View>
+              <Input
+                label="О себе"
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Опыт работы, специализация..."
+                autoCapitalize="sentences"
+                multiline
+                numberOfLines={5}
+                minHeight={120}
+                maxLength={1000}
+                showCharCount
+              />
 
               {/* contacts */}
-              <View style={styles.fieldWrapper}>
-                <Text style={styles.inputLabel}>Контакты / ссылки</Text>
-                <TextInput
-                  value={contacts}
-                  onChangeText={setContacts}
-                  placeholder="Telegram: @username"
-                  placeholderTextColor={Colors.textMuted}
-                  autoCapitalize="none"
-                  maxLength={200}
-                  onFocus={() => setFocusedField('contacts')}
-                  onBlur={() => setFocusedField(null)}
-                  style={[
-                    styles.input,
-                    focusedField === 'contacts' && styles.inputFocused,
-                  ]}
-                />
-                <Text style={styles.charCount}>{contacts.length}/200</Text>
-              </View>
+              <Input
+                label="Контакты / ссылки"
+                value={contacts}
+                onChangeText={setContacts}
+                placeholder="Telegram: @username"
+                autoCapitalize="none"
+                maxLength={200}
+                showCharCount
+              />
 
               {!!error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -268,34 +221,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     gap: Spacing['2xl'],
   },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 0,
-    marginTop: Spacing.xl,
-  },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.border,
-  },
-  progressDotDone: {
-    backgroundColor: Colors.brandSecondary,
-  },
-  progressDotActive: {
-    backgroundColor: Colors.brandPrimary,
-    width: 12,
-    height: 12,
-    borderRadius: BorderRadius.sm,
-  },
-  progressLine: {
-    width: 32,
-    height: 2,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.xs,
-  },
   header: {
     gap: Spacing.xs,
   },
@@ -316,45 +241,6 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: Spacing.lg,
-  },
-  fieldWrapper: {
-    gap: Spacing.xs,
-  },
-  inputLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    marginBottom: 2,
-  },
-  input: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  textarea: {
-    minHeight: 120,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  inputFocused: {
-    borderColor: Colors.brandPrimary,
-  },
-  charCount: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'right',
-    marginTop: 2,
   },
   errorText: {
     fontSize: Typography.fontSize.xs,

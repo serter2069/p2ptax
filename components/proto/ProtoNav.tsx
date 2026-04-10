@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 
-type NavVariant = 'public' | 'auth' | 'client' | 'specialist' | 'admin';
+import type { NavVariant } from '../../constants/pageRegistry';
 
 interface ProtoNavProps {
   variant: NavVariant;
@@ -152,12 +152,12 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    backgroundColor: '#0F2447',
+    backgroundColor: Colors.textPrimary,
   },
   logo: {
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
-    color: '#FFF',
+    color: Colors.white,
   },
   publicLinks: {
     flexDirection: 'row',
@@ -178,7 +178,7 @@ const s = StyleSheet.create({
   loginBtnText: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.medium,
-    color: '#FFF',
+    color: Colors.white,
   },
 
   // Auth

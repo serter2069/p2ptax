@@ -85,7 +85,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
   },
-  addBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  addBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   statsRow: { flexDirection: 'row', gap: Spacing.sm },
   stat: {
     flex: 1, backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md,

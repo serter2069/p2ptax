@@ -11,9 +11,7 @@ import { BrandStyleStates } from '../../../components/proto/states/BrandStyleSta
 import { AuthEmailStates } from '../../../components/proto/states/AuthEmailStates';
 import { AuthOtpStates } from '../../../components/proto/states/AuthOtpStates';
 import { OnboardingUsernameStates } from '../../../components/proto/states/OnboardingUsernameStates';
-import { OnboardingCitiesStates } from '../../../components/proto/states/OnboardingCitiesStates';
-import { OnboardingServicesStates } from '../../../components/proto/states/OnboardingServicesStates';
-import { OnboardingFnsStates } from '../../../components/proto/states/OnboardingFnsStates';
+import { OnboardingWorkAreaStates } from '../../../components/proto/states/OnboardingWorkAreaStates';
 import { OnboardingProfileStates } from '../../../components/proto/states/OnboardingProfileStates';
 import { DashboardStates } from '../../../components/proto/states/DashboardStates';
 import { MyRequestsStates } from '../../../components/proto/states/MyRequestsStates';
@@ -44,9 +42,7 @@ const STATE_MAP: Record<string, React.ComponentType> = {
   'auth-email': AuthEmailStates,
   'auth-otp': AuthOtpStates,
   'onboarding-username': OnboardingUsernameStates,
-  'onboarding-cities': OnboardingCitiesStates,
-  'onboarding-services': OnboardingServicesStates,
-  'onboarding-fns': OnboardingFnsStates,
+  'onboarding-work-area': OnboardingWorkAreaStates,
   'onboarding-profile': OnboardingProfileStates,
   'dashboard': DashboardStates,
   'my-requests': MyRequestsStates,

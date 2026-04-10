@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
@@ -8,7 +9,7 @@ function Popup({ type, onClose }: { type: 'success' | 'error'; onClose: () => vo
   return (
     <View style={s.overlay}>
       <View style={s.popup}>
-        <Text style={s.popupIcon}>{isSuccess ? '✓' : '✕'}</Text>
+        <Feather name={isSuccess ? 'check' : 'x'} size={44} color={isSuccess ? Colors.statusSuccess : Colors.statusError} />
         <Text style={s.popupTitle}>{isSuccess ? 'Отклик отправлен!' : 'Ошибка отправки'}</Text>
         <Text style={s.popupText}>
           {isSuccess
@@ -80,11 +81,55 @@ function FormScreen() {
   );
 }
 
+function SubmittedScreen() {
+  return (
+    <View style={s.container}>
+      <View style={s.successWrap}>
+        <View style={s.successIconCircle}>
+          <Feather name="check" size={32} color={Colors.statusSuccess} />
+        </View>
+        <Text style={s.successTitle}>Отклик отправлен!</Text>
+        <Text style={s.successText}>
+          Клиент получит уведомление о вашем отклике и сможет связаться с вами.
+        </Text>
+        <Pressable style={s.btn}><Text style={s.btnText}>К моим откликам</Text></Pressable>
+      </View>
+    </View>
+  );
+}
+
+function ErrorScreen() {
+  return (
+    <View style={s.container}>
+      <View style={s.successWrap}>
+        <View style={[s.successIconCircle, { backgroundColor: Colors.statusBg.error }]}>
+          <Feather name="alert-circle" size={32} color={Colors.statusError} />
+        </View>
+        <Text style={s.successTitle}>Ошибка отправки</Text>
+        <Text style={s.successText}>
+          Не удалось отправить отклик. Проверьте подключение к интернету и попробуйте ещё раз.
+        </Text>
+        <Pressable style={[s.btn, { backgroundColor: Colors.statusError }]}>
+          <Text style={s.btnText}>Попробовать снова</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export function SpecialistRespondStates() {
   return (
-    <StateSection title="INTERACTIVE_FORM">
-      <FormScreen />
-    </StateSection>
+    <>
+      <StateSection title="INTERACTIVE_FORM">
+        <FormScreen />
+      </StateSection>
+      <StateSection title="SUBMITTED">
+        <SubmittedScreen />
+      </StateSection>
+      <StateSection title="ERROR">
+        <ErrorScreen />
+      </StateSection>
+    </>
   );
 }
 
@@ -113,7 +158,14 @@ const s = StyleSheet.create({
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+  successWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.md },
+  successIconCircle: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.statusBg.success,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  successTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  successText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10, alignItems: 'center', justifyContent: 'center',
@@ -123,7 +175,6 @@ const s = StyleSheet.create({
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, padding: Spacing['2xl'],
     alignItems: 'center', gap: Spacing.md, width: '100%', maxWidth: 340,
   },
-  popupIcon: { fontSize: 44, color: Colors.statusSuccess },
   popupTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   popupText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
   popupBtn: {
@@ -131,5 +182,5 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing['2xl'], width: '100%',
   },
   popupBtnError: { backgroundColor: Colors.statusError },
-  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
 });

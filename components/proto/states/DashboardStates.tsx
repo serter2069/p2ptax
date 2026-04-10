@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
@@ -51,7 +50,7 @@ function WithDataDashboard() {
       <View style={s.header}>
         <Text style={s.greeting}>Добрый день, Елена!</Text>
       </View>
-      <ProtoPlaceholderImage type="banner" height={100} label="Promo banner" borderRadius={10} />
+      <Image source={{ uri: 'https://picsum.photos/seed/promo-banner/800/200' }} style={{ width: '100%', height: 100, borderRadius: 10 }} resizeMode="cover" />
       <View style={s.statsRow}>
         <StatCard label="Активные" value="3" color={Colors.brandPrimary} />
         <StatCard label="Отклики" value="8" color={Colors.statusSuccess} />
@@ -62,7 +61,7 @@ function WithDataDashboard() {
         <View style={s.list}>
           <RequestRow title="Декларация 3-НДФЛ за 2025" status="Новая" date="08.04.2026" statusColor={Colors.brandPrimary} />
           <RequestRow title="Регистрация ИП на УСН" status="3 отклика" date="07.04.2026" statusColor={Colors.statusSuccess} />
-          <RequestRow title="Оптимизация налогов ООО" status="В работе" date="05.04.2026" statusColor="#D97706" />
+          <RequestRow title="Оптимизация налогов ООО" status="В работе" date="05.04.2026" statusColor={Colors.statusWarning} />
         </View>
       </View>
     </View>
@@ -132,7 +131,7 @@ const s = StyleSheet.create({
     height: 44, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing['2xl'], marginTop: Spacing.sm,
   },
-  btnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  btnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   loadingWrap: { alignItems: 'center', padding: Spacing['4xl'], gap: Spacing.md },
   loadingText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
 });
