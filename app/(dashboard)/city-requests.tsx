@@ -16,6 +16,7 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
@@ -46,6 +47,7 @@ interface FeedResponse {
 }
 
 export default function CityRequestsScreen() {
+  const { isMobile } = useBreakpoints();
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [myCities, setMyCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -400,7 +402,7 @@ export default function CityRequestsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Запросы в моих городах" showBack />
+      {isMobile && <Header title="Запросы в моих городах" showBack />}
 
       {myCities.length > 0 && !loading && !error && (
         <View style={styles.citiesBar}>

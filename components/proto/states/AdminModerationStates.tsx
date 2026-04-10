@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function ModerationCard({ name, type, date, onApprove, onReject, onView }: {
   name: string; type: string; date: string;
@@ -11,7 +11,7 @@ function ModerationCard({ name, type, date, onApprove, onReject, onView }: {
   return (
     <View style={s.card}>
       <View style={s.cardTop}>
-        <ProtoPlaceholderImage type="avatar" height={40} />
+        <Image source={{ uri: `https://picsum.photos/seed/${name.replace(/\s/g, '')}/40/40` }} style={{ width: 40, height: 40, borderRadius: 20 }} />
         <View style={s.cardInfo}>
           <Text style={s.cardName}>{name}</Text>
           <Text style={s.cardType}>{type}</Text>
@@ -20,13 +20,13 @@ function ModerationCard({ name, type, date, onApprove, onReject, onView }: {
         <View style={s.pendingBadge}><Text style={s.pendingText}>Ожидает</Text></View>
       </View>
       <View style={s.docPreviewRow}>
-        <ProtoPlaceholderImage type="document" width={60} height={48} borderRadius={4} />
-        <ProtoPlaceholderImage type="document" width={60} height={48} borderRadius={4} />
+        <Image source={{ uri: `https://picsum.photos/seed/${name.replace(/\s/g, '')}-doc1/60/48` }} style={{ width: 60, height: 48, borderRadius: 4 }} />
+        <Image source={{ uri: `https://picsum.photos/seed/${name.replace(/\s/g, '')}-doc2/60/48` }} style={{ width: 60, height: 48, borderRadius: 4 }} />
       </View>
       <View style={s.cardActions}>
         <Pressable onPress={onView} style={s.btnView}><Text style={s.btnViewText}>Просмотр</Text></Pressable>
-        <Pressable onPress={onApprove} style={s.btnApprove}><Text style={s.btnApproveText}>{'✓'}</Text></Pressable>
-        <Pressable onPress={onReject} style={s.btnReject}><Text style={s.btnRejectText}>{'✕'}</Text></Pressable>
+        <Pressable onPress={onApprove} style={s.btnApprove}><Feather name="check" size={16} color={Colors.statusSuccess} /></Pressable>
+        <Pressable onPress={onReject} style={s.btnReject}><Feather name="x" size={16} color={Colors.statusError} /></Pressable>
       </View>
     </View>
   );
@@ -69,7 +69,9 @@ function InteractiveModeration() {
       {popup && (
         <View style={s.overlay}>
           <View style={s.popup}>
-            <Text style={s.popupIcon}>{popup.type === 'approve' ? '✓' : '✕'}</Text>
+            <View style={s.popupIconWrap}>
+              <Feather name={popup.type === 'approve' ? 'check' : 'x'} size={40} color={popup.type === 'approve' ? Colors.statusSuccess : Colors.statusError} />
+            </View>
             <Text style={s.popupTitle}>{popup.type === 'approve' ? 'Одобрить профиль?' : 'Отклонить профиль?'}</Text>
             {popup.type === 'approve' ? (
               <Text style={s.popupText}>Профиль специалиста {popup.name} будет опубликован и виден клиентам</Text>
@@ -104,11 +106,81 @@ function InteractiveModeration() {
   );
 }
 
+function DefaultModeration() {
+  return (
+    <View style={s.container}>
+      <View style={s.header}>
+        <Text style={s.pageTitle}>Модерация</Text>
+        <View style={s.countBadge}><Text style={s.countText}>{QUEUE_ITEMS.length}</Text></View>
+      </View>
+      {QUEUE_ITEMS.map((item, i) => (
+        <ModerationCard
+          key={i}
+          name={item.name}
+          type={item.type}
+          date={item.date}
+          onView={() => {}}
+          onApprove={() => {}}
+          onReject={() => {}}
+        />
+      ))}
+    </View>
+  );
+}
+
+function ApprovedModeration() {
+  return (
+    <View style={s.container}>
+      <View style={s.header}>
+        <Text style={s.pageTitle}>Модерация</Text>
+        <View style={s.countBadge}><Text style={s.countText}>{QUEUE_ITEMS.length - 1}</Text></View>
+      </View>
+      <View style={s.card}>
+        <View style={s.cardTop}>
+          <Image source={{ uri: 'https://picsum.photos/seed/OlgaSmirnova/40/40' }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+          <View style={s.cardInfo}>
+            <Text style={s.cardName}>Ольга Смирнова</Text>
+            <Text style={s.cardType}>Верификация специалиста</Text>
+            <Text style={s.cardDate}>08.04.2026</Text>
+          </View>
+          <View style={s.approvedBadge}>
+            <Feather name="check" size={12} color={Colors.statusSuccess} />
+            <Text style={s.approvedText}>Одобрено</Text>
+          </View>
+        </View>
+        <View style={s.docPreviewRow}>
+          <Image source={{ uri: 'https://picsum.photos/seed/OlgaSmirnova-doc1/60/48' }} style={{ width: 60, height: 48, borderRadius: 4 }} />
+          <Image source={{ uri: 'https://picsum.photos/seed/OlgaSmirnova-doc2/60/48' }} style={{ width: 60, height: 48, borderRadius: 4 }} />
+        </View>
+      </View>
+      {QUEUE_ITEMS.slice(1).map((item, i) => (
+        <ModerationCard
+          key={i}
+          name={item.name}
+          type={item.type}
+          date={item.date}
+          onView={() => {}}
+          onApprove={() => {}}
+          onReject={() => {}}
+        />
+      ))}
+    </View>
+  );
+}
+
 export function AdminModerationStates() {
   return (
-    <StateSection title="INTERACTIVE" maxWidth={800}>
-      <InteractiveModeration />
-    </StateSection>
+    <>
+      <StateSection title="DEFAULT" maxWidth={800}>
+        <DefaultModeration />
+      </StateSection>
+      <StateSection title="INTERACTIVE" maxWidth={800}>
+        <InteractiveModeration />
+      </StateSection>
+      <StateSection title="APPROVED" maxWidth={800}>
+        <ApprovedModeration />
+      </StateSection>
+    </>
   );
 }
 
@@ -117,10 +189,10 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   pageTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   countBadge: {
-    backgroundColor: '#D97706', minWidth: 24, height: 24, borderRadius: 12,
+    backgroundColor: Colors.statusWarning, minWidth: 24, height: 24, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
   },
-  countText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: '#FFF' },
+  countText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.white },
   card: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
     borderWidth: 1, borderColor: Colors.border, gap: Spacing.md,
@@ -132,8 +204,13 @@ const s = StyleSheet.create({
   cardName: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   cardType: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   cardDate: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  pendingBadge: { backgroundColor: '#fef3cd', paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full },
-  pendingText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: '#D97706' },
+  pendingBadge: { backgroundColor: Colors.statusBg.warning, paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full },
+  pendingText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.statusWarning },
+  approvedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: Colors.statusBg.success, paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full,
+  },
+  approvedText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.statusSuccess },
   docPreviewRow: { flexDirection: 'row', gap: Spacing.sm },
   cardActions: { flexDirection: 'row', gap: Spacing.sm },
   btnView: {
@@ -143,14 +220,14 @@ const s = StyleSheet.create({
   btnViewText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
   btnApprove: {
     width: 36, height: 36, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#e6f4ed',
+    backgroundColor: Colors.statusBg.success,
   },
-  btnApproveText: { fontSize: 16, color: Colors.statusSuccess },
+  // btnApprove icon uses Feather directly
   btnReject: {
     width: 36, height: 36, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#fde8e8',
+    backgroundColor: Colors.statusBg.error,
   },
-  btnRejectText: { fontSize: 16, color: Colors.statusError },
+  // btnReject icon uses Feather directly
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10, alignItems: 'center', justifyContent: 'center',
@@ -160,7 +237,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, padding: Spacing['2xl'],
     alignItems: 'center', gap: Spacing.md, width: '100%', maxWidth: 360,
   },
-  popupIcon: { fontSize: 40, color: Colors.statusSuccess },
+  popupIconWrap: { alignItems: 'center' },
   popupTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   popupText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
   field: { width: '100%', gap: Spacing.xs },
@@ -178,7 +255,7 @@ const s = StyleSheet.create({
     height: 44, backgroundColor: Colors.statusError, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   popupBtnCancel: {
     height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border,

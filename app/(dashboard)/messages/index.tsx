@@ -10,6 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useBreakpoints } from '../../../hooks/useBreakpoints';
 import { useAuth } from '../../../stores/authStore';
 import { api, ApiError } from '../../../lib/api';
 import { Avatar } from '../../../components/Avatar';
@@ -78,6 +79,7 @@ function truncate(text: string, maxLen: number): string {
 
 export default function MessagesScreen() {
   const router = useRouter();
+  const { isMobile } = useBreakpoints();
   const { user } = useAuth();
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -173,7 +175,7 @@ export default function MessagesScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Диалоги" showBack />
+      {isMobile && <Header title="Диалоги" showBack />}
 
       {loading ? (
         <View style={styles.center}>

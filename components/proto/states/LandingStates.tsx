@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { StateSection } from '../StateSection';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 const BRAND = {
-  primary: '#0F2447',
-  action: '#1A5BA8',
+  primary: Colors.textPrimary,
+  action: Colors.brandPrimary,
   accent: '#D4A843',
-  bg: '#F4F8FC',
-  card: '#FFFFFF',
-  textPrimary: '#0F2447',
-  textSecondary: '#4A6B88',
-  textMuted: '#6B8299',
-  border: '#D6E2F0',
-  error: '#B91C1C',
-  errorBg: '#FEF2F2',
-  successBg: '#F0FDF4',
-  success: '#16A34A',
+  bg: Colors.bgPrimary,
+  card: Colors.bgCard,
+  textPrimary: Colors.textPrimary,
+  textSecondary: Colors.textSecondary,
+  textMuted: Colors.textMuted,
+  border: Colors.border,
+  error: Colors.statusError,
+  errorBg: Colors.statusBg.error,
+  successBg: Colors.statusBg.success,
+  success: Colors.statusSuccess,
 };
 
-const CITIES = ['Москва', 'Санкт-Петербург', 'Екатеринбург', 'Казань', 'Новосибирск', 'Краснодар'];
+const CITIES = [
+  'Москва', 'Санкт-Петербург', 'Екатеринбург', 'Казань', 'Новосибирск',
+  'Краснодар', 'Нижний Новгород', 'Самара', 'Ростов-на-Дону', 'Уфа',
+  'Челябинск', 'Воронеж', 'Пермь', 'Волгоград', 'Красноярск', 'Омск',
+];
 
 const FNS_MAP: Record<string, string[]> = {
   'Москва': ['ФНС №1', 'ФНС №5', 'ФНС №12', 'ФНС №18', 'ФНС №24'],
@@ -30,44 +33,34 @@ const FNS_MAP: Record<string, string[]> = {
   'Казань': ['ФНС №4', 'ФНС №6'],
   'Новосибирск': ['ФНС №1', 'ФНС №8', 'ФНС №14'],
   'Краснодар': ['ФНС №2', 'ФНС №10'],
+  'Нижний Новгород': ['ФНС №1', 'ФНС №5', 'ФНС №13'],
+  'Самара': ['ФНС №3', 'ФНС №7'],
+  'Ростов-на-Дону': ['ФНС №2', 'ФНС №6', 'ФНС №11'],
+  'Уфа': ['ФНС №1', 'ФНС №4'],
+  'Челябинск': ['ФНС №3', 'ФНС №8'],
+  'Воронеж': ['ФНС №2', 'ФНС №5'],
+  'Пермь': ['ФНС №1', 'ФНС №6'],
+  'Волгоград': ['ФНС №3', 'ФНС №7'],
+  'Красноярск': ['ФНС №2', 'ФНС №9'],
+  'Омск': ['ФНС №1', 'ФНС №4'],
 };
 
 const SPECIALISTS = [
-  { name: 'Алексей Петров', spec: 'Камеральные проверки', rating: 4.9, city: 'Москва', color: '#E8F0FE' },
-  { name: 'Мария Иванова', spec: 'Налоговый аудит', rating: 4.8, city: 'Санкт-Петербург', color: '#FEF3E2' },
-  { name: 'Дмитрий Козлов', spec: 'ФНС споры', rating: 4.7, city: 'Екатеринбург', color: '#E8F5E9' },
-  { name: 'Елена Соколова', spec: 'Оптимизация налогов', rating: 4.9, city: 'Казань', color: '#F3E8FE' },
-  { name: 'Артём Волков', spec: 'Бухгалтерский учёт', rating: 4.6, city: 'Новосибирск', color: '#FEE8E8' },
+  { name: 'Алексей Петров', spec: 'Камеральные проверки', rating: 4.9, city: 'Москва', seed: 'alexei' },
+  { name: 'Мария Иванова', spec: 'Налоговый аудит', rating: 4.8, city: 'Санкт-Петербург', seed: 'maria' },
+  { name: 'Дмитрий Козлов', spec: 'ФНС споры', rating: 4.7, city: 'Екатеринбург', seed: 'dmitry' },
+  { name: 'Елена Соколова', spec: 'Оптимизация налогов', rating: 4.9, city: 'Казань', seed: 'elena' },
+  { name: 'Артём Волков', spec: 'Бухгалтерский учёт', rating: 4.6, city: 'Новосибирск', seed: 'artem' },
 ];
 
 // --- Subcomponents ---
 
-function Nav() {
-  return (
-    <View style={s.nav}>
-      <View style={s.navLeft}>
-        <Feather name="briefcase" size={20} color={BRAND.accent} />
-        <Text style={s.logoText}>Налоговик</Text>
-      </View>
-      <View style={s.navLinks}>
-        <Text style={s.navLink}>Специалисты</Text>
-        <Text style={s.navLink}>Тарифы</Text>
-        <View style={s.loginBtn}>
-          <Feather name="log-in" size={14} color="#FFF" />
-          <Text style={s.loginBtnText}>Войти</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 function Hero() {
   return (
     <View style={s.hero}>
-      <Nav />
       <View style={s.heroContent}>
         <View style={s.heroIllustrationWrap}>
-          <ProtoPlaceholderImage type="illustration" height={140} label="Hero illustration" borderRadius={12} />
+          <Image source={{ uri: 'https://picsum.photos/seed/taxlaw/600/140' }} style={{ width: '100%', height: 140, borderRadius: 12 }} resizeMode="cover" />
         </View>
         <Text style={s.heroTitle}>Найдите налогового{'\n'}специалиста</Text>
         <Text style={s.heroSubtitle}>
@@ -75,11 +68,11 @@ function Hero() {
         </Text>
         <View style={s.heroCta}>
           <Pressable style={s.heroBtn}>
-            <Feather name="search" size={16} color="#FFF" />
+            <Feather name="search" size={16} color={Colors.white} />
             <Text style={s.heroBtnText}>Найти специалиста</Text>
           </Pressable>
           <Pressable style={s.heroBtnOutline}>
-            <Feather name="user-check" size={16} color="#FFF" />
+            <Feather name="user-check" size={16} color={Colors.white} />
             <Text style={s.heroBtnOutlineText}>Я специалист</Text>
           </Pressable>
         </View>
@@ -117,7 +110,6 @@ function Features() {
       <View style={s.featureGrid}>
         {items.map((item) => (
           <View key={item.title} style={s.featureCard}>
-            <ProtoPlaceholderImage type="illustration" height={64} borderRadius={8} />
             <View style={s.featureIconWrap}>
               <Feather name={item.icon} size={22} color={BRAND.action} />
             </View>
@@ -164,7 +156,7 @@ function SpecialistsCarousel() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.carouselContent}>
         {SPECIALISTS.map((sp) => (
           <View key={sp.name} style={s.specCard}>
-            <ProtoPlaceholderImage type="avatar" height={56} />
+            <Image source={{ uri: `https://picsum.photos/seed/${sp.seed}/56/56` }} style={{ width: 56, height: 56, borderRadius: 28 }} />
             <Text style={s.specName}>{sp.name}</Text>
             <Text style={s.specSpec}>{sp.spec}</Text>
             <View style={s.specRatingRow}>
@@ -298,7 +290,7 @@ function RequestForm({ prefill, errors, submitted }: RequestFormProps) {
 
         {/* Submit */}
         <Pressable style={s.submitBtn}>
-          <Feather name="send" size={16} color="#FFF" />
+          <Feather name="send" size={16} color={Colors.white} />
           <Text style={s.submitBtnText}>Отправить заявку</Text>
         </Pressable>
 
@@ -352,11 +344,11 @@ function FullLanding(props: RequestFormProps) {
 export function LandingStates() {
   return (
     <View style={{ gap: Spacing['4xl'] }}>
-      <StateSection title="DEFAULT" pageId="landing">
+      <StateSection title="DEFAULT" pageId="landing" maxWidth={1024}>
         <FullLanding />
       </StateSection>
 
-      <StateSection title="FORM_FILLING" pageId="landing">
+      <StateSection title="FORM_FILLING" pageId="landing" maxWidth={1024}>
         <FullLanding
           prefill={{
             city: 'Москва',
@@ -366,7 +358,7 @@ export function LandingStates() {
         />
       </StateSection>
 
-      <StateSection title="FORM_VALIDATION" pageId="landing">
+      <StateSection title="FORM_VALIDATION" pageId="landing" maxWidth={1024}>
         <FullLanding
           prefill={{
             city: 'Санкт-Петербург',
@@ -378,7 +370,7 @@ export function LandingStates() {
         />
       </StateSection>
 
-      <StateSection title="FORM_SUCCESS" pageId="landing">
+      <StateSection title="FORM_SUCCESS" pageId="landing" maxWidth={1024}>
         <FullLanding
           prefill={{ email: 'ivan@example.com' }}
           submitted
@@ -392,50 +384,7 @@ export function LandingStates() {
 
 const s = StyleSheet.create({
   page: {
-    backgroundColor: '#FFFFFF',
-  },
-
-  // Nav
-  nav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  navLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  logoText: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: '#FFF',
-  },
-  navLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.lg,
-  },
-  navLink: {
-    fontSize: Typography.fontSize.sm,
-    color: 'rgba(255,255,255,0.7)',
-  },
-  loginBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  loginBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: '#FFF',
+    backgroundColor: Colors.bgCard,
   },
 
   // Hero
@@ -452,9 +401,9 @@ const s = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   heroTitle: {
-    fontSize: 28,
+    fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
-    color: '#FFF',
+    color: Colors.white,
     lineHeight: 36,
   },
   heroSubtitle: {
@@ -479,7 +428,7 @@ const s = StyleSheet.create({
   heroBtnText: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
-    color: '#FFF',
+    color: Colors.white,
   },
   heroBtnOutline: {
     flexDirection: 'row',
@@ -494,7 +443,7 @@ const s = StyleSheet.create({
   heroBtnOutlineText: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.medium,
-    color: '#FFF',
+    color: Colors.white,
   },
   statsRow: {
     flexDirection: 'row',
@@ -516,7 +465,7 @@ const s = StyleSheet.create({
   statValue: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
-    color: '#FFF',
+    color: Colors.white,
   },
   statLabel: {
     fontSize: Typography.fontSize.xs,
@@ -528,7 +477,7 @@ const s = StyleSheet.create({
   section: {
     padding: Spacing['2xl'],
     gap: Spacing.lg,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
   },
   sectionTitle: {
     fontSize: Typography.fontSize.title,
@@ -542,10 +491,12 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.md,
+    justifyContent: 'center',
   },
   featureCard: {
-    width: '47%',
-    backgroundColor: '#FFFFFF',
+    width: '48%',
+    minWidth: 220,
+    backgroundColor: Colors.bgCard,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     borderWidth: 1,
@@ -556,7 +507,7 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: BorderRadius.lg,
-    backgroundColor: '#EBF3FB',
+    backgroundColor: Colors.bgSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -595,7 +546,7 @@ const s = StyleSheet.create({
   stepNumText: {
     fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.bold,
-    color: '#FFF',
+    color: Colors.white,
   },
   stepContent: {
     flex: 1,
@@ -618,7 +569,7 @@ const s = StyleSheet.create({
     top: 44,
     bottom: 0,
     width: 2,
-    backgroundColor: '#D6E2F0',
+    backgroundColor: Colors.border,
   },
 
   // Specialists
@@ -628,7 +579,7 @@ const s = StyleSheet.create({
   },
   specCard: {
     width: 160,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     borderWidth: 1,
@@ -677,12 +628,15 @@ const s = StyleSheet.create({
 
   // Request Form
   formCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
     borderWidth: 1,
     borderColor: BRAND.border,
     gap: Spacing.md,
+    maxWidth: 640,
+    alignSelf: 'center',
+    width: '100%',
   },
   formLabel: {
     fontSize: Typography.fontSize.sm,
@@ -699,7 +653,7 @@ const s = StyleSheet.create({
     borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: BRAND.border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
   },
   chipActive: {
     backgroundColor: BRAND.action,
@@ -710,7 +664,7 @@ const s = StyleSheet.create({
     color: BRAND.textPrimary,
   },
   chipTextActive: {
-    color: '#FFFFFF',
+    color: Colors.white,
     fontWeight: Typography.fontWeight.medium,
   },
   fnsBlock: {
@@ -724,7 +678,7 @@ const s = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     fontSize: Typography.fontSize.base,
     color: BRAND.textPrimary,
-    backgroundColor: '#FAFCFF',
+    backgroundColor: Colors.bgPrimary,
   },
   formInputError: {
     borderColor: BRAND.error,
@@ -740,7 +694,7 @@ const s = StyleSheet.create({
     paddingTop: Spacing.md,
     fontSize: Typography.fontSize.base,
     color: BRAND.textPrimary,
-    backgroundColor: '#FAFCFF',
+    backgroundColor: Colors.bgPrimary,
     textAlignVertical: 'top',
   },
   errorRow: {
@@ -766,7 +720,7 @@ const s = StyleSheet.create({
   submitBtnText: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
-    color: '#FFF',
+    color: Colors.white,
   },
   noteRow: {
     flexDirection: 'row',
@@ -787,13 +741,13 @@ const s = StyleSheet.create({
     backgroundColor: BRAND.successBg,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: Colors.statusBg.success,
   },
   successIconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: Colors.statusBg.success,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
@@ -832,7 +786,7 @@ const s = StyleSheet.create({
   footerLogo: {
     fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.bold,
-    color: '#FFF',
+    color: Colors.white,
   },
   footerLinksRow: {
     gap: Spacing.sm,

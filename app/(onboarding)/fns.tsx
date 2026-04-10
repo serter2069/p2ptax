@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { shortFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { OnboardingProgress } from '../../components/OnboardingProgress';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 import { FNS_DEPARTMENTS } from '../../constants/FNS_DEPARTMENTS';
 
@@ -117,18 +118,7 @@ export default function FNSScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
-          {/* Progress — 5 steps */}
-          <View style={styles.progressRow}>
-            <View style={[styles.progressDot, styles.progressDotDone]} />
-            <View style={styles.progressLine} />
-            <View style={[styles.progressDot, styles.progressDotDone]} />
-            <View style={styles.progressLine} />
-            <View style={[styles.progressDot, styles.progressDotActive]} />
-            <View style={styles.progressLine} />
-            <View style={styles.progressDot} />
-            <View style={styles.progressLine} />
-            <View style={styles.progressDot} />
-          </View>
+          <OnboardingProgress currentStep={3} />
 
           <View style={styles.header}>
             <Text style={styles.step}>Шаг 3 из 5</Text>
@@ -275,33 +265,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     gap: Spacing.xl,
   },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xl,
-  },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.border,
-  },
-  progressDotDone: {
-    backgroundColor: Colors.brandSecondary,
-  },
-  progressDotActive: {
-    backgroundColor: Colors.brandPrimary,
-    width: 12,
-    height: 12,
-    borderRadius: BorderRadius.sm,
-  },
-  progressLine: {
-    width: 40,
-    height: 2,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.xs,
-  },
   header: {
     gap: Spacing.xs,
   },
@@ -427,7 +390,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   deptChipTextActive: {
-    color: '#FFFFFF',
+    color: Colors.white,
     fontWeight: Typography.fontWeight.medium,
   },
   chipText: {

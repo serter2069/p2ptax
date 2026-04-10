@@ -1,23 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_SPECIALISTS } from '../../../constants/protoMockData';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
+
+function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 1 }}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <Feather key={i} name="star" size={size} color={i <= Math.round(rating) ? Colors.statusWarning : Colors.border} />
+      ))}
+    </View>
+  );
+}
 
 function SpecialistCard({ name, city, services, rating, reviews, experience, completedOrders }: {
   name: string; city: string; services: string[]; rating: number; reviews: number; experience: string; completedOrders: number;
 }) {
-  const stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
+  const seed = name.replace(/\s/g, '-').toLowerCase();
   return (
     <View style={s.card}>
       <View style={s.cardTop}>
-        <ProtoPlaceholderImage type="avatar" height={48} />
+        <Image source={{ uri: `https://picsum.photos/seed/${seed}/48/48` }} style={{ width: 48, height: 48, borderRadius: 24 }} />
         <View style={s.info}>
           <Text style={s.name}>{name}</Text>
           <Text style={s.city}>{city}</Text>
           <View style={s.ratingRow}>
-            <Text style={s.starsText}>{stars}</Text>
+            <Stars rating={rating} />
             <Text style={s.ratingLabel}>{rating} ({reviews})</Text>
           </View>
         </View>
@@ -83,11 +93,77 @@ function InteractiveCatalog() {
   );
 }
 
+function SkeletonCard() {
+  return (
+    <View style={s.card}>
+      <View style={s.cardTop}>
+        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.border }} />
+        <View style={s.info}>
+          <View style={{ width: 120, height: 14, backgroundColor: Colors.border, borderRadius: 4 }} />
+          <View style={{ width: 80, height: 12, backgroundColor: Colors.border, borderRadius: 4, marginTop: 4 }} />
+          <View style={{ width: 100, height: 12, backgroundColor: Colors.border, borderRadius: 4, marginTop: 4 }} />
+        </View>
+      </View>
+      <View style={s.chipRow}>
+        <View style={{ width: 80, height: 20, backgroundColor: Colors.border, borderRadius: BorderRadius.full }} />
+        <View style={{ width: 60, height: 20, backgroundColor: Colors.border, borderRadius: BorderRadius.full }} />
+      </View>
+      <View style={{ width: '60%', height: 12, backgroundColor: Colors.border, borderRadius: 4 }} />
+      <View style={{ height: 38, backgroundColor: Colors.border, borderRadius: BorderRadius.md }} />
+    </View>
+  );
+}
+
+function EmptyCatalog() {
+  return (
+    <View style={s.container}>
+      <Text style={s.pageTitle}>Специалисты</Text>
+      <TextInput
+        editable={false}
+        placeholder="Поиск по имени, городу, услуге..."
+        placeholderTextColor={Colors.textMuted}
+        style={s.searchInput}
+      />
+      <View style={s.emptyWrap}>
+        <Feather name="search" size={40} color={Colors.textMuted} />
+        <Text style={s.emptyTitle}>Специалисты не найдены</Text>
+        <Text style={s.emptyText}>Попробуйте изменить параметры поиска или вернитесь позже</Text>
+      </View>
+    </View>
+  );
+}
+
+function LoadingCatalog() {
+  return (
+    <View style={s.container}>
+      <Text style={s.pageTitle}>Специалисты</Text>
+      <TextInput
+        editable={false}
+        placeholder="Поиск по имени, городу, услуге..."
+        placeholderTextColor={Colors.textMuted}
+        style={s.searchInput}
+      />
+      <ActivityIndicator size="small" color={Colors.brandPrimary} style={{ alignSelf: 'center', marginVertical: Spacing.sm }} />
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
+    </View>
+  );
+}
+
 export function SpecialistsCatalogStates() {
   return (
-    <StateSection title="INTERACTIVE">
-      <InteractiveCatalog />
-    </StateSection>
+    <>
+      <StateSection title="INTERACTIVE" maxWidth={1024}>
+        <InteractiveCatalog />
+      </StateSection>
+      <StateSection title="EMPTY" maxWidth={1024}>
+        <EmptyCatalog />
+      </StateSection>
+      <StateSection title="LOADING" maxWidth={1024}>
+        <LoadingCatalog />
+      </StateSection>
+    </>
   );
 }
 
@@ -104,13 +180,10 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
   },
   cardTop: { flexDirection: 'row', gap: Spacing.md },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
   info: { flex: 1, gap: 1 },
   name: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   city: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 2 },
-  starsText: { fontSize: 12, color: Colors.brandPrimary },
   ratingLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
   chip: { backgroundColor: Colors.bgSecondary, paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full },

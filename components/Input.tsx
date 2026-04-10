@@ -25,6 +25,11 @@ interface InputProps {
   maxLength?: number;
   onSubmitEditing?: () => void;
   returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send';
+  multiline?: boolean;
+  numberOfLines?: number;
+  showCharCount?: boolean;
+  minHeight?: number;
+  textAlignVertical?: 'auto' | 'top' | 'center' | 'bottom';
 }
 
 export function Input({
@@ -44,8 +49,16 @@ export function Input({
   maxLength,
   onSubmitEditing,
   returnKeyType,
+  multiline = false,
+  numberOfLines,
+  showCharCount = false,
+  minHeight,
+  textAlignVertical,
 }: InputProps) {
   const [focused, setFocused] = useState(false);
+
+  const resolvedMinHeight = multiline ? (minHeight ?? 80) : undefined;
+  const resolvedTextAlignVertical = textAlignVertical ?? (multiline ? 'top' : undefined);
 
   return (
     <View style={[styles.wrapper, style]}>
@@ -66,13 +79,21 @@ export function Input({
         onBlur={() => setFocused(false)}
         onSubmitEditing={onSubmitEditing}
         returnKeyType={returnKeyType}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
+        textAlignVertical={resolvedTextAlignVertical}
         style={[
           styles.input,
+          !multiline && styles.inputSingleLine,
+          multiline && resolvedMinHeight ? { minHeight: resolvedMinHeight } : null,
           focused && styles.inputFocused,
           error ? styles.inputError : null,
           !editable && styles.inputDisabled,
         ]}
       />
+      {showCharCount && maxLength != null ? (
+        <Text style={styles.charCount}>{value.length}/{maxLength}</Text>
+      ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {hint && !error ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
@@ -90,14 +111,24 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   input: {
-    height: 48,
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
+  },
+  inputSingleLine: {
+    height: 48,
+    paddingVertical: 0,
+  },
+  charCount: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'right',
+    marginTop: 2,
   },
   inputFocused: {
     borderColor: Colors.brandPrimary,

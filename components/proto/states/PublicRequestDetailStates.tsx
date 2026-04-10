@@ -64,10 +64,10 @@ function DetailView({ showRespondPopup }: { showRespondPopup?: boolean }) {
 export function PublicRequestDetailStates() {
   return (
     <>
-      <StateSection title="DETAIL">
+      <StateSection title="DETAIL" maxWidth={800}>
         <DetailView />
       </StateSection>
-      <StateSection title="RESPOND_POPUP">
+      <StateSection title="RESPOND_POPUP" maxWidth={800}>
         <DetailView showRespondPopup />
       </StateSection>
     </>
@@ -93,7 +93,7 @@ const s = StyleSheet.create({
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  respondBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  respondBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   loginHint: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, textAlign: 'center' },
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -120,7 +120,7 @@ const s = StyleSheet.create({
     height: 44, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  popupBtnPrimaryText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  popupBtnPrimaryText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   popupBtnCancel: {
     height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border,

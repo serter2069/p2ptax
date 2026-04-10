@@ -2,6 +2,10 @@
   "name": "p2ptax",
   "version": "1.0.0",
   "main": "expo-router/entry",
+  "proto": {
+    "viewerPort": 9081,
+    "appPort": 8081
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",

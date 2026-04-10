@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REQUESTS, MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
@@ -119,11 +120,64 @@ function InteractiveRequests() {
   );
 }
 
+function EmptyRequests() {
+  return (
+    <View style={s.container}>
+      <View style={s.topBar}>
+        <Text style={s.pageTitle}>Заявки</Text>
+        <View style={s.filterToggle}>
+          <Text style={s.filterToggleText}>Фильтры</Text>
+        </View>
+      </View>
+      <View style={s.emptyStateWrap}>
+        <Feather name="inbox" size={48} color={Colors.textMuted} />
+        <Text style={s.emptyTitle}>Заявок пока нет</Text>
+        <Text style={s.emptyText}>Новые заявки от клиентов появятся здесь</Text>
+      </View>
+    </View>
+  );
+}
+
+function LoadingRequests() {
+  return (
+    <View style={s.container}>
+      <View style={s.topBar}>
+        <Text style={s.pageTitle}>Заявки</Text>
+        <View style={s.filterToggle}>
+          <Text style={s.filterToggleText}>Фильтры</Text>
+        </View>
+      </View>
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={s.card}>
+          <View style={[s.skeleton, { width: '60%', height: 16, borderRadius: BorderRadius.sm }]} />
+          <View style={[s.skeleton, { width: '90%', height: 14, borderRadius: BorderRadius.sm }]} />
+          <View style={s.cardTags}>
+            <View style={[s.skeleton, { width: 60, height: 20, borderRadius: BorderRadius.full }]} />
+            <View style={[s.skeleton, { width: 80, height: 20, borderRadius: BorderRadius.full }]} />
+          </View>
+          <View style={s.cardBottom}>
+            <View style={[s.skeleton, { width: 70, height: 14, borderRadius: BorderRadius.sm }]} />
+            <View style={[s.skeleton, { width: 50, height: 12, borderRadius: BorderRadius.sm }]} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function PublicRequestsStates() {
   return (
-    <StateSection title="INTERACTIVE">
-      <InteractiveRequests />
-    </StateSection>
+    <>
+      <StateSection title="INTERACTIVE" maxWidth={1024}>
+        <InteractiveRequests />
+      </StateSection>
+      <StateSection title="EMPTY" maxWidth={1024}>
+        <EmptyRequests />
+      </StateSection>
+      <StateSection title="LOADING" maxWidth={1024}>
+        <LoadingRequests />
+      </StateSection>
+    </>
   );
 }
 
@@ -182,4 +236,6 @@ const s = StyleSheet.create({
   emptyWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.sm },
   emptyTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
+  emptyStateWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.md },
+  skeleton: { backgroundColor: Colors.bgSecondary },
 });

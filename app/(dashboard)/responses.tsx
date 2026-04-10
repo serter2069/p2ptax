@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
@@ -34,6 +35,7 @@ interface ResponseItem {
 
 export default function MyResponsesScreen() {
   const router = useRouter();
+  const { isMobile } = useBreakpoints();
   const [responses, setResponses] = useState<ResponseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -144,7 +146,7 @@ export default function MyResponsesScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Мои отклики" showBack />
+      {isMobile && <Header title="Мои отклики" showBack />}
       <FlatList
         data={responses}
         keyExtractor={(item) => item.id}

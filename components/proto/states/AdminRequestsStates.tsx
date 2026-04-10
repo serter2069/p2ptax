@@ -7,7 +7,7 @@ import { MOCK_REQUESTS } from '../../../constants/protoMockData';
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   NEW: { label: 'Новая', color: Colors.brandPrimary },
   ACTIVE: { label: 'Активная', color: Colors.statusSuccess },
-  IN_PROGRESS: { label: 'В работе', color: '#D97706' },
+  IN_PROGRESS: { label: 'В работе', color: Colors.statusWarning },
   COMPLETED: { label: 'Завершена', color: Colors.textMuted },
   CANCELLED: { label: 'Отменена', color: Colors.statusError },
 };
@@ -98,7 +98,7 @@ const s = StyleSheet.create({
   },
   filterActive: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
   filterText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  filterActiveText: { fontSize: Typography.fontSize.xs, color: '#FFF', fontWeight: Typography.fontWeight.semibold },
+  filterActiveText: { fontSize: Typography.fontSize.xs, color: Colors.white, fontWeight: Typography.fontWeight.semibold },
   row: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary, gap: Spacing.sm,
@@ -134,9 +134,9 @@ const s = StyleSheet.create({
     flex: 1, height: 40, backgroundColor: Colors.statusSuccess, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   popupBtnReject: {
-    flex: 1, height: 40, backgroundColor: '#fde8e8', borderRadius: BorderRadius.md,
+    flex: 1, height: 40, backgroundColor: Colors.statusBg.error, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
   popupBtnRejectText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.statusError },

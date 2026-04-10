@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
@@ -43,7 +44,7 @@ function FormScreen() {
       {success && (
         <View style={s.overlay}>
           <View style={s.popup}>
-            <Text style={s.popupIcon}>{'✓'}</Text>
+            <Feather name="check-circle" size={48} color={Colors.statusSuccess} />
             <Text style={s.popupTitle}>Заявка создана!</Text>
             <Text style={s.popupText}>Специалисты получат уведомление и смогут откликнуться</Text>
             <Pressable onPress={() => { setSuccess(false); setTitle(''); setDescription(''); setCity(''); setService(''); setBudget(''); }} style={s.popupBtn}>
@@ -127,7 +128,7 @@ function FormScreen() {
       </View>
       <Pressable onPress={handleSubmit} disabled={loading} style={[s.btn, loading ? s.btnLoading : null]}>
         {loading ? (
-          <ActivityIndicator size="small" color="#FFF" />
+          <ActivityIndicator size="small" color={Colors.white} />
         ) : (
           <Text style={s.btnText}>Создать заявку</Text>
         )}
@@ -136,11 +137,130 @@ function FormScreen() {
   );
 }
 
+function LoadingState() {
+  return (
+    <View style={s.container}>
+      <Text style={s.pageTitle}>Новая заявка</Text>
+      <View style={s.form}>
+        <View style={s.field}>
+          <Text style={s.label}>Заголовок *</Text>
+          <View style={s.input}><Text style={{ color: Colors.textPrimary, fontSize: Typography.fontSize.base }}>Заполнить декларацию 3-НДФЛ</Text></View>
+        </View>
+        <View style={s.field}>
+          <Text style={s.label}>Описание *</Text>
+          <View style={s.textarea}><Text style={{ color: Colors.textPrimary, fontSize: Typography.fontSize.base }}>Нужно заполнить и подать декларацию за 2025 год</Text></View>
+        </View>
+        <View style={s.field}>
+          <Text style={s.label}>Город *</Text>
+          <View style={s.select}><Text style={s.selectTextFilled}>Москва</Text><Text style={s.selectArrow}>{'>'}</Text></View>
+        </View>
+      </View>
+      <View style={[s.btn, s.btnLoading]}>
+        <ActivityIndicator size="small" color={Colors.white} />
+      </View>
+      <View style={s.loadingOverlay}>
+        <ActivityIndicator size="large" color={Colors.brandPrimary} />
+        <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted, marginTop: Spacing.sm }}>Отправка заявки...</Text>
+      </View>
+    </View>
+  );
+}
+
+function SuccessState() {
+  return (
+    <View style={s.container}>
+      <View style={s.successWrap}>
+        <View style={s.successIconCircle}>
+          <Feather name="check-circle" size={48} color={Colors.statusSuccess} />
+        </View>
+        <Text style={s.successTitle}>Заявка создана!</Text>
+        <Text style={s.successText}>Специалисты получат уведомление и смогут откликнуться на вашу заявку</Text>
+        <Pressable style={s.popupBtn}>
+          <Text style={s.popupBtnText}>К моим заявкам</Text>
+        </Pressable>
+        <Pressable style={s.secondaryBtn}>
+          <Text style={s.secondaryBtnText}>Создать ещё</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function ValidationState() {
+  return (
+    <View style={s.container}>
+      <Text style={s.pageTitle}>Новая заявка</Text>
+      <View style={s.form}>
+        <View style={s.field}>
+          <Text style={s.label}>Заголовок *</Text>
+          <TextInput
+            value="Нал"
+            editable={false}
+            style={[s.input, s.inputError]}
+          />
+          <Text style={s.error}>Заголовок должен содержать минимум 5 символов</Text>
+        </View>
+        <View style={s.field}>
+          <Text style={s.label}>Описание *</Text>
+          <TextInput
+            value=""
+            editable={false}
+            placeholder="Подробно опишите, что нужно сделать..."
+            placeholderTextColor={Colors.textMuted}
+            multiline
+            style={[s.textarea, s.inputError]}
+          />
+          <Text style={s.error}>Обязательное поле</Text>
+        </View>
+        <View style={s.field}>
+          <Text style={s.label}>Город *</Text>
+          <View style={[s.select, s.inputError]}>
+            <Text style={s.selectText}>Выберите город</Text>
+            <Text style={s.selectArrow}>{'>'}</Text>
+          </View>
+          <Text style={s.error}>Выберите город</Text>
+        </View>
+        <View style={s.field}>
+          <Text style={s.label}>Услуга *</Text>
+          <View style={s.select}>
+            <Text style={s.selectText}>Выберите услугу</Text>
+            <Text style={s.selectArrow}>{'>'}</Text>
+          </View>
+        </View>
+        <View style={s.field}>
+          <Text style={s.label}>Бюджет</Text>
+          <TextInput
+            value=""
+            editable={false}
+            placeholder="Например: 5 000 — 10 000 ₽"
+            placeholderTextColor={Colors.textMuted}
+            style={s.input}
+          />
+        </View>
+      </View>
+      <Pressable style={s.btn}>
+        <Text style={s.btnText}>Создать заявку</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export function MyRequestsNewStates() {
   return (
-    <StateSection title="INTERACTIVE_FORM">
-      <FormScreen />
-    </StateSection>
+    <View style={{ gap: Spacing['4xl'] }}>
+      <StateSection title="INTERACTIVE_FORM">
+        <FormScreen />
+      </StateSection>
+      <StateSection title="LOADING">
+        <LoadingState />
+      </StateSection>
+      <StateSection title="SUCCESS">
+        <SuccessState />
+      </StateSection>
+      <StateSection title="VALIDATION">
+        <ValidationState />
+      </StateSection>
+    </View>
   );
 }
 
@@ -184,7 +304,7 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   btnLoading: { opacity: 0.7 },
-  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10, alignItems: 'center', justifyContent: 'center',
@@ -194,12 +314,30 @@ const s = StyleSheet.create({
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, padding: Spacing['2xl'],
     alignItems: 'center', gap: Spacing.md, width: '100%', maxWidth: 340,
   },
-  popupIcon: { fontSize: 48, color: Colors.statusSuccess },
+  popupIconWrap: { marginBottom: Spacing.xs },
   popupTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   popupText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
   popupBtn: {
     height: 44, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing['2xl'], marginTop: Spacing.sm,
   },
-  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+  loadingOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.8)', zIndex: 10, alignItems: 'center', justifyContent: 'center',
+  },
+  successWrap: {
+    alignItems: 'center', padding: Spacing['2xl'], gap: Spacing.md,
+  },
+  successIconCircle: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.statusSuccess + '15',
+    alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm,
+  },
+  successTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  successText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  secondaryBtn: {
+    height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: Spacing['2xl'], borderWidth: 1, borderColor: Colors.border,
+  },
+  secondaryBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
 });

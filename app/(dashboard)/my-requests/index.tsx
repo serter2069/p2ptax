@@ -174,7 +174,7 @@ export default function MyRequestsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title="Мои запросы" showBack={isMobile} />
+      {isMobile && <Header title="Мои запросы" showBack={isMobile} />}
 
       {/* Tabs */}
       <View style={[styles.tabs, !isMobile && styles.tabsWide]}>

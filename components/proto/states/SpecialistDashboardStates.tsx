@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_REQUESTS } from '../../../constants/protoMockData';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function RequestCard({ title, city, budget, service, date }: {
   title: string; city: string; budget: string; service: string; date: string;
@@ -37,14 +37,14 @@ function InteractiveDashboard() {
   return (
     <View style={s.container}>
       <Text style={s.greeting}>Добрый день, Алексей!</Text>
-      <ProtoPlaceholderImage type="banner" height={88} label="Promo banner" borderRadius={10} />
+      <Image source={{ uri: 'https://picsum.photos/seed/spec-promo/800/176' }} style={{ width: '100%', height: 88, borderRadius: 10 }} resizeMode="cover" />
       <View style={s.statsRow}>
         <Pressable onPress={() => setTab('new')} style={s.stat}>
           <Text style={[s.statValue, { color: Colors.brandPrimary }]}>{newRequests.length}</Text>
           <Text style={s.statLabel}>Новые</Text>
         </Pressable>
         <Pressable onPress={() => setTab('inProgress')} style={s.stat}>
-          <Text style={[s.statValue, { color: '#D97706' }]}>{inProgressRequests.length}</Text>
+          <Text style={[s.statValue, { color: Colors.statusWarning }]}>{inProgressRequests.length}</Text>
           <Text style={s.statLabel}>В работе</Text>
         </Pressable>
         <Pressable onPress={() => setTab('completed')} style={s.stat}>
@@ -76,11 +76,46 @@ function InteractiveDashboard() {
   );
 }
 
+function EmptyDashboard() {
+  return (
+    <View style={s.container}>
+      <Text style={s.greeting}>Добрый день, Алексей!</Text>
+      <Image source={{ uri: 'https://picsum.photos/seed/spec-promo-empty/800/176' }} style={{ width: '100%', height: 88, borderRadius: 10 }} resizeMode="cover" />
+      <View style={s.statsRow}>
+        <View style={s.stat}>
+          <Text style={[s.statValue, { color: Colors.brandPrimary }]}>0</Text>
+          <Text style={s.statLabel}>Новые</Text>
+        </View>
+        <View style={s.stat}>
+          <Text style={[s.statValue, { color: Colors.statusWarning }]}>0</Text>
+          <Text style={s.statLabel}>В работе</Text>
+        </View>
+        <View style={s.stat}>
+          <Text style={[s.statValue, { color: Colors.statusSuccess }]}>0</Text>
+          <Text style={s.statLabel}>Завершены</Text>
+        </View>
+      </View>
+      <View style={s.emptyStateWrap}>
+        <Feather name="inbox" size={48} color={Colors.textMuted} />
+        <Text style={s.emptyStateTitle}>Пока нет заявок</Text>
+        <Text style={s.emptyStateText}>
+          Новые заявки от клиентов появятся здесь. Убедитесь, что ваш профиль заполнен, чтобы получать больше заявок.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export function SpecialistDashboardStates() {
   return (
-    <StateSection title="INTERACTIVE">
-      <InteractiveDashboard />
-    </StateSection>
+    <>
+      <StateSection title="INTERACTIVE">
+        <InteractiveDashboard />
+      </StateSection>
+      <StateSection title="EMPTY">
+        <EmptyDashboard />
+      </StateSection>
+    </>
   );
 }
 
@@ -101,7 +136,7 @@ const s = StyleSheet.create({
   },
   tabBtnActive: { borderColor: Colors.brandPrimary, backgroundColor: Colors.brandPrimary },
   tabText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, fontWeight: Typography.fontWeight.medium },
-  tabTextActive: { color: '#FFF', fontWeight: Typography.fontWeight.semibold },
+  tabTextActive: { color: Colors.white, fontWeight: Typography.fontWeight.semibold },
   sectionTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   card: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
@@ -118,7 +153,10 @@ const s = StyleSheet.create({
     height: 38, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center', marginTop: Spacing.xs,
   },
-  respondBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  respondBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   emptyWrap: { alignItems: 'center', padding: Spacing['2xl'], gap: Spacing.sm },
   emptyTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  emptyStateWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.md },
+  emptyStateTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  emptyStateText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
 });

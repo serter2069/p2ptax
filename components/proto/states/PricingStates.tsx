@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_PRICING_PLANS } from '../../../constants/protoMockData';
@@ -18,7 +19,7 @@ function PlanCard({ name, price, period, features, highlighted }: {
       <View style={s.featureList}>
         {features.map((f) => (
           <View key={f} style={s.featureRow}>
-            <Text style={[s.featureCheck, highlighted ? s.featureCheckHL : null]}>{'✓'}</Text>
+            <Feather name="check" size={16} color={highlighted ? Colors.brandPrimary : Colors.statusSuccess} />
             <Text style={s.featureText}>{f}</Text>
           </View>
         ))}
@@ -34,7 +35,7 @@ function PlanCard({ name, price, period, features, highlighted }: {
 
 export function PricingStates() {
   return (
-    <StateSection title="PLANS_COMPARISON" maxWidth={800}>
+    <StateSection title="PLANS_COMPARISON" maxWidth={1024}>
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.title}>Тарифы</Text>
@@ -78,7 +79,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.md, paddingVertical: 3,
     borderRadius: BorderRadius.full,
   },
-  popularText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: '#FFF' },
+  popularText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.white },
   planName: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   planNameHL: { color: Colors.brandPrimary },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs },
@@ -87,8 +88,7 @@ const s = StyleSheet.create({
   period: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   featureList: { gap: Spacing.sm },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  featureCheck: { fontSize: 16, color: Colors.statusSuccess },
-  featureCheckHL: { color: Colors.brandPrimary },
+  featureCheckWrap: { width: 20, alignItems: 'center' },
   featureText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
   planBtn: {
     height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
@@ -96,7 +96,7 @@ const s = StyleSheet.create({
   },
   planBtnHL: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
   planBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  planBtnTextHL: { color: '#FFF' },
+  planBtnTextHL: { color: Colors.white },
   faq: { gap: Spacing.md },
   faqTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   faqItem: { gap: Spacing.xs, paddingBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary },

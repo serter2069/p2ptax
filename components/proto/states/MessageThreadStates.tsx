@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_MESSAGES, MockMessage } from '../../../constants/protoMockData';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function ChatHeader() {
   return (
     <View style={s.chatHeader}>
       <Text style={s.backArrow}>{'<'}</Text>
-      <ProtoPlaceholderImage type="avatar" height={36} />
+      <Image source={{ uri: 'https://picsum.photos/seed/AlekseyPetrov/36/36' }} style={{ width: 36, height: 36, borderRadius: 18 }} />
       <View>
         <Text style={s.chatName}>Алексей Петров</Text>
         <Text style={s.chatStatus}>Онлайн</Text>
@@ -54,12 +53,12 @@ function InteractiveChat({ initialMessages }: { initialMessages: MockMessage[] }
             <MessageBubble text={m.text} fromMe={m.fromMe} time={m.time} />
             {i === 1 && (
               <View style={s.attachmentWrap}>
-                <ProtoPlaceholderImage type="photo" height={100} width={160} label="Photo attachment" borderRadius={10} />
+                <Image source={{ uri: 'https://picsum.photos/seed/chat-photo/160/100' }} style={{ width: 160, height: 100, borderRadius: 10 }} />
               </View>
             )}
             {i === 2 && (
               <View style={[s.attachmentWrap, { alignItems: 'flex-end' }]}>
-                <ProtoPlaceholderImage type="document" height={60} width={140} label="document.pdf" borderRadius={8} />
+                <Image source={{ uri: 'https://picsum.photos/seed/doc-pdf/140/60' }} style={{ width: 140, height: 60, borderRadius: 8 }} />
               </View>
             )}
           </View>
@@ -95,6 +94,47 @@ export function MessageThreadStates() {
       <StateSection title="EMPTY">
         <InteractiveChat initialMessages={[]} />
       </StateSection>
+      <StateSection title="TYPING_INDICATOR">
+        <View style={s.container}>
+          <ChatHeader />
+          <View style={s.messages}>
+            {MOCK_MESSAGES.map((m, i) => (
+              <View key={m.id}>
+                <MessageBubble text={m.text} fromMe={m.fromMe} time={m.time} />
+                {i === 1 && (
+                  <View style={s.attachmentWrap}>
+                    <Image source={{ uri: 'https://picsum.photos/seed/chat-photo/160/100' }} style={{ width: 160, height: 100, borderRadius: 10 }} />
+                  </View>
+                )}
+                {i === 2 && (
+                  <View style={[s.attachmentWrap, { alignItems: 'flex-end' }]}>
+                    <Image source={{ uri: 'https://picsum.photos/seed/doc-pdf/140/60' }} style={{ width: 140, height: 60, borderRadius: 8 }} />
+                  </View>
+                )}
+              </View>
+            ))}
+            <View style={s.bubbleWrap}>
+              <View style={[s.bubble, s.bubbleTheirs, s.typingBubble]}>
+                <Text style={s.typingDots}>...</Text>
+              </View>
+            </View>
+          </View>
+          <View style={s.inputBar}>
+            <View style={s.inputRow}>
+              <Pressable style={s.attachBtn}>
+                <Feather name="paperclip" size={18} color={Colors.textMuted} />
+              </Pressable>
+              <TextInput
+                placeholder="Введите сообщение..."
+                placeholderTextColor={Colors.textMuted}
+                style={s.chatInput}
+                editable={false}
+              />
+              <View style={s.sendBtn}><Text style={s.sendText}>{'>'}</Text></View>
+            </View>
+          </View>
+        </View>
+      </StateSection>
     </>
   );
 }
@@ -119,7 +159,7 @@ const s = StyleSheet.create({
   bubbleMine: { backgroundColor: Colors.brandPrimary, borderBottomRightRadius: BorderRadius.sm },
   bubbleTheirs: { backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderBottomLeftRadius: BorderRadius.sm },
   bubbleText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary, lineHeight: 20 },
-  bubbleTextMine: { color: '#FFF' },
+  bubbleTextMine: { color: Colors.white },
   bubbleTime: { fontSize: 10, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
   bubbleTimeMine: { color: 'rgba(255,255,255,0.7)' },
   attachmentWrap: { paddingHorizontal: Spacing.md, marginTop: 4, marginBottom: Spacing.xs },
@@ -134,5 +174,7 @@ const s = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.brandPrimary,
     alignItems: 'center', justifyContent: 'center',
   },
-  sendText: { fontSize: Typography.fontSize.md, color: '#FFF', fontWeight: Typography.fontWeight.bold },
+  sendText: { fontSize: Typography.fontSize.md, color: Colors.white, fontWeight: Typography.fontWeight.bold },
+  typingBubble: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm },
+  typingDots: { fontSize: Typography.fontSize.lg, color: Colors.textMuted, letterSpacing: 2 },
 });

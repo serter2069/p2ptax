@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_ADMIN_STATS } from '../../../constants/protoMockData';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function StatCard({ label, value, color, trend }: { label: string; value: string | number; color: string; trend?: string }) {
   return (
@@ -47,7 +46,7 @@ export function AdminDashboardStates() {
           <StatCard label="Специалистов" value={st.totalSpecialists} color={Colors.brandPrimary} />
           <StatCard label="Всего заявок" value={st.totalRequests} color={Colors.textPrimary} trend="+15 сегодня" />
           <StatCard label="Активные заявки" value={st.activeRequests} color={Colors.statusSuccess} />
-          <StatCard label="На модерации" value={st.pendingModeration} color="#D97706" />
+          <StatCard label="На модерации" value={st.pendingModeration} color={Colors.statusWarning} />
           <StatCard label="Средний рейтинг" value={st.avgRating} color={Colors.brandPrimary} />
         </View>
 
@@ -56,7 +55,7 @@ export function AdminDashboardStates() {
           <Text style={s.revenueValue}>{st.revenue}</Text>
         </View>
 
-        <ProtoPlaceholderImage type="banner" height={80} label="Admin promo / announcement" borderRadius={10} />
+        <Image source={{ uri: 'https://picsum.photos/seed/admin-promo/600/80' }} style={{ width: '100%', height: 80, borderRadius: 10 }} resizeMode="cover" />
 
         <ChartPlaceholder title="Регистрации за неделю" />
         <ChartPlaceholder title="Заявки за неделю" />
@@ -95,10 +94,10 @@ const s = StyleSheet.create({
   statValue: { fontSize: 22, fontWeight: Typography.fontWeight.bold },
   statTrend: { fontSize: Typography.fontSize.xs, color: Colors.statusSuccess },
   revenue: {
-    backgroundColor: '#0F2447', borderRadius: BorderRadius.md, padding: Spacing.lg, alignItems: 'center', gap: Spacing.xs,
+    backgroundColor: Colors.textPrimary, borderRadius: BorderRadius.md, padding: Spacing.lg, alignItems: 'center', gap: Spacing.xs,
   },
   revenueLabel: { fontSize: Typography.fontSize.sm, color: 'rgba(255,255,255,0.7)' },
-  revenueValue: { fontSize: 28, fontWeight: Typography.fontWeight.bold, color: '#FFF' },
+  revenueValue: { fontSize: 28, fontWeight: Typography.fontWeight.bold, color: Colors.white },
   chartCard: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
     borderWidth: 1, borderColor: Colors.border, gap: Spacing.md,

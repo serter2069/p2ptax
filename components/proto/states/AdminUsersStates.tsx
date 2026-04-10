@@ -1,20 +1,19 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Image, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_USERS } from '../../../constants/protoMockData';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
 
 function UserRow({ name, email, role, city }: { name: string; email: string; role: string; city: string }) {
   return (
     <View style={s.userRow}>
-      <ProtoPlaceholderImage type="avatar" height={40} />
+      <Image source={{ uri: `https://picsum.photos/seed/${name.replace(/\s/g, '')}/40/40` }} style={{ width: 40, height: 40, borderRadius: 20 }} />
       <View style={s.userInfo}>
         <Text style={s.userName}>{name}</Text>
         <Text style={s.userEmail}>{email}</Text>
       </View>
       <View style={s.userMeta}>
-        <View style={[s.roleBadge, { backgroundColor: role === 'SPECIALIST' ? '#e6f4ed' : Colors.bgSecondary }]}>
+        <View style={[s.roleBadge, { backgroundColor: role === 'SPECIALIST' ? Colors.statusBg.success : Colors.bgSecondary }]}>
           <Text style={[s.roleText, { color: role === 'SPECIALIST' ? Colors.statusSuccess : Colors.brandPrimary }]}>
             {role === 'SPECIALIST' ? 'Специалист' : 'Клиент'}
           </Text>
@@ -101,7 +100,7 @@ const s = StyleSheet.create({
   },
   filterActive: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
   filterText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  filterActiveText: { fontSize: Typography.fontSize.xs, color: '#FFF', fontWeight: Typography.fontWeight.semibold },
+  filterActiveText: { fontSize: Typography.fontSize.xs, color: Colors.white, fontWeight: Typography.fontWeight.semibold },
   userRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
     paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,
@@ -139,7 +138,7 @@ const s = StyleSheet.create({
   popupBtnText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
   popupBtnDanger: {
     height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#fde8e8',
+    backgroundColor: Colors.statusBg.error,
   },
   popupBtnDangerText: { fontSize: Typography.fontSize.sm, color: Colors.statusError, fontWeight: Typography.fontWeight.medium },
 });

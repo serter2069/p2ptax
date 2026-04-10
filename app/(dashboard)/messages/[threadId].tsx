@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useBreakpoints } from '../../../hooks/useBreakpoints';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../stores/authStore';
@@ -80,6 +81,7 @@ function formatMsgTime(dateStr: string): string {
 export default function ThreadScreen() {
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
   const { user, token } = useAuth();
+  const { isMobile } = useBreakpoints();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -480,7 +482,7 @@ export default function ThreadScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Header title={otherName || 'Диалог'} showBack breadcrumbs={[{ label: 'Сообщения', route: '/(dashboard)/messages' }, { label: otherName || 'Диалог' }]} />
+      {isMobile && <Header title={otherName || 'Диалог'} showBack breadcrumbs={[{ label: 'Сообщения', route: '/(dashboard)/messages' }, { label: otherName || 'Диалог' }]} />}
 
       <KeyboardAvoidingView
         style={styles.flex}

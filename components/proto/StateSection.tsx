@@ -79,7 +79,7 @@ export function StateSection({ title, children, maxWidth = 430, pageId: pageIdPr
             <Feather
               name={copied ? 'check' : 'copy'}
               size={14}
-              color={copied ? '#16a34a' : Colors.textMuted}
+              color={copied ? Colors.statusSuccess : Colors.textMuted}
             />
           </Pressable>
         )}
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.bold,
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },

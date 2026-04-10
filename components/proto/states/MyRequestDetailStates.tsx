@@ -1,18 +1,27 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_RESPONSES } from '../../../constants/protoMockData';
-import { ProtoPlaceholderImage } from '../ProtoPlaceholderImage';
+
+function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 1 }}>
+      {[1,2,3,4,5].map(i => (
+        <Feather key={i} name="star" size={size} color={i <= rating ? Colors.statusWarning : Colors.border} />
+      ))}
+    </View>
+  );
+}
 
 function ResponseCard({ name, city, rating, reviews, price, message }: {
   name: string; city: string; rating: number; reviews: number; price: string; message: string;
 }) {
-  const stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
   return (
     <View style={s.respCard}>
       <View style={s.respHeader}>
-        <ProtoPlaceholderImage type="avatar" height={40} />
+        <Image source={{ uri: `https://picsum.photos/seed/${name.replace(/\s/g, '')}/40/40` }} style={{ width: 40, height: 40, borderRadius: 20 }} />
         <View style={s.respInfo}>
           <Text style={s.respName}>{name}</Text>
           <Text style={s.respCity}>{city}</Text>
@@ -20,7 +29,7 @@ function ResponseCard({ name, city, rating, reviews, price, message }: {
         <Text style={s.respPrice}>{price}</Text>
       </View>
       <View style={s.respRating}>
-        <Text style={s.stars}>{stars}</Text>
+        <Stars rating={Math.round(rating)} size={14} />
         <Text style={s.ratingText}>{rating} ({reviews})</Text>
       </View>
       <Text style={s.respMessage} numberOfLines={2}>{message}</Text>
@@ -55,8 +64,8 @@ function DetailScreen({ mode }: { mode: 'responses' | 'no_responses' | 'closed' 
         </View>
         <Text style={s.attachLabel}>Прикрепленные документы</Text>
         <View style={s.attachRow}>
-          <ProtoPlaceholderImage type="document" width={80} height={64} label="Справка" borderRadius={6} />
-          <ProtoPlaceholderImage type="photo" width={80} height={64} label="Фото" borderRadius={6} />
+          <Image source={{ uri: 'https://picsum.photos/seed/doc-spravka/80/64' }} style={{ width: 80, height: 64, borderRadius: 6 }} />
+          <Image source={{ uri: 'https://picsum.photos/seed/photo-attach/80/64' }} style={{ width: 80, height: 64, borderRadius: 6 }} />
         </View>
       </View>
 
@@ -135,7 +144,7 @@ const s = StyleSheet.create({
   respCity: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   respPrice: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
   respRating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  stars: { fontSize: 14, color: Colors.brandPrimary },
+  starsWrap: { flexDirection: 'row', gap: 1 },
   ratingText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   respMessage: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
   respActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
@@ -143,7 +152,7 @@ const s = StyleSheet.create({
     flex: 1, height: 38, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  respBtnPrimaryText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: '#FFF' },
+  respBtnPrimaryText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   respBtnSecondary: {
     flex: 1, height: 38, backgroundColor: 'transparent', borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
