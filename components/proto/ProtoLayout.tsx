@@ -1,22 +1,28 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import type { NavVariant } from '../../constants/pageRegistry';
+import { ProtoNavHeader, ProtoNavFooter } from './ProtoNav';
 
 interface ProtoLayoutProps {
   title: string;
   route: string;
+  nav?: NavVariant;
   children: React.ReactNode;
 }
 
-export function ProtoLayout({ title, route, children }: ProtoLayoutProps) {
+export function ProtoLayout({ title, route, nav, children }: ProtoLayoutProps) {
   const handleBack = () => {
     if (Platform.OS === 'web') {
       window.open('/proto', '_self');
     }
   };
 
+  const showNav = nav && nav !== 'none';
+
   return (
     <View style={styles.container}>
+      {showNav && <ProtoNavHeader variant={nav!} />}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
           <Text style={styles.backIcon}>{'<'}</Text>
@@ -34,6 +40,7 @@ export function ProtoLayout({ title, route, children }: ProtoLayoutProps) {
       >
         {children}
       </ScrollView>
+      {showNav && <ProtoNavFooter variant={nav!} />}
     </View>
   );
 }

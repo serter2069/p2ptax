@@ -85,7 +85,7 @@ export default function ProtoStatesPage() {
 
   return (
     <PageIdProvider value={page || ''}>
-      <ProtoLayout title={pageData.title} route={pageData.route}>
+      <ProtoLayout title={pageData.title} route={pageData.route} nav={pageData.nav}>
         <StatesComponent />
       </ProtoLayout>
     </PageIdProvider>
