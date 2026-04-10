@@ -5,12 +5,12 @@ export class CreateQuickRequestDto {
   @IsNotEmpty()
   @MinLength(3)
   @MaxLength(500)
-  description: string;
+  description!: string;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
-  serviceType: string;
+  serviceType!: string;
 
   @IsOptional()
   @IsString()
