@@ -62,11 +62,13 @@ function RootNavigator() {
   const { user, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const isRedirectingRef = useRef(false);
 
   useProactiveRefresh(!!user);
 
   useEffect(() => {
     if (isLoading) return;
+    if (isRedirectingRef.current) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     const inDashboardGroup = segments[0] === '(dashboard)';
@@ -78,6 +80,7 @@ function RootNavigator() {
 
     // New user must complete onboarding (specialist) or goes to dashboard (client)
     if (user && user.isNewUser && !inOnboardingGroup && !inAuthGroup) {
+      isRedirectingRef.current = true;
       if (user.role === 'SPECIALIST') {
         router.replace('/(onboarding)/username');
       } else {
@@ -89,16 +92,22 @@ function RootNavigator() {
 
     if (!user && !inAuthGroup && !isPublicRoute && segments[0] !== undefined) {
       // Not authenticated and trying to access a protected route → landing
+      isRedirectingRef.current = true;
       router.replace('/');
     } else if (user && inAuthGroup && !user.isNewUser) {
       // Already authenticated (and onboarded) still in auth group → dashboard
+      isRedirectingRef.current = true;
       router.replace('/(dashboard)');
     } else if (user && !inDashboardGroup && !isPublicRoute && segments[0] === undefined) {
       // Authenticated user on landing → redirect to dashboard
+      isRedirectingRef.current = true;
       router.replace('/(dashboard)');
     } else if (user && inAdminGroup && !isAdmin(user.email)) {
       // Non-admin trying to access admin section → redirect to dashboard
+      isRedirectingRef.current = true;
       router.replace('/(dashboard)');
+    } else {
+      isRedirectingRef.current = false;
     }
   }, [user, isLoading, segments, router]);
 

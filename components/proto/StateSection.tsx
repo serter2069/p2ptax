@@ -61,10 +61,33 @@ export function StateSection({ title, children, maxWidth = 430, pageId: pageIdPr
 
   const handleCopy = useCallback(() => {
     if (Platform.OS === 'web' && pageId) {
-      navigator.clipboard.writeText(buildStateCopyText(pageId, title)).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      });
+      const text = buildStateCopyText(pageId, title);
+      const writeClipboard = () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }).catch(() => fallbackCopy());
+        } else {
+          fallbackCopy();
+        }
+      };
+      const fallbackCopy = () => {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+        document.body.appendChild(el);
+        el.select();
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch (e) {
+          // silent fail
+        }
+        document.body.removeChild(el);
+      };
+      writeClipboard();
     }
   }, [pageId, title]);
 
