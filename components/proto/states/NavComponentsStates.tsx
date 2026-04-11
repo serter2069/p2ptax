@@ -4,110 +4,84 @@ import { StateSection } from '../StateSection';
 import { ProtoHeader, ProtoTabBar, ProtoBurger } from '../NavComponents';
 import { Colors, Spacing, Typography } from '../../../constants/Colors';
 
-function NavLabel({ text }: { text: string }) {
-  return (
-    <View style={s.labelBox}>
-      <Text style={s.labelText}>{text}</Text>
-    </View>
-  );
-}
-
 export function NavComponentsStates() {
   const [interactiveTab, setInteractiveTab] = useState('home');
   const [burgerOpen, setBurgerOpen] = useState(false);
 
   return (
-    <View style={s.root}>
-      {/* HEADER — GUEST */}
-      <View style={s.section}>
-        <NavLabel text="HEADER -- GUEST" />
-        <ProtoHeader variant="guest" />
-      </View>
+    <>
+      <StateSection title="HEADER_GUEST">
+        <View style={s.sectionContent}>
+          <ProtoHeader variant="guest" />
+        </View>
+      </StateSection>
 
-      {/* HEADER — AUTH */}
-      <View style={s.section}>
-        <NavLabel text="HEADER -- AUTH" />
-        <ProtoHeader variant="auth" />
-      </View>
+      <StateSection title="HEADER_AUTH">
+        <View style={s.sectionContent}>
+          <ProtoHeader variant="auth" />
+        </View>
+      </StateSection>
 
-      {/* HEADER — BACK */}
-      <View style={s.section}>
-        <NavLabel text="HEADER -- BACK" />
-        <ProtoHeader variant="back" backTitle="Мои заявки" />
-      </View>
+      <StateSection title="HEADER_BACK">
+        <View style={s.sectionContent}>
+          <ProtoHeader variant="back" backTitle="Мои заявки" />
+        </View>
+      </StateSection>
 
-      {/* TAB BAR — HOME ACTIVE */}
-      <View style={s.section}>
-        <NavLabel text="TAB BAR -- HOME ACTIVE" />
-        <ProtoTabBar activeTab="home" />
-      </View>
+      <StateSection title="TABBAR_HOME">
+        <View style={s.sectionContent}>
+          <ProtoTabBar activeTab="home" />
+        </View>
+      </StateSection>
 
-      {/* TAB BAR — REQUESTS ACTIVE */}
-      <View style={s.section}>
-        <NavLabel text="TAB BAR -- REQUESTS ACTIVE" />
-        <ProtoTabBar activeTab="requests" />
-      </View>
+      <StateSection title="TABBAR_REQUESTS">
+        <View style={s.sectionContent}>
+          <ProtoTabBar activeTab="requests" />
+        </View>
+      </StateSection>
 
-      {/* TAB BAR — MESSAGES ACTIVE */}
-      <View style={s.section}>
-        <NavLabel text="TAB BAR -- MESSAGES ACTIVE" />
-        <ProtoTabBar activeTab="messages" />
-      </View>
+      <StateSection title="TABBAR_MESSAGES">
+        <View style={s.sectionContent}>
+          <ProtoTabBar activeTab="messages" />
+        </View>
+      </StateSection>
 
-      {/* TAB BAR — PROFILE ACTIVE */}
-      <View style={s.section}>
-        <NavLabel text="TAB BAR -- PROFILE ACTIVE" />
-        <ProtoTabBar activeTab="profile" />
-      </View>
+      <StateSection title="TABBAR_PROFILE">
+        <View style={s.sectionContent}>
+          <ProtoTabBar activeTab="profile" />
+        </View>
+      </StateSection>
 
-      {/* TAB BAR — INTERACTIVE */}
-      <View style={s.section}>
-        <NavLabel text="TAB BAR -- INTERACTIVE" />
-        <ProtoTabBar activeTab={interactiveTab} onTabChange={setInteractiveTab} />
-      </View>
+      <StateSection title="TABBAR_INTERACTIVE">
+        <View style={s.sectionContent}>
+          <ProtoTabBar activeTab={interactiveTab} onTabChange={setInteractiveTab} />
+        </View>
+      </StateSection>
 
-      {/* BURGER — CLOSED */}
-      <View style={s.section}>
-        <NavLabel text="BURGER -- CLOSED" />
-        <ProtoBurger open={false} />
-      </View>
+      <StateSection title="BURGER_CLOSED">
+        <View style={s.sectionContent}>
+          <ProtoBurger open={false} />
+        </View>
+      </StateSection>
 
-      {/* BURGER — OPEN */}
-      <View style={s.section}>
-        <NavLabel text="BURGER -- OPEN" />
-        <ProtoBurger open={true} />
-      </View>
+      <StateSection title="BURGER_OPEN">
+        <View style={s.sectionContent}>
+          <ProtoBurger open={true} />
+        </View>
+      </StateSection>
 
-      {/* BURGER — INTERACTIVE */}
-      <View style={s.section}>
-        <NavLabel text="BURGER -- INTERACTIVE" />
-        <ProtoBurger open={burgerOpen} onToggle={() => setBurgerOpen(!burgerOpen)} />
-      </View>
-    </View>
+      <StateSection title="BURGER_INTERACTIVE">
+        <View style={s.sectionContent}>
+          <ProtoBurger open={burgerOpen} onToggle={() => setBurgerOpen(!burgerOpen)} />
+        </View>
+      </StateSection>
+    </>
   );
 }
 
 const s = StyleSheet.create({
-  root: {
-    gap: Spacing['3xl'],
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  section: {
+  sectionContent: {
+    padding: Spacing.lg,
     gap: Spacing.md,
-  },
-  labelBox: {
-    backgroundColor: Colors.brandPrimary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: 3,
-    alignSelf: 'flex-start',
-  },
-  labelText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
   },
 });
