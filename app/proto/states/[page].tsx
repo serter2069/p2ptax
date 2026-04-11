@@ -39,13 +39,11 @@ import { AdminReviewsStates } from '../../../components/proto/states/AdminReview
 import { AdminPromotionsStates } from '../../../components/proto/states/AdminPromotionsStates';
 import { NavComponentsStates } from '../../../components/proto/states/NavComponentsStates';
 import { ComponentsStates } from '../../../components/proto/states/ComponentsStates';
-import { BrandStates } from '../../../components/proto/states/BrandStates';
 
 const STATE_MAP: Record<string, React.ComponentType> = {
   'overview': OverviewStates,
-  'brand': BrandStates,
   'nav-components': NavComponentsStates,
-  'brand-style': BrandStyleStates,
+  'brand': BrandStyleStates,
   'components': ComponentsStates,
   'auth-email': AuthEmailStates,
   'auth-otp': AuthOtpStates,

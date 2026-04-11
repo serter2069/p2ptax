@@ -88,6 +88,14 @@ jobs:
           sudo pm2 restart p2ptax-api --update-env || sudo pm2 start dist/main.js --name p2ptax-api
           sudo pm2 save
 
+      - name: Install proto-viewer
+        run: sudo npm i -g github:serter2069/proto-viewer
+
+      - name: Restart proto-viewer
+        run: |
+          sudo pm2 restart proto-p2ptax --update-env || echo "proto-p2ptax not running, skipping"
+          sudo pm2 save
+
       - name: Verify staging
         run: |
           sleep 5
