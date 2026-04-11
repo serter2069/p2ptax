@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REQUESTS } from '../../../constants/protoMockData';
@@ -12,12 +13,12 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'Отменена', color: Colors.statusError },
 };
 
-function RequestRow({ title, client, status, date, city }: {
-  title: string; client: string; status: string; date: string; city: string;
+function RequestRow({ title, client, status, date, city, selected, onSelect }: {
+  title: string; client: string; status: string; date: string; city: string; selected?: boolean; onSelect?: () => void;
 }) {
   const st = STATUS_MAP[status] || STATUS_MAP.NEW;
   return (
-    <View style={s.row}>
+    <Pressable style={[s.row, selected && s.rowSelected]} onPress={onSelect}>
       <View style={s.rowMain}>
         <Text style={s.rowTitle} numberOfLines={1}>{title}</Text>
         <View style={s.rowMeta}>
@@ -31,7 +32,7 @@ function RequestRow({ title, client, status, date, city }: {
       <View style={[s.badge, { backgroundColor: st.color + '20' }]}>
         <Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -59,6 +60,8 @@ function ModerationPopup() {
 }
 
 export function AdminRequestsStates() {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   return (
     <>
       <StateSection title="LIST" maxWidth={800}>
@@ -71,7 +74,7 @@ export function AdminRequestsStates() {
             <View style={s.filterChip}><Text style={s.filterText}>Завершены</Text></View>
           </View>
           {MOCK_REQUESTS.map((r) => (
-            <RequestRow key={r.id} title={r.title} client={r.clientName} status={r.status} date={r.createdAt} city={r.city} />
+            <RequestRow key={r.id} title={r.title} client={r.clientName} status={r.status} date={r.createdAt} city={r.city} selected={selectedId === r.id} onSelect={() => setSelectedId(selectedId === r.id ? null : r.id)} />
           ))}
         </View>
       </StateSection>
@@ -103,6 +106,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary, gap: Spacing.sm,
   },
+  rowSelected: { backgroundColor: Colors.bgSecondary },
   rowMain: { flex: 1 },
   rowTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
   rowMeta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 2 },

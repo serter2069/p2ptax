@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
@@ -13,6 +14,7 @@ const PROMO_DATA = [
 function PromoCard({ code, discount, type, usages, maxUsages, active, expiry }: {
   code: string; discount: string; type: string; usages: number; maxUsages: number; active: boolean; expiry: string;
 }) {
+  const [toggled, setToggled] = useState(active);
   const pct = Math.round((usages / maxUsages) * 100);
   return (
     <View style={s.card}>
@@ -20,7 +22,7 @@ function PromoCard({ code, discount, type, usages, maxUsages, active, expiry }: 
         <View>
           <View style={s.codeRow}>
             <Text style={s.code}>{code}</Text>
-            <View style={[s.statusDot, { backgroundColor: active ? Colors.statusSuccess : Colors.textMuted }]} />
+            <View style={[s.statusDot, { backgroundColor: toggled ? Colors.statusSuccess : Colors.textMuted }]} />
           </View>
           <Text style={s.type}>{type}</Text>
         </View>
@@ -38,9 +40,9 @@ function PromoCard({ code, discount, type, usages, maxUsages, active, expiry }: 
         <Text style={s.expiry}>До {expiry}</Text>
         <View style={s.cardActions}>
           <View style={s.btnEdit}><Text style={s.btnEditText}>Изменить</Text></View>
-          <View style={s.btnToggle}>
-            <Text style={s.btnToggleText}>{active ? 'Деактивировать' : 'Активировать'}</Text>
-          </View>
+          <Pressable style={s.btnToggle} onPress={() => setToggled(!toggled)}>
+            <Text style={s.btnToggleText}>{toggled ? 'Деактивировать' : 'Активировать'}</Text>
+          </Pressable>
         </View>
       </View>
     </View>

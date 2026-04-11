@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
@@ -8,6 +8,7 @@ import { MOCK_REVIEWS } from '../../../constants/protoMockData';
 function ReviewRow({ author, rating, text, date, specialistName }: {
   author: string; rating: number; text: string; date: string; specialistName: string;
 }) {
+  const [expanded, setExpanded] = useState(false);
   return (
     <View style={s.reviewCard}>
       <View style={s.reviewHeader}>
@@ -24,9 +25,9 @@ function ReviewRow({ author, rating, text, date, specialistName }: {
           <Text style={s.reviewDate}>{date}</Text>
         </View>
       </View>
-      <Text style={s.reviewText}>{text}</Text>
+      <Text style={s.reviewText} numberOfLines={expanded ? undefined : 2}>{text}</Text>
       <View style={s.reviewActions}>
-        <View style={s.btnView}><Text style={s.btnViewText}>Подробнее</Text></View>
+        <Pressable style={s.btnView} onPress={() => setExpanded(!expanded)}><Text style={s.btnViewText}>{expanded ? 'Свернуть' : 'Подробнее'}</Text></Pressable>
         <View style={s.btnDelete}><Text style={s.btnDeleteText}>Удалить</Text></View>
       </View>
     </View>
