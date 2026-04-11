@@ -143,7 +143,7 @@ function TypographySection() {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Typography</Text>
-      <Text style={styles.sectionDesc}>Font scale and hierarchy</Text>
+      <Text style={styles.sectionDesc}>Nunito font family — scale and hierarchy</Text>
       <View style={styles.typoList}>
         {TYPO_SAMPLES.map((t) => (
           <View key={t.label} style={styles.typoRow}>
