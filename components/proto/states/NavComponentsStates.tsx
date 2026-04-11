@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions, Image } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../../constants/Colors';
-import { ProtoHeader, ProtoTabBar, ProtoBurger } from '../NavComponents';
 
 // ---------------------------------------------------------------------------
 // Layout helper
@@ -15,177 +14,232 @@ function useLayout() {
 }
 
 // ---------------------------------------------------------------------------
-// Section wrapper
+// Shared small components
 // ---------------------------------------------------------------------------
-function DemoSection({ title, description, children }: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
+function LogoBlock() {
   return (
-    <View style={s.demoSection}>
-      <Text style={s.demoTitle}>{title}</Text>
-      {description ? <Text style={s.demoDesc}>{description}</Text> : null}
-      <View style={s.demoContent}>
-        {children}
+    <View style={s.logoRow}>
+      <View style={s.logoIcon}>
+        <Feather name="shield" size={16} color={Colors.white} />
+      </View>
+      <Text style={s.logoText}>Nalogovik</Text>
+    </View>
+  );
+}
+
+function NotifBell() {
+  return (
+    <View>
+      <Feather name="bell" size={20} color={Colors.textSecondary} />
+      <View style={s.redDot} />
+    </View>
+  );
+}
+
+function AvatarCircle({ initials }: { initials: string }) {
+  return (
+    <View style={s.avatarCircle}>
+      <Text style={s.avatarText}>{initials}</Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 1: Desktop public header (guest)
+// ---------------------------------------------------------------------------
+function DesktopPublicHeader() {
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Desktop — public header (guest)</Text>
+      <View style={s.headerBar}>
+        <LogoBlock />
+        <View style={s.navLinks}>
+          <Text style={[s.navLink, s.navLinkActive]}>Glavnaya</Text>
+          <Text style={s.navLink}>Specialisty</Text>
+          <Text style={s.navLink}>Zayavki</Text>
+          <Text style={s.navLink}>Tarify</Text>
+        </View>
+        <View style={s.headerRight}>
+          <Pressable style={s.btnOutline}>
+            <Text style={s.btnOutlineText}>Voyti</Text>
+          </Pressable>
+          <Pressable style={s.btnPrimary}>
+            <Text style={s.btnPrimaryText}>Razmestit zayavku</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// 1. Header Variants
+// Section 2: Mobile burger menu (open state)
 // ---------------------------------------------------------------------------
-function HeaderShowcase() {
+function MobileBurgerHeader() {
   return (
-    <DemoSection
-      title="ProtoHeader"
-      description="Header variants: guest (public pages), auth (logged-in), back (detail/sub-pages)"
-    >
-      <View style={s.variantCard}>
-        <Text style={s.variantLabel}>variant="guest"</Text>
-        <ProtoHeader variant="guest" />
-      </View>
-      <View style={s.spacer} />
-      <View style={s.variantCard}>
-        <Text style={s.variantLabel}>variant="auth"</Text>
-        <ProtoHeader variant="auth" />
-      </View>
-      <View style={s.spacer} />
-      <View style={s.variantCard}>
-        <Text style={s.variantLabel}>variant="back"</Text>
-        <ProtoHeader variant="back" backTitle="Заявки" />
-      </View>
-    </DemoSection>
-  );
-}
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Mobile — burger menu (open)</Text>
 
-// ---------------------------------------------------------------------------
-// 2. Tab Bar — all tabs highlighted
-// ---------------------------------------------------------------------------
-function TabBarShowcase() {
-  const [activeTab, setActiveTab] = useState('home');
-  return (
-    <DemoSection
-      title="ProtoTabBar"
-      description="Mobile bottom tab bar. Each tab is interactive — tap to highlight."
-    >
-      <View style={s.variantCard}>
-        <Text style={s.variantLabel}>Client tabs — active: {activeTab}</Text>
-        <ProtoTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* Closed header */}
+      <View style={s.mobileHeaderBar}>
+        <LogoBlock />
+        <Pressable>
+          <Feather name="menu" size={24} color={Colors.textPrimary} />
+        </Pressable>
       </View>
-    </DemoSection>
-  );
-}
 
-// ---------------------------------------------------------------------------
-// 3. Burger Menu — closed and open states
-// ---------------------------------------------------------------------------
-function BurgerShowcase() {
-  const [open, setOpen] = useState(false);
-  return (
-    <DemoSection
-      title="ProtoBurger"
-      description="Tablet/desktop slide-out drawer. Tap the menu icon to toggle."
-    >
-      <View style={s.burgerDemo}>
-        <ProtoBurger open={open} onToggle={() => setOpen((o) => !o)} />
-      </View>
-      <View style={s.spacer} />
-      <View style={s.variantCard}>
-        <Text style={s.variantLabel}>Burger always-open preview</Text>
-        <View style={s.burgerStaticWrap}>
-          <ProtoBurger open={true} />
-        </View>
-      </View>
-    </DemoSection>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 4. Combined Navigation — full page shell example
-// ---------------------------------------------------------------------------
-function FullShellShowcase() {
-  const { isDesktop, width } = useLayout();
-  return (
-    <DemoSection
-      title="Full Page Shell"
-      description="How header + content + tab bar combine in a real page (desktop vs mobile)"
-    >
-      <View style={s.shellPreview}>
-        {/* Desktop header */}
-        {isDesktop ? (
-          <View style={s.desktopHeaderRow}>
-            <Text style={s.desktopLogo}>Налоговик</Text>
-            <View style={s.desktopNavLinks}>
-              <Text style={s.desktopNavLink}>Главная</Text>
-              <Text style={s.desktopNavLink}>Заявки</Text>
-              <Text style={s.desktopNavLink}>Специалисты</Text>
-              <Text style={s.desktopNavLink}>Тарифы</Text>
-            </View>
-            <View style={s.desktopHeaderRight}>
-              <Feather name="bell" size={18} color={Colors.textMuted} />
-              <Image source={{ uri: 'https://picsum.photos/seed/navuser/80/80' }} style={s.desktopAvatar} />
-            </View>
+      {/* Open drawer state */}
+      <View style={s.drawerOverlay}>
+        <View style={s.drawerPanel}>
+          <View style={s.drawerClose}>
+            <Feather name="x" size={24} color={Colors.textPrimary} />
           </View>
-        ) : (
-          <ProtoHeader variant="auth" />
-        )}
-        {/* Content placeholder */}
-        <View style={s.shellContent}>
-          <Feather name="monitor" size={32} color={Colors.textMuted} />
-          <Text style={s.shellContentText}>
-            {isDesktop ? 'Desktop layout — horizontal nav in header, no tab bar' : 'Mobile layout — header + bottom tab bar'}
-          </Text>
-          <Text style={s.shellContentWidth}>Viewport: {Math.round(width)}px</Text>
+          <View style={s.drawerLinks}>
+            <Text style={[s.drawerLink, s.drawerLinkActive]}>Glavnaya</Text>
+            <Text style={s.drawerLink}>Specialisty</Text>
+            <Text style={s.drawerLink}>Zayavki</Text>
+            <Text style={s.drawerLink}>Tarify</Text>
+          </View>
+          <View style={s.drawerButtons}>
+            <Pressable style={s.btnOutlineFull}>
+              <Text style={s.btnOutlineText}>Voyti</Text>
+            </Pressable>
+            <Pressable style={s.btnPrimaryFull}>
+              <Text style={s.btnPrimaryText}>Razmestit zayavku</Text>
+            </Pressable>
+          </View>
         </View>
-        {/* Mobile tab bar only */}
-        {!isDesktop && <ProtoTabBar activeTab="home" />}
       </View>
-    </DemoSection>
+    </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// 5. Admin Navigation
+// Section 3: Auth header (desktop + mobile)
 // ---------------------------------------------------------------------------
-function AdminNavShowcase() {
-  const [activeItem, setActiveItem] = useState('dashboard');
-  const items = [
-    { id: 'dashboard', icon: 'bar-chart-2' as const, label: 'Статистика' },
-    { id: 'users', icon: 'users' as const, label: 'Пользователи' },
-    { id: 'requests', icon: 'file-text' as const, label: 'Заявки' },
-    { id: 'moderation', icon: 'shield' as const, label: 'Модерация' },
-    { id: 'reviews', icon: 'star' as const, label: 'Отзывы' },
-    { id: 'promotions', icon: 'gift' as const, label: 'Промо' },
-  ];
+function AuthHeader() {
   return (
-    <DemoSection
-      title="Admin Navigation"
-      description="Horizontal tab bar used in admin section"
-    >
-      <View style={s.adminBar}>
-        <Text style={s.adminLogo}>Налоговик Admin</Text>
-        <View style={s.adminTabs}>
-          {items.map((item) => (
-            <Pressable
-              key={item.id}
-              style={[s.adminTab, activeItem === item.id && s.adminTabActive]}
-              onPress={() => setActiveItem(item.id)}
-            >
-              <Feather
-                name={item.icon}
-                size={16}
-                color={activeItem === item.id ? Colors.brandPrimary : Colors.textMuted}
-              />
-              <Text style={[s.adminTabText, activeItem === item.id && s.adminTabTextActive]}>
-                {item.label}
-              </Text>
-            </Pressable>
-          ))}
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Authorized user</Text>
+
+      {/* Desktop variant */}
+      <Text style={s.variantLabel}>DESKTOP</Text>
+      <View style={s.headerBar}>
+        <LogoBlock />
+        <View style={s.navLinks}>
+          <Text style={[s.navLink, s.navLinkActive]}>Glavnaya</Text>
+          <Text style={s.navLink}>Specialisty</Text>
+          <Text style={s.navLink}>Zayavki</Text>
+          <Text style={s.navLink}>Tarify</Text>
+        </View>
+        <View style={s.headerRight}>
+          <NotifBell />
+          <AvatarCircle initials="AP" />
         </View>
       </View>
-    </DemoSection>
+
+      <View style={s.spacer} />
+
+      {/* Mobile variant */}
+      <Text style={s.variantLabel}>MOBILE</Text>
+      <View style={s.mobileHeaderBar}>
+        <LogoBlock />
+        <View style={s.mobileAuthRight}>
+          <NotifBell />
+          <AvatarCircle initials="AP" />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 4: Bottom nav — Client
+// ---------------------------------------------------------------------------
+const CLIENT_TABS = [
+  { id: 'home', icon: 'home' as const, label: 'Glavnaya' },
+  { id: 'requests', icon: 'file-text' as const, label: 'Zayavki' },
+  { id: 'messages', icon: 'message-circle' as const, label: 'Soobscheniya', badge: true },
+  { id: 'profile', icon: 'user' as const, label: 'Profil' },
+];
+
+function BottomTabBar({ tabs, activeId, label }: {
+  tabs: typeof CLIENT_TABS;
+  activeId: string;
+  label: string;
+}) {
+  return (
+    <View>
+      <Text style={s.tabStateLabel}>{label}</Text>
+      <View style={s.tabBar}>
+        {tabs.map((tab) => {
+          const active = tab.id === activeId;
+          return (
+            <View key={tab.id} style={s.tabItem}>
+              <View>
+                <Feather
+                  name={tab.icon}
+                  size={20}
+                  color={active ? Colors.brandPrimary : Colors.textMuted}
+                />
+                {tab.badge && <View style={s.tabBadge} />}
+              </View>
+              <Text style={[s.tabLabel, active && s.tabLabelActive]}>{tab.label}</Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function ClientBottomNav() {
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Bottom navigation — Client</Text>
+      <BottomTabBar tabs={CLIENT_TABS} activeId="home" label="State 1: Glavnaya active" />
+      <View style={s.spacer} />
+      <BottomTabBar tabs={CLIENT_TABS} activeId="requests" label="State 2: Zayavki active" />
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 5: Bottom nav — Specialist
+// ---------------------------------------------------------------------------
+const SPECIALIST_TABS = [
+  { id: 'cabinet', icon: 'briefcase' as const, label: 'Kabinet' },
+  { id: 'exchange', icon: 'list' as const, label: 'Birzha' },
+  { id: 'messages', icon: 'message-circle' as const, label: 'Soobscheniya', badge: true },
+  { id: 'profile', icon: 'user' as const, label: 'Profil' },
+];
+
+function SpecialistBottomNav() {
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Bottom navigation — Specialist</Text>
+      <BottomTabBar tabs={SPECIALIST_TABS} activeId="cabinet" label="Kabinet active" />
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section 6: Back navigation header
+// ---------------------------------------------------------------------------
+function BackHeader() {
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>Header — inner page (back button)</Text>
+      <View style={s.backHeaderBar}>
+        <View style={s.backLeft}>
+          <Feather name="arrow-left" size={20} color={Colors.brandPrimary} />
+          <Text style={s.backTitle}>Zayavki</Text>
+        </View>
+        <Pressable>
+          <Feather name="more-vertical" size={20} color={Colors.textSecondary} />
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -201,11 +255,12 @@ export function NavComponentsStates() {
         style={s.container}
         contentContainerStyle={[s.containerInner, isDesktop && s.containerInnerDesktop]}
       >
-        <HeaderShowcase />
-        <TabBarShowcase />
-        <BurgerShowcase />
-        <FullShellShowcase />
-        <AdminNavShowcase />
+        <DesktopPublicHeader />
+        <MobileBurgerHeader />
+        <AuthHeader />
+        <ClientBottomNav />
+        <SpecialistBottomNav />
+        <BackHeader />
       </ScrollView>
     </StateSection>
   );
@@ -225,171 +280,265 @@ const s = StyleSheet.create({
     paddingBottom: 80,
   },
   containerInnerDesktop: {
-    maxWidth: 960,
+    maxWidth: 800,
     alignSelf: 'center',
     paddingHorizontal: 48,
   },
 
-  // Demo section
-  demoSection: {
+  // Sections
+  section: {
     gap: Spacing.md,
   },
-  demoTitle: {
+  sectionTitle: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
-  },
-  demoDesc: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-  demoContent: {
-    gap: Spacing.lg,
-  },
-
-  // Variant card
-  variantCard: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
   },
   variantLabel: {
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.textMuted,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xs,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
   },
-
   spacer: {
     height: Spacing.lg,
   },
 
-  // Burger demo
-  burgerDemo: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-  },
-  burgerStaticWrap: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-  },
-
-  // Full shell preview
-  shellPreview: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-  },
-  shellContent: {
-    flex: 1,
-    minHeight: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.md,
-    padding: Spacing.xl,
-  },
-  shellContentText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  shellContentWidth: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-
-  // Desktop header
-  desktopHeaderRow: {
+  // Logo
+  logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.bgCard,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: Spacing.xl,
+    gap: Spacing.sm,
   },
-  desktopLogo: {
+  logoIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.brandPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.brandPrimary,
   },
-  desktopNavLinks: {
-    flexDirection: 'row',
-    gap: Spacing.lg,
+
+  // Red dot badge
+  redDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.statusError,
   },
-  desktopNavLink: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  desktopHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    marginLeft: 'auto',
-  },
-  desktopAvatar: {
+
+  // Avatar
+  avatarCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.bgSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.brandPrimary,
   },
 
-  // Admin bar
-  adminBar: {
+  // Desktop header bar
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 56,
     paddingHorizontal: Spacing.lg,
     backgroundColor: Colors.bgCard,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: Spacing.xl,
     borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  adminLogo: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  adminTabs: {
+  navLinks: {
     flexDirection: 'row',
-    gap: 4,
+    gap: Spacing.xl,
+    marginLeft: Spacing['3xl'],
+    flex: 1,
   },
-  adminTab: {
+  navLink: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textSecondary,
+  },
+  navLinkActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.sm,
+    gap: Spacing.md,
   },
-  adminTabActive: {
-    backgroundColor: Colors.bgSecondary,
+
+  // Buttons
+  btnOutline: {
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
   },
-  adminTabText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  adminTabTextActive: {
+  btnOutlineText: {
     color: Colors.brandPrimary,
+    fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  btnPrimary: {
+    backgroundColor: Colors.brandPrimary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  btnPrimaryText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  btnOutlineFull: {
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  btnPrimaryFull: {
+    backgroundColor: Colors.brandPrimary,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+
+  // Mobile header bar
+  mobileHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 56,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  mobileAuthRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+
+  // Drawer (open state — static preview)
+  drawerOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    minHeight: 320,
+    justifyContent: 'flex-end',
+    flexDirection: 'row',
+  },
+  drawerPanel: {
+    width: 260,
+    backgroundColor: Colors.bgCard,
+    padding: Spacing.xl,
+    gap: Spacing.xl,
+  },
+  drawerClose: {
+    alignSelf: 'flex-end',
+  },
+  drawerLinks: {
+    gap: Spacing.lg,
+  },
+  drawerLink: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textSecondary,
+  },
+  drawerLinkActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  drawerButtons: {
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+
+  // Tab bar
+  tabBar: {
+    flexDirection: 'row',
+    height: 60,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  tabLabel: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  tabLabelActive: {
+    color: Colors.brandPrimary,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  tabBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.statusError,
+  },
+  tabStateLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    marginBottom: Spacing.xs,
+  },
+
+  // Back header
+  backHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 56,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  backLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  backTitle: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.brandPrimary,
   },
 });
