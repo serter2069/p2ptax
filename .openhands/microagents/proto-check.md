@@ -43,8 +43,25 @@ Read the page's `components/proto/states/[PageName]States.tsx` and check:
 | 19 | Brand page exists (group: 'Brand', id: 'brand') | Create BrandStates.tsx with color palette |
 | 20 | Overview page exists (group: 'Overview', id: 'overview') | Create OverviewStates.tsx with project description |
 | 21 | Components page exists (group: 'Brand', id: 'components') | Create ComponentsStates.tsx with UI components |
+| 22 | `testScenarios[]` defined in pageRegistry for this page (min 2 scenarios) | Add testScenarios — see format below |
 
-**SCORE = number of criteria passed (0–21)**
+**testScenarios format** (add to pageRegistry entry if missing):
+```typescript
+testScenarios: [
+  {
+    name: "Guest views [page title]",
+    steps: ["open [route]", "verify [key element] visible", "scroll down", "verify content loads"]
+  },
+  {
+    name: "[Primary action on page]",
+    steps: ["open [route]", "tap [button/element]", "verify [expected result]"]
+  }
+]
+```
+Rules: 2-4 scenarios per page. Each step = one atomic action. Cover: initial load, primary action, error state.
+Auth pages: add "Wrong OTP" scenario. List pages: add "Empty state" + "Scroll to bottom" scenarios.
+
+**SCORE = number of criteria passed (0–22)**
 - Criterion #6 (no emoji): if ANY emoji found → SCORE = 0, loop continues until fixed
 
 ## Step 3: Fix all issues found
@@ -56,12 +73,13 @@ Fix everything you can. Then re-check. Repeat until SCORE >= 18/21 or 5 iteratio
 qaCycles: (currentValue + 1),
 qaScore: SCORE,
 // If qaCycles >= 5: page is ready for manual review
+// testScenarios: [...] // add if not present (criterion #22)
 ```
 
 ## Step 5: Commit and push
 ```bash
 git add constants/pageRegistry.ts components/proto/states/
-git commit -m "proto-check: QC pass cycle N — score S/21"
+git commit -m "proto-check: QC pass cycle N — score S/22"
 git push origin development
 ```
 

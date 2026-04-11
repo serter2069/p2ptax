@@ -87,14 +87,38 @@ const isMobile = width < 768;
 9. **marginBottom: 80** in StateSection wrapper (visual separation between states)
 10. **No double header** — ProtoLayout only has back button, header is inside StateSection only
 
-## Step 5: Update pageRegistry.ts
+## Step 5: Add testScenarios to pageRegistry.ts
+
+For each page you create/improve, add `testScenarios[]` if missing:
+
+```typescript
+testScenarios: [
+  {
+    name: "Guest views [page title]",
+    steps: ["open [route]", "verify [key element] visible", "scroll down", "verify content loads"]
+  },
+  {
+    name: "[Primary action on page]",
+    steps: ["open [route]", "tap [button/element]", "verify [expected result]"]
+  }
+]
+```
+
+**Rules for scenarios:**
+- 2-4 scenarios per page minimum
+- Each step = one atomic action ("tap X", "type email", "scroll down", "verify Y visible")
+- Cover: initial load, primary action, error state (if applicable)
+- Auth pages: add "Wrong OTP" scenario
+- List pages: add "Empty state" and "Scroll to bottom" scenarios
+
+## Step 6: Update pageRegistry.ts
 ```typescript
 // After improving a page:
 qaCycles: (currentValue + 1),
 qaScore: SCORE,  // how many of 10 criteria passed
 ```
 
-## Step 6: Commit and push
+## Step 7: Commit and push
 ```bash
 git add constants/pageRegistry.ts components/proto/states/
 git commit -m "proto: improve prototype pages — cycle N"
