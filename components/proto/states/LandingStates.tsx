@@ -344,11 +344,11 @@ function FullLanding(props: RequestFormProps) {
 export function LandingStates() {
   return (
     <View style={{ gap: Spacing['4xl'] }}>
-      <StateSection title="DEFAULT" pageId="landing" maxWidth={1024}>
+      <StateSection title="DEFAULT" pageId="landing">
         <FullLanding />
       </StateSection>
 
-      <StateSection title="FORM_FILLING" pageId="landing" maxWidth={1024}>
+      <StateSection title="FORM_FILLING" pageId="landing">
         <FullLanding
           prefill={{
             city: 'Москва',
@@ -358,7 +358,7 @@ export function LandingStates() {
         />
       </StateSection>
 
-      <StateSection title="FORM_VALIDATION" pageId="landing" maxWidth={1024}>
+      <StateSection title="FORM_VALIDATION" pageId="landing">
         <FullLanding
           prefill={{
             city: 'Санкт-Петербург',
@@ -370,7 +370,7 @@ export function LandingStates() {
         />
       </StateSection>
 
-      <StateSection title="FORM_SUCCESS" pageId="landing" maxWidth={1024}>
+      <StateSection title="FORM_SUCCESS" pageId="landing">
         <FullLanding
           prefill={{ email: 'ivan@example.com' }}
           submitted

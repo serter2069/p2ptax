@@ -101,10 +101,10 @@ function UserListInteractive() {
 export function AdminUsersStates() {
   return (
     <>
-      <StateSection title="LIST" maxWidth={800}>
+      <StateSection title="LIST">
         <UserListInteractive />
       </StateSection>
-      <StateSection title="DETAIL_POPUP" maxWidth={800}>
+      <StateSection title="DETAIL_POPUP">
         <View style={[s.container, { minHeight: 500 }]}>
           <Text style={s.pageTitle}>Пользователи</Text>
           {MOCK_USERS.slice(0, 3).map((u) => (

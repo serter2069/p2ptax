@@ -171,13 +171,13 @@ function ApprovedModeration() {
 export function AdminModerationStates() {
   return (
     <>
-      <StateSection title="DEFAULT" maxWidth={800}>
+      <StateSection title="DEFAULT">
         <DefaultModeration />
       </StateSection>
-      <StateSection title="INTERACTIVE" maxWidth={800}>
+      <StateSection title="INTERACTIVE">
         <InteractiveModeration />
       </StateSection>
-      <StateSection title="APPROVED" maxWidth={800}>
+      <StateSection title="APPROVED">
         <ApprovedModeration />
       </StateSection>
     </>

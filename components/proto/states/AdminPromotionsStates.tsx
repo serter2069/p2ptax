@@ -51,7 +51,7 @@ function PromoCard({ code, discount, type, usages, maxUsages, active, expiry }: 
 
 export function AdminPromotionsStates() {
   return (
-    <StateSection title="LIST" maxWidth={800}>
+    <StateSection title="LIST">
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.pageTitle}>Промо-коды</Text>

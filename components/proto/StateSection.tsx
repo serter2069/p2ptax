@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { getPageById } from '../../constants/pageRegistry';
 import { ProtoNavHeader, ProtoNavFooter } from './ProtoNav';
@@ -15,11 +15,14 @@ interface StateSectionProps {
   pageId?: string;
 }
 
-export function StateSection({ title, children, maxWidth = 430, pageId: pageIdProp }: StateSectionProps) {
+export function StateSection({ title, children, maxWidth = 960, pageId: pageIdProp }: StateSectionProps) {
   const contextPageId = useContext(PageIdContext);
   const pageId = pageIdProp || contextPageId;
   const page = pageId ? getPageById(pageId) : undefined;
   const ref = useRef<View>(null);
+
+  const windowHeight = Dimensions.get('window').height;
+  const minHeight = Math.max(844, windowHeight);
 
   useEffect(() => {
     if (Platform.OS === 'web' && ref.current) {
@@ -37,7 +40,7 @@ export function StateSection({ title, children, maxWidth = 430, pageId: pageIdPr
         <View style={styles.line} />
       </View>
       <View style={[styles.content, { maxWidth }]}>
-        <View style={styles.phone}>
+        <View style={[styles.phone, { minHeight }]}>
           {page && <ProtoNavHeader variant={page.nav} activeTab={page.activeTab} />}
           <View style={styles.phoneBody}>
             {children}
@@ -87,7 +90,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
-    minHeight: 844,
   },
   phoneBody: {
     flex: 1,
