@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, Image, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, ActivityIndicator, Pressable, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
@@ -86,14 +87,35 @@ export function DashboardStates() {
   return (
     <>
       <StateSection title="EMPTY">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <EmptyDashboard />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="WITH_DATA">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <WithDataDashboard />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="LOADING">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <LoadingDashboard />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </>
   );
 }

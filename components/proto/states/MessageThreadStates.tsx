@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, TextInput, Pressable, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_MESSAGES, MockMessage } from '../../../constants/protoMockData';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function ChatHeader() {
   return (
@@ -89,12 +90,30 @@ export function MessageThreadStates() {
   return (
     <>
       <StateSection title="INTERACTIVE_CHAT">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <InteractiveChat initialMessages={MOCK_MESSAGES} />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="EMPTY">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <InteractiveChat initialMessages={[]} />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="TYPING_INDICATOR">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <View style={s.container}>
           <ChatHeader />
           <View style={s.messages}>
@@ -134,7 +153,10 @@ export function MessageThreadStates() {
             </View>
           </View>
         </View>
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </>
   );
 }

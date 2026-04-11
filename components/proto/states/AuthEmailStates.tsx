@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, Pressable, StyleSheet, Platform } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function AuthScreen({ initialEmail, initialError, initialLoading }: { initialEmail: string; initialError?: string; initialLoading?: boolean }) {
   const [email, setEmail] = useState(initialEmail);
@@ -53,14 +54,35 @@ export function AuthEmailStates() {
   return (
     <>
       <StateSection title="DEFAULT">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <AuthScreen initialEmail="" />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="ERROR">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <AuthScreen initialEmail="invalid-email" initialError="Введите корректный email адрес" />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="LOADING">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <AuthScreen initialEmail="elena@mail.ru" initialLoading />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </>
   );
 }

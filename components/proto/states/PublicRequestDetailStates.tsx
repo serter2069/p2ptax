@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function DetailView({ showRespondPopup }: { showRespondPopup?: boolean }) {
   return (
@@ -65,11 +66,25 @@ export function PublicRequestDetailStates() {
   return (
     <>
       <StateSection title="DETAIL" maxWidth={800}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <DetailView />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="RESPOND_POPUP" maxWidth={800}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <DetailView showRespondPopup />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </>
   );
 }

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Image, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function ModerationCard({ name, type, date, onApprove, onReject, onView }: {
   name: string; type: string; date: string;
@@ -172,14 +173,35 @@ export function AdminModerationStates() {
   return (
     <>
       <StateSection title="DEFAULT" maxWidth={800}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <DefaultModeration />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="INTERACTIVE" maxWidth={800}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <InteractiveModeration />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="APPROVED" maxWidth={800}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <ApprovedModeration />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </>
   );
 }

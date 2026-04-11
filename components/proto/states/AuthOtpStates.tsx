@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, Pressable, StyleSheet, Platform } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function OtpScreen({ initialCode, initialError, initialResendTimer, initialLoading }: {
   initialCode?: string; initialError?: string; initialResendTimer?: number; initialLoading?: boolean;
@@ -109,17 +110,45 @@ export function AuthOtpStates() {
   return (
     <>
       <StateSection title="DEFAULT">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <OtpScreen />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="ERROR">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <OtpScreen initialCode="123456" initialError="Неверный код. Попробуйте ещё раз." />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="RESEND">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <OtpScreen initialResendTimer={42} />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="LOADING">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <OtpScreen initialCode="000000" initialLoading />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </>
   );
 }

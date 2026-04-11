@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, Pressable, StyleSheet, Platform } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REQUESTS } from '../../../constants/protoMockData';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   NEW: { label: 'Новая', color: Colors.brandPrimary },
@@ -78,9 +79,20 @@ export function MyRequestsStates() {
   return (
     <>
       <StateSection title="INTERACTIVE_TABS">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <InteractiveList />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="EMPTY">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <View style={s.container}>
           <View style={s.topBar}>
             <Text style={s.pageTitle}>Мои заявки</Text>
@@ -91,8 +103,15 @@ export function MyRequestsStates() {
             <Text style={s.emptyText}>Создайте заявку, чтобы получить предложения от специалистов</Text>
           </View>
         </View>
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="LOADING">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <View style={s.container}>
           <View style={s.topBar}>
             <Text style={s.pageTitle}>Мои заявки</Text>
@@ -101,7 +120,10 @@ export function MyRequestsStates() {
             <ActivityIndicator size="large" color={Colors.brandPrimary} />
           </View>
         </View>
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </>
   );
 }

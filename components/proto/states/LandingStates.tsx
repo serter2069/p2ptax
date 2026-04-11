@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { StateSection } from '../StateSection';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 const BRAND = {
   primary: Colors.textPrimary,
   action: Colors.brandPrimary,
-  accent: '#D4A843',
+  accent: Colors.statusWarning,
   bg: Colors.bgPrimary,
   card: Colors.bgCard,
   textPrimary: Colors.textPrimary,
@@ -345,10 +346,21 @@ export function LandingStates() {
   return (
     <View style={{ gap: Spacing['4xl'] }}>
       <StateSection title="DEFAULT" pageId="landing" maxWidth={1024}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <FullLanding />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
 
       <StateSection title="FORM_FILLING" pageId="landing" maxWidth={1024}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <FullLanding
           prefill={{
             city: 'Москва',
@@ -356,9 +368,16 @@ export function LandingStates() {
             description: 'Нужна помощь с камеральной проверкой за 2025 год. Получил требование из налоговой.',
           }}
         />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
 
       <StateSection title="FORM_VALIDATION" pageId="landing" maxWidth={1024}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <FullLanding
           prefill={{
             city: 'Санкт-Петербург',
@@ -368,14 +387,24 @@ export function LandingStates() {
           }}
           errors={{ email: true }}
         />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
 
       <StateSection title="FORM_SUCCESS" pageId="landing" maxWidth={1024}>
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <FullLanding
           prefill={{ email: 'ivan@example.com' }}
           submitted
         />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </View>
   );
 }

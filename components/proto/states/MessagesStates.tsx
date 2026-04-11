@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet, Platform } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_THREADS } from '../../../constants/protoMockData';
+import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function ThreadItem({ name, lastMessage, time, unread, selected, onPress }: {
   name: string; lastMessage: string; time: string; unread: number; selected: boolean; onPress: () => void;
@@ -56,9 +57,20 @@ export function MessagesStates() {
   return (
     <>
       <StateSection title="INTERACTIVE">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <InteractiveMessages />
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
       <StateSection title="EMPTY">
+        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+          <ProtoHeader variant="auth" />
+          <View style={{ flex: 1 }}>
+
         <View style={s.container}>
           <Text style={s.pageTitle}>Сообщения</Text>
           <View style={s.emptyWrap}>
@@ -66,7 +78,10 @@ export function MessagesStates() {
             <Text style={s.emptyText}>Сообщения появятся после принятия отклика специалиста</Text>
           </View>
         </View>
-      </StateSection>
+                </View>
+          <ProtoTabBar activeTab="home" />
+        </View>
+</StateSection>
     </>
   );
 }
