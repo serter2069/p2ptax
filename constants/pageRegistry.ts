@@ -52,8 +52,8 @@ export const pageRegistry: PageEntry[] = [
   ] },
 
   // Brand
-  { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 11, nav: 'none', qaCycles: 5, qaScore: 9, testScenarios: [
-    { name: 'View nav components', steps: ['open /proto/states/nav-components', 'verify navigation variants displayed'] },
+  { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 1, nav: 'none', qaCycles: 5, qaScore: 9, testScenarios: [
+    { name: 'View nav components', steps: ['open /proto/states/nav-components', 'verify header variants displayed', 'verify tab bar visible', 'verify burger menu toggle'] },
   ] },
   { id: 'brand', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none', qaCycles: 5, qaScore: 11,
       notes: [

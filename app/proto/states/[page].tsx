@@ -41,6 +41,8 @@ import { AdminPromotionsStates } from '../../../components/proto/states/AdminPro
 const STATE_MAP: Record<string, React.ComponentType> = {
   'overview': OverviewStates,
   'brand': BrandStyleStates,
+  'nav-components': BrandStyleStates,
+  'components': BrandStyleStates,
   'auth-email': AuthEmailStates,
   'auth-otp': AuthOtpStates,
   'onboarding-username': OnboardingUsernameStates,
