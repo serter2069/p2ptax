@@ -1,47 +1,47 @@
 export const Colors = {
   // Backgrounds
-  bgPrimary: '#F4FBFC',
-  bgSecondary: '#EBF3FB',
-  bgSurface: '#EBF3FB',
+  bgPrimary: '#FFFFFF',
+  bgSecondary: '#F0F9FF',
+  bgSurface: '#F0F9FF',
   bgCard: '#FFFFFF',
 
   // Text
-  textPrimary: '#0F2447',
-  textSecondary: '#4A6B88',
-  textMuted: '#4A6080',
-  textAccent: '#1A5BA8',
+  textPrimary: '#0C1A2E',
+  textSecondary: '#475569',
+  textMuted: '#94A3B8',
+  textAccent: '#0284C7',
 
   // Brand
-  brandPrimary: '#1A5BA8',
-  brandPrimaryHover: '#2368BE',
-  brandSecondary: '#1E3A6E',
+  brandPrimary: '#0284C7',
+  brandPrimaryHover: '#0369A1',
+  brandSecondary: '#0369A1',
 
   // Status
-  statusSuccess: '#1A7848',
-  statusWarning: '#f59e0b',
-  statusError: '#B91C1C',
-  statusErrorHover: '#991818',
-  statusInfo: '#1A5BA8',
+  statusSuccess: '#15803D',
+  statusWarning: '#D97706',
+  statusError: '#DC2626',
+  statusErrorHover: '#B91C1C',
+  statusInfo: '#0284C7',
 
   // Utilities
   white: '#FFFFFF',
 
   // Status background tints (for badges)
   statusBg: {
-    success: '#e6f4ed',
-    warning: '#fef3cd',
-    error: '#fde8e8',
-    info: '#e0ecf8',
-    accent: '#dce8f5',
-    familiar: '#dce8f5',
+    success: '#DCFCE7',
+    warning: '#FEF9C3',
+    error: '#FEE2E2',
+    info: '#E0F2FE',
+    accent: '#E0F2FE',
+    familiar: '#E0F2FE',
   },
 
   // Extended text
-  textFamiliar: '#2E74CC',
+  textFamiliar: '#0284C7',
 
   // Borders
-  border: '#C0D0EA',
-  borderLight: '#C0D0EA',
+  border: '#BAE6FD',
+  borderLight: '#E0F2FE',
 } as const;
 
 export const Spacing = {
@@ -82,9 +82,11 @@ export const Shadows = {
 
 export const Typography = {
   fontFamily: {
-    regular: undefined, // system default
-    medium: undefined,
-    bold: undefined,
+    regular: 'Nunito_400Regular',
+    medium: 'Nunito_500Medium',
+    semibold: 'Nunito_600SemiBold',
+    bold: 'Nunito_700Bold',
+    extrabold: 'Nunito_800ExtraBold',
   },
   fontSize: {
     xs: 11,
@@ -119,6 +121,9 @@ export const BorderRadius = {
   xl: 16,
   xxl: 24,
   full: 9999,
+  btn: 12,
+  card: 14,
+  input: 10,
 } as const;
 
 export const Breakpoints = {
