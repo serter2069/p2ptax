@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_REQUESTS } from '../../../constants/protoMockData';
 
-function RequestCard({ title, city, budget, service, date }: {
-  title: string; city: string; budget: string; service: string; date: string;
+function navigate(pageId: string) {
+  if (Platform.OS === 'web') {
+    window.open(`/proto/states/${pageId}`, '_self');
+  }
+}
+
+function RequestCard({ title, city, budget, service, date, requestId }: {
+  title: string; city: string; budget: string; service: string; date: string; requestId: string;
 }) {
   return (
     <View style={s.card}>
-      <Text style={s.cardTitle} numberOfLines={2}>{title}</Text>
+      <Pressable onPress={() => navigate('public-request-detail')}>
+        <Text style={s.cardTitle} numberOfLines={2}>{title}</Text>
+      </Pressable>
       <View style={s.cardMeta}>
         <Text style={s.metaItem}>{city}</Text>
         <Text style={s.dot}>{'·'}</Text>
@@ -20,7 +28,9 @@ function RequestCard({ title, city, budget, service, date }: {
         <Text style={s.budget}>{budget}</Text>
         <Text style={s.date}>{date}</Text>
       </View>
-      <Pressable style={s.respondBtn}><Text style={s.respondBtnText}>Откликнуться</Text></Pressable>
+      <Pressable style={s.respondBtn} onPress={() => navigate('specialist-respond')}>
+        <Text style={s.respondBtnText}>Откликнуться</Text>
+      </Pressable>
     </View>
   );
 }
@@ -69,7 +79,7 @@ function InteractiveDashboard() {
         </View>
       ) : (
         visibleRequests.map((r) => (
-          <RequestCard key={r.id} title={r.title} city={r.city} budget={r.budget} service={r.service} date={r.createdAt} />
+          <RequestCard key={r.id} title={r.title} city={r.city} budget={r.budget} service={r.service} date={r.createdAt} requestId={r.id} />
         ))
       )}
     </View>

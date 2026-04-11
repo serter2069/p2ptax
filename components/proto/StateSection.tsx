@@ -52,6 +52,7 @@ export function StateSection({ title, children, maxWidth = 430, pageId: pageIdPr
 const styles = StyleSheet.create({
   section: {
     gap: Spacing.md,
+    marginBottom: 80,
   },
   labelRow: {
     flexDirection: 'row',
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
-    minHeight: 200,
+    minHeight: 844,
   },
   phoneBody: {
     flex: 1,

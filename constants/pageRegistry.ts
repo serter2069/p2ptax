@@ -7,6 +7,11 @@ export interface PageNote {
   text: string;
 }
 
+export interface TestScenario {
+  name: string;
+  steps: string[];
+}
+
 export interface PageEntry {
   id: string;
   title: string;
@@ -21,10 +26,12 @@ export interface PageEntry {
   navTo?: string[];
   /** IDs of pages that can navigate to this page (inbound transitions) */
   navFrom?: string[];
-  /** Last QC score (0–10), updated after each proto-check pass */
+  /** Last QC score (0–22), updated after each proto-check pass */
   qaScore?: number;
   /** How many proto+proto-check cycles completed (target: 5 before review) */
   qaCycles?: number;
+  /** Test scenarios for QA validation (min 2 per page) */
+  testScenarios?: TestScenario[];
 }
 
 export const PAGE_GROUPS: PageGroup[] = [
@@ -40,16 +47,23 @@ export const PAGE_GROUPS: PageGroup[] = [
 
 export const pageRegistry: PageEntry[] = [
   // Overview
-  { id: 'overview', title: 'Project Overview', group: 'Overview', route: '/', stateCount: 1, nav: 'none' },
+  { id: 'overview', title: 'Project Overview', group: 'Overview', route: '/', stateCount: 1, nav: 'none', testScenarios: [
+    { name: 'View project overview', steps: ['open /proto/states/overview', 'verify project title visible', 'verify roles listed'] },
+  ] },
 
   // Brand
-  { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 11, nav: 'none' },
+  { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 11, nav: 'none', testScenarios: [
+    { name: 'View nav components', steps: ['open /proto/states/nav-components', 'verify navigation variants displayed'] },
+  ] },
   { id: 'brand', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none', qaCycles: 1, qaScore: 10,
       notes: [
         { date: '2026-04-10', text: '(empty)' },
-      ]
-    },
-  { id: 'components', title: 'UI Components', group: 'Brand', route: '/components', stateCount: 1, nav: 'none' },
+      ], testScenarios: [
+    { name: 'View brand colors', steps: ['open /proto/states/brand', 'verify color palette visible', 'verify background color block shown first'] },
+  ] },
+  { id: 'components', title: 'UI Components', group: 'Brand', route: '/components', stateCount: 1, nav: 'none', testScenarios: [
+    { name: 'View UI components', steps: ['open /proto/states/components', 'verify button variants shown', 'verify input fields shown'] },
+  ] },
 
   // Auth
   { id: 'auth-email', title: 'Вход — Email', group: 'Auth', route: '/(auth)/login', stateCount: 3, nav: 'auth', qaCycles: 1, qaScore: 10, api: [
@@ -57,17 +71,26 @@ export const pageRegistry: PageEntry[] = [
   ] ,
       notes: [
         { date: '2026-04-10', text: 'asfasf' },
-      ]
-    },
+      ], testScenarios: [
+    { name: 'Guest enters email', steps: ['open /proto/states/auth-email', 'verify email input visible', 'type email', 'tap "Получить код"', 'verify loading state'] },
+    { name: 'Invalid email error', steps: ['open /proto/states/auth-email', 'type invalid text', 'verify error message shown'] },
+  ] },
   { id: 'auth-otp', title: 'Вход — OTP код', group: 'Auth', route: '/(auth)/otp', stateCount: 4, nav: 'auth', qaCycles: 1, qaScore: 10, api: [
     'POST /api/auth/verify-otp',
     'POST /api/auth/request-otp',
+  ], testScenarios: [
+    { name: 'Enter OTP code', steps: ['open /proto/states/auth-otp', 'verify 6 digit inputs visible', 'type code', 'verify auto-submit'] },
+    { name: 'Wrong OTP code', steps: ['open /proto/states/auth-otp', 'type wrong code', 'verify error state: attempt counter'] },
+    { name: 'Resend OTP', steps: ['open /proto/states/auth-otp', 'wait for countdown', 'tap resend button'] },
   ] },
 
   // Onboarding (specialist)
   { id: 'onboarding-username', title: 'Имя пользователя', group: 'Onboarding', route: '/(onboarding)/username', stateCount: 2, nav: 'auth', qaCycles: 1, qaScore: 9, api: [
     'PUT /api/onboarding/username',
     'GET /api/onboarding/check-username/:nick',
+  ], testScenarios: [
+    { name: 'Specialist enters username', steps: ['open /proto/states/onboarding-username', 'verify username input visible', 'type username', 'verify validation feedback'] },
+    { name: 'Username already taken', steps: ['open /proto/states/onboarding-username', 'type taken username', 'verify error message'] },
   ] },
   { id: 'onboarding-work-area', title: 'Город, ФНС, услуги', group: 'Onboarding', route: '/(onboarding)/work-area', stateCount: 2, nav: 'auth', qaCycles: 1, qaScore: 9, api: [
     'GET /api/cities',
@@ -76,12 +99,18 @@ export const pageRegistry: PageEntry[] = [
     'PUT /api/onboarding/work-area',
   ], notes: [
     { date: '2026-04-09', text: 'Один экран: город -> ФНС -> услуги при ФНС. Услуги: Выездная проверка, Отдел оперативного контроля, Камеральная проверка. ИНН не нужен.' },
+  ], testScenarios: [
+    { name: 'Select city and FNS', steps: ['open /proto/states/onboarding-work-area', 'verify city selector visible', 'select city', 'verify FNS dropdown populated'] },
+    { name: 'Select services', steps: ['open /proto/states/onboarding-work-area', 'select city', 'select FNS', 'verify services chips visible', 'tap service chips'] },
   ] },
   { id: 'onboarding-profile', title: 'Заполнение профиля', group: 'Onboarding', route: '/(onboarding)/profile', stateCount: 2, nav: 'auth', qaCycles: 1, qaScore: 9, api: [
     'PUT /api/onboarding/profile',
     'POST /api/upload/avatar',
   ], notes: [
     { date: '2026-04-09', state: 'DEFAULT', text: 'Иконка профиля вместо фото если нет фото. Убрать Опыт работы.' },
+  ], testScenarios: [
+    { name: 'Fill specialist profile', steps: ['open /proto/states/onboarding-profile', 'verify avatar placeholder visible', 'type description', 'verify submit button'] },
+    { name: 'Upload avatar', steps: ['open /proto/states/onboarding-profile', 'tap avatar area', 'verify upload trigger'] },
   ] },
 
   // Dashboard (Client)
@@ -89,10 +118,17 @@ export const pageRegistry: PageEntry[] = [
     'GET /api/dashboard/stats',
     'GET /api/requests?limit=3&status=active',
     'GET /api/responses?limit=3&unread=true',
+  ], testScenarios: [
+    { name: 'Client views dashboard', steps: ['open /proto/states/dashboard', 'verify greeting visible', 'verify stats cards shown', 'verify recent requests listed'] },
+    { name: 'Client creates new request', steps: ['open /proto/states/dashboard', 'tap "Создать заявку"', 'verify navigation to my-requests-new'] },
   ] },
   { id: 'my-requests', title: 'Мои заявки', group: 'Dashboard', route: '/(dashboard)/my-requests', stateCount: 3, nav: 'client', activeTab: 'requests', qaCycles: 1, qaScore: 9, api: [
     'GET /api/requests?status=:status&page=:page',
     'DELETE /api/requests/:id',
+  ], testScenarios: [
+    { name: 'Client views requests list', steps: ['open /proto/states/my-requests', 'verify request cards shown', 'verify status filter tabs'] },
+    { name: 'Empty state', steps: ['open /proto/states/my-requests', 'verify EMPTY state with message'] },
+    { name: 'Scroll to bottom', steps: ['open /proto/states/my-requests', 'scroll down', 'verify all requests loaded'] },
   ] },
   { id: 'my-requests-new', title: 'Новая заявка', group: 'Dashboard', route: '/(dashboard)/new-request', stateCount: 4, nav: 'client', activeTab: 'requests', qaCycles: 1, qaScore: 9, api: [
     'POST /api/requests',
@@ -102,51 +138,83 @@ export const pageRegistry: PageEntry[] = [
   ] ,
       notes: [
         { date: '2026-04-10', text: 'test' },
-      ]
-    },
+      ], testScenarios: [
+    { name: 'Client fills request form', steps: ['open /proto/states/my-requests-new', 'verify form fields visible', 'type description', 'select city', 'select FNS', 'select service'] },
+    { name: 'Submit request', steps: ['open /proto/states/my-requests-new', 'fill all fields', 'tap submit', 'verify success state'] },
+  ] },
   { id: 'my-request-detail', title: 'Детали заявки', group: 'Dashboard', route: '/(dashboard)/request/1', stateCount: 3, nav: 'client', activeTab: 'requests', qaCycles: 1, qaScore: 9, api: [
     'GET /api/requests/:id',
     'GET /api/requests/:id/responses',
     'PUT /api/requests/:id',
     'DELETE /api/requests/:id',
+  ], testScenarios: [
+    { name: 'View request details', steps: ['open /proto/states/my-request-detail', 'verify request title visible', 'verify status badge', 'verify response list'] },
+    { name: 'View responses', steps: ['open /proto/states/my-request-detail', 'tap "Отклики"', 'verify navigation to responses'] },
   ] },
   { id: 'responses', title: 'Отклики', group: 'Dashboard', route: '/(dashboard)/responses', stateCount: 4, nav: 'client', activeTab: 'requests', qaCycles: 1, qaScore: 9, api: [
     'GET /api/responses?requestId=:id',
     'PUT /api/responses/:id/accept',
     'PUT /api/responses/:id/reject',
+  ], testScenarios: [
+    { name: 'View specialist responses', steps: ['open /proto/states/responses', 'verify response cards shown', 'verify specialist info visible'] },
+    { name: 'Accept response', steps: ['open /proto/states/responses', 'tap "Принять"', 'verify confirmation popup'] },
+    { name: 'Reject response', steps: ['open /proto/states/responses', 'tap "Отклонить"', 'verify rejection popup'] },
   ] },
   { id: 'messages', title: 'Сообщения', group: 'Dashboard', route: '/(dashboard)/messages', stateCount: 2, nav: 'client', activeTab: 'messages', qaCycles: 1, qaScore: 9, api: [
     'GET /api/threads',
+  ], testScenarios: [
+    { name: 'View message threads', steps: ['open /proto/states/messages', 'verify thread list shown', 'verify unread indicators'] },
+    { name: 'Open thread', steps: ['open /proto/states/messages', 'tap thread', 'verify navigation to message-thread'] },
   ] },
   { id: 'message-thread', title: 'Чат', group: 'Dashboard', route: '/(dashboard)/messages/1', stateCount: 3, nav: 'client', activeTab: 'messages', qaCycles: 1, qaScore: 9, api: [
     'GET /api/threads/:id/messages?page=:page',
     'POST /api/threads/:id/messages',
     'PUT /api/threads/:id/read',
+  ], testScenarios: [
+    { name: 'View chat messages', steps: ['open /proto/states/message-thread', 'verify messages shown', 'verify message input visible'] },
+    { name: 'Send message', steps: ['open /proto/states/message-thread', 'type message', 'tap send', 'verify message sent'] },
   ] },
   { id: 'profile', title: 'Профиль', group: 'Dashboard', route: '/(dashboard)/profile', stateCount: 2, nav: 'client', activeTab: 'profile', qaCycles: 1, qaScore: 9, api: [
     'GET /api/profile',
     'PUT /api/profile',
     'POST /api/upload/avatar',
+  ], testScenarios: [
+    { name: 'View profile', steps: ['open /proto/states/profile', 'verify user info shown', 'verify edit fields visible'] },
+    { name: 'Edit profile', steps: ['open /proto/states/profile', 'modify name', 'tap save', 'verify success'] },
   ] },
   { id: 'settings', title: 'Настройки', group: 'Dashboard', route: '/(dashboard)/settings', stateCount: 1, nav: 'client', activeTab: 'profile', qaCycles: 1, qaScore: 10, api: [
     'GET /api/settings',
     'PUT /api/settings',
     'POST /api/auth/logout',
     'DELETE /api/account',
+  ], testScenarios: [
+    { name: 'View settings', steps: ['open /proto/states/settings', 'verify settings options listed', 'verify logout button visible'] },
+    { name: 'Logout', steps: ['open /proto/states/settings', 'tap "Выйти"', 'verify confirmation'] },
   ] },
 
   // Specialist
-  { id: 'specialist-dashboard', title: 'Кабинет специалиста', group: 'Specialist', route: '/specialist', stateCount: 2, nav: 'specialist', activeTab: 'dashboard', api: [
+  { id: 'specialist-dashboard', title: 'Кабинет специалиста', group: 'Specialist', route: '/specialist', stateCount: 2, nav: 'specialist', activeTab: 'dashboard', qaCycles: 1, qaScore: 20, navTo: ['public-requests', 'messages', 'profile', 'specialist-respond', 'public-request-detail'], navFrom: ['auth-otp', 'onboarding-profile', 'specialist-respond'], api: [
     'GET /api/specialist/stats',
     'GET /api/specialist/requests?status=new&limit=5',
+  ], testScenarios: [
+    { name: 'Специалист видит дашборд', steps: ['open /proto/states/specialist-dashboard', 'verify greeting visible', 'verify stats cards: Новые, В работе, Завершены', 'verify request cards visible'] },
+    { name: 'Специалист переключает табы', steps: ['open /proto/states/specialist-dashboard', 'tap tab "В работе"', 'verify filtered requests shown', 'tap tab "Завершены"', 'verify completed/cancelled requests'] },
+    { name: 'Специалист откликается на заявку', steps: ['open /proto/states/specialist-dashboard', 'tap "Откликнуться" on request card', 'verify navigation to specialist-respond'] },
   ] },
-  { id: 'specialist-respond', title: 'Отклик специалиста', group: 'Specialist', route: '/specialist/respond', stateCount: 3, nav: 'specialist', activeTab: 'dashboard', api: [
+  { id: 'specialist-respond', title: 'Отклик специалиста', group: 'Specialist', route: '/specialist/respond', stateCount: 3, nav: 'specialist', activeTab: 'dashboard', qaCycles: 1, qaScore: 20, navTo: ['specialist-dashboard', 'public-requests', 'messages', 'profile'], navFrom: ['specialist-dashboard'], api: [
     'GET /api/requests/:id',
     'POST /api/responses',
+  ], testScenarios: [
+    { name: 'Специалист заполняет отклик', steps: ['open /proto/states/specialist-respond', 'verify request info visible', 'verify price input editable', 'verify message input editable', 'tap "Отправить отклик"', 'verify popup shown'] },
+    { name: 'Успешная отправка отклика', steps: ['open /proto/states/specialist-respond', 'verify SUBMITTED state shows success', 'tap "К моим откликам"', 'verify navigation to specialist-dashboard'] },
+    { name: 'Ошибка отправки отклика', steps: ['open /proto/states/specialist-respond', 'verify ERROR state visible', 'verify error message shown', 'tap "Попробовать снова"'] },
   ] },
   { id: 'specialist-profile-public', title: 'Публичный профиль', group: 'Specialist', route: '/specialists/1', stateCount: 2, nav: 'public', qaCycles: 1, qaScore: 9, api: [
     'GET /api/specialists/:id',
     'GET /api/specialists/:id/reviews?page=:page',
+  ], testScenarios: [
+    { name: 'View specialist profile', steps: ['open /proto/states/specialist-profile-public', 'verify specialist name visible', 'verify services listed', 'verify rating shown'] },
+    { name: 'View reviews', steps: ['open /proto/states/specialist-profile-public', 'scroll to reviews', 'verify review cards shown'] },
   ] },
 
   // Public
@@ -159,46 +227,82 @@ export const pageRegistry: PageEntry[] = [
     'POST /api/auth/verify-otp',
   ], notes: [
     { date: '2026-04-09', text: 'Карусель специалистов. Форма заявки: город -> ФНС -> описание + email/имя -> OTP верификация -> отправка.' },
+  ], testScenarios: [
+    { name: 'Guest views landing', steps: ['open /proto/states/landing', 'verify hero section visible', 'verify specialist carousel', 'verify request form visible'] },
+    { name: 'Guest submits quick request', steps: ['open /proto/states/landing', 'fill request form', 'verify OTP verification step'] },
+    { name: 'Scroll to bottom', steps: ['open /proto/states/landing', 'scroll down', 'verify footer visible'] },
   ] },
   { id: 'public-requests', title: 'Лента заявок', group: 'Public', route: '/requests', stateCount: 3, nav: 'public', qaCycles: 1, qaScore: 10, api: [
     'GET /api/requests/public?city=:city&service=:service&page=:page',
+  ], testScenarios: [
+    { name: 'View public requests feed', steps: ['open /proto/states/public-requests', 'verify request cards shown', 'verify filter controls'] },
+    { name: 'Empty state', steps: ['open /proto/states/public-requests', 'verify empty state message when no requests'] },
+    { name: 'Scroll to bottom', steps: ['open /proto/states/public-requests', 'scroll down', 'verify pagination'] },
   ] },
   { id: 'public-request-detail', title: 'Детали заявки (публ.)', group: 'Public', route: '/requests/1', stateCount: 2, nav: 'public', qaCycles: 1, qaScore: 10, api: [
     'GET /api/requests/:id/public',
+  ], testScenarios: [
+    { name: 'View public request detail', steps: ['open /proto/states/public-request-detail', 'verify request title visible', 'verify respond button'] },
+    { name: 'Respond to request', steps: ['open /proto/states/public-request-detail', 'tap respond', 'verify popup or navigation'] },
   ] },
   { id: 'specialists-catalog', title: 'Каталог специалистов', group: 'Public', route: '/specialists', stateCount: 3, nav: 'public', qaCycles: 1, qaScore: 9, api: [
     'GET /api/specialists?city=:city&service=:service&page=:page',
+  ], testScenarios: [
+    { name: 'Browse specialists', steps: ['open /proto/states/specialists-catalog', 'verify specialist cards shown', 'verify filter controls'] },
+    { name: 'Open specialist profile', steps: ['open /proto/states/specialists-catalog', 'tap specialist card', 'verify navigation to specialist-profile-public'] },
+    { name: 'Empty state', steps: ['open /proto/states/specialists-catalog', 'verify empty state when no results'] },
   ] },
   { id: 'pricing', title: 'Тарифы', group: 'Public', route: '/pricing', stateCount: 1, nav: 'public', qaCycles: 1, qaScore: 10, api: [
     'GET /api/pricing/plans',
+  ], testScenarios: [
+    { name: 'View pricing plans', steps: ['open /proto/states/pricing', 'verify plan cards shown', 'verify highlighted plan'] },
+    { name: 'Select plan', steps: ['open /proto/states/pricing', 'tap "Начать" on plan', 'verify CTA action'] },
   ] },
 
   // Admin
   { id: 'admin-dashboard', title: 'Админ — Главная', group: 'Admin', route: '/(admin)', stateCount: 1, nav: 'admin', activeTab: 'dashboard', qaCycles: 1, qaScore: 9, api: [
     'GET /api/admin/stats',
+  ], testScenarios: [
+    { name: 'Admin views dashboard', steps: ['open /proto/states/admin-dashboard', 'verify stats cards shown', 'verify navigation tabs'] },
   ] },
   { id: 'admin-users', title: 'Админ — Пользователи', group: 'Admin', route: '/(admin)/users', stateCount: 2, nav: 'admin', activeTab: 'users', qaCycles: 1, qaScore: 9, api: [
     'GET /api/admin/users?role=:role&page=:page',
     'PUT /api/admin/users/:id/block',
+  ], testScenarios: [
+    { name: 'Admin views users', steps: ['open /proto/states/admin-users', 'verify user table shown', 'verify role filter'] },
+    { name: 'Block user', steps: ['open /proto/states/admin-users', 'tap block on user', 'verify confirmation'] },
   ] },
   { id: 'admin-requests', title: 'Админ — Заявки', group: 'Admin', route: '/(admin)/requests', stateCount: 2, nav: 'admin', activeTab: 'requests', qaCycles: 1, qaScore: 10, api: [
     'GET /api/admin/requests?page=:page',
     'PUT /api/admin/requests/:id/moderate',
+  ], testScenarios: [
+    { name: 'Admin views requests', steps: ['open /proto/states/admin-requests', 'verify request list shown', 'verify status filters'] },
+    { name: 'Moderate request', steps: ['open /proto/states/admin-requests', 'tap request row', 'verify moderation action'] },
   ] },
   { id: 'admin-moderation', title: 'Админ — Модерация', group: 'Admin', route: '/(admin)/moderation', stateCount: 3, nav: 'admin', activeTab: 'moderation', qaCycles: 1, qaScore: 9, api: [
     'GET /api/admin/moderation/queue',
     'PUT /api/admin/moderation/:id/approve',
     'PUT /api/admin/moderation/:id/reject',
+  ], testScenarios: [
+    { name: 'Admin views moderation queue', steps: ['open /proto/states/admin-moderation', 'verify queue items shown', 'verify specialist data'] },
+    { name: 'Approve specialist', steps: ['open /proto/states/admin-moderation', 'tap approve', 'verify approval popup'] },
+    { name: 'Reject specialist', steps: ['open /proto/states/admin-moderation', 'tap reject', 'verify rejection with comment'] },
   ] },
   { id: 'admin-reviews', title: 'Админ — Отзывы', group: 'Admin', route: '/(admin)/reviews', stateCount: 1, nav: 'admin', activeTab: 'reviews', qaCycles: 1, qaScore: 10, api: [
     'GET /api/admin/reviews?page=:page',
     'DELETE /api/admin/reviews/:id',
+  ], testScenarios: [
+    { name: 'Admin views reviews', steps: ['open /proto/states/admin-reviews', 'verify review list shown', 'verify delete action'] },
+    { name: 'Delete review', steps: ['open /proto/states/admin-reviews', 'tap delete on review', 'verify confirmation'] },
   ] },
   { id: 'admin-promotions', title: 'Админ — Промо', group: 'Admin', route: '/(admin)/promotions', stateCount: 1, nav: 'admin', activeTab: 'promotions', qaCycles: 1, qaScore: 10, api: [
     'GET /api/admin/promotions',
     'POST /api/admin/promotions',
     'PUT /api/admin/promotions/:id',
     'DELETE /api/admin/promotions/:id',
+  ], testScenarios: [
+    { name: 'Admin views promotions', steps: ['open /proto/states/admin-promotions', 'verify promotion list shown', 'verify create button'] },
+    { name: 'Create promotion', steps: ['open /proto/states/admin-promotions', 'tap create', 'verify form shown'] },
   ] },
 ];
 
