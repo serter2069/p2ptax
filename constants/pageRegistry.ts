@@ -520,3 +520,4 @@ export const pageRegistryWithNav: PageEntry[] = pageRegistry.map((p) => ({
   navTo: getNavTo(p.id),
   navFrom: getNavFrom(p.id),
 }));
+// ci-speed-test Fri Apr 10 22:51:33 PDT 2026
