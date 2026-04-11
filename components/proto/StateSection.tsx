@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { getPageById } from '../../constants/pageRegistry';
@@ -19,10 +19,17 @@ export function StateSection({ title, children, maxWidth = 430, pageId: pageIdPr
   const contextPageId = useContext(PageIdContext);
   const pageId = pageIdProp || contextPageId;
   const page = pageId ? getPageById(pageId) : undefined;
-  const webProps = Platform.OS === 'web' ? { 'data-state-name': title } : {};
+  const ref = useRef<View>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && ref.current) {
+      // Set data attribute directly on DOM element for text/screenshot API
+      (ref.current as unknown as HTMLElement).setAttribute('data-state-name', title);
+    }
+  }, [title]);
 
   return (
-    <View {...webProps} style={styles.section}>
+    <View ref={ref} style={styles.section}>
       <View style={styles.labelRow}>
         <View style={styles.labelBadge}>
           <Text style={styles.labelText}>{title}</Text>

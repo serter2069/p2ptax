@@ -43,6 +43,7 @@ export const pageRegistry: PageEntry[] = [
   { id: 'overview', title: 'Project Overview', group: 'Overview', route: '/', stateCount: 1, nav: 'none' },
 
   // Brand
+  { id: 'brand', title: 'Brand', group: 'Brand', route: '/proto/brand', stateCount: 1, nav: 'none' },
   { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 11, nav: 'none' },
   { id: 'brand-style', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none', qaCycles: 1, qaScore: 10,
       notes: [
