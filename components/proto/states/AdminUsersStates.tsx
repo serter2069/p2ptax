@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, TextInput, Image, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Image, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_USERS } from '../../../constants/protoMockData';
@@ -50,28 +51,58 @@ function UserPopup() {
   );
 }
 
+function UserListInteractive() {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'CLIENT' | 'SPECIALIST'>('all');
+
+  const filtered = MOCK_USERS.filter((u) => {
+    if (filter !== 'all' && u.role !== filter) return false;
+    if (search && !u.name.toLowerCase().includes(search.toLowerCase()) && !u.email.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <View style={s.container}>
+      <Text style={s.pageTitle}>Пользователи (1 247)</Text>
+      <View style={s.searchWrap}>
+        <Feather name="search" size={16} color={Colors.textMuted} />
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Поиск по имени, email..."
+          placeholderTextColor={Colors.textMuted}
+          style={s.searchInput}
+        />
+      </View>
+      <View style={s.filters}>
+        <Pressable style={[s.filterChip, filter === 'all' ? s.filterActive : null]} onPress={() => setFilter('all')}>
+          <Text style={[s.filterText, filter === 'all' ? s.filterActiveText : null]}>Все</Text>
+        </Pressable>
+        <Pressable style={[s.filterChip, filter === 'CLIENT' ? s.filterActive : null]} onPress={() => setFilter('CLIENT')}>
+          <Text style={[s.filterText, filter === 'CLIENT' ? s.filterActiveText : null]}>Клиенты</Text>
+        </Pressable>
+        <Pressable style={[s.filterChip, filter === 'SPECIALIST' ? s.filterActive : null]} onPress={() => setFilter('SPECIALIST')}>
+          <Text style={[s.filterText, filter === 'SPECIALIST' ? s.filterActiveText : null]}>Специалисты</Text>
+        </Pressable>
+      </View>
+      {filtered.map((u) => (
+        <UserRow key={u.id} name={u.name} email={u.email} role={u.role} city={u.city} />
+      ))}
+      {filtered.length === 0 && (
+        <View style={s.emptyWrap}>
+          <Text style={s.emptyTitle}>Ничего не найдено</Text>
+          <Text style={s.emptyText}>Попробуйте изменить фильтры</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export function AdminUsersStates() {
   return (
     <>
       <StateSection title="LIST" maxWidth={800}>
-        <View style={s.container}>
-          <Text style={s.pageTitle}>Пользователи (1 247)</Text>
-          <TextInput
-            value=""
-            editable={false}
-            placeholder="Поиск по имени, email..."
-            placeholderTextColor={Colors.textMuted}
-            style={s.searchInput}
-          />
-          <View style={s.filters}>
-            <View style={[s.filterChip, s.filterActive]}><Text style={s.filterActiveText}>Все</Text></View>
-            <View style={s.filterChip}><Text style={s.filterText}>Клиенты</Text></View>
-            <View style={s.filterChip}><Text style={s.filterText}>Специалисты</Text></View>
-          </View>
-          {MOCK_USERS.map((u) => (
-            <UserRow key={u.id} name={u.name} email={u.email} role={u.role} city={u.city} />
-          ))}
-        </View>
+        <UserListInteractive />
       </StateSection>
       <StateSection title="DETAIL_POPUP" maxWidth={800}>
         <View style={[s.container, { minHeight: 500 }]}>
@@ -89,9 +120,13 @@ export function AdminUsersStates() {
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing.md, position: 'relative' },
   pageTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  searchInput: {
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
     height: 40, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, fontSize: Typography.fontSize.sm, color: Colors.textPrimary,
+    borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md,
+  },
+  searchInput: {
+    flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textPrimary, paddingVertical: 0,
   },
   filters: { flexDirection: 'row', gap: Spacing.sm },
   filterChip: {
@@ -101,6 +136,9 @@ const s = StyleSheet.create({
   filterActive: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
   filterText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   filterActiveText: { fontSize: Typography.fontSize.xs, color: Colors.white, fontWeight: Typography.fontWeight.semibold },
+  emptyWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.sm },
+  emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
   userRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
     paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,

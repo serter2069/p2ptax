@@ -388,7 +388,7 @@ function AlertsSection() {
 export function ComponentsStates() {
   return (
     <StateSection title="SHOWCASE">
-      <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
+      <View style={{ minHeight: Platform.OS === 'web' ? 900 : 844 }}>
         <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
           <Text style={s.pageTitle}>UI Components</Text>
           <Text style={s.pageSubtitle}>Interactive showcase of all reusable components</Text>

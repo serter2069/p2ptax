@@ -1,31 +1,38 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
 function DetailView({ showRespondPopup }: { showRespondPopup?: boolean }) {
+  const [price, setPrice] = useState('4 500');
+  const [message, setMessage] = useState('Готов помочь! Опыт работы 8 лет.');
+  
   return (
     <View style={[s.container, showRespondPopup ? { minHeight: 550 } : null]}>
       {showRespondPopup && (
         <View style={s.overlay}>
           <View style={s.popup}>
-            <Text style={s.popupTitle}>Откликнуться на заявку</Text>
+            <View style={s.popupHeader}>
+              <Text style={s.popupTitle}>Откликнуться на заявку</Text>
+              <Pressable><Feather name="x" size={20} color={Colors.textMuted} /></Pressable>
+            </View>
             <View style={s.popupField}>
               <Text style={s.popupLabel}>Ваша цена</Text>
-              <TextInput value="4 500" editable={false} style={s.popupInput} />
+              <TextInput value={price} onChangeText={setPrice} style={s.popupInput} keyboardType="numeric" />
             </View>
             <View style={s.popupField}>
               <Text style={s.popupLabel}>Сообщение</Text>
               <TextInput
-                value="Готов помочь! Опыт работы 8 лет."
-                editable={false}
+                value={message}
+                onChangeText={setMessage}
                 multiline
                 style={s.popupTextarea}
               />
             </View>
             <View style={s.popupActions}>
-              <View style={s.popupBtnPrimary}><Text style={s.popupBtnPrimaryText}>Отправить</Text></View>
-              <View style={s.popupBtnCancel}><Text style={s.popupBtnCancelText}>Отмена</Text></View>
+              <Pressable style={s.popupBtnPrimary}><Text style={s.popupBtnPrimaryText}>Отправить</Text></Pressable>
+              <Pressable style={s.popupBtnCancel}><Text style={s.popupBtnCancelText}>Отмена</Text></Pressable>
             </View>
           </View>
         </View>
@@ -105,6 +112,7 @@ const s = StyleSheet.create({
     width: '100%', maxWidth: 380, gap: Spacing.md,
   },
   popupTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  popupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   popupField: { gap: Spacing.xs },
   popupLabel: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },
   popupInput: {
