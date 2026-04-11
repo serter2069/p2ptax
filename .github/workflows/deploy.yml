@@ -58,6 +58,7 @@ jobs:
         run: npm run build
 
       - name: Run DB migrations
+        continue-on-error: true
         working-directory: ./api
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STG }}
