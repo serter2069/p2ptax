@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, TextInput, Image, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, Image, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_USERS } from '../../../constants/protoMockData';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function UserRow({ name, email, role, city }: { name: string; email: string; role: string; city: string }) {
   return (
@@ -55,10 +54,6 @@ export function AdminUsersStates() {
   return (
     <>
       <StateSection title="LIST" maxWidth={800}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <View style={s.container}>
           <Text style={s.pageTitle}>Пользователи (1 247)</Text>
           <TextInput
@@ -77,15 +72,8 @@ export function AdminUsersStates() {
             <UserRow key={u.id} name={u.name} email={u.email} role={u.role} city={u.city} />
           ))}
         </View>
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="DETAIL_POPUP" maxWidth={800}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <View style={[s.container, { minHeight: 500 }]}>
           <Text style={s.pageTitle}>Пользователи</Text>
           {MOCK_USERS.slice(0, 3).map((u) => (
@@ -93,10 +81,7 @@ export function AdminUsersStates() {
           ))}
           <UserPopup />
         </View>
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
     </>
   );
 }

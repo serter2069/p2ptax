@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function SettingRow({ label, value, danger, onPress }: { label: string; value?: string; danger?: boolean; onPress?: () => void }) {
   return (
@@ -72,15 +71,8 @@ function InteractiveSettings() {
 export function SettingsStates() {
   return (
     <StateSection title="INTERACTIVE">
-      <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-        <ProtoHeader variant="auth" />
-        <View style={{ flex: 1 }}>
-
       <InteractiveSettings />
-            </View>
-        <ProtoTabBar activeTab="home" />
-      </View>
-</StateSection>
+    </StateSection>
   );
 }
 

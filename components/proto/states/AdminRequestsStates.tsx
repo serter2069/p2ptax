@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REQUESTS } from '../../../constants/protoMockData';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   NEW: { label: 'Новая', color: Colors.brandPrimary },
@@ -63,10 +62,6 @@ export function AdminRequestsStates() {
   return (
     <>
       <StateSection title="LIST" maxWidth={800}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <View style={s.container}>
           <Text style={s.pageTitle}>Заявки (3 456)</Text>
           <View style={s.filters}>
@@ -79,15 +74,8 @@ export function AdminRequestsStates() {
             <RequestRow key={r.id} title={r.title} client={r.clientName} status={r.status} date={r.createdAt} city={r.city} />
           ))}
         </View>
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="MODERATION_POPUP" maxWidth={800}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <View style={[s.container, { minHeight: 450 }]}>
           <Text style={s.pageTitle}>Заявки</Text>
           {MOCK_REQUESTS.slice(0, 2).map((r) => (
@@ -95,10 +83,7 @@ export function AdminRequestsStates() {
           ))}
           <ModerationPopup />
         </View>
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
     </>
   );
 }

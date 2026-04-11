@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_PRICING_PLANS } from '../../../constants/protoMockData';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function PlanCard({ name, price, period, features, highlighted }: {
   name: string; price: string; period: string; features: string[]; highlighted: boolean;
@@ -37,10 +36,6 @@ function PlanCard({ name, price, period, features, highlighted }: {
 export function PricingStates() {
   return (
     <StateSection title="PLANS_COMPARISON" maxWidth={1024}>
-      <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-        <ProtoHeader variant="auth" />
-        <View style={{ flex: 1 }}>
-
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.title}>Тарифы</Text>
@@ -64,10 +59,7 @@ export function PricingStates() {
           ))}
         </View>
       </View>
-            </View>
-        <ProtoTabBar activeTab="home" />
-      </View>
-</StateSection>
+    </StateSection>
   );
 }
 
