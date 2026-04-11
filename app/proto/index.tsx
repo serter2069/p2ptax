@@ -174,12 +174,6 @@ export default function ProtoIndex() {
         <View style={styles.sidebarHeader}>
           <Text style={styles.logoText}>P2PTax Proto</Text>
           <Text style={styles.statsText}>{pageRegistry.length} стр / {totalStates} сост</Text>
-          <Pressable
-            onPress={() => { if (Platform.OS === 'web') window.open('/proto/overview', '_self'); }}
-            style={styles.overviewBtn}
-          >
-            <Text style={styles.overviewBtnText}>Overview</Text>
-          </Pressable>
         </View>
 
         <View style={styles.searchWrap}>
@@ -337,19 +331,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     gap: 4,
-  },
-  overviewBtn: {
-    marginTop: 4,
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-  },
-  overviewBtnText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
   },
   logoText: {
     fontSize: 18,
