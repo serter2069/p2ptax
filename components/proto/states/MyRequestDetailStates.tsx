@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_RESPONSES } from '../../../constants/protoMockData';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
   return (
@@ -100,35 +99,14 @@ export function MyRequestDetailStates() {
   return (
     <>
       <StateSection title="WITH_RESPONSES">
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <DetailScreen mode="responses" />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="NO_RESPONSES">
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <DetailScreen mode="no_responses" />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="CLOSED">
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <DetailScreen mode="closed" />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
     </>
   );
 }

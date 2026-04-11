@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_ADMIN_STATS } from '../../../constants/protoMockData';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function StatCard({ label, value, color, trend }: { label: string; value: string | number; color: string; trend?: string }) {
   return (
@@ -39,10 +38,6 @@ export function AdminDashboardStates() {
   const st = MOCK_ADMIN_STATS;
   return (
     <StateSection title="STATS" maxWidth={800}>
-      <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-        <ProtoHeader variant="auth" />
-        <View style={{ flex: 1 }}>
-
       <View style={s.container}>
         <Text style={s.pageTitle}>Панель администратора</Text>
 
@@ -83,10 +78,7 @@ export function AdminDashboardStates() {
           ))}
         </View>
       </View>
-            </View>
-        <ProtoTabBar activeTab="home" />
-      </View>
-</StateSection>
+    </StateSection>
   );
 }
 

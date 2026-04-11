@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TextInput, Pressable, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, Image, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_SPECIALISTS } from '../../../constants/protoMockData';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
   return (
@@ -156,35 +155,14 @@ export function SpecialistsCatalogStates() {
   return (
     <>
       <StateSection title="INTERACTIVE" maxWidth={1024}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <InteractiveCatalog />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="EMPTY" maxWidth={1024}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <EmptyCatalog />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="LOADING" maxWidth={1024}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <LoadingCatalog />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
     </>
   );
 }

@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 const PROMO_DATA = [
   { id: '1', code: 'WELCOME30', discount: '30%', type: 'Скидка на тариф', usages: 45, maxUsages: 100, active: true, expiry: '30.06.2026' },
@@ -51,10 +50,6 @@ function PromoCard({ code, discount, type, usages, maxUsages, active, expiry }: 
 export function AdminPromotionsStates() {
   return (
     <StateSection title="LIST" maxWidth={800}>
-      <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-        <ProtoHeader variant="auth" />
-        <View style={{ flex: 1 }}>
-
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.pageTitle}>Промо-коды</Text>
@@ -78,10 +73,7 @@ export function AdminPromotionsStates() {
           <PromoCard key={p.id} {...p} />
         ))}
       </View>
-            </View>
-        <ProtoTabBar activeTab="home" />
-      </View>
-</StateSection>
+    </StateSection>
   );
 }
 

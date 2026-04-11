@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REQUESTS, MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function RequestFeedCard({ title, description, city, service, budget, date }: {
   title: string; description: string; city: string; service: string; budget: string; date: string;
@@ -170,35 +169,14 @@ export function PublicRequestsStates() {
   return (
     <>
       <StateSection title="INTERACTIVE" maxWidth={1024}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <InteractiveRequests />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="EMPTY" maxWidth={1024}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <EmptyRequests />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="LOADING" maxWidth={1024}>
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <LoadingRequests />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
     </>
   );
 }

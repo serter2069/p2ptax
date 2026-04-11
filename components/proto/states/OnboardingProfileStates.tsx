@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function Screen({ initialFilled }: { initialFilled?: boolean }) {
   const [about, setAbout] = useState(initialFilled ? 'Налоговый консультант с опытом работы 8 лет. Специализация — НДФЛ, имущественные вычеты, регистрация ИП.' : '');
@@ -55,25 +54,11 @@ export function OnboardingProfileStates() {
   return (
     <>
       <StateSection title="DEFAULT">
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <Screen />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
       <StateSection title="FILLED">
-        <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-          <ProtoHeader variant="auth" />
-          <View style={{ flex: 1 }}>
-
         <Screen initialFilled />
-                </View>
-          <ProtoTabBar activeTab="home" />
-        </View>
-</StateSection>
+      </StateSection>
     </>
   );
 }

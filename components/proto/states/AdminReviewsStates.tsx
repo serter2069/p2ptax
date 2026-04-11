@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_REVIEWS } from '../../../constants/protoMockData';
-import { ProtoHeader, ProtoTabBar } from '../NavComponents';
 
 function ReviewRow({ author, rating, text, date, specialistName }: {
   author: string; rating: number; text: string; date: string; specialistName: string;
@@ -37,10 +36,6 @@ function ReviewRow({ author, rating, text, date, specialistName }: {
 export function AdminReviewsStates() {
   return (
     <StateSection title="LIST" maxWidth={800}>
-      <View style={{ minHeight: Platform.OS === 'web' ? '100vh' : 844 }}>
-        <ProtoHeader variant="auth" />
-        <View style={{ flex: 1 }}>
-
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.pageTitle}>Отзывы</Text>
@@ -68,10 +63,7 @@ export function AdminReviewsStates() {
           <ReviewRow key={r.id} author={r.author} rating={r.rating} text={r.text} date={r.date} specialistName={r.specialistName} />
         ))}
       </View>
-            </View>
-        <ProtoTabBar activeTab="home" />
-      </View>
-</StateSection>
+    </StateSection>
   );
 }
 
