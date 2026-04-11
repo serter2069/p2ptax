@@ -8,22 +8,23 @@ interface ProtoLayoutProps {
   title: string;
   route: string;
   nav?: NavVariant;
+  activeTab?: string;
   children: React.ReactNode;
 }
 
-export function ProtoLayout({ title, route, nav, children }: ProtoLayoutProps) {
+export function ProtoLayout({ title, route, nav, activeTab, children }: ProtoLayoutProps) {
   const showNav = nav && nav !== 'none';
 
   return (
     <View style={styles.container}>
-      {showNav && <ProtoNavHeader variant={nav!} />}
+      {showNav && <ProtoNavHeader variant={nav!} activeTab={activeTab} />}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
       >
         {children}
       </ScrollView>
-      {showNav && <ProtoNavFooter variant={nav!} />}
+      {showNav && <ProtoNavFooter variant={nav!} activeTab={activeTab} />}
     </View>
   );
 }

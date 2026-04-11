@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Platform, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../../constants/Colors';
+import { ProtoHeader, ProtoTabBar, ProtoBurger } from '../NavComponents';
 
+// =====================================================================
+// SECTION 1: Colors
+// =====================================================================
 const COLORS = [
   { label: 'Primary', hex: Colors.brandPrimary },
   { label: 'Background', hex: Colors.bgPrimary },
@@ -25,7 +29,7 @@ function isLight(hex: string): boolean {
 function ColorsSection() {
   return (
     <View style={s.block}>
-      <Text style={s.blockTitle}>Colors</Text>
+      <Text style={s.blockTitle}>1. Color Palette</Text>
       <View style={s.colorRow}>
         {COLORS.map((c) => (
           <View key={c.label} style={s.colorItem}>
@@ -40,10 +44,13 @@ function ColorsSection() {
   );
 }
 
+// =====================================================================
+// SECTION 2: Typography
+// =====================================================================
 function TypographySection() {
   return (
     <View style={s.block}>
-      <Text style={s.blockTitle}>Typography</Text>
+      <Text style={s.blockTitle}>2. Typography</Text>
       <View style={s.typoList}>
         <Text style={{ fontSize: Typography.fontSize.display, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>Display 36</Text>
         <Text style={{ fontSize: Typography.fontSize.title, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>Title 22</Text>
@@ -57,10 +64,13 @@ function TypographySection() {
   );
 }
 
+// =====================================================================
+// SECTION 3: Buttons
+// =====================================================================
 function ButtonsSection() {
   return (
     <View style={s.block}>
-      <Text style={s.blockTitle}>Buttons</Text>
+      <Text style={s.blockTitle}>3. Buttons</Text>
       <View style={s.row}>
         <Pressable style={s.btnPrimary}>
           <Text style={s.btnPrimaryText}>Primary</Text>
@@ -103,13 +113,16 @@ function ButtonsSection() {
   );
 }
 
+// =====================================================================
+// SECTION 4: Inputs
+// =====================================================================
 function InputsSection() {
   const [text, setText] = useState('');
   const [focused, setFocused] = useState('');
 
   return (
     <View style={s.block}>
-      <Text style={s.blockTitle}>Inputs</Text>
+      <Text style={s.blockTitle}>4. Inputs</Text>
       <View style={s.inputGroup}>
         <Text style={s.inputLabel}>Email</Text>
         <TextInput
@@ -166,10 +179,13 @@ function InputsSection() {
   );
 }
 
+// =====================================================================
+// SECTION 5: Cards
+// =====================================================================
 function CardsSection() {
   return (
     <View style={s.block}>
-      <Text style={s.blockTitle}>Cards</Text>
+      <Text style={s.blockTitle}>5. Cards</Text>
       <View style={s.card}>
         <Text style={s.cardTitle}>Basic Card</Text>
         <Text style={s.cardText}>Standard card with border and white background for content grouping.</Text>
@@ -189,14 +205,32 @@ function CardsSection() {
           </View>
         </View>
       </View>
+      {/* Request card with specialist avatar */}
+      <View style={s.card}>
+        <View style={s.cardSpecialist}>
+          <Image source={{ uri: 'https://picsum.photos/seed/spec1/80/80' }} style={s.cardAvatar} />
+          <View style={s.cardSpecInfo}>
+            <Text style={s.cardTitle}>Ivanov Alexey</Text>
+            <Text style={s.cardText}>Tax Consultant</Text>
+            <View style={s.cardRating}>
+              <Feather name="star" size={12} color={Colors.statusWarning} />
+              <Text style={s.cardRatingText}>4.8</Text>
+              <Text style={s.cardText}>(42 reviews)</Text>
+            </View>
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
 
+// =====================================================================
+// SECTION 6: Badges & Tags
+// =====================================================================
 function BadgesSection() {
   return (
     <View style={s.block}>
-      <Text style={s.blockTitle}>Badges and Tags</Text>
+      <Text style={s.blockTitle}>6. Badges & Tags</Text>
       <View style={s.row}>
         <View style={[s.badge, { backgroundColor: Colors.statusBg.success }]}>
           <Text style={[s.badgeText, { color: Colors.statusSuccess }]}>Active</Text>
@@ -229,10 +263,36 @@ function BadgesSection() {
   );
 }
 
+// =====================================================================
+// SECTION 7: Alerts
+// =====================================================================
+function AlertsSection() {
+  return (
+    <View style={s.block}>
+      <Text style={s.blockTitle}>7. Alerts</Text>
+      <View style={[s.alert, { backgroundColor: Colors.statusBg.info, borderColor: Colors.brandPrimary }]}>
+        <Feather name="info" size={16} color={Colors.brandPrimary} />
+        <Text style={[s.alertText, { color: Colors.brandPrimary }]}>Informational message</Text>
+      </View>
+      <View style={[s.alert, { backgroundColor: Colors.statusBg.success, borderColor: Colors.statusSuccess }]}>
+        <Feather name="check-circle" size={16} color={Colors.statusSuccess} />
+        <Text style={[s.alertText, { color: Colors.statusSuccess }]}>Request created successfully</Text>
+      </View>
+      <View style={[s.alert, { backgroundColor: Colors.statusBg.error, borderColor: Colors.statusError }]}>
+        <Feather name="alert-circle" size={16} color={Colors.statusError} />
+        <Text style={[s.alertText, { color: Colors.statusError }]}>Error sending data</Text>
+      </View>
+    </View>
+  );
+}
+
+// =====================================================================
+// SECTION 8: List Items
+// =====================================================================
 function ListItemsSection() {
   return (
     <View style={s.block}>
-      <Text style={s.blockTitle}>List Items</Text>
+      <Text style={s.blockTitle}>8. List Items</Text>
       <View style={s.listCard}>
         <View style={s.listItem}>
           <View style={s.listIcon}>
@@ -273,13 +333,63 @@ function ListItemsSection() {
   );
 }
 
+// =====================================================================
+// SECTION 9: Navigation - Header variants
+// =====================================================================
+function HeaderVariantsSection() {
+  return (
+    <View style={s.block}>
+      <Text style={s.blockTitle}>9. Navigation - Header</Text>
+      <Text style={s.navLabel}>guest - no avatar, login button</Text>
+      <ProtoHeader variant="guest" />
+      <View style={s.gap} />
+      <Text style={s.navLabel}>auth - avatar + notifications</Text>
+      <ProtoHeader variant="auth" />
+      <View style={s.gap} />
+      <Text style={s.navLabel}>back - arrow + page title</Text>
+      <ProtoHeader variant="back" backTitle="My Requests" />
+    </View>
+  );
+}
+
+// =====================================================================
+// SECTION 10: Navigation - Bottom Tab Bar
+// =====================================================================
+function TabBarSection() {
+  const [activeTab, setActiveTab] = useState('home');
+  return (
+    <View style={s.block}>
+      <Text style={s.blockTitle}>10. Navigation - Bottom Tab Bar</Text>
+      <Text style={s.navLabel}>Active tab: {activeTab}</Text>
+      <ProtoTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+    </View>
+  );
+}
+
+// =====================================================================
+// SECTION 11: Navigation - Burger Menu
+// =====================================================================
+function BurgerSection() {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={s.block}>
+      <Text style={s.blockTitle}>11. Navigation - Burger Menu</Text>
+      <Text style={s.navLabel}>Click hamburger icon to toggle drawer</Text>
+      <ProtoBurger open={open} onToggle={() => setOpen(!open)} />
+    </View>
+  );
+}
+
+// =====================================================================
+// MAIN EXPORT
+// =====================================================================
 export function BrandStyleStates() {
   return (
     <StateSection title="STYLE GUIDE" maxWidth={800}>
       <ScrollView style={s.container} contentContainerStyle={s.containerInner}>
         <View style={s.header}>
-          <Text style={s.title}>P2PTax UI Kit</Text>
-          <Text style={s.subtitle}>Colors, typography, buttons, inputs, cards, badges</Text>
+          <Text style={s.title}>P2PTax Brand & UI Kit</Text>
+          <Text style={s.subtitle}>Colors, typography, components, navigation</Text>
         </View>
 
         <ColorsSection />
@@ -288,7 +398,11 @@ export function BrandStyleStates() {
         <InputsSection />
         <CardsSection />
         <BadgesSection />
+        <AlertsSection />
         <ListItemsSection />
+        <HeaderVariantsSection />
+        <TabBarSection />
+        <BurgerSection />
       </ScrollView>
     </StateSection>
   );
@@ -306,6 +420,16 @@ const s = StyleSheet.create({
   blockTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: Spacing.sm },
 
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, alignItems: 'center' },
+  gap: { height: Spacing.sm },
+
+  // Nav labels
+  navLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 
   // Colors
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
@@ -353,6 +477,11 @@ const s = StyleSheet.create({
   cardIcon: { width: 40, height: 40, borderRadius: BorderRadius.full, backgroundColor: Colors.statusBg.info, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   cardText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 18 },
+  cardSpecialist: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  cardAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.bgSecondary },
+  cardSpecInfo: { flex: 1, gap: 2 },
+  cardRating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  cardRatingText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
 
   // Badges
   badge: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: BorderRadius.full },
@@ -362,6 +491,10 @@ const s = StyleSheet.create({
   tag: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.bgCard },
   tagText: { fontSize: Typography.fontSize.xs, color: Colors.textSecondary },
   tagActive: { borderColor: Colors.brandPrimary, backgroundColor: Colors.statusBg.info },
+
+  // Alerts
+  alert: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md, borderRadius: BorderRadius.md, borderLeftWidth: 3 },
+  alertText: { flex: 1, fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium },
 
   // List items
   listCard: { backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },

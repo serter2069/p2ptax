@@ -52,17 +52,10 @@ export const pageRegistry: PageEntry[] = [
   ] },
 
   // Brand
-  { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 11, nav: 'none', qaCycles: 3, qaScore: 9, testScenarios: [
-    { name: 'View nav components', steps: ['open /proto/states/nav-components', 'verify navigation variants displayed'] },
-  ] },
-  { id: 'brand', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none', qaCycles: 3, qaScore: 10,
-      notes: [
-        { date: '2026-04-10', text: '(empty)' },
-      ], testScenarios: [
-    { name: 'View brand colors', steps: ['open /proto/states/brand', 'verify color palette visible', 'verify background color block shown first'] },
-  ] },
-  { id: 'components', title: 'UI Components', group: 'Brand', route: '/components', stateCount: 1, nav: 'none', qaCycles: 3, qaScore: 9, testScenarios: [
-    { name: 'View UI components', steps: ['open /proto/states/components', 'verify button variants shown', 'verify input fields shown'] },
+  { id: 'brand', title: 'Brand & UI Components', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none', qaCycles: 3, qaScore: 10, testScenarios: [
+    { name: 'View brand colors and typography', steps: ['open /proto/states/brand', 'verify color palette visible', 'verify typography samples shown'] },
+    { name: 'View UI components', steps: ['open /proto/states/brand', 'scroll to buttons section', 'verify button variants shown', 'verify input fields shown'] },
+    { name: 'View navigation components', steps: ['open /proto/states/brand', 'scroll to navigation section', 'verify header variants displayed', 'verify tab bar shown', 'verify burger menu shown'] },
   ] },
 
   // Auth
@@ -320,9 +313,7 @@ export const pageRegistry: PageEntry[] = [
 // ---------------------------------------------------------------------------
 export const PAGE_TRANSITIONS: Record<string, { to: string; action: string }[]> = {
   // === Brand ===
-  'nav-components': [],
   'brand': [],
-  'components': [],
 
   // === Public pages (nav: 'public') ===
   'landing': [
