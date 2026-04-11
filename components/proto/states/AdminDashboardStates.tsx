@@ -47,7 +47,7 @@ export function AdminDashboardStates() {
   ];
 
   return (
-    <StateSection title="STATS" maxWidth={800}>
+    <StateSection title="STATS">
       <View style={s.container}>
         <Text style={s.pageTitle}>Панель администратора</Text>
 

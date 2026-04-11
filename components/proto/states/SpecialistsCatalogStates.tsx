@@ -154,13 +154,13 @@ function LoadingCatalog() {
 export function SpecialistsCatalogStates() {
   return (
     <>
-      <StateSection title="INTERACTIVE" maxWidth={1024}>
+      <StateSection title="INTERACTIVE">
         <InteractiveCatalog />
       </StateSection>
-      <StateSection title="EMPTY" maxWidth={1024}>
+      <StateSection title="EMPTY">
         <EmptyCatalog />
       </StateSection>
-      <StateSection title="LOADING" maxWidth={1024}>
+      <StateSection title="LOADING">
         <LoadingCatalog />
       </StateSection>
     </>

@@ -64,7 +64,7 @@ export function AdminRequestsStates() {
 
   return (
     <>
-      <StateSection title="LIST" maxWidth={800}>
+      <StateSection title="LIST">
         <View style={s.container}>
           <Text style={s.pageTitle}>Заявки (3 456)</Text>
           <View style={s.filters}>
@@ -78,7 +78,7 @@ export function AdminRequestsStates() {
           ))}
         </View>
       </StateSection>
-      <StateSection title="MODERATION_POPUP" maxWidth={800}>
+      <StateSection title="MODERATION_POPUP">
         <View style={[s.container, { minHeight: 450 }]}>
           <Text style={s.pageTitle}>Заявки</Text>
           {MOCK_REQUESTS.slice(0, 2).map((r) => (

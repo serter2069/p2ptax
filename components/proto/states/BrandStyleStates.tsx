@@ -385,7 +385,7 @@ function BurgerSection() {
 // =====================================================================
 export function BrandStyleStates() {
   return (
-    <StateSection title="STYLE GUIDE" maxWidth={800}>
+    <StateSection title="STYLE GUIDE">
       <ScrollView style={s.container} contentContainerStyle={s.containerInner}>
         <View style={s.header}>
           <Text style={s.title}>P2PTax Brand & UI Kit</Text>

@@ -37,7 +37,7 @@ export function PricingStates() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   return (
-    <StateSection title="PLANS_COMPARISON" maxWidth={1024}>
+    <StateSection title="PLANS_COMPARISON">
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.title}>Тарифы</Text>

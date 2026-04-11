@@ -71,10 +71,10 @@ function DetailView({ showRespondPopup }: { showRespondPopup?: boolean }) {
 export function PublicRequestDetailStates() {
   return (
     <>
-      <StateSection title="DETAIL" maxWidth={800}>
+      <StateSection title="DETAIL">
         <DetailView />
       </StateSection>
-      <StateSection title="RESPOND_POPUP" maxWidth={800}>
+      <StateSection title="RESPOND_POPUP">
         <DetailView showRespondPopup />
       </StateSection>
     </>

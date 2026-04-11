@@ -36,7 +36,7 @@ function ReviewRow({ author, rating, text, date, specialistName }: {
 
 export function AdminReviewsStates() {
   return (
-    <StateSection title="LIST" maxWidth={800}>
+    <StateSection title="LIST">
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.pageTitle}>Отзывы</Text>

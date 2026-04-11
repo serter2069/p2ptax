@@ -168,13 +168,13 @@ function LoadingRequests() {
 export function PublicRequestsStates() {
   return (
     <>
-      <StateSection title="INTERACTIVE" maxWidth={1024}>
+      <StateSection title="INTERACTIVE">
         <InteractiveRequests />
       </StateSection>
-      <StateSection title="EMPTY" maxWidth={1024}>
+      <StateSection title="EMPTY">
         <EmptyRequests />
       </StateSection>
-      <StateSection title="LOADING" maxWidth={1024}>
+      <StateSection title="LOADING">
         <LoadingRequests />
       </StateSection>
     </>
