@@ -1,4 +1,4 @@
-export type PageGroup = 'Brand' | 'Auth' | 'Onboarding' | 'Dashboard' | 'Specialist' | 'Public' | 'Admin';
+export type PageGroup = 'Overview' | 'Brand' | 'Auth' | 'Onboarding' | 'Dashboard' | 'Specialist' | 'Public' | 'Admin';
 export type NavVariant = 'none' | 'public' | 'auth' | 'client' | 'specialist' | 'admin';
 
 export interface PageNote {
@@ -28,6 +28,7 @@ export interface PageEntry {
 }
 
 export const PAGE_GROUPS: PageGroup[] = [
+  'Overview',
   'Brand',
   'Auth',
   'Onboarding',
@@ -38,6 +39,9 @@ export const PAGE_GROUPS: PageGroup[] = [
 ];
 
 export const pageRegistry: PageEntry[] = [
+  // Overview
+  { id: 'overview', title: 'Project Overview', group: 'Overview', route: '/', stateCount: 1, nav: 'none' },
+
   // Brand
   { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 11, nav: 'none' },
   { id: 'brand-style', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none', qaCycles: 1, qaScore: 10,
