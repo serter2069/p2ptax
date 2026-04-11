@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+
+function navigate(pageId: string) {
+  if (Platform.OS === 'web') {
+    window.open(`/proto/states/${pageId}`, '_self');
+  }
+}
 
 function Popup({ type, onClose }: { type: 'success' | 'error'; onClose: () => void }) {
   const isSuccess = type === 'success';
@@ -16,7 +22,7 @@ function Popup({ type, onClose }: { type: 'success' | 'error'; onClose: () => vo
             ? 'Клиент получит уведомление о вашем отклике и сможет связаться с вами'
             : 'Не удалось отправить отклик. Попробуйте ещё раз.'}
         </Text>
-        <Pressable onPress={onClose} style={[s.popupBtn, isSuccess ? null : s.popupBtnError]}>
+        <Pressable onPress={isSuccess ? () => navigate('specialist-dashboard') : onClose} style={[s.popupBtn, isSuccess ? null : s.popupBtnError]}>
           <Text style={s.popupBtnText}>{isSuccess ? 'К моим откликам' : 'Попробовать снова'}</Text>
         </Pressable>
       </View>
@@ -92,7 +98,9 @@ function SubmittedScreen() {
         <Text style={s.successText}>
           Клиент получит уведомление о вашем отклике и сможет связаться с вами.
         </Text>
-        <Pressable style={s.btn}><Text style={s.btnText}>К моим откликам</Text></Pressable>
+        <Pressable style={s.btn} onPress={() => navigate('specialist-dashboard')}>
+          <Text style={s.btnText}>К моим откликам</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -109,7 +117,7 @@ function ErrorScreen() {
         <Text style={s.successText}>
           Не удалось отправить отклик. Проверьте подключение к интернету и попробуйте ещё раз.
         </Text>
-        <Pressable style={[s.btn, { backgroundColor: Colors.statusError }]}>
+        <Pressable style={[s.btn, { backgroundColor: Colors.statusError }]} onPress={() => navigate('specialist-respond')}>
           <Text style={s.btnText}>Попробовать снова</Text>
         </Pressable>
       </View>

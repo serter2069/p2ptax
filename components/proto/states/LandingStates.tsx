@@ -7,7 +7,7 @@ import { StateSection } from '../StateSection';
 const BRAND = {
   primary: Colors.textPrimary,
   action: Colors.brandPrimary,
-  accent: '#D4A843',
+  accent: Colors.statusWarning,
   bg: Colors.bgPrimary,
   card: Colors.bgCard,
   textPrimary: Colors.textPrimary,
