@@ -43,9 +43,8 @@ export const pageRegistry: PageEntry[] = [
   { id: 'overview', title: 'Project Overview', group: 'Overview', route: '/', stateCount: 1, nav: 'none' },
 
   // Brand
-  { id: 'brand', title: 'Brand', group: 'Brand', route: '/proto/brand', stateCount: 1, nav: 'none' },
   { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 11, nav: 'none' },
-  { id: 'brand-style', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none', qaCycles: 1, qaScore: 10,
+  { id: 'brand', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none', qaCycles: 1, qaScore: 10,
       notes: [
         { date: '2026-04-10', text: '(empty)' },
       ]
@@ -218,7 +217,7 @@ export const pageRegistry: PageEntry[] = [
 export const PAGE_TRANSITIONS: Record<string, { to: string; action: string }[]> = {
   // === Brand ===
   'nav-components': [],
-  'brand-style': [],
+  'brand': [],
   'components': [],
 
   // === Public pages (nav: 'public') ===
