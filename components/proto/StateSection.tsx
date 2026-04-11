@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { getPageById } from '../../constants/pageRegistry';
 import { ProtoNavHeader, ProtoNavFooter } from './ProtoNav';
@@ -19,9 +19,10 @@ export function StateSection({ title, children, maxWidth = 430, pageId: pageIdPr
   const contextPageId = useContext(PageIdContext);
   const pageId = pageIdProp || contextPageId;
   const page = pageId ? getPageById(pageId) : undefined;
+  const webProps = Platform.OS === 'web' ? { 'data-state-name': title } : {};
 
   return (
-    <View style={styles.section}>
+    <View {...webProps} style={styles.section}>
       <View style={styles.labelRow}>
         <View style={styles.labelBadge}>
           <Text style={styles.labelText}>{title}</Text>
