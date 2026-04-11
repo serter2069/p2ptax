@@ -7,6 +7,7 @@ import { getPageById } from '../../../constants/pageRegistry';
 import { Colors, Typography, Spacing } from '../../../constants/Colors';
 
 // State components
+import { OverviewStates } from '../../../components/proto/states/OverviewStates';
 import { BrandStyleStates } from '../../../components/proto/states/BrandStyleStates';
 import { AuthEmailStates } from '../../../components/proto/states/AuthEmailStates';
 import { AuthOtpStates } from '../../../components/proto/states/AuthOtpStates';
@@ -39,6 +40,7 @@ import { AdminPromotionsStates } from '../../../components/proto/states/AdminPro
 import { NavComponentsStates } from '../../../components/proto/states/NavComponentsStates';
 
 const STATE_MAP: Record<string, React.ComponentType> = {
+  'overview': OverviewStates,
   'nav-components': NavComponentsStates,
   'brand-style': BrandStyleStates,
   'auth-email': AuthEmailStates,
