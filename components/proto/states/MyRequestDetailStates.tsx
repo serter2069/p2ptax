@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
@@ -18,6 +18,7 @@ function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
 function ResponseCard({ name, city, rating, reviews, price, message }: {
   name: string; city: string; rating: number; reviews: number; price: string; message: string;
 }) {
+  const [accepted, setAccepted] = useState(false);
   return (
     <View style={s.respCard}>
       <View style={s.respHeader}>
@@ -34,7 +35,9 @@ function ResponseCard({ name, city, rating, reviews, price, message }: {
       </View>
       <Text style={s.respMessage} numberOfLines={2}>{message}</Text>
       <View style={s.respActions}>
-        <View style={s.respBtnPrimary}><Text style={s.respBtnPrimaryText}>Принять</Text></View>
+        <Pressable style={[s.respBtnPrimary, accepted && s.respBtnAccepted]} onPress={() => setAccepted(!accepted)}>
+          <Text style={s.respBtnPrimaryText}>{accepted ? 'Принято' : 'Принять'}</Text>
+        </Pressable>
         <View style={s.respBtnSecondary}><Text style={s.respBtnSecondaryText}>Написать</Text></View>
       </View>
     </View>
@@ -152,6 +155,7 @@ const s = StyleSheet.create({
     flex: 1, height: 38, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
+  respBtnAccepted: { backgroundColor: Colors.statusSuccess },
   respBtnPrimaryText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   respBtnSecondary: {
     flex: 1, height: 38, backgroundColor: 'transparent', borderRadius: BorderRadius.md,

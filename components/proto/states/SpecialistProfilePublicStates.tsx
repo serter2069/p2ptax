@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
@@ -28,15 +28,19 @@ function ReviewItem({ author, rating, text, date }: { author: string; rating: nu
   );
 }
 
-function ProfileScreen({ showReviewsPopup }: { showReviewsPopup?: boolean }) {
+function ProfileScreen({ initialShowReviews }: { initialShowReviews?: boolean }) {
+  const [showReviews, setShowReviews] = useState(initialShowReviews || false);
+
   return (
-    <View style={[s.container, showReviewsPopup ? { minHeight: 600 } : null]}>
-      {showReviewsPopup && (
+    <View style={[s.container, showReviews ? { minHeight: 600 } : null]}>
+      {showReviews && (
         <View style={s.overlay}>
           <View style={s.popup}>
             <View style={s.popupHeader}>
               <Text style={s.popupTitle}>Все отзывы (42)</Text>
-              <Text style={s.popupClose}>{'x'}</Text>
+              <Pressable onPress={() => setShowReviews(false)}>
+                <Feather name="x" size={20} color={Colors.textMuted} />
+              </Pressable>
             </View>
             {MOCK_REVIEWS.slice(0, 3).map((r) => (
               <ReviewItem key={r.id} author={r.author} rating={r.rating} text={r.text} date={r.date} />
@@ -97,7 +101,7 @@ function ProfileScreen({ showReviewsPopup }: { showReviewsPopup?: boolean }) {
       <View style={s.section}>
         <View style={s.reviewsHeader}>
           <Text style={s.sectionTitle}>Отзывы</Text>
-          <Text style={s.viewAll}>Все 42 {'>'}</Text>
+          <Text style={s.viewAll} onPress={() => setShowReviews(true)}>Все 42 {'>'}</Text>
         </View>
         {MOCK_REVIEWS.slice(0, 2).map((r) => (
           <ReviewItem key={r.id} author={r.author} rating={r.rating} text={r.text} date={r.date} />
@@ -113,7 +117,7 @@ function ProfileScreen({ showReviewsPopup }: { showReviewsPopup?: boolean }) {
         </View>
       </View>
 
-      <View style={s.contactBtn}><Text style={s.contactBtnText}>Связаться</Text></View>
+      <Pressable style={s.contactBtn} onPress={() => setShowReviews(true)}><Text style={s.contactBtnText}>Связаться</Text></Pressable>
     </View>
   );
 }
@@ -125,7 +129,7 @@ export function SpecialistProfilePublicStates() {
         <ProfileScreen />
       </StateSection>
       <StateSection title="REVIEWS_POPUP">
-        <ProfileScreen showReviewsPopup />
+        <ProfileScreen initialShowReviews />
       </StateSection>
     </>
   );
@@ -190,5 +194,4 @@ const s = StyleSheet.create({
   },
   popupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   popupTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  popupClose: { fontSize: Typography.fontSize.lg, color: Colors.textMuted, padding: Spacing.xs },
 });

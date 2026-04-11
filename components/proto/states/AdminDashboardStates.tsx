@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_ADMIN_STATS } from '../../../constants/protoMockData';
@@ -36,6 +37,15 @@ function ChartPlaceholder({ title }: { title: string }) {
 
 export function AdminDashboardStates() {
   const st = MOCK_ADMIN_STATS;
+  const [expandedActivity, setExpandedActivity] = useState<number | null>(null);
+
+  const activities = [
+    { action: 'Регистрация', detail: 'Новый пользователь: Сергей К.', time: '5 мин назад' },
+    { action: 'Заявка', detail: 'Новая заявка: Декларация 3-НДФЛ', time: '12 мин назад' },
+    { action: 'Модерация', detail: 'Специалист ожидает проверки', time: '30 мин назад' },
+    { action: 'Отзыв', detail: 'Новый отзыв от Елены В.', time: '1 час назад' },
+  ];
+
   return (
     <StateSection title="STATS" maxWidth={800}>
       <View style={s.container}>
@@ -62,19 +72,20 @@ export function AdminDashboardStates() {
 
         <View style={s.recentSection}>
           <Text style={s.sectionTitle}>Последние действия</Text>
-          {[
-            { action: 'Регистрация', detail: 'Новый пользователь: Сергей К.', time: '5 мин назад' },
-            { action: 'Заявка', detail: 'Новая заявка: Декларация 3-НДФЛ', time: '12 мин назад' },
-            { action: 'Модерация', detail: 'Специалист ожидает проверки', time: '30 мин назад' },
-            { action: 'Отзыв', detail: 'Новый отзыв от Елены В.', time: '1 час назад' },
-          ].map((item, i) => (
-            <View key={i} style={s.activityRow}>
+          {activities.map((item, i) => (
+            <Pressable key={i} style={s.activityRow} onPress={() => setExpandedActivity(expandedActivity === i ? null : i)}>
               <View style={s.activityDot} />
               <View style={s.activityContent}>
                 <Text style={s.activityAction}>{item.action}: <Text style={s.activityDetail}>{item.detail}</Text></Text>
                 <Text style={s.activityTime}>{item.time}</Text>
+                {expandedActivity === i && (
+                  <View style={s.expandedInfo}>
+                    <Feather name="info" size={14} color={Colors.brandPrimary} />
+                    <Text style={s.expandedText}>Подробнее о действии</Text>
+                  </View>
+                )}
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -116,4 +127,6 @@ const s = StyleSheet.create({
   activityAction: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   activityDetail: { fontWeight: Typography.fontWeight.regular, color: Colors.textSecondary },
   activityTime: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  expandedInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.xs },
+  expandedText: { fontSize: Typography.fontSize.xs, color: Colors.brandPrimary },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
@@ -45,6 +45,7 @@ function EmptyDashboard() {
 }
 
 function WithDataDashboard() {
+  const [expanded, setExpanded] = useState<string | null>(null);
   return (
     <View style={s.container}>
       <View style={s.header}>
@@ -59,8 +60,14 @@ function WithDataDashboard() {
       <View style={s.section}>
         <Text style={s.sectionTitle}>Активные заявки</Text>
         <View style={s.list}>
-          <RequestRow title="Декларация 3-НДФЛ за 2025" status="Новая" date="08.04.2026" statusColor={Colors.brandPrimary} />
-          <RequestRow title="Регистрация ИП на УСН" status="3 отклика" date="07.04.2026" statusColor={Colors.statusSuccess} />
+          <Pressable onPress={() => setExpanded(expanded === '1' ? null : '1')}>
+            <RequestRow title="Декларация 3-НДФЛ за 2025" status="Новая" date="08.04.2026" statusColor={Colors.brandPrimary} />
+            {expanded === '1' && <Text style={s.expandedHint}>Нажмите для перехода к заявке</Text>}
+          </Pressable>
+          <Pressable onPress={() => setExpanded(expanded === '2' ? null : '2')}>
+            <RequestRow title="Регистрация ИП на УСН" status="3 отклика" date="07.04.2026" statusColor={Colors.statusSuccess} />
+            {expanded === '2' && <Text style={s.expandedHint}>Нажмите для перехода к заявке</Text>}
+          </Pressable>
           <RequestRow title="Оптимизация налогов ООО" status="В работе" date="05.04.2026" statusColor={Colors.statusWarning} />
         </View>
       </View>
@@ -134,4 +141,5 @@ const s = StyleSheet.create({
   btnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   loadingWrap: { alignItems: 'center', padding: Spacing['4xl'], gap: Spacing.md },
   loadingText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  expandedHint: { fontSize: Typography.fontSize.xs, color: Colors.brandPrimary, paddingVertical: Spacing.xs },
 });

@@ -1,15 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { MOCK_PRICING_PLANS } from '../../../constants/protoMockData';
 
-function PlanCard({ name, price, period, features, highlighted }: {
-  name: string; price: string; period: string; features: string[]; highlighted: boolean;
+function PlanCard({ name, price, period, features, highlighted, selected, onSelect }: {
+  name: string; price: string; period: string; features: string[]; highlighted: boolean; selected: boolean; onSelect: () => void;
 }) {
   return (
-    <View style={[s.planCard, highlighted ? s.planHighlighted : null]}>
+    <Pressable onPress={onSelect} style={[s.planCard, highlighted ? s.planHighlighted : null, selected ? s.planSelected : null]}>
       {highlighted && <View style={s.popularBadge}><Text style={s.popularText}>Популярный</Text></View>}
       <Text style={[s.planName, highlighted ? s.planNameHL : null]}>{name}</Text>
       <View style={s.priceRow}>
@@ -24,16 +24,18 @@ function PlanCard({ name, price, period, features, highlighted }: {
           </View>
         ))}
       </View>
-      <View style={[s.planBtn, highlighted ? s.planBtnHL : null]}>
-        <Text style={[s.planBtnText, highlighted ? s.planBtnTextHL : null]}>
-          {highlighted ? 'Начать' : 'Выбрать'}
+      <View style={[s.planBtn, (highlighted || selected) ? s.planBtnHL : null]}>
+        <Text style={[s.planBtnText, (highlighted || selected) ? s.planBtnTextHL : null]}>
+          {selected ? 'Выбрано' : highlighted ? 'Начать' : 'Выбрать'}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
 export function PricingStates() {
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
   return (
     <StateSection title="PLANS_COMPARISON" maxWidth={1024}>
       <View style={s.container}>
@@ -43,7 +45,7 @@ export function PricingStates() {
         </View>
         <View style={s.plans}>
           {MOCK_PRICING_PLANS.map((plan) => (
-            <PlanCard key={plan.id} {...plan} />
+            <PlanCard key={plan.id} {...plan} selected={selectedPlan === plan.id} onSelect={() => setSelectedPlan(plan.id)} />
           ))}
         </View>
         <View style={s.faq}>
@@ -97,6 +99,7 @@ const s = StyleSheet.create({
   planBtnHL: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
   planBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   planBtnTextHL: { color: Colors.white },
+  planSelected: { borderColor: Colors.brandPrimary, borderWidth: 2 },
   faq: { gap: Spacing.md },
   faqTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   faqItem: { gap: Spacing.xs, paddingBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary },
