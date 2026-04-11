@@ -430,51 +430,95 @@ const styles = StyleSheet.create({
   previewContainer: {
     flex: 1,
     backgroundColor: '#E8EAED',
-    steps: [
-      { page: 'landing', action: 'Видит форму быстрой заявки, вводит описание + email' },
-      { page: 'auth-otp', action: 'Вводит OTP-код из письма (dev: 000000)' },
-      { page: 'my-request-detail', action: 'Аккаунт создан, заявка опубликована' },
-    ],
   },
-  {
-    id: 'specialist-onboarding',
-    title: 'Регистрация специалиста',
-    role: 'specialist',
-    description: 'Новый специалист регистрируется через email OTP и проходит онбординг.',
-    steps: [
-      { page: 'auth-email', action: 'Вводит email, выбирает роль "Специалист"' },
-      { page: 'auth-otp', action: 'Вводит OTP-код' },
-      { page: 'onboarding-username', action: 'Выбирает уникальное имя' },
-      { page: 'onboarding-work-area', action: 'Указывает город, ФНС, виды услуг' },
-      { page: 'onboarding-profile', action: 'Загружает фото, пишет о себе' },
-      { page: 'specialist-dashboard', action: 'Онбординг завершён, кабинет открыт' },
-    ],
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.bgCard,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: Spacing.md,
   },
-  {
-    id: 'specialist-respond',
-    title: 'Специалист откликается',
-    role: 'specialist',
-    description: 'Специалист находит подходящую заявку и отправляет отклик.',
-    steps: [
-      { page: 'specialist-dashboard', action: 'Видит новые заявки в дашборде' },
-      { page: 'public-request-detail', action: 'Читает детали заявки' },
-      { page: 'specialist-respond', action: 'Пишет сообщение клиенту, указывает цену и срок' },
-      { page: 'specialist-dashboard', action: 'Отклик отправлен, ожидает ответа клиента' },
-    ],
+  toolbarTitle: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
   },
-  {
-    id: 'admin-moderation',
-    title: 'Модерация профиля специалиста',
-    role: 'admin',
-    description: 'Администратор проверяет новый профиль специалиста перед публикацией.',
-    steps: [
-      { page: 'admin-moderation', action: 'Видит профили в очереди модерации' },
-      { page: 'admin-moderation', action: 'Проверяет документы и данные' },
-      { page: 'admin-moderation', action: 'Одобряет или отклоняет профиль с комментарием' },
-      { page: 'admin-users', action: 'Специалист становится видимым в каталоге' },
-    ],
+  toolbarRoute: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+    fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
   },
-];
+  toolbarSpacer: {
+    flex: 1,
+  },
+  presetRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  presetBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.bgSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  presetBtnActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  presetText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  presetTextActive: {
+    color: '#fff',
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  widthLabel: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
+    minWidth: 40,
+    textAlign: 'right',
+  },
+  previewFrame: {
+    flex: 1,
+    position: 'relative' as const,
+  },
+  iframeWrap: {
+    flex: 1,
+    position: 'relative' as const,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  emptyPreview: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.md,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    color: Colors.textMuted,
+  },
+  emptyTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textSecondary,
+  },
+  emptySubtitle: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    maxWidth: 260,
+    lineHeight: 20,
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Proto rules (for agents building new pages)
