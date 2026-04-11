@@ -49,6 +49,7 @@ export const pageRegistry: PageEntry[] = [
         { date: '2026-04-10', text: '(empty)' },
       ]
     },
+  { id: 'components', title: 'UI Components', group: 'Brand', route: '/components', stateCount: 1, nav: 'none' },
 
   // Auth
   { id: 'auth-email', title: 'Вход — Email', group: 'Auth', route: '/(auth)/login', stateCount: 3, nav: 'auth', qaCycles: 1, qaScore: 10, api: [
@@ -217,6 +218,7 @@ export const PAGE_TRANSITIONS: Record<string, { to: string; action: string }[]> 
   // === Brand ===
   'nav-components': [],
   'brand-style': [],
+  'components': [],
 
   // === Public pages (nav: 'public') ===
   'landing': [
