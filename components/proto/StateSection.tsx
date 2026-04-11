@@ -1,8 +1,7 @@
-import React, { useState, useCallback, createContext, useContext } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import React, { createContext, useContext } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { getPageById, getNotesForState, getPageNotes } from '../../constants/pageRegistry';
+import { getPageById } from '../../constants/pageRegistry';
 import { ProtoNavHeader, ProtoNavFooter } from './ProtoNav';
 
 // Context so all StateSections get pageId without prop drilling
@@ -16,80 +15,10 @@ interface StateSectionProps {
   pageId?: string;
 }
 
-function getFilePath(pageId: string): string {
-  const stateFile = pageId
-    .split('-')
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join('');
-  return `components/proto/states/${stateFile}States.tsx`;
-}
-
-function buildStateCopyText(pageId: string, stateTitle: string): string {
-  const page = getPageById(pageId);
-  if (!page) {
-    return `State: ${stateTitle}`;
-  }
-  const lines = [
-    `Page: ${page.title}`,
-    `State: ${stateTitle}`,
-    `Route: ${page.route}`,
-    `File: ${getFilePath(pageId)}`,
-    `Showcase: /proto/states/${pageId}`,
-    `Project: /Users/sergei/Documents/Projects/Ruslan/p2ptax`,
-  ];
-
-  // Include existing notes for this state
-  const stateNotes = getNotesForState(pageId, stateTitle);
-  const pageNotes = getPageNotes(pageId).filter((n) => !n.state);
-  const allNotes = [...stateNotes, ...pageNotes];
-  if (allNotes.length > 0) {
-    lines.push('');
-    lines.push('Notes:');
-    allNotes.forEach((n) => lines.push(`- [${n.date}] ${n.text}`));
-  }
-
-  lines.push('');
-  lines.push(`Task: update state "${stateTitle}" on page "${page.title}" (${page.route})`);
-  return lines.join('\n');
-}
-
 export function StateSection({ title, children, maxWidth = 430, pageId: pageIdProp }: StateSectionProps) {
   const contextPageId = useContext(PageIdContext);
   const pageId = pageIdProp || contextPageId;
   const page = pageId ? getPageById(pageId) : undefined;
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(() => {
-    if (Platform.OS === 'web' && pageId) {
-      const text = buildStateCopyText(pageId, title);
-      const writeClipboard = () => {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          }).catch(() => fallbackCopy());
-        } else {
-          fallbackCopy();
-        }
-      };
-      const fallbackCopy = () => {
-        const el = document.createElement('textarea');
-        el.value = text;
-        el.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
-        document.body.appendChild(el);
-        el.select();
-        try {
-          document.execCommand('copy');
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        } catch (e) {
-          // silent fail
-        }
-        document.body.removeChild(el);
-      };
-      writeClipboard();
-    }
-  }, [pageId, title]);
 
   return (
     <View style={styles.section}>
@@ -97,15 +26,6 @@ export function StateSection({ title, children, maxWidth = 430, pageId: pageIdPr
         <View style={styles.labelBadge}>
           <Text style={styles.labelText}>{title}</Text>
         </View>
-        {pageId && (
-          <Pressable onPress={handleCopy} style={styles.copyBtn}>
-            <Feather
-              name={copied ? 'check' : 'copy'}
-              size={14}
-              color={copied ? Colors.statusSuccess : Colors.textMuted}
-            />
-          </Pressable>
-        )}
         <View style={styles.line} />
       </View>
       <View style={[styles.content, { maxWidth }]}>
@@ -142,14 +62,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-  },
-  copyBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   line: {
     flex: 1,
