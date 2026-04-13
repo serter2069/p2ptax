@@ -406,6 +406,24 @@ async function main() {
   }
   console.log(`  Seeded ${categories.length} categories`);
 
+  // --- Seed Service records (used in SpecialistService join table) ---
+  console.log('Seeding services...');
+  const serviceNames = [
+    'Выездная проверка',
+    'Камеральная проверка',
+    'Отдел оперативного контроля',
+  ] as const;
+  const serviceRecords: Record<string, { id: string }> = {};
+  for (const name of serviceNames) {
+    const rec = await prisma.service.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    serviceRecords[name] = rec;
+    console.log(`  Service: ${name} (${rec.id})`);
+  }
+
   console.log('Seeding specialists...');
 
   for (const spec of specialists) {
@@ -421,7 +439,7 @@ async function main() {
     });
 
     // Upsert specialist profile
-    await prisma.specialistProfile.upsert({
+    const profile = await prisma.specialistProfile.upsert({
       where: { userId: user.id },
       update: {
         nick: spec.nick,
@@ -451,6 +469,43 @@ async function main() {
         avatarUrl: spec.avatarUrl,
       },
     });
+
+    // Create SpecialistFns + SpecialistService join records
+    // Map fnsOffices (names) → Ifns records, then link services
+    if (spec.fnsOffices && spec.fnsOffices.length > 0) {
+      for (const fnsName of spec.fnsOffices) {
+        const ifnsRec = await prisma.ifns.findFirst({ where: { name: fnsName } });
+        if (!ifnsRec) continue;
+
+        // SpecialistFns
+        await prisma.specialistFns.upsert({
+          where: { specialistId_fnsId: { specialistId: profile.id, fnsId: ifnsRec.id } },
+          update: {},
+          create: { specialistId: profile.id, fnsId: ifnsRec.id },
+        });
+
+        // SpecialistService for each service that exists in Service table
+        for (const svcName of spec.services) {
+          const svcRec = serviceRecords[svcName];
+          if (!svcRec) continue;
+          await prisma.specialistService.upsert({
+            where: {
+              specialistId_fnsId_serviceId: {
+                specialistId: profile.id,
+                fnsId: ifnsRec.id,
+                serviceId: svcRec.id,
+              },
+            },
+            update: {},
+            create: {
+              specialistId: profile.id,
+              fnsId: ifnsRec.id,
+              serviceId: svcRec.id,
+            },
+          });
+        }
+      }
+    }
 
     // Create a dummy request from a client to enable reviews
     // Find or create a dummy client

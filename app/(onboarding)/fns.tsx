@@ -85,19 +85,31 @@ export default function FNSScreen() {
     try {
       const cities = [...new Set(selected.map((o) => o.city.name))];
       const fnsNames = selected.map((o) => o.name);
+      const fnsIds = selected.map((o) => o.id);
       const fnsDepartmentsData: FnsDeptEntry[] = selected.map((o) => ({
         office: o.name,
+        departments: departmentsMap[o.name] || [],
+      }));
+      // Structured data for join tables: each FNS office with its departments (services)
+      const fnsServicesData = selected.map((o) => ({
+        fnsId: o.id,
+        fnsName: o.name,
+        cityName: o.city.name,
         departments: departmentsMap[o.name] || [],
       }));
       // Persist to AsyncStorage for refresh/deep-link resilience
       await AsyncStorage.setItem('onboarding_cities', JSON.stringify(cities));
       await AsyncStorage.setItem('onboarding_fns', JSON.stringify(fnsNames));
+      await AsyncStorage.setItem('onboarding_fns_ids', JSON.stringify(fnsIds));
       await AsyncStorage.setItem('onboarding_fns_data', JSON.stringify(fnsDepartmentsData));
+      await AsyncStorage.setItem('onboarding_fns_services', JSON.stringify(fnsServicesData));
       router.push({
         pathname: '/(onboarding)/services',
         params: {
           cities: JSON.stringify(cities),
           fnsOffices: JSON.stringify(fnsNames),
+          fnsIds: JSON.stringify(fnsIds),
+          fnsServices: JSON.stringify(fnsServicesData),
         },
       });
     } finally {
@@ -230,7 +242,9 @@ export default function FNSScreen() {
                 // Skip FNS — save empty data
                 await AsyncStorage.setItem('onboarding_cities', JSON.stringify([]));
                 await AsyncStorage.setItem('onboarding_fns', JSON.stringify([]));
+                await AsyncStorage.setItem('onboarding_fns_ids', JSON.stringify([]));
                 await AsyncStorage.setItem('onboarding_fns_data', JSON.stringify([]));
+                await AsyncStorage.setItem('onboarding_fns_services', JSON.stringify([]));
                 router.push('/(onboarding)/services');
               }}
               style={styles.skipBtn}

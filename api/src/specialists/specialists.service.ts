@@ -11,9 +11,48 @@ import { StorageService } from '../storage/storage.service';
 // Specialists cannot self-assign badges — all badges are admin-only
 const ALLOWED_BADGES: string[] = [];
 
+/** Set intersection helper for join table filtering */
+function intersectSets<T>(a: Set<T>, b: Set<T>): Set<T> {
+  const result = new Set<T>();
+  for (const item of a) {
+    if (b.has(item)) result.add(item);
+  }
+  return result;
+}
+
 @Injectable()
 export class SpecialistsService {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Sync SpecialistFns + SpecialistService join tables from structured fnsServices data.
+   * Deletes existing join rows and recreates them (full replace strategy).
+   */
+  private async syncJoinTables(
+    specialistProfileId: string,
+    fnsServices: Array<{ fnsId: string; serviceNames: string[] }>,
+  ) {
+    await this.prisma.specialistService.deleteMany({ where: { specialistId: specialistProfileId } });
+    await this.prisma.specialistFns.deleteMany({ where: { specialistId: specialistProfileId } });
+
+    for (const entry of fnsServices) {
+      await this.prisma.specialistFns.create({
+        data: { specialistId: specialistProfileId, fnsId: entry.fnsId },
+      }).catch(() => { /* ignore duplicate */ });
+
+      for (const svcName of entry.serviceNames) {
+        const svc = await this.prisma.service.findUnique({ where: { name: svcName } });
+        if (!svc) continue;
+        await this.prisma.specialistService.create({
+          data: {
+            specialistId: specialistProfileId,
+            fnsId: entry.fnsId,
+            serviceId: svc.id,
+          },
+        }).catch(() => { /* ignore duplicate */ });
+      }
+    }
+  }
 
   async createProfile(userId: string, dto: CreateSpecialistProfileDto) {
     const existing = await this.prisma.specialistProfile.findUnique({ where: { userId } });
@@ -29,7 +68,7 @@ export class SpecialistsService {
       fnsOffices = [...new Set(fnsDepartmentsData.map((x) => x.office))];
     }
 
-    return this.prisma.specialistProfile.create({
+    const profile = await this.prisma.specialistProfile.create({
       data: {
         userId,
         nick: dto.nick,
@@ -45,16 +84,28 @@ export class SpecialistsService {
         contacts: dto.contacts,
       },
     });
+
+    // Write join tables when fnsServices is provided
+    if (dto.fnsServices && dto.fnsServices.length > 0) {
+      await this.syncJoinTables(profile.id, dto.fnsServices);
+    }
+
+    return profile;
   }
 
   async getMyProfile(userId: string) {
     const profile = await this.prisma.specialistProfile.findUnique({
       where: { userId },
+      include: {
+        specialistFns: { include: { fns: { include: { city: true } } } },
+        specialistServices: { include: { fns: true, service: true } },
+      },
     });
     if (!profile) throw new NotFoundException('Profile not found');
 
     const activity = await this.computeActivity(userId);
-    return { ...profile, activity };
+    const fnsGroupedByCity = this.groupFnsByCity(profile.specialistFns, profile.specialistServices);
+    return { ...profile, activity, fnsGroupedByCity };
   }
 
   async updateProfile(userId: string, dto: UpdateSpecialistProfileDto) {
@@ -72,27 +123,78 @@ export class SpecialistsService {
       data.fnsOffices = [...new Set(data.fnsDepartmentsData.map((x: any) => x.office))];
     }
 
-    return this.prisma.specialistProfile.update({
+    const updated = await this.prisma.specialistProfile.update({
       where: { userId },
       data,
     });
+
+    // Write join tables when fnsServices is provided
+    if (dto.fnsServices && dto.fnsServices.length > 0) {
+      await this.syncJoinTables(updated.id, dto.fnsServices);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Group FNS offices by city from join table data.
+   * Returns array of { city, offices: [{ fnsId, fnsName, services: [string] }] }
+   */
+  private groupFnsByCity(
+    specialistFns: Array<{ fnsId: string; fns: { id: string; name: string; city: { id: string; name: string } } }>,
+    specialistServices: Array<{ fnsId: string; fns: { name: string }; service: { name: string } }>,
+  ) {
+    const cityMap = new Map<string, { city: string; offices: Map<string, { fnsId: string; fnsName: string; services: string[] }> }>();
+
+    for (const sf of specialistFns) {
+      const cityName = sf.fns.city.name;
+      if (!cityMap.has(cityName)) {
+        cityMap.set(cityName, { city: cityName, offices: new Map() });
+      }
+      const cityEntry = cityMap.get(cityName)!;
+      if (!cityEntry.offices.has(sf.fnsId)) {
+        cityEntry.offices.set(sf.fnsId, { fnsId: sf.fnsId, fnsName: sf.fns.name, services: [] });
+      }
+    }
+
+    for (const ss of specialistServices) {
+      // Find the city entry that contains this fnsId
+      for (const [, cityEntry] of cityMap) {
+        const office = cityEntry.offices.get(ss.fnsId);
+        if (office && !office.services.includes(ss.service.name)) {
+          office.services.push(ss.service.name);
+        }
+      }
+    }
+
+    return Array.from(cityMap.values()).map(({ city, offices }) => ({
+      city,
+      offices: Array.from(offices.values()),
+    }));
   }
 
   async getProfile(nick: string, requestingUser: { id: string } | null = null) {
     const profile = await this.prisma.specialistProfile.findUnique({
       where: { nick },
+      include: {
+        specialistFns: { include: { fns: { include: { city: true } } } },
+        specialistServices: { include: { fns: true, service: true } },
+      },
     });
     if (!profile) throw new NotFoundException('Specialist not found');
 
     const activity = await this.computeActivity(profile.userId);
+    const fnsGroupedByCity = this.groupFnsByCity(profile.specialistFns, profile.specialistServices);
+
     // Strip internal IDs from public profile response; contacts only for authenticated users
-    const { id: _id, userId: _userId, contacts, ...publicProfile } = profile;
+    const { id: _id, userId: _userId, contacts, specialistFns: _sf, specialistServices: _ss, ...publicProfile } = profile;
     return {
       ...publicProfile,
       ...(requestingUser ? { contacts } : {}),
       activity,
       rating: activity.avgRating,
       reviewCount: activity.reviewCount,
+      fnsGroupedByCity,
     };
   }
 
@@ -110,7 +212,7 @@ export class SpecialistsService {
     return Array.from(citySet).sort((a, b) => a.localeCompare(b, 'ru'));
   }
 
-  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string, page: number = 1, limit: number = 20, offset?: number) {
+  async getCatalog(city?: string, badge?: string, sort?: string, search?: string, fns?: string, category?: string, page: number = 1, limit: number = 20, offset?: number, serviceId?: string) {
     // Cap limit to prevent abuse
     if (limit > 50) limit = 50;
     if (limit < 1) limit = 1;
@@ -126,14 +228,79 @@ export class SpecialistsService {
       }
     }
     if (badge) profileWhere.badges = { has: badge };
+
+    // --- Join table filters ---
+    // Collect specialist profile IDs that match join-table filters, then intersect
+    let joinFilteredProfileIds: Set<string> | null = null;
+
+    // FNS filter: query specialist_fns join table by Ifns code/name
     if (fns) {
       const fnsList = fns.split(',').map((f) => f.trim()).filter(Boolean);
+      // Try matching by Ifns code or name
+      const matchingIfns = await this.prisma.ifns.findMany({
+        where: {
+          OR: [
+            { code: { in: fnsList } },
+            { name: { in: fnsList } },
+            { id: { in: fnsList } },
+          ],
+        },
+        select: { id: true },
+      });
+      const ifnsIds = matchingIfns.map((i) => i.id);
+      if (ifnsIds.length > 0) {
+        const sfRecords = await this.prisma.specialistFns.findMany({
+          where: { fnsId: { in: ifnsIds } },
+          select: { specialistId: true },
+        });
+        const ids = new Set(sfRecords.map((r) => r.specialistId));
+        joinFilteredProfileIds = joinFilteredProfileIds ? intersectSets(joinFilteredProfileIds, ids) : ids;
+      } else {
+        // No matching IFNS records — no results possible
+        joinFilteredProfileIds = new Set();
+      }
+
+      // Also keep legacy String[] filter for backward compat during migration
       profileWhere.fnsOffices = fnsList.length === 1 ? { has: fnsList[0] } : { hasSome: fnsList };
     }
 
-    // Category filter: match against services array
+    // Category/service filter: query specialist_services join table
     if (category && category.trim()) {
-      profileWhere.services = { hasSome: [category.trim()] };
+      const svcName = category.trim();
+      // Look up Service record by name
+      const svcRecord = await this.prisma.service.findUnique({ where: { name: svcName } });
+      if (svcRecord) {
+        const ssRecords = await this.prisma.specialistService.findMany({
+          where: { serviceId: svcRecord.id },
+          select: { specialistId: true },
+        });
+        const ids = new Set(ssRecords.map((r) => r.specialistId));
+        joinFilteredProfileIds = joinFilteredProfileIds ? intersectSets(joinFilteredProfileIds, ids) : ids;
+      }
+
+      // Also keep legacy String[] filter for backward compat
+      profileWhere.services = { hasSome: [svcName] };
+    }
+
+    // ServiceId filter: direct lookup by service ID
+    if (serviceId) {
+      const ssRecords = await this.prisma.specialistService.findMany({
+        where: { serviceId },
+        select: { specialistId: true },
+      });
+      const ids = new Set(ssRecords.map((r) => r.specialistId));
+      joinFilteredProfileIds = joinFilteredProfileIds ? intersectSets(joinFilteredProfileIds, ids) : ids;
+    }
+
+    // Apply join table filter to profileWhere
+    if (joinFilteredProfileIds !== null) {
+      if (joinFilteredProfileIds.size === 0) {
+        // No matches — return empty result immediately
+        return { items: [], total: 0, page, pages: 0 };
+      }
+      // We need to filter by profile id — fetch profile IDs from userIds
+      // Actually joinFilteredProfileIds contains specialistProfile.id values
+      profileWhere.id = { in: Array.from(joinFilteredProfileIds) };
     }
 
     // Search filter: match against displayName, nick, services (partial ILIKE), cities, bio
