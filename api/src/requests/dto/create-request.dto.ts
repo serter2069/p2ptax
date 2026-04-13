@@ -1,24 +1,22 @@
-import { IsString, IsNotEmpty, MaxLength, MinLength, IsOptional, IsInt, Min } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, MinLength, IsOptional, IsInt, Min, ValidateIf } from 'class-validator';
 
 export class CreateRequestDto {
-  // Primary field name
-  @IsOptional()
-  @IsString()
-  @MinLength(3)
-  @MaxLength(2000)
+  @ValidateIf((o) => !o.title)
+  @IsString({ message: 'description must be a string' })
+  @MinLength(10, { message: 'description must be at least 10 characters' })
+  @MaxLength(2000, { message: 'description must be at most 2000 characters' })
   description?: string;
 
-  // Alias: spec says "title", maps to description
-  @IsOptional()
-  @IsString()
-  @MinLength(3)
-  @MaxLength(2000)
+  @ValidateIf((o) => !o.description)
+  @IsString({ message: 'title must be a string' })
+  @MinLength(10, { message: 'title must be at least 10 characters' })
+  @MaxLength(2000, { message: 'title must be at most 2000 characters' })
   title?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  city?: string;
+  @IsNotEmpty({ message: 'city is required' })
+  @IsString({ message: 'city must be a string' })
+  @MaxLength(100, { message: 'city must be at most 100 characters' })
+  city!: string;
 
   @IsOptional()
   @IsString()
@@ -30,15 +28,14 @@ export class CreateRequestDto {
   @MaxLength(200)
   ifnsName?: string;
 
-  // Alias: spec says "serviceType", maps to category
   @IsOptional()
   @IsString()
   @MaxLength(100)
   serviceType?: string;
 
   @IsOptional()
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'budget must be a number' })
+  @Min(1, { message: 'budget must be greater than 0' })
   budget?: number;
 
   @IsOptional()
