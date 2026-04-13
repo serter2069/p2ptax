@@ -211,6 +211,15 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Успешная отправка отклика', steps: ['open /proto/states/specialist-respond', 'verify SUBMITTED state shows success', 'tap "К моим откликам"', 'verify navigation to specialist-dashboard'] },
     { name: 'Ошибка отправки отклика', steps: ['open /proto/states/specialist-respond', 'verify ERROR state visible', 'verify error message shown', 'tap "Попробовать снова"'] },
   ] },
+  { id: 'specialist-my-responses', title: 'Мои отклики', group: 'Specialist', route: '/specialist/my-responses', stateCount: 3, nav: 'specialist', activeTab: 'dashboard', qaCycles: 0, qaScore: 0, navTo: ['public-requests', 'message-thread'], navFrom: ['specialist-dashboard', 'specialist-respond'], api: [
+    'GET /api/specialist/responses',
+    'PATCH /api/specialist/responses/:id/deactivate',
+  ], testScenarios: [
+    { name: 'Loading state — skeleton cards', steps: ['open /proto/states/specialist-my-responses', 'verify LOADING state visible', 'verify skeleton filter chips', 'verify skeleton response cards'] },
+    { name: 'Empty state — no responses', steps: ['open /proto/states/specialist-my-responses', 'verify EMPTY state visible', 'verify "Вы ещё не откликались на заявки" message', 'verify CTA "Посмотреть заявки" navigates to public-requests'] },
+    { name: 'Populated state — filter and list', steps: ['open /proto/states/specialist-my-responses', 'verify POPULATED state visible', 'verify filter chips: Все, Активные, Деактивированные', 'verify response cards with status badges', 'tap filter chip "Активные"', 'verify list filters correctly'] },
+    { name: 'Deactivate response', steps: ['open /proto/states/specialist-my-responses', 'verify POPULATED state visible', 'tap "Деактивировать" on sent response', 'verify confirmation dialog'] },
+  ] },
   { id: 'specialist-profile-public', title: 'Публичный профиль', group: 'Specialist', route: '/specialists/1', stateCount: 2, nav: 'public', qaCycles: 5, qaScore: 11, api: [
     'GET /api/specialists/:id',
     'GET /api/specialists/:id/reviews?page=:page',
@@ -566,6 +575,7 @@ const SPECIALIST_ONLY_PAGES = [
   'onboarding-profile',
   'specialist-dashboard',
   'specialist-respond',
+  'specialist-my-responses',
   'messages',
   'message-thread',
   'profile',

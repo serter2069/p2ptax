@@ -25,6 +25,7 @@ import { ProfileStates } from '../../../components/proto/states/ProfileStates';
 import { SettingsStates } from '../../../components/proto/states/SettingsStates';
 import { SpecialistDashboardStates } from '../../../components/proto/states/SpecialistDashboardStates';
 import { SpecialistRespondStates } from '../../../components/proto/states/SpecialistRespondStates';
+import { SpecialistMyResponsesStates } from '../../../components/proto/states/SpecialistMyResponsesStates';
 import { SpecialistProfilePublicStates } from '../../../components/proto/states/SpecialistProfilePublicStates';
 import { LandingStates } from '../../../components/proto/states/LandingStates';
 import { PublicRequestsStates } from '../../../components/proto/states/PublicRequestsStates';
@@ -61,6 +62,7 @@ const STATE_MAP: Record<string, React.ComponentType> = {
   'settings': SettingsStates,
   'specialist-dashboard': SpecialistDashboardStates,
   'specialist-respond': SpecialistRespondStates,
+  'specialist-my-responses': SpecialistMyResponsesStates,
   'specialist-profile-public': SpecialistProfilePublicStates,
   'landing': LandingStates,
   'public-requests': PublicRequestsStates,
