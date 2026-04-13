@@ -37,6 +37,7 @@ export class RequestsService {
       take: limit,
       select: {
         id: true,
+        title: true,
         description: true,
         city: true,
         category: true,
@@ -72,13 +73,16 @@ export class RequestsService {
   }
 
   async create(clientId: string, dto: CreateRequestDto) {
-    // Map aliases: title -> description, serviceType -> category
-    const description = dto.description || dto.title;
+    const title = dto.title;
+    const description = dto.description;
     const city = dto.city;
     const category = dto.category || dto.serviceType || null;
 
-    if (!description || description.trim().length < 3) {
-      throw new BadRequestException('description (or title) is required and must be at least 3 characters');
+    if (!title || title.trim().length < 3) {
+      throw new BadRequestException('title is required and must be at least 3 characters');
+    }
+    if (!description || description.trim().length < 10) {
+      throw new BadRequestException('description is required and must be at least 10 characters');
     }
     if (!city) {
       throw new BadRequestException('city is required');
@@ -97,6 +101,7 @@ export class RequestsService {
     const created = await this.prisma.request.create({
       data: {
         clientId,
+        title,
         description,
         city,
         ifnsId: dto.ifnsId ?? null,
@@ -390,6 +395,7 @@ export class RequestsService {
         request: {
           select: {
             id: true,
+            title: true,
             description: true,
             city: true,
             status: true,
