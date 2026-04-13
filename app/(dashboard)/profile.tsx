@@ -21,7 +21,7 @@ import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../consta
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { useFnsSearch, FnsOfficeItem } from '../../hooks/useFnsData';
+import { useFnsSearch, useFnsOffices, FnsOfficeItem } from '../../hooks/useFnsData';
 import { shortFnsLabel } from '../../lib/format';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
@@ -61,6 +61,7 @@ export default function MySpecialistProfileScreen() {
   const [services, setServices] = useState<string[]>([]);
   const [fnsOffices, setFnsOffices] = useState<string[]>([]);
   const [fnsSearch, setFnsSearch] = useState('');
+  const { results: fnsSearchResults } = useFnsSearch(fnsSearch);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
@@ -506,18 +507,13 @@ export default function MySpecialistProfileScreen() {
                 returnKeyType="done"
               />
             </View>
-            {fnsSearch.trim().length > 0 && (() => {
-              const terms = fnsSearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
+            {fnsSearchResults.length > 0 && (() => {
               const selectedSet = new Set(fnsOffices);
-              const matches = FNS_OFFICES.filter((o: FNSOffice) => {
-                if (selectedSet.has(o.name)) return false;
-                const text = `${o.name} ${o.city}`.toLowerCase();
-                return terms.every((t) => text.includes(t));
-              }).slice(0, 6);
+              const matches = fnsSearchResults.filter((o) => !selectedSet.has(o.name)).slice(0, 6);
               if (matches.length === 0) return null;
               return (
                 <View style={styles.fnsSuggestions}>
-                  {matches.map((office: FNSOffice) => (
+                  {matches.map((office) => (
                     <TouchableOpacity
                       key={office.code}
                       style={styles.fnsSuggestionItem}
@@ -528,7 +524,7 @@ export default function MySpecialistProfileScreen() {
                       activeOpacity={0.7}
                     >
                       <Text style={styles.fnsSuggestionName} numberOfLines={2}>{office.name}</Text>
-                      <Text style={styles.fnsSuggestionCity}>{office.city}</Text>
+                      <Text style={styles.fnsSuggestionCity}>{office.city.name}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -539,8 +535,7 @@ export default function MySpecialistProfileScreen() {
             )}
             <View style={styles.tagList}>
               {fnsOffices.map((name) => {
-                const office = FNS_OFFICES.find((o: FNSOffice) => o.name === name);
-                const label = office ? shortFnsLabel(office.name, office.city) : name;
+                const label = shortFnsLabel(name, '');
                 return (
                   <View key={name} style={[styles.tag, styles.fnsTag]}>
                     <Text style={[styles.tagText, styles.fnsTagText]} numberOfLines={1}>{label}</Text>
