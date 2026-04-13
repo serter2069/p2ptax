@@ -122,6 +122,32 @@ export class EmailService {
     }).catch((err) => this.logger.error('[notifyNewMessage] send failed', err));
   }
 
+  /** Notify specialist that their response was accepted by the client */
+  notifyResponseAccepted(specialistEmail: string, clientName: string, requestTitle: string, userId: string): void {
+    if (!this.client) {
+      this.logger.log(
+        `DEV EMAIL [notifyResponseAccepted]: to=${specialistEmail} client=${clientName} request=${requestTitle}`,
+      );
+      return;
+    }
+
+    const text =
+      `Ваш отклик принят клиентом ${clientName}.\n\n` +
+      `Напишите ему.`;
+
+    const html = `
+      <p>Ваш отклик на запрос <strong>${requestTitle}</strong> принят клиентом <strong>${clientName}</strong>.</p>
+      <p>Напишите ему.</p>`;
+
+    this.send({
+      to: specialistEmail,
+      subject: 'Ваш отклик принят — Налоговик',
+      text,
+      html,
+      userId,
+    }).catch((err) => this.logger.error('[notifyResponseAccepted] send failed', err));
+  }
+
   /** Notify a list of specialists that a new request appeared in their city */
   notifyNewRequestInCity(
     specialistEmails: string[],
