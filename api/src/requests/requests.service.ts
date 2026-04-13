@@ -346,7 +346,7 @@ export class RequestsService {
     });
     if (existing) throw new ConflictException('Already responded to this request');
 
-    // Create response + thread in transaction
+    // Create response (thread is created later in acceptResponse)
     const result = await this.prisma.$transaction(async (tx) => {
       const response = await tx.response.create({
         data: {
@@ -364,19 +364,7 @@ export class RequestsService {
         data: { lastActivityAt: new Date() },
       });
 
-      // Create thread: enforce participant1Id < participant2Id
-      const [p1, p2] =
-        specialistId < request.clientId
-          ? [specialistId, request.clientId]
-          : [request.clientId, specialistId];
-
-      const thread = await tx.thread.upsert({
-        where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
-        create: { participant1Id: p1, participant2Id: p2 },
-        update: {},
-      });
-
-      return { response, thread };
+      return { response };
     });
 
     // Notify client about new response — fire-and-forget

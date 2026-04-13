@@ -243,36 +243,48 @@ describe('RequestsService — lifecycle features', () => {
     });
   });
 
-  describe('respond() — lastActivityAt update', () => {
-    it('should update lastActivityAt when a new response is created', async () => {
-      const request = {
-        id: 'req-resp-1',
-        clientId: 'client-1',
-        status: RequestStatus.OPEN,
-        city: 'Moscow',
-        client: { id: 'client-1', email: 'c@test.com', notifyNewResponses: false },
-      };
+  describe('respond()', () => {
+    const baseRequest = {
+      id: 'req-resp-1',
+      clientId: 'client-1',
+      status: RequestStatus.OPEN,
+      city: 'Moscow',
+      client: { id: 'client-1', email: 'c@test.com', notifyNewResponses: false },
+    };
 
-      prisma.request.findUnique.mockResolvedValue(request);
-      prisma.specialistProfile.findUnique.mockResolvedValue({
-        cities: ['Moscow'],
-      });
-      prisma.response.findUnique.mockResolvedValue(null); // no existing response
+    beforeEach(() => {
+      prisma.request.findUnique.mockResolvedValue(baseRequest);
+      prisma.specialistProfile.findUnique.mockResolvedValue({ cities: ['Moscow'] });
+      prisma.response.findUnique.mockResolvedValue(null);
       prisma.response.create.mockResolvedValue({ id: 'resp-1' });
-      prisma.request.update.mockResolvedValue({ ...request, lastActivityAt: new Date() });
+      prisma.request.update.mockResolvedValue({ ...baseRequest, lastActivityAt: new Date() });
       prisma.thread.upsert.mockResolvedValue({ id: 'thread-1' });
+    });
 
+    it('should update lastActivityAt when a new response is created', async () => {
       await service.respond('specialist-1', 'req-resp-1', {
         comment: 'I can help',
         price: 5000,
         deadline: new Date(Date.now() + 86400000).toISOString() as any,
       });
 
-      // The transaction calls request.update with lastActivityAt
       expect(prisma.request.update).toHaveBeenCalledWith({
         where: { id: 'req-resp-1' },
         data: { lastActivityAt: expect.any(Date) },
       });
     });
+
+    it('should NOT create a thread (thread is created only in acceptResponse)', async () => {
+      const result = await service.respond('specialist-1', 'req-resp-1', {
+        comment: 'I can help',
+        price: 5000,
+        deadline: new Date(Date.now() + 86400000).toISOString() as any,
+      });
+
+      expect(prisma.thread.upsert).not.toHaveBeenCalled();
+      expect(result.response).toBeDefined();
+      expect(result).not.toHaveProperty('thread');
+    });
   });
+
 });
