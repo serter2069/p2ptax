@@ -30,6 +30,8 @@ model User {
   username    String?   @unique
   firstName   String?
   lastName    String?
+  phone       String?
+  avatarUrl   String?
   role               Role      @default(CLIENT)
   isBlocked          Boolean   @default(false)
   emailNotifications Boolean   @default(true)
@@ -76,6 +78,7 @@ model SpecialistProfile {
   bio         String?
   headline    String?
   experience  Int?
+  hourlyRate  Int?
   cities      String[]
   services    String[]
   badges      String[]
