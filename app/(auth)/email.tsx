@@ -12,14 +12,11 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LandingHeader } from '../../components/LandingHeader';
 import { Footer } from '../../components/Footer';
-import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { api, ApiError } from '../../lib/api';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { AuthProgress } from '../../components/AuthProgress';
-
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? '/api';
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -110,27 +107,6 @@ export default function EmailScreen() {
               <Text style={styles.hint}>
                 Вход и регистрация — одно действие. Просто введите email.
               </Text>
-
-              {/* Google OAuth */}
-              <TouchableOpacity
-                style={styles.googleBtn}
-                onPress={() => {
-                  // Redirect to backend Google OAuth
-                  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-                  window.location.href = `${API_BASE}/auth/google?state=${encodeURIComponent(origin)}`;
-                }}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Войти через Google"
-              >
-                <Text style={styles.googleBtnText}>Войти через Google</Text>
-              </TouchableOpacity>
-
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>или</Text>
-                <View style={styles.dividerLine} />
-              </View>
 
               {/* Role buttons */}
               <View style={styles.roleButtons}>
@@ -236,37 +212,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  googleBtnText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
   },
   roleButtons: {
     gap: Spacing.lg,
