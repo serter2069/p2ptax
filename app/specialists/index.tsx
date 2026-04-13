@@ -25,9 +25,9 @@ import { Footer } from '../../components/Footer';
 import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
+import { RUSSIAN_CITIES } from '../../constants/Cities';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
-// APP_URL used in Head meta tags
 
 interface SpecialistItem {
   nick: string;
@@ -67,6 +67,8 @@ export default function SpecialistsCatalogScreen() {
   const [error, setError] = useState('');
 
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedSort, setSelectedSort] = useState('');
   const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
 
   useEffect(() => {
@@ -106,6 +108,8 @@ export default function SpecialistsCatalogScreen() {
       const params = new URLSearchParams();
       if (fnsFilterParam) params.set('fns', fnsFilterParam);
       if (selectedCategory) params.set('category', selectedCategory);
+      if (selectedCity) params.set('city', selectedCity);
+      if (selectedSort) params.set('sort', selectedSort);
       params.set('page', String(pageNum));
       params.set('limit', String(PAGE_SIZE));
 
