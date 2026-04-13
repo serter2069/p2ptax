@@ -12,6 +12,7 @@ import {
   RefreshControl,
   Image,
   Platform,
+  Switch,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -34,6 +35,12 @@ interface SpecialistProfile {
   contacts: string | null;
   avatarUrl: string | null;
   fnsOffices: string[];
+  phone: string | null;
+  telegram: string | null;
+  whatsapp: string | null;
+  officeAddress: string | null;
+  workingHours: string | null;
+  isAvailable: boolean;
 }
 
 export default function MySpecialistProfileScreen() {
@@ -58,6 +65,14 @@ export default function MySpecialistProfileScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
 
+  // Specialist contact & availability fields
+  const [phone, setPhone] = useState('');
+  const [telegram, setTelegram] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [officeAddress, setOfficeAddress] = useState('');
+  const [workingHours, setWorkingHours] = useState('');
+  const [isAvailable, setIsAvailable] = useState(true);
+
   const fetchProfile = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     setError('');
@@ -70,6 +85,12 @@ export default function MySpecialistProfileScreen() {
       setServices(data.services);
       setAvatarUrl(data.avatarUrl ?? null);
       setFnsOffices(data.fnsOffices ?? []);
+      setPhone(data.phone ?? '');
+      setTelegram(data.telegram ?? '');
+      setWhatsapp(data.whatsapp ?? '');
+      setOfficeAddress(data.officeAddress ?? '');
+      setWorkingHours(data.workingHours ?? '');
+      setIsAvailable(data.isAvailable ?? true);
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         // No profile yet — will need to create one
@@ -205,10 +226,22 @@ export default function MySpecialistProfileScreen() {
         cities,
         services,
         fnsOffices,
+        phone: phone.trim() || null,
+        telegram: telegram.trim() || null,
+        whatsapp: whatsapp.trim() || null,
+        officeAddress: officeAddress.trim() || null,
+        workingHours: workingHours.trim() || null,
+        isAvailable,
       });
       setProfile(updated);
       setDisplayName(updated.displayName ?? '');
       setFnsOffices(updated.fnsOffices ?? []);
+      setPhone(updated.phone ?? '');
+      setTelegram(updated.telegram ?? '');
+      setWhatsapp(updated.whatsapp ?? '');
+      setOfficeAddress(updated.officeAddress ?? '');
+      setWorkingHours(updated.workingHours ?? '');
+      setIsAvailable(updated.isAvailable ?? true);
       Alert.alert('Сохранено', 'Профиль обновлён.');
     } catch (err) {
       const msg =
@@ -321,6 +354,71 @@ export default function MySpecialistProfileScreen() {
               value={contacts}
               onChangeText={setContacts}
               placeholder="Telegram: @username, тел: +7..."
+              autoCapitalize="sentences"
+              style={styles.inputGap}
+            />
+          </View>
+
+          {/* Contact & Availability */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Контакты и доступность</Text>
+
+            {/* isAvailable toggle */}
+            <View style={styles.toggleRow}>
+              <View style={styles.toggleTextBlock}>
+                <Text style={styles.toggleLabel}>
+                  {isAvailable ? 'Принимаю заявки' : 'Не принимаю'}
+                </Text>
+                <Text style={styles.toggleHint}>
+                  Отключите, если временно не хотите получать новые заявки
+                </Text>
+              </View>
+              <Switch
+                value={isAvailable}
+                onValueChange={setIsAvailable}
+                trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
+                thumbColor={Colors.textPrimary}
+                accessibilityLabel="Принимаю заявки"
+              />
+            </View>
+
+            <Input
+              label="Телефон"
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+7 (___) ___-__-__"
+              keyboardType="phone-pad"
+              style={styles.inputGap}
+            />
+            <Input
+              label="Telegram"
+              value={telegram}
+              onChangeText={setTelegram}
+              placeholder="@username"
+              autoCapitalize="none"
+              style={styles.inputGap}
+            />
+            <Input
+              label="WhatsApp"
+              value={whatsapp}
+              onChangeText={setWhatsapp}
+              placeholder="+7 (___) ___-__-__"
+              keyboardType="phone-pad"
+              style={styles.inputGap}
+            />
+            <Input
+              label="Адрес офиса"
+              value={officeAddress}
+              onChangeText={setOfficeAddress}
+              placeholder="г. Москва, ул. Примерная, д. 1, оф. 101"
+              autoCapitalize="sentences"
+              style={styles.inputGap}
+            />
+            <Input
+              label="Часы работы"
+              value={workingHours}
+              onChangeText={setWorkingHours}
+              placeholder="Пн-Пт 9:00-18:00"
               autoCapitalize="sentences"
               style={styles.inputGap}
             />
@@ -518,6 +616,25 @@ const styles = StyleSheet.create({
   },
   inputGap: {
     marginTop: Spacing.sm,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  toggleTextBlock: {
+    flex: 1,
+    gap: 2,
+  },
+  toggleLabel: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  toggleHint: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
   },
   addRow: {
     flexDirection: 'row',
