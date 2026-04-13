@@ -397,17 +397,11 @@ enum ComplaintReason {
   other
 }
 
-model Complaint {
-  id           String          @id @default(cuid())
-  reporterId   String
-  reporter     User            @relation("ComplaintReporter", fields: [reporterId], references: [id])
-  targetUserId String
-  target       User            @relation("ComplaintTarget", fields: [targetUserId], references: [id])
-  reason       ComplaintReason
-  description  String?
-  createdAt    DateTime        @default(now())
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
 
-  @@index([targetUserId])
-  @@index([reporterId])
-  @@map("complaints")
+  @@map("settings")
 }
+
