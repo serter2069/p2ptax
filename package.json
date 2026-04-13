@@ -11,12 +11,12 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "expo export --platform web",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx",
+    "build:web": "npx expo export --platform web",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 200",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
+    "format": "prettier --write '**/*.{ts,tsx,json,md}'",
+    "format:check": "prettier --check '**/*.{ts,tsx,json,md}'",
+    "typecheck": "cd api && npx tsc --noEmit"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

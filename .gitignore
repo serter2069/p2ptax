@@ -56,3 +56,4 @@ api/uploads/
 .vscode/
 .idea/
 worktrees/
+tests/__pycache__/

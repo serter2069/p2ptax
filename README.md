@@ -1,41 +1,45 @@
 # P2PTax
 
-Tax consultant marketplace. Clients find specialists, specialists get clients.
+Tax consultant marketplace — clients find specialists, specialists get clients.
 
 ## Tech Stack
 
 - **Frontend:** Expo + React Native + NativeWind (Tailwind) + TypeScript
-- **Backend:** Express.js + Prisma + PostgreSQL
-- **CI/CD:** GitHub Actions → self-hosted runner
-- **Secrets:** Doppler
+- **Backend:** NestJS + Prisma + PostgreSQL
+- **Deployment:** PM2 + Nginx on self-hosted runner
 
-## URLs
+## Getting Started
 
-| Environment | URL |
-|-------------|-----|
-| Production  | https://p2ptax.smartlaunchhub.com |
-| Staging     | https://p2ptax.smartlaunchhub.com (development branch) |
-| API         | https://p2ptax.smartlaunchhub.com/api |
-
-## Local Development
-
-### Prerequisites
-- Node.js 20+
-- Doppler CLI (`doppler login` once per machine)
-
-### Setup
 ```bash
-doppler setup --project p2ptax --config dev --no-interactive
-
-# API (terminal 1)
-cd api && npm install && doppler run -- npm run dev
-
-# Frontend (terminal 2)
+# Install dependencies
 npm install
-doppler run -- npx expo start --web
+cd api && npm install && cd ..
+
+# Run frontend (web)
+npm run web
+
+# Run API (requires Doppler)
+cd api && npm run dev
 ```
 
-> **Important:** Always run frontend via `doppler run` so `EXPO_PUBLIC_API_URL` is set correctly.
+## Branch Strategy
+
+| Branch | Environment | Purpose |
+|--------|------------|---------|
+| `main` | Production | Stable releases |
+| `development` | Staging | Active development |
+| `feat/*` | — | Feature branches |
+| `fix/*` | — | Bug fix branches |
+
+## CI/CD
+
+Push to `development` triggers:
+1. **Lint** — ESLint check
+2. **Type check** — TypeScript strict mode
+3. **Build** — Expo web export + API build
+4. **Deploy** — Staging at https://p2ptax.smartlaunchhub.com
+
+Push to `main` triggers production deploy.
 
 ## Scripts
 
@@ -45,46 +49,15 @@ npm run lint:fix      # ESLint auto-fix
 npm run format        # Prettier format
 npm run format:check  # Prettier check
 npm run build:web     # Expo web export
-npm run typecheck     # TypeScript type check
+npm run typecheck     # TypeScript check (API)
 ```
 
-## Branch Strategy
+## Environment
 
-| Branch | Purpose |
-|--------|---------|
-| `main` | Production — deployed automatically |
-| `development` | Staging — main working branch |
-| `feat/*` | Feature branches |
-| `fix/*` | Bug fix branches |
+Secrets managed via Doppler. See `.env.example` for required variables.
 
-## CI/CD Pipeline
+## Staging
 
-On push to `development`:
-1. **Lint** — ESLint + Prettier check
-2. **Typecheck** — TypeScript strict mode
-3. **Build** — Expo web export + API build
-4. **Deploy** — rsync to staging server, PM2 restart
-
-On push to `main`:
-1. **Build** — Frontend + API
-2. **Deploy** — Production server
-
-## Project Structure
-
-```
-├── app/              # Expo Router pages
-├── api/              # Express.js backend
-│   ├── src/          # API source code
-│   └── prisma/       # Prisma schema & migrations
-├── components/       # React components
-├── constants/        # App constants, page registry
-├── stores/           # State management
-├── public/           # Static assets
-├── .github/workflows # CI/CD pipelines
-└── docs/             # Documentation
-```
-
-## Database
-
-Remote PostgreSQL on production server. No local DB required.
-Connection managed via Doppler secrets.
+- URL: https://p2ptax.smartlaunchhub.com
+- Version: https://p2ptax.smartlaunchhub.com/version.json
+- Health: https://p2ptax.smartlaunchhub.com/api/health

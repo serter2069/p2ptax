@@ -18,15 +18,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: ESLint
+      - name: Lint
         run: npm run lint
 
-      - name: Prettier check
-        continue-on-error: true
-        run: npm run format:check
-
   validate:
-    needs: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +44,6 @@ jobs:
         run: npm run build
 
   build:
-    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,10 +57,10 @@ jobs:
         run: npm ci
 
       - name: Build frontend (web)
-        run: npx expo export --platform web
+        run: npm run build:web
 
   deploy:
-    needs: build
+    needs: [lint, validate, build]
     runs-on: self-hosted
     steps:
       - name: Checkout
