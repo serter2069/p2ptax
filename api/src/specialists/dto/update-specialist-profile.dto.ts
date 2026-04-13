@@ -25,6 +25,11 @@ export class UpdateSpecialistProfileDto {
   @IsOptional()
   experience?: number;
 
+  @IsInt({ message: 'hourlyRate must be a number' })
+  @Min(0, { message: 'hourlyRate must be at least 0' })
+  @IsOptional()
+  hourlyRate?: number;
+
   @IsArray({ message: 'cities must be an array' })
   @IsString({ each: true, message: 'each city must be a string' })
   @IsOptional()

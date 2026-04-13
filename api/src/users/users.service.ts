@@ -17,11 +17,11 @@ export class UsersService {
     private readonly emailService: EmailService,
   ) {}
 
-  /** Return current user profile (id, email, role, username). */
-  async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null }> {
+  /** Return current user profile (id, email, role, username, firstName, lastName, phone, avatarUrl). */
+  async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null; firstName: string | null; lastName: string | null; phone: string | null; avatarUrl: string | null }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    return { id: user.id, email: user.email, role: user.role, username: user.username };
+    return { id: user.id, email: user.email, role: user.role, username: user.username, firstName: user.firstName, lastName: user.lastName, phone: user.phone, avatarUrl: user.avatarUrl };
   }
 
   /**
@@ -50,6 +50,25 @@ export class UsersService {
     });
 
     return { id: updated.id, email: updated.email, role: updated.role };
+  }
+
+  /** Update client profile fields (firstName, lastName, phone, avatarUrl). */
+  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string; avatarUrl?: string }) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updateData: Record<string, unknown> = {};
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    return { id: updated.id, email: updated.email, role: updated.role, username: updated.username, firstName: updated.firstName, lastName: updated.lastName, phone: updated.phone, avatarUrl: updated.avatarUrl };
   }
 
   /** Set username (+ optional firstName/lastName) for a user. */

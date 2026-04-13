@@ -1,9 +1,19 @@
-import { Controller, Delete, Get, Patch, Post, Body, Request, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Patch, Post, Body, Request, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { IsString, IsArray, IsBoolean, IsOptional, IsIn, Length, Matches, MinLength, ArrayMinSize, IsEmail } from 'class-validator';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EmailThrottlerGuard } from '../auth/email-throttler.guard';
 import { UsersService } from './users.service';
+import { StorageService } from '../storage/storage.service';
+
+const AVATAR_UPLOADS_DIR = join(__dirname, '..', '..', 'uploads', 'avatars');
+if (!existsSync(AVATAR_UPLOADS_DIR)) {
+  mkdirSync(AVATAR_UPLOADS_DIR, { recursive: true });
+}
 
 class SetUsernameDto {
   @IsString()
@@ -36,6 +46,23 @@ class UpdateMeDto {
   @IsString()
   @Length(3, 20)
   username?: string;
+}
+
+class UpdateProfileDto {
+  @IsOptional()
+  @IsString()
+  @Length(2, 50)
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 50)
+  lastName?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 30)
+  phone?: string;
 }
 
 class SetupSpecialistProfileDto {
@@ -72,7 +99,10 @@ class ChangeEmailConfirmDto {
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly storageService: StorageService,
+  ) {}
 
   /** GET /users/me — return current user profile */
   @Get('me')
@@ -106,6 +136,50 @@ export class UsersController {
     }
 
     return result;
+  }
+
+  /** PATCH /users/me/profile — update client profile (firstName, lastName, phone) */
+  @Patch('me/profile')
+  updateProfile(
+    @Request() req: { user: { id: string } },
+    @Body() body: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(req.user.id, body);
+  }
+
+  /** POST /users/me/avatar — upload avatar for any user */
+  @Post('me/avatar')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          cb(new BadRequestException('Only image files are allowed') as any, false);
+        } else {
+          cb(null, true);
+        }
+      },
+    }),
+  )
+  async uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file uploaded');
+
+    const ext = extname(file.originalname) || '.jpg';
+    let avatarUrl: string;
+
+    if (this.storageService.isS3Enabled) {
+      const s3Key = `avatars/${req.user.id}${ext}`;
+      avatarUrl = await this.storageService.uploadBufferPublic(s3Key, file.buffer, file.mimetype);
+    } else {
+      const { writeFile } = await import('fs/promises');
+      const filename = `${req.user.id}${ext}`;
+      const filePath = join(AVATAR_UPLOADS_DIR, filename);
+      await writeFile(filePath, file.buffer);
+      avatarUrl = `/api/uploads/avatars/${filename}`;
+    }
+
+    return this.usersService.updateProfile(req.user.id, { avatarUrl });
   }
 
   /** PATCH /users/me/username — set or update username + name */
