@@ -20,7 +20,7 @@ import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
 
 type ResponseStatus = 'sent' | 'viewed' | 'accepted' | 'deactivated';
-type FilterTab = 'all' | 'active' | 'accepted' | 'deactivated';
+type FilterTab = 'all' | 'active' | 'deactivated';
 
 interface ResponseItem {
   id: string;
@@ -45,13 +45,12 @@ interface ResponseItem {
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: 'all', label: 'Все' },
   { key: 'active', label: 'Активные' },
-  { key: 'accepted', label: 'Принятые' },
   { key: 'deactivated', label: 'Отклоненные' },
 ];
 
 const STATUS_CONFIG: Record<ResponseStatus, { label: string; bg: string; color: string }> = {
-  sent: { label: 'Отправлен', bg: Colors.statusBg.info, color: Colors.statusInfo },
-  viewed: { label: 'Просмотрен', bg: Colors.statusBg.warning, color: Colors.statusWarning },
+  sent: { label: 'Отправлен', bg: Colors.statusBg.neutral, color: Colors.statusNeutral },
+  viewed: { label: 'Просмотрен', bg: Colors.statusBg.info, color: Colors.statusInfo },
   accepted: { label: 'Принят', bg: Colors.statusBg.success, color: Colors.statusSuccess },
   deactivated: { label: 'Деактивирован', bg: Colors.statusBg.error, color: Colors.statusError },
 };
@@ -60,8 +59,6 @@ function filterResponses(responses: ResponseItem[], tab: FilterTab): ResponseIte
   switch (tab) {
     case 'active':
       return responses.filter((r) => r.status === 'sent' || r.status === 'viewed');
-    case 'accepted':
-      return responses.filter((r) => r.status === 'accepted');
     case 'deactivated':
       return responses.filter((r) => r.status === 'deactivated');
     default:
@@ -119,7 +116,7 @@ export default function SpecialistMyResponsesScreen() {
     if (deactivatingId) return;
     setDeactivatingId(responseId);
     try {
-      await api.patch(`/requests/responses/${responseId}`, { status: 'deactivated' });
+      await api.patch(`/responses/${responseId}`, { status: 'deactivated' });
       setResponses((prev) =>
         prev.map((r) => (r.id === responseId ? { ...r, status: 'deactivated' as ResponseStatus } : r)),
       );
@@ -151,7 +148,11 @@ export default function SpecialistMyResponsesScreen() {
     const canDeactivate = item.status === 'sent' || item.status === 'viewed';
 
     return (
-      <View style={styles.cardWrapper}>
+      <TouchableOpacity
+        style={styles.cardWrapper}
+        activeOpacity={0.7}
+        onPress={() => router.push(`/requests/${item.request.id}`)}
+      >
         <Card padding={Spacing.lg}>
           {/* Title + Status */}
           <View style={styles.topRow}>
@@ -199,7 +200,10 @@ export default function SpecialistMyResponsesScreen() {
           {canDeactivate && (
             <TouchableOpacity
               style={styles.deactivateBtn}
-              onPress={() => handleDeactivate(item.id)}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleDeactivate(item.id);
+              }}
               disabled={deactivatingId === item.id}
               activeOpacity={0.7}
             >
@@ -211,7 +215,7 @@ export default function SpecialistMyResponsesScreen() {
             </TouchableOpacity>
           )}
         </Card>
-      </View>
+      </TouchableOpacity>
     );
   }
 
@@ -255,7 +259,7 @@ export default function SpecialistMyResponsesScreen() {
       title="Нет откликов"
       subtitle={
         activeTab === 'all'
-          ? 'Вы ещё не откликались ни на один запрос'
+          ? "You haven't responded to any requests yet"
           : 'Нет откликов в этой категории'
       }
       ctaLabel={activeTab === 'all' ? 'Смотреть запросы' : undefined}
