@@ -50,7 +50,6 @@ export default function ServicesScreen() {
       }
     }
     loadFromStorage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const POPULAR_SERVICES = [

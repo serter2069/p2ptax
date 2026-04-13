@@ -277,7 +277,7 @@ export default function RequestsFeedScreen() {
   // Immediately refetch when category, budget, or IFNS changes
   useEffect(() => {
     fetchFeed({ replace: true });
-  }, [selectedCategory, maxBudget, selectedIfns]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedCategory, maxBudget, selectedIfns]);
 
   function handleRefresh() {
     setRefreshing(true);

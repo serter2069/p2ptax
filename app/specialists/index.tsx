@@ -126,7 +126,6 @@ export default function SpecialistsCatalogScreen() {
 
   useEffect(() => {
     fetchSpecialists(1, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fnsFilterParam, selectedCategory]);
 
   function handleRefresh() {
