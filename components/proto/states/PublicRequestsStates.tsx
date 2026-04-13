@@ -165,6 +165,27 @@ function LoadingRequests() {
   );
 }
 
+function ErrorRequests() {
+  return (
+    <View style={s.container}>
+      <View style={s.topBar}>
+        <Text style={s.pageTitle}>Заявки</Text>
+        <View style={s.filterToggle}>
+          <Text style={s.filterToggleText}>Фильтры</Text>
+        </View>
+      </View>
+      <View style={s.errorWrap}>
+        <Feather name="alert-circle" size={48} color={Colors.statusError} />
+        <Text style={s.errorTitle}>Не удалось загрузить заявки</Text>
+        <Text style={s.errorText}>Проверьте подключение к интернету и попробуйте снова</Text>
+        <Pressable style={s.retryBtn} onPress={() => {}}>
+          <Text style={s.retryBtnText}>Повторить</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export function PublicRequestsStates() {
   return (
     <>
@@ -176,6 +197,9 @@ export function PublicRequestsStates() {
       </StateSection>
       <StateSection title="LOADING">
         <LoadingRequests />
+      </StateSection>
+      <StateSection title="ERROR">
+        <ErrorRequests />
       </StateSection>
     </>
   );
@@ -238,4 +262,12 @@ const s = StyleSheet.create({
   emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
   emptyStateWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.md },
   skeleton: { backgroundColor: Colors.bgSecondary },
+  errorWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.md },
+  errorTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  errorText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
+  retryBtn: {
+    backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md, marginTop: Spacing.sm,
+  },
+  retryBtnText: { fontSize: Typography.fontSize.sm, color: '#fff', fontWeight: Typography.fontWeight.semibold },
 });

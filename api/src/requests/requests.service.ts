@@ -150,7 +150,7 @@ export class RequestsService {
       this.prisma.request.count({ where }),
     ]);
 
-    return { items, total, page: pageNum, pageSize: PAGE_SIZE };
+    return { items, total, page: pageNum, pageSize: PAGE_SIZE, hasMore: skip + items.length < total };
   }
 
   async findMy(clientId: string) {
