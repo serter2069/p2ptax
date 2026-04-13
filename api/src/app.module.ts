@@ -17,6 +17,7 @@ import { StorageModule } from './storage/storage.module';
 import { IfnsModule } from './ifns/ifns.module';
 import { CategoriesModule } from './categories/categories.module';
 import { StatsModule } from './stats/stats.module';
+import { ContentModule } from './content/content.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { StatsModule } from './stats/stats.module';
     IfnsModule,
     CategoriesModule,
     StatsModule,
+    ContentModule,
   ],
   controllers: [AppController],
 })

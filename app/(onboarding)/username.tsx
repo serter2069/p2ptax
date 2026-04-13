@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '../../components/Button';
@@ -34,6 +35,7 @@ export default function UsernameScreen() {
   const [usernameEdited, setUsernameEdited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Auto-generate username from firstName + lastName
   const suggestedUsername = useMemo(
