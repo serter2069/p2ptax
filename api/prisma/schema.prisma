@@ -87,6 +87,7 @@ model SpecialistProfile {
   contacts    String?
   avatarUrl   String?
   profileComplete Boolean @default(false)
+  isAvailable    Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
