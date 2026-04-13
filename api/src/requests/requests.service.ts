@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   ConflictException,
   BadRequestException,
+  UnprocessableEntityException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,6 +15,7 @@ import { RespondRequestDto } from './dto/respond-request.dto';
 import { RequestStatus, ResponseStatus, Prisma } from '@prisma/client';
 
 const PAGE_SIZE = 20;
+const DEFAULT_MAX_REQUESTS = 5;
 
 @Injectable()
 export class RequestsService {
@@ -54,6 +56,17 @@ export class RequestsService {
     });
   }
 
+  private async getMaxRequests(): Promise<number> {
+    const setting = await this.prisma.setting.findUnique({
+      where: { key: 'max_requests_per_client' },
+    });
+    if (setting) {
+      const parsed = parseInt(setting.value, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return DEFAULT_MAX_REQUESTS;
+  }
+
   async create(clientId: string, dto: CreateRequestDto) {
     // Map aliases: title -> description, serviceType -> category
     const description = dto.description || dto.title;
@@ -67,11 +80,14 @@ export class RequestsService {
       throw new BadRequestException('city is required');
     }
 
+    const maxRequests = await this.getMaxRequests();
     const openCount = await this.prisma.request.count({
       where: { clientId, status: RequestStatus.OPEN },
     });
-    if (openCount >= 5) {
-      throw new BadRequestException('Maximum 5 active requests allowed');
+    if (openCount >= maxRequests) {
+      throw new UnprocessableEntityException(
+        `Достигнут лимит заявок (${maxRequests}). Удалите или закройте существующие заявки.`,
+      );
     }
 
     const created = await this.prisma.request.create({
@@ -171,6 +187,30 @@ export class RequestsService {
         },
       },
     });
+  }
+
+  async getDashboardStats(clientId: string) {
+    const maxRequests = await this.getMaxRequests();
+
+    const [totalRequests, activeRequests, totalResponses, acceptedResponses] =
+      await Promise.all([
+        this.prisma.request.count({ where: { clientId } }),
+        this.prisma.request.count({ where: { clientId, status: RequestStatus.OPEN } }),
+        this.prisma.response.count({
+          where: { request: { clientId } },
+        }),
+        this.prisma.response.count({
+          where: { request: { clientId }, status: ResponseStatus.accepted },
+        }),
+      ]);
+
+    return {
+      totalRequests,
+      maxRequests,
+      activeRequests,
+      totalResponses,
+      acceptedResponses,
+    };
   }
 
   async findResponses(requestId: string, userId: string) {
