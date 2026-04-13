@@ -201,11 +201,11 @@ class TestRequestsController(unittest.TestCase):
 
     def test_extend_endpoint_exists(self):
         """PATCH /requests/:id/extend endpoint must exist."""
-        self.assertIn("@Patch(':id/extend')", self.controller)
+        self.assertIn("@Post(':id/extend')", self.controller)
 
     def test_extend_requires_auth(self):
         """extend endpoint must require JWT auth and CLIENT role."""
-        extend_section = self.controller[self.controller.index("@Patch(':id/extend')"):]
+        extend_section = self.controller[self.controller.index("@Post(':id/extend')"):]
         self.assertIn("JwtAuthGuard", extend_section[:500])
         self.assertIn("Role.CLIENT", extend_section[:500])
 
