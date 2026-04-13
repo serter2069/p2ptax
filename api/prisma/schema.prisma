@@ -91,7 +91,56 @@ model SpecialistProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  specialistFns      SpecialistFns[]
+  specialistServices SpecialistService[]
+
   @@map("specialist_profiles")
+}
+
+/// Predefined service types offered by specialists within a specific FNS office.
+model Service {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  specialistServices SpecialistService[]
+
+  @@map("services")
+}
+
+/// Many-to-many join: which FNS offices a specialist is affiliated with.
+model SpecialistFns {
+  id            String   @id @default(cuid())
+  specialistId  String
+  fnsId         String
+  createdAt     DateTime @default(now())
+
+  specialist    SpecialistProfile @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  fns           Ifns              @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+
+  @@unique([specialistId, fnsId])
+  @@index([specialistId])
+  @@index([fnsId])
+  @@map("specialist_fns")
+}
+
+/// Many-to-many join: which services a specialist offers at a specific FNS office.
+model SpecialistService {
+  id            String   @id @default(cuid())
+  specialistId  String
+  fnsId         String
+  serviceId     String
+  createdAt     DateTime @default(now())
+
+  specialist    SpecialistProfile @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  fns           Ifns              @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+  service       Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([specialistId, fnsId, serviceId])
+  @@index([specialistId])
+  @@index([fnsId])
+  @@index([serviceId])
+  @@map("specialist_services")
 }
 
 model Request {
@@ -245,6 +294,9 @@ model Ifns {
   searchAliases String?
   cityId        String
   city          City    @relation(fields: [cityId], references: [id])
+
+  specialistFns      SpecialistFns[]
+  specialistServices SpecialistService[]
 
   @@index([cityId])
   @@index([name])
