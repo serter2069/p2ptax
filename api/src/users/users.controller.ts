@@ -36,6 +36,16 @@ class UpdateSettingsDto {
   emailNotifications?: boolean;
 }
 
+class UpdateNotificationSettingsDto {
+  @IsBoolean()
+  @IsOptional()
+  new_responses?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  new_messages?: boolean;
+}
+
 class UpdateMeDto {
   @IsOptional()
   @IsString()
@@ -217,6 +227,21 @@ export class UsersController {
     @Body() body: UpdateSettingsDto,
   ) {
     return this.usersService.updateSettings(req.user.id, body);
+  }
+
+  /** GET /users/me/notification-settings — return granular notification preferences */
+  @Get('me/notification-settings')
+  getNotificationSettings(@Request() req: { user: { id: string } }) {
+    return this.usersService.getNotificationSettings(req.user.id);
+  }
+
+  /** PATCH /users/me/notification-settings — update individual notification toggles */
+  @Patch('me/notification-settings')
+  updateNotificationSettings(
+    @Request() req: { user: { id: string } },
+    @Body() body: UpdateNotificationSettingsDto,
+  ) {
+    return this.usersService.updateNotificationSettings(req.user.id, body);
   }
 
   /** DELETE /users/me — permanently delete the authenticated user's account */

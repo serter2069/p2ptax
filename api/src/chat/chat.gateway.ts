@@ -229,9 +229,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     const recipient = await this.prisma.user.findUnique({
       where: { id: recipientId },
-      select: { email: true, emailNotifications: true },
+      select: { email: true, notifyNewMessages: true },
     });
-    if (recipient?.email && recipient.emailNotifications) {
+    if (recipient?.email && recipient.notifyNewMessages) {
       this.emailService.notifyNewMessage(recipient.email, senderEmail, threadId);
     }
   }
