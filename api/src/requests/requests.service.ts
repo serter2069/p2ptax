@@ -225,6 +225,33 @@ export class RequestsService {
     return publicFields;
   }
 
+  async findPublicById(requestId: string) {
+    const request = await this.prisma.request.findUnique({
+      where: { id: requestId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        city: true,
+        ifnsId: true,
+        ifnsName: true,
+        budget: true,
+        category: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { responses: true } },
+      },
+    });
+
+    if (!request || request.status === RequestStatus.CLOSED) {
+      throw new NotFoundException('Request not found');
+    }
+
+    const { _count, ...rest } = request;
+    return { ...rest, responseCount: _count.responses };
+  }
+
   async respond(specialistId: string, requestId: string, dto: RespondRequestDto) {
     // Check request exists and is open
     const request = await this.prisma.request.findUnique({
