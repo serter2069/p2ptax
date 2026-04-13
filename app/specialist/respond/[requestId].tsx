@@ -36,7 +36,9 @@ export default function SpecialistRespondScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [message, setMessage] = useState('');
+  const [comment, setComment] = useState('');
+  const [price, setPrice] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [alreadyResponded, setAlreadyResponded] = useState(false);
@@ -74,14 +76,33 @@ export default function SpecialistRespondScreen() {
     return () => { cancelled = true; };
   }, [requestId]);
 
+  const getTomorrowDate = useCallback(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  }, []);
+
+  const isFormValid = useCallback(() => {
+    const trimmed = comment.trim();
+    if (trimmed.length < 10 || trimmed.length > 500) return false;
+    const parsedPrice = parseInt(price, 10);
+    if (isNaN(parsedPrice) || parsedPrice < 0) return false;
+    if (!deadline || deadline < getTomorrowDate()) return false;
+    return true;
+  }, [comment, price, deadline, getTomorrowDate]);
+
   const handleSubmit = useCallback(async () => {
-    if (!requestId || !message.trim()) return;
+    if (!requestId || !isFormValid()) return;
 
     setSubmitting(true);
     setSubmitError('');
 
     try {
-      await api.post(`/requests/${requestId}/respond`, { message: message.trim() });
+      await api.post(`/requests/${requestId}/respond`, {
+        comment: comment.trim(),
+        price: parseInt(price, 10),
+        deadline,
+      });
 
       if (Platform.OS === 'web') {
         alert('Your response has been sent');
@@ -103,7 +124,7 @@ export default function SpecialistRespondScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [requestId, message, router]);
+  }, [requestId, comment, price, deadline, isFormValid, router]);
 
   if (!user || user.role !== 'SPECIALIST') {
     return null;
@@ -181,10 +202,35 @@ export default function SpecialistRespondScreen() {
           {!alreadyResponded && (
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Your response</Text>
+
+              <Text style={styles.fieldLabel}>Предлагаемая цена, руб.</Text>
+              <TextInput
+                style={styles.input}
+                value={price}
+                onChangeText={(text) => setPrice(text.replace(/[^0-9]/g, ''))}
+                placeholder="0"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="numeric"
+                editable={!submitting}
+                testID="price-input"
+              />
+
+              <Text style={styles.fieldLabel}>Срок выполнения</Text>
+              <TextInput
+                style={styles.input}
+                value={deadline}
+                onChangeText={setDeadline}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={Colors.textMuted}
+                editable={!submitting}
+                testID="deadline-input"
+              />
+
+              <Text style={styles.fieldLabel}>Комментарий</Text>
               <TextInput
                 style={styles.textArea}
-                value={message}
-                onChangeText={setMessage}
+                value={comment}
+                onChangeText={setComment}
                 placeholder="Describe how you can help with this request..."
                 placeholderTextColor={Colors.textMuted}
                 multiline
@@ -192,9 +238,10 @@ export default function SpecialistRespondScreen() {
                 maxLength={500}
                 textAlignVertical="top"
                 editable={!submitting}
+                testID="comment-input"
               />
               <Text style={styles.charCount}>
-                {message.length}/500
+                {comment.length}/500
               </Text>
 
               {submitError && !alreadyResponded ? (
@@ -205,7 +252,7 @@ export default function SpecialistRespondScreen() {
                 onPress={handleSubmit}
                 variant="primary"
                 loading={submitting}
-                disabled={!message.trim() || submitting}
+                disabled={!isFormValid() || submitting}
                 style={styles.submitBtn}
               >
                 Send response
@@ -296,6 +343,23 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.textSecondary,
     fontWeight: Typography.fontWeight.medium,
+  },
+  fieldLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+    marginTop: Spacing.md,
+  },
+  input: {
+    backgroundColor: Colors.bgPrimary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
   },
   textArea: {
     minHeight: 120,
