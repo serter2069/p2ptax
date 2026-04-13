@@ -1,17 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  TouchableOpacity,
-  TextInput,
-  Platform,
-  Share,
-} from 'react-native';
+
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
