@@ -15,6 +15,7 @@ enum Role {
 
 enum RequestStatus {
   OPEN
+  CLOSING_SOON
   CLOSED
   CANCELLED
 }
@@ -159,26 +160,29 @@ model SpecialistService {
 }
 
 model Request {
-  id          String        @id @default(cuid())
-  clientId    String
-  client      User          @relation(fields: [clientId], references: [id])
-  title       String
-  description String
-  city        String
-  ifnsId      String?
-  ifnsName    String?
-  budget      Int?
-  category    String?
-  documents   Json          @default("[]")
-  status      RequestStatus @default(OPEN)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  clientId         String
+  client           User          @relation(fields: [clientId], references: [id])
+  title            String
+  description      String
+  city             String
+  ifnsId           String?
+  ifnsName         String?
+  budget           Int?
+  category         String?
+  documents        Json          @default("[]")
+  status           RequestStatus @default(OPEN)
+  lastActivityAt   DateTime      @default(now())
+  extensionsCount  Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   responses   Response[]
   reviews     Review[]
 
   @@index([clientId])
   @@index([city, status])
+  @@index([status, lastActivityAt])
   @@map("requests")
 }
 
