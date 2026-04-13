@@ -261,12 +261,18 @@ export class EmailService {
   private async send(opts: { to: string; subject: string; text: string; html: string; userId: string }): Promise<void> {
     if (!this.client) return;
 
+    const unsubscribeUrl = this.getUnsubscribeUrl(opts.userId);
+
     await this.client.transactionalEmails.sendTransacEmail({
       sender: { email: this.senderEmail, name: this.senderName },
       to: [{ email: opts.to }],
       subject: opts.subject,
       textContent: this.appendTextFooter(opts.text, opts.userId),
       htmlContent: this.wrapWithFooter(opts.html, opts.userId),
+      headers: {
+        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
   }
 }
