@@ -287,6 +287,80 @@ export const MOCK_ADMIN_STATS = {
   avgRating: 4.7,
 };
 
+export type SpecialistResponseStatus = 'sent' | 'viewed' | 'accepted' | 'deactivated';
+
+export interface MockSpecialistResponse {
+  id: string;
+  requestId: string;
+  requestTitle: string;
+  requestCity: string;
+  requestService: string;
+  requestDeadline: string;
+  price: string;
+  status: SpecialistResponseStatus;
+  createdAt: string;
+  threadId?: string;
+}
+
+export const MOCK_SPECIALIST_RESPONSES: MockSpecialistResponse[] = [
+  {
+    id: 'sr1',
+    requestId: '1',
+    requestTitle: 'Заполнить декларацию 3-НДФЛ за 2025 год',
+    requestCity: 'Москва',
+    requestService: 'Декларация 3-НДФЛ',
+    requestDeadline: '2026-04-30',
+    price: '4 500 ₽',
+    status: 'sent',
+    createdAt: '2026-04-08',
+  },
+  {
+    id: 'sr2',
+    requestId: '2',
+    requestTitle: 'Регистрация ИП на УСН',
+    requestCity: 'Санкт-Петербург',
+    requestService: 'Регистрация ИП',
+    requestDeadline: '2026-04-20',
+    price: '6 000 ₽',
+    status: 'viewed',
+    createdAt: '2026-04-07',
+  },
+  {
+    id: 'sr3',
+    requestId: '3',
+    requestTitle: 'Оптимизация налогов для ООО',
+    requestCity: 'Казань',
+    requestService: 'Оптимизация налогов',
+    requestDeadline: '2026-05-15',
+    price: '12 000 ₽',
+    status: 'accepted',
+    threadId: '1',
+    createdAt: '2026-04-05',
+  },
+  {
+    id: 'sr4',
+    requestId: '4',
+    requestTitle: 'Представление в налоговой при камеральной проверке',
+    requestCity: 'Екатеринбург',
+    requestService: 'Представление в ФНС',
+    requestDeadline: '2026-04-10',
+    price: '18 000 ₽',
+    status: 'deactivated',
+    createdAt: '2026-03-20',
+  },
+  {
+    id: 'sr5',
+    requestId: '5',
+    requestTitle: 'Закрытие ИП с долгами по налогам',
+    requestCity: 'Ростов-на-Дону',
+    requestService: 'Закрытие ИП',
+    requestDeadline: '2026-04-25',
+    price: '8 000 ₽',
+    status: 'sent',
+    createdAt: '2026-04-10',
+  },
+];
+
 export const MOCK_PRICING_PLANS = [
   {
     id: 'free',
