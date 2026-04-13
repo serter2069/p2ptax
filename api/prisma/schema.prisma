@@ -92,8 +92,13 @@ model SpecialistProfile {
   badges      String[]
   fnsOffices  String[]
   fnsDepartmentsData Json?
-  contacts    String?
-  avatarUrl   String?
+  contacts      String?
+  phone         String?
+  telegram      String?
+  whatsapp      String?
+  officeAddress String?
+  workingHours  String?
+  avatarUrl     String?
   profileComplete Boolean @default(false)
   isAvailable    Boolean @default(true)
 
