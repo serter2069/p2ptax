@@ -96,6 +96,31 @@ interface FeedResponse {
   total: number;
   page: number;
   pageSize: number;
+  hasMore: boolean;
+}
+
+// Skeleton card for loading state
+function SkeletonCard() {
+  return (
+    <View style={styles.cardWrapperMobile}>
+      <Card padding={Spacing.lg} variant="elevated">
+        <View style={styles.skeletonRow}>
+          <View style={[styles.skeletonBlock, { width: '40%', height: 14 }]} />
+          <View style={[styles.skeletonBlock, { width: 60, height: 20, borderRadius: BorderRadius.full }]} />
+        </View>
+        <View style={[styles.skeletonBlock, { width: '90%', height: 14, marginTop: Spacing.sm }]} />
+        <View style={[styles.skeletonBlock, { width: '75%', height: 14 }]} />
+        <View style={styles.skeletonRow}>
+          <View style={[styles.skeletonBlock, { width: 70, height: 20, borderRadius: BorderRadius.full }]} />
+          <View style={[styles.skeletonBlock, { width: 80, height: 20, borderRadius: BorderRadius.full }]} />
+        </View>
+        <View style={styles.skeletonRow}>
+          <View style={[styles.skeletonBlock, { width: 60, height: 12 }]} />
+          <View style={[styles.skeletonBlock, { width: 50, height: 12 }]} />
+        </View>
+      </Card>
+    </View>
+  );
 }
 
 export default function RequestsFeedScreen() {

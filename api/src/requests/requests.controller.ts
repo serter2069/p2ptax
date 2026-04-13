@@ -66,13 +66,16 @@ export class RequestsController {
     @Query('city') city?: string,
     @Query('page') page?: string,
     @Query('category') category?: string,
+    @Query('service') service?: string,
     @Query('maxBudget') maxBudget?: string,
     @Query('ifnsId') ifnsId?: string,
   ) {
+    // 'service' is an alias for 'category' (both accepted)
+    const effectiveCategory = category || service;
     return this.requestsService.findFeed(
       city,
       page ? parseInt(page, 10) : 1,
-      category,
+      effectiveCategory,
       maxBudget ? parseInt(maxBudget, 10) : undefined,
       ifnsId,
     );
