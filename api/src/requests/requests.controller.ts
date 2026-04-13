@@ -9,8 +9,12 @@ import {
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { CreateQuickRequestDto } from './dto/create-quick-request.dto';
@@ -21,6 +25,15 @@ import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
+
+const REQUEST_DOC_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+]);
+
+const MAX_REQUEST_DOCUMENTS = 5;
+const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10 MB
 
 @Controller('requests')
 export class RequestsController {
@@ -112,6 +125,36 @@ export class RequestsController {
   @UseGuards(JwtAuthGuard)
   getResponses(@Request() req: any, @Param('id') id: string) {
     return this.requestsService.findResponses(id, req.user.id);
+  }
+
+  // POST /requests/:id/documents — upload documents to a request
+  @Post(':id/documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CLIENT)
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      limits: { fileSize: MAX_DOCUMENT_SIZE, files: MAX_REQUEST_DOCUMENTS },
+    }),
+  )
+  async uploadDocuments(
+    @Request() req: any,
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files uploaded');
+    }
+
+    // Validate MIME types
+    for (const file of files) {
+      if (!REQUEST_DOC_MIME_TYPES.has(file.mimetype)) {
+        throw new BadRequestException(
+          `File type not allowed: ${file.mimetype}. Allowed: PDF, JPG, PNG`,
+        );
+      }
+    }
+
+    return this.requestsService.uploadDocuments(req.user.id, id, files);
   }
 
   // GET /requests/:id — owner gets full data including responses
