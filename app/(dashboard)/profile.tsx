@@ -20,7 +20,7 @@ import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../consta
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
+import { useFnsSearch, FnsOfficeItem } from '../../hooks/useFnsData';
 import { shortFnsLabel } from '../../lib/format';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 

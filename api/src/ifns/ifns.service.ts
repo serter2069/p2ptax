@@ -5,6 +5,15 @@ import { PrismaService } from '../prisma/prisma.service';
 export class IfnsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAll(cityId?: string) {
+    const where = cityId ? { cityId } : {};
+    return this.prisma.ifns.findMany({
+      where,
+      include: { city: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async search(query: string) {
     const where = query
       ? {
@@ -20,6 +29,12 @@ export class IfnsService {
       where,
       include: { city: true },
       take: 20,
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async getCities() {
+    return this.prisma.city.findMany({
       orderBy: { name: 'asc' },
     });
   }
