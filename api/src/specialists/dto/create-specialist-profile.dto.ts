@@ -1,4 +1,15 @@
-import { IsString, IsArray, IsOptional, IsInt, Min, MinLength, MaxLength, ArrayMinSize, ArrayMaxSize, Matches } from 'class-validator';
+import { IsString, IsArray, IsOptional, IsInt, Min, MinLength, MaxLength, ArrayMinSize, ArrayMaxSize, Matches, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+/** One FNS office with its selected service names */
+export class FnsServiceEntryDto {
+  @IsString()
+  fnsId!: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  serviceNames!: string[];
+}
 
 export class CreateSpecialistProfileDto {
   @IsString({ message: 'nick must be a string' })
@@ -25,6 +36,12 @@ export class CreateSpecialistProfileDto {
 
   @IsOptional()
   fnsDepartmentsData?: Array<{ office: string; departments: string[] }>;
+
+  /** Structured FNS-service bindings: array of { fnsId, serviceNames[] } */
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => FnsServiceEntryDto)
+  fnsServices?: FnsServiceEntryDto[];
 
   @IsInt({ message: 'experience must be a number' })
   @Min(0, { message: 'experience must be at least 0' })
