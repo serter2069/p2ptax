@@ -543,7 +543,10 @@ export class RequestsService {
   async acceptResponse(responseId: string, clientId: string) {
     const response = await this.prisma.response.findUnique({
       where: { id: responseId },
-      include: { request: { select: { clientId: true } } },
+      include: {
+        request: { select: { clientId: true, title: true } },
+        specialist: { select: { id: true, email: true, notifyNewResponses: true } },
+      },
     });
     if (!response) throw new NotFoundException('Response not found');
     if (response.request.clientId !== clientId) {
@@ -580,6 +583,21 @@ export class RequestsService {
 
       return { response: updated, thread };
     });
+
+    // Notify specialist that their response was accepted — fire-and-forget
+    if (response.specialist.notifyNewResponses) {
+      const client = await this.prisma.user.findUnique({
+        where: { id: clientId },
+        select: { email: true, firstName: true, lastName: true },
+      });
+      const clientName = [client?.firstName, client?.lastName].filter(Boolean).join(' ') || client?.email || 'Клиент';
+      this.emailService.notifyResponseAccepted(
+        response.specialist.email,
+        clientName,
+        response.request.title,
+        response.specialist.id,
+      );
+    }
 
     return result;
   }
