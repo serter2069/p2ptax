@@ -28,10 +28,12 @@ def test_no_message_state():
     assert not re.search(r"const\s*\[message,\s*setMessage\]", content), \
         "old message state should be removed"
 
+
+
 def test_price_label():
     content = read_file()
-    assert "Предлагаемая цена, руб." in content, \
-        "Price field label must be present"
+    assert "Стоимость, руб." in content, \
+        "Price field label must be 'Стоимость, руб.'"
 
 def test_deadline_label():
     content = read_file()
@@ -111,3 +113,43 @@ def test_input_style_exists():
     # Check for input style definition (not just usage)
     assert re.search(r"input:\s*\{", content), \
         "input style must be defined"
+
+def test_inline_price_error_displayed():
+    content = read_file()
+    assert 'testID="price-error"' in content, \
+        "Inline price validation error must be displayed"
+
+def test_inline_deadline_error_displayed():
+    content = read_file()
+    assert 'testID="deadline-error"' in content, \
+        "Inline deadline validation error must be displayed"
+
+def test_inline_comment_error_displayed():
+    content = read_file()
+    assert 'testID="comment-error"' in content, \
+        "Inline comment validation error must be displayed"
+
+def test_field_error_style_exists():
+    content = read_file()
+    assert "fieldError:" in content, \
+        "fieldError style must be defined for inline errors"
+
+def test_input_error_style_exists():
+    content = read_file()
+    assert "inputError:" in content, \
+        "inputError style must be defined for error border"
+
+def test_get_price_error_function():
+    content = read_file()
+    assert "getPriceError" in content, \
+        "getPriceError validation function must exist"
+
+def test_get_deadline_error_function():
+    content = read_file()
+    assert "getDeadlineError" in content, \
+        "getDeadlineError validation function must exist"
+
+def test_get_comment_error_function():
+    content = read_file()
+    assert "getCommentError" in content, \
+        "getCommentError validation function must exist"
