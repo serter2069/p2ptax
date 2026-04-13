@@ -79,6 +79,7 @@ interface IfnsItem {
 
 interface RequestItem {
   id: string;
+  title?: string;
   description: string;
   city: string;
   budget?: number | null;
@@ -353,7 +354,12 @@ export default function RequestsFeedScreen() {
             <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
           </View>
 
-          {/* Description */}
+          {/* Title + Description */}
+          {item.title ? (
+            <Text style={styles.cardTitle} numberOfLines={2}>
+              {item.title}
+            </Text>
+          ) : null}
           <Text style={styles.description} numberOfLines={3}>
             {item.description}
           </Text>
@@ -1156,6 +1162,13 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textMuted,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+    lineHeight: 24,
+    marginBottom: Spacing.xs,
   },
   description: {
     fontSize: Typography.fontSize.base,

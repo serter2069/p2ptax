@@ -1,17 +1,17 @@
-import { IsString, IsNotEmpty, MaxLength, MinLength, IsOptional, IsInt, Min, ValidateIf } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, MinLength, IsOptional, IsInt, Min } from 'class-validator';
 
 export class CreateRequestDto {
-  @ValidateIf((o) => !o.title)
+  @IsNotEmpty({ message: 'title is required' })
+  @IsString({ message: 'title must be a string' })
+  @MinLength(3, { message: 'title must be at least 3 characters' })
+  @MaxLength(100, { message: 'title must be at most 100 characters' })
+  title!: string;
+
+  @IsNotEmpty({ message: 'description is required' })
   @IsString({ message: 'description must be a string' })
   @MinLength(10, { message: 'description must be at least 10 characters' })
   @MaxLength(2000, { message: 'description must be at most 2000 characters' })
-  description?: string;
-
-  @ValidateIf((o) => !o.description)
-  @IsString({ message: 'title must be a string' })
-  @MinLength(10, { message: 'title must be at least 10 characters' })
-  @MaxLength(2000, { message: 'title must be at most 2000 characters' })
-  title?: string;
+  description!: string;
 
   @IsNotEmpty({ message: 'city is required' })
   @IsString({ message: 'city must be a string' })

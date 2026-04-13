@@ -38,19 +38,25 @@ export default function CreateRequestScreen() {
   const router = useRouter();
   const { isMobile } = useBreakpoints();
   const { specialist } = useLocalSearchParams<{ specialist?: string }>();
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
   const [selectedIfns, setSelectedIfns] = useState<any>(null);
   const [budget, setBudget] = useState('');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ description?: string; city?: string; budget?: string }>({});
+  const [errors, setErrors] = useState<{ title?: string; description?: string; city?: string; budget?: string }>({});
   const scrollViewRef = useRef<ScrollView>(null);
 
   function validate(): boolean {
     const e: typeof errors = {};
-    if (description.trim().length < 3) {
-      e.description = 'Минимум 3 символа';
+    if (title.trim().length < 3) {
+      e.title = 'Минимум 3 символа';
+    } else if (title.trim().length > 100) {
+      e.title = 'Максимум 100 символов';
+    }
+    if (description.trim().length < 10) {
+      e.description = 'Минимум 10 символов';
     }
     if (!city.trim() && !selectedIfns) {
       e.city = 'Укажите город или выберите ИФНС';
@@ -71,6 +77,7 @@ export default function CreateRequestScreen() {
     try {
       const effectiveCity = selectedIfns ? selectedIfns.city.name : city.trim();
       const body: Record<string, unknown> = {
+        title: title.trim(),
         description: description.trim(),
         city: effectiveCity,
       };
@@ -113,6 +120,19 @@ export default function CreateRequestScreen() {
                 Запрос увидят специалисты в вашем городе
               </Text>
             ) : null}
+
+            <Input
+              label="Заголовок"
+              value={title}
+              onChangeText={(t) => {
+                if (t.length <= 100) setTitle(t);
+                if (errors.title) setErrors((e) => ({ ...e, title: undefined }));
+              }}
+              placeholder="Кратко опишите задачу"
+              autoCapitalize="sentences"
+              maxLength={100}
+              error={errors.title}
+            />
 
             <View style={styles.field}>
               <Text style={styles.label}>Описание</Text>
