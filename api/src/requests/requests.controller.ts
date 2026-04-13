@@ -196,8 +196,8 @@ export class RequestsController {
     return this.requestsService.deleteRequest(req.user.id, id);
   }
 
-  // PATCH /requests/:id/extend — client extends a request (resets lastActivityAt, max 3)
-  @Patch(':id/extend')
+  // POST /requests/:id/extend — client extends a request (resets lastActivityAt, max 3)
+  @Post(':id/extend')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CLIENT)
   extend(@Request() req: any, @Param('id') id: string) {

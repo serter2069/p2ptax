@@ -396,11 +396,28 @@ model QuickRequest {
   @@map("quick_requests")
 }
 
+
+
 enum ComplaintReason {
   spam
   fraud
   inappropriate
   other
+}
+
+model Complaint {
+  id         String          @id @default(cuid())
+  reporterId String
+  reporter   User            @relation("ComplaintReporter", fields: [reporterId], references: [id])
+  targetId   String
+  target     User            @relation("ComplaintTarget", fields: [targetId], references: [id])
+  reason     ComplaintReason
+  comment    String?
+  createdAt  DateTime        @default(now())
+
+  @@index([reporterId])
+  @@index([targetId])
+  @@map("complaints")
 }
 
 model Setting {
