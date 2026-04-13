@@ -101,12 +101,16 @@ export class UsersService {
    * Onboarding step 3: set cities + services, create SpecialistProfile, promote user to SPECIALIST.
    * Nick is taken from the user's username (set in step 1).
    * No role guard — called during onboarding before the role is assigned.
+   *
+   * fnsServices: structured array of { fnsId, serviceNames[] } for join table writes.
+   * Falls back to legacy fnsOffices/services string arrays when fnsServices is absent.
    */
   async setupSpecialistProfile(
     userId: string,
     cities: string[],
     services: string[],
     fnsOffices?: string[],
+    fnsServices?: Array<{ fnsId: string; serviceNames: string[] }>,
   ): Promise<{ ok: true }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -146,12 +150,17 @@ export class UsersService {
           data: { role: Role.SPECIALIST },
         }),
       ]);
+
+      // Write join tables when fnsServices is provided
+      if (fnsServices && fnsServices.length > 0) {
+        await this.syncSpecialistJoinTables(existing.id, fnsServices);
+      }
     } else {
       // Check nick uniqueness (username is used as nick)
       const nickTaken = await this.prisma.specialistProfile.findUnique({ where: { nick: user.username } });
       if (nickTaken) throw new ConflictException('Nick already taken');
 
-      await this.prisma.$transaction([
+      const [, profile] = await this.prisma.$transaction([
         this.prisma.specialistProfile.create({
           data: {
             userId,
@@ -168,9 +177,51 @@ export class UsersService {
           data: { role: Role.SPECIALIST },
         }),
       ]);
+
+      // Write join tables when fnsServices is provided
+      // Note: we need the profile id — fetch it since transaction returns may vary
+      if (fnsServices && fnsServices.length > 0) {
+        const created = await this.prisma.specialistProfile.findUnique({ where: { userId } });
+        if (created) {
+          await this.syncSpecialistJoinTables(created.id, fnsServices);
+        }
+      }
     }
 
     return { ok: true };
+  }
+
+  /**
+   * Sync SpecialistFns + SpecialistService join tables from structured fnsServices data.
+   * Deletes existing join rows and recreates them (full replace strategy).
+   */
+  private async syncSpecialistJoinTables(
+    specialistProfileId: string,
+    fnsServices: Array<{ fnsId: string; serviceNames: string[] }>,
+  ) {
+    // Delete existing join records for this specialist
+    await this.prisma.specialistService.deleteMany({ where: { specialistId: specialistProfileId } });
+    await this.prisma.specialistFns.deleteMany({ where: { specialistId: specialistProfileId } });
+
+    for (const entry of fnsServices) {
+      // Create SpecialistFns
+      await this.prisma.specialistFns.create({
+        data: { specialistId: specialistProfileId, fnsId: entry.fnsId },
+      }).catch(() => { /* ignore duplicate */ });
+
+      // Create SpecialistService for each service name
+      for (const svcName of entry.serviceNames) {
+        const svc = await this.prisma.service.findUnique({ where: { name: svcName } });
+        if (!svc) continue;
+        await this.prisma.specialistService.create({
+          data: {
+            specialistId: specialistProfileId,
+            fnsId: entry.fnsId,
+            serviceId: svc.id,
+          },
+        }).catch(() => { /* ignore duplicate */ });
+      }
+    }
   }
 
   /** Return user settings */

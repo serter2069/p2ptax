@@ -109,6 +109,7 @@ export class SpecialistsController {
     @Query('search') search?: string,
     @Query('fns') fns?: string,
     @Query('category') category?: string,
+    @Query('serviceId') serviceId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
@@ -125,6 +126,7 @@ export class SpecialistsController {
       parseInt(page ?? '1') || 1,
       parsedLimit,
       parsedOffset !== undefined && !isNaN(parsedOffset) ? parsedOffset : undefined,
+      serviceId,
     );
   }
 

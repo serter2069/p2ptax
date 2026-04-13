@@ -90,6 +90,10 @@ class SetupSpecialistProfileDto {
   @IsString({ each: true })
   @IsOptional()
   fnsOffices?: string[];
+
+  /** Structured FNS-service bindings: array of { fnsId, serviceNames[] } */
+  @IsOptional()
+  fnsServices?: Array<{ fnsId: string; serviceNames: string[] }>;
 }
 
 class ChangeEmailRequestDto {
@@ -211,7 +215,7 @@ export class UsersController {
     @Request() req: { user: { id: string } },
     @Body() body: SetupSpecialistProfileDto,
   ) {
-    return this.usersService.setupSpecialistProfile(req.user.id, body.cities, body.services, body.fnsOffices);
+    return this.usersService.setupSpecialistProfile(req.user.id, body.cities, body.services, body.fnsOffices, body.fnsServices);
   }
 
   /** GET /users/me/settings — return user settings */
