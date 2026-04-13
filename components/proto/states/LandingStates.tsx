@@ -1,339 +1,451 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { StateSection } from '../StateSection';
 
 const BRAND = {
-  primary: Colors.textPrimary,
-  action: Colors.brandPrimary,
-  accent: Colors.statusWarning,
-  bg: Colors.bgPrimary,
-  card: Colors.bgCard,
-  textPrimary: Colors.textPrimary,
-  textSecondary: Colors.textSecondary,
-  textMuted: Colors.textMuted,
-  border: Colors.border,
-  error: Colors.statusError,
-  errorBg: Colors.statusBg.error,
-  successBg: Colors.statusBg.success,
-  success: Colors.statusSuccess,
+  primary: '#1B2E4A',
+  accent: '#0EA5E9',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  textDark: '#111827',
+  textGray: '#6B7280',
+  textLight: '#9CA3AF',
+  bgWhite: '#FFFFFF',
+  bgLight: '#F9FAFB',
+  bgCard: '#F3F4F6',
+  border: '#E5E7EB',
 };
 
 const CITIES = [
-  'Москва', 'Санкт-Петербург', 'Екатеринбург', 'Казань', 'Новосибирск',
+  'Москва', 'Санкт-Петербург', 'Казань', 'Екатеринбург', 'Новосибирск',
   'Краснодар', 'Нижний Новгород', 'Самара', 'Ростов-на-Дону', 'Уфа',
   'Челябинск', 'Воронеж', 'Пермь', 'Волгоград', 'Красноярск', 'Омск',
 ];
 
 const FNS_MAP: Record<string, string[]> = {
-  'Москва': ['ФНС №1', 'ФНС №5', 'ФНС №12', 'ФНС №18', 'ФНС №24'],
-  'Санкт-Петербург': ['ФНС №2', 'ФНС №7', 'ФНС №15'],
-  'Екатеринбург': ['ФНС №3', 'ФНС №9', 'ФНС №11'],
-  'Казань': ['ФНС №4', 'ФНС №6'],
-  'Новосибирск': ['ФНС №1', 'ФНС №8', 'ФНС №14'],
-  'Краснодар': ['ФНС №2', 'ФНС №10'],
-  'Нижний Новгород': ['ФНС №1', 'ФНС №5', 'ФНС №13'],
-  'Самара': ['ФНС №3', 'ФНС №7'],
-  'Ростов-на-Дону': ['ФНС №2', 'ФНС №6', 'ФНС №11'],
-  'Уфа': ['ФНС №1', 'ФНС №4'],
-  'Челябинск': ['ФНС №3', 'ФНС №8'],
-  'Воронеж': ['ФНС №2', 'ФНС №5'],
-  'Пермь': ['ФНС №1', 'ФНС №6'],
-  'Волгоград': ['ФНС №3', 'ФНС №7'],
-  'Красноярск': ['ФНС №2', 'ФНС №9'],
-  'Омск': ['ФНС №1', 'ФНС №4'],
+  'Москва': ['ИФНС №7', 'ИФНС №10', 'ИФНС №18', 'ИФНС №24', 'ИФНС №46'],
+  'Санкт-Петербург': ['ИФНС №2', 'ИФНС №9', 'ИФНС №15', 'ИФНС №21'],
+  'Казань': ['ИФНС №4', 'ИФНС №6', 'ИФНС №14'],
+  'Екатеринбург': ['ИФНС №3', 'ИФНС №9', 'ИФНС №11'],
+  'Новосибирск': ['ИФНС №1', 'ИФНС №8', 'ИФНС №14'],
+  'Краснодар': ['ИФНС №2', 'ИФНС №5', 'ИФНС №10'],
+  'Нижний Новгород': ['ИФНС №1', 'ИФНС №5', 'ИФНС №13'],
+  'Самара': ['ИФНС №3', 'ИФНС №7'],
+  'Ростов-на-Дону': ['ИФНС №2', 'ИФНС №6', 'ИФНС №11'],
+  'Уфа': ['ИФНС №1', 'ИФНС №4'],
+  'Челябинск': ['ИФНС №3', 'ИФНС №8'],
+  'Воронеж': ['ИФНС №2', 'ИФНС №5'],
+  'Пермь': ['ИФНС №1', 'ИФНС №6'],
+  'Волгоград': ['ИФНС №3', 'ИФНС №7'],
+  'Красноярск': ['ИФНС №2', 'ИФНС №9'],
+  'Омск': ['ИФНС №1', 'ИФНС №4'],
 };
 
+const SERVICE_OPTIONS = ['Камеральная проверка', 'Выездная проверка', 'Оперативный контроль', 'Не знаю'] as const;
+
 const SPECIALISTS = [
-  { name: 'Алексей Петров', spec: 'Камеральные проверки', rating: 4.9, city: 'Москва', seed: 'alexei' },
-  { name: 'Мария Иванова', spec: 'Налоговый аудит', rating: 4.8, city: 'Санкт-Петербург', seed: 'maria' },
-  { name: 'Дмитрий Козлов', spec: 'ФНС споры', rating: 4.7, city: 'Екатеринбург', seed: 'dmitry' },
-  { name: 'Елена Соколова', spec: 'Оптимизация налогов', rating: 4.9, city: 'Казань', seed: 'elena' },
-  { name: 'Артём Волков', spec: 'Бухгалтерский учёт', rating: 4.6, city: 'Новосибирск', seed: 'artem' },
+  {
+    name: 'Алексей Петров',
+    city: 'Москва',
+    fns: 'ИФНС №7',
+    services: ['Камеральная проверка', 'Выездная проверка'],
+    since: 2023,
+    seed: 'alexei-petrov',
+  },
+  {
+    name: 'Мария Сидорова',
+    city: 'Санкт-Петербург',
+    fns: 'ИФНС №15',
+    services: ['Выездная проверка', 'Оперативный контроль'],
+    since: 2023,
+    seed: 'maria-sidorova',
+  },
+  {
+    name: 'Дмитрий Козлов',
+    city: 'Казань',
+    fns: 'ИФНС №4',
+    services: ['Камеральная проверка'],
+    since: 2024,
+    seed: 'dmitry-kozlov',
+  },
+  {
+    name: 'Елена Волкова',
+    city: 'Москва',
+    fns: 'ИФНС №46',
+    services: ['Камеральная проверка', 'Оперативный контроль'],
+    since: 2023,
+    seed: 'elena-volkova',
+  },
 ];
 
-// --- Subcomponents ---
+// --- Public Header ---
 
-function Hero() {
+function PublicHeader() {
+  return (
+    <View style={s.header}>
+      <View style={s.headerInner}>
+        <View style={s.headerLogoRow}>
+          <Feather name="briefcase" size={20} color={BRAND.accent} />
+          <Text style={s.headerLogoText}>Налоговик</Text>
+        </View>
+        <View style={s.headerNav}>
+          <Text style={s.headerNavLink}>Специалисты</Text>
+          <Text style={s.headerNavLink}>Заявки</Text>
+          <Text style={s.headerNavLink}>Тарифы</Text>
+        </View>
+        <Pressable style={s.headerLoginBtn}>
+          <Text style={s.headerLoginText}>Войти</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// --- Hero Section ---
+
+function HeroSection() {
   return (
     <View style={s.hero}>
-      <View style={s.heroContent}>
-        <View style={s.heroIllustrationWrap}>
-          <Image source={{ uri: 'https://picsum.photos/seed/taxlaw/600/140' }} style={{ width: '100%', height: 140, borderRadius: 12 }} resizeMode="cover" />
-        </View>
-        <Text style={s.heroTitle}>Найдите налогового{'\n'}специалиста</Text>
+      <View style={s.heroInner}>
+        <Text style={s.heroTitle}>Найдите специалиста{'\n'}в вашей налоговой</Text>
         <Text style={s.heroSubtitle}>
-          Квалифицированные налоговые консультанты, бухгалтеры и юристы в вашем городе
+          Консультанты, которые знают вашу инспекцию изнутри — камеральные и выездные проверки, оперативный контроль
         </Text>
-        <View style={s.heroCta}>
-          <Pressable style={s.heroBtn}>
-            <Feather name="search" size={16} color={Colors.white} />
-            <Text style={s.heroBtnText}>Найти специалиста</Text>
+        <View style={s.heroSearchRow}>
+          <View style={s.heroSearchInputWrap}>
+            <Feather name="map-pin" size={18} color={BRAND.textLight} style={{ marginLeft: 14 }} />
+            <TextInput
+              style={s.heroSearchInput}
+              placeholder="Введите город..."
+              placeholderTextColor={BRAND.textLight}
+            />
+          </View>
+          <Pressable style={s.heroSearchBtn}>
+            <Feather name="search" size={18} color={BRAND.bgWhite} />
+            <Text style={s.heroSearchBtnText}>Найти специалиста</Text>
           </Pressable>
-          <Pressable style={s.heroBtnOutline}>
-            <Feather name="user-check" size={16} color={Colors.white} />
-            <Text style={s.heroBtnOutlineText}>Я специалист</Text>
-          </Pressable>
-        </View>
-        <View style={s.statsRow}>
-          <View style={s.statItem}>
-            <Text style={s.statValue}>189</Text>
-            <Text style={s.statLabel}>Специалистов</Text>
-          </View>
-          <View style={s.statDivider} />
-          <View style={s.statItem}>
-            <Text style={s.statValue}>3 400+</Text>
-            <Text style={s.statLabel}>Заявок</Text>
-          </View>
-          <View style={s.statDivider} />
-          <View style={s.statItem}>
-            <Text style={s.statValue}>4.7</Text>
-            <Text style={s.statLabel}>Средняя оценка</Text>
-          </View>
         </View>
       </View>
     </View>
   );
 }
 
-function Features() {
-  const items: { icon: 'search' | 'shield' | 'message-circle' | 'star'; title: string; desc: string }[] = [
-    { icon: 'search', title: 'Умный поиск', desc: 'Найдите специалиста по городу, услуге и бюджету за минуты' },
-    { icon: 'shield', title: 'Верификация', desc: 'Все специалисты проверены через базы ФНС и реестры' },
-    { icon: 'message-circle', title: 'Прямая связь', desc: 'Безопасный чат со специалистом прямо на платформе' },
-    { icon: 'star', title: 'Честные отзывы', desc: 'Реальные оценки и отзывы от проверенных клиентов' },
+// --- How It Works ---
+
+function HowItWorksSection() {
+  const steps: { icon: 'map-pin' | 'file-text' | 'message-circle'; title: string; desc: string }[] = [
+    { icon: 'map-pin', title: 'Укажите ваш ФНС', desc: 'Выберите город и налоговую инспекцию' },
+    { icon: 'file-text', title: 'Опишите задачу', desc: 'Расскажите, с чем нужна помощь — камеральная проверка, выездная или оперативный контроль' },
+    { icon: 'message-circle', title: 'Получите отклик', desc: 'Специалист, который работает в вашем ФНС, свяжется с вами' },
   ];
   return (
     <View style={s.section}>
-      <Text style={s.sectionTitle}>Почему Налоговик?</Text>
-      <View style={s.featureGrid}>
-        {items.map((item) => (
-          <View key={item.title} style={s.featureCard}>
-            <View style={s.featureIconWrap}>
-              <Feather name={item.icon} size={22} color={BRAND.action} />
-            </View>
-            <Text style={s.featureTitle}>{item.title}</Text>
-            <Text style={s.featureDesc}>{item.desc}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function HowItWorks() {
-  const steps = [
-    { num: '1', title: 'Создайте заявку', desc: 'Опишите задачу, укажите город и отделение ФНС' },
-    { num: '2', title: 'Получите отклики', desc: 'Проверенные специалисты предложат свои условия' },
-    { num: '3', title: 'Выберите лучшего', desc: 'Сравните рейтинг, цены и опыт' },
-  ];
-  return (
-    <View style={[s.section, { backgroundColor: BRAND.bg }]}>
-      <Text style={s.sectionTitle}>Как это работает</Text>
-      <View style={s.stepsContainer}>
-        {steps.map((step, i) => (
-          <View key={step.num} style={s.stepRow}>
-            <View style={s.stepNumCircle}>
-              <Text style={s.stepNumText}>{step.num}</Text>
-            </View>
-            <View style={s.stepContent}>
+      <View style={s.sectionInner}>
+        <Text style={s.sectionTitle}>Как это работает</Text>
+        <View style={s.stepsRow}>
+          {steps.map((step, i) => (
+            <View key={step.title} style={s.stepCard}>
+              <View style={s.stepNumBadge}>
+                <Text style={s.stepNumText}>{i + 1}</Text>
+              </View>
+              <View style={s.stepIconWrap}>
+                <Feather name={step.icon} size={28} color={BRAND.accent} />
+              </View>
               <Text style={s.stepTitle}>{step.title}</Text>
               <Text style={s.stepDesc}>{step.desc}</Text>
             </View>
-            {i < steps.length - 1 && <View style={s.stepLine} />}
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
     </View>
   );
 }
 
-function SpecialistsCarousel() {
+// --- Services Section ---
+
+function ServicesSection() {
+  const services: { icon: 'search' | 'shield' | 'eye'; title: string; desc: string }[] = [
+    {
+      icon: 'search',
+      title: 'Камеральная проверка',
+      desc: 'Сопровождение проверки деклараций. Поможем подготовить документы и пройти проверку без штрафов.',
+    },
+    {
+      icon: 'shield',
+      title: 'Выездная проверка',
+      desc: 'Защита интересов при выездной проверке ФНС. Подготовка, присутствие, обжалование результатов.',
+    },
+    {
+      icon: 'eye',
+      title: 'Отдел оперативного контроля',
+      desc: 'Консультации по вопросам оперативного контроля. Проверка контрагентов, встречные проверки.',
+    },
+  ];
   return (
-    <View style={s.section}>
-      <Text style={s.sectionTitle}>Лучшие специалисты</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.carouselContent}>
-        {SPECIALISTS.map((sp) => (
-          <View key={sp.name} style={s.specCard}>
-            <Image source={{ uri: `https://picsum.photos/seed/${sp.seed}/56/56` }} style={{ width: 56, height: 56, borderRadius: 28 }} />
-            <Text style={s.specName}>{sp.name}</Text>
-            <Text style={s.specSpec}>{sp.spec}</Text>
-            <View style={s.specRatingRow}>
-              <Feather name="star" size={13} color={BRAND.accent} />
-              <Text style={s.specRating}>{sp.rating}</Text>
+    <View style={[s.section, { backgroundColor: BRAND.bgLight }]}>
+      <View style={s.sectionInner}>
+        <Text style={s.sectionTitle}>Наши услуги</Text>
+        <View style={s.servicesGrid}>
+          {services.map((svc) => (
+            <View key={svc.title} style={s.serviceCard}>
+              <View style={s.serviceIconWrap}>
+                <Feather name={svc.icon} size={24} color={BRAND.accent} />
+              </View>
+              <Text style={s.serviceTitle}>{svc.title}</Text>
+              <Text style={s.serviceDesc}>{svc.desc}</Text>
             </View>
-            <View style={s.specCityRow}>
-              <Feather name="map-pin" size={12} color={BRAND.textMuted} />
-              <Text style={s.specCity}>{sp.city}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
 
-interface RequestFormProps {
-  prefill?: {
-    city?: string;
-    fns?: string;
-    description?: string;
-    email?: string;
-    name?: string;
-  };
-  errors?: { email?: boolean };
-  submitted?: boolean;
+// --- Featured Specialists ---
+
+interface SpecialistsProps {
+  loading?: boolean;
+  error?: boolean;
 }
 
-function RequestForm({ prefill, errors, submitted }: RequestFormProps) {
-  const [city, setCity] = useState(prefill?.city || '');
-  const [fns, setFns] = useState(prefill?.fns || '');
-  const [description, setDescription] = useState(prefill?.description || '');
-  const [email, setEmail] = useState(prefill?.email || '');
-  const [name, setName] = useState(prefill?.name || '');
+function FeaturedSpecialists({ loading, error }: SpecialistsProps) {
+  return (
+    <View style={s.section}>
+      <View style={s.sectionInner}>
+        <Text style={s.sectionTitle}>Специалисты на платформе</Text>
+
+        {error && (
+          <View style={s.errorBanner}>
+            <Feather name="alert-circle" size={18} color={BRAND.error} />
+            <Text style={s.errorBannerText}>Не удалось загрузить специалистов</Text>
+            <Pressable style={s.retryBtn}>
+              <Text style={s.retryBtnText}>Повторить</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {!error && (
+          <View style={s.specialistsGrid}>
+            {SPECIALISTS.map((sp) => (
+              <View key={sp.seed} style={[s.specialistCard, loading && s.skeletonCard]}>
+                {loading ? (
+                  <>
+                    <View style={s.skeletonAvatar} />
+                    <View style={s.skeletonLine} />
+                    <View style={[s.skeletonLine, { width: '60%' }]} />
+                    <View style={[s.skeletonLine, { width: '80%' }]} />
+                  </>
+                ) : (
+                  <>
+                    <Image
+                      source={{ uri: `https://picsum.photos/seed/${sp.seed}/80/80` }}
+                      style={s.specialistAvatar}
+                    />
+                    <Text style={s.specialistName}>{sp.name}</Text>
+                    <View style={s.specialistChipsRow}>
+                      <View style={s.chipLocation}>
+                        <Feather name="map-pin" size={12} color={BRAND.accent} />
+                        <Text style={s.chipLocationText}>{sp.city}</Text>
+                      </View>
+                      <View style={s.chipFns}>
+                        <Text style={s.chipFnsText}>{sp.fns}</Text>
+                      </View>
+                    </View>
+                    <View style={s.specialistServicesRow}>
+                      {sp.services.map((svc) => (
+                        <View key={svc} style={s.chipService}>
+                          <Text style={s.chipServiceText}>{svc}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Text style={s.specialistSince}>На сайте с {sp.since} года</Text>
+                  </>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {!error && !loading && (
+          <Pressable style={s.allSpecialistsLink}>
+            <Text style={s.allSpecialistsText}>Все специалисты</Text>
+            <Feather name="arrow-right" size={16} color={BRAND.accent} />
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// --- Quick Request Form ---
+
+interface FormProps {
+  prefillCity?: string;
+  prefillFns?: string;
+  prefillService?: string;
+  prefillDescription?: string;
+}
+
+function QuickRequestForm({ prefillCity, prefillFns, prefillService, prefillDescription }: FormProps) {
+  const [city, setCity] = useState(prefillCity || '');
+  const [fns, setFns] = useState(prefillFns || '');
+  const [service, setService] = useState(prefillService || '');
+  const [description, setDescription] = useState(prefillDescription || '');
 
   const fnsOptions = city ? (FNS_MAP[city] || []) : [];
 
-  if (submitted) {
-    return (
-      <View style={s.section}>
-        <View style={s.successOverlay}>
-          <View style={s.successIconCircle}>
-            <Feather name="check-circle" size={40} color={BRAND.success} />
-          </View>
-          <Text style={s.successTitle}>Заявка отправлена</Text>
-          <Text style={s.successText}>
-            Код подтверждения отправлен на {email || 'your@email.com'}
-          </Text>
-          <Text style={s.successHint}>Проверьте вашу почту</Text>
-        </View>
-      </View>
-    );
-  }
-
   return (
-    <View style={[s.section, { backgroundColor: BRAND.bg }]}>
-      <Text style={s.sectionTitle}>Оставить заявку</Text>
-      <View style={s.formCard}>
-        {/* City */}
-        <Text style={s.formLabel}>Город</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
-          {CITIES.map((c) => (
-            <Pressable
-              key={c}
-              style={[s.chip, city === c && s.chipActive]}
-              onPress={() => { setCity(c); setFns(''); }}
-            >
-              <Text style={[s.chipText, city === c && s.chipTextActive]}>{c}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+    <View style={[s.section, { backgroundColor: BRAND.bgLight }]}>
+      <View style={s.sectionInner}>
+        <Text style={s.sectionTitle}>Оставьте заявку прямо сейчас</Text>
+        <Text style={s.sectionSubtitle}>Бесплатно. Специалисты откликнутся в течение дня.</Text>
 
-        {/* FNS offices */}
-        {fnsOptions.length > 0 && (
-          <View style={s.fnsBlock}>
-            <Text style={s.formLabel}>Отделение ФНС</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
-              {fnsOptions.map((f) => (
-                <Pressable
-                  key={f}
-                  style={[s.chip, fns === f && s.chipActive]}
-                  onPress={() => setFns(f)}
-                >
-                  <Text style={[s.chipText, fns === f && s.chipTextActive]}>{f}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+        <View style={s.formCard}>
+          {/* City */}
+          <Text style={s.formLabel}>Город</Text>
+          <View style={s.formInputWrap}>
+            <Feather name="map-pin" size={16} color={BRAND.textLight} style={{ marginLeft: 12 }} />
+            <TextInput
+              style={s.formInput}
+              placeholder="Начните вводить город..."
+              placeholderTextColor={BRAND.textLight}
+              value={city}
+              onChangeText={(v) => { setCity(v); setFns(''); }}
+            />
           </View>
-        )}
 
-        {/* Description */}
-        <Text style={s.formLabel}>Опишите вашу задачу</Text>
-        <TextInput
-          style={s.formTextArea}
-          multiline
-          numberOfLines={4}
-          placeholder="Например: нужна помощь с камеральной проверкой за 2025 год..."
-          placeholderTextColor={BRAND.textMuted}
-          value={description}
-          onChangeText={setDescription}
-        />
+          {/* FNS */}
+          {fnsOptions.length > 0 && (
+            <>
+              <Text style={s.formLabel}>Отделение ФНС</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.formChipsScroll}>
+                {fnsOptions.map((f) => (
+                  <Pressable
+                    key={f}
+                    style={[s.formChip, fns === f && s.formChipActive]}
+                    onPress={() => setFns(f)}
+                  >
+                    <Text style={[s.formChipText, fns === f && s.formChipTextActive]}>{f}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </>
+          )}
 
-        {/* Name */}
-        <Text style={s.formLabel}>Ваше имя</Text>
-        <TextInput
-          style={s.formInput}
-          placeholder="Иван Иванов"
-          placeholderTextColor={BRAND.textMuted}
-          value={name}
-          onChangeText={setName}
-        />
-
-        {/* Email */}
-        <Text style={s.formLabel}>Email</Text>
-        <TextInput
-          style={[s.formInput, errors?.email && s.formInputError]}
-          placeholder="your@email.com"
-          placeholderTextColor={BRAND.textMuted}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
-        {errors?.email && (
-          <View style={s.errorRow}>
-            <Feather name="alert-circle" size={13} color={BRAND.error} />
-            <Text style={s.errorText}>Введите корректный email</Text>
+          {/* Service */}
+          <Text style={s.formLabel}>Услуга</Text>
+          <View style={s.serviceRadioGroup}>
+            {SERVICE_OPTIONS.map((svc) => (
+              <Pressable
+                key={svc}
+                style={s.serviceRadioRow}
+                onPress={() => setService(svc)}
+              >
+                <View style={[s.radioOuter, service === svc && s.radioOuterActive]}>
+                  {service === svc && <View style={s.radioInner} />}
+                </View>
+                <Text style={s.serviceRadioLabel}>{svc}</Text>
+              </Pressable>
+            ))}
           </View>
-        )}
 
-        {/* Submit */}
-        <Pressable style={s.submitBtn}>
-          <Feather name="send" size={16} color={Colors.white} />
-          <Text style={s.submitBtnText}>Отправить заявку</Text>
-        </Pressable>
+          {/* Description */}
+          <Text style={s.formLabel}>Описание</Text>
+          <TextInput
+            style={s.formTextArea}
+            multiline
+            numberOfLines={4}
+            placeholder="Опишите вашу ситуацию..."
+            placeholderTextColor={BRAND.textLight}
+            value={description}
+            onChangeText={setDescription}
+          />
 
-        <View style={s.noteRow}>
-          <Feather name="info" size={13} color={BRAND.textMuted} />
-          <Text style={s.noteText}>После отправки вам придёт код подтверждения на email</Text>
+          {/* Submit */}
+          <Pressable style={s.formSubmitBtn}>
+            <Feather name="send" size={16} color={BRAND.bgWhite} />
+            <Text style={s.formSubmitText}>Отправить заявку</Text>
+          </Pressable>
         </View>
       </View>
     </View>
   );
 }
+
+// --- Stats / Trust ---
+
+function StatsSection() {
+  const stats = [
+    { value: '230+', label: 'специалистов' },
+    { value: '47', label: 'городов' },
+    { value: '1 200+', label: 'заявок' },
+  ];
+  return (
+    <View style={s.section}>
+      <View style={s.sectionInner}>
+        <Text style={s.sectionTitle}>Налоговик в цифрах</Text>
+        <View style={s.statsRow}>
+          {stats.map((stat) => (
+            <View key={stat.label} style={s.statItem}>
+              <Text style={s.statValue}>{stat.value}</Text>
+              <Text style={s.statLabel}>{stat.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// --- Footer ---
 
 function FooterSection() {
   return (
     <View style={s.footer}>
-      <View style={s.footerTop}>
-        <View style={s.footerLogoRow}>
-          <Feather name="briefcase" size={18} color={BRAND.accent} />
-          <Text style={s.footerLogo}>Налоговик</Text>
+      <View style={s.footerInner}>
+        <View style={s.footerTop}>
+          <View style={s.footerLogoRow}>
+            <Feather name="briefcase" size={18} color={BRAND.accent} />
+            <Text style={s.footerLogo}>Налоговик</Text>
+          </View>
+          <View style={s.footerLinksRow}>
+            <Text style={s.footerLink}>Специалисты</Text>
+            <Text style={s.footerLink}>Заявки</Text>
+            <Text style={s.footerLink}>Условия использования</Text>
+          </View>
         </View>
-        <View style={s.footerLinksRow}>
-          <Text style={s.footerLink}>О сервисе</Text>
-          <Text style={s.footerLink}>Специалисты</Text>
-          <Text style={s.footerLink}>Тарифы</Text>
-          <Text style={s.footerLink}>Контакты</Text>
-        </View>
+        <View style={s.footerDivider} />
+        <Text style={s.footerCopy}>2026 Налоговик. Все права защищены.</Text>
       </View>
-      <View style={s.footerDivider} />
-      <Text style={s.footerCopy}>2026 Налоговик. Все права защищены.</Text>
     </View>
   );
 }
 
-// --- Full Landing ---
+// --- Full Landing Page ---
 
-function FullLanding(props: RequestFormProps) {
+interface LandingPageProps {
+  specialistsLoading?: boolean;
+  specialistsError?: boolean;
+  formPrefill?: FormProps;
+}
+
+function LandingPage({
+  specialistsLoading,
+  specialistsError,
+  formPrefill,
+}: LandingPageProps) {
   return (
     <View style={s.page}>
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <SpecialistsCarousel />
-      <RequestForm {...props} />
+      <PublicHeader />
+      <HeroSection />
+      <HowItWorksSection />
+      <ServicesSection />
+      <FeaturedSpecialists loading={specialistsLoading} error={specialistsError} />
+      <QuickRequestForm {...formPrefill} />
+      <StatsSection />
       <FooterSection />
     </View>
   );
@@ -344,36 +456,25 @@ function FullLanding(props: RequestFormProps) {
 export function LandingStates() {
   return (
     <View style={{ gap: Spacing['4xl'] }}>
-      <StateSection title="DEFAULT" pageId="landing">
-        <FullLanding />
+      <StateSection title="POPULATED" pageId="landing">
+        <LandingPage />
       </StateSection>
 
-      <StateSection title="FORM_FILLING" pageId="landing">
-        <FullLanding
-          prefill={{
-            city: 'Москва',
-            fns: 'ФНС №5',
-            description: 'Нужна помощь с камеральной проверкой за 2025 год. Получил требование из налоговой.',
+      <StateSection title="LOADING" pageId="landing">
+        <LandingPage specialistsLoading />
+      </StateSection>
+
+      <StateSection title="ERROR" pageId="landing">
+        <LandingPage specialistsError />
+      </StateSection>
+
+      <StateSection title="IDLE" pageId="landing">
+        <LandingPage
+          formPrefill={{
+            prefillCity: 'Москва',
+            prefillFns: 'ИФНС №7',
+            prefillService: 'Камеральная проверка',
           }}
-        />
-      </StateSection>
-
-      <StateSection title="FORM_VALIDATION" pageId="landing">
-        <FullLanding
-          prefill={{
-            city: 'Санкт-Петербург',
-            fns: 'ФНС №7',
-            description: 'Налоговый аудит ООО',
-            name: 'Иван',
-          }}
-          errors={{ email: true }}
-        />
-      </StateSection>
-
-      <StateSection title="FORM_SUCCESS" pageId="landing">
-        <FullLanding
-          prefill={{ email: 'ivan@example.com' }}
-          submitted
         />
       </StateSection>
     </View>
@@ -384,393 +485,533 @@ export function LandingStates() {
 
 const s = StyleSheet.create({
   page: {
-    backgroundColor: Colors.bgCard,
+    backgroundColor: BRAND.bgWhite,
+  },
+
+  // Header
+  header: {
+    backgroundColor: BRAND.bgWhite,
+    borderBottomWidth: 1,
+    borderBottomColor: BRAND.border,
+  },
+  headerInner: {
+    maxWidth: 960,
+    width: '100%',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+  },
+  headerLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  headerLogoText: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: BRAND.primary,
+  },
+  headerNav: {
+    flexDirection: 'row',
+    gap: Spacing.xl,
+  },
+  headerNavLink: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textGray,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  headerLoginBtn: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.btn,
+    borderWidth: 1,
+    borderColor: BRAND.accent,
+  },
+  headerLoginText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.accent,
   },
 
   // Hero
   hero: {
     backgroundColor: BRAND.primary,
+    paddingVertical: Spacing['4xl'],
   },
-  heroContent: {
-    padding: Spacing['2xl'],
-    paddingTop: Spacing['3xl'],
-    paddingBottom: Spacing['4xl'],
+  heroInner: {
+    maxWidth: 960,
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
     gap: Spacing.lg,
   },
-  heroIllustrationWrap: {
-    marginBottom: Spacing.md,
-  },
   heroTitle: {
-    fontSize: Typography.fontSize['2xl'],
+    fontSize: Typography.fontSize.display,
     fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-    lineHeight: 36,
+    color: BRAND.bgWhite,
+    textAlign: 'center',
+    lineHeight: 44,
   },
   heroSubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: Typography.fontSize.md,
+    color: 'rgba(255,255,255,0.75)',
+    textAlign: 'center',
     lineHeight: 24,
+    maxWidth: 600,
   },
-  heroCta: {
+  heroSearchRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+    width: '100%',
+    maxWidth: 560,
   },
-  heroBtn: {
+  heroSearchInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.btn,
+    overflow: 'hidden',
+  },
+  heroSearchInput: {
+    flex: 1,
+    height: 52,
+    paddingHorizontal: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: BRAND.textDark,
+    // @ts-ignore web-only
+    outlineStyle: 'none',
+  },
+  heroSearchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 48,
-    backgroundColor: BRAND.action,
-    borderRadius: BorderRadius.lg,
+    height: 52,
+    backgroundColor: BRAND.accent,
+    borderRadius: BorderRadius.btn,
     paddingHorizontal: Spacing.xl,
   },
-  heroBtnText: {
+  heroSearchBtnText: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-  heroBtnOutline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    height: 48,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  heroBtnOutlineText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.white,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.xl,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  statValue: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: 'rgba(255,255,255,0.6)',
-    marginTop: 2,
+    color: BRAND.bgWhite,
   },
 
   // Sections
   section: {
-    padding: Spacing['2xl'],
-    gap: Spacing.lg,
-    backgroundColor: Colors.bgCard,
+    paddingVertical: Spacing['4xl'],
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: BRAND.bgWhite,
+  },
+  sectionInner: {
+    maxWidth: 960,
+    width: '100%',
+    alignSelf: 'center',
+    gap: Spacing.xl,
   },
   sectionTitle: {
-    fontSize: Typography.fontSize.title,
+    fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
-    color: BRAND.textPrimary,
+    color: BRAND.textDark,
     textAlign: 'center',
   },
+  sectionSubtitle: {
+    fontSize: Typography.fontSize.base,
+    color: BRAND.textGray,
+    textAlign: 'center',
+    marginTop: -Spacing.md,
+  },
 
-  // Features
-  featureGrid: {
+  // How it works — steps
+  stepsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    gap: Spacing.xl,
     justifyContent: 'center',
   },
-  featureCard: {
-    width: '48%',
-    minWidth: 220,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+  stepCard: {
+    flex: 1,
+    minWidth: 240,
+    maxWidth: 300,
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.xl,
     borderWidth: 1,
     borderColor: BRAND.border,
-    gap: Spacing.sm,
+    alignItems: 'center',
+    gap: Spacing.md,
+    ...Shadows.sm,
   },
-  featureIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.bgSecondary,
+  stepNumBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: BRAND.accent,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  featureTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textPrimary,
-  },
-  featureDesc: {
-    fontSize: Typography.fontSize.sm,
-    color: BRAND.textSecondary,
-    lineHeight: 20,
-  },
-
-  // How It Works
-  stepsContainer: {
-    gap: 0,
-    paddingHorizontal: Spacing.md,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.lg,
-    position: 'relative',
-    paddingBottom: Spacing['2xl'],
-  },
-  stepNumCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: BRAND.action,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
   },
   stepNumText: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  stepContent: {
-    flex: 1,
-    gap: 4,
-    paddingTop: 4,
-  },
-  stepTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textPrimary,
-  },
-  stepDesc: {
     fontSize: Typography.fontSize.sm,
-    color: BRAND.textSecondary,
-    lineHeight: 20,
+    fontWeight: Typography.fontWeight.bold,
+    color: BRAND.bgWhite,
   },
-  stepLine: {
-    position: 'absolute',
-    left: 19,
-    top: 44,
-    bottom: 0,
-    width: 2,
-    backgroundColor: Colors.border,
-  },
-
-  // Specialists
-  carouselContent: {
-    paddingHorizontal: Spacing.sm,
-    gap: Spacing.md,
-  },
-  specCard: {
-    width: 160,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: BRAND.border,
-    alignItems: 'center',
-    gap: 6,
-  },
-  specAvatar: {
+  stepIconWrap: {
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
   },
-  specName: {
-    fontSize: Typography.fontSize.sm,
+  stepTitle: {
+    fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textPrimary,
+    color: BRAND.textDark,
     textAlign: 'center',
   },
-  specSpec: {
-    fontSize: Typography.fontSize.xs,
-    color: BRAND.textSecondary,
-    textAlign: 'center',
-  },
-  specRatingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  specRating: {
+  stepDesc: {
     fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textPrimary,
-  },
-  specCityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  specCity: {
-    fontSize: Typography.fontSize.xs,
-    color: BRAND.textMuted,
+    color: BRAND.textGray,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 
-  // Request Form
-  formCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+  // Services
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.lg,
+    justifyContent: 'center',
+  },
+  serviceCard: {
+    flex: 1,
+    minWidth: 260,
+    maxWidth: 320,
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.card,
     padding: Spacing.xl,
     borderWidth: 1,
     borderColor: BRAND.border,
     gap: Spacing.md,
-    maxWidth: 640,
+    ...Shadows.sm,
+  },
+  serviceIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serviceTitle: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.textDark,
+  },
+  serviceDesc: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textGray,
+    lineHeight: 20,
+  },
+
+  // Specialists
+  specialistsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.lg,
+    justifyContent: 'center',
+  },
+  specialistCard: {
+    width: 210,
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    ...Shadows.sm,
+  },
+  specialistAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    marginBottom: Spacing.xs,
+  },
+  specialistName: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.textDark,
+    textAlign: 'center',
+  },
+  specialistChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'center',
+  },
+  chipLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    backgroundColor: '#EFF6FF',
+  },
+  chipLocationText: {
+    fontSize: Typography.fontSize.xs,
+    color: BRAND.accent,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  chipFns: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    backgroundColor: BRAND.bgCard,
+  },
+  chipFnsText: {
+    fontSize: Typography.fontSize.xs,
+    color: BRAND.textGray,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  specialistServicesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  chipService: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+  },
+  chipServiceText: {
+    fontSize: 10,
+    color: BRAND.textGray,
+  },
+  specialistSince: {
+    fontSize: Typography.fontSize.xs,
+    color: BRAND.textLight,
+    marginTop: 4,
+  },
+  allSpecialistsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  allSpecialistsText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.accent,
+  },
+
+  // Skeleton
+  skeletonCard: {
+    opacity: 0.6,
+  },
+  skeletonAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: BRAND.bgCard,
+    marginBottom: Spacing.xs,
+  },
+  skeletonLine: {
+    width: '80%',
+    height: 14,
+    borderRadius: 4,
+    backgroundColor: BRAND.bgCard,
+    marginVertical: 4,
+  },
+
+  // Error banner
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: '#FEF2F2',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.error,
+  },
+  retryBtn: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.btn,
+    backgroundColor: BRAND.error,
+  },
+  retryBtnText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.bgWhite,
+  },
+
+  // Form
+  formCard: {
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    gap: Spacing.lg,
+    maxWidth: 600,
     alignSelf: 'center',
     width: '100%',
+    ...Shadows.sm,
   },
   formLabel: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textPrimary,
+    color: BRAND.textDark,
   },
-  chipsRow: {
+  formInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    borderRadius: BorderRadius.input,
+    backgroundColor: BRAND.bgWhite,
+    overflow: 'hidden',
+  },
+  formInput: {
+    flex: 1,
+    height: 44,
+    paddingHorizontal: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: BRAND.textDark,
+    // @ts-ignore web-only
+    outlineStyle: 'none',
+  },
+  formChipsScroll: {
     gap: Spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
-  chip: {
+  formChip: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: BRAND.border,
-    backgroundColor: Colors.bgCard,
+    backgroundColor: BRAND.bgWhite,
   },
-  chipActive: {
-    backgroundColor: BRAND.action,
-    borderColor: BRAND.action,
+  formChipActive: {
+    backgroundColor: BRAND.accent,
+    borderColor: BRAND.accent,
   },
-  chipText: {
+  formChipText: {
     fontSize: Typography.fontSize.sm,
-    color: BRAND.textPrimary,
+    color: BRAND.textDark,
   },
-  chipTextActive: {
-    color: Colors.white,
+  formChipTextActive: {
+    color: BRAND.bgWhite,
     fontWeight: Typography.fontWeight.medium,
   },
-  fnsBlock: {
+  serviceRadioGroup: {
     gap: Spacing.sm,
   },
-  formInput: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: BRAND.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: BRAND.textPrimary,
-    backgroundColor: Colors.bgPrimary,
+  serviceRadioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: 4,
   },
-  formInputError: {
-    borderColor: BRAND.error,
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    backgroundColor: BRAND.errorBg,
+    borderColor: BRAND.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOuterActive: {
+    borderColor: BRAND.accent,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: BRAND.accent,
+  },
+  serviceRadioLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textDark,
   },
   formTextArea: {
     minHeight: 88,
     borderWidth: 1,
     borderColor: BRAND.border,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.input,
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
     fontSize: Typography.fontSize.base,
-    color: BRAND.textPrimary,
-    backgroundColor: Colors.bgPrimary,
+    color: BRAND.textDark,
+    backgroundColor: BRAND.bgWhite,
     textAlignVertical: 'top',
+    // @ts-ignore web-only
+    outlineStyle: 'none',
   },
-  errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: -4,
-  },
-  errorText: {
-    fontSize: Typography.fontSize.xs,
-    color: BRAND.error,
-  },
-  submitBtn: {
+  formSubmitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     height: 48,
-    backgroundColor: BRAND.action,
-    borderRadius: BorderRadius.lg,
-    marginTop: Spacing.sm,
+    backgroundColor: BRAND.accent,
+    borderRadius: BorderRadius.btn,
   },
-  submitBtnText: {
+  formSubmitText: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-  noteRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  noteText: {
-    fontSize: Typography.fontSize.xs,
-    color: BRAND.textMuted,
-    flex: 1,
+    color: BRAND.bgWhite,
   },
 
-  // Success
-  successOverlay: {
-    alignItems: 'center',
-    padding: Spacing['3xl'],
-    gap: Spacing.md,
-    backgroundColor: BRAND.successBg,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.statusBg.success,
-  },
-  successIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.statusBg.success,
-    alignItems: 'center',
+  // Stats
+  statsRow: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: Spacing.sm,
+    gap: Spacing['3xl'],
   },
-  successTitle: {
-    fontSize: Typography.fontSize.xl,
+  statItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: Typography.fontSize['3xl'],
     fontWeight: Typography.fontWeight.bold,
-    color: BRAND.textPrimary,
+    color: BRAND.primary,
   },
-  successText: {
-    fontSize: Typography.fontSize.base,
-    color: BRAND.textSecondary,
-    textAlign: 'center',
-  },
-  successHint: {
+  statLabel: {
     fontSize: Typography.fontSize.sm,
-    color: BRAND.textMuted,
+    color: BRAND.textGray,
   },
 
   // Footer
   footer: {
     backgroundColor: BRAND.primary,
-    padding: Spacing['2xl'],
+    paddingVertical: Spacing['3xl'],
+    paddingHorizontal: Spacing.xl,
+  },
+  footerInner: {
+    maxWidth: 960,
+    width: '100%',
+    alignSelf: 'center',
     gap: Spacing.lg,
   },
   footerTop: {
@@ -786,11 +1027,11 @@ const s = StyleSheet.create({
   footerLogo: {
     fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
+    color: BRAND.bgWhite,
   },
   footerLinksRow: {
-    gap: Spacing.sm,
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: Spacing.xl,
   },
   footerLink: {
     fontSize: Typography.fontSize.sm,
