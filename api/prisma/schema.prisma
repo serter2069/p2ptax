@@ -155,6 +155,7 @@ model Request {
   id          String        @id @default(cuid())
   clientId    String
   client      User          @relation(fields: [clientId], references: [id])
+  title       String
   description String
   city        String
   ifnsId      String?
