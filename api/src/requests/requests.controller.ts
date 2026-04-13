@@ -100,6 +100,12 @@ export class RequestsController {
     );
   }
 
+  // GET /requests/:id/public — dedicated public endpoint, never exposes client identity
+  @Get(':id/public')
+  getPublicById(@Param('id') id: string) {
+    return this.requestsService.findPublicById(id);
+  }
+
   // GET /requests/:id/responses — owner gets list of responses
   @Get(':id/responses')
   @UseGuards(JwtAuthGuard)
@@ -107,7 +113,7 @@ export class RequestsController {
     return this.requestsService.findResponses(id, req.user.id);
   }
 
-  // GET /requests/:id — public, owner gets full data including responses
+  // GET /requests/:id — owner gets full data including responses
   @Get(':id')
   @UseGuards(OptionalJwtAuthGuard)
   getById(@Request() req: any, @Param('id') id: string) {
