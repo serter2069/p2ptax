@@ -12,6 +12,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { BlockUserDto } from './dto/block-user.dto';
+import { UpdateSettingsDto } from './dto/update-settings.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -104,5 +105,19 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   deleteReview(@Param('id') id: string) {
     return this.adminService.deleteReview(id);
+  }
+
+  /** GET /admin/settings — returns all settings */
+  @Get('settings')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getSettings() {
+    return this.adminService.getSettings();
+  }
+
+  /** PATCH /admin/settings — updates settings (admin only) */
+  @Patch('settings')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  updateSettings(@Body() dto: UpdateSettingsDto) {
+    return this.adminService.updateSettings(dto.settings);
   }
 }

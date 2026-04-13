@@ -679,6 +679,26 @@ async function main() {
     console.log(`  Created admin user: ${adminEntry.email} (OTP 000000 in dev mode)`);
   }
 
+  // --- Seed default settings ---
+  console.log('Seeding default settings...');
+  const defaultSettings: Record<string, string> = {
+    max_requests_per_client: '5',
+    max_responses_per_request: '10',
+    auto_close_days: '30',
+    max_extensions: '3',
+    close_warning_days: '3',
+    max_file_size_mb: '10',
+    max_files_per_message: '5',
+  };
+  for (const [key, value] of Object.entries(defaultSettings)) {
+    await prisma.setting.upsert({
+      where: { key },
+      update: {},
+      create: { key, value },
+    });
+  }
+  console.log(`  Seeded ${Object.keys(defaultSettings).length} settings`);
+
   console.log('Seeding complete!');
 }
 

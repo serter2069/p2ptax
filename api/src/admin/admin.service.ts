@@ -195,4 +195,28 @@ export class AdminService {
 
     return { items, total, page, pages: Math.ceil(total / take) };
   }
+
+  // ── Settings ──────────────────────────────────────────────────────────
+
+  async getSettings(): Promise<Record<string, string>> {
+    const rows = await this.prisma.setting.findMany();
+    const map: Record<string, string> = {};
+    for (const row of rows) {
+      map[row.key] = row.value;
+    }
+    return map;
+  }
+
+  async updateSettings(settings: Record<string, string>): Promise<Record<string, string>> {
+    await Promise.all(
+      Object.entries(settings).map(([key, value]) =>
+        this.prisma.setting.upsert({
+          where: { key },
+          update: { value },
+          create: { key, value },
+        }),
+      ),
+    );
+    return this.getSettings();
+  }
 }
