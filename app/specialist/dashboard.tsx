@@ -166,6 +166,16 @@ export default function SpecialistDashboard() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionCard}
+          onPress={() => router.push('/specialist/my-responses')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.actionIconWrap}>
+            <Ionicons name="document-text-outline" size={22} color={Colors.brandPrimary} />
+          </View>
+          <Text style={styles.actionLabel}>Мои отклики</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionCard}
           onPress={() => router.push('/(dashboard)/messages')}
           activeOpacity={0.7}
         >
