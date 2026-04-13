@@ -4,6 +4,7 @@ dotenv.config();
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationExceptionFilter } from './common/validation-exception.filter';
 import helmet from 'helmet';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
@@ -28,7 +29,14 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      validationError: { target: false, value: false },
+    }),
+  );
+  app.useGlobalFilters(new ValidationExceptionFilter());
 
   // Security headers — disable CSP to avoid breaking API consumers / frontend assets
   app.use(helmet({ contentSecurityPolicy: false }));

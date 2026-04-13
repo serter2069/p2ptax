@@ -191,15 +191,7 @@ async function request<T>(
   return response.json() as Promise<T>;
 }
 
-export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
+
 
 // Multipart upload helper (for avatar etc.)
 async function uploadFile<T>(path: string, formData: FormData): Promise<T> {

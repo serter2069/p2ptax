@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards, Res, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { IsEmail, IsString, Length, IsOptional, IsIn } from 'class-validator';
+import { IsEmail, IsString, Length, IsOptional, IsIn, Matches } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Response, Request as ExpressRequest } from 'express';
 import { AuthService } from './auth.service';
@@ -16,8 +16,9 @@ class VerifyOtpDto {
   @IsEmail()
   email!: string;
 
-  @IsString()
-  @Length(6, 6)
+  @IsString({ message: 'code must be a string' })
+  @Length(6, 6, { message: 'code must be exactly 6 characters' })
+  @Matches(/^\d{6}$/, { message: 'code must contain only digits' })
   code!: string;
 
   @IsOptional()
