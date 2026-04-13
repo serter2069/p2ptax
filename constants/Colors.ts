@@ -26,6 +26,9 @@ export const Colors = {
   // Utilities
   white: '#FFFFFF',
 
+  // Status neutral (grey)
+  statusNeutral: '#6B7280',
+
   // Status background tints (for badges)
   statusBg: {
     success: '#DCFCE7',
@@ -34,6 +37,7 @@ export const Colors = {
     info: '#E0F2FE',
     accent: '#E0F2FE',
     familiar: '#E0F2FE',
+    neutral: '#F3F4F6',
   },
 
   // Extended text
