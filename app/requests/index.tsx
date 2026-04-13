@@ -1342,4 +1342,13 @@ const styles = StyleSheet.create({
   modalBtn: {
     flex: 1,
   },
+  skeletonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  skeletonBlock: {
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.sm,
+  },
 });

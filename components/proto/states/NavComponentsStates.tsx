@@ -164,7 +164,7 @@ const CLIENT_TABS = [
 ];
 
 function BottomTabBar({ tabs, activeId, label }: {
-  tabs: typeof CLIENT_TABS;
+  tabs: Array<{ id: string; icon: string; label: string; badge?: boolean }>;
   activeId: string;
   label: string;
 }) {
@@ -178,7 +178,7 @@ function BottomTabBar({ tabs, activeId, label }: {
             <View key={tab.id} style={s.tabItem}>
               <View>
                 <Feather
-                  name={tab.icon}
+                  name={tab.icon as any}
                   size={20}
                   color={active ? Colors.brandPrimary : Colors.textMuted}
                 />

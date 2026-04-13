@@ -585,7 +585,7 @@ const s = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: BRAND.textDark,
     // @ts-ignore web-only
-    outlineStyle: 'none',
+    outlineStyle: 'none' as any,
   },
   heroSearchBtn: {
     flexDirection: 'row',
@@ -896,7 +896,7 @@ const s = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: BRAND.textDark,
     // @ts-ignore web-only
-    outlineStyle: 'none',
+    outlineStyle: 'none' as any,
   },
   formChipsScroll: {
     gap: Spacing.sm,
@@ -965,7 +965,7 @@ const s = StyleSheet.create({
     backgroundColor: BRAND.bgWhite,
     textAlignVertical: 'top',
     // @ts-ignore web-only
-    outlineStyle: 'none',
+    outlineStyle: 'none' as any,
   },
   formSubmitBtn: {
     flexDirection: 'row',
