@@ -174,28 +174,59 @@ export class UsersService {
   }
 
   /** Return user settings */
-  async getSettings(userId: string): Promise<{ emailNotifications: boolean }> {
+  async getSettings(userId: string): Promise<{ notifyNewResponses: boolean; notifyNewMessages: boolean }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    return { emailNotifications: user.emailNotifications };
+    return { notifyNewResponses: user.notifyNewResponses, notifyNewMessages: user.notifyNewMessages };
   }
 
-  /** Update user settings (email notifications etc.) */
+  /** Update user settings (backward-compatible: maps old emailNotifications to both new fields) */
   async updateSettings(
     userId: string,
     settings: { emailNotifications?: boolean },
-  ): Promise<{ emailNotifications: boolean }> {
+  ): Promise<{ notifyNewResponses: boolean; notifyNewMessages: boolean }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
+    const data: Record<string, unknown> = {};
+    if (settings.emailNotifications !== undefined) {
+      data.notifyNewResponses = settings.emailNotifications;
+      data.notifyNewMessages = settings.emailNotifications;
+    }
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        ...(settings.emailNotifications !== undefined && { emailNotifications: settings.emailNotifications }),
-      },
+      data,
     });
 
-    return { emailNotifications: updated.emailNotifications };
+    return { notifyNewResponses: updated.notifyNewResponses, notifyNewMessages: updated.notifyNewMessages };
+  }
+
+  /** Return granular notification preferences */
+  async getNotificationSettings(userId: string): Promise<{ new_responses: boolean; new_messages: boolean }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return { new_responses: user.notifyNewResponses, new_messages: user.notifyNewMessages };
+  }
+
+  /** Update individual notification toggles */
+  async updateNotificationSettings(
+    userId: string,
+    settings: { new_responses?: boolean; new_messages?: boolean },
+  ): Promise<{ new_responses: boolean; new_messages: boolean }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const data: Record<string, unknown> = {};
+    if (settings.new_responses !== undefined) data.notifyNewResponses = settings.new_responses;
+    if (settings.new_messages !== undefined) data.notifyNewMessages = settings.new_messages;
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+
+    return { new_responses: updated.notifyNewResponses, new_messages: updated.notifyNewMessages };
   }
 
   /**

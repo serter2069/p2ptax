@@ -109,7 +109,6 @@ export class RequestsService {
         WHERE EXISTS (
           SELECT 1 FROM unnest(sp.cities) c WHERE lower(c) = ${cityLower}
         )
-        AND u."emailNotifications" = true
       `,
     );
 
@@ -229,7 +228,7 @@ export class RequestsService {
     // Check request exists and is open
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
-      include: { client: { select: { id: true, email: true, emailNotifications: true } } },
+      include: { client: { select: { id: true, email: true, notifyNewResponses: true } } },
     });
     if (!request) throw new NotFoundException('Request not found');
     if (request.status !== RequestStatus.OPEN) {
@@ -284,7 +283,7 @@ export class RequestsService {
     });
 
     // Notify client about new response — fire-and-forget
-    if (request.client.emailNotifications) {
+    if (request.client.notifyNewResponses) {
       this.emailService.notifyNewResponse(request.client.email, requestId, specialistId);
     }
 
