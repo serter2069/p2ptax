@@ -9,4 +9,14 @@ export class IfnsController {
   search(@Query('q') q: string) {
     return this.ifnsService.search(q || '');
   }
+
+  @Get()
+  findAll(@Query('city_id') cityId?: string) {
+    return this.ifnsService.findAll(cityId);
+  }
+
+  @Get('cities')
+  getCities() {
+    return this.ifnsService.getCities();
+  }
 }

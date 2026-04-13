@@ -24,8 +24,7 @@ import { LandingHeader } from '../../components/LandingHeader';
 import { Footer } from '../../components/Footer';
 import { Stars } from '../../components/Stars';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
-import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
-import { RUSSIAN_CITIES } from '../../constants/Cities';
+import { useFnsSearch, useCities, FnsOfficeItem } from '../../hooks/useFnsData';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 
@@ -69,29 +68,22 @@ export default function SpecialistsCatalogScreen() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedSort, setSelectedSort] = useState('');
-  const [selectedFns, setSelectedFns] = useState<FNSOffice[]>([]);
+  const [selectedFns, setSelectedFns] = useState<FnsOfficeItem[]>([]);
 
   useEffect(() => {
     api.get<ServiceCategory[]>('/categories')
       .then(data => setServiceCategories(data))
       .catch(() => {});
   }, []);
-  const [fnsQuery, setFnsQuery] = useState('');
-  const [fnsDropdown, setFnsDropdown] = useState<FNSOffice[]>([]);
 
-  // Local FNS dropdown filtering
-  useEffect(() => {
-    if (fnsQuery.trim().length < 2) {
-      setFnsDropdown([]);
-      return;
-    }
-    const q = fnsQuery.trim().toLowerCase();
-    const selectedCodes = new Set(selectedFns.map((o) => o.code));
-    const results = FNS_OFFICES.filter(
-      (o) => !selectedCodes.has(o.code) && (o.name.toLowerCase().includes(q) || o.city.toLowerCase().includes(q))
-    ).slice(0, 8);
-    setFnsDropdown(results);
-  }, [fnsQuery, selectedFns]);
+  const { cities: apiCities } = useCities();
+  const [fnsQuery, setFnsQuery] = useState('');
+  const { results: fnsSearchResults } = useFnsSearch(fnsQuery, 300);
+
+  // FNS dropdown: filter API search results to exclude already selected
+  const fnsDropdown = fnsSearchResults
+    .filter((o) => !selectedFns.some((s) => s.code === o.code))
+    .slice(0, 8);
 
   const fnsFilterParam = selectedFns.map((o) => o.name).join(',');
 
@@ -309,7 +301,6 @@ export default function SpecialistsCatalogScreen() {
                       onPress={() => {
                         setSelectedFns((prev) => [...prev, office]);
                         setFnsQuery('');
-                        setFnsDropdown([]);
                       }}
                       style={styles.fnsDropdownItem}
                       activeOpacity={0.7}
@@ -317,7 +308,7 @@ export default function SpecialistsCatalogScreen() {
                       <Text style={styles.fnsDropdownName} numberOfLines={2}>
                         {office.name}
                       </Text>
-                      <Text style={styles.fnsDropdownCity}>{office.city}</Text>
+                      <Text style={styles.fnsDropdownCity}>{office.city.name}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -337,7 +328,7 @@ export default function SpecialistsCatalogScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.fnsChipText} numberOfLines={1}>
-                      {office.name} ({office.city})
+                      {office.name} ({office.city.name})
                     </Text>
                     <Text style={styles.fnsChipRemove}>x</Text>
                   </TouchableOpacity>

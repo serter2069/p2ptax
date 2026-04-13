@@ -14,8 +14,8 @@ import { Button } from '../../components/Button';
 import { shortFnsLabel } from '../../lib/format';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { OnboardingProgress } from '../../components/OnboardingProgress';
-import { FNS_OFFICES, FNSOffice } from '../../constants/FNS';
 import { FNS_DEPARTMENTS } from '../../constants/FNS_DEPARTMENTS';
+import { useFnsSearch, FnsOfficeItem } from '../../hooks/useFnsData';
 
 interface FnsDeptEntry {
   office: string;
@@ -24,7 +24,7 @@ interface FnsDeptEntry {
 
 export default function FNSScreen() {
   const router = useRouter();
-  const [selected, setSelected] = useState<FNSOffice[]>([]);
+  const [selected, setSelected] = useState<FnsOfficeItem[]>([]);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,16 +33,12 @@ export default function FNSScreen() {
 
   const selectedNames = new Set(selected.map((o) => o.name));
 
-  const searchTerms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const suggestions = searchTerms.length > 0
-    ? FNS_OFFICES.filter((o) => {
-        if (selectedNames.has(o.name)) return false;
-        const text = `${o.name} ${o.city}`.toLowerCase();
-        return searchTerms.every((t) => text.includes(t));
-      }).slice(0, 8)
-    : [];
+  // Use API-backed search instead of hardcoded FNS_OFFICES
+  const { results: suggestions } = useFnsSearch(search);
 
-  function addOffice(office: FNSOffice) {
+  const filteredSuggestions = suggestions.filter((o) => !selectedNames.has(o.name)).slice(0, 8);
+
+  function addOffice(office: FnsOfficeItem) {
     setSelected((prev) => [...prev, office]);
     setDepartmentsMap((prev) => ({ ...prev, [office.name]: [] }));
     setExpandedOffice(office.name);
@@ -87,7 +83,7 @@ export default function FNSScreen() {
     }
     setIsLoading(true);
     try {
-      const cities = [...new Set(selected.map((o) => o.city))];
+      const cities = [...new Set(selected.map((o) => o.city.name))];
       const fnsNames = selected.map((o) => o.name);
       const fnsDepartmentsData: FnsDeptEntry[] = selected.map((o) => ({
         office: o.name,
@@ -138,9 +134,9 @@ export default function FNSScreen() {
               placeholderTextColor={Colors.textMuted}
               autoCorrect={false}
             />
-            {suggestions.length > 0 && (
+            {filteredSuggestions.length > 0 && (
               <View style={styles.dropdown}>
-                {suggestions.map((office) => (
+                {filteredSuggestions.map((office) => (
                   <TouchableOpacity
                     key={office.code}
                     onPress={() => addOffice(office)}
@@ -150,7 +146,7 @@ export default function FNSScreen() {
                     <Text style={styles.dropdownName} numberOfLines={2}>
                       {office.name}
                     </Text>
-                    <Text style={styles.dropdownCity}>{office.city}</Text>
+                    <Text style={styles.dropdownCity}>{office.city.name}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -172,7 +168,7 @@ export default function FNSScreen() {
                       activeOpacity={0.7}
                     >
                       <Text style={styles.chipText} numberOfLines={1}>
-                        {shortFnsLabel(office.name, office.city)}
+                        {shortFnsLabel(office.name, office.city.name)}
                       </Text>
                       <Text style={styles.deptCount}>
                         {(departmentsMap[office.name] || []).length} отд.
