@@ -1,9 +1,8 @@
-import { Controller, Post, Body, UseGuards, Res, Req, Get, Redirect } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Res, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { IsEmail, IsString, Length, IsOptional, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Response, Request as ExpressRequest } from 'express';
-import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { EmailThrottlerGuard } from './email-throttler.guard';
 import { IpThrottlerGuard } from './ip-throttler.guard';
@@ -115,41 +114,5 @@ export class AuthController {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken', { path: '/api/auth/refresh' });
     return { ok: true };
-  }
-
-  // --- Google OAuth ---
-
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  googleAuth(
-    @Req() req: ExpressRequest,
-    @Res({ passthrough: false }) res: Response,
-  ) {
-    // Guard will handle redirect — this is a placeholder
-    // The `state` query param is automatically forwarded by Passport
-  }
-
-  @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
-  async googleCallback(
-    @Req() req: ExpressRequest & { user: { accessToken: string; refreshToken: string; isNewUser: boolean; frontendOrigin: string; user: { userId: string; email: string; role: string; username: string | null } } },
-    @Res({ passthrough: false }) res: Response,
-  ) {
-    const { accessToken, refreshToken, isNewUser, frontendOrigin, user } = req.user;
-    this.setTokenCookies(res, accessToken, refreshToken);
-
-    // Use origin from state param if provided, otherwise fallback to FRONTEND_URL
-    const baseUrl = frontendOrigin || process.env.FRONTEND_URL || '/';
-    const params = new URLSearchParams({
-      accessToken,
-      refreshToken,
-      isNewUser: String(isNewUser),
-      userId: user.userId,
-      email: user.email,
-      role: user.role,
-      username: user.username ?? '',
-    });
-
-    res.redirect(`${baseUrl}/auth/google-callback?${params.toString()}`);
   }
 }
