@@ -82,14 +82,29 @@ export default function SpecialistRespondScreen() {
     return d.toISOString().split('T')[0];
   }, []);
 
-  const isFormValid = useCallback(() => {
-    const trimmed = comment.trim();
-    if (trimmed.length < 10 || trimmed.length > 500) return false;
+  const getPriceError = useCallback((): string => {
+    if (price === '') return 'Введите стоимость';
     const parsedPrice = parseInt(price, 10);
-    if (isNaN(parsedPrice) || parsedPrice < 0) return false;
-    if (!deadline || deadline < getTomorrowDate()) return false;
-    return true;
-  }, [comment, price, deadline, getTomorrowDate]);
+    if (isNaN(parsedPrice) || parsedPrice < 0) return 'Стоимость должна быть >= 0';
+    return '';
+  }, [price]);
+
+  const getDeadlineError = useCallback((): string => {
+    if (!deadline) return 'Выберите срок выполнения';
+    if (deadline < getTomorrowDate()) return 'Срок должен быть в будущем';
+    return '';
+  }, [deadline, getTomorrowDate]);
+
+  const getCommentError = useCallback((): string => {
+    const trimmed = comment.trim();
+    if (trimmed.length < 10) return 'Минимум 10 символов';
+    if (trimmed.length > 500) return 'Максимум 500 символов';
+    return '';
+  }, [comment]);
+
+  const isFormValid = useCallback(() => {
+    return !getPriceError() && !getDeadlineError() && !getCommentError();
+  }, [getPriceError, getDeadlineError, getCommentError]);
 
   const handleSubmit = useCallback(async () => {
     if (!requestId || !isFormValid()) return;
@@ -203,9 +218,9 @@ export default function SpecialistRespondScreen() {
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Your response</Text>
 
-              <Text style={styles.fieldLabel}>Предлагаемая цена, руб.</Text>
+              <Text style={styles.fieldLabel}>Стоимость, руб.</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, price !== '' && getPriceError() ? styles.inputError : null]}
                 value={price}
                 onChangeText={(text) => setPrice(text.replace(/[^0-9]/g, ''))}
                 placeholder="0"
@@ -214,10 +229,13 @@ export default function SpecialistRespondScreen() {
                 editable={!submitting}
                 testID="price-input"
               />
+              {price !== '' && getPriceError() ? (
+                <Text style={styles.fieldError} testID="price-error">{getPriceError()}</Text>
+              ) : null}
 
               <Text style={styles.fieldLabel}>Срок выполнения</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, deadline !== '' && getDeadlineError() ? styles.inputError : null]}
                 value={deadline}
                 onChangeText={setDeadline}
                 placeholder="YYYY-MM-DD"
@@ -225,10 +243,13 @@ export default function SpecialistRespondScreen() {
                 editable={!submitting}
                 testID="deadline-input"
               />
+              {deadline !== '' && getDeadlineError() ? (
+                <Text style={styles.fieldError} testID="deadline-error">{getDeadlineError()}</Text>
+              ) : null}
 
               <Text style={styles.fieldLabel}>Комментарий</Text>
               <TextInput
-                style={styles.textArea}
+                style={[styles.textArea, comment !== '' && getCommentError() ? styles.inputError : null]}
                 value={comment}
                 onChangeText={setComment}
                 placeholder="Describe how you can help with this request..."
@@ -243,6 +264,9 @@ export default function SpecialistRespondScreen() {
               <Text style={styles.charCount}>
                 {comment.length}/500
               </Text>
+              {comment !== '' && getCommentError() ? (
+                <Text style={styles.fieldError} testID="comment-error">{getCommentError()}</Text>
+              ) : null}
 
               {submitError && !alreadyResponded ? (
                 <Text style={styles.errorText}>{submitError}</Text>
@@ -379,6 +403,14 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'right',
     marginTop: Spacing.xs,
+  },
+  fieldError: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.statusError,
+    marginTop: Spacing.xs,
+  },
+  inputError: {
+    borderColor: Colors.statusError,
   },
   errorText: {
     fontSize: Typography.fontSize.sm,
