@@ -193,12 +193,14 @@ export const pageRegistry: PageEntry[] = [
   ] },
 
   // Specialist
-  { id: 'specialist-dashboard', title: 'Кабинет специалиста', group: 'Specialist', route: '/specialist', stateCount: 2, nav: 'specialist', activeTab: 'dashboard', qaCycles: 5, qaScore: 20, navTo: ['public-requests', 'messages', 'profile', 'specialist-respond', 'public-request-detail'], navFrom: ['auth-otp', 'onboarding-profile', 'specialist-respond'], api: [
-    'GET /api/specialist/stats',
-    'GET /api/specialist/requests?status=new&limit=5',
+  { id: 'specialist-dashboard', title: 'Кабинет специалиста', group: 'Specialist', route: '/specialist', stateCount: 4, nav: 'specialist', activeTab: 'dashboard', qaCycles: 0, qaScore: 0, navTo: ['public-requests', 'messages', 'profile', 'specialist-respond', 'public-request-detail'], navFrom: ['auth-otp', 'onboarding-profile', 'specialist-respond'], api: [
+    'GET /api/specialist/dashboard',
+    'GET /api/specialist/active-responses',
   ], testScenarios: [
-    { name: 'Специалист видит дашборд', steps: ['open /proto/states/specialist-dashboard', 'verify greeting visible', 'verify stats cards: Новые, В работе, Завершены', 'verify request cards visible'] },
-    { name: 'Специалист переключает табы', steps: ['open /proto/states/specialist-dashboard', 'tap tab "В работе"', 'verify filtered requests shown', 'tap tab "Завершены"', 'verify completed/cancelled requests'] },
+    { name: 'Loading state — skeleton cards', steps: ['open /proto/states/specialist-dashboard', 'verify LOADING state visible', 'verify skeleton stat cards', 'verify skeleton request cards', 'verify activity indicator'] },
+    { name: 'Empty state — no active requests', steps: ['open /proto/states/specialist-dashboard', 'verify EMPTY state visible', 'verify "Нет активных заявок" message', 'verify CTA "Посмотреть заявки" navigates to public-requests'] },
+    { name: 'Populated state — stats and requests', steps: ['open /proto/states/specialist-dashboard', 'verify POPULATED state visible', 'verify greeting visible', 'verify stats cards: Активные отклики, Ожидают ответа, Заработок', 'verify request cards visible', 'verify tab switching works'] },
+    { name: 'Error state — retry', steps: ['open /proto/states/specialist-dashboard', 'verify ERROR state visible', 'verify error message shown', 'verify "Попробовать снова" button visible'] },
     { name: 'Специалист откликается на заявку', steps: ['open /proto/states/specialist-dashboard', 'tap "Откликнуться" on request card', 'verify navigation to specialist-respond'] },
   ] },
   { id: 'specialist-respond', title: 'Отклик специалиста', group: 'Specialist', route: '/specialist/respond', stateCount: 3, nav: 'specialist', activeTab: 'dashboard', qaCycles: 5, qaScore: 20, navTo: ['specialist-dashboard', 'public-requests', 'messages', 'profile'], navFrom: ['specialist-dashboard'], api: [
