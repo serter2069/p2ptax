@@ -186,10 +186,10 @@ model Response {
   specialist   User         @relation(fields: [specialistId], references: [id])
   requestId    String
   request      Request      @relation(fields: [requestId], references: [id])
-  message      String
+  comment      String
   status       ResponseStatus @default(sent)
-  price        Int?
-  deadline     DateTime?
+  price        Int
+  deadline     DateTime
   viewedAt     DateTime?
   acceptedAt   DateTime?
   createdAt    DateTime     @default(now())

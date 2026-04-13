@@ -11,7 +11,7 @@ import { EmailService } from '../notifications/email.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { CreateQuickRequestDto } from './dto/create-quick-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
-import { RequestStatus, Prisma } from '@prisma/client';
+import { RequestStatus, ResponseStatus, Prisma } from '@prisma/client';
 
 const PAGE_SIZE = 20;
 
@@ -181,6 +181,12 @@ export class RequestsService {
     if (!request) throw new NotFoundException('Request not found');
     if (request.clientId !== userId) throw new ForbiddenException('Only the request owner can view responses');
 
+    // Bulk-update sent → viewed for this request's responses
+    await this.prisma.response.updateMany({
+      where: { requestId, status: ResponseStatus.sent },
+      data: { status: ResponseStatus.viewed, viewedAt: new Date() },
+    });
+
     return this.prisma.response.findMany({
       where: { requestId },
       include: {
@@ -252,6 +258,12 @@ export class RequestsService {
   }
 
   async respond(specialistId: string, requestId: string, dto: RespondRequestDto) {
+    // Validate deadline is in the future
+    const deadlineDate = new Date(dto.deadline);
+    if (deadlineDate <= new Date()) {
+      throw new BadRequestException('Deadline must be a future date');
+    }
+
     // Check request exists and is open
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
@@ -290,7 +302,9 @@ export class RequestsService {
         data: {
           specialistId,
           requestId,
-          message: dto.message,
+          comment: dto.comment,
+          price: dto.price,
+          deadline: deadlineDate,
         },
       });
 
@@ -461,6 +475,85 @@ export class RequestsService {
     return this.prisma.request.update({
       where: { id: requestId },
       data: { status },
+    });
+  }
+
+  /**
+   * Accept a response: changes status to accepted + creates/ensures thread exists.
+   * Only the request owner (client) can accept.
+   */
+  async acceptResponse(responseId: string, clientId: string) {
+    const response = await this.prisma.response.findUnique({
+      where: { id: responseId },
+      include: { request: { select: { clientId: true } } },
+    });
+    if (!response) throw new NotFoundException('Response not found');
+    if (response.request.clientId !== clientId) {
+      throw new ForbiddenException('Only the request owner can accept responses');
+    }
+    if (response.status === ResponseStatus.accepted) {
+      throw new ConflictException('Response is already accepted');
+    }
+    if (response.status === ResponseStatus.deactivated) {
+      throw new ConflictException('Cannot accept a deactivated response');
+    }
+
+    const now = new Date();
+
+    // Update response + ensure thread in transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.response.update({
+        where: { id: responseId },
+        data: { status: ResponseStatus.accepted, acceptedAt: now },
+      });
+
+      // Create thread: enforce participant1Id < participant2Id
+      const specialistId = response.specialistId;
+      const [p1, p2] =
+        specialistId < clientId
+          ? [specialistId, clientId]
+          : [clientId, specialistId];
+
+      const thread = await tx.thread.upsert({
+        where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
+        create: { participant1Id: p1, participant2Id: p2 },
+        update: {},
+      });
+
+      return { response: updated, thread };
+    });
+
+    return result;
+  }
+
+  /**
+   * Patch a response: specialist can deactivate a sent/viewed response.
+   * Deactivating an accepted response returns 409.
+   */
+  async patchResponse(responseId: string, specialistId: string, status: string) {
+    const response = await this.prisma.response.findUnique({
+      where: { id: responseId },
+    });
+    if (!response) throw new NotFoundException('Response not found');
+    if (response.specialistId !== specialistId) {
+      throw new ForbiddenException('You can only modify your own responses');
+    }
+
+    if (status !== 'deactivated') {
+      throw new BadRequestException('Only status=deactivated is supported');
+    }
+
+    if (response.status === ResponseStatus.accepted) {
+      throw new ConflictException('Cannot deactivate an accepted response');
+    }
+
+    if (response.status === ResponseStatus.deactivated) {
+      throw new ConflictException('Response is already deactivated');
+    }
+
+    return this.prisma.response.update({
+      where: { id: responseId },
+      data: { status: ResponseStatus.deactivated },
     });
   }
 }

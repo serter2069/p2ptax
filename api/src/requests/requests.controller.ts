@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Param,
@@ -167,5 +168,25 @@ export class RequestsController {
     }
     // Otherwise update fields (description, city, budget, category)
     return this.requestsService.updateFields(req.user.id, id, dto);
+  }
+
+  // PUT /responses/:id/accept — client accepts a response
+  @Put('responses/:id/accept')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CLIENT)
+  acceptResponse(@Request() req: any, @Param('id') id: string) {
+    return this.requestsService.acceptResponse(id, req.user.id);
+  }
+
+  // PATCH /responses/:id — specialist deactivates own response
+  @Patch('responses/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SPECIALIST)
+  patchResponse(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { status: string },
+  ) {
+    return this.requestsService.patchResponse(id, req.user.id, body.status);
   }
 }
