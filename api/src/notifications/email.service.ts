@@ -211,6 +211,32 @@ export class EmailService {
     });
   }
 
+  /** Notify client that their request will be auto-closed soon */
+  notifyRequestClosingSoon(clientEmail: string, requestId: string, userId: string): void {
+    if (!this.client) {
+      this.logger.log(
+        `DEV EMAIL [notifyRequestClosingSoon]: to=${clientEmail} requestId=${requestId}`,
+      );
+      return;
+    }
+
+    const text =
+      `Ваш запрос #${requestId} будет автоматически закрыт через 3 дня из-за отсутствия активности.\n\n` +
+      `Если запрос ещё актуален, продлите его через приложение.`;
+
+    const html = `
+      <p>Ваш запрос <strong>#${requestId}</strong> будет автоматически закрыт через 3 дня из-за отсутствия активности.</p>
+      <p>Если запрос ещё актуален, продлите его через приложение.</p>`;
+
+    this.send({
+      to: clientEmail,
+      subject: 'Запрос будет закрыт через 3 дня — Налоговик',
+      text,
+      html,
+      userId,
+    }).catch((err) => this.logger.error('[notifyRequestClosingSoon] send failed', err));
+  }
+
   /** Send a one-time password to the user (no unsubscribe footer — transactional email) */
   async sendOtp(email: string, code: string): Promise<void> {
     if (!this.client) {

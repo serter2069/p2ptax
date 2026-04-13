@@ -7,6 +7,7 @@ import {
   UnprocessableEntityException,
   Logger,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { CreateRequestDto } from './dto/create-request.dto';
@@ -16,6 +17,9 @@ import { RequestStatus, ResponseStatus, Prisma } from '@prisma/client';
 
 const PAGE_SIZE = 20;
 const DEFAULT_MAX_REQUESTS = 5;
+const MAX_EXTENSIONS = 3;
+const CLOSING_SOON_DAYS = 27;
+const AUTO_CLOSE_DAYS = 30;
 
 @Injectable()
 export class RequestsService {
@@ -28,7 +32,7 @@ export class RequestsService {
 
   async findRecent(limit = 5) {
     return this.prisma.request.findMany({
-      where: { status: RequestStatus.OPEN },
+      where: { status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] } },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
@@ -82,7 +86,7 @@ export class RequestsService {
 
     const maxRequests = await this.getMaxRequests();
     const openCount = await this.prisma.request.count({
-      where: { clientId, status: RequestStatus.OPEN },
+      where: { clientId, status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] } },
     });
     if (openCount >= maxRequests) {
       throw new UnprocessableEntityException(
@@ -140,7 +144,7 @@ export class RequestsService {
     // #1855: Sanitize page to prevent negative skip
     const pageNum = Math.max(1, parseInt(page as unknown as string) || 1);
 
-    const where: any = { status: RequestStatus.OPEN };
+    const where: any = { status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] } };
     // #1849: Case-insensitive city filter
     if (city) where.city = { equals: city, mode: 'insensitive' };
     // #1801: Category filter (case-insensitive contains)
@@ -196,7 +200,7 @@ export class RequestsService {
     const [totalRequests, activeRequests, totalResponses, acceptedResponses] =
       await Promise.all([
         this.prisma.request.count({ where: { clientId } }),
-        this.prisma.request.count({ where: { clientId, status: RequestStatus.OPEN } }),
+        this.prisma.request.count({ where: { clientId, status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] } } }),
         this.prisma.response.count({
           where: { request: { clientId } },
         }),
@@ -290,7 +294,7 @@ export class RequestsService {
       },
     });
 
-    if (!request || request.status === RequestStatus.CLOSED) {
+    if (!request || request.status === RequestStatus.CLOSED || request.status === RequestStatus.CANCELLED) {
       throw new NotFoundException('Request not found');
     }
 
@@ -311,7 +315,7 @@ export class RequestsService {
       include: { client: { select: { id: true, email: true, notifyNewResponses: true } } },
     });
     if (!request) throw new NotFoundException('Request not found');
-    if (request.status !== RequestStatus.OPEN) {
+    if (request.status !== RequestStatus.OPEN && request.status !== RequestStatus.CLOSING_SOON) {
       throw new BadRequestException('Request is not open for responses');
     }
 
@@ -347,6 +351,12 @@ export class RequestsService {
           price: dto.price,
           deadline: deadlineDate,
         },
+      });
+
+      // Update lastActivityAt on the request
+      await tx.request.update({
+        where: { id: requestId },
+        data: { lastActivityAt: new Date() },
       });
 
       // Create thread: enforce participant1Id < participant2Id
@@ -502,7 +512,8 @@ export class RequestsService {
 
     // Transition matrix: defines all valid moves
     const ALLOWED_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
-      [RequestStatus.OPEN]: [RequestStatus.CLOSED, RequestStatus.CANCELLED],
+      [RequestStatus.OPEN]: [RequestStatus.CLOSING_SOON, RequestStatus.CLOSED, RequestStatus.CANCELLED],
+      [RequestStatus.CLOSING_SOON]: [RequestStatus.OPEN, RequestStatus.CLOSED, RequestStatus.CANCELLED],
       // CLOSED and CANCELLED are final — no transitions allowed
     };
 
@@ -596,5 +607,90 @@ export class RequestsService {
       where: { id: responseId },
       data: { status: ResponseStatus.deactivated },
     });
+  }
+
+  /**
+   * Extend a request: resets lastActivityAt and increments extensionsCount.
+   * Max 3 extensions allowed. Only the owner can extend.
+   */
+  async extend(clientId: string, requestId: string) {
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
+    if (request.status !== RequestStatus.OPEN && request.status !== RequestStatus.CLOSING_SOON) {
+      throw new BadRequestException('Can only extend requests with OPEN or CLOSING_SOON status');
+    }
+    if (request.extensionsCount >= MAX_EXTENSIONS) {
+      throw new BadRequestException(`Maximum number of extensions (${MAX_EXTENSIONS}) reached`);
+    }
+
+    return this.prisma.request.update({
+      where: { id: requestId },
+      data: {
+        lastActivityAt: new Date(),
+        extensionsCount: { increment: 1 },
+        status: RequestStatus.OPEN,
+      },
+    });
+  }
+
+  /**
+   * Daily cron: mark OPEN requests with lastActivityAt > 27 days ago as CLOSING_SOON
+   * and send warning emails.
+   */
+  @Cron('0 2 * * *')
+  async markClosingSoon(): Promise<void> {
+    const cutoff = new Date(Date.now() - CLOSING_SOON_DAYS * 24 * 60 * 60 * 1000);
+
+    const requests = await this.prisma.request.findMany({
+      where: {
+        status: RequestStatus.OPEN,
+        lastActivityAt: { lt: cutoff },
+      },
+      include: {
+        client: { select: { id: true, email: true } },
+      },
+    });
+
+    if (requests.length === 0) {
+      this.logger.log('markClosingSoon: no requests to update');
+      return;
+    }
+
+    const ids = requests.map((r) => r.id);
+
+    const { count } = await this.prisma.request.updateMany({
+      where: { id: { in: ids } },
+      data: { status: RequestStatus.CLOSING_SOON },
+    });
+
+    // Send warning emails
+    for (const request of requests) {
+      this.emailService.notifyRequestClosingSoon(
+        request.client.email,
+        request.id,
+        request.client.id,
+      );
+    }
+
+    this.logger.log(`markClosingSoon: ${count} requests set to CLOSING_SOON, ${requests.length} warning emails sent`);
+  }
+
+  /**
+   * Daily cron: auto-close OPEN/CLOSING_SOON requests with lastActivityAt > 30 days ago.
+   */
+  @Cron('0 3 * * *')
+  async autoCloseStale(): Promise<void> {
+    const cutoff = new Date(Date.now() - AUTO_CLOSE_DAYS * 24 * 60 * 60 * 1000);
+
+    const { count } = await this.prisma.request.updateMany({
+      where: {
+        status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] },
+        lastActivityAt: { lt: cutoff },
+      },
+      data: { status: RequestStatus.CLOSED },
+    });
+
+    this.logger.log(`autoCloseStale: ${count} requests auto-closed`);
   }
 }
