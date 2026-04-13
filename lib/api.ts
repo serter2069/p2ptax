@@ -6,7 +6,34 @@ const BASE_URL =
 
 export const TOKEN_KEY = '@p2ptax_token';
 
-// Simple event emitter for auth events
+// ---------------------------------------------------------------------------
+// Standardized API error
+// ---------------------------------------------------------------------------
+export interface FieldError {
+  field: string;
+  message: string;
+}
+
+export class ApiError extends Error {
+  /** HTTP status code (e.g. 400, 401, 404) */
+  readonly status: number;
+  /** Machine-readable error code (e.g. VALIDATION_ERROR, NOT_FOUND) */
+  readonly code: string;
+  /** Per-field validation errors (populated for VALIDATION_ERROR) */
+  readonly details: FieldError[];
+
+  constructor(status: number, code: string, message: string, details: FieldError[] = []) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Auth event bus
+// ---------------------------------------------------------------------------
 type AuthEventListener = () => void;
 const unauthorizedListeners: AuthEventListener[] = [];
 
@@ -97,6 +124,33 @@ export async function tryRefreshTokens(): Promise<boolean> {
 // Detect web runtime (browser) — used for cookie credentials
 const isWebRuntime = typeof window !== 'undefined' && typeof document !== 'undefined';
 
+// ---------------------------------------------------------------------------
+// Parse the standardized error response from the API:
+// { error: { code, message, details } }
+// Falls back gracefully if the response is not in the expected shape.
+// ---------------------------------------------------------------------------
+async function parseApiError(response: Response): Promise<ApiError> {
+  const status = response.status;
+  try {
+    const json = await response.json();
+    // Standardized format: { error: { code, message, details } }
+    if (json?.error && typeof json.error === 'object') {
+      const { code, message, details } = json.error;
+      return new ApiError(
+        status,
+        code ?? 'INTERNAL_ERROR',
+        message ?? `HTTP ${status}`,
+        Array.isArray(details) ? details : [],
+      );
+    }
+    // Legacy fallback: { message } or { statusCode, message }
+    const msg = json?.message ?? json?.error ?? `HTTP ${status}`;
+    return new ApiError(status, 'INTERNAL_ERROR', Array.isArray(msg) ? msg.join(', ') : msg);
+  } catch {
+    return new ApiError(status, 'INTERNAL_ERROR', `HTTP ${status}`);
+  }
+}
+
 // Core fetch helper
 async function request<T>(
   method: string,
@@ -119,15 +173,13 @@ async function request<T>(
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
-    // Include cookies on web so httpOnly refresh token cookie is sent automatically
     credentials: isWebRuntime ? 'include' : 'same-origin',
   });
 
+  // 401 → auto-refresh → retry → if fails → logout
   if (response.status === 401) {
-    // Attempt token refresh before giving up
     const refreshed = await tryRefreshTokens();
     if (refreshed) {
-      // Retry original request with new token
       const newToken = await getToken();
       const retryHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -145,17 +197,10 @@ async function request<T>(
       if (retryResponse.status === 401) {
         await clearToken();
         emitUnauthorized();
-        throw new ApiError(401, 'Unauthorized');
+        throw new ApiError(401, 'UNAUTHORIZED', 'Необходима авторизация');
       }
       if (!retryResponse.ok) {
-        let retryMessage = `HTTP ${retryResponse.status}`;
-        try {
-          const json = await retryResponse.json();
-          retryMessage = json?.message ?? json?.error ?? retryMessage;
-        } catch {
-          // ignore parse error
-        }
-        throw new ApiError(retryResponse.status, retryMessage);
+        throw await parseApiError(retryResponse);
       }
       if (retryResponse.status === 204) {
         return undefined as T;
@@ -164,23 +209,11 @@ async function request<T>(
     }
     await clearToken();
     emitUnauthorized();
-    throw new ApiError(401, 'Unauthorized');
+    throw new ApiError(401, 'UNAUTHORIZED', 'Необходима авторизация');
   }
 
   if (!response.ok) {
-    // 429 Too Many Requests — throttler fires a raw "ThrottlerException: Too Many Requests"
-    // message that is not user-friendly. Replace it here centrally for all screens.
-    if (response.status === 429) {
-      throw new ApiError(429, 'Слишком много попыток. Попробуйте через 5 минут.');
-    }
-    let message = `HTTP ${response.status}`;
-    try {
-      const json = await response.json();
-      message = json?.message ?? json?.error ?? message;
-    } catch {
-      // ignore parse error
-    }
-    throw new ApiError(response.status, message);
+    throw await parseApiError(response);
   }
 
   // Handle 204 No Content
@@ -190,8 +223,6 @@ async function request<T>(
 
   return response.json() as Promise<T>;
 }
-
-
 
 // Multipart upload helper (for avatar etc.)
 async function uploadFile<T>(path: string, formData: FormData): Promise<T> {
@@ -218,18 +249,23 @@ async function uploadFile<T>(path: string, formData: FormData): Promise<T> {
       const retryHeaders: Record<string, string> = { Accept: 'application/json' };
       if (newToken) retryHeaders['Authorization'] = `Bearer ${newToken}`;
       const retryResponse = await fetch(url, { method: 'POST', headers: retryHeaders, body: formData });
-      if (!retryResponse.ok) throw new ApiError(retryResponse.status, `HTTP ${retryResponse.status}`);
+      if (retryResponse.status === 401) {
+        await clearToken();
+        emitUnauthorized();
+        throw new ApiError(401, 'UNAUTHORIZED', 'Необходима авторизация');
+      }
+      if (!retryResponse.ok) {
+        throw await parseApiError(retryResponse);
+      }
       return retryResponse.json() as Promise<T>;
     }
     await clearToken();
     emitUnauthorized();
-    throw new ApiError(401, 'Unauthorized');
+    throw new ApiError(401, 'UNAUTHORIZED', 'Необходима авторизация');
   }
 
   if (!response.ok) {
-    let message = `HTTP ${response.status}`;
-    try { const json = await response.json(); message = json?.message ?? message; } catch {}
-    throw new ApiError(response.status, message);
+    throw await parseApiError(response);
   }
 
   return response.json() as Promise<T>;
