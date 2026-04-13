@@ -101,9 +101,9 @@ export class RequestsService {
     // #176: Filter by city at DB level using PostgreSQL lower() + unnest() for case-insensitive
     // array match — avoids full table scan that was done previously with JS filtering
     const cityLower = city.toLowerCase();
-    const rows = await this.prisma.$queryRaw<{ email: string }[]>(
+    const rows = await this.prisma.$queryRaw<{ email: string; userId: string }[]>(
       Prisma.sql`
-        SELECT u.email
+        SELECT u.email, u.id as "userId"
         FROM specialist_profiles sp
         JOIN users u ON u.id = sp."userId"
         WHERE EXISTS (
@@ -113,9 +113,10 @@ export class RequestsService {
     );
 
     const emails = rows.map((r) => r.email);
+    const userIds = rows.map((r) => r.userId);
 
     if (emails.length > 0) {
-      this.emailService.notifyNewRequestInCity(emails, city, description);
+      this.emailService.notifyNewRequestInCity(emails, userIds, city, description);
     }
   }
 
@@ -325,7 +326,7 @@ export class RequestsService {
 
     // Notify client about new response — fire-and-forget
     if (request.client.notifyNewResponses) {
-      this.emailService.notifyNewResponse(request.client.email, requestId, specialistId);
+      this.emailService.notifyNewResponse(request.client.email, requestId, specialistId, request.client.id);
     }
 
     return result;
