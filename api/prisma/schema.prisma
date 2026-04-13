@@ -24,6 +24,13 @@ enum PromotionTier {
   TOP
 }
 
+enum ResponseStatus {
+  sent
+  viewed
+  accepted
+  deactivated
+}
+
 model User {
   id          String    @id @default(cuid())
   email       String    @unique
@@ -167,13 +174,18 @@ model Request {
 }
 
 model Response {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   specialistId String
-  specialist   User     @relation(fields: [specialistId], references: [id])
+  specialist   User         @relation(fields: [specialistId], references: [id])
   requestId    String
-  request      Request  @relation(fields: [requestId], references: [id])
+  request      Request      @relation(fields: [requestId], references: [id])
   message      String
-  createdAt    DateTime @default(now())
+  status       ResponseStatus @default(sent)
+  price        Int?
+  deadline     DateTime?
+  viewedAt     DateTime?
+  acceptedAt   DateTime?
+  createdAt    DateTime     @default(now())
 
   @@unique([specialistId, requestId])
   @@index([requestId])
