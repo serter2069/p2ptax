@@ -66,7 +66,7 @@ export const pageRegistry: PageEntry[] = [
   ] },
 
   // Auth
-  { id: 'auth-email', title: 'Вход — Email', group: 'Auth', route: '/(auth)/login', stateCount: 3, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
+  { id: 'auth-email', title: 'Вход — Email', group: 'Auth', route: '/(auth)/login', stateCount: 4, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
     'POST /api/auth/request-otp',
   ] ,
       notes: [
@@ -75,7 +75,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Guest enters email', steps: ['open /proto/states/auth-email', 'verify email input visible', 'type email', 'tap "Получить код"', 'verify loading state'] },
     { name: 'Invalid email error', steps: ['open /proto/states/auth-email', 'type invalid text', 'verify error message shown'] },
   ] },
-  { id: 'auth-otp', title: 'Вход — OTP код', group: 'Auth', route: '/(auth)/otp', stateCount: 4, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
+  { id: 'auth-otp', title: 'Вход — OTP код', group: 'Auth', route: '/(auth)/otp', stateCount: 5, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
     'POST /api/auth/verify-otp',
     'POST /api/auth/request-otp',
   ], testScenarios: [
@@ -85,14 +85,14 @@ export const pageRegistry: PageEntry[] = [
   ] },
 
   // Onboarding (specialist)
-  { id: 'onboarding-username', title: 'Имя пользователя', group: 'Onboarding', route: '/(onboarding)/username', stateCount: 2, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
+  { id: 'onboarding-username', title: 'Имя пользователя', group: 'Onboarding', route: '/(onboarding)/username', stateCount: 4, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
     'PUT /api/onboarding/username',
     'GET /api/onboarding/check-username/:nick',
   ], testScenarios: [
     { name: 'Specialist enters username', steps: ['open /proto/states/onboarding-username', 'verify username input visible', 'type username', 'verify validation feedback'] },
     { name: 'Username already taken', steps: ['open /proto/states/onboarding-username', 'type taken username', 'verify error message'] },
   ] },
-  { id: 'onboarding-work-area', title: 'Город, ФНС, услуги', group: 'Onboarding', route: '/(onboarding)/work-area', stateCount: 2, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
+  { id: 'onboarding-work-area', title: 'Город, ФНС, услуги', group: 'Onboarding', route: '/(onboarding)/work-area', stateCount: 3, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
     'GET /api/cities',
     'GET /api/fns?city=:city',
     'GET /api/services',
@@ -103,7 +103,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Select city and FNS', steps: ['open /proto/states/onboarding-work-area', 'verify city selector visible', 'select city', 'verify FNS dropdown populated'] },
     { name: 'Select services', steps: ['open /proto/states/onboarding-work-area', 'select city', 'select FNS', 'verify services chips visible', 'tap service chips'] },
   ] },
-  { id: 'onboarding-profile', title: 'Заполнение профиля', group: 'Onboarding', route: '/(onboarding)/profile', stateCount: 2, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
+  { id: 'onboarding-profile', title: 'Заполнение профиля', group: 'Onboarding', route: '/(onboarding)/profile', stateCount: 3, nav: 'auth', qaCycles: 5, qaScore: 11, api: [
     'PUT /api/onboarding/profile',
     'POST /api/upload/avatar',
   ], notes: [
