@@ -1,28 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { StateSection } from '../StateSection';
 
-const BRAND = {
-  primary: '#1B2E4A',
-  accent: '#0EA5E9',
-  success: '#22C55E',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  textDark: '#111827',
-  textGray: '#6B7280',
-  textLight: '#9CA3AF',
-  bgWhite: '#FFFFFF',
-  bgLight: '#F9FAFB',
-  bgCard: '#F3F4F6',
-  border: '#E5E7EB',
-};
-
 const CITIES = [
   'Москва', 'Санкт-Петербург', 'Казань', 'Екатеринбург', 'Новосибирск',
   'Краснодар', 'Нижний Новгород', 'Самара', 'Ростов-на-Дону', 'Уфа',
-  'Челябинск', 'Воронеж', 'Пермь', 'Волгоград', 'Красноярск', 'Омск',
 ];
 
 const FNS_MAP: Record<string, string[]> = {
@@ -36,59 +20,32 @@ const FNS_MAP: Record<string, string[]> = {
   'Самара': ['ИФНС №3', 'ИФНС №7'],
   'Ростов-на-Дону': ['ИФНС №2', 'ИФНС №6', 'ИФНС №11'],
   'Уфа': ['ИФНС №1', 'ИФНС №4'],
-  'Челябинск': ['ИФНС №3', 'ИФНС №8'],
-  'Воронеж': ['ИФНС №2', 'ИФНС №5'],
-  'Пермь': ['ИФНС №1', 'ИФНС №6'],
-  'Волгоград': ['ИФНС №3', 'ИФНС №7'],
-  'Красноярск': ['ИФНС №2', 'ИФНС №9'],
-  'Омск': ['ИФНС №1', 'ИФНС №4'],
 };
 
 const SERVICE_OPTIONS = ['Камеральная проверка', 'Выездная проверка', 'Оперативный контроль', 'Не знаю'] as const;
 
 const SPECIALISTS = [
-  {
-    name: 'Алексей Петров',
-    city: 'Москва',
-    fns: 'ИФНС №7',
-    services: ['Камеральная проверка', 'Выездная проверка'],
-    since: 2023,
-    seed: 'alexei-petrov',
-  },
-  {
-    name: 'Мария Сидорова',
-    city: 'Санкт-Петербург',
-    fns: 'ИФНС №15',
-    services: ['Выездная проверка', 'Оперативный контроль'],
-    since: 2023,
-    seed: 'maria-sidorova',
-  },
-  {
-    name: 'Дмитрий Козлов',
-    city: 'Казань',
-    fns: 'ИФНС №4',
-    services: ['Камеральная проверка'],
-    since: 2024,
-    seed: 'dmitry-kozlov',
-  },
-  {
-    name: 'Елена Волкова',
-    city: 'Москва',
-    fns: 'ИФНС №46',
-    services: ['Камеральная проверка', 'Оперативный контроль'],
-    since: 2023,
-    seed: 'elena-volkova',
-  },
+  { name: 'Алексей Петров', city: 'Москва', fns: 'ИФНС №7', services: ['Камеральная проверка', 'Выездная проверка'], seed: 'alexei-petrov' },
+  { name: 'Мария Сидорова', city: 'СПб', fns: 'ИФНС №15', services: ['Выездная проверка', 'Оперативный контроль'], seed: 'maria-sidorova' },
+  { name: 'Дмитрий Козлов', city: 'Казань', fns: 'ИФНС №4', services: ['Камеральная проверка'], seed: 'dmitry-kozlov' },
+  { name: 'Елена Волкова', city: 'Москва', fns: 'ИФНС №46', services: ['Камеральная проверка', 'Оперативный контроль'], seed: 'elena-volkova' },
 ];
 
-// --- Public Header ---
+function useLayout() {
+  const { width } = useWindowDimensions();
+  return { isDesktop: width >= 768 };
+}
+
+// --- Header ---
 
 function PublicHeader() {
   return (
     <View style={s.header}>
       <View style={s.headerInner}>
         <View style={s.headerLogoRow}>
-          <Feather name="briefcase" size={20} color={BRAND.accent} />
+          <View style={s.headerLogoIcon}>
+            <Feather name="shield" size={16} color={Colors.white} />
+          </View>
           <Text style={s.headerLogoText}>Налоговик</Text>
         </View>
         <View style={s.headerNav}>
@@ -104,29 +61,39 @@ function PublicHeader() {
   );
 }
 
-// --- Hero Section ---
+// --- Hero ---
 
 function HeroSection() {
+  const { isDesktop } = useLayout();
   return (
     <View style={s.hero}>
       <View style={s.heroInner}>
-        <Text style={s.heroTitle}>Найдите специалиста{'\n'}в вашей налоговой</Text>
-        <Text style={s.heroSubtitle}>
-          Консультанты, которые знают вашу инспекцию изнутри — камеральные и выездные проверки, оперативный контроль
+        <Text style={[s.heroTitle, isDesktop && s.heroTitleDesktop]}>
+          Найдите специалиста{'\n'}в вашей налоговой
         </Text>
-        <View style={s.heroSearchRow}>
+        <Text style={s.heroSubtitle}>
+          Консультанты, которые знают вашу инспекцию изнутри
+        </Text>
+        <View style={[s.heroSearchRow, isDesktop && s.heroSearchRowDesktop]}>
           <View style={s.heroSearchInputWrap}>
-            <Feather name="map-pin" size={18} color={BRAND.textLight} style={{ marginLeft: 14 }} />
+            <Feather name="map-pin" size={18} color={Colors.textMuted} style={{ marginLeft: 14 }} />
             <TextInput
               style={s.heroSearchInput}
               placeholder="Введите город..."
-              placeholderTextColor={BRAND.textLight}
+              placeholderTextColor={Colors.textMuted}
             />
           </View>
           <Pressable style={s.heroSearchBtn}>
-            <Feather name="search" size={18} color={BRAND.bgWhite} />
-            <Text style={s.heroSearchBtnText}>Найти специалиста</Text>
+            <Feather name="search" size={18} color={Colors.white} />
+            <Text style={s.heroSearchBtnText}>Найти</Text>
           </Pressable>
+        </View>
+        <View style={s.heroStats}>
+          <Text style={s.heroStat}>230+ специалистов</Text>
+          <View style={s.heroDot} />
+          <Text style={s.heroStat}>47 городов</Text>
+          <View style={s.heroDot} />
+          <Text style={s.heroStat}>1 200+ заявок</Text>
         </View>
       </View>
     </View>
@@ -136,23 +103,27 @@ function HeroSection() {
 // --- How It Works ---
 
 function HowItWorksSection() {
+  const { isDesktop } = useLayout();
   const steps: { icon: 'map-pin' | 'file-text' | 'message-circle'; title: string; desc: string }[] = [
-    { icon: 'map-pin', title: 'Укажите ваш ФНС', desc: 'Выберите город и налоговую инспекцию' },
-    { icon: 'file-text', title: 'Опишите задачу', desc: 'Расскажите, с чем нужна помощь — камеральная проверка, выездная или оперативный контроль' },
-    { icon: 'message-circle', title: 'Получите отклик', desc: 'Специалист, который работает в вашем ФНС, свяжется с вами' },
+    { icon: 'map-pin', title: 'Укажите ФНС', desc: 'Выберите город и налоговую инспекцию' },
+    { icon: 'file-text', title: 'Опишите задачу', desc: 'Камеральная, выездная проверка или оперативный контроль' },
+    { icon: 'message-circle', title: 'Получите отклик', desc: 'Специалист из вашего ФНС свяжется с вами' },
   ];
   return (
     <View style={s.section}>
       <View style={s.sectionInner}>
-        <Text style={s.sectionTitle}>Как это работает</Text>
-        <View style={s.stepsRow}>
+        <Text style={s.sectionLabel}>КАК ЭТО РАБОТАЕТ</Text>
+        <Text style={s.sectionTitle}>Три простых шага</Text>
+        <View style={[s.stepsRow, isDesktop && s.stepsRowDesktop]}>
           {steps.map((step, i) => (
             <View key={step.title} style={s.stepCard}>
-              <View style={s.stepNumBadge}>
-                <Text style={s.stepNumText}>{i + 1}</Text>
+              <View style={s.stepNumRow}>
+                <View style={s.stepNum}>
+                  <Text style={s.stepNumText}>{i + 1}</Text>
+                </View>
               </View>
               <View style={s.stepIconWrap}>
-                <Feather name={step.icon} size={28} color={BRAND.accent} />
+                <Feather name={step.icon} size={24} color={Colors.brandPrimary} />
               </View>
               <Text style={s.stepTitle}>{step.title}</Text>
               <Text style={s.stepDesc}>{step.desc}</Text>
@@ -164,35 +135,25 @@ function HowItWorksSection() {
   );
 }
 
-// --- Services Section ---
+// --- Services ---
 
 function ServicesSection() {
+  const { isDesktop } = useLayout();
   const services: { icon: 'search' | 'shield' | 'eye'; title: string; desc: string }[] = [
-    {
-      icon: 'search',
-      title: 'Камеральная проверка',
-      desc: 'Сопровождение проверки деклараций. Поможем подготовить документы и пройти проверку без штрафов.',
-    },
-    {
-      icon: 'shield',
-      title: 'Выездная проверка',
-      desc: 'Защита интересов при выездной проверке ФНС. Подготовка, присутствие, обжалование результатов.',
-    },
-    {
-      icon: 'eye',
-      title: 'Отдел оперативного контроля',
-      desc: 'Консультации по вопросам оперативного контроля. Проверка контрагентов, встречные проверки.',
-    },
+    { icon: 'search', title: 'Камеральная проверка', desc: 'Сопровождение проверки деклараций без штрафов.' },
+    { icon: 'shield', title: 'Выездная проверка', desc: 'Защита интересов при выездной проверке ФНС.' },
+    { icon: 'eye', title: 'Оперативный контроль', desc: 'Проверка контрагентов, встречные проверки.' },
   ];
   return (
-    <View style={[s.section, { backgroundColor: BRAND.bgLight }]}>
+    <View style={[s.section, { backgroundColor: Colors.bgSecondary }]}>
       <View style={s.sectionInner}>
-        <Text style={s.sectionTitle}>Наши услуги</Text>
-        <View style={s.servicesGrid}>
+        <Text style={s.sectionLabel}>УСЛУГИ</Text>
+        <Text style={s.sectionTitle}>Чем мы помогаем</Text>
+        <View style={[s.servicesGrid, isDesktop && s.servicesGridDesktop]}>
           {services.map((svc) => (
             <View key={svc.title} style={s.serviceCard}>
               <View style={s.serviceIconWrap}>
-                <Feather name={svc.icon} size={24} color={BRAND.accent} />
+                <Feather name={svc.icon} size={22} color={Colors.brandPrimary} />
               </View>
               <Text style={s.serviceTitle}>{svc.title}</Text>
               <Text style={s.serviceDesc}>{svc.desc}</Text>
@@ -206,20 +167,19 @@ function ServicesSection() {
 
 // --- Featured Specialists ---
 
-interface SpecialistsProps {
-  loading?: boolean;
-  error?: boolean;
-}
+interface SpecialistsProps { loading?: boolean; error?: boolean }
 
 function FeaturedSpecialists({ loading, error }: SpecialistsProps) {
+  const { isDesktop } = useLayout();
   return (
     <View style={s.section}>
       <View style={s.sectionInner}>
-        <Text style={s.sectionTitle}>Специалисты на платформе</Text>
+        <Text style={s.sectionLabel}>СПЕЦИАЛИСТЫ</Text>
+        <Text style={s.sectionTitle}>На платформе</Text>
 
         {error && (
           <View style={s.errorBanner}>
-            <Feather name="alert-circle" size={18} color={BRAND.error} />
+            <Feather name="alert-circle" size={18} color={Colors.statusError} />
             <Text style={s.errorBannerText}>Не удалось загрузить специалистов</Text>
             <Pressable style={s.retryBtn}>
               <Text style={s.retryBtnText}>Повторить</Text>
@@ -228,7 +188,7 @@ function FeaturedSpecialists({ loading, error }: SpecialistsProps) {
         )}
 
         {!error && (
-          <View style={s.specialistsGrid}>
+          <View style={[s.specialistsGrid, isDesktop && s.specialistsGridDesktop]}>
             {SPECIALISTS.map((sp) => (
               <View key={sp.seed} style={[s.specialistCard, loading && s.skeletonCard]}>
                 {loading ? (
@@ -236,18 +196,14 @@ function FeaturedSpecialists({ loading, error }: SpecialistsProps) {
                     <View style={s.skeletonAvatar} />
                     <View style={s.skeletonLine} />
                     <View style={[s.skeletonLine, { width: '60%' }]} />
-                    <View style={[s.skeletonLine, { width: '80%' }]} />
                   </>
                 ) : (
                   <>
-                    <Image
-                      source={{ uri: `https://picsum.photos/seed/${sp.seed}/80/80` }}
-                      style={s.specialistAvatar}
-                    />
+                    <Image source={{ uri: `https://picsum.photos/seed/${sp.seed}/80/80` }} style={s.specialistAvatar} />
                     <Text style={s.specialistName}>{sp.name}</Text>
                     <View style={s.specialistChipsRow}>
                       <View style={s.chipLocation}>
-                        <Feather name="map-pin" size={12} color={BRAND.accent} />
+                        <Feather name="map-pin" size={11} color={Colors.brandPrimary} />
                         <Text style={s.chipLocationText}>{sp.city}</Text>
                       </View>
                       <View style={s.chipFns}>
@@ -261,7 +217,6 @@ function FeaturedSpecialists({ loading, error }: SpecialistsProps) {
                         </View>
                       ))}
                     </View>
-                    <Text style={s.specialistSince}>На сайте с {sp.since} года</Text>
                   </>
                 )}
               </View>
@@ -272,7 +227,7 @@ function FeaturedSpecialists({ loading, error }: SpecialistsProps) {
         {!error && !loading && (
           <Pressable style={s.allSpecialistsLink}>
             <Text style={s.allSpecialistsText}>Все специалисты</Text>
-            <Feather name="arrow-right" size={16} color={BRAND.accent} />
+            <Feather name="arrow-right" size={16} color={Colors.brandPrimary} />
           </Pressable>
         )}
       </View>
@@ -298,36 +253,31 @@ function QuickRequestForm({ prefillCity, prefillFns, prefillService, prefillDesc
   const fnsOptions = city ? (FNS_MAP[city] || []) : [];
 
   return (
-    <View style={[s.section, { backgroundColor: BRAND.bgLight }]}>
+    <View style={[s.section, { backgroundColor: Colors.bgSecondary }]}>
       <View style={s.sectionInner}>
-        <Text style={s.sectionTitle}>Оставьте заявку прямо сейчас</Text>
+        <Text style={s.sectionLabel}>ЗАЯВКА</Text>
+        <Text style={s.sectionTitle}>Оставьте заявку</Text>
         <Text style={s.sectionSubtitle}>Бесплатно. Специалисты откликнутся в течение дня.</Text>
 
         <View style={s.formCard}>
-          {/* City */}
           <Text style={s.formLabel}>Город</Text>
           <View style={s.formInputWrap}>
-            <Feather name="map-pin" size={16} color={BRAND.textLight} style={{ marginLeft: 12 }} />
+            <Feather name="map-pin" size={16} color={Colors.textMuted} style={{ marginLeft: 12 }} />
             <TextInput
               style={s.formInput}
               placeholder="Начните вводить город..."
-              placeholderTextColor={BRAND.textLight}
+              placeholderTextColor={Colors.textMuted}
               value={city}
               onChangeText={(v) => { setCity(v); setFns(''); }}
             />
           </View>
 
-          {/* FNS */}
           {fnsOptions.length > 0 && (
             <>
               <Text style={s.formLabel}>Отделение ФНС</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.formChipsScroll}>
                 {fnsOptions.map((f) => (
-                  <Pressable
-                    key={f}
-                    style={[s.formChip, fns === f && s.formChipActive]}
-                    onPress={() => setFns(f)}
-                  >
+                  <Pressable key={f} style={[s.formChip, fns === f && s.formChipActive]} onPress={() => setFns(f)}>
                     <Text style={[s.formChipText, fns === f && s.formChipTextActive]}>{f}</Text>
                   </Pressable>
                 ))}
@@ -335,15 +285,10 @@ function QuickRequestForm({ prefillCity, prefillFns, prefillService, prefillDesc
             </>
           )}
 
-          {/* Service */}
           <Text style={s.formLabel}>Услуга</Text>
           <View style={s.serviceRadioGroup}>
             {SERVICE_OPTIONS.map((svc) => (
-              <Pressable
-                key={svc}
-                style={s.serviceRadioRow}
-                onPress={() => setService(svc)}
-              >
+              <Pressable key={svc} style={s.serviceRadioRow} onPress={() => setService(svc)}>
                 <View style={[s.radioOuter, service === svc && s.radioOuterActive]}>
                   {service === svc && <View style={s.radioInner} />}
                 </View>
@@ -352,21 +297,19 @@ function QuickRequestForm({ prefillCity, prefillFns, prefillService, prefillDesc
             ))}
           </View>
 
-          {/* Description */}
           <Text style={s.formLabel}>Описание</Text>
           <TextInput
             style={s.formTextArea}
             multiline
             numberOfLines={4}
             placeholder="Опишите вашу ситуацию..."
-            placeholderTextColor={BRAND.textLight}
+            placeholderTextColor={Colors.textMuted}
             value={description}
             onChangeText={setDescription}
           />
 
-          {/* Submit */}
           <Pressable style={s.formSubmitBtn}>
-            <Feather name="send" size={16} color={BRAND.bgWhite} />
+            <Feather name="send" size={16} color={Colors.white} />
             <Text style={s.formSubmitText}>Отправить заявку</Text>
           </Pressable>
         </View>
@@ -375,21 +318,23 @@ function QuickRequestForm({ prefillCity, prefillFns, prefillService, prefillDesc
   );
 }
 
-// --- Stats / Trust ---
+// --- Stats ---
 
 function StatsSection() {
+  const { isDesktop } = useLayout();
   const stats = [
-    { value: '230+', label: 'специалистов' },
-    { value: '47', label: 'городов' },
-    { value: '1 200+', label: 'заявок' },
+    { value: '230+', label: 'специалистов', icon: 'users' as const },
+    { value: '47', label: 'городов', icon: 'map-pin' as const },
+    { value: '1 200+', label: 'заявок', icon: 'file-text' as const },
+    { value: '4.8', label: 'средний рейтинг', icon: 'star' as const },
   ];
   return (
     <View style={s.section}>
       <View style={s.sectionInner}>
-        <Text style={s.sectionTitle}>Налоговик в цифрах</Text>
-        <View style={s.statsRow}>
+        <View style={[s.statsRow, isDesktop && s.statsRowDesktop]}>
           {stats.map((stat) => (
             <View key={stat.label} style={s.statItem}>
+              <Feather name={stat.icon} size={20} color={Colors.brandPrimary} />
               <Text style={s.statValue}>{stat.value}</Text>
               <Text style={s.statLabel}>{stat.label}</Text>
             </View>
@@ -408,13 +353,15 @@ function FooterSection() {
       <View style={s.footerInner}>
         <View style={s.footerTop}>
           <View style={s.footerLogoRow}>
-            <Feather name="briefcase" size={18} color={BRAND.accent} />
+            <View style={s.footerLogoIcon}>
+              <Feather name="shield" size={14} color={Colors.white} />
+            </View>
             <Text style={s.footerLogo}>Налоговик</Text>
           </View>
           <View style={s.footerLinksRow}>
             <Text style={s.footerLink}>Специалисты</Text>
             <Text style={s.footerLink}>Заявки</Text>
-            <Text style={s.footerLink}>Условия использования</Text>
+            <Text style={s.footerLink}>Условия</Text>
           </View>
         </View>
         <View style={s.footerDivider} />
@@ -432,11 +379,7 @@ interface LandingPageProps {
   formPrefill?: FormProps;
 }
 
-function LandingPage({
-  specialistsLoading,
-  specialistsError,
-  formPrefill,
-}: LandingPageProps) {
+function LandingPage({ specialistsLoading, specialistsError, formPrefill }: LandingPageProps) {
   return (
     <View style={s.page}>
       <PublicHeader />
@@ -468,7 +411,7 @@ export function LandingStates() {
         <LandingPage specialistsError />
       </StateSection>
 
-      <StateSection title="IDLE" pageId="landing">
+      <StateSection title="PREFILLED" pageId="landing">
         <LandingPage
           formPrefill={{
             prefillCity: 'Москва',
@@ -484,15 +427,13 @@ export function LandingStates() {
 // --- Styles ---
 
 const s = StyleSheet.create({
-  page: {
-    backgroundColor: BRAND.bgWhite,
-  },
+  page: { backgroundColor: Colors.bgPrimary },
 
   // Header
   header: {
-    backgroundColor: BRAND.bgWhite,
+    backgroundColor: Colors.bgPrimary,
     borderBottomWidth: 1,
-    borderBottomColor: BRAND.border,
+    borderBottomColor: Colors.borderLight,
   },
   headerInner: {
     maxWidth: 960,
@@ -504,23 +445,24 @@ const s = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
   },
-  headerLogoRow: {
-    flexDirection: 'row',
+  headerLogoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  headerLogoIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
-    gap: Spacing.sm,
+    justifyContent: 'center',
   },
   headerLogoText: {
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
-    color: BRAND.primary,
+    color: Colors.textPrimary,
   },
-  headerNav: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-  },
+  headerNav: { flexDirection: 'row', gap: Spacing.xl },
   headerNavLink: {
     fontSize: Typography.fontSize.sm,
-    color: BRAND.textGray,
+    color: Colors.textSecondary,
     fontWeight: Typography.fontWeight.medium,
   },
   headerLoginBtn: {
@@ -528,17 +470,17 @@ const s = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.btn,
     borderWidth: 1,
-    borderColor: BRAND.accent,
+    borderColor: Colors.brandPrimary,
   },
   headerLoginText: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.accent,
+    color: Colors.brandPrimary,
   },
 
   // Hero
   hero: {
-    backgroundColor: BRAND.primary,
+    backgroundColor: Colors.textPrimary,
     paddingVertical: Spacing['4xl'],
   },
   heroInner: {
@@ -550,343 +492,257 @@ const s = StyleSheet.create({
     gap: Spacing.lg,
   },
   heroTitle: {
-    fontSize: Typography.fontSize.display,
+    fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
-    color: BRAND.bgWhite,
+    color: Colors.white,
     textAlign: 'center',
+    lineHeight: 36,
+  },
+  heroTitleDesktop: {
+    fontSize: Typography.fontSize.display,
     lineHeight: 44,
   },
   heroSubtitle: {
-    fontSize: Typography.fontSize.md,
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: Typography.fontSize.base,
+    color: 'rgba(255,255,255,0.65)',
     textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 600,
+    maxWidth: 500,
   },
   heroSearchRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: Spacing.sm,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     width: '100%',
-    maxWidth: 560,
+    maxWidth: 480,
+  },
+  heroSearchRowDesktop: {
+    flexDirection: 'row',
   },
   heroSearchInputWrap: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BRAND.bgWhite,
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.btn,
     overflow: 'hidden',
   },
   heroSearchInput: {
     flex: 1,
-    height: 52,
+    height: 48,
     paddingHorizontal: Spacing.md,
     fontSize: Typography.fontSize.base,
-    color: BRAND.textDark,
+    color: Colors.textPrimary,
     // @ts-ignore web-only
     outlineStyle: 'none' as any,
   },
   heroSearchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    height: 52,
-    backgroundColor: BRAND.accent,
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    height: 48,
+    backgroundColor: Colors.brandPrimary,
     borderRadius: BorderRadius.btn,
     paddingHorizontal: Spacing.xl,
   },
   heroSearchBtnText: {
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.bgWhite,
+    color: Colors.white,
+  },
+  heroStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  heroStat: {
+    fontSize: Typography.fontSize.xs,
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: Typography.fontWeight.medium,
+  },
+  heroDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
 
   // Sections
   section: {
     paddingVertical: Spacing['4xl'],
     paddingHorizontal: Spacing.xl,
-    backgroundColor: BRAND.bgWhite,
+    backgroundColor: Colors.bgPrimary,
   },
   sectionInner: {
     maxWidth: 960,
     width: '100%',
     alignSelf: 'center',
-    gap: Spacing.xl,
+    gap: Spacing.md,
+  },
+  sectionLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.brandPrimary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    textAlign: 'center',
   },
   sectionTitle: {
     fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
-    color: BRAND.textDark,
+    color: Colors.textPrimary,
     textAlign: 'center',
   },
   sectionSubtitle: {
     fontSize: Typography.fontSize.base,
-    color: BRAND.textGray,
+    color: Colors.textSecondary,
     textAlign: 'center',
-    marginTop: -Spacing.md,
+    marginTop: -Spacing.xs,
   },
 
-  // How it works — steps
-  stepsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xl,
-    justifyContent: 'center',
-  },
+  // Steps
+  stepsRow: { gap: Spacing.lg, marginTop: Spacing.md },
+  stepsRowDesktop: { flexDirection: 'row' },
   stepCard: {
     flex: 1,
-    minWidth: 240,
-    maxWidth: 300,
-    backgroundColor: BRAND.bgWhite,
+    backgroundColor: Colors.bgPrimary,
     borderRadius: BorderRadius.card,
     padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: BRAND.border,
-    alignItems: 'center',
+    borderColor: Colors.borderLight,
     gap: Spacing.md,
+    alignItems: 'center',
     ...Shadows.sm,
   },
-  stepNumBadge: {
+  stepNumRow: { alignItems: 'center' },
+  stepNum: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: BRAND.accent,
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepNumText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.bold,
-    color: BRAND.bgWhite,
-  },
+  stepNumText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.bold, color: Colors.white },
   stepIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#EFF6FF',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.bgSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textDark,
-    textAlign: 'center',
-  },
-  stepDesc: {
-    fontSize: Typography.fontSize.sm,
-    color: BRAND.textGray,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+  stepTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary, textAlign: 'center' },
+  stepDesc: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
 
   // Services
-  servicesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.lg,
-    justifyContent: 'center',
-  },
+  servicesGrid: { gap: Spacing.md, marginTop: Spacing.md },
+  servicesGridDesktop: { flexDirection: 'row' },
   serviceCard: {
     flex: 1,
-    minWidth: 260,
-    maxWidth: 320,
-    backgroundColor: BRAND.bgWhite,
+    backgroundColor: Colors.bgPrimary,
     borderRadius: BorderRadius.card,
     padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: BRAND.border,
+    borderColor: Colors.borderLight,
     gap: Spacing.md,
     ...Shadows.sm,
   },
   serviceIconWrap: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: BorderRadius.lg,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: Colors.bgSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  serviceTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textDark,
-  },
-  serviceDesc: {
-    fontSize: Typography.fontSize.sm,
-    color: BRAND.textGray,
-    lineHeight: 20,
-  },
+  serviceTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  serviceDesc: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
 
   // Specialists
   specialistsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.lg,
+    gap: Spacing.md,
     justifyContent: 'center',
+    marginTop: Spacing.md,
   },
+  specialistsGridDesktop: { gap: Spacing.lg },
   specialistCard: {
-    width: 210,
-    backgroundColor: BRAND.bgWhite,
+    width: 200,
+    backgroundColor: Colors.bgPrimary,
     borderRadius: BorderRadius.card,
     padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: BRAND.border,
+    borderColor: Colors.borderLight,
     alignItems: 'center',
     gap: Spacing.sm,
     ...Shadows.sm,
   },
-  specialistAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    marginBottom: Spacing.xs,
-  },
-  specialistName: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textDark,
-    textAlign: 'center',
-  },
-  specialistChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    justifyContent: 'center',
-  },
+  specialistAvatar: { width: 64, height: 64, borderRadius: 32, marginBottom: Spacing.xs },
+  specialistName: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary, textAlign: 'center' },
+  specialistChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'center' },
   chipLocation: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-    backgroundColor: '#EFF6FF',
-  },
-  chipLocationText: {
-    fontSize: Typography.fontSize.xs,
-    color: BRAND.accent,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  chipFns: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-    backgroundColor: BRAND.bgCard,
-  },
-  chipFnsText: {
-    fontSize: Typography.fontSize.xs,
-    color: BRAND.textGray,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  specialistServicesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  chipService: {
-    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-    borderColor: BRAND.border,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.bgSecondary,
   },
-  chipServiceText: {
-    fontSize: 10,
-    color: BRAND.textGray,
-  },
-  specialistSince: {
-    fontSize: Typography.fontSize.xs,
-    color: BRAND.textLight,
-    marginTop: 4,
-  },
-  allSpecialistsLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  allSpecialistsText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.accent,
-  },
+  chipLocationText: { fontSize: Typography.fontSize.xs, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
+  chipFns: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full, backgroundColor: Colors.statusBg.neutral },
+  chipFnsText: { fontSize: Typography.fontSize.xs, color: Colors.textSecondary, fontWeight: Typography.fontWeight.medium },
+  specialistServicesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 3, justifyContent: 'center', marginTop: 2 },
+  chipService: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: BorderRadius.sm, borderWidth: 1, borderColor: Colors.borderLight },
+  chipServiceText: { fontSize: 10, color: Colors.textSecondary },
+  allSpecialistsLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: Spacing.md },
+  allSpecialistsText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.brandPrimary },
 
   // Skeleton
-  skeletonCard: {
-    opacity: 0.6,
-  },
-  skeletonAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: BRAND.bgCard,
-    marginBottom: Spacing.xs,
-  },
-  skeletonLine: {
-    width: '80%',
-    height: 14,
-    borderRadius: 4,
-    backgroundColor: BRAND.bgCard,
-    marginVertical: 4,
-  },
+  skeletonCard: { opacity: 0.6 },
+  skeletonAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bgSecondary, marginBottom: Spacing.xs },
+  skeletonLine: { width: '80%', height: 12, borderRadius: 4, backgroundColor: Colors.bgSecondary, marginVertical: 3 },
 
-  // Error banner
+  // Error
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    backgroundColor: '#FEF2F2',
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.statusBg.error,
+    borderRadius: BorderRadius.card,
     padding: Spacing.lg,
     borderWidth: 1,
     borderColor: '#FECACA',
+    marginTop: Spacing.md,
   },
-  errorBannerText: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: BRAND.error,
-  },
-  retryBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.btn,
-    backgroundColor: BRAND.error,
-  },
-  retryBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.bgWhite,
-  },
+  errorBannerText: { flex: 1, fontSize: Typography.fontSize.sm, color: Colors.statusError },
+  retryBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.btn, backgroundColor: Colors.statusError },
+  retryBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
 
   // Form
   formCard: {
-    backgroundColor: BRAND.bgWhite,
+    backgroundColor: Colors.bgPrimary,
     borderRadius: BorderRadius.card,
     padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: BRAND.border,
-    gap: Spacing.lg,
-    maxWidth: 600,
+    borderColor: Colors.borderLight,
+    gap: Spacing.md,
+    maxWidth: 560,
     alignSelf: 'center',
     width: '100%',
     ...Shadows.sm,
   },
-  formLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.textDark,
-  },
+  formLabel: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   formInputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: BRAND.border,
+    borderColor: Colors.border,
     borderRadius: BorderRadius.input,
-    backgroundColor: BRAND.bgWhite,
+    backgroundColor: Colors.bgPrimary,
     overflow: 'hidden',
   },
   formInput: {
@@ -894,75 +750,46 @@ const s = StyleSheet.create({
     height: 44,
     paddingHorizontal: Spacing.md,
     fontSize: Typography.fontSize.base,
-    color: BRAND.textDark,
+    color: Colors.textPrimary,
     // @ts-ignore web-only
     outlineStyle: 'none' as any,
   },
-  formChipsScroll: {
-    gap: Spacing.sm,
-    paddingVertical: 2,
-  },
+  formChipsScroll: { gap: Spacing.sm, paddingVertical: 2 },
   formChip: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: BRAND.border,
-    backgroundColor: BRAND.bgWhite,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgPrimary,
   },
-  formChipActive: {
-    backgroundColor: BRAND.accent,
-    borderColor: BRAND.accent,
-  },
-  formChipText: {
-    fontSize: Typography.fontSize.sm,
-    color: BRAND.textDark,
-  },
-  formChipTextActive: {
-    color: BRAND.bgWhite,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  serviceRadioGroup: {
-    gap: Spacing.sm,
-  },
-  serviceRadioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: 4,
-  },
+  formChipActive: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
+  formChipText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
+  formChipTextActive: { color: Colors.white, fontWeight: Typography.fontWeight.medium },
+  serviceRadioGroup: { gap: Spacing.sm },
+  serviceRadioRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: 3 },
   radioOuter: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: BRAND.border,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioOuterActive: {
-    borderColor: BRAND.accent,
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: BRAND.accent,
-  },
-  serviceRadioLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: BRAND.textDark,
-  },
+  radioOuterActive: { borderColor: Colors.brandPrimary },
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.brandPrimary },
+  serviceRadioLabel: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
   formTextArea: {
-    minHeight: 88,
+    minHeight: 80,
     borderWidth: 1,
-    borderColor: BRAND.border,
+    borderColor: Colors.border,
     borderRadius: BorderRadius.input,
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
     fontSize: Typography.fontSize.base,
-    color: BRAND.textDark,
-    backgroundColor: BRAND.bgWhite,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.bgPrimary,
     textAlignVertical: 'top',
     // @ts-ignore web-only
     outlineStyle: 'none' as any,
@@ -971,79 +798,46 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     height: 48,
-    backgroundColor: BRAND.accent,
+    backgroundColor: Colors.brandPrimary,
     borderRadius: BorderRadius.btn,
+    marginTop: Spacing.xs,
   },
-  formSubmitText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: BRAND.bgWhite,
-  },
+  formSubmitText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
 
   // Stats
   statsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: Spacing['3xl'],
+    gap: Spacing['2xl'],
   },
-  statItem: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  statValue: {
-    fontSize: Typography.fontSize['3xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: BRAND.primary,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: BRAND.textGray,
-  },
+  statsRowDesktop: { gap: Spacing['4xl'] },
+  statItem: { alignItems: 'center', gap: 4, minWidth: 80 },
+  statValue: { fontSize: Typography.fontSize['2xl'], fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  statLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
 
   // Footer
   footer: {
-    backgroundColor: BRAND.primary,
+    backgroundColor: Colors.textPrimary,
     paddingVertical: Spacing['3xl'],
     paddingHorizontal: Spacing.xl,
   },
-  footerInner: {
-    maxWidth: 960,
-    width: '100%',
-    alignSelf: 'center',
-    gap: Spacing.lg,
-  },
-  footerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  footerLogoRow: {
-    flexDirection: 'row',
+  footerInner: { maxWidth: 960, width: '100%', alignSelf: 'center', gap: Spacing.lg },
+  footerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  footerLogoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  footerLogoIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
-    gap: Spacing.sm,
+    justifyContent: 'center',
   },
-  footerLogo: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.bold,
-    color: BRAND.bgWhite,
-  },
-  footerLinksRow: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-  },
-  footerLink: {
-    fontSize: Typography.fontSize.sm,
-    color: 'rgba(255,255,255,0.6)',
-  },
-  footerDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  footerCopy: {
-    fontSize: Typography.fontSize.xs,
-    color: 'rgba(255,255,255,0.4)',
-    textAlign: 'center',
-  },
+  footerLogo: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.white },
+  footerLinksRow: { flexDirection: 'row', gap: Spacing.xl },
+  footerLink: { fontSize: Typography.fontSize.sm, color: 'rgba(255,255,255,0.5)' },
+  footerDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)' },
+  footerCopy: { fontSize: Typography.fontSize.xs, color: 'rgba(255,255,255,0.35)', textAlign: 'center' },
 });
