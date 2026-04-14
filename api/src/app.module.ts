@@ -18,6 +18,7 @@ import { IfnsModule } from './ifns/ifns.module';
 import { CategoriesModule } from './categories/categories.module';
 import { StatsModule } from './stats/stats.module';
 import { ContentModule } from './content/content.module';
+import { ProtoModule } from './proto/proto.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ContentModule } from './content/content.module';
     CategoriesModule,
     StatsModule,
     ContentModule,
+    ProtoModule,
   ],
   controllers: [AppController],
 })
