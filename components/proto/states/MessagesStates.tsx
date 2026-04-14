@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_THREADS } from '../../../constants/protoMockData';
 
 function ThreadItem({ name, lastMessage, time, unread, selected, onPress }: {
@@ -22,6 +23,7 @@ function ThreadItem({ name, lastMessage, time, unread, selected, onPress }: {
           )}
         </View>
       </View>
+      <Feather name="chevron-right" size={16} color={Colors.textMuted} />
     </Pressable>
   );
 }
@@ -31,7 +33,12 @@ function InteractiveMessages() {
 
   return (
     <View style={s.container}>
-      <Text style={s.pageTitle}>Сообщения</Text>
+      <View style={s.headerRow}>
+        <Text style={s.pageTitle}>Сообщения</Text>
+        <View style={s.unreadCountBadge}>
+          <Text style={s.unreadCountText}>{MOCK_THREADS.reduce((sum, t) => sum + t.unread, 0)}</Text>
+        </View>
+      </View>
       {MOCK_THREADS.map((t) => (
         <ThreadItem
           key={t.id}
@@ -43,62 +50,45 @@ function InteractiveMessages() {
           onPress={() => setSelectedId(selectedId === t.id ? null : t.id)}
         />
       ))}
-      {selectedId && (
-        <View style={s.preview}>
-          <Text style={s.previewText}>Открыт чат с: {MOCK_THREADS.find((t) => t.id === selectedId)?.name}</Text>
-        </View>
-      )}
     </View>
   );
 }
 
 export function MessagesStates() {
   return (
-    <>
-      <StateSection title="INTERACTIVE">
-        <InteractiveMessages />
-      </StateSection>
-      <StateSection title="EMPTY">
-        <View style={s.container}>
-          <Text style={s.pageTitle}>Сообщения</Text>
-          <View style={s.emptyWrap}>
-            <Text style={s.emptyTitle}>Нет сообщений</Text>
-            <Text style={s.emptyText}>Сообщения появятся после принятия отклика специалиста</Text>
-          </View>
-        </View>
-      </StateSection>
-    </>
+    <StateSection title="INTERACTIVE">
+      <InteractiveMessages />
+    </StateSection>
   );
 }
 
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing.sm },
-  pageTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.sm },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
+  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  unreadCountBadge: {
+    backgroundColor: Colors.brandPrimary, minWidth: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
+  },
+  unreadCountText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.white },
   thread: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,
+    paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card,
+    borderWidth: 1, borderColor: Colors.border, ...Shadows.sm,
   },
-  threadSelected: { backgroundColor: Colors.bgSecondary, marginHorizontal: -Spacing.lg, paddingHorizontal: Spacing.lg, borderRadius: BorderRadius.md },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
+  threadSelected: { backgroundColor: Colors.bgSecondary, borderColor: Colors.brandPrimary },
   threadBody: { flex: 1, gap: 2 },
   threadTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  threadName: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
+  threadName: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
   threadNameBold: { fontWeight: Typography.fontWeight.bold },
-  threadTime: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  threadTime: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   threadBottom: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  threadMsg: { flex: 1, fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  threadMsg: { flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   threadMsgBold: { color: Colors.textPrimary, fontWeight: Typography.fontWeight.medium },
   unreadBadge: {
     backgroundColor: Colors.brandPrimary, minWidth: 20, height: 20, borderRadius: 10,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
   },
   unreadText: { fontSize: 11, fontWeight: Typography.fontWeight.bold, color: Colors.white },
-  preview: {
-    backgroundColor: Colors.bgSecondary, padding: Spacing.md, borderRadius: BorderRadius.md, marginTop: Spacing.sm,
-  },
-  previewText: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
-  emptyWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.sm },
-  emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
 });

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 
 const SERVICES = [
   'Выездная проверка',
@@ -192,21 +192,16 @@ function Screen({ preset }: { preset?: { cities: string[]; bindings: FnsBindings
 
 export function OnboardingWorkAreaStates() {
   return (
-    <>
-      <StateSection title="DEFAULT">
-        <Screen />
-      </StateSection>
-      <StateSection title="FILLED">
-        <Screen preset={{
-          cities: ['Москва', 'Санкт-Петербург'],
-          bindings: {
-            'Москва:ИФНС №5 по г. Москве': ['Выездная проверка', 'Камеральная проверка'],
-            'Москва:ИФНС №46 по г. Москве': ['Отдел оперативного контроля'],
-            'Санкт-Петербург:ИФНС №15 по СПб': ['Выездная проверка'],
-          },
-        }} />
-      </StateSection>
-    </>
+    <StateSection title="FILLED">
+      <Screen preset={{
+        cities: ['Москва', 'Санкт-Петербург'],
+        bindings: {
+          'Москва:ИФНС №5 по г. Москве': ['Выездная проверка', 'Камеральная проверка'],
+          'Москва:ИФНС №46 по г. Москве': ['Отдел оперативного контроля'],
+          'Санкт-Петербург:ИФНС №15 по СПб': ['Выездная проверка'],
+        },
+      }} />
+    </StateSection>
   );
 }
 
