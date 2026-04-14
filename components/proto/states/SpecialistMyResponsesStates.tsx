@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
@@ -9,6 +9,12 @@ function navigate(pageId: string) {
   if (Platform.OS === 'web') {
     window.open(`/proto/states/${pageId}`, '_self');
   }
+}
+
+function SkeletonBlock({ width, height, radius }: { width: string | number; height: number; radius?: number }) {
+  return (
+    <View style={[s.skeleton, { width: width as any, height, borderRadius: radius || BorderRadius.md }]} />
+  );
 }
 
 const STATUS_CONFIG: Record<SpecialistResponseStatus, { label: string; bg: string; color: string; icon: string }> = {
@@ -105,6 +111,10 @@ function ResponseCard({ item, onDeactivate }: { item: MockSpecialistResponse; on
   );
 }
 
+// ---------------------------------------------------------------------------
+// STATE: POPULATED
+// ---------------------------------------------------------------------------
+
 function PopulatedState() {
   const [filter, setFilter] = useState<FilterKey>('all');
 
@@ -151,11 +161,83 @@ function PopulatedState() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// STATE: EMPTY
+// ---------------------------------------------------------------------------
+
+function EmptyState() {
+  return (
+    <View style={s.container}>
+      <View style={s.headerRow}>
+        <Feather name="mail" size={20} color={Colors.brandPrimary} />
+        <View style={{ flex: 1 }}>
+          <Text style={s.screenTitle}>Мои отклики</Text>
+        </View>
+      </View>
+
+      <View style={s.emptyBlock}>
+        <View style={s.emptyIconWrap}>
+          <Feather name="send" size={40} color={Colors.brandPrimary} />
+        </View>
+        <Text style={s.emptyBlockTitle}>Вы ещё не откликались на заявки</Text>
+        <Text style={s.emptyBlockText}>
+          Найдите подходящие заявки и предложите свои услуги клиентам
+        </Text>
+        <Pressable style={s.ctaBtn} onPress={() => navigate('public-requests')}>
+          <Feather name="search" size={16} color={Colors.white} />
+          <Text style={s.ctaBtnText}>Посмотреть заявки</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// STATE: LOADING
+// ---------------------------------------------------------------------------
+
+function LoadingState() {
+  return (
+    <View style={s.container}>
+      <View style={s.headerRow}>
+        <SkeletonBlock width={20} height={20} radius={4} />
+        <View style={{ flex: 1 }}>
+          <SkeletonBlock width="50%" height={20} />
+          <SkeletonBlock width="30%" height={14} />
+        </View>
+      </View>
+      <View style={s.filterRow}>
+        <SkeletonBlock width={60} height={36} radius={BorderRadius.full} />
+        <SkeletonBlock width={80} height={36} radius={BorderRadius.full} />
+        <SkeletonBlock width={120} height={36} radius={BorderRadius.full} />
+      </View>
+      {[0, 1, 2].map((i) => (
+        <SkeletonBlock key={i} width="100%" height={160} radius={BorderRadius.card} />
+      ))}
+      <View style={{ alignItems: 'center', paddingTop: Spacing.md }}>
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main export
+// ---------------------------------------------------------------------------
+
 export function SpecialistMyResponsesStates() {
   return (
-    <StateSection title="POPULATED">
-      <PopulatedState />
-    </StateSection>
+    <>
+      <StateSection title="POPULATED">
+        <PopulatedState />
+      </StateSection>
+      <StateSection title="EMPTY">
+        <EmptyState />
+      </StateSection>
+      <StateSection title="LOADING">
+        <LoadingState />
+      </StateSection>
+    </>
   );
 }
 
@@ -216,4 +298,22 @@ const s = StyleSheet.create({
 
   emptyFilter: { alignItems: 'center', paddingVertical: Spacing['3xl'], gap: Spacing.sm },
   emptyFilterText: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
+
+  // Empty block
+  emptyBlock: { alignItems: 'center', paddingVertical: Spacing['3xl'], gap: Spacing.md },
+  emptyIconWrap: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.bgSurface,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
+  },
+  emptyBlockTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  emptyBlockText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 280 },
+  ctaBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+    height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
+    paddingHorizontal: Spacing['2xl'], ...Shadows.sm,
+  },
+  ctaBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+
+  // Loading
+  skeleton: { backgroundColor: Colors.bgSurface, opacity: 0.7 },
 });
