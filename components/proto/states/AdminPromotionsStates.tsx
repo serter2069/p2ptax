@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 
 const PROMO_DATA = [
   { id: '1', code: 'WELCOME30', discount: '30%', type: 'Скидка на тариф', usages: 45, maxUsages: 100, active: true, expiry: '30.06.2026' },
@@ -21,6 +21,7 @@ function PromoCard({ code, discount, type, usages, maxUsages, active, expiry }: 
       <View style={s.cardTop}>
         <View>
           <View style={s.codeRow}>
+            <Feather name="tag" size={14} color={Colors.brandPrimary} />
             <Text style={s.code}>{code}</Text>
             <View style={[s.statusDot, { backgroundColor: toggled ? Colors.statusSuccess : Colors.textMuted }]} />
           </View>
@@ -37,10 +38,17 @@ function PromoCard({ code, discount, type, usages, maxUsages, active, expiry }: 
         <Text style={s.usageText}>{usages}/{maxUsages}</Text>
       </View>
       <View style={s.cardBottom}>
-        <Text style={s.expiry}>До {expiry}</Text>
+        <View style={s.expiryRow}>
+          <Feather name="calendar" size={12} color={Colors.textMuted} />
+          <Text style={s.expiry}>До {expiry}</Text>
+        </View>
         <View style={s.cardActions}>
-          <View style={s.btnEdit}><Text style={s.btnEditText}>Изменить</Text></View>
+          <Pressable style={s.btnEdit}>
+            <Feather name="edit-2" size={12} color={Colors.textPrimary} />
+            <Text style={s.btnEditText}>Изменить</Text>
+          </Pressable>
           <Pressable style={s.btnToggle} onPress={() => setToggled(!toggled)}>
+            <Feather name={toggled ? 'pause' : 'play'} size={12} color={Colors.brandPrimary} />
             <Text style={s.btnToggleText}>{toggled ? 'Деактивировать' : 'Активировать'}</Text>
           </Pressable>
         </View>
@@ -55,18 +63,24 @@ export function AdminPromotionsStates() {
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.pageTitle}>Промо-коды</Text>
-          <View style={s.addBtn}><Text style={s.addBtnText}>+ Создать</Text></View>
+          <Pressable style={s.addBtn}>
+            <Feather name="plus" size={16} color={Colors.white} />
+            <Text style={s.addBtnText}>Создать</Text>
+          </Pressable>
         </View>
         <View style={s.statsRow}>
           <View style={s.stat}>
+            <Feather name="hash" size={16} color={Colors.textPrimary} />
             <Text style={s.statValue}>4</Text>
             <Text style={s.statLabel}>Всего</Text>
           </View>
           <View style={s.stat}>
+            <Feather name="check-circle" size={16} color={Colors.statusSuccess} />
             <Text style={[s.statValue, { color: Colors.statusSuccess }]}>3</Text>
             <Text style={s.statLabel}>Активные</Text>
           </View>
           <View style={s.stat}>
+            <Feather name="bar-chart-2" size={16} color={Colors.brandPrimary} />
             <Text style={s.statValue}>357</Text>
             <Text style={s.statLabel}>Использований</Text>
           </View>
@@ -82,28 +96,28 @@ export function AdminPromotionsStates() {
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing.md },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pageTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   addBtn: {
     backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
   },
   addBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   statsRow: { flexDirection: 'row', gap: Spacing.sm },
   stat: {
-    flex: 1, backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md,
-    padding: Spacing.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
+    flex: 1, backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card,
+    padding: Spacing.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.border, gap: Spacing.xs, ...Shadows.sm,
   },
   statValue: { fontSize: 20, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   statLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
   card: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   codeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   code: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary, fontFamily: 'monospace' },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  type: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, marginTop: 2 },
+  type: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, marginTop: 2 },
   discountBadge: {
     backgroundColor: Colors.brandPrimary + '15', paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -112,18 +126,19 @@ const s = StyleSheet.create({
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   progressBar: { flex: 1, height: 6, backgroundColor: Colors.bgSecondary, borderRadius: 3 },
   progressFill: { height: 6, backgroundColor: Colors.brandPrimary, borderRadius: 3 },
-  usageText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, minWidth: 50, textAlign: 'right' },
+  usageText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, minWidth: 50, textAlign: 'right' },
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  expiry: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  expiryRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  expiry: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   cardActions: { flexDirection: 'row', gap: Spacing.sm },
   btnEdit: {
     paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, borderRadius: BorderRadius.md,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  btnEditText: { fontSize: Typography.fontSize.xs, color: Colors.textPrimary },
+  btnEditText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
   btnToggle: {
     paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgSecondary,
+    backgroundColor: Colors.bgSecondary, flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  btnToggleText: { fontSize: Typography.fontSize.xs, color: Colors.brandPrimary },
+  btnToggleText: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary },
 });

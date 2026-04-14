@@ -5,12 +5,20 @@ import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_ADMIN_STATS } from '../../../constants/protoMockData';
 
-function StatCard({ label, value, color, trend }: { label: string; value: string | number; color: string; trend?: string }) {
+function StatCard({ label, value, color, trend, icon }: { label: string; value: string | number; color: string; trend?: string; icon: string }) {
   return (
     <View style={s.statCard}>
+      <View style={[s.statIcon, { backgroundColor: color + '15' }]}>
+        <Feather name={icon as any} size={18} color={color} />
+      </View>
       <Text style={s.statLabel}>{label}</Text>
       <Text style={[s.statValue, { color }]}>{value}</Text>
-      {trend && <Text style={s.statTrend}>{trend}</Text>}
+      {trend && (
+        <View style={s.trendRow}>
+          <Feather name="trending-up" size={12} color={Colors.statusSuccess} />
+          <Text style={s.statTrend}>{trend}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -37,13 +45,12 @@ function ChartPlaceholder({ title }: { title: string }) {
 
 export function AdminDashboardStates() {
   const st = MOCK_ADMIN_STATS;
-  const [expandedActivity, setExpandedActivity] = useState<number | null>(null);
 
   const activities = [
-    { action: 'Регистрация', detail: 'Новый пользователь: Сергей К.', time: '5 мин назад' },
-    { action: 'Заявка', detail: 'Новая заявка: Декларация 3-НДФЛ', time: '12 мин назад' },
-    { action: 'Модерация', detail: 'Специалист ожидает проверки', time: '30 мин назад' },
-    { action: 'Отзыв', detail: 'Новый отзыв от Елены В.', time: '1 час назад' },
+    { icon: 'user-plus', action: 'Регистрация', detail: 'Новый пользователь: Сергей К.', time: '5 мин назад' },
+    { icon: 'file-text', action: 'Заявка', detail: 'Новая заявка: Декларация 3-НДФЛ', time: '12 мин назад' },
+    { icon: 'shield', action: 'Модерация', detail: 'Специалист ожидает проверки', time: '30 мин назад' },
+    { icon: 'star', action: 'Отзыв', detail: 'Новый отзыв от Елены В.', time: '1 час назад' },
   ];
 
   return (
@@ -52,20 +59,19 @@ export function AdminDashboardStates() {
         <Text style={s.pageTitle}>Панель администратора</Text>
 
         <View style={s.statsGrid}>
-          <StatCard label="Всего пользователей" value={st.totalUsers} color={Colors.textPrimary} trend="+23 сегодня" />
-          <StatCard label="Специалистов" value={st.totalSpecialists} color={Colors.brandPrimary} />
-          <StatCard label="Всего заявок" value={st.totalRequests} color={Colors.textPrimary} trend="+15 сегодня" />
-          <StatCard label="Активные заявки" value={st.activeRequests} color={Colors.statusSuccess} />
-          <StatCard label="На модерации" value={st.pendingModeration} color={Colors.statusWarning} />
-          <StatCard label="Средний рейтинг" value={st.avgRating} color={Colors.brandPrimary} />
+          <StatCard label="Всего пользователей" value={st.totalUsers} color={Colors.textPrimary} trend="+23 сегодня" icon="users" />
+          <StatCard label="Специалистов" value={st.totalSpecialists} color={Colors.brandPrimary} icon="briefcase" />
+          <StatCard label="Всего заявок" value={st.totalRequests} color={Colors.textPrimary} trend="+15 сегодня" icon="file-text" />
+          <StatCard label="Активные заявки" value={st.activeRequests} color={Colors.statusSuccess} icon="check-circle" />
+          <StatCard label="На модерации" value={st.pendingModeration} color={Colors.statusWarning} icon="clock" />
+          <StatCard label="Средний рейтинг" value={st.avgRating} color={Colors.brandPrimary} icon="star" />
         </View>
 
         <View style={s.revenue}>
+          <Feather name="dollar-sign" size={24} color="rgba(255,255,255,0.7)" />
           <Text style={s.revenueLabel}>Общий доход</Text>
           <Text style={s.revenueValue}>{st.revenue}</Text>
         </View>
-
-        <Image source={{ uri: 'https://picsum.photos/seed/admin-promo/600/80' }} style={{ width: '100%', height: 80, borderRadius: 10 }} resizeMode="cover" />
 
         <ChartPlaceholder title="Регистрации за неделю" />
         <ChartPlaceholder title="Заявки за неделю" />
@@ -73,19 +79,16 @@ export function AdminDashboardStates() {
         <View style={s.recentSection}>
           <Text style={s.sectionTitle}>Последние действия</Text>
           {activities.map((item, i) => (
-            <Pressable key={i} style={s.activityRow} onPress={() => setExpandedActivity(expandedActivity === i ? null : i)}>
-              <View style={s.activityDot} />
+            <View key={i} style={s.activityRow}>
+              <View style={s.activityIconWrap}>
+                <Feather name={item.icon as any} size={16} color={Colors.brandPrimary} />
+              </View>
               <View style={s.activityContent}>
                 <Text style={s.activityAction}>{item.action}: <Text style={s.activityDetail}>{item.detail}</Text></Text>
                 <Text style={s.activityTime}>{item.time}</Text>
-                {expandedActivity === i && (
-                  <View style={s.expandedInfo}>
-                    <Feather name="info" size={14} color={Colors.brandPrimary} />
-                    <Text style={s.expandedText}>Подробнее о действии</Text>
-                  </View>
-                )}
               </View>
-            </Pressable>
+              <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+            </View>
           ))}
         </View>
       </View>
@@ -98,35 +101,39 @@ const s = StyleSheet.create({
   pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   statCard: {
-    width: '48%', backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md,
-    padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, gap: 2, ...Shadows.sm,
+    width: '48%', backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card,
+    padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, gap: Spacing.xs, ...Shadows.sm,
   },
-  statLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  statLabel: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   statValue: { fontSize: 22, fontWeight: Typography.fontWeight.bold },
+  trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statTrend: { fontSize: Typography.fontSize.xs, color: Colors.statusSuccess },
   revenue: {
-    backgroundColor: Colors.textPrimary, borderRadius: BorderRadius.md, padding: Spacing.lg, alignItems: 'center', gap: Spacing.xs,
+    backgroundColor: Colors.textPrimary, borderRadius: BorderRadius.card, padding: Spacing.lg, alignItems: 'center', gap: Spacing.xs,
+    ...Shadows.md,
   },
-  revenueLabel: { fontSize: Typography.fontSize.sm, color: 'rgba(255,255,255,0.7)' },
+  revenueLabel: { fontSize: Typography.fontSize.base, color: 'rgba(255,255,255,0.7)' },
   revenueValue: { fontSize: 28, fontWeight: Typography.fontWeight.bold, color: Colors.white },
   chartCard: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm,
   },
-  chartTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  chartTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   chartArea: { gap: Spacing.sm },
   chartBars: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm, height: 100 },
   chartBar: { flex: 1, borderRadius: BorderRadius.sm },
   chartLabels: { flexDirection: 'row', gap: Spacing.sm },
   chartLabel: { flex: 1, fontSize: Typography.fontSize.xs, color: Colors.textMuted, textAlign: 'center' },
   recentSection: { gap: Spacing.md },
-  sectionTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  activityRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
-  activityDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.brandPrimary, marginTop: 6 },
+  sectionTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  activityRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+  activityIconWrap: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.brandPrimary + '15',
+    alignItems: 'center', justifyContent: 'center',
+  },
   activityContent: { flex: 1, gap: 1 },
-  activityAction: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  activityAction: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   activityDetail: { fontWeight: Typography.fontWeight.regular, color: Colors.textSecondary },
-  activityTime: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  expandedInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.xs },
-  expandedText: { fontSize: Typography.fontSize.xs, color: Colors.brandPrimary },
+  activityTime: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
 });

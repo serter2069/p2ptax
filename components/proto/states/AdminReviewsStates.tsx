@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_REVIEWS } from '../../../constants/protoMockData';
 
 function ReviewRow({ author, rating, text, date, specialistName }: {
@@ -16,19 +16,31 @@ function ReviewRow({ author, rating, text, date, specialistName }: {
           <Text style={s.reviewAuthor}>{author}</Text>
           <View style={s.starsRow}>
             {[1, 2, 3, 4, 5].map((i) => (
-              <Feather key={i} name="star" size={12} color={i <= rating ? Colors.brandPrimary : Colors.bgSecondary} />
+              <Feather key={i} name="star" size={14} color={i <= rating ? Colors.statusWarning : Colors.bgSecondary} />
             ))}
           </View>
         </View>
         <View style={s.reviewRight}>
-          <Text style={s.reviewSpecialist}>О: {specialistName}</Text>
-          <Text style={s.reviewDate}>{date}</Text>
+          <View style={s.specialistRow}>
+            <Feather name="user" size={11} color={Colors.textMuted} />
+            <Text style={s.reviewSpecialist}>{specialistName}</Text>
+          </View>
+          <View style={s.dateRow}>
+            <Feather name="calendar" size={11} color={Colors.textMuted} />
+            <Text style={s.reviewDate}>{date}</Text>
+          </View>
         </View>
       </View>
       <Text style={s.reviewText} numberOfLines={expanded ? undefined : 2}>{text}</Text>
       <View style={s.reviewActions}>
-        <Pressable style={s.btnView} onPress={() => setExpanded(!expanded)}><Text style={s.btnViewText}>{expanded ? 'Свернуть' : 'Подробнее'}</Text></Pressable>
-        <View style={s.btnDelete}><Text style={s.btnDeleteText}>Удалить</Text></View>
+        <Pressable style={s.btnView} onPress={() => setExpanded(!expanded)}>
+          <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textPrimary} />
+          <Text style={s.btnViewText}>{expanded ? 'Свернуть' : 'Подробнее'}</Text>
+        </Pressable>
+        <Pressable style={s.btnDelete}>
+          <Feather name="trash-2" size={14} color={Colors.statusError} />
+          <Text style={s.btnDeleteText}>Удалить</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -40,7 +52,10 @@ export function AdminReviewsStates() {
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.pageTitle}>Отзывы</Text>
-          <Text style={s.subtitle}>Средний рейтинг: 4.7</Text>
+          <View style={s.avgRow}>
+            <Feather name="star" size={16} color={Colors.statusWarning} />
+            <Text style={s.subtitle}>4.7 средний рейтинг</Text>
+          </View>
         </View>
         <View style={s.stats}>
           {[
@@ -53,7 +68,7 @@ export function AdminReviewsStates() {
             <View key={row.stars} style={s.statRow}>
               <View style={s.statStarsRow}>
                 <Text style={s.statStarsNum}>{row.stars}</Text>
-                <Feather name="star" size={10} color={Colors.brandPrimary} />
+                <Feather name="star" size={12} color={Colors.statusWarning} />
               </View>
               <View style={s.statBar}><View style={[s.statBarFill, { width: `${row.pct}%` }]} /></View>
               <Text style={s.statCount}>{row.count}</Text>
@@ -71,39 +86,42 @@ export function AdminReviewsStates() {
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing.md },
   header: { gap: Spacing.xs },
-  pageTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  subtitle: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  avgRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  subtitle: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
   stats: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm,
   },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   statStarsRow: { width: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2 },
-  statStarsNum: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  statStarsNum: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   statBar: { flex: 1, height: 8, backgroundColor: Colors.bgSecondary, borderRadius: 4 },
   statBarFill: { height: 8, backgroundColor: Colors.brandPrimary, borderRadius: 4 },
-  statCount: { width: 24, fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  statCount: { width: 24, fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   reviewCard: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm,
   },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  reviewLeft: { gap: 2 },
-  reviewRight: { alignItems: 'flex-end', gap: 2 },
-  reviewAuthor: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  reviewLeft: { gap: 4 },
+  reviewRight: { alignItems: 'flex-end', gap: 4 },
+  reviewAuthor: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   starsRow: { flexDirection: 'row', gap: 2 },
-  reviewSpecialist: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  reviewDate: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  reviewText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
+  specialistRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  reviewSpecialist: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  reviewDate: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  reviewText: { fontSize: Typography.fontSize.base, color: Colors.textSecondary, lineHeight: 22 },
   reviewActions: { flexDirection: 'row', gap: Spacing.sm },
   btnView: {
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: BorderRadius.md,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  btnViewText: { fontSize: Typography.fontSize.xs, color: Colors.textPrimary },
+  btnViewText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
   btnDelete: {
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: BorderRadius.md,
-    backgroundColor: Colors.statusBg.error,
+    backgroundColor: Colors.statusBg.error, flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  btnDeleteText: { fontSize: Typography.fontSize.xs, color: Colors.statusError },
+  btnDeleteText: { fontSize: Typography.fontSize.sm, color: Colors.statusError },
 });
