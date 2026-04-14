@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Typography, Spacing, BorderRadius } from '../../../constants/Colors';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../../constants/Colors';
 
 // =====================================================================
 // HELPERS
@@ -29,20 +29,24 @@ function HeroSection({ isDesktop }: { isDesktop: boolean }) {
     <View style={[styles.heroWrap, isDesktop && styles.heroWrapDesktop]}>
       <View style={styles.heroLogoRow}>
         <View style={styles.heroLogoIcon}>
-          <Feather name="shield" size={isDesktop ? 32 : 24} color={Colors.white} />
+          <Feather name="shield" size={isDesktop ? 28 : 22} color={Colors.white} />
         </View>
-        <Text style={[styles.heroLogoText, isDesktop && styles.heroLogoTextDesktop]}>P2PTax</Text>
+        <Text style={[styles.heroLogoText, isDesktop && styles.heroLogoTextDesktop]}>
+          Nalogovik
+        </Text>
       </View>
       <Text style={[styles.heroTagline, isDesktop && styles.heroTaglineDesktop]}>
-        Найди налогового специалиста
+        Design System
       </Text>
       <Text style={styles.heroSub}>
-        Профессиональный маркетплейс налоговых услуг
+        Visual language for P2PTax tax specialist marketplace
       </Text>
+      <View style={styles.heroDivider} />
       <View style={styles.heroBrandStrip}>
         <View style={[styles.heroBrandBlock, { backgroundColor: Colors.brandPrimary }]} />
-        <View style={[styles.heroBrandBlock, { backgroundColor: Colors.brandSecondary }]} />
         <View style={[styles.heroBrandBlock, { backgroundColor: Colors.brandPrimaryHover }]} />
+        <View style={[styles.heroBrandBlock, { backgroundColor: Colors.brandSecondary }]} />
+        <View style={[styles.heroBrandBlock, { backgroundColor: Colors.textPrimary }]} />
       </View>
     </View>
   );
@@ -56,16 +60,17 @@ const COLOR_GROUPS = [
     group: 'Brand',
     items: [
       { label: 'Primary', value: Colors.brandPrimary, token: 'brandPrimary' },
-      { label: 'Primary Hover', value: Colors.brandPrimaryHover, token: 'brandPrimaryHover' },
+      { label: 'Hover', value: Colors.brandPrimaryHover, token: 'brandPrimaryHover' },
       { label: 'Secondary', value: Colors.brandSecondary, token: 'brandSecondary' },
     ],
   },
   {
     group: 'Backgrounds',
     items: [
-      { label: 'BG Primary', value: Colors.bgPrimary, token: 'bgPrimary' },
-      { label: 'BG Secondary', value: Colors.bgSecondary, token: 'bgSecondary' },
-      { label: 'BG Card', value: Colors.bgCard, token: 'bgCard' },
+      { label: 'Primary', value: Colors.bgPrimary, token: 'bgPrimary' },
+      { label: 'Secondary', value: Colors.bgSecondary, token: 'bgSecondary' },
+      { label: 'Surface', value: Colors.bgSurface, token: 'bgSurface' },
+      { label: 'Card', value: Colors.bgCard, token: 'bgCard' },
     ],
   },
   {
@@ -84,13 +89,14 @@ const COLOR_GROUPS = [
       { label: 'Warning', value: Colors.statusWarning, token: 'statusWarning' },
       { label: 'Error', value: Colors.statusError, token: 'statusError' },
       { label: 'Info', value: Colors.statusInfo, token: 'statusInfo' },
+      { label: 'Neutral', value: Colors.statusNeutral, token: 'statusNeutral' },
     ],
   },
   {
-    group: 'Utility',
+    group: 'Borders',
     items: [
-      { label: 'White', value: Colors.white, token: 'white' },
       { label: 'Border', value: Colors.border, token: 'border' },
+      { label: 'Light', value: Colors.borderLight, token: 'borderLight' },
     ],
   },
 ];
@@ -126,32 +132,42 @@ function ColorPaletteSection({ isDesktop }: { isDesktop: boolean }) {
 }
 
 // =====================================================================
-// SECTION: Typography
+// SECTION: Typography Scale
 // =====================================================================
 const TYPO_SAMPLES = [
-  { label: 'Display', size: Typography.fontSize.display, weight: Typography.fontWeight.bold, sample: 'P2PTax', color: Colors.textPrimary },
-  { label: 'Jumbo', size: Typography.fontSize.jumbo, weight: Typography.fontWeight.bold, sample: '3 500', color: Colors.brandPrimary },
-  { label: 'H1 / Title', size: Typography.fontSize.title, weight: Typography.fontWeight.bold, sample: 'Налоговая консультация', color: Colors.textPrimary },
-  { label: 'H2 / XL', size: Typography.fontSize.xl, weight: Typography.fontWeight.semibold, sample: 'Выездная проверка', color: Colors.textPrimary },
-  { label: 'H3 / LG', size: Typography.fontSize.lg, weight: Typography.fontWeight.semibold, sample: 'Оптимизация налогов', color: Colors.textPrimary },
-  { label: 'Body', size: Typography.fontSize.base, weight: Typography.fontWeight.regular, sample: 'Мы подберем специалиста, который решит вашу задачу быстро и профессионально.', color: Colors.textPrimary },
-  { label: 'Small', size: Typography.fontSize.sm, weight: Typography.fontWeight.regular, sample: 'Опыт работы от 5 лет, средний рейтинг 4.8', color: Colors.textSecondary },
-  { label: 'Caption', size: Typography.fontSize.xs, weight: Typography.fontWeight.medium, sample: 'Обновлено 2 мин. назад', color: Colors.textMuted },
+  { label: 'Jumbo', size: Typography.fontSize.jumbo, weight: Typography.fontWeight.bold, sample: '48', color: Colors.textPrimary },
+  { label: 'Display', size: Typography.fontSize.display, weight: Typography.fontWeight.bold, sample: 'Display Heading', color: Colors.textPrimary },
+  { label: '3XL', size: Typography.fontSize['3xl'], weight: Typography.fontWeight.bold, sample: 'Section Title', color: Colors.textPrimary },
+  { label: '2XL', size: Typography.fontSize['2xl'], weight: Typography.fontWeight.bold, sample: 'Page Heading', color: Colors.textPrimary },
+  { label: 'Title', size: Typography.fontSize.title, weight: Typography.fontWeight.bold, sample: 'Card Title', color: Colors.textPrimary },
+  { label: 'XL', size: Typography.fontSize.xl, weight: Typography.fontWeight.semibold, sample: 'Subsection', color: Colors.textPrimary },
+  { label: 'LG', size: Typography.fontSize.lg, weight: Typography.fontWeight.semibold, sample: 'Label or Subtitle', color: Colors.textPrimary },
+  { label: 'MD', size: Typography.fontSize.md, weight: Typography.fontWeight.medium, sample: 'Medium body text', color: Colors.textPrimary },
+  { label: 'Base', size: Typography.fontSize.base, weight: Typography.fontWeight.regular, sample: 'Regular body text for paragraphs and descriptions.', color: Colors.textSecondary },
+  { label: 'SM', size: Typography.fontSize.sm, weight: Typography.fontWeight.regular, sample: 'Small supporting text, captions, meta info.', color: Colors.textSecondary },
+  { label: 'XS', size: Typography.fontSize.xs, weight: Typography.fontWeight.medium, sample: 'OVERLINE / LABEL', color: Colors.textMuted },
 ];
 
 function TypographySection() {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Typography</Text>
-      <Text style={styles.sectionDesc}>Nunito font family — scale and hierarchy</Text>
+      <Text style={styles.sectionTitle}>Typography Scale</Text>
+      <Text style={styles.sectionDesc}>Nunito family -- sizes, weights, hierarchy</Text>
       <View style={styles.typoList}>
         {TYPO_SAMPLES.map((t) => (
           <View key={t.label} style={styles.typoRow}>
             <View style={styles.typoMeta}>
               <Text style={styles.typoLabel}>{t.label}</Text>
-              <Text style={styles.typoSize}>{t.size}px / {t.weight}</Text>
+              <Text style={styles.typoSize}>{t.size}px</Text>
             </View>
-            <Text style={{ fontSize: t.size, fontWeight: t.weight as any, color: t.color, lineHeight: t.size * 1.35 }}>
+            <Text
+              style={{
+                fontSize: t.size,
+                fontWeight: t.weight as any,
+                color: t.color,
+                lineHeight: t.size * 1.35,
+              }}
+            >
               {t.sample}
             </Text>
           </View>
@@ -162,19 +178,34 @@ function TypographySection() {
 }
 
 // =====================================================================
-// SECTION: UI Primitives — Buttons
+// SECTION: Buttons -- all variants and states
 // =====================================================================
 function ButtonsSection({ isDesktop }: { isDesktop: boolean }) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Buttons</Text>
-      <Text style={styles.sectionDesc}>Primary, Secondary, Ghost, Destructive, sizes</Text>
+      <Text style={styles.sectionDesc}>Variants, sizes, and states</Text>
 
-      <Text style={styles.subLabel}>Standard</Text>
+      {/* Primary variants */}
+      <Text style={styles.subLabel}>Primary</Text>
       <View style={[styles.row, isDesktop && styles.rowDesktop]}>
         <View style={styles.btnPrimary}>
-          <Text style={styles.btnPrimaryText}>Primary</Text>
+          <Text style={styles.btnPrimaryText}>Default</Text>
         </View>
+        <View style={[styles.btnPrimary, { backgroundColor: Colors.brandPrimaryHover }]}>
+          <Text style={styles.btnPrimaryText}>Hover</Text>
+        </View>
+        <View style={[styles.btnPrimary, { backgroundColor: Colors.brandSecondary }]}>
+          <Text style={styles.btnPrimaryText}>Pressed</Text>
+        </View>
+        <View style={[styles.btnPrimary, styles.btnDisabled]}>
+          <Text style={styles.btnPrimaryText}>Disabled</Text>
+        </View>
+      </View>
+
+      {/* Secondary / Outline / Ghost */}
+      <Text style={styles.subLabel}>Secondary / Outline / Ghost</Text>
+      <View style={[styles.row, isDesktop && styles.rowDesktop]}>
         <View style={styles.btnSecondary}>
           <Text style={styles.btnSecondaryText}>Secondary</Text>
         </View>
@@ -186,30 +217,37 @@ function ButtonsSection({ isDesktop }: { isDesktop: boolean }) {
         </View>
       </View>
 
+      {/* Semantic */}
       <Text style={styles.subLabel}>Semantic</Text>
       <View style={[styles.row, isDesktop && styles.rowDesktop]}>
         <View style={styles.btnDestructive}>
           <Feather name="trash-2" size={14} color={Colors.white} />
-          <Text style={styles.btnPrimaryText}>Destructive</Text>
+          <Text style={styles.btnPrimaryText}>Delete</Text>
         </View>
         <View style={styles.btnSuccess}>
           <Feather name="check" size={14} color={Colors.white} />
-          <Text style={styles.btnPrimaryText}>Success</Text>
+          <Text style={styles.btnPrimaryText}>Confirm</Text>
         </View>
-        <View style={[styles.btnPrimary, styles.btnDisabled]}>
-          <Text style={styles.btnPrimaryText}>Disabled</Text>
+        <View style={styles.btnWarning}>
+          <Feather name="alert-triangle" size={14} color={Colors.white} />
+          <Text style={styles.btnPrimaryText}>Warning</Text>
         </View>
       </View>
 
-      <Text style={styles.subLabel}>With Icons</Text>
+      {/* With icons + sizes */}
+      <Text style={styles.subLabel}>With Icons + Sizes</Text>
       <View style={[styles.row, isDesktop && styles.rowDesktop]}>
+        <View style={styles.btnLarge}>
+          <Feather name="plus" size={18} color={Colors.white} />
+          <Text style={styles.btnLargeText}>Large Button</Text>
+        </View>
         <View style={styles.btnIconPrimary}>
-          <Feather name="plus" size={14} color={Colors.white} />
-          <Text style={styles.btnPrimaryText}>Создать заявку</Text>
+          <Feather name="send" size={14} color={Colors.white} />
+          <Text style={styles.btnPrimaryText}>Send</Text>
         </View>
         <View style={styles.btnIconOutline}>
-          <Feather name="search" size={14} color={Colors.brandPrimary} />
-          <Text style={styles.btnOutlineText}>Найти</Text>
+          <Feather name="filter" size={14} color={Colors.brandPrimary} />
+          <Text style={styles.btnOutlineText}>Filter</Text>
         </View>
         <View style={styles.btnSmall}>
           <Text style={styles.btnSmallText}>Small</Text>
@@ -220,57 +258,121 @@ function ButtonsSection({ isDesktop }: { isDesktop: boolean }) {
 }
 
 // =====================================================================
-// SECTION: UI Primitives — Badges & Tags
+// SECTION: Inputs -- all states
+// =====================================================================
+function InputsSection({ isDesktop }: { isDesktop: boolean }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Inputs</Text>
+      <Text style={styles.sectionDesc}>Text fields in all states</Text>
+
+      <View style={[styles.inputGrid, isDesktop && styles.inputGridDesktop]}>
+        {/* Empty */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputStateLabel}>Empty</Text>
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputPlaceholder}>Placeholder text...</Text>
+          </View>
+        </View>
+
+        {/* Focused */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputStateLabel}>Focused</Text>
+          <View style={[styles.inputWrap, styles.inputFocused]}>
+            <Text style={styles.inputValue}>Typing here|</Text>
+          </View>
+        </View>
+
+        {/* Filled */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputStateLabel}>Filled</Text>
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputValue}>ivan@mail.ru</Text>
+          </View>
+        </View>
+
+        {/* Error */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputStateLabel}>Error</Text>
+          <View style={[styles.inputWrap, styles.inputError]}>
+            <Text style={styles.inputValue}>bad-value</Text>
+          </View>
+          <View style={styles.errorRow}>
+            <Feather name="alert-circle" size={12} color={Colors.statusError} />
+            <Text style={styles.inputErrorText}>Invalid format</Text>
+          </View>
+        </View>
+
+        {/* Disabled */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputStateLabel}>Disabled</Text>
+          <View style={[styles.inputWrap, styles.inputDisabledWrap]}>
+            <Text style={styles.inputDisabledText}>Disabled field</Text>
+          </View>
+        </View>
+
+        {/* With icon */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputStateLabel}>With Icon</Text>
+          <View style={[styles.inputWrap, styles.inputWithIconWrap]}>
+            <Feather name="search" size={16} color={Colors.textMuted} />
+            <Text style={styles.inputPlaceholder}>Search...</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// =====================================================================
+// SECTION: Badges, Tags, Status
 // =====================================================================
 function BadgesSection({ isDesktop }: { isDesktop: boolean }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Badges & Service Tags</Text>
-      <Text style={styles.sectionDesc}>Status badges and specialist service tags</Text>
+      <Text style={styles.sectionTitle}>Badges & Tags</Text>
+      <Text style={styles.sectionDesc}>Status indicators and category labels</Text>
 
       <Text style={styles.subLabel}>Status Badges</Text>
       <View style={[styles.row, isDesktop && styles.rowDesktop]}>
         <View style={[styles.badge, { backgroundColor: Colors.statusBg.success }]}>
           <Feather name="check-circle" size={12} color={Colors.statusSuccess} />
-          <Text style={[styles.badgeText, { color: Colors.statusSuccess }]}>Верифицирован</Text>
+          <Text style={[styles.badgeText, { color: Colors.statusSuccess }]}>Verified</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: Colors.statusBg.info }]}>
           <View style={styles.onlineDot} />
-          <Text style={[styles.badgeText, { color: Colors.brandPrimary }]}>Онлайн</Text>
+          <Text style={[styles.badgeText, { color: Colors.brandPrimary }]}>Online</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: Colors.statusBg.warning }]}>
-          <Feather name="award" size={12} color={Colors.statusWarning} />
-          <Text style={[styles.badgeText, { color: Colors.statusWarning }]}>Топ</Text>
+          <Feather name="clock" size={12} color={Colors.statusWarning} />
+          <Text style={[styles.badgeText, { color: Colors.statusWarning }]}>Pending</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: Colors.statusBg.error }]}>
-          <Text style={[styles.badgeText, { color: Colors.statusError }]}>Отклонено</Text>
+          <Text style={[styles.badgeText, { color: Colors.statusError }]}>Rejected</Text>
+        </View>
+        <View style={[styles.badge, { backgroundColor: Colors.statusBg.neutral }]}>
+          <Text style={[styles.badgeText, { color: Colors.statusNeutral }]}>Draft</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: Colors.statusBg.accent }]}>
-          <Text style={[styles.badgeText, { color: Colors.textFamiliar }]}>Новый</Text>
+          <Feather name="zap" size={12} color={Colors.brandPrimary} />
+          <Text style={[styles.badgeText, { color: Colors.brandPrimary }]}>New</Text>
         </View>
       </View>
 
       <Text style={styles.subLabel}>Service Tags</Text>
       <View style={[styles.row, isDesktop && styles.rowDesktop]}>
         <View style={styles.tag}>
-          <Feather name="briefcase" size={12} color={Colors.textMuted} />
-          <Text style={styles.tagText}>Налоговый аудит</Text>
+          <Text style={styles.tagText}>3-NDFL</Text>
         </View>
         <View style={styles.tag}>
-          <Feather name="file-text" size={12} color={Colors.textMuted} />
-          <Text style={styles.tagText}>3-НДФЛ</Text>
-        </View>
-        <View style={styles.tag}>
-          <Feather name="globe" size={12} color={Colors.textMuted} />
-          <Text style={styles.tagText}>ВЭД</Text>
+          <Text style={styles.tagText}>IP registration</Text>
         </View>
         <View style={[styles.tag, styles.tagActive]}>
-          <Feather name="check" size={12} color={Colors.brandPrimary} />
-          <Text style={[styles.tagText, { color: Colors.brandPrimary }]}>ИП / Самозанятые</Text>
+          <Feather name="check" size={11} color={Colors.brandPrimary} />
+          <Text style={[styles.tagText, { color: Colors.brandPrimary }]}>Tax audit</Text>
         </View>
         <View style={styles.tag}>
-          <Feather name="shield" size={12} color={Colors.textMuted} />
-          <Text style={styles.tagText}>Споры с ФНС</Text>
+          <Text style={styles.tagText}>Consulting</Text>
         </View>
       </View>
     </View>
@@ -295,18 +397,82 @@ const SPACING_ITEMS: { label: string; value: number }[] = [
 function SpacingSection() {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Spacing System</Text>
-      <Text style={styles.sectionDesc}>Consistent spacing tokens from Spacing constant</Text>
+      <Text style={styles.sectionTitle}>Spacing Tokens</Text>
+      <Text style={styles.sectionDesc}>Consistent spacing scale</Text>
       <View style={styles.spacingList}>
         {SPACING_ITEMS.map((sp) => (
           <View key={sp.label} style={styles.spacingRow}>
             <Text style={styles.spacingLabel}>{sp.label}</Text>
             <Text style={styles.spacingValue}>{sp.value}px</Text>
             <View style={styles.spacingBarWrap}>
-              <View style={[styles.spacingBar, { width: sp.value * 4 }]} />
+              <View style={[styles.spacingBar, { width: Math.min(sp.value * 4, 200) }]} />
             </View>
           </View>
         ))}
+      </View>
+    </View>
+  );
+}
+
+// =====================================================================
+// SECTION: Border Radius
+// =====================================================================
+function RadiusSection({ isDesktop }: { isDesktop: boolean }) {
+  const radii = [
+    { label: 'sm', value: BorderRadius.sm },
+    { label: 'md', value: BorderRadius.md },
+    { label: 'lg', value: BorderRadius.lg },
+    { label: 'xl', value: BorderRadius.xl },
+    { label: 'xxl', value: BorderRadius.xxl },
+    { label: 'btn', value: BorderRadius.btn },
+    { label: 'card', value: BorderRadius.card },
+    { label: 'input', value: BorderRadius.input },
+    { label: 'full', value: 32 },
+  ];
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Border Radius</Text>
+      <Text style={styles.sectionDesc}>Rounding tokens from BorderRadius</Text>
+      <View style={[styles.row, isDesktop && styles.rowDesktop, { gap: Spacing.lg }]}>
+        {radii.map((r) => (
+          <View key={r.label} style={styles.radiusItem}>
+            <View
+              style={[
+                styles.radiusBox,
+                { borderRadius: r.value },
+              ]}
+            />
+            <Text style={styles.radiusLabel}>{r.label}</Text>
+            <Text style={styles.radiusValue}>{r.value}px</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// =====================================================================
+// SECTION: Shadows
+// =====================================================================
+function ShadowsSection({ isDesktop }: { isDesktop: boolean }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Shadows</Text>
+      <Text style={styles.sectionDesc}>Elevation levels</Text>
+      <View style={[styles.row, isDesktop && styles.rowDesktop, { gap: Spacing.xl }]}>
+        <View style={styles.shadowItem}>
+          <View style={[styles.shadowBox, Shadows.sm]} />
+          <Text style={styles.shadowLabel}>sm</Text>
+        </View>
+        <View style={styles.shadowItem}>
+          <View style={[styles.shadowBox, Shadows.md]} />
+          <Text style={styles.shadowLabel}>md</Text>
+        </View>
+        <View style={styles.shadowItem}>
+          <View style={[styles.shadowBox, Shadows.lg]} />
+          <Text style={styles.shadowLabel}>lg</Text>
+        </View>
       </View>
     </View>
   );
@@ -331,8 +497,11 @@ export function BrandStyleStates() {
         <ColorPaletteSection isDesktop={isDesktop} />
         <TypographySection />
         <ButtonsSection isDesktop={isDesktop} />
+        <InputsSection isDesktop={isDesktop} />
         <BadgesSection isDesktop={isDesktop} />
         <SpacingSection />
+        <RadiusSection isDesktop={isDesktop} />
+        <ShadowsSection isDesktop={isDesktop} />
       </ScrollView>
     </StateSection>
   );
@@ -344,9 +513,9 @@ export function BrandStyleStates() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   containerInner: {
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     gap: Spacing['4xl'],
-    paddingBottom: 80,
+    paddingBottom: 100,
   },
   containerInnerDesktop: {
     maxWidth: 960,
@@ -362,62 +531,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
   },
-  heroWrapDesktop: {
-    padding: Spacing['4xl'],
-  },
+  heroWrapDesktop: { padding: Spacing['4xl'] },
   heroLogoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
   },
   heroLogoIcon: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: BorderRadius.lg,
     backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroLogoText: {
-    fontSize: Typography.fontSize.display,
+    fontSize: Typography.fontSize['3xl'],
     fontWeight: Typography.fontWeight.bold,
-    color: Colors.brandPrimary,
-    letterSpacing: -1,
-  },
-  heroLogoTextDesktop: {
-    fontSize: Typography.fontSize.jumbo,
-  },
-  heroTagline: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.semibold,
     color: Colors.textPrimary,
-    textAlign: 'center',
+    letterSpacing: -0.5,
   },
-  heroTaglineDesktop: {
-    fontSize: Typography.fontSize['2xl'],
-  },
-  heroSub: {
-    fontSize: Typography.fontSize.sm,
+  heroLogoTextDesktop: { fontSize: Typography.fontSize.display },
+  heroTagline: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.medium,
     color: Colors.textSecondary,
     textAlign: 'center',
+    marginTop: Spacing.xs,
+  },
+  heroTaglineDesktop: { fontSize: Typography.fontSize.xl },
+  heroSub: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  heroDivider: {
+    width: 40,
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: Spacing.sm,
   },
   heroBrandStrip: {
     flexDirection: 'row',
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
+    gap: Spacing.sm,
   },
   heroBrandBlock: {
-    width: 48,
-    height: 6,
+    width: 40,
+    height: 5,
     borderRadius: BorderRadius.full,
   },
 
   // Sections
-  section: {
-    gap: Spacing.lg,
-  },
+  section: { gap: Spacing.lg },
   sectionTitle: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
@@ -425,7 +592,7 @@ const styles = StyleSheet.create({
   },
   sectionDesc: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
+    color: Colors.textMuted,
     marginTop: -Spacing.sm,
   },
   subLabel: {
@@ -434,13 +601,11 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
   },
 
   // Colors
-  colorGroup: {
-    gap: Spacing.sm,
-  },
+  colorGroup: { gap: Spacing.sm, marginTop: Spacing.xs },
   colorGroupLabel: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
@@ -451,24 +616,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.sm,
   },
-  colorGridDesktop: {
-    gap: Spacing.md,
-  },
-  colorCard: {
-    alignItems: 'center',
-    gap: Spacing.xxs,
-  },
+  colorGridDesktop: { gap: Spacing.md },
+  colorCard: { alignItems: 'center', gap: 3 },
   colorSwatch: {
     width: 72,
-    height: 48,
+    height: 44,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  swatchBorder: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
+  swatchBorder: { borderWidth: 1, borderColor: Colors.border },
   colorHex: {
     fontSize: 9,
     fontWeight: Typography.fontWeight.medium,
@@ -479,15 +636,10 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
     color: Colors.textPrimary,
   },
-  colorToken: {
-    fontSize: 9,
-    color: Colors.textMuted,
-  },
+  colorToken: { fontSize: 9, color: Colors.textMuted },
 
   // Typography
-  typoList: {
-    gap: Spacing.lg,
-  },
+  typoList: { gap: Spacing.md },
   typoRow: {
     gap: Spacing.xxs,
     paddingBottom: Spacing.md,
@@ -505,6 +657,7 @@ const styles = StyleSheet.create({
     color: Colors.brandPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    minWidth: 48,
   },
   typoSize: {
     fontSize: Typography.fontSize.xs,
@@ -518,14 +671,12 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     alignItems: 'center',
   },
-  rowDesktop: {
-    gap: Spacing.md,
-  },
+  rowDesktop: { gap: Spacing.md },
   btnPrimary: {
     backgroundColor: Colors.brandPrimary,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -538,7 +689,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgSecondary,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -552,7 +703,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.brandPrimary,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md - 1,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -564,7 +715,7 @@ const styles = StyleSheet.create({
   btnGhost: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -580,7 +731,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.statusError,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn,
   },
   btnSuccess: {
     flexDirection: 'row',
@@ -589,10 +740,31 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.statusSuccess,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn,
   },
-  btnDisabled: {
-    opacity: 0.4,
+  btnWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.statusWarning,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.btn,
+  },
+  btnDisabled: { opacity: 0.4 },
+  btnLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.brandPrimary,
+    paddingHorizontal: Spacing['2xl'],
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.btn,
+  },
+  btnLargeText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
   },
   btnIconPrimary: {
     flexDirection: 'row',
@@ -601,7 +773,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandPrimary,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn,
   },
   btnIconOutline: {
     flexDirection: 'row',
@@ -611,18 +783,83 @@ const styles = StyleSheet.create({
     borderColor: Colors.brandPrimary,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md - 1,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.btn,
   },
   btnSmall: {
     backgroundColor: Colors.brandPrimary,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: BorderRadius.sm,
   },
   btnSmallText: {
     color: Colors.white,
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.semibold,
+  },
+
+  // Inputs
+  inputGrid: {
+    gap: Spacing.lg,
+  },
+  inputGridDesktop: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.lg,
+  },
+  inputGroup: { gap: Spacing.xs, minWidth: 200, flex: 1 },
+  inputStateLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputWrap: {
+    height: 44,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.input,
+    paddingHorizontal: Spacing.md,
+    justifyContent: 'center',
+    backgroundColor: Colors.bgCard,
+  },
+  inputFocused: {
+    borderColor: Colors.brandPrimary,
+    borderWidth: 2,
+  },
+  inputError: {
+    borderColor: Colors.statusError,
+    borderWidth: 2,
+  },
+  inputDisabledWrap: {
+    backgroundColor: Colors.bgSecondary,
+    opacity: 0.6,
+  },
+  inputWithIconWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  inputPlaceholder: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textMuted,
+  },
+  inputValue: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+  },
+  inputDisabledText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textMuted,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  inputErrorText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.statusError,
   },
 
   // Badges
@@ -652,7 +889,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.bgCard,
@@ -660,6 +897,7 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
   },
   tagActive: {
     borderColor: Colors.brandPrimary,
@@ -673,7 +911,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
   },
   spacingRow: {
     flexDirection: 'row',
@@ -694,7 +932,7 @@ const styles = StyleSheet.create({
   },
   spacingBarWrap: {
     flex: 1,
-    height: 12,
+    height: 10,
     backgroundColor: Colors.bgSecondary,
     borderRadius: BorderRadius.sm,
     overflow: 'hidden',
@@ -704,5 +942,38 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandPrimary,
     borderRadius: BorderRadius.sm,
     minWidth: 4,
+  },
+
+  // Border Radius
+  radiusItem: { alignItems: 'center', gap: 4 },
+  radiusBox: {
+    width: 48,
+    height: 48,
+    backgroundColor: Colors.bgSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  radiusLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  radiusValue: {
+    fontSize: 9,
+    color: Colors.textMuted,
+  },
+
+  // Shadows
+  shadowItem: { alignItems: 'center', gap: Spacing.sm },
+  shadowBox: {
+    width: 80,
+    height: 56,
+    backgroundColor: Colors.bgCard,
+    borderRadius: BorderRadius.lg,
+  },
+  shadowLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textSecondary,
   },
 });
