@@ -5,7 +5,40 @@ import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
 
-function FormScreen() {
+// ---------------------------------------------------------------------------
+// Shared
+// ---------------------------------------------------------------------------
+
+function StepIndicator({ current, total }: { current: number; total: number }) {
+  return (
+    <View style={s.stepRow}>
+      {Array.from({ length: total }, (_, i) => {
+        const step = i + 1;
+        const done = step < current;
+        const active = step === current;
+        return (
+          <View key={step} style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={[s.stepDot, active && s.stepDotActive, done && s.stepDotDone]}>
+              {done ? (
+                <Feather name="check" size={12} color={Colors.white} />
+              ) : (
+                <Text style={[s.stepNum, (active || done) && s.stepNumActive]}>{step}</Text>
+              )}
+            </View>
+            {step < total && <View style={[s.stepLine, (done || active) && s.stepLineDone]} />}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// STATE: DEFAULT (interactive step form)
+// ---------------------------------------------------------------------------
+
+function DefaultNewRequest() {
+  const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
@@ -17,21 +50,34 @@ function FormScreen() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showServicePicker, setShowServicePicker] = useState(false);
 
-  const validate = () => {
+  const validateStep1 = () => {
     const errs: Record<string, string> = {};
-    if (title.length < 5) errs.title = 'Заголовок должен содержать минимум 5 символов';
-    if (!description) errs.description = 'Обязательное поле';
-    if (!city) errs.city = 'Выберите город';
+    if (!service) errs.service = 'Выберите услугу';
     return errs;
   };
 
-  const handleSubmit = () => {
-    const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
+  const validateStep2 = () => {
+    const errs: Record<string, string> = {};
+    if (title.length < 5) errs.title = 'Минимум 5 символов';
+    if (!description) errs.description = 'Обязательное поле';
+    return errs;
+  };
+
+  const handleNext = () => {
+    if (step === 1) {
+      const errs = validateStep1();
+      if (Object.keys(errs).length) { setErrors(errs); return; }
+      setErrors({});
+      setStep(2);
+    } else if (step === 2) {
+      const errs = validateStep2();
+      if (Object.keys(errs).length) { setErrors(errs); return; }
+      setErrors({});
+      setStep(3);
     }
-    setErrors({});
+  };
+
+  const handleSubmit = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -39,8 +85,20 @@ function FormScreen() {
     }, 1500);
   };
 
+  const reset = () => {
+    setSuccess(false);
+    setStep(1);
+    setTitle('');
+    setDescription('');
+    setCity('');
+    setService('');
+    setBudget('');
+    setErrors({});
+  };
+
   return (
     <View style={s.container}>
+      {/* Success overlay */}
       {success && (
         <View style={s.overlay}>
           <View style={s.popup}>
@@ -49,134 +107,280 @@ function FormScreen() {
             </View>
             <Text style={s.popupTitle}>Заявка создана!</Text>
             <Text style={s.popupText}>Специалисты получат уведомление и смогут откликнуться</Text>
-            <Pressable onPress={() => { setSuccess(false); setTitle(''); setDescription(''); setCity(''); setService(''); setBudget(''); }} style={s.popupBtn}>
+            <Pressable onPress={reset} style={s.popupBtn}>
               <Feather name="list" size={16} color={Colors.white} />
               <Text style={s.popupBtnText}>К моим заявкам</Text>
             </Pressable>
           </View>
         </View>
       )}
+
       <Text style={s.pageTitle}>Новая заявка</Text>
-      <View style={s.form}>
-        <View style={s.field}>
-          <Text style={s.label}>Заголовок *</Text>
-          <TextInput
-            value={title}
-            onChangeText={(t) => { setTitle(t); if (errors.title) { const e = { ...errors }; delete e.title; setErrors(e); } }}
-            placeholder="Кратко опишите задачу"
-            placeholderTextColor={Colors.textMuted}
-            style={[s.input, errors.title ? s.inputError : null]}
-          />
-          {errors.title && (
-            <View style={s.errorRow}>
-              <Feather name="alert-circle" size={12} color={Colors.statusError} />
-              <Text style={s.error}>{errors.title}</Text>
-            </View>
-          )}
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Описание *</Text>
-          <TextInput
-            value={description}
-            onChangeText={(t) => { setDescription(t); if (errors.description) { const e = { ...errors }; delete e.description; setErrors(e); } }}
-            placeholder="Подробно опишите, что нужно сделать..."
-            placeholderTextColor={Colors.textMuted}
-            multiline
-            style={[s.textarea, errors.description ? s.inputError : null]}
-          />
-          {errors.description && (
-            <View style={s.errorRow}>
-              <Feather name="alert-circle" size={12} color={Colors.statusError} />
-              <Text style={s.error}>{errors.description}</Text>
-            </View>
-          )}
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Город *</Text>
-          <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowServicePicker(false); }}>
-            <View style={[s.select, errors.city ? s.inputError : null]}>
-              <Feather name="map-pin" size={16} color={Colors.textMuted} />
-              <Text style={city ? s.selectTextFilled : s.selectText}>{city || 'Выберите город'}</Text>
-              <Feather name="chevron-down" size={16} color={Colors.textMuted} />
-            </View>
+      <StepIndicator current={step} total={3} />
+
+      {/* Step 1: Service type + city + FNS */}
+      {step === 1 && (
+        <View style={s.form}>
+          <View style={s.field}>
+            <Text style={s.label}>Услуга *</Text>
+            <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); }}>
+              <View style={[s.select, errors.service ? s.inputError : null]}>
+                <Feather name="briefcase" size={16} color={Colors.textMuted} />
+                <Text style={service ? s.selectTextFilled : s.selectText}>{service || 'Выберите услугу'}</Text>
+                <Feather name="chevron-down" size={16} color={Colors.textMuted} />
+              </View>
+            </Pressable>
+            {showServicePicker && (
+              <View style={s.pickerList}>
+                {MOCK_SERVICES.map((svc) => (
+                  <Pressable key={svc.id} onPress={() => { setService(svc.name); setShowServicePicker(false); if (errors.service) { const e = { ...errors }; delete e.service; setErrors(e); } }} style={s.pickerItem}>
+                    <Text style={[s.pickerText, service === svc.name && s.pickerTextActive]}>{svc.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            {errors.service && (
+              <View style={s.errorRow}>
+                <Feather name="alert-circle" size={12} color={Colors.statusError} />
+                <Text style={s.error}>{errors.service}</Text>
+              </View>
+            )}
+          </View>
+          <View style={s.field}>
+            <Text style={s.label}>Город</Text>
+            <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowServicePicker(false); }}>
+              <View style={s.select}>
+                <Feather name="map-pin" size={16} color={Colors.textMuted} />
+                <Text style={city ? s.selectTextFilled : s.selectText}>{city || 'Выберите город'}</Text>
+                <Feather name="chevron-down" size={16} color={Colors.textMuted} />
+              </View>
+            </Pressable>
+            {showCityPicker && (
+              <View style={s.pickerList}>
+                {MOCK_CITIES.map((c) => (
+                  <Pressable key={c} onPress={() => { setCity(c); setShowCityPicker(false); }} style={s.pickerItem}>
+                    <Text style={[s.pickerText, city === c && s.pickerTextActive]}>{c}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+          <Pressable onPress={handleNext} style={s.btn}>
+            <Text style={s.btnText}>Далее</Text>
+            <Feather name="arrow-right" size={16} color={Colors.white} />
           </Pressable>
-          {showCityPicker && (
-            <View style={s.pickerList}>
-              {MOCK_CITIES.map((c) => (
-                <Pressable key={c} onPress={() => { setCity(c); setShowCityPicker(false); if (errors.city) { const e = { ...errors }; delete e.city; setErrors(e); } }} style={s.pickerItem}>
-                  <Text style={[s.pickerText, city === c ? s.pickerTextActive : null]}>{c}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
-          {errors.city && (
-            <View style={s.errorRow}>
-              <Feather name="alert-circle" size={12} color={Colors.statusError} />
-              <Text style={s.error}>{errors.city}</Text>
-            </View>
-          )}
         </View>
-        <View style={s.field}>
-          <Text style={s.label}>Услуга *</Text>
-          <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); }}>
-            <View style={s.select}>
-              <Feather name="briefcase" size={16} color={Colors.textMuted} />
-              <Text style={service ? s.selectTextFilled : s.selectText}>{service || 'Выберите услугу'}</Text>
-              <Feather name="chevron-down" size={16} color={Colors.textMuted} />
-            </View>
-          </Pressable>
-          {showServicePicker && (
-            <View style={s.pickerList}>
-              {MOCK_SERVICES.map((svc) => (
-                <Pressable key={svc.id} onPress={() => { setService(svc.name); setShowServicePicker(false); }} style={s.pickerItem}>
-                  <Text style={[s.pickerText, service === svc.name ? s.pickerTextActive : null]}>{svc.name}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Бюджет</Text>
-          <View style={s.budgetWrap}>
-            <Feather name="dollar-sign" size={16} color={Colors.textMuted} />
+      )}
+
+      {/* Step 2: Description */}
+      {step === 2 && (
+        <View style={s.form}>
+          <View style={s.field}>
+            <Text style={s.label}>Заголовок *</Text>
             <TextInput
-              value={budget}
-              onChangeText={setBudget}
-              placeholder="Например: 5 000 - 10 000 &#8381;"
+              value={title}
+              onChangeText={(t) => { setTitle(t); if (errors.title) { const e = { ...errors }; delete e.title; setErrors(e); } }}
+              placeholder="Кратко опишите задачу"
               placeholderTextColor={Colors.textMuted}
-              style={s.budgetInput}
+              style={[s.input, errors.title ? s.inputError : null]}
             />
+            {errors.title && (
+              <View style={s.errorRow}>
+                <Feather name="alert-circle" size={12} color={Colors.statusError} />
+                <Text style={s.error}>{errors.title}</Text>
+              </View>
+            )}
+          </View>
+          <View style={s.field}>
+            <Text style={s.label}>Описание *</Text>
+            <TextInput
+              value={description}
+              onChangeText={(t) => { setDescription(t); if (errors.description) { const e = { ...errors }; delete e.description; setErrors(e); } }}
+              placeholder="Подробно опишите, что нужно сделать..."
+              placeholderTextColor={Colors.textMuted}
+              multiline
+              style={[s.textarea, errors.description ? s.inputError : null]}
+            />
+            {errors.description && (
+              <View style={s.errorRow}>
+                <Feather name="alert-circle" size={12} color={Colors.statusError} />
+                <Text style={s.error}>{errors.description}</Text>
+              </View>
+            )}
+          </View>
+          <View style={s.field}>
+            <Text style={s.label}>Бюджет</Text>
+            <View style={s.budgetWrap}>
+              <Feather name="dollar-sign" size={16} color={Colors.textMuted} />
+              <TextInput
+                value={budget}
+                onChangeText={setBudget}
+                placeholder="Например: 5 000 - 10 000"
+                placeholderTextColor={Colors.textMuted}
+                style={s.budgetInput}
+              />
+              <Text style={s.currencyLabel}>&#8381;</Text>
+            </View>
+          </View>
+          <View style={s.stepActions}>
+            <Pressable onPress={() => setStep(1)} style={s.btnBack}>
+              <Feather name="arrow-left" size={16} color={Colors.textPrimary} />
+              <Text style={s.btnBackText}>Назад</Text>
+            </Pressable>
+            <Pressable onPress={handleNext} style={[s.btn, { flex: 1 }]}>
+              <Text style={s.btnText}>Далее</Text>
+              <Feather name="arrow-right" size={16} color={Colors.white} />
+            </Pressable>
           </View>
         </View>
-      </View>
-      <Pressable onPress={handleSubmit} disabled={loading} style={[s.btn, loading ? s.btnLoading : null]}>
-        {loading ? (
-          <ActivityIndicator size="small" color={Colors.white} />
-        ) : (
-          <>
-            <Feather name="plus" size={16} color={Colors.white} />
-            <Text style={s.btnText}>Создать заявку</Text>
-          </>
-        )}
-      </Pressable>
+      )}
+
+      {/* Step 3: Preview + submit */}
+      {step === 3 && (
+        <View style={s.form}>
+          <View style={s.previewCard}>
+            <Text style={s.previewLabel}>Предпросмотр заявки</Text>
+            <View style={s.previewRow}>
+              <Text style={s.previewKey}>Услуга</Text>
+              <Text style={s.previewValue}>{service || '—'}</Text>
+            </View>
+            <View style={s.previewRow}>
+              <Text style={s.previewKey}>Город</Text>
+              <Text style={s.previewValue}>{city || 'Не указан'}</Text>
+            </View>
+            <View style={s.previewRow}>
+              <Text style={s.previewKey}>Заголовок</Text>
+              <Text style={s.previewValue}>{title}</Text>
+            </View>
+            <View style={s.previewRow}>
+              <Text style={s.previewKey}>Описание</Text>
+              <Text style={s.previewValue}>{description}</Text>
+            </View>
+            {budget ? (
+              <View style={s.previewRow}>
+                <Text style={s.previewKey}>Бюджет</Text>
+                <Text style={s.previewValue}>{budget} &#8381;</Text>
+              </View>
+            ) : null}
+          </View>
+          <View style={s.stepActions}>
+            <Pressable onPress={() => setStep(2)} style={s.btnBack}>
+              <Feather name="arrow-left" size={16} color={Colors.textPrimary} />
+              <Text style={s.btnBackText}>Назад</Text>
+            </Pressable>
+            <Pressable onPress={handleSubmit} disabled={loading} style={[s.btn, { flex: 1 }, loading && s.btnLoading]}>
+              {loading ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <>
+                  <Feather name="send" size={16} color={Colors.white} />
+                  <Text style={s.btnText}>Отправить</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
+// ---------------------------------------------------------------------------
+// STATE: LOADING (skeleton)
+// ---------------------------------------------------------------------------
+
+function LoadingNewRequest() {
+  return (
+    <View style={s.container}>
+      <View style={s.skeletonBlock}><View style={[s.skeleton, { width: '40%', height: 22 }]} /></View>
+      <View style={s.stepRow}>
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={[s.skeleton, { width: 28, height: 28, borderRadius: 14 }]} />
+            {i < 3 && <View style={[s.skeleton, { flex: 1, height: 2, marginHorizontal: 4 }]} />}
+          </View>
+        ))}
+      </View>
+      <View style={s.form}>
+        {[1, 2].map((i) => (
+          <View key={i} style={s.field}>
+            <View style={[s.skeleton, { width: 80, height: 14 }]} />
+            <View style={[s.skeleton, { width: '100%', height: 48, borderRadius: BorderRadius.card }]} />
+          </View>
+        ))}
+        <View style={[s.skeleton, { width: '100%', height: 48, borderRadius: BorderRadius.btn }]} />
+      </View>
+      <View style={{ alignItems: 'center', paddingTop: Spacing.md }}>
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// STATE: ERROR
+// ---------------------------------------------------------------------------
+
+function ErrorNewRequest() {
+  return (
+    <View style={s.container}>
+      <Text style={s.pageTitle}>Новая заявка</Text>
+      <View style={s.errorBlock}>
+        <View style={s.errorIconWrap}>
+          <Feather name="alert-triangle" size={36} color={Colors.statusError} />
+        </View>
+        <Text style={s.errorTitle}>Не удалось загрузить форму</Text>
+        <Text style={s.errorText}>Не удалось получить список услуг и городов</Text>
+        <Pressable style={s.retryBtn}>
+          <Feather name="refresh-cw" size={16} color={Colors.white} />
+          <Text style={s.retryBtnText}>Попробовать снова</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main export
+// ---------------------------------------------------------------------------
+
 export function MyRequestsNewStates() {
   return (
-    <StateSection title="INTERACTIVE_FORM">
-      <FormScreen />
-    </StateSection>
+    <>
+      <StateSection title="DEFAULT">
+        <DefaultNewRequest />
+      </StateSection>
+      <StateSection title="LOADING">
+        <LoadingNewRequest />
+      </StateSection>
+      <StateSection title="ERROR">
+        <ErrorNewRequest />
+      </StateSection>
+    </>
   );
 }
 
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing.lg, position: 'relative' },
   pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+
+  // Step indicator
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 0, paddingHorizontal: Spacing.lg },
+  stepDot: {
+    width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bgCard,
+  },
+  stepDotActive: { borderColor: Colors.brandPrimary, backgroundColor: Colors.brandPrimary },
+  stepDotDone: { borderColor: Colors.statusSuccess, backgroundColor: Colors.statusSuccess },
+  stepNum: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.textMuted },
+  stepNumActive: { color: Colors.white },
+  stepLine: { flex: 1, height: 2, backgroundColor: Colors.border, marginHorizontal: 4 },
+  stepLineDone: { backgroundColor: Colors.brandPrimary },
+
+  // Form
   form: { gap: Spacing.lg },
   field: { gap: Spacing.xs },
-  label: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },
+  label: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },
   input: {
     height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
     borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary,
@@ -202,6 +406,7 @@ const s = StyleSheet.create({
     alignItems: 'center', gap: Spacing.sm,
   },
   budgetInput: { flex: 1, fontSize: Typography.fontSize.base, color: Colors.textPrimary, paddingVertical: 0 },
+  currencyLabel: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
   pickerList: {
     borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card,
     backgroundColor: Colors.bgCard, overflow: 'hidden', maxHeight: 200, ...Shadows.sm,
@@ -212,6 +417,17 @@ const s = StyleSheet.create({
   },
   pickerText: { fontSize: Typography.fontSize.base, color: Colors.textPrimary },
   pickerTextActive: { color: Colors.brandPrimary, fontWeight: Typography.fontWeight.semibold },
+
+  // Step actions
+  stepActions: { flexDirection: 'row', gap: Spacing.sm },
+  btnBack: {
+    height: 48, borderRadius: BorderRadius.btn, paddingHorizontal: Spacing.lg,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
+    flexDirection: 'row', gap: Spacing.xs,
+  },
+  btnBackText: { fontSize: Typography.fontSize.base, color: Colors.textPrimary },
+
+  // Buttons
   btn: {
     height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
     alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.sm,
@@ -219,6 +435,18 @@ const s = StyleSheet.create({
   },
   btnLoading: { opacity: 0.7 },
   btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+
+  // Preview
+  previewCard: {
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm,
+  },
+  previewLabel: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary, marginBottom: Spacing.xs },
+  previewRow: { flexDirection: 'row', gap: Spacing.sm },
+  previewKey: { width: 90, fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  previewValue: { flex: 1, fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
+
+  // Success popup
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10, alignItems: 'center', justifyContent: 'center',
@@ -240,4 +468,23 @@ const s = StyleSheet.create({
     flexDirection: 'row', gap: Spacing.sm,
   },
   popupBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+
+  // Error state
+  errorBlock: { alignItems: 'center', paddingVertical: Spacing['4xl'], gap: Spacing.md },
+  errorIconWrap: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.statusBg.error,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  errorTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  errorText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 280 },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+    height: 44, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
+    paddingHorizontal: Spacing['2xl'], marginTop: Spacing.sm,
+  },
+  retryBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+
+  // Skeleton
+  skeleton: { backgroundColor: Colors.bgSurface, opacity: 0.7, borderRadius: BorderRadius.md },
+  skeletonBlock: { gap: Spacing.sm },
 });

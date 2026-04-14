@@ -114,7 +114,7 @@ export const pageRegistry: PageEntry[] = [
   ] },
 
   // Dashboard (Client)
-  { id: 'dashboard', title: 'Главная', group: 'Dashboard', route: '/(dashboard)', stateCount: 3, nav: 'client', activeTab: 'home', qaCycles: 5, qaScore: 11, api: [
+  { id: 'dashboard', title: 'Главная', group: 'Dashboard', route: '/(dashboard)', stateCount: 4, nav: 'client', activeTab: 'home', qaCycles: 5, qaScore: 11, api: [
     'GET /api/dashboard/stats',
     'GET /api/requests?limit=3&status=active',
     'GET /api/responses?limit=3&unread=true',
@@ -122,7 +122,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Client views dashboard', steps: ['open /proto/states/dashboard', 'verify greeting visible', 'verify stats cards shown', 'verify recent requests listed'] },
     { name: 'Client creates new request', steps: ['open /proto/states/dashboard', 'tap "Создать заявку"', 'verify navigation to my-requests-new'] },
   ] },
-  { id: 'my-requests', title: 'Мои заявки', group: 'Dashboard', route: '/(dashboard)/my-requests', stateCount: 3, nav: 'client', activeTab: 'requests', qaCycles: 5, qaScore: 11, api: [
+  { id: 'my-requests', title: 'Мои заявки', group: 'Dashboard', route: '/(dashboard)/my-requests', stateCount: 4, nav: 'client', activeTab: 'requests', qaCycles: 5, qaScore: 11, api: [
     'GET /api/requests?status=:status&page=:page',
     'DELETE /api/requests/:id',
   ], testScenarios: [
@@ -130,7 +130,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Empty state', steps: ['open /proto/states/my-requests', 'verify EMPTY state with message'] },
     { name: 'Scroll to bottom', steps: ['open /proto/states/my-requests', 'scroll down', 'verify all requests loaded'] },
   ] },
-  { id: 'my-requests-new', title: 'Новая заявка', group: 'Dashboard', route: '/(dashboard)/new-request', stateCount: 4, nav: 'client', activeTab: 'requests', qaCycles: 5, qaScore: 11, api: [
+  { id: 'my-requests-new', title: 'Новая заявка', group: 'Dashboard', route: '/(dashboard)/new-request', stateCount: 3, nav: 'client', activeTab: 'requests', qaCycles: 5, qaScore: 11, api: [
     'POST /api/requests',
     'GET /api/cities',
     'GET /api/fns?city=:city',
@@ -142,7 +142,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Client fills request form', steps: ['open /proto/states/my-requests-new', 'verify form fields visible', 'type description', 'select city', 'select FNS', 'select service'] },
     { name: 'Submit request', steps: ['open /proto/states/my-requests-new', 'fill all fields', 'tap submit', 'verify success state'] },
   ] },
-  { id: 'my-request-detail', title: 'Детали заявки', group: 'Dashboard', route: '/(dashboard)/request/1', stateCount: 3, nav: 'client', activeTab: 'requests', qaCycles: 5, qaScore: 11, api: [
+  { id: 'my-request-detail', title: 'Детали заявки', group: 'Dashboard', route: '/(dashboard)/request/1', stateCount: 4, nav: 'client', activeTab: 'requests', qaCycles: 5, qaScore: 11, api: [
     'GET /api/requests/:id',
     'GET /api/requests/:id/responses',
     'PUT /api/requests/:id',
@@ -160,13 +160,13 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Accept response', steps: ['open /proto/states/responses', 'tap "Принять"', 'verify confirmation popup'] },
     { name: 'Reject response', steps: ['open /proto/states/responses', 'tap "Отклонить"', 'verify rejection popup'] },
   ] },
-  { id: 'messages', title: 'Сообщения', group: 'Dashboard', route: '/(dashboard)/messages', stateCount: 2, nav: 'client', activeTab: 'messages', qaCycles: 5, qaScore: 11, api: [
+  { id: 'messages', title: 'Сообщения', group: 'Dashboard', route: '/(dashboard)/messages', stateCount: 4, nav: 'client', activeTab: 'messages', qaCycles: 5, qaScore: 11, api: [
     'GET /api/threads',
   ], testScenarios: [
     { name: 'View message threads', steps: ['open /proto/states/messages', 'verify thread list shown', 'verify unread indicators'] },
     { name: 'Open thread', steps: ['open /proto/states/messages', 'tap thread', 'verify navigation to message-thread'] },
   ] },
-  { id: 'message-thread', title: 'Чат', group: 'Dashboard', route: '/(dashboard)/messages/1', stateCount: 3, nav: 'client', activeTab: 'messages', qaCycles: 5, qaScore: 11, api: [
+  { id: 'message-thread', title: 'Чат', group: 'Dashboard', route: '/(dashboard)/messages/1', stateCount: 4, nav: 'client', activeTab: 'messages', qaCycles: 5, qaScore: 11, api: [
     'GET /api/threads/:id/messages?page=:page',
     'POST /api/threads/:id/messages',
     'PUT /api/threads/:id/read',
@@ -174,7 +174,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'View chat messages', steps: ['open /proto/states/message-thread', 'verify messages shown', 'verify message input visible'] },
     { name: 'Send message', steps: ['open /proto/states/message-thread', 'type message', 'tap send', 'verify message sent'] },
   ] },
-  { id: 'profile', title: 'Профиль', group: 'Dashboard', route: '/(dashboard)/profile', stateCount: 2, nav: 'client', activeTab: 'profile', qaCycles: 5, qaScore: 11, api: [
+  { id: 'profile', title: 'Профиль', group: 'Dashboard', route: '/(dashboard)/profile', stateCount: 3, nav: 'client', activeTab: 'profile', qaCycles: 5, qaScore: 11, api: [
     'GET /api/profile',
     'PUT /api/profile',
     'POST /api/upload/avatar',
@@ -182,7 +182,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'View profile', steps: ['open /proto/states/profile', 'verify user info shown', 'verify edit fields visible'] },
     { name: 'Edit profile', steps: ['open /proto/states/profile', 'modify name', 'tap save', 'verify success'] },
   ] },
-  { id: 'settings', title: 'Настройки', group: 'Dashboard', route: '/(dashboard)/settings', stateCount: 1, nav: 'client', activeTab: 'profile', qaCycles: 5, qaScore: 11, api: [
+  { id: 'settings', title: 'Настройки', group: 'Dashboard', route: '/(dashboard)/settings', stateCount: 3, nav: 'client', activeTab: 'profile', qaCycles: 5, qaScore: 11, api: [
     'GET /api/settings',
     'PUT /api/settings',
     'POST /api/auth/logout',
