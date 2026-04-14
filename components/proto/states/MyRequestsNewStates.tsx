@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
 
 function FormScreen() {
@@ -44,10 +44,13 @@ function FormScreen() {
       {success && (
         <View style={s.overlay}>
           <View style={s.popup}>
-            <Feather name="check-circle" size={48} color={Colors.statusSuccess} />
+            <View style={s.successIconCircle}>
+              <Feather name="check-circle" size={48} color={Colors.statusSuccess} />
+            </View>
             <Text style={s.popupTitle}>Заявка создана!</Text>
             <Text style={s.popupText}>Специалисты получат уведомление и смогут откликнуться</Text>
             <Pressable onPress={() => { setSuccess(false); setTitle(''); setDescription(''); setCity(''); setService(''); setBudget(''); }} style={s.popupBtn}>
+              <Feather name="list" size={16} color={Colors.white} />
               <Text style={s.popupBtnText}>К моим заявкам</Text>
             </Pressable>
           </View>
@@ -64,7 +67,12 @@ function FormScreen() {
             placeholderTextColor={Colors.textMuted}
             style={[s.input, errors.title ? s.inputError : null]}
           />
-          {errors.title && <Text style={s.error}>{errors.title}</Text>}
+          {errors.title && (
+            <View style={s.errorRow}>
+              <Feather name="alert-circle" size={12} color={Colors.statusError} />
+              <Text style={s.error}>{errors.title}</Text>
+            </View>
+          )}
         </View>
         <View style={s.field}>
           <Text style={s.label}>Описание *</Text>
@@ -76,14 +84,20 @@ function FormScreen() {
             multiline
             style={[s.textarea, errors.description ? s.inputError : null]}
           />
-          {errors.description && <Text style={s.error}>{errors.description}</Text>}
+          {errors.description && (
+            <View style={s.errorRow}>
+              <Feather name="alert-circle" size={12} color={Colors.statusError} />
+              <Text style={s.error}>{errors.description}</Text>
+            </View>
+          )}
         </View>
         <View style={s.field}>
           <Text style={s.label}>Город *</Text>
           <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowServicePicker(false); }}>
             <View style={[s.select, errors.city ? s.inputError : null]}>
+              <Feather name="map-pin" size={16} color={Colors.textMuted} />
               <Text style={city ? s.selectTextFilled : s.selectText}>{city || 'Выберите город'}</Text>
-              <Text style={s.selectArrow}>{'>'}</Text>
+              <Feather name="chevron-down" size={16} color={Colors.textMuted} />
             </View>
           </Pressable>
           {showCityPicker && (
@@ -95,14 +109,20 @@ function FormScreen() {
               ))}
             </View>
           )}
-          {errors.city && <Text style={s.error}>{errors.city}</Text>}
+          {errors.city && (
+            <View style={s.errorRow}>
+              <Feather name="alert-circle" size={12} color={Colors.statusError} />
+              <Text style={s.error}>{errors.city}</Text>
+            </View>
+          )}
         </View>
         <View style={s.field}>
           <Text style={s.label}>Услуга *</Text>
           <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); }}>
             <View style={s.select}>
+              <Feather name="briefcase" size={16} color={Colors.textMuted} />
               <Text style={service ? s.selectTextFilled : s.selectText}>{service || 'Выберите услугу'}</Text>
-              <Text style={s.selectArrow}>{'>'}</Text>
+              <Feather name="chevron-down" size={16} color={Colors.textMuted} />
             </View>
           </Pressable>
           {showServicePicker && (
@@ -117,129 +137,27 @@ function FormScreen() {
         </View>
         <View style={s.field}>
           <Text style={s.label}>Бюджет</Text>
-          <TextInput
-            value={budget}
-            onChangeText={setBudget}
-            placeholder="Например: 5 000 — 10 000 ₽"
-            placeholderTextColor={Colors.textMuted}
-            style={s.input}
-          />
+          <View style={s.budgetWrap}>
+            <Feather name="dollar-sign" size={16} color={Colors.textMuted} />
+            <TextInput
+              value={budget}
+              onChangeText={setBudget}
+              placeholder="Например: 5 000 - 10 000 &#8381;"
+              placeholderTextColor={Colors.textMuted}
+              style={s.budgetInput}
+            />
+          </View>
         </View>
       </View>
       <Pressable onPress={handleSubmit} disabled={loading} style={[s.btn, loading ? s.btnLoading : null]}>
         {loading ? (
           <ActivityIndicator size="small" color={Colors.white} />
         ) : (
-          <Text style={s.btnText}>Создать заявку</Text>
+          <>
+            <Feather name="plus" size={16} color={Colors.white} />
+            <Text style={s.btnText}>Создать заявку</Text>
+          </>
         )}
-      </Pressable>
-    </View>
-  );
-}
-
-function LoadingState() {
-  return (
-    <View style={s.container}>
-      <Text style={s.pageTitle}>Новая заявка</Text>
-      <View style={s.form}>
-        <View style={s.field}>
-          <Text style={s.label}>Заголовок *</Text>
-          <View style={s.input}><Text style={{ color: Colors.textPrimary, fontSize: Typography.fontSize.base }}>Заполнить декларацию 3-НДФЛ</Text></View>
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Описание *</Text>
-          <View style={s.textarea}><Text style={{ color: Colors.textPrimary, fontSize: Typography.fontSize.base }}>Нужно заполнить и подать декларацию за 2025 год</Text></View>
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Город *</Text>
-          <View style={s.select}><Text style={s.selectTextFilled}>Москва</Text><Text style={s.selectArrow}>{'>'}</Text></View>
-        </View>
-      </View>
-      <View style={[s.btn, s.btnLoading]}>
-        <ActivityIndicator size="small" color={Colors.white} />
-      </View>
-      <View style={s.loadingOverlay}>
-        <ActivityIndicator size="large" color={Colors.brandPrimary} />
-        <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted, marginTop: Spacing.sm }}>Отправка заявки...</Text>
-      </View>
-    </View>
-  );
-}
-
-function SuccessState() {
-  return (
-    <View style={s.container}>
-      <View style={s.successWrap}>
-        <View style={s.successIconCircle}>
-          <Feather name="check-circle" size={48} color={Colors.statusSuccess} />
-        </View>
-        <Text style={s.successTitle}>Заявка создана!</Text>
-        <Text style={s.successText}>Специалисты получат уведомление и смогут откликнуться на вашу заявку</Text>
-        <Pressable style={s.popupBtn}>
-          <Text style={s.popupBtnText}>К моим заявкам</Text>
-        </Pressable>
-        <Pressable style={s.secondaryBtn}>
-          <Text style={s.secondaryBtnText}>Создать ещё</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-function ValidationState() {
-  return (
-    <View style={s.container}>
-      <Text style={s.pageTitle}>Новая заявка</Text>
-      <View style={s.form}>
-        <View style={s.field}>
-          <Text style={s.label}>Заголовок *</Text>
-          <TextInput
-            value="Нал"
-            editable={false}
-            style={[s.input, s.inputError]}
-          />
-          <Text style={s.error}>Заголовок должен содержать минимум 5 символов</Text>
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Описание *</Text>
-          <TextInput
-            value=""
-            editable={false}
-            placeholder="Подробно опишите, что нужно сделать..."
-            placeholderTextColor={Colors.textMuted}
-            multiline
-            style={[s.textarea, s.inputError]}
-          />
-          <Text style={s.error}>Обязательное поле</Text>
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Город *</Text>
-          <View style={[s.select, s.inputError]}>
-            <Text style={s.selectText}>Выберите город</Text>
-            <Text style={s.selectArrow}>{'>'}</Text>
-          </View>
-          <Text style={s.error}>Выберите город</Text>
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Услуга *</Text>
-          <View style={s.select}>
-            <Text style={s.selectText}>Выберите услугу</Text>
-            <Text style={s.selectArrow}>{'>'}</Text>
-          </View>
-        </View>
-        <View style={s.field}>
-          <Text style={s.label}>Бюджет</Text>
-          <TextInput
-            value=""
-            editable={false}
-            placeholder="Например: 5 000 — 10 000 ₽"
-            placeholderTextColor={Colors.textMuted}
-            style={s.input}
-          />
-        </View>
-      </View>
-      <Pressable style={s.btn}>
-        <Text style={s.btnText}>Создать заявку</Text>
       </Pressable>
     </View>
   );
@@ -247,61 +165,57 @@ function ValidationState() {
 
 export function MyRequestsNewStates() {
   return (
-    <View style={{ gap: Spacing['4xl'] }}>
-      <StateSection title="INTERACTIVE_FORM">
-        <FormScreen />
-      </StateSection>
-      <StateSection title="LOADING">
-        <LoadingState />
-      </StateSection>
-      <StateSection title="SUCCESS">
-        <SuccessState />
-      </StateSection>
-      <StateSection title="VALIDATION">
-        <ValidationState />
-      </StateSection>
-    </View>
+    <StateSection title="INTERACTIVE_FORM">
+      <FormScreen />
+    </StateSection>
   );
 }
 
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing.lg, position: 'relative' },
-  pageTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   form: { gap: Spacing.lg },
   field: { gap: Spacing.xs },
-  label: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },
+  label: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary },
   input: {
     height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.md, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary,
+    borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary,
   },
   textarea: {
     minHeight: 96, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.md, padding: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary,
+    borderRadius: BorderRadius.card, padding: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary,
     textAlignVertical: 'top',
   },
   inputError: { borderColor: Colors.statusError },
-  error: { fontSize: Typography.fontSize.xs, color: Colors.statusError },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  error: { fontSize: Typography.fontSize.sm, color: Colors.statusError },
   select: {
     height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.md, paddingHorizontal: Spacing.lg, flexDirection: 'row',
-    alignItems: 'center', justifyContent: 'space-between',
+    borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, flexDirection: 'row',
+    alignItems: 'center', gap: Spacing.sm,
   },
-  selectText: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
-  selectTextFilled: { fontSize: Typography.fontSize.base, color: Colors.textPrimary },
-  selectArrow: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  selectText: { flex: 1, fontSize: Typography.fontSize.base, color: Colors.textMuted },
+  selectTextFilled: { flex: 1, fontSize: Typography.fontSize.base, color: Colors.textPrimary },
+  budgetWrap: {
+    height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, flexDirection: 'row',
+    alignItems: 'center', gap: Spacing.sm,
+  },
+  budgetInput: { flex: 1, fontSize: Typography.fontSize.base, color: Colors.textPrimary, paddingVertical: 0 },
   pickerList: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard, overflow: 'hidden', maxHeight: 200,
+    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card,
+    backgroundColor: Colors.bgCard, overflow: 'hidden', maxHeight: 200, ...Shadows.sm,
   },
   pickerItem: {
-    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
     borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,
   },
-  pickerText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
+  pickerText: { fontSize: Typography.fontSize.base, color: Colors.textPrimary },
   pickerTextActive: { color: Colors.brandPrimary, fontWeight: Typography.fontWeight.semibold },
   btn: {
-    height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
-    alignItems: 'center', justifyContent: 'center',
+    height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
+    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.sm,
+    ...Shadows.sm,
   },
   btnLoading: { opacity: 0.7 },
   btnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
@@ -311,33 +225,19 @@ const s = StyleSheet.create({
     padding: Spacing.lg,
   },
   popup: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, padding: Spacing['2xl'],
-    alignItems: 'center', gap: Spacing.md, width: '100%', maxWidth: 340,
-  },
-  popupIconWrap: { marginBottom: Spacing.xs },
-  popupTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  popupText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
-  popupBtn: {
-    height: 44, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing['2xl'], marginTop: Spacing.sm,
-  },
-  popupBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
-  loadingOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.8)', zIndex: 10, alignItems: 'center', justifyContent: 'center',
-  },
-  successWrap: {
-    alignItems: 'center', padding: Spacing['2xl'], gap: Spacing.md,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.xl, padding: Spacing['2xl'],
+    alignItems: 'center', gap: Spacing.md, width: '100%', maxWidth: 340, ...Shadows.md,
   },
   successIconCircle: {
     width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.statusSuccess + '15',
-    alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm,
+    alignItems: 'center', justifyContent: 'center',
   },
-  successTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  successText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
-  secondaryBtn: {
-    height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: Spacing['2xl'], borderWidth: 1, borderColor: Colors.border,
+  popupTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  popupText: { fontSize: Typography.fontSize.base, color: Colors.textMuted, textAlign: 'center' },
+  popupBtn: {
+    height: 44, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing['2xl'], marginTop: Spacing.sm,
+    flexDirection: 'row', gap: Spacing.sm,
   },
-  secondaryBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
+  popupBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
 });
