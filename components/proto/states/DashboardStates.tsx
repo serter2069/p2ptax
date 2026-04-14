@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, Image, ActivityIndicator, Pressable, StyleSheet, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Text, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
@@ -11,7 +11,7 @@ import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../con
 function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
   return (
     <View style={s.statCard}>
-      <View style={[s.statIcon, { backgroundColor: color + '15' }]}>
+      <View style={[s.statIcon, { backgroundColor: color + '12' }]}>
         <Feather name={icon as any} size={18} color={color} />
       </View>
       <Text style={[s.statValue, { color }]}>{value}</Text>
@@ -69,8 +69,16 @@ function SkeletonBlock({ width, height, radius }: { width: string | number; heig
   );
 }
 
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 6) return 'Доброй ночи';
+  if (h < 12) return 'Доброе утро';
+  if (h < 18) return 'Добрый день';
+  return 'Добрый вечер';
+}
+
 // ---------------------------------------------------------------------------
-// STATE: DEFAULT (populated) — story #135
+// STATE: DEFAULT (populated)
 // ---------------------------------------------------------------------------
 
 function DefaultDashboard() {
@@ -80,7 +88,7 @@ function DefaultDashboard() {
       <View style={s.header}>
         <View style={s.greetingRow}>
           <View style={{ flex: 1 }}>
-            <Text style={s.greeting}>Добрый день, Елена!</Text>
+            <Text style={s.greeting}>{getGreeting()}, Елена!</Text>
             <Text style={s.subGreeting}>Ваши заявки и отклики</Text>
           </View>
           <Pressable style={s.notifBtn}>
@@ -186,64 +194,76 @@ function DefaultDashboard() {
 }
 
 // ---------------------------------------------------------------------------
-// STATE: LOADING — story #136
+// STATE: LOADING (skeleton)
 // ---------------------------------------------------------------------------
 
 function LoadingDashboard() {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <SkeletonBlock width="60%" height={22} />
-        <SkeletonBlock width="45%" height={14} />
+        <SkeletonBlock width="55%" height={24} />
+        <View style={{ height: 6 }} />
+        <SkeletonBlock width="40%" height={14} />
       </View>
-      <SkeletonBlock width="100%" height={40} radius={BorderRadius.md} />
+
+      {/* Limit skeleton */}
+      <View style={s.limitWrap}>
+        <View style={s.limitHeader}>
+          <SkeletonBlock width={80} height={12} />
+          <SkeletonBlock width={40} height={12} />
+        </View>
+        <SkeletonBlock width="100%" height={6} radius={3} />
+      </View>
+
+      {/* Stats skeleton */}
       <View style={s.statsRow}>
-        <View style={[s.statCard, { alignItems: 'center' }]}>
-          <SkeletonBlock width={36} height={36} radius={18} />
-          <SkeletonBlock width={24} height={20} />
-          <SkeletonBlock width={48} height={12} />
-        </View>
-        <View style={[s.statCard, { alignItems: 'center' }]}>
-          <SkeletonBlock width={36} height={36} radius={18} />
-          <SkeletonBlock width={24} height={20} />
-          <SkeletonBlock width={48} height={12} />
-        </View>
-        <View style={[s.statCard, { alignItems: 'center' }]}>
-          <SkeletonBlock width={36} height={36} radius={18} />
-          <SkeletonBlock width={24} height={20} />
-          <SkeletonBlock width={48} height={12} />
-        </View>
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={[s.statCard, { alignItems: 'center' }]}>
+            <SkeletonBlock width={36} height={36} radius={18} />
+            <SkeletonBlock width={28} height={22} />
+            <SkeletonBlock width={52} height={12} />
+          </View>
+        ))}
       </View>
-      <SkeletonBlock width="100%" height={44} radius={BorderRadius.btn} />
+
+      {/* CTA skeleton */}
+      <SkeletonBlock width="100%" height={48} radius={BorderRadius.btn} />
+
+      {/* Requests skeleton */}
       <View style={s.section}>
-        <SkeletonBlock width="40%" height={16} />
+        <SkeletonBlock width="35%" height={18} />
         <View style={s.list}>
-          <SkeletonBlock width="100%" height={64} radius={BorderRadius.md} />
-          <SkeletonBlock width="100%" height={64} radius={BorderRadius.md} />
-          <SkeletonBlock width="100%" height={64} radius={BorderRadius.md} />
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={s.skeletonRow}>
+              <View style={{ flex: 1, gap: 8 }}>
+                <SkeletonBlock width="80%" height={14} />
+                <SkeletonBlock width="50%" height={11} />
+              </View>
+              <SkeletonBlock width={60} height={22} radius={BorderRadius.full} />
+            </View>
+          ))}
         </View>
       </View>
-      <View style={{ alignItems: 'center', paddingTop: Spacing.md }}>
+
+      <View style={{ alignItems: 'center', paddingTop: Spacing.sm }}>
         <ActivityIndicator size="small" color={Colors.brandPrimary} />
-        <Text style={s.loadingText}>Загрузка данных...</Text>
       </View>
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// STATE: EMPTY — story #137
+// STATE: EMPTY
 // ---------------------------------------------------------------------------
 
 function EmptyDashboard() {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.greeting}>Добрый день, Елена!</Text>
+        <Text style={s.greeting}>{getGreeting()}, Елена!</Text>
         <Text style={s.subGreeting}>Добро пожаловать в Налоговик</Text>
       </View>
 
-      {/* Limit — 0 of 5 */}
       <LimitBar used={0} total={5} />
 
       <View style={s.emptyBlock}>
@@ -254,7 +274,7 @@ function EmptyDashboard() {
         <Text style={s.emptyText}>
           Создайте первую заявку, чтобы найти налогового специалиста для решения вашей задачи
         </Text>
-        <Pressable style={s.ctaBtn}>
+        <Pressable style={[s.ctaBtn, { marginTop: Spacing.sm }]}>
           <Feather name="plus" size={18} color={Colors.white} />
           <Text style={s.ctaBtnText}>Создать первую заявку</Text>
         </Pressable>
@@ -264,27 +284,19 @@ function EmptyDashboard() {
       <View style={s.section}>
         <Text style={s.sectionTitle}>Как это работает</Text>
         <View style={s.list}>
-          <View style={s.hintRow}>
-            <View style={s.hintNum}><Text style={s.hintNumText}>1</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.hintTitle}>Опишите задачу</Text>
-              <Text style={s.hintDesc}>Укажите тип услуги, город и бюджет</Text>
+          {[
+            { num: '1', title: 'Опишите задачу', desc: 'Укажите тип услуги, город и бюджет' },
+            { num: '2', title: 'Получите отклики', desc: 'Специалисты предложат свои услуги' },
+            { num: '3', title: 'Выберите лучшего', desc: 'Сравните рейтинги, цены и отзывы' },
+          ].map((h) => (
+            <View key={h.num} style={s.hintRow}>
+              <View style={s.hintNum}><Text style={s.hintNumText}>{h.num}</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.hintTitle}>{h.title}</Text>
+                <Text style={s.hintDesc}>{h.desc}</Text>
+              </View>
             </View>
-          </View>
-          <View style={s.hintRow}>
-            <View style={s.hintNum}><Text style={s.hintNumText}>2</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.hintTitle}>Получите отклики</Text>
-              <Text style={s.hintDesc}>Специалисты предложат свои услуги</Text>
-            </View>
-          </View>
-          <View style={s.hintRow}>
-            <View style={s.hintNum}><Text style={s.hintNumText}>3</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.hintTitle}>Выберите лучшего</Text>
-              <Text style={s.hintDesc}>Сравните рейтинги, цены и отзывы</Text>
-            </View>
-          </View>
+          ))}
         </View>
       </View>
     </View>
@@ -292,14 +304,14 @@ function EmptyDashboard() {
 }
 
 // ---------------------------------------------------------------------------
-// STATE: ERROR — from SA (state-dashboard-error)
+// STATE: ERROR
 // ---------------------------------------------------------------------------
 
 function ErrorDashboard() {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.greeting}>Добрый день!</Text>
+        <Text style={s.greeting}>{getGreeting()}!</Text>
       </View>
       <View style={s.errorBlock}>
         <View style={s.errorIconWrap}>
@@ -457,5 +469,9 @@ const s = StyleSheet.create({
 
   // Loading skeleton
   skeleton: { backgroundColor: Colors.bgSurface, opacity: 0.7 },
-  loadingText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, marginTop: Spacing.sm },
+  skeletonRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.bgCard, padding: Spacing.md, borderRadius: BorderRadius.card,
+    borderWidth: 1, borderColor: Colors.border,
+  },
 });
