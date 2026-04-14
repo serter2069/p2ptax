@@ -193,7 +193,7 @@ export const pageRegistry: PageEntry[] = [
   ] },
 
   // Specialist
-  { id: 'specialist-dashboard', title: 'Кабинет специалиста', group: 'Specialist', route: '/specialist', stateCount: 4, nav: 'specialist', activeTab: 'dashboard', qaCycles: 0, qaScore: 0, navTo: ['public-requests', 'messages', 'profile', 'specialist-respond', 'public-request-detail'], navFrom: ['auth-otp', 'onboarding-profile', 'specialist-respond'], api: [
+  { id: 'specialist-dashboard', title: 'Кабинет специалиста', group: 'Specialist', route: '/specialist', stateCount: 4, nav: 'specialist', activeTab: 'dashboard', qaCycles: 0, qaScore: 4, navTo: ['public-requests', 'messages', 'profile', 'specialist-respond', 'public-request-detail'], navFrom: ['auth-otp', 'onboarding-profile', 'specialist-respond'], api: [
     'GET /api/specialist/dashboard',
     'GET /api/specialist/active-responses',
   ], testScenarios: [
@@ -203,7 +203,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Error state — retry', steps: ['open /proto/states/specialist-dashboard', 'verify ERROR state visible', 'verify error message shown', 'verify "Попробовать снова" button visible'] },
     { name: 'Специалист откликается на заявку', steps: ['open /proto/states/specialist-dashboard', 'tap "Откликнуться" on request card', 'verify navigation to specialist-respond'] },
   ] },
-  { id: 'specialist-respond', title: 'Отклик специалиста', group: 'Specialist', route: '/specialist/respond', stateCount: 3, nav: 'specialist', activeTab: 'dashboard', qaCycles: 5, qaScore: 20, navTo: ['specialist-dashboard', 'public-requests', 'messages', 'profile'], navFrom: ['specialist-dashboard'], api: [
+  { id: 'specialist-respond', title: 'Отклик специалиста', group: 'Specialist', route: '/specialist/respond', stateCount: 4, nav: 'specialist', activeTab: 'dashboard', qaCycles: 0, qaScore: 4, navTo: ['specialist-dashboard', 'public-requests', 'messages', 'profile'], navFrom: ['specialist-dashboard'], api: [
     'GET /api/requests/:id',
     'POST /api/responses',
   ], testScenarios: [
@@ -211,7 +211,7 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Успешная отправка отклика', steps: ['open /proto/states/specialist-respond', 'verify SUBMITTED state shows success', 'tap "К моим откликам"', 'verify navigation to specialist-dashboard'] },
     { name: 'Ошибка отправки отклика', steps: ['open /proto/states/specialist-respond', 'verify ERROR state visible', 'verify error message shown', 'tap "Попробовать снова"'] },
   ] },
-  { id: 'specialist-my-responses', title: 'Мои отклики', group: 'Specialist', route: '/specialist/my-responses', stateCount: 3, nav: 'specialist', activeTab: 'dashboard', qaCycles: 0, qaScore: 0, navTo: ['public-requests', 'message-thread'], navFrom: ['specialist-dashboard', 'specialist-respond'], api: [
+  { id: 'specialist-my-responses', title: 'Мои отклики', group: 'Specialist', route: '/specialist/my-responses', stateCount: 3, nav: 'specialist', activeTab: 'dashboard', qaCycles: 0, qaScore: 4, navTo: ['public-requests', 'message-thread'], navFrom: ['specialist-dashboard', 'specialist-respond'], api: [
     'GET /api/specialist/responses',
     'PATCH /api/specialist/responses/:id/deactivate',
   ], testScenarios: [
@@ -271,26 +271,26 @@ export const pageRegistry: PageEntry[] = [
   ] },
 
   // Admin
-  { id: 'admin-dashboard', title: 'Админ — Главная', group: 'Admin', route: '/(admin)', stateCount: 1, nav: 'admin', activeTab: 'dashboard', qaCycles: 5, qaScore: 11, api: [
+  { id: 'admin-dashboard', title: 'Админ — Главная', group: 'Admin', route: '/(admin)', stateCount: 2, nav: 'admin', activeTab: 'dashboard', qaCycles: 0, qaScore: 4, api: [
     'GET /api/admin/stats',
   ], testScenarios: [
     { name: 'Admin views dashboard', steps: ['open /proto/states/admin-dashboard', 'verify stats cards shown', 'verify navigation tabs'] },
   ] },
-  { id: 'admin-users', title: 'Админ — Пользователи', group: 'Admin', route: '/(admin)/users', stateCount: 2, nav: 'admin', activeTab: 'users', qaCycles: 5, qaScore: 11, api: [
+  { id: 'admin-users', title: 'Админ — Пользователи', group: 'Admin', route: '/(admin)/users', stateCount: 4, nav: 'admin', activeTab: 'users', qaCycles: 0, qaScore: 4, api: [
     'GET /api/admin/users?role=:role&page=:page',
     'PUT /api/admin/users/:id/block',
   ], testScenarios: [
     { name: 'Admin views users', steps: ['open /proto/states/admin-users', 'verify user table shown', 'verify role filter'] },
     { name: 'Block user', steps: ['open /proto/states/admin-users', 'tap block on user', 'verify confirmation'] },
   ] },
-  { id: 'admin-requests', title: 'Админ — Заявки', group: 'Admin', route: '/(admin)/requests', stateCount: 2, nav: 'admin', activeTab: 'requests', qaCycles: 5, qaScore: 11, api: [
+  { id: 'admin-requests', title: 'Админ — Заявки', group: 'Admin', route: '/(admin)/requests', stateCount: 2, nav: 'admin', activeTab: 'requests', qaCycles: 0, qaScore: 4, api: [
     'GET /api/admin/requests?page=:page',
     'PUT /api/admin/requests/:id/moderate',
   ], testScenarios: [
     { name: 'Admin views requests', steps: ['open /proto/states/admin-requests', 'verify request list shown', 'verify status filters'] },
     { name: 'Moderate request', steps: ['open /proto/states/admin-requests', 'tap request row', 'verify moderation action'] },
   ] },
-  { id: 'admin-moderation', title: 'Админ — Модерация', group: 'Admin', route: '/(admin)/moderation', stateCount: 3, nav: 'admin', activeTab: 'moderation', qaCycles: 5, qaScore: 11, api: [
+  { id: 'admin-moderation', title: 'Админ — Модерация', group: 'Admin', route: '/(admin)/moderation', stateCount: 5, nav: 'admin', activeTab: 'moderation', qaCycles: 0, qaScore: 4, api: [
     'GET /api/admin/moderation/queue',
     'PUT /api/admin/moderation/:id/approve',
     'PUT /api/admin/moderation/:id/reject',
@@ -299,14 +299,14 @@ export const pageRegistry: PageEntry[] = [
     { name: 'Approve specialist', steps: ['open /proto/states/admin-moderation', 'tap approve', 'verify approval popup'] },
     { name: 'Reject specialist', steps: ['open /proto/states/admin-moderation', 'tap reject', 'verify rejection with comment'] },
   ] },
-  { id: 'admin-reviews', title: 'Админ — Отзывы', group: 'Admin', route: '/(admin)/reviews', stateCount: 1, nav: 'admin', activeTab: 'reviews', qaCycles: 5, qaScore: 11, api: [
+  { id: 'admin-reviews', title: 'Админ — Отзывы', group: 'Admin', route: '/(admin)/reviews', stateCount: 1, nav: 'admin', activeTab: 'reviews', qaCycles: 0, qaScore: 4, api: [
     'GET /api/admin/reviews?page=:page',
     'DELETE /api/admin/reviews/:id',
   ], testScenarios: [
     { name: 'Admin views reviews', steps: ['open /proto/states/admin-reviews', 'verify review list shown', 'verify delete action'] },
     { name: 'Delete review', steps: ['open /proto/states/admin-reviews', 'tap delete on review', 'verify confirmation'] },
   ] },
-  { id: 'admin-promotions', title: 'Админ — Промо', group: 'Admin', route: '/(admin)/promotions', stateCount: 1, nav: 'admin', activeTab: 'promotions', qaCycles: 5, qaScore: 11, api: [
+  { id: 'admin-promotions', title: 'Админ — Промо', group: 'Admin', route: '/(admin)/promotions', stateCount: 2, nav: 'admin', activeTab: 'promotions', qaCycles: 0, qaScore: 4, api: [
     'GET /api/admin/promotions',
     'POST /api/admin/promotions',
     'PUT /api/admin/promotions/:id',

@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_ADMIN_STATS } from '../../../constants/protoMockData';
+
+function SkeletonBlock({ width, height, radius }: { width: string | number; height: number; radius?: number }) {
+  return (
+    <View style={[s.skeleton, { width: width as any, height, borderRadius: radius || BorderRadius.md }]} />
+  );
+}
 
 function StatCard({ label, value, color, trend, icon }: { label: string; value: string | number; color: string; trend?: string; icon: string }) {
   return (
@@ -43,7 +49,11 @@ function ChartPlaceholder({ title }: { title: string }) {
   );
 }
 
-export function AdminDashboardStates() {
+// ---------------------------------------------------------------------------
+// STATE: DEFAULT (populated with stats)
+// ---------------------------------------------------------------------------
+
+function DefaultDashboard() {
   const st = MOCK_ADMIN_STATS;
 
   const activities = [
@@ -51,54 +61,117 @@ export function AdminDashboardStates() {
     { icon: 'file-text', action: 'Заявка', detail: 'Новая заявка: Декларация 3-НДФЛ', time: '12 мин назад' },
     { icon: 'shield', action: 'Модерация', detail: 'Специалист ожидает проверки', time: '30 мин назад' },
     { icon: 'star', action: 'Отзыв', detail: 'Новый отзыв от Елены В.', time: '1 час назад' },
+    { icon: 'alert-triangle', action: 'Жалоба', detail: 'Жалоба на специалиста Козлова Д.', time: '2 часа назад' },
   ];
 
   return (
-    <StateSection title="STATS">
-      <View style={s.container}>
+    <View style={s.container}>
+      <View style={s.pageHeader}>
         <Text style={s.pageTitle}>Панель администратора</Text>
+        <Text style={s.pageSubtitle}>Обзор за сегодня</Text>
+      </View>
 
-        <View style={s.statsGrid}>
-          <StatCard label="Всего пользователей" value={st.totalUsers} color={Colors.textPrimary} trend="+23 сегодня" icon="users" />
-          <StatCard label="Специалистов" value={st.totalSpecialists} color={Colors.brandPrimary} icon="briefcase" />
-          <StatCard label="Всего заявок" value={st.totalRequests} color={Colors.textPrimary} trend="+15 сегодня" icon="file-text" />
-          <StatCard label="Активные заявки" value={st.activeRequests} color={Colors.statusSuccess} icon="check-circle" />
-          <StatCard label="На модерации" value={st.pendingModeration} color={Colors.statusWarning} icon="clock" />
-          <StatCard label="Средний рейтинг" value={st.avgRating} color={Colors.brandPrimary} icon="star" />
-        </View>
+      <View style={s.statsGrid}>
+        <StatCard label="Всего пользователей" value={st.totalUsers} color={Colors.textPrimary} trend="+23 сегодня" icon="users" />
+        <StatCard label="Специалистов" value={st.totalSpecialists} color={Colors.brandPrimary} icon="briefcase" />
+        <StatCard label="Всего заявок" value={st.totalRequests} color={Colors.textPrimary} trend="+15 сегодня" icon="file-text" />
+        <StatCard label="Активные заявки" value={st.activeRequests} color={Colors.statusSuccess} icon="check-circle" />
+        <StatCard label="На модерации" value={st.pendingModeration} color={Colors.statusWarning} icon="clock" />
+        <StatCard label="Средний рейтинг" value={st.avgRating} color={Colors.brandPrimary} icon="star" />
+      </View>
 
-        <View style={s.revenue}>
-          <Feather name="dollar-sign" size={24} color="rgba(255,255,255,0.7)" />
-          <Text style={s.revenueLabel}>Общий доход</Text>
-          <Text style={s.revenueValue}>{st.revenue}</Text>
-        </View>
-
-        <ChartPlaceholder title="Регистрации за неделю" />
-        <ChartPlaceholder title="Заявки за неделю" />
-
-        <View style={s.recentSection}>
-          <Text style={s.sectionTitle}>Последние действия</Text>
-          {activities.map((item, i) => (
-            <View key={i} style={s.activityRow}>
-              <View style={s.activityIconWrap}>
-                <Feather name={item.icon as any} size={16} color={Colors.brandPrimary} />
-              </View>
-              <View style={s.activityContent}>
-                <Text style={s.activityAction}>{item.action}: <Text style={s.activityDetail}>{item.detail}</Text></Text>
-                <Text style={s.activityTime}>{item.time}</Text>
-              </View>
-              <Feather name="chevron-right" size={16} color={Colors.textMuted} />
-            </View>
-          ))}
+      <View style={s.revenue}>
+        <Feather name="dollar-sign" size={24} color="rgba(255,255,255,0.7)" />
+        <Text style={s.revenueLabel}>Общий доход</Text>
+        <Text style={s.revenueValue}>{st.revenue}</Text>
+        <View style={s.revenueTrend}>
+          <Feather name="trending-up" size={14} color="rgba(255,255,255,0.8)" />
+          <Text style={s.revenueTrendText}>+12% к прошлому месяцу</Text>
         </View>
       </View>
-    </StateSection>
+
+      <ChartPlaceholder title="Регистрации за неделю" />
+      <ChartPlaceholder title="Заявки за неделю" />
+
+      <View style={s.recentSection}>
+        <View style={s.sectionHeader}>
+          <Text style={s.sectionTitle}>Последние действия</Text>
+          <View style={s.sectionBadge}>
+            <Text style={s.sectionBadgeText}>{activities.length}</Text>
+          </View>
+        </View>
+        {activities.map((item, i) => (
+          <View key={i} style={s.activityRow}>
+            <View style={s.activityIconWrap}>
+              <Feather name={item.icon as any} size={16} color={Colors.brandPrimary} />
+            </View>
+            <View style={s.activityContent}>
+              <Text style={s.activityAction}>{item.action}: <Text style={s.activityDetail}>{item.detail}</Text></Text>
+              <Text style={s.activityTime}>{item.time}</Text>
+            </View>
+            <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// STATE: LOADING
+// ---------------------------------------------------------------------------
+
+function LoadingDashboard() {
+  return (
+    <View style={s.container}>
+      <View style={s.pageHeader}>
+        <SkeletonBlock width="60%" height={22} />
+        <SkeletonBlock width="35%" height={14} />
+      </View>
+      <View style={s.statsGrid}>
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <View key={i} style={[s.statCard, { alignItems: 'center' }]}>
+            <SkeletonBlock width={36} height={36} radius={18} />
+            <SkeletonBlock width={56} height={12} />
+            <SkeletonBlock width={40} height={22} />
+          </View>
+        ))}
+      </View>
+      <SkeletonBlock width="100%" height={80} radius={BorderRadius.card} />
+      <SkeletonBlock width="100%" height={160} radius={BorderRadius.card} />
+      <SkeletonBlock width="100%" height={160} radius={BorderRadius.card} />
+      <View style={{ alignItems: 'center', paddingTop: Spacing.md }}>
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+        <Text style={s.loadingText}>Загрузка статистики...</Text>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main export
+// ---------------------------------------------------------------------------
+
+export function AdminDashboardStates() {
+  return (
+    <>
+      <StateSection title="DEFAULT">
+        <DefaultDashboard />
+      </StateSection>
+      <StateSection title="LOADING">
+        <LoadingDashboard />
+      </StateSection>
+    </>
   );
 }
 
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing.lg },
+
+  pageHeader: { gap: Spacing.xs },
   pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  pageSubtitle: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   statCard: {
     width: '48%', backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card,
@@ -109,12 +182,16 @@ const s = StyleSheet.create({
   statValue: { fontSize: 22, fontWeight: Typography.fontWeight.bold },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statTrend: { fontSize: Typography.fontSize.xs, color: Colors.statusSuccess },
+
   revenue: {
     backgroundColor: Colors.textPrimary, borderRadius: BorderRadius.card, padding: Spacing.lg, alignItems: 'center', gap: Spacing.xs,
     ...Shadows.md,
   },
   revenueLabel: { fontSize: Typography.fontSize.base, color: 'rgba(255,255,255,0.7)' },
   revenueValue: { fontSize: 28, fontWeight: Typography.fontWeight.bold, color: Colors.white },
+  revenueTrend: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: Spacing.xs },
+  revenueTrendText: { fontSize: Typography.fontSize.xs, color: 'rgba(255,255,255,0.6)' },
+
   chartCard: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
     borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm,
@@ -125,9 +202,20 @@ const s = StyleSheet.create({
   chartBar: { flex: 1, borderRadius: BorderRadius.sm },
   chartLabels: { flexDirection: 'row', gap: Spacing.sm },
   chartLabel: { flex: 1, fontSize: Typography.fontSize.xs, color: Colors.textMuted, textAlign: 'center' },
+
   recentSection: { gap: Spacing.md },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   sectionTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  activityRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+  sectionBadge: {
+    backgroundColor: Colors.brandPrimary, minWidth: 22, height: 22, borderRadius: 11,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
+  },
+  sectionBadgeText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.white },
+
+  activityRow: {
+    flexDirection: 'row', gap: Spacing.md, alignItems: 'center',
+    paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,
+  },
   activityIconWrap: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.brandPrimary + '15',
     alignItems: 'center', justifyContent: 'center',
@@ -136,4 +224,8 @@ const s = StyleSheet.create({
   activityAction: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   activityDetail: { fontWeight: Typography.fontWeight.regular, color: Colors.textSecondary },
   activityTime: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+
+  // Loading
+  skeleton: { backgroundColor: Colors.bgSurface, opacity: 0.7 },
+  loadingText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, marginTop: Spacing.sm },
 });
