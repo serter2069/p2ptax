@@ -1,106 +1,90 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   SafeAreaView,
-  TouchableOpacity,
-  Platform,
+  TextInput,
+  Pressable,
   Image,
-  Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
-import { Typography, BorderRadius, Colors, Spacing } from '../constants/Colors';
+import { Typography, BorderRadius, Spacing, Shadows } from '../constants/Colors';
 import { api } from '../lib/api';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
-import { useBreakpoints } from '../hooks/useBreakpoints';
-import { LandingHeader } from '../components/LandingHeader';
-import { Button } from '../components/Button';
-import { Footer } from '../components/Footer';
-import { QuickRequestForm } from '../components/QuickRequestForm';
 
-// ---- Skeleton Components ----
+const BRAND = {
+  primary: '#1B2E4A',
+  accent: '#0EA5E9',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  textDark: '#111827',
+  textGray: '#6B7280',
+  textLight: '#9CA3AF',
+  bgWhite: '#FFFFFF',
+  bgLight: '#F9FAFB',
+  bgCard: '#F3F4F6',
+  border: '#E5E7EB',
+};
 
-function SkeletonPulse({ children }: { children: React.ReactNode }) {
-  const opacity = useRef(new Animated.Value(0.15)).current;
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.35, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.15, duration: 800, useNativeDriver: true }),
-      ]),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [opacity]);
-  return <Animated.View style={{ opacity }}>{children}</Animated.View>;
-}
+const CITIES = [
+  'Москва', 'Санкт-Петербург', 'Казань', 'Екатеринбург', 'Новосибирск',
+  'Краснодар', 'Нижний Новгород', 'Самара', 'Ростов-на-Дону', 'Уфа',
+  'Челябинск', 'Воронеж', 'Пермь', 'Волгоград', 'Красноярск', 'Омск',
+];
 
-function SkeletonCard({ width, height }: { width: number | string; height: number }) {
-  return (
-    <SkeletonPulse>
-      <View style={{ width: width as any, height, backgroundColor: Colors.textMuted, borderRadius: 8 }} />
-    </SkeletonPulse>
-  );
-}
+const FNS_MAP: Record<string, string[]> = {
+  'Москва': ['ИФНС №7', 'ИФНС №10', 'ИФНС №18', 'ИФНС №24', 'ИФНС №46'],
+  'Санкт-Петербург': ['ИФНС №2', 'ИФНС №9', 'ИФНС №15', 'ИФНС №21'],
+  'Казань': ['ИФНС №4', 'ИФНС №6', 'ИФНС №14'],
+  'Екатеринбург': ['ИФНС №3', 'ИФНС №9', 'ИФНС №11'],
+  'Новосибирск': ['ИФНС №1', 'ИФНС №8', 'ИФНС №14'],
+  'Краснодар': ['ИФНС №2', 'ИФНС №5', 'ИФНС №10'],
+  'Нижний Новгород': ['ИФНС №1', 'ИФНС №5', 'ИФНС №13'],
+  'Самара': ['ИФНС №3', 'ИФНС №7'],
+  'Ростов-на-Дону': ['ИФНС №2', 'ИФНС №6', 'ИФНС №11'],
+  'Уфа': ['ИФНС №1', 'ИФНС №4'],
+  'Челябинск': ['ИФНС №3', 'ИФНС №8'],
+  'Воронеж': ['ИФНС №2', 'ИФНС №5'],
+  'Пермь': ['ИФНС №1', 'ИФНС №6'],
+  'Волгоград': ['ИФНС №3', 'ИФНС №7'],
+  'Красноярск': ['ИФНС №2', 'ИФНС №9'],
+  'Омск': ['ИФНС №1', 'ИФНС №4'],
+};
 
-function SkeletonChip() {
-  return (
-    <SkeletonPulse>
-      <View style={{ width: 80, height: 32, backgroundColor: Colors.textMuted, borderRadius: 16 }} />
-    </SkeletonPulse>
-  );
-}
-
-// ---- Main ----
+const SERVICE_OPTIONS = ['Камеральная проверка', 'Выездная проверка', 'Оперативный контроль', 'Не знаю'] as const;
 
 export default function LandingScreen() {
   const router = useRouter();
-  const { isMobile, isTablet, isDesktop } = useBreakpoints();
-  const [featuredSpecialists, setFeaturedSpecialists] = useState<any[]>([]);
-  const [recentRequests, setRecentRequests] = useState<any[]>([]);
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const [isLoadingSpecialists, setIsLoadingSpecialists] = useState(true);
-  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
-  const [landingStats, setLandingStats] = useState<{ specialistsCount: number; ifnsCount: number; requestsCount: number } | null>(null);
-  const [reviews, setReviews] = useState<Array<{
-    id: string;
-    rating: number;
-    comment: string | null;
-    clientName: string;
-    specialistName: string;
-    specialistNick?: string;
-  }>>([]);
-  const carouselRef = useRef<ScrollView>(null);
+  const [specialists, setSpecialists] = useState<any[]>([]);
+  const [specialistsLoading, setSpecialistsLoading] = useState(true);
+  const [specialistsError, setSpecialistsError] = useState(false);
+  const [stats, setStats] = useState<{ specialistsCount: number; ifnsCount: number; requestsCount: number } | null>(null);
+
+  const [formCity, setFormCity] = useState('');
+  const [formFns, setFormFns] = useState('');
+  const [formService, setFormService] = useState('');
+  const [formDescription, setFormDescription] = useState('');
 
   useEffect(() => {
-    // TODO: show error state to user
-    api.get<any[]>('/specialists/featured?limit=50').then(setFeaturedSpecialists).catch((err) => console.warn('Landing section failed (featured specialists):', err)).finally(() => setIsLoadingSpecialists(false));
-    // TODO: show error state to user
-    api.get<any[]>('/requests/recent?limit=5').then(setRecentRequests).catch((err) => console.warn('Landing section failed (recent requests):', err)).finally(() => setIsLoadingRequests(false));
-    // TODO: show error state to user
-    api.get<any[]>('/reviews/public?limit=6').then(setReviews).catch((err) => console.warn('Landing section failed (reviews):', err));
-    // TODO: show error state to user
-    api.get<{ specialistsCount: number; ifnsCount: number; requestsCount: number }>('/stats/landing').then(setLandingStats).catch((err) => console.warn('Landing section failed (stats):', err));
+    api.get<any[]>('/specialists/featured?limit=50')
+      .then(setSpecialists)
+      .catch(() => setSpecialistsError(true))
+      .finally(() => setSpecialistsLoading(false));
+    api.get<{ specialistsCount: number; ifnsCount: number; requestsCount: number }>('/stats/landing')
+      .then(setStats)
+      .catch(() => {});
   }, []);
 
-  const isWide = !isMobile;
-  const sectionMaxWidth: number | '100%' = isDesktop ? 1200 : isTablet ? 900 : '100%';
-  const sectionPadding = isMobile ? 20 : 40;
-
-  const innerStyle = {
-    maxWidth: sectionMaxWidth as any,
-    paddingHorizontal: sectionPadding,
-    width: '100%' as const,
-    alignSelf: 'center' as const,
-  };
+  const fnsOptions = formCity ? (FNS_MAP[formCity] || []) : [];
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={s.safe}>
       <Stack.Screen options={{ title: 'Налоговик — найдите налогового специалиста' }} />
       <Head>
         <title>Налоговик — найдите налогового специалиста</title>
@@ -109,1193 +93,868 @@ export default function LandingScreen() {
         <meta property="og:description" content="Подбираем специалиста по вашей ИФНС и конкретной ситуации. Выездная проверка, камеральная, вычеты, споры — только тот, кто знает именно ваш вопрос." />
         <meta property="og:url" content={APP_URL} />
       </Head>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ===== Navigation Header ===== */}
-        <LandingHeader />
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ===== SECTION 1: Hero ===== */}
-        <View style={styles.heroSection}>
-          <View
-            style={[
-              styles.heroContent,
-              innerStyle,
-              isWide && styles.heroContentWide,
-            ]}
-          >
-            <View style={[styles.heroLeft, isWide && styles.heroLeftWide]}>
-              <Text
-                style={[styles.heroTitle, isWide && styles.heroTitleWide]}
-                accessibilityRole="header"
-                aria-level={1}
-              >
-                {'Специалист, который знает\nименно вашу ИФНС'}
-              </Text>
-              <Text style={[styles.heroSubtitle, isWide && styles.heroSubtitleWide]}>
-                {'Не общие советы — а специалист, который работал с вашей инспекцией и знает её практику. Первая консультация бесплатно.'}
-              </Text>
-
-              <View style={[styles.heroCtas, isWide && styles.heroCtasWide]}>
-                <Button
-                  onPress={() => router.push('/specialists')}
-                  variant="primary"
-                  style={!isWide ? { width: '100%', minHeight: 52 } : { minWidth: 260, maxWidth: 320 }}
-                >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
-              </View>
-              <TouchableOpacity
-                onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-                activeOpacity={0.7}
-                style={{ marginTop: 8 }}
-              >
-                <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>
-                  {'\u042F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442 \u2014 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F'}
-                </Text>
-              </TouchableOpacity>
+        {/* ===== Header ===== */}
+        <View style={s.header}>
+          <View style={s.headerInner}>
+            <Pressable style={s.headerLogoRow} onPress={() => router.push('/')}>
+              <Feather name="briefcase" size={20} color={BRAND.accent} />
+              <Text style={s.headerLogoText}>Налоговик</Text>
+            </Pressable>
+            <View style={s.headerNav}>
+              <Pressable onPress={() => router.push('/specialists')}>
+                <Text style={s.headerNavLink}>Специалисты</Text>
+              </Pressable>
+              <Pressable onPress={() => router.push('/requests')}>
+                <Text style={s.headerNavLink}>Заявки</Text>
+              </Pressable>
+              <Text style={s.headerNavLink}>Тарифы</Text>
             </View>
+            <Pressable style={s.headerLoginBtn} onPress={() => router.push('/(auth)/email')}>
+              <Text style={s.headerLoginText}>Войти</Text>
+            </Pressable>
+          </View>
+        </View>
 
-            {isWide && (
-              <View style={[styles.heroRight, styles.heroRightWide]}>
-                <View style={styles.heroCardsContainer}>
-                  {[
-                    { icon: 'search-outline' as const, label: '200+ ИФНС' },
-                    { icon: 'people-outline' as const, label: 'Проверенные специалисты' },
-                    { icon: 'checkmark-done-outline' as const, label: 'Результат, не совет' },
-                  ].map((item) => (
-                    <View key={item.label} style={styles.heroCard}>
-                      <Ionicons name={item.icon} size={28} color={Colors.brandPrimary} />
-                      <Text style={styles.heroCardText}>{item.label}</Text>
-                    </View>
-                  ))}
-                </View>
+        {/* ===== Hero ===== */}
+        <View style={s.hero}>
+          <View style={s.heroInner}>
+            <Text style={s.heroTitle}>{'Найдите специалиста\nв вашей налоговой'}</Text>
+            <Text style={s.heroSubtitle}>
+              Консультанты, которые знают вашу инспекцию изнутри — камеральные и выездные проверки, оперативный контроль
+            </Text>
+            <View style={s.heroSearchRow}>
+              <View style={s.heroSearchInputWrap}>
+                <Feather name="map-pin" size={18} color={BRAND.textLight} style={{ marginLeft: 14 }} />
+                <TextInput
+                  style={s.heroSearchInput}
+                  placeholder="Введите город..."
+                  placeholderTextColor={BRAND.textLight}
+                />
               </View>
+              <Pressable style={s.heroSearchBtn} onPress={() => router.push('/specialists')}>
+                <Feather name="search" size={18} color={BRAND.bgWhite} />
+                <Text style={s.heroSearchBtnText}>Найти специалиста</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        {/* ===== How it works ===== */}
+        <View style={s.section}>
+          <View style={s.sectionInner}>
+            <Text style={s.sectionTitle}>Как это работает</Text>
+            <View style={s.stepsRow}>
+              {([
+                { icon: 'map-pin' as const, title: 'Укажите ваш ФНС', desc: 'Выберите город и налоговую инспекцию' },
+                { icon: 'file-text' as const, title: 'Опишите задачу', desc: 'Расскажите, с чем нужна помощь — камеральная проверка, выездная или оперативный контроль' },
+                { icon: 'message-circle' as const, title: 'Получите отклик', desc: 'Специалист, который работает в вашем ФНС, свяжется с вами' },
+              ]).map((step, i) => (
+                <View key={step.title} style={s.stepCard}>
+                  <View style={s.stepNumBadge}>
+                    <Text style={s.stepNumText}>{i + 1}</Text>
+                  </View>
+                  <View style={s.stepIconWrap}>
+                    <Feather name={step.icon} size={28} color={BRAND.accent} />
+                  </View>
+                  <Text style={s.stepTitle}>{step.title}</Text>
+                  <Text style={s.stepDesc}>{step.desc}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        {/* ===== Services ===== */}
+        <View style={[s.section, { backgroundColor: BRAND.bgLight }]}>
+          <View style={s.sectionInner}>
+            <Text style={s.sectionTitle}>Наши услуги</Text>
+            <View style={s.servicesGrid}>
+              {([
+                { icon: 'search' as const, title: 'Камеральная проверка', desc: 'Сопровождение проверки деклараций. Поможем подготовить документы и пройти проверку без штрафов.' },
+                { icon: 'shield' as const, title: 'Выездная проверка', desc: 'Защита интересов при выездной проверке ФНС. Подготовка, присутствие, обжалование результатов.' },
+                { icon: 'eye' as const, title: 'Отдел оперативного контроля', desc: 'Консультации по вопросам оперативного контроля. Проверка контрагентов, встречные проверки.' },
+              ]).map((svc) => (
+                <View key={svc.title} style={s.serviceCard}>
+                  <View style={s.serviceIconWrap}>
+                    <Feather name={svc.icon} size={24} color={BRAND.accent} />
+                  </View>
+                  <Text style={s.serviceTitle}>{svc.title}</Text>
+                  <Text style={s.serviceDesc}>{svc.desc}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        {/* ===== Featured Specialists ===== */}
+        <View style={s.section}>
+          <View style={s.sectionInner}>
+            <Text style={s.sectionTitle}>Специалисты на платформе</Text>
+
+            {specialistsError && (
+              <View style={s.errorBanner}>
+                <Feather name="alert-circle" size={18} color={BRAND.error} />
+                <Text style={s.errorBannerText}>Не удалось загрузить специалистов</Text>
+                <Pressable style={s.retryBtn} onPress={() => {
+                  setSpecialistsError(false);
+                  setSpecialistsLoading(true);
+                  api.get<any[]>('/specialists/featured?limit=50')
+                    .then(setSpecialists)
+                    .catch(() => setSpecialistsError(true))
+                    .finally(() => setSpecialistsLoading(false));
+                }}>
+                  <Text style={s.retryBtnText}>Повторить</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {!specialistsError && (
+              <View style={s.specialistsGrid}>
+                {(specialistsLoading
+                  ? [{ seed: 'sk1' }, { seed: 'sk2' }, { seed: 'sk3' }, { seed: 'sk4' }]
+                  : specialists
+                ).map((sp: any) => (
+                  <Pressable
+                    key={sp.seed || sp.nick || sp.id}
+                    style={[s.specialistCard, specialistsLoading && s.skeletonCard]}
+                    onPress={!specialistsLoading && sp.nick ? () => router.push(`/specialists/${sp.nick}` as any) : undefined}
+                  >
+                    {specialistsLoading ? (
+                      <>
+                        <View style={s.skeletonAvatar} />
+                        <View style={s.skeletonLine} />
+                        <View style={[s.skeletonLine, { width: '60%' }]} />
+                        <View style={[s.skeletonLine, { width: '80%' }]} />
+                      </>
+                    ) : (
+                      <>
+                        {sp.avatarUrl ? (
+                          <Image source={{ uri: sp.avatarUrl }} style={s.specialistAvatar} />
+                        ) : (
+                          <View style={[s.specialistAvatar, { backgroundColor: BRAND.bgCard, alignItems: 'center', justifyContent: 'center' }]}>
+                            <Text style={{ fontSize: 24, fontWeight: Typography.fontWeight.bold, color: BRAND.accent }}>
+                              {(sp.displayName || sp.nick || '?').charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={s.specialistName}>{sp.displayName || sp.nick || ''}</Text>
+                        <View style={s.specialistChipsRow}>
+                          {sp.cities && sp.cities[0] && (
+                            <View style={s.chipLocation}>
+                              <Feather name="map-pin" size={12} color={BRAND.accent} />
+                              <Text style={s.chipLocationText}>{sp.cities[0]}</Text>
+                            </View>
+                          )}
+                          {sp.fns && (
+                            <View style={s.chipFns}>
+                              <Text style={s.chipFnsText}>{sp.fns}</Text>
+                            </View>
+                          )}
+                        </View>
+                        {sp.services && sp.services.length > 0 && (
+                          <View style={s.specialistServicesRow}>
+                            {sp.services.map((svc: string) => (
+                              <View key={svc} style={s.chipService}>
+                                <Text style={s.chipServiceText}>{svc}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        {sp.createdAt && (
+                          <Text style={s.specialistSince}>
+                            На сайте с {new Date(sp.createdAt).getFullYear()} года
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {!specialistsError && !specialistsLoading && (
+              <Pressable style={s.allSpecialistsLink} onPress={() => router.push('/specialists')}>
+                <Text style={s.allSpecialistsText}>Все специалисты</Text>
+                <Feather name="arrow-right" size={16} color={BRAND.accent} />
+              </Pressable>
             )}
           </View>
         </View>
 
-        {/* ===== Stats Bar ===== */}
-        {landingStats && (
-          <View style={styles.statsSection}>
-            <View style={[styles.statsInner, innerStyle]}>
-              <View style={[isMobile ? styles.statsRowMobile : styles.statsRow]}>
-                {[
-                  { number: String(landingStats.specialistsCount), label: 'Специалистов' },
-                  { number: String(landingStats.ifnsCount), label: 'ИФНС в базе' },
-                  { number: String(landingStats.requestsCount), label: 'Решённых запросов' },
-                ].map((stat, idx, arr) => (
-                  <React.Fragment key={stat.label}>
-                    <View style={[styles.statItem, isMobile && styles.statItemMobile]}>
-                      <Text style={styles.statNumber}>{stat.number}</Text>
-                      <Text style={styles.statLabel}>{stat.label}</Text>
-                    </View>
-                    {!isMobile && idx < arr.length - 1 && <View style={styles.statDivider} />}
-                  </React.Fragment>
-                ))}
+        {/* ===== Quick Request Form ===== */}
+        <View style={[s.section, { backgroundColor: BRAND.bgLight }]}>
+          <View style={s.sectionInner}>
+            <Text style={s.sectionTitle}>Оставьте заявку прямо сейчас</Text>
+            <Text style={s.sectionSubtitle}>Бесплатно. Специалисты откликнутся в течение дня.</Text>
+
+            <View style={s.formCard}>
+              <Text style={s.formLabel}>Город</Text>
+              <View style={s.formInputWrap}>
+                <Feather name="map-pin" size={16} color={BRAND.textLight} style={{ marginLeft: 12 }} />
+                <TextInput
+                  style={s.formInput}
+                  placeholder="Начните вводить город..."
+                  placeholderTextColor={BRAND.textLight}
+                  value={formCity}
+                  onChangeText={(v) => { setFormCity(v); setFormFns(''); }}
+                />
               </View>
-            </View>
-          </View>
-        )}
 
-        {/* ===== Quick Request Form (prominent) ===== */}
-        <View style={styles.quickFormSection}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.quickFormHeading}>
-              {'Опишите вашу ситуацию — мы найдём специалиста'}
-            </Text>
-            <Text style={styles.quickFormSubheading}>
-              {'Бесплатно. Отклики за 1-2 часа.'}
-            </Text>
-            <View style={styles.quickFormCard}>
-              <QuickRequestForm />
-            </View>
-          </View>
-        </View>
+              {fnsOptions.length > 0 && (
+                <>
+                  <Text style={s.formLabel}>Отделение ФНС</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.formChipsScroll}>
+                    {fnsOptions.map((f) => (
+                      <Pressable
+                        key={f}
+                        style={[s.formChip, formFns === f && s.formChipActive]}
+                        onPress={() => setFormFns(f)}
+                      >
+                        <Text style={[s.formChipText, formFns === f && s.formChipTextActive]}>{f}</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </>
+              )}
 
-        {/* ===== SECTION 2b: Featured Specialists ===== */}
-        {isLoadingSpecialists && (
-          <View style={[styles.section, { backgroundColor: Colors.bgPrimary, paddingVertical: 40 }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, flexDirection: 'row' }}>
-                <SkeletonCard width={160} height={100} />
-                <SkeletonCard width={160} height={100} />
-                <SkeletonCard width={160} height={100} />
-              </ScrollView>
-            </View>
-          </View>
-        )}
-        {!isLoadingSpecialists && featuredSpecialists.length > 0 && (
-          <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B'}</Text>
-              <ScrollView
-                ref={carouselRef}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={dyn.specialistsRow}
-                onScroll={() => {}}
-                scrollEventThrottle={16}
-              >
-                {featuredSpecialists.map((s: any, idx: number) => {
-                  const displayName = s.displayName || s.nick || '';
-                  const initials = displayName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
-                  const headline = s.headline || (s.services && s.services.length > 0 ? s.services[0] : null);
-                  const city = s.cities && s.cities.length > 0 ? s.cities[0] : null;
-                  const memberYear = s.createdAt ? new Date(s.createdAt).getFullYear() : null;
-                  return (
-                    <TouchableOpacity
-                      key={`${s.nick}-${idx}`}
-                      style={dyn.specialistCard}
-                      activeOpacity={0.8}
-                      onPress={() => router.push(`/specialists/${s.nick}` as any)}
-                    >
-                      {/* Avatar */}
-                      <View style={dyn.avatarRow}>
-                        {s.avatarUrl ? (
-                          <Image source={{ uri: s.avatarUrl }} style={dyn.avatar} />
-                        ) : (
-                          <View style={dyn.avatarPlaceholder}>
-                            <Text style={dyn.avatarInitials}>{initials || '?'}</Text>
-                          </View>
-                        )}
-                      </View>
-                      {/* Name */}
-                      <Text style={dyn.specialistName} numberOfLines={2}>{displayName}</Text>
-                      {/* Headline / specialization */}
-                      {headline ? (
-                        <Text style={dyn.specialistHeadline} numberOfLines={2}>{headline}</Text>
-                      ) : null}
-                      {/* Pills row */}
-                      <View style={dyn.pillsRow}>
-                        {city ? (
-                          <View style={dyn.pill}>
-                            <Text style={dyn.pillText} numberOfLines={1}>{city}</Text>
-                          </View>
-                        ) : null}
-                        {memberYear ? (
-                          <View style={[dyn.pill, dyn.pillYear]}>
-                            <Text style={[dyn.pillText, dyn.pillTextYear]}>{`с ${memberYear}`}</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-              <TouchableOpacity onPress={() => router.push('/specialists')} activeOpacity={0.8} style={dyn.seeAllBtn}>
-                <Text style={dyn.seeAllText}>{'\u0421\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0432\u0441\u0435\u0445 \u2192'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        {!isLoadingSpecialists && featuredSpecialists.length === 0 && (
-          <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle}>{'Специалисты'}</Text>
-              <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, maxWidth: 400 }}>
-                {'Скоро здесь появятся проверенные специалисты по вашей ИФНС.'}
-              </Text>
-              <Button
-                onPress={() => router.push('/specialists')}
-                variant="primary"
-                style={{ marginTop: Spacing.sm }}
-              >{'Смотреть всех специалистов'}</Button>
-            </View>
-          </View>
-        )}
-
-        {/* ===== SECTION 2c: Recent Requests ===== */}
-        {isLoadingRequests && (
-          <View style={[styles.section, { backgroundColor: Colors.bgSecondary, paddingVertical: 40 }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <View style={{ width: '100%', gap: 12 }}>
-                <SkeletonCard width="100%" height={60} />
-                <SkeletonCard width="100%" height={60} />
-              </View>
-            </View>
-          </View>
-        )}
-        {!isLoadingRequests && recentRequests.length > 0 && (
-          <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
-              <View style={dyn.requestsList}>
-                {recentRequests.map((req: any) => (
-                  <TouchableOpacity
-                    key={req.id}
-                    style={dyn.requestItem}
-                    activeOpacity={0.8}
-                    onPress={() => router.push(`/requests/${req.id}` as any)}
+              <Text style={s.formLabel}>Услуга</Text>
+              <View style={s.serviceRadioGroup}>
+                {SERVICE_OPTIONS.map((svc) => (
+                  <Pressable
+                    key={svc}
+                    style={s.serviceRadioRow}
+                    onPress={() => setFormService(svc)}
                   >
-                    <View style={dyn.requestLeft}>
-                      <Text style={dyn.requestTitle} numberOfLines={2}>{req.title || req.description}</Text>
-                      {req.city ? <Text style={dyn.requestCity}>{req.city}</Text> : null}
+                    <View style={[s.radioOuter, formService === svc && s.radioOuterActive]}>
+                      {formService === svc && <View style={s.radioInner} />}
                     </View>
-                    {req.budget ? (
-                      <Text style={dyn.requestBudget}>{req.budget.toLocaleString('ru-RU')}{' \u20BD'}</Text>
-                    ) : null}
-                  </TouchableOpacity>
+                    <Text style={s.serviceRadioLabel}>{svc}</Text>
+                  </Pressable>
                 ))}
               </View>
-              <TouchableOpacity onPress={() => router.push('/requests')} activeOpacity={0.8} style={dyn.seeAllBtn}>
-                <Text style={dyn.seeAllText}>{'\u0421\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0432\u0441\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B \u2192'}</Text>
-              </TouchableOpacity>
+
+              <Text style={s.formLabel}>Описание</Text>
+              <TextInput
+                style={s.formTextArea}
+                multiline
+                numberOfLines={4}
+                placeholder="Опишите вашу ситуацию..."
+                placeholderTextColor={BRAND.textLight}
+                value={formDescription}
+                onChangeText={setFormDescription}
+              />
+
+              <Pressable style={s.formSubmitBtn}>
+                <Feather name="send" size={16} color={BRAND.bgWhite} />
+                <Text style={s.formSubmitText}>Отправить заявку</Text>
+              </Pressable>
             </View>
           </View>
-        )}
-        {!isLoadingRequests && recentRequests.length === 0 && (
-          <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B'}</Text>
-              <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, maxWidth: 400 }}>
-                {'\u0411\u0443\u0434\u044C\u0442\u0435 \u043F\u0435\u0440\u0432\u044B\u043C! \u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u043E\u0441 \u0438 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 \u043E\u0442\u043A\u043B\u0438\u043A\u0438 \u043E\u0442 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432.'}
-              </Text>
-              <Button
-                onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
-                variant="primary"
-                style={{ marginTop: Spacing.sm }}
-              >{'\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
-            </View>
-          </View>
-        )}
+        </View>
 
-        {/* Popular Cities section removed — replaced by IFNS search */}
-
-        {/* ===== SECTION 3: How it works ===== */}
-        <View nativeID="how-it-works" style={[styles.section, { backgroundColor: Colors.bgCard }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041A\u0430\u043A \u044D\u0442\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442'}</Text>
-
-            <View style={[styles.stepsRow, isWide && styles.stepsRowWide]}>
+        {/* ===== Stats ===== */}
+        <View style={s.section}>
+          <View style={s.sectionInner}>
+            <Text style={s.sectionTitle}>Налоговик в цифрах</Text>
+            <View style={s.statsRow}>
               {[
-                { num: '1', icon: 'create-outline' as const, title: 'Опишите ситуацию', desc: 'Расскажите что произошло: требование ФНС, проверка, штраф или нужна помощь с декларацией' },
-                { num: '2', icon: 'search-outline' as const, title: 'Подбираем по ИФНС', desc: 'Ищем специалистов, которые работали именно с вашей инспекцией и знают её практику' },
-                { num: '3', icon: 'checkmark-circle-outline' as const, title: 'Получите решение', desc: 'Специалист не просто сопровождает — он ведёт ваш вопрос до закрытия' },
-              ].map((step, idx, arr) => (
-                <React.Fragment key={step.num}>
-                  {idx > 0 && isWide && (
-                    <View style={{ justifyContent: 'center', paddingBottom: 24 }}>
-                      <Ionicons name="arrow-forward" size={24} color={Colors.border} />
-                    </View>
-                  )}
-                  <View style={[styles.stepItem, isWide && styles.stepItemWide]}>
-                    <View style={styles.stepNumberCircle}>
-                      <Ionicons name={step.icon} size={24} color={Colors.white} />
-                    </View>
-                    <View style={styles.stepTextBlock}>
-                      <Text style={[styles.stepTitle, !isWide && { textAlign: 'center' as const }]}>{step.title}</Text>
-                      <Text style={[styles.stepDesc, !isWide && { textAlign: 'center' as const }]}>{step.desc}</Text>
-                    </View>
-                  </View>
-                </React.Fragment>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* ===== SECTION 3b: Our Principle ===== */}
-        {/* backgroundColor '#1A3A6C' is a unique accent navy — no matching token in Colors.ts */}
-        <View style={[styles.section, { backgroundColor: '#1A3A6C', paddingVertical: 64 }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={[styles.sectionTitle, { color: Colors.white }]} accessibilityRole="header" aria-level={2}>
-              {'Специалист по вашей ИФНС — не по налогам вообще'}
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: 'rgba(255,255,255,0.80)', maxWidth: 620 }]}>
-              {'Мы не даём общих советов. Каждый специалист на платформе работает с конкретными инспекциями и решает конкретные вопросы: камеральная в ИФНС №46, выездная в МРИ №5, спор с вашей районной.'}
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push('/specialists')}
-              activeOpacity={0.85}
-              style={{
-                marginTop: 8,
-                backgroundColor: 'rgba(255,255,255,0.15)',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.4)',
-                borderRadius: 8,
-                paddingHorizontal: 28,
-                paddingVertical: 14,
-              }}
-            >
-              <Text style={{ color: Colors.white, fontSize: 16, fontWeight: '600' }}>
-                {'Найти специалиста под мою задачу →'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ===== SECTION 4: For whom ===== */}
-        <View style={[styles.section, { backgroundColor: Colors.bgCard }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0414\u043B\u044F \u043A\u043E\u0433\u043E'}</Text>
-
-            <View style={[styles.forWhomRow, isWide && styles.forWhomRowWide]}>
-              {/* Clients */}
-              <View style={[styles.forWhomCard, isWide && styles.forWhomCardWide]}>
-                <View style={styles.forWhomIconContainer}>
-                  <Ionicons name="person-outline" size={48} color={Colors.brandPrimary} />
-                </View>
-                <View style={styles.forWhomContent}>
-                  <Text style={styles.forWhomTitle}>{'\u0417\u0430\u043A\u0430\u0437\u0447\u0438\u043A\u0430\u043C'}</Text>
-                  <Text style={styles.forWhomSubtitle}>{'\u0424\u0438\u0437\u043B\u0438\u0446\u0430, \u0418\u041F \u0438 \u043A\u043E\u043C\u043F\u0430\u043D\u0438\u0438'}</Text>
-                  {[
-                    '\u0414\u0435\u043A\u043B\u0430\u0440\u0430\u0446\u0438\u0438 \u0438 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0435 \u0432\u044B\u0447\u0435\u0442\u044B',
-                    '\u0421\u043F\u043E\u0440\u044B \u0441 \u0424\u041D\u0421',
-                    '\u041E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044F \u043D\u0430\u043B\u043E\u0433\u043E\u0432',
-                    '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u0431\u0438\u0437\u043D\u0435\u0441\u0430',
-                  ].map((item) => (
-                    <View key={item} style={styles.forWhomItem}>
-                      <Text style={styles.forWhomBullet}>{'\u2022'}</Text>
-                      <Text style={styles.forWhomText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Specialists */}
-              <View style={[styles.forWhomCard, isWide && styles.forWhomCardWide]}>
-                <View style={styles.forWhomIconContainer}>
-                  <Ionicons name="briefcase-outline" size={48} color={Colors.brandPrimary} />
-                </View>
-                <View style={styles.forWhomContent}>
-                  <Text style={styles.forWhomTitle}>{'\u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430\u043C'}</Text>
-                  <Text style={styles.forWhomSubtitle}>{'\u042E\u0440\u0438\u0441\u0442\u044B \u0438 \u043D\u0430\u043B\u043E\u0433\u043E\u0432\u044B\u0435 \u043A\u043E\u043D\u0441\u0443\u043B\u044C\u0442\u0430\u043D\u0442\u044B'}</Text>
-                  {[
-                    '\u0421\u0442\u0430\u0431\u0438\u043B\u044C\u043D\u044B\u0439 \u043F\u043E\u0442\u043E\u043A \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432',
-                    '\u0420\u0430\u0431\u043E\u0442\u0430 \u0432 \u0441\u0432\u043E\u0451\u043C \u0433\u043E\u0440\u043E\u0434\u0435',
-                    '\u0413\u0438\u0431\u043A\u0438\u0439 \u0433\u0440\u0430\u0444\u0438\u043A',
-                    '\u041F\u0440\u043E\u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F',
-                  ].map((item) => (
-                    <View key={item} style={styles.forWhomItem}>
-                      <Text style={styles.forWhomBullet}>{'\u2022'}</Text>
-                      <Text style={styles.forWhomText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* ===== SECTION 6: Trust ===== */}
-        <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041A\u0430\u043A \u043C\u044B \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432'}</Text>
-
-            <View style={[styles.trustRow, isWide && styles.trustRowWide]}>
-              {[
-                { title: '\u0412\u0435\u0440\u0438\u0444\u0438\u043A\u0430\u0446\u0438\u044F \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u043E\u0432', desc: '\u041F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u043C \u0434\u0438\u043F\u043B\u043E\u043C\u044B \u0438 \u043B\u0438\u0446\u0435\u043D\u0437\u0438\u0438', icon: 'document-text-outline' as const },
-                { title: '\u0420\u0435\u0430\u043B\u044C\u043D\u044B\u0435 \u043E\u0442\u0437\u044B\u0432\u044B', desc: '\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043D\u043D\u044B\u0445 \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432', icon: 'star-outline' as const },
-                { title: '\u0411\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u0430\u044F \u043E\u043F\u043B\u0430\u0442\u0430', desc: '\u0421\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u043F\u0435\u0440\u0435\u0432\u043E\u0434\u044F\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F \u0440\u0430\u0431\u043E\u0442\u044B', icon: 'shield-checkmark-outline' as const },
-              ].map((item) => (
-                <View key={item.title} style={[styles.trustItem, isWide && styles.trustItemWide]}>
-                  <Ionicons name={item.icon} size={36} color={Colors.brandPrimary} />
-                  <Text style={styles.trustTitle}>{item.title}</Text>
-                  <Text style={styles.trustDesc}>{item.desc}</Text>
+                { value: stats ? `${stats.specialistsCount}+` : '...', label: 'специалистов' },
+                { value: stats ? String(stats.ifnsCount) : '...', label: 'городов' },
+                { value: stats ? `${stats.requestsCount}+` : '...', label: 'заявок' },
+              ].map((stat) => (
+                <View key={stat.label} style={s.statItem}>
+                  <Text style={s.statValue}>{stat.value}</Text>
+                  <Text style={s.statLabel}>{stat.label}</Text>
                 </View>
               ))}
             </View>
           </View>
         </View>
 
-        {/* ===== SECTION 7: Reviews ===== */}
-        {reviews.length > 0 && (
-          <View style={[styles.section, { backgroundColor: Colors.bgSecondary }]}>
-            <View style={[styles.sectionInner, innerStyle]}>
-              <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u041e\u0442\u0437\u044b\u0432\u044b \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432'}</Text>
-              <Text style={styles.sectionSubtitle}>{'\u0420\u0435\u0430\u043b\u044c\u043d\u044b\u0435 \u043e\u0442\u0437\u044b\u0432\u044b \u043e\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u044b\u0445 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432'}</Text>
-
-              <View style={[
-                styles.reviewsRow,
-                isWide && styles.reviewsRowDesktop,
-                isTablet && !isWide && styles.reviewsRowTablet,
-              ]}>
-                {reviews.map((review) => (
-                  <View
-                    key={review.id}
-                    style={[
-                      styles.reviewCard,
-                      isTablet && !isWide && styles.reviewCardTablet,
-                    ]}
-                  >
-                    <Text style={styles.reviewQuote}>{'\u201c'}</Text>
-                    <Text style={styles.reviewText}>{review.comment}</Text>
-                    <Text style={styles.reviewStars}>
-                      {'\u2605'.repeat(review.rating)}{'\u2606'.repeat(5 - review.rating)}
-                    </Text>
-                    <Text style={styles.reviewName}>{review.clientName}</Text>
-                    <Text style={styles.reviewCity}>{'\u0421\u043f\u0435\u0446\u0438\u0430\u043b\u0438\u0441\u0442: '}{review.specialistName}</Text>
-                  </View>
-                ))}
+        {/* ===== Footer ===== */}
+        <View style={s.footer}>
+          <View style={s.footerInner}>
+            <View style={s.footerTop}>
+              <View style={s.footerLogoRow}>
+                <Feather name="briefcase" size={18} color={BRAND.accent} />
+                <Text style={s.footerLogo}>Налоговик</Text>
+              </View>
+              <View style={s.footerLinksRow}>
+                <Pressable onPress={() => router.push('/specialists')}>
+                  <Text style={s.footerLink}>Специалисты</Text>
+                </Pressable>
+                <Pressable onPress={() => router.push('/requests')}>
+                  <Text style={s.footerLink}>Заявки</Text>
+                </Pressable>
+                <Text style={s.footerLink}>Условия использования</Text>
               </View>
             </View>
-          </View>
-        )}
-
-        {/* ===== SECTION 8: FAQ ===== */}
-        <View style={[styles.section, { backgroundColor: Colors.bgPrimary }]}>
-          <View style={[styles.sectionInner, innerStyle]}>
-            <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={2}>{'\u0427\u0430\u0441\u0442\u043E \u0437\u0430\u0434\u0430\u0432\u0430\u0435\u043C\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B'}</Text>
-
-            <View style={styles.faqList}>
-              {[
-                {
-                  q: '\u0421\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0442\u043E\u0438\u0442 \u0440\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441?',
-                  a: '\u0420\u0430\u0437\u043C\u0435\u0449\u0435\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u0430 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E. \u0412\u044B \u043F\u043B\u0430\u0442\u0438\u0442\u0435 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u043C\u0443 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0443.',
-                },
-                {
-                  q: '\u041A\u0430\u043A \u0431\u044B\u0441\u0442\u0440\u043E \u043F\u0440\u0438\u0434\u0443\u0442 \u043E\u0442\u043A\u043B\u0438\u043A\u0438?',
-                  a: '\u041F\u0435\u0440\u0432\u044B\u0435 \u043E\u0442\u043A\u043B\u0438\u043A\u0438 \u043E\u0431\u044B\u0447\u043D\u043E \u043F\u043E\u0441\u0442\u0443\u043F\u0430\u044E\u0442 \u0432 \u0442\u0435\u0447\u0435\u043D\u0438\u0435 1\u20132 \u0447\u0430\u0441\u043E\u0432 \u043F\u043E\u0441\u043B\u0435 \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0438.',
-                },
-                {
-                  q: '\u041A\u0430\u043A \u0437\u0430\u0449\u0438\u0449\u0435\u043D\u044B \u043C\u043E\u0438 \u0434\u0435\u043D\u044C\u0433\u0438?',
-                  a: '\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u0437\u0435\u0440\u0432\u0438\u0440\u0443\u0435\u0442\u0441\u044F \u043D\u0430 \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0435 \u0438 \u043F\u0435\u0440\u0435\u0432\u043E\u0434\u0438\u0442\u0441\u044F \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0443 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E\u0441\u043B\u0435 \u0442\u043E\u0433\u043E, \u043A\u0430\u043A \u0432\u044B \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u0435 \u0440\u0430\u0431\u043E\u0442\u044B.',
-                },
-                {
-                  q: '\u0427\u0442\u043E \u0435\u0441\u043B\u0438 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442 \u043C\u0435\u043D\u044F \u043D\u0435 \u0443\u0441\u0442\u0440\u043E\u0438\u0442?',
-                  a: '\u0412\u044B \u043C\u043E\u0436\u0435\u0442\u0435 \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0441\u043F\u043E\u0440. \u041D\u0430\u0448\u0430 \u0441\u043B\u0443\u0436\u0431\u0430 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0438 \u0440\u0430\u0441\u0441\u043C\u043E\u0442\u0440\u0438\u0442 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u044E \u0438 \u043F\u043E\u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0439\u0442\u0438 \u0440\u0435\u0448\u0435\u043D\u0438\u0435.',
-                },
-              ].map((item, index) => (
-                <View key={item.q} style={[styles.faqItem, index < 3 && styles.faqItemBorder]}>
-                  <TouchableOpacity
-                    style={styles.faqQuestionRow}
-                    activeOpacity={0.7}
-                    onPress={() => setExpandedFaq(expandedFaq === index ? null : index)}
-                  >
-                    <Text style={styles.faqQ}>{item.q}</Text>
-                    <Text style={styles.faqChevron}>{expandedFaq === index ? '\u25B2' : '\u25BC'}</Text>
-                  </TouchableOpacity>
-                  {expandedFaq === index && (
-                    <Text style={styles.faqA}>{item.a}</Text>
-                  )}
-                </View>
-              ))}
-            </View>
+            <View style={s.footerDivider} />
+            <Text style={s.footerCopy}>{`${new Date().getFullYear()} Налоговик. Все права защищены.`}</Text>
           </View>
         </View>
 
-        {/* ===== SECTION 9: Final CTA ===== */}
-        <View style={styles.ctaSection}>
-          <View style={[styles.ctaContent, innerStyle]}>
-            <Text style={styles.ctaTitle}>{'\u041D\u0430\u0447\u043D\u0438\u0442\u0435 \u043F\u0440\u044F\u043C\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u2014 \u044D\u0442\u043E \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E'}</Text>
-            <Text style={styles.ctaSubtitle}>
-              {'Специалисты по всей России готовы довести ваш вопрос до результата'}
-            </Text>
-            <View style={[styles.ctaButtons, isWide && styles.ctaButtonsWide]}>
-              <Button
-                onPress={() => router.push('/specialists')}
-                variant="white"
-                style={{ minWidth: 200 }}
-              >{'\u041D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430'}</Button>
-              <Button
-                onPress={() => router.push('/(auth)/email?redirectTo=%2F(dashboard)%2Fmy-requests%2Fnew')}
-                variant="outline-white"
-                style={{ minWidth: 200 }}
-              >{'\u0420\u0430\u0437\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441'}</Button>
-              <Button
-                onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-                variant="outline-white"
-                style={{ minWidth: 200 }}
-              >{'\u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F \u043A\u0430\u043A \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442'}</Button>
-            </View>
-          </View>
-        </View>
-
-        {/* ===== SECTION 10: Footer ===== */}
-        <Footer isWide={isWide} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ---- Styles ----
-
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.bgPrimary,
+    backgroundColor: BRAND.bgWhite,
   },
   scroll: {
     flexGrow: 1,
   },
 
-  // ---- Hero ----
-  heroSection: {
-    width: '100%',
-    paddingVertical: 80,
-    alignItems: 'center',
-    backgroundColor: Colors.bgPrimary,
+  header: {
+    backgroundColor: BRAND.bgWhite,
+    borderBottomWidth: 1,
+    borderBottomColor: BRAND.border,
   },
-  heroContent: {
+  headerInner: {
+    maxWidth: 960,
     width: '100%',
-    gap: 40,
-  },
-  heroContentWide: {
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
   },
-  heroLeft: {
-    flex: 1,
-    gap: 20,
+  headerLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
-  heroLeftWide: {
-    flex: 1,
-    paddingRight: 40,
+  headerLogoText: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: BRAND.primary,
   },
-  heroRight: {
+  headerNav: {
+    flexDirection: 'row',
+    gap: Spacing.xl,
+  },
+  headerNavLink: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textGray,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  headerLoginBtn: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.btn,
+    borderWidth: 1,
+    borderColor: BRAND.accent,
+  },
+  headerLoginText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.accent,
+  },
+
+  hero: {
+    backgroundColor: BRAND.primary,
+    paddingVertical: Spacing['4xl'],
+  },
+  heroInner: {
+    maxWidth: 960,
     width: '100%',
-    marginTop: 32,
-  },
-  heroRightWide: {
-    flex: 1,
-    marginTop: 0,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.lg,
   },
   heroTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    lineHeight: 42,
-    letterSpacing: -0.5,
-  },
-  heroTitleWide: {
-    fontSize: 44,
-    lineHeight: 56,
-    letterSpacing: -0.8,
-  },
-  heroSubtitle: {
-    fontSize: 17,
-    color: Colors.textSecondary,
-    lineHeight: 26,
-    maxWidth: 520,
-  },
-  heroSubtitleWide: {
-    fontSize: Typography.fontSize.lg,
-    lineHeight: 28,
-  },
-  heroCtas: {
-    width: '100%',
-    gap: 12,
-    marginTop: 8,
-  },
-  heroCtasWide: {
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    alignItems: 'center',
-    gap: 12,
-  },
-  heroImage: {
-    width: '100%',
-    height: 280,
-    borderRadius: BorderRadius.lg,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 8px 30px rgba(15, 36, 71, 0.12)' }
-      : {
-          shadowColor: Colors.textPrimary,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.12,
-          shadowRadius: 30,
-          elevation: 8,
-        }),
-  },
-  heroImageWide: {
-    height: 400,
-  },
-  heroImageFallback: {
-    backgroundColor: Colors.brandPrimary,
-    ...(Platform.OS === 'web'
-      ? { background: `linear-gradient(135deg, ${Colors.brandPrimary} 0%, ${Colors.brandPrimaryHover} 100%)` } as any
-      : {}),
-  },
-  heroCardsContainer: {
-    gap: 16,
-    padding: 24,
-    borderRadius: BorderRadius.lg,
-    ...(Platform.OS === 'web'
-      ? { background: `linear-gradient(135deg, ${Colors.brandPrimary} 0%, ${Colors.brandPrimaryHover} 100%)` } as any
-      : { backgroundColor: Colors.brandPrimary }),
-  },
-  heroCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    padding: 16,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 2px 8px rgba(15, 36, 71, 0.10)' }
-      : {
-          shadowColor: Colors.textPrimary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 3,
-        }),
-  },
-  heroCardText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-
-  // ---- Stats Bar ----
-  statsSection: {
-    width: '100%',
-    backgroundColor: Colors.bgSecondary,
-    paddingVertical: 32,
-    alignItems: 'center',
-  },
-  statsInner: {
-    width: '100%',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statsRowMobile: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  statItem: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 8,
-  },
-  statItemMobile: {
-    width: '50%',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Colors.border,
-  },
-
-  // ---- Quick Form Section ----
-  quickFormSection: {
-    width: '100%',
-    paddingVertical: 56,
-    alignItems: 'center',
-    ...(Platform.OS === 'web'
-      ? { background: `linear-gradient(135deg, ${Colors.brandPrimary} 0%, ${Colors.brandPrimaryHover} 100%)` } as any
-      : { backgroundColor: Colors.brandPrimary }),
-  },
-  quickFormHeading: {
-    fontSize: 28,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-    marginBottom: 8,
-  },
-  quickFormSubheading: {
-    fontSize: Typography.fontSize.md,
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  quickFormCard: {
-    width: '100%',
-    maxWidth: 430,
-    borderRadius: 16,
-    backgroundColor: Colors.bgCard,
-    padding: 0,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)' }
-      : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.15,
-          shadowRadius: 30,
-          elevation: 10,
-        }),
-  },
-
-  // ---- Sections ----
-  section: {
-    width: '100%',
-    paddingVertical: 80,
-    alignItems: 'center',
-  },
-  sectionInner: {
-    width: '100%',
-    alignItems: 'center',
-    gap: 16,
-  },
-  sectionTitle: {
-    fontSize: 32,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  sectionSubtitle: {
-    fontSize: Typography.fontSize.md,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 550,
-    marginBottom: 24,
-  },
-
-  // ---- Steps ----
-  stepsRow: {
-    width: '100%',
-    gap: 32,
-    marginTop: 24,
-  },
-  stepsRowWide: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-  },
-  stepItem: {
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  stepItemWide: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  stepNumberCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNumberText: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  stepTextBlock: {
-    gap: 4,
-  },
-  stepTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  stepDesc: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-
-  // ---- For whom ----
-  forWhomRow: {
-    width: '100%',
-    gap: 24,
-    marginTop: 8,
-  },
-  forWhomRowWide: {
-    flexDirection: 'row',
-  },
-  forWhomCard: {
-    flex: 1,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    backgroundColor: Colors.bgPrimary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 2px 12px rgba(15, 36, 71, 0.06)' }
-      : {
-          shadowColor: Colors.textPrimary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          elevation: 3,
-        }),
-  },
-  forWhomCardWide: {},
-  forWhomIconContainer: {
-    alignItems: 'center',
-    paddingTop: 24,
-    paddingBottom: 8,
-  },
-  forWhomContent: {
-    padding: 24,
-    gap: 10,
-  },
-  forWhomTitle: {
-    fontSize: Typography.fontSize.title,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  forWhomSubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-    marginBottom: 4,
-  },
-  forWhomItem: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  forWhomBullet: {
-    fontSize: Typography.fontSize.md,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.bold,
-    marginTop: 1,
-  },
-  forWhomText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    flex: 1,
-  },
-
-  // ---- Trust ----
-  trustRow: {
-    width: '100%',
-    gap: 24,
-    marginTop: 8,
-  },
-  trustRowWide: {
-    flexDirection: 'row',
-  },
-  trustItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 8,
-    padding: 24,
-  },
-  trustItemWide: {},
-  trustCheck: {
-    fontSize: 28,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.bold,
-    marginBottom: 4,
-  },
-  trustTitle: {
-    fontSize: 17,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  trustDesc: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-
-  // ---- Reviews ----
-  reviewsRow: {
-    width: '100%',
-    gap: 20,
-    marginTop: 8,
-  },
-  reviewsRowDesktop: {
-    flexDirection: 'row',
-  },
-  reviewsRowTablet: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  reviewCard: {
-    flex: 1,
-    minWidth: 280,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    padding: 24,
-    gap: 8,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 2px 12px rgba(15, 36, 71, 0.06)' }
-      : {
-          shadowColor: Colors.textPrimary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          elevation: 3,
-        }),
-  },
-  reviewCardTablet: {
-    width: '48%',
-    flex: undefined as any,
-  },
-  reviewQuote: {
-    fontSize: Typography.fontSize.jumbo,
-    color: Colors.border,
-    lineHeight: 48,
-    fontWeight: Typography.fontWeight.bold,
-  },
-  reviewText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    lineHeight: 23,
-  },
-  reviewStars: {
-    fontSize: Typography.fontSize.md,
-    color: Colors.brandPrimary,
-    letterSpacing: 2,
-    marginTop: 4,
-  },
-  reviewName: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginTop: 4,
-  },
-  reviewCity: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-
-  // ---- FAQ ----
-  faqList: {
-    width: '100%',
-    maxWidth: 700,
-    marginTop: 8,
-  },
-  faqItem: {
-    paddingVertical: 20,
-    gap: 8,
-  },
-  faqItemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  faqQuestionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}),
-  },
-  faqQ: {
-    fontSize: 17,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  faqChevron: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    marginLeft: 12,
-  },
-  faqA: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 23,
-  },
-
-  // ---- CTA Section ----
-  ctaSection: {
-    width: '100%',
-    paddingVertical: 80,
-    alignItems: 'center',
-    backgroundColor: Colors.textPrimary,
-  },
-  ctaContent: {
-    width: '100%',
-    alignItems: 'center',
-    gap: 20,
-  },
-  ctaTitle: {
     fontSize: Typography.fontSize.display,
     fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
+    color: BRAND.bgWhite,
     textAlign: 'center',
-    letterSpacing: -0.3,
+    lineHeight: 44,
   },
-  ctaSubtitle: {
-    fontSize: 17,
+  heroSubtitle: {
+    fontSize: Typography.fontSize.md,
     color: 'rgba(255,255,255,0.75)',
     textAlign: 'center',
-    lineHeight: 26,
-    maxWidth: 500,
+    lineHeight: 24,
+    maxWidth: 600,
   },
-  ctaButtons: {
-    gap: 12,
-    marginTop: 8,
+  heroSearchRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+    width: '100%',
+    maxWidth: 560,
+  },
+  heroSearchInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.btn,
+    overflow: 'hidden',
   },
-  ctaButtonsWide: {
+  heroSearchInput: {
+    flex: 1,
+    height: 52,
+    paddingHorizontal: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: BRAND.textDark,
+    // @ts-ignore web-only
+    outlineStyle: 'none' as any,
+  },
+  heroSearchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 52,
+    backgroundColor: BRAND.accent,
+    borderRadius: BorderRadius.btn,
+    paddingHorizontal: Spacing.xl,
+  },
+  heroSearchBtnText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.bgWhite,
+  },
+
+  section: {
+    paddingVertical: Spacing['4xl'],
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: BRAND.bgWhite,
+  },
+  sectionInner: {
+    maxWidth: 960,
+    width: '100%',
+    alignSelf: 'center',
+    gap: Spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: BRAND.textDark,
+    textAlign: 'center',
+  },
+  sectionSubtitle: {
+    fontSize: Typography.fontSize.base,
+    color: BRAND.textGray,
+    textAlign: 'center',
+    marginTop: -Spacing.md,
+  },
+
+  stepsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: Spacing.xl,
     justifyContent: 'center',
   },
-
-});
-
-// ---- Dynamic section styles ----
-
-const dyn = StyleSheet.create({
-  specialistsRow: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    gap: 16,
-    flexDirection: 'row',
-  },
-  specialistCard: {
-    width: 184,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
+  stepCard: {
+    flex: 1,
+    minWidth: 240,
+    maxWidth: 300,
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    gap: 8,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 2px 10px rgba(15, 36, 71, 0.07)' }
-      : {
-          shadowColor: Colors.textPrimary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.07,
-          shadowRadius: 10,
-          elevation: 3,
-        }),
+    borderColor: BRAND.border,
+    alignItems: 'center',
+    gap: Spacing.md,
+    ...Shadows.sm,
   },
-  avatarRow: {
-    alignItems: 'flex-start',
-    marginBottom: 2,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-  avatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.brandPrimary,
+  stepNumBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: BRAND.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitials: {
-    fontSize: 18,
+  stepNumText: {
+    fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
+    color: BRAND.bgWhite,
+  },
+  stepIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepTitle: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.textDark,
+    textAlign: 'center',
+  },
+  stepDesc: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textGray,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.lg,
+    justifyContent: 'center',
+  },
+  serviceCard: {
+    flex: 1,
+    minWidth: 260,
+    maxWidth: 320,
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    gap: Spacing.md,
+    ...Shadows.sm,
+  },
+  serviceIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serviceTitle: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.textDark,
+  },
+  serviceDesc: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textGray,
+    lineHeight: 20,
+  },
+
+  specialistsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.lg,
+    justifyContent: 'center',
+  },
+  specialistCard: {
+    width: 210,
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    ...Shadows.sm,
+  },
+  specialistAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    marginBottom: Spacing.xs,
   },
   specialistName: {
     fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    lineHeight: 20,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.textDark,
+    textAlign: 'center',
   },
-  specialistHeadline: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  pillsRow: {
+  specialistChipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 2,
+    gap: 6,
+    justifyContent: 'center',
   },
-  pill: {
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    alignSelf: 'flex-start',
-  },
-  pillYear: {
-    backgroundColor: 'rgba(14, 105, 209, 0.08)',
-  },
-  pillText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  pillTextYear: {
-    color: Colors.brandPrimary,
-  },
-  specialistCity: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  specialistChip: {
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-  },
-  specialistChipText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-  },
-  requestsList: {
-    width: '100%',
-    gap: 0,
-  },
-  requestItem: {
+  chipLocation: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: 12,
-  },
-  requestLeft: {
-    flex: 1,
     gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    backgroundColor: '#EFF6FF',
   },
-  requestTitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
+  chipLocationText: {
+    fontSize: Typography.fontSize.xs,
+    color: BRAND.accent,
     fontWeight: Typography.fontWeight.medium,
   },
-  requestCity: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
+  chipFns: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    backgroundColor: BRAND.bgCard,
   },
-  requestBudget: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.brandPrimary,
-    flexShrink: 0,
+  chipFnsText: {
+    fontSize: Typography.fontSize.xs,
+    color: BRAND.textGray,
+    fontWeight: Typography.fontWeight.medium,
   },
-  citiesRow: {
+  specialistServicesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 4,
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 2,
   },
-  cityChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+  chipService: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgPrimary,
-    minHeight: 44,
-    justifyContent: 'center',
+    borderColor: BRAND.border,
   },
-  cityChipText: {
+  chipServiceText: {
+    fontSize: 10,
+    color: BRAND.textGray,
+  },
+  specialistSince: {
+    fontSize: Typography.fontSize.xs,
+    color: BRAND.textLight,
+    marginTop: 4,
+  },
+  allSpecialistsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  allSpecialistsText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.accent,
+  },
+
+  skeletonCard: {
+    opacity: 0.6,
+  },
+  skeletonAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: BRAND.bgCard,
+    marginBottom: Spacing.xs,
+  },
+  skeletonLine: {
+    width: '80%',
+    height: 14,
+    borderRadius: 4,
+    backgroundColor: BRAND.bgCard,
+    marginVertical: 4,
+  },
+
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: '#FEF2F2',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  errorBannerText: {
+    flex: 1,
     fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
+    color: BRAND.error,
+  },
+  retryBtn: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.btn,
+    backgroundColor: BRAND.error,
+  },
+  retryBtnText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.bgWhite,
+  },
+
+  formCard: {
+    backgroundColor: BRAND.bgWhite,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    gap: Spacing.lg,
+    maxWidth: 600,
+    alignSelf: 'center',
+    width: '100%',
+    ...Shadows.sm,
+  },
+  formLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.textDark,
+  },
+  formInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    borderRadius: BorderRadius.input,
+    backgroundColor: BRAND.bgWhite,
+    overflow: 'hidden',
+  },
+  formInput: {
+    flex: 1,
+    height: 44,
+    paddingHorizontal: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: BRAND.textDark,
+    // @ts-ignore web-only
+    outlineStyle: 'none' as any,
+  },
+  formChipsScroll: {
+    gap: Spacing.sm,
+    paddingVertical: 2,
+  },
+  formChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    backgroundColor: BRAND.bgWhite,
+  },
+  formChipActive: {
+    backgroundColor: BRAND.accent,
+    borderColor: BRAND.accent,
+  },
+  formChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textDark,
+  },
+  formChipTextActive: {
+    color: BRAND.bgWhite,
     fontWeight: Typography.fontWeight.medium,
   },
-  seeAllBtn: {
-    marginTop: 8,
-    alignSelf: 'center',
+  serviceRadioGroup: {
+    gap: Spacing.sm,
   },
-  seeAllText: {
+  serviceRadioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: 4,
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: BRAND.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOuterActive: {
+    borderColor: BRAND.accent,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: BRAND.accent,
+  },
+  serviceRadioLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textDark,
+  },
+  formTextArea: {
+    minHeight: 88,
+    borderWidth: 1,
+    borderColor: BRAND.border,
+    borderRadius: BorderRadius.input,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
     fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
+    color: BRAND.textDark,
+    backgroundColor: BRAND.bgWhite,
+    textAlignVertical: 'top',
+    // @ts-ignore web-only
+    outlineStyle: 'none' as any,
+  },
+  formSubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 48,
+    backgroundColor: BRAND.accent,
+    borderRadius: BorderRadius.btn,
+  },
+  formSubmitText: {
+    fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
+    color: BRAND.bgWhite,
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing['3xl'],
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: Typography.fontSize['3xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: BRAND.primary,
+  },
+  statLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: BRAND.textGray,
+  },
+
+  footer: {
+    backgroundColor: BRAND.primary,
+    paddingVertical: Spacing['3xl'],
+    paddingHorizontal: Spacing.xl,
+  },
+  footerInner: {
+    maxWidth: 960,
+    width: '100%',
+    alignSelf: 'center',
+    gap: Spacing.lg,
+  },
+  footerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  footerLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  footerLogo: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.bold,
+    color: BRAND.bgWhite,
+  },
+  footerLinksRow: {
+    flexDirection: 'row',
+    gap: Spacing.xl,
+  },
+  footerLink: {
+    fontSize: Typography.fontSize.sm,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  footerDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  footerCopy: {
+    fontSize: Typography.fontSize.xs,
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'center',
   },
 });
-// dev-sync test Thu Apr  9 08:47:11 PDT 2026
