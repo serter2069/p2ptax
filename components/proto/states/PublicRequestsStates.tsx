@@ -2,25 +2,38 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_REQUESTS, MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
 
 function RequestFeedCard({ title, description, city, service, budget, date }: {
   title: string; description: string; city: string; service: string; budget: string; date: string;
 }) {
   return (
-    <View style={s.card}>
+    <Pressable style={s.card}>
       <Text style={s.cardTitle}>{title}</Text>
       <Text style={s.cardDesc} numberOfLines={2}>{description}</Text>
       <View style={s.cardTags}>
-        <View style={s.tag}><Text style={s.tagText}>{city}</Text></View>
-        <View style={s.tag}><Text style={s.tagText}>{service}</Text></View>
+        <View style={s.tag}>
+          <Feather name="map-pin" size={11} color={Colors.brandPrimary} />
+          <Text style={s.tagText}>{city}</Text>
+        </View>
+        <View style={s.tag}>
+          <Feather name="briefcase" size={11} color={Colors.brandPrimary} />
+          <Text style={s.tagText}>{service}</Text>
+        </View>
       </View>
       <View style={s.cardBottom}>
-        <Text style={s.budget}>{budget}</Text>
-        <Text style={s.date}>{date}</Text>
+        <View style={s.budgetRow}>
+          <Feather name="dollar-sign" size={14} color={Colors.brandPrimary} />
+          <Text style={s.budget}>{budget}</Text>
+        </View>
+        <View style={s.dateRow}>
+          <Feather name="calendar" size={12} color={Colors.textMuted} />
+          <Text style={s.date}>{date}</Text>
+        </View>
+        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -44,6 +57,7 @@ function InteractiveRequests() {
       <View style={s.topBar}>
         <Text style={s.pageTitle}>Заявки</Text>
         <Pressable onPress={() => setShowFilters(!showFilters)} style={s.filterToggle}>
+          <Feather name="sliders" size={16} color={Colors.brandPrimary} />
           <Text style={s.filterToggleText}>{showFilters ? 'Скрыть' : 'Фильтры'}</Text>
         </Pressable>
       </View>
@@ -55,6 +69,7 @@ function InteractiveRequests() {
             <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowServicePicker(false); }}>
               <View style={s.filterSelect}>
                 <Text style={s.filterSelectText}>{filterCity || 'Все города'}</Text>
+                <Feather name="chevron-down" size={14} color={Colors.textMuted} />
               </View>
             </Pressable>
             {showCityPicker && (
@@ -75,6 +90,7 @@ function InteractiveRequests() {
             <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); }}>
               <View style={s.filterSelect}>
                 <Text style={s.filterSelectText}>{filterService || 'Все услуги'}</Text>
+                <Feather name="chevron-down" size={14} color={Colors.textMuted} />
               </View>
             </Pressable>
             {showServicePicker && (
@@ -90,24 +106,15 @@ function InteractiveRequests() {
               </View>
             )}
           </View>
-          <View style={s.filterGroup}>
-            <Text style={s.filterLabel}>Бюджет до</Text>
-            <TextInput
-              value={filterBudget}
-              onChangeText={setFilterBudget}
-              placeholder="Макс. сумма"
-              placeholderTextColor={Colors.textMuted}
-              keyboardType="number-pad"
-              style={s.filterInput}
-            />
-          </View>
           <Pressable onPress={() => { setFilterCity(''); setFilterService(''); setFilterBudget(''); }} style={s.filterResetBtn}>
+            <Feather name="x" size={14} color={Colors.textMuted} />
             <Text style={s.filterResetText}>Сбросить фильтры</Text>
           </Pressable>
         </View>
       )}
       {requests.length === 0 ? (
         <View style={s.emptyWrap}>
+          <Feather name="inbox" size={40} color={Colors.textMuted} />
           <Text style={s.emptyTitle}>Нет заявок по вашим фильтрам</Text>
           <Text style={s.emptyText}>Попробуйте изменить параметры поиска</Text>
         </View>
@@ -120,154 +127,68 @@ function InteractiveRequests() {
   );
 }
 
-function EmptyRequests() {
-  return (
-    <View style={s.container}>
-      <View style={s.topBar}>
-        <Text style={s.pageTitle}>Заявки</Text>
-        <View style={s.filterToggle}>
-          <Text style={s.filterToggleText}>Фильтры</Text>
-        </View>
-      </View>
-      <View style={s.emptyStateWrap}>
-        <Feather name="inbox" size={48} color={Colors.textMuted} />
-        <Text style={s.emptyTitle}>Заявок пока нет</Text>
-        <Text style={s.emptyText}>Новые заявки от клиентов появятся здесь</Text>
-      </View>
-    </View>
-  );
-}
-
-function LoadingRequests() {
-  return (
-    <View style={s.container}>
-      <View style={s.topBar}>
-        <Text style={s.pageTitle}>Заявки</Text>
-        <View style={s.filterToggle}>
-          <Text style={s.filterToggleText}>Фильтры</Text>
-        </View>
-      </View>
-      {[1, 2, 3].map((i) => (
-        <View key={i} style={s.card}>
-          <View style={[s.skeleton, { width: '60%', height: 16, borderRadius: BorderRadius.sm }]} />
-          <View style={[s.skeleton, { width: '90%', height: 14, borderRadius: BorderRadius.sm }]} />
-          <View style={s.cardTags}>
-            <View style={[s.skeleton, { width: 60, height: 20, borderRadius: BorderRadius.full }]} />
-            <View style={[s.skeleton, { width: 80, height: 20, borderRadius: BorderRadius.full }]} />
-          </View>
-          <View style={s.cardBottom}>
-            <View style={[s.skeleton, { width: 70, height: 14, borderRadius: BorderRadius.sm }]} />
-            <View style={[s.skeleton, { width: 50, height: 12, borderRadius: BorderRadius.sm }]} />
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function ErrorRequests() {
-  return (
-    <View style={s.container}>
-      <View style={s.topBar}>
-        <Text style={s.pageTitle}>Заявки</Text>
-        <View style={s.filterToggle}>
-          <Text style={s.filterToggleText}>Фильтры</Text>
-        </View>
-      </View>
-      <View style={s.errorWrap}>
-        <Feather name="alert-circle" size={48} color={Colors.statusError} />
-        <Text style={s.errorTitle}>Не удалось загрузить заявки</Text>
-        <Text style={s.errorText}>Проверьте подключение к интернету и попробуйте снова</Text>
-        <Pressable style={s.retryBtn} onPress={() => {}}>
-          <Text style={s.retryBtnText}>Повторить</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 export function PublicRequestsStates() {
   return (
-    <>
-      <StateSection title="INTERACTIVE">
-        <InteractiveRequests />
-      </StateSection>
-      <StateSection title="EMPTY">
-        <EmptyRequests />
-      </StateSection>
-      <StateSection title="LOADING">
-        <LoadingRequests />
-      </StateSection>
-      <StateSection title="ERROR">
-        <ErrorRequests />
-      </StateSection>
-    </>
+    <StateSection title="INTERACTIVE">
+      <InteractiveRequests />
+    </StateSection>
   );
 }
 
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing.md },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pageTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   filterToggle: {
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md,
-    borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.btn,
+    borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
   },
   filterToggleText: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary },
   card: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm,
   },
   cardTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  cardDesc: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
+  cardDesc: { fontSize: Typography.fontSize.base, color: Colors.textSecondary, lineHeight: 22 },
   cardTags: { flexDirection: 'row', gap: Spacing.sm },
-  tag: { backgroundColor: Colors.bgSecondary, paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full },
-  tagText: { fontSize: Typography.fontSize.xs, color: Colors.brandPrimary },
-  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.xs },
-  budget: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.brandPrimary },
-  date: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
+  tag: {
+    backgroundColor: Colors.bgSecondary, paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: BorderRadius.full,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+  },
+  tagText: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary },
+  cardBottom: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.xs },
+  budgetRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
+  budget: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.brandPrimary },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  date: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   filterPanel: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm,
   },
-  filterTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  filterTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   filterGroup: { gap: Spacing.xs },
-  filterLabel: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.medium, color: Colors.textMuted },
+  filterLabel: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textMuted },
   filterSelect: {
-    height: 40, backgroundColor: Colors.bgPrimary, borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md, justifyContent: 'center',
+    height: 40, backgroundColor: Colors.bgPrimary, borderRadius: BorderRadius.card,
+    paddingHorizontal: Spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
-  filterSelectText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
-  filterInput: {
-    height: 40, backgroundColor: Colors.bgPrimary, borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md, fontSize: Typography.fontSize.sm, color: Colors.textPrimary,
-  },
+  filterSelectText: { fontSize: Typography.fontSize.base, color: Colors.textSecondary },
   filterResetBtn: {
-    height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.border,
+    height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', gap: Spacing.xs,
   },
   filterResetText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
   pickerList: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard, overflow: 'hidden', maxHeight: 200,
+    borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card,
+    backgroundColor: Colors.bgCard, overflow: 'hidden', maxHeight: 200, ...Shadows.sm,
   },
   pickerItem: {
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
     borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,
   },
-  pickerText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
+  pickerText: { fontSize: Typography.fontSize.base, color: Colors.textPrimary },
   pickerTextActive: { color: Colors.brandPrimary, fontWeight: Typography.fontWeight.semibold },
   emptyWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.sm },
-  emptyTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
-  emptyStateWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.md },
-  skeleton: { backgroundColor: Colors.bgSecondary },
-  errorWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.md },
-  errorTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  errorText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
-  retryBtn: {
-    backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md, marginTop: Spacing.sm,
-  },
-  retryBtnText: { fontSize: Typography.fontSize.sm, color: '#fff', fontWeight: Typography.fontWeight.semibold },
+  emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  emptyText: { fontSize: Typography.fontSize.base, color: Colors.textMuted, textAlign: 'center' },
 });

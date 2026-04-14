@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_PRICING_PLANS } from '../../../constants/protoMockData';
 
 function PlanCard({ name, price, period, features, highlighted, selected, onSelect }: {
@@ -68,12 +68,13 @@ export function PricingStates() {
 const s = StyleSheet.create({
   container: { padding: Spacing.lg, gap: Spacing['2xl'] },
   header: { alignItems: 'center', gap: Spacing.sm },
-  title: { fontSize: 24, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  title: { fontSize: Typography.fontSize['2xl'], fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   subtitle: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
   plans: { gap: Spacing.md },
   planCard: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, padding: Spacing.lg,
     borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, position: 'relative',
+    ...Shadows.sm,
   },
   planHighlighted: { borderColor: Colors.brandPrimary, borderWidth: 2 },
   popularBadge: {
@@ -91,7 +92,7 @@ const s = StyleSheet.create({
   featureList: { gap: Spacing.sm },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   featureCheckWrap: { width: 20, alignItems: 'center' },
-  featureText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
+  featureText: { fontSize: Typography.fontSize.base, color: Colors.textSecondary },
   planBtn: {
     height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border, marginTop: Spacing.xs,

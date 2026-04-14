@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { PROJECT, ROLES, SCENARIOS } from '../../../constants/protoMeta';
 import { pageRegistry } from '../../../constants/pageRegistry';
 import { Feather } from '@expo/vector-icons';
@@ -135,6 +135,7 @@ const s = StyleSheet.create({
     flex: 1,
     minWidth: 200,
     gap: Spacing.xs,
+    ...Shadows.sm,
   },
   roleBadge: {
     paddingHorizontal: Spacing.md,
@@ -180,6 +181,7 @@ const s = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: Spacing.md,
     gap: Spacing.xs,
+    ...Shadows.sm,
   },
   scenarioHeader: {
     flexDirection: 'row',
@@ -230,6 +232,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     gap: Spacing.sm,
+    ...Shadows.sm,
   },
   progressText: {
     fontSize: Typography.fontSize.base,
