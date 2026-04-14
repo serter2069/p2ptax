@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_RESPONSES } from '../../../constants/protoMockData';
 
-function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
+function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 1 }}>
+    <View style={{ flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4, 5].map(i => (
         <Feather key={i} name="star" size={size} color={i <= Math.round(rating) ? Colors.statusWarning : Colors.border} />
       ))}
@@ -27,51 +27,36 @@ function ResponseItem({ name, price, message, rating, reviews, onAccept, onDecli
           <Text style={s.name}>{name}</Text>
           <View style={s.ratingRow}>
             <Stars rating={rating} />
-            <Text style={s.ratingLabel}>{rating} ({reviews})</Text>
+            <Text style={s.ratingLabel}>{rating} ({reviews} отзывов)</Text>
           </View>
         </View>
-        <Text style={s.price}>{price}</Text>
+        <View style={s.priceWrap}>
+          <Feather name="dollar-sign" size={14} color={Colors.brandPrimary} />
+          <Text style={s.price}>{price}</Text>
+        </View>
       </View>
       <Text style={s.message} numberOfLines={2}>{message}</Text>
       <View style={s.actions}>
-        <Pressable onPress={onAccept} style={s.btnAccept}><Text style={s.btnAcceptText}>Принять</Text></Pressable>
-        <Pressable onPress={onDecline} style={s.btnDecline}><Text style={s.btnDeclineText}>Отклонить</Text></Pressable>
-      </View>
-    </View>
-  );
-}
-
-function Popup({ type, name, onConfirm, onCancel }: { type: 'accept' | 'decline'; name: string; onConfirm: () => void; onCancel: () => void }) {
-  const isAccept = type === 'accept';
-  return (
-    <View style={s.overlay}>
-      <View style={s.popup}>
-        <View style={s.popupIconWrap}>
-          <Feather name={isAccept ? 'check' : 'x'} size={40} color={isAccept ? Colors.brandPrimary : Colors.statusError} />
-        </View>
-        <Text style={s.popupTitle}>{isAccept ? 'Принять отклик?' : 'Отклонить отклик?'}</Text>
-        <Text style={s.popupText}>
-          {isAccept
-            ? `Специалист ${name} будет назначен исполнителем вашей заявки`
-            : `Отклик от ${name} будет отклонён`}
-        </Text>
-        <View style={s.popupActions}>
-          <Pressable onPress={onConfirm} style={[s.popupBtn, isAccept ? s.popupBtnAccept : s.popupBtnDecline]}>
-            <Text style={s.popupBtnPrimaryText}>{isAccept ? 'Подтвердить' : 'Отклонить'}</Text>
-          </Pressable>
-          <Pressable onPress={onCancel} style={s.popupBtnCancel}><Text style={s.popupBtnCancelText}>Отмена</Text></Pressable>
-        </View>
+        <Pressable onPress={onAccept} style={s.btnAccept}>
+          <Feather name="check" size={16} color={Colors.white} />
+          <Text style={s.btnAcceptText}>Принять</Text>
+        </Pressable>
+        <Pressable onPress={onDecline} style={s.btnDecline}>
+          <Feather name="x" size={16} color={Colors.textMuted} />
+          <Text style={s.btnDeclineText}>Отклонить</Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
 function InteractiveResponses() {
-  const [popupState, setPopupState] = useState<{ type: 'accept' | 'decline'; name: string } | null>(null);
-
   return (
-    <View style={[s.container, popupState ? { minHeight: 500 } : null]}>
-      <Text style={s.pageTitle}>Отклики ({MOCK_RESPONSES.length})</Text>
+    <View style={s.container}>
+      <View style={s.topBar}>
+        <Feather name="message-circle" size={20} color={Colors.brandPrimary} />
+        <Text style={s.pageTitle}>Отклики ({MOCK_RESPONSES.length})</Text>
+      </View>
       {MOCK_RESPONSES.map((r) => (
         <ResponseItem
           key={r.id}
@@ -80,156 +65,49 @@ function InteractiveResponses() {
           message={r.message}
           rating={r.rating}
           reviews={r.reviewCount}
-          onAccept={() => setPopupState({ type: 'accept', name: r.specialistName })}
-          onDecline={() => setPopupState({ type: 'decline', name: r.specialistName })}
+          onAccept={() => {}}
+          onDecline={() => {}}
         />
       ))}
-      {popupState && (
-        <Popup
-          type={popupState.type}
-          name={popupState.name}
-          onConfirm={() => setPopupState(null)}
-          onCancel={() => setPopupState(null)}
-        />
-      )}
-    </View>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <View style={s.card}>
-      <View style={s.cardTop}>
-        <View style={[s.avatar, { backgroundColor: Colors.border }]} />
-        <View style={s.info}>
-          <View style={{ width: 120, height: 14, backgroundColor: Colors.border, borderRadius: 4 }} />
-          <View style={{ width: 80, height: 12, backgroundColor: Colors.border, borderRadius: 4, marginTop: 6 }} />
-        </View>
-        <View style={{ width: 60, height: 16, backgroundColor: Colors.border, borderRadius: 4 }} />
-      </View>
-      <View style={{ width: '100%', height: 12, backgroundColor: Colors.border, borderRadius: 4 }} />
-      <View style={{ width: '70%', height: 12, backgroundColor: Colors.border, borderRadius: 4 }} />
-      <View style={s.actions}>
-        <View style={{ flex: 1, height: 36, backgroundColor: Colors.border, borderRadius: BorderRadius.md }} />
-        <View style={{ flex: 1, height: 36, backgroundColor: Colors.border, borderRadius: BorderRadius.md }} />
-      </View>
-    </View>
-  );
-}
-
-function LoadingResponses() {
-  return (
-    <View style={s.container}>
-      <Text style={s.pageTitle}>Отклики</Text>
-      <ActivityIndicator size="small" color={Colors.brandPrimary} style={{ alignSelf: 'center', marginVertical: Spacing.sm }} />
-      <SkeletonCard />
-      <SkeletonCard />
-    </View>
-  );
-}
-
-function AcceptedResponse() {
-  return (
-    <View style={s.container}>
-      <Text style={s.pageTitle}>Отклики</Text>
-      <View style={s.acceptedWrap}>
-        <View style={s.acceptedIconCircle}>
-          <Feather name="check" size={32} color={Colors.statusSuccess} />
-        </View>
-        <Text style={s.acceptedTitle}>Отклик принят!</Text>
-        <Text style={s.acceptedText}>
-          Специалист назначен исполнителем вашей заявки. Вы можете связаться с ним в чате.
-        </Text>
-        <Pressable style={s.btnAccept}>
-          <Text style={s.btnAcceptText}>Перейти в чат</Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
 
 export function ResponsesStates() {
   return (
-    <>
-      <StateSection title="INTERACTIVE">
-        <InteractiveResponses />
-      </StateSection>
-      <StateSection title="EMPTY">
-        <View style={s.container}>
-          <Text style={s.pageTitle}>Отклики</Text>
-          <View style={s.emptyWrap}>
-            <Text style={s.emptyTitle}>Нет откликов</Text>
-            <Text style={s.emptyText}>Специалисты ещё не откликнулись на ваши заявки</Text>
-          </View>
-        </View>
-      </StateSection>
-      <StateSection title="LOADING">
-        <LoadingResponses />
-      </StateSection>
-      <StateSection title="ACCEPTED">
-        <AcceptedResponse />
-      </StateSection>
-    </>
+    <StateSection title="INTERACTIVE">
+      <InteractiveResponses />
+    </StateSection>
   );
 }
 
 const s = StyleSheet.create({
-  container: { padding: Spacing.lg, gap: Spacing.md, position: 'relative' },
-  pageTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  container: { padding: Spacing.lg, gap: Spacing.md },
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
   card: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.md, padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
   info: { flex: 1 },
-  name: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  ratingLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  price: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
-  message: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
+  name: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 2 },
+  ratingLabel: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  priceWrap: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  price: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
+  message: { fontSize: Typography.fontSize.base, color: Colors.textSecondary, lineHeight: 22 },
   actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
   btnAccept: {
-    flex: 1, height: 36, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.md,
-    alignItems: 'center', justifyContent: 'center',
+    flex: 1, height: 40, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
+    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.xs, ...Shadows.sm,
   },
-  btnAcceptText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+  btnAcceptText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
   btnDecline: {
-    flex: 1, height: 36, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.border,
+    flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', gap: Spacing.xs,
   },
-  btnDeclineText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-  emptyWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.sm },
-  emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
-  acceptedWrap: { alignItems: 'center', padding: Spacing['3xl'], gap: Spacing.md },
-  acceptedIconCircle: {
-    width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.statusBg.success,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  acceptedTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  acceptedText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
-  overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10, alignItems: 'center', justifyContent: 'center',
-    padding: Spacing.lg,
-  },
-  popup: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.lg, padding: Spacing['2xl'],
-    alignItems: 'center', gap: Spacing.md, width: '100%', maxWidth: 340,
-  },
-  popupIconWrap: { alignItems: 'center' },
-  popupTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  popupText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
-  popupActions: { width: '100%', gap: Spacing.sm },
-  popupBtn: { height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center' },
-  popupBtnAccept: { backgroundColor: Colors.brandPrimary },
-  popupBtnDecline: { backgroundColor: Colors.statusError },
-  popupBtnPrimaryText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
-  popupBtnCancel: {
-    height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  popupBtnCancelText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  btnDeclineText: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
 });
