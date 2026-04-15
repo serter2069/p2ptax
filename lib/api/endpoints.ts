@@ -124,19 +124,19 @@ export const specialists = {
 // ---------------------------------------------------------------------------
 export const threads = {
   getThreads() {
-    return client.get('/chat');
+    return client.get('/threads');
   },
 
   getMessages(threadId: string, params?: Record<string, unknown>) {
-    return client.get(`/chat/${threadId}/messages`, { params });
+    return client.get(`/threads/${threadId}/messages`, { params });
   },
 
-  sendMessage(threadId: string, content: string) {
-    return client.post(`/chat/${threadId}/messages`, { content });
+  sendMessage(threadId: string, data: { content?: string; attachmentUrl?: string; attachmentType?: string; attachmentName?: string }) {
+    return client.post(`/threads/${threadId}/messages`, data);
   },
 
-  startThread(userId: string) {
-    return client.post('/chat/start', { userId });
+  startThread(otherUserId: string) {
+    return client.post('/threads/start', { otherUserId });
   },
 };
 
