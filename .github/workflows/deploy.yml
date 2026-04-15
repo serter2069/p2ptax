@@ -17,7 +17,7 @@ jobs:
           node-version: '20'
 
       - name: Install frontend dependencies
-        run: npm install --prefer-offline
+        run: npm ci
 
       - name: Lint
         run: npm run lint
@@ -26,14 +26,45 @@ jobs:
       - name: Build frontend (web)
         run: npx expo export --platform web
 
-      - name: Deploy frontend
+      - name: Install API dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Build API
+        working-directory: ./api
+        run: npm run build
+
+      - name: Generate Prisma client
+        working-directory: ./api
+        run: npx prisma generate
+
+      - name: Run DB migrations
+        working-directory: ./api
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy to server
         run: |
-          DEPLOY_DIR="/var/www/p2ptax-web"
-          sudo mkdir -p $DEPLOY_DIR
-          sudo rsync -av --delete dist/ $DEPLOY_DIR/
-          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" | sudo tee $DEPLOY_DIR/version.json
+          DEPLOY_DIR="/var/www/p2ptax"
+
+          sudo mkdir -p $DEPLOY_DIR/web
+          sudo rsync -av --delete dist/ $DEPLOY_DIR/web/
+
+          sudo mkdir -p $DEPLOY_DIR/api
+          sudo rsync -av --delete api/dist/ $DEPLOY_DIR/api/dist/
+          sudo rsync -av --delete api/node_modules/ $DEPLOY_DIR/api/node_modules/
+          sudo rsync -av api/prisma/ $DEPLOY_DIR/api/prisma/
+          sudo cp api/package.json $DEPLOY_DIR/api/package.json
+
+          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"env\":\"staging\"}" | sudo tee $DEPLOY_DIR/web/version.json
+
+          cd $DEPLOY_DIR/api
+          sudo pm2 restart p2ptax-api --update-env || sudo pm2 start dist/main.js --name p2ptax-api
+          sudo pm2 save
 
       - name: Verify staging
         run: |
-          sleep 2
+          sleep 5
+          curl -s https://p2ptax.smartlaunchhub.com/api/health
           curl -s https://p2ptax.smartlaunchhub.com/version.json
