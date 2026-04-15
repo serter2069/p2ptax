@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Pressable, Text, StyleSheet } from 'react-native';
+import { View, Pressable, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Typography } from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 import { useUnreadNotifications } from '../lib/hooks/useUnreadNotifications';
 
 export function NotificationBell() {
@@ -13,13 +13,13 @@ export function NotificationBell() {
     <Pressable
       onPress={() => router.push('/notifications')}
       hitSlop={8}
-      style={styles.wrap}
+      className="relative p-1"
       accessibilityLabel={`Уведомления${unreadCount > 0 ? `, ${unreadCount} непрочитанных` : ''}`}
     >
       <Feather name="bell" size={20} color={Colors.textSecondary} />
       {unreadCount > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
+        <View className="absolute top-0 -right-[2px] bg-statusError rounded-[10px] min-w-[16px] h-4 items-center justify-center px-[3px] border-[1.5px] border-bgPrimary">
+          <Text className="text-white text-[9px] font-bold leading-[11px]">
             {unreadCount > 99 ? '99+' : unreadCount}
           </Text>
         </View>
@@ -27,30 +27,3 @@ export function NotificationBell() {
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    position: 'relative',
-    padding: 4,
-  },
-  badge: {
-    position: 'absolute',
-    top: 0,
-    right: -2,
-    backgroundColor: Colors.statusError,
-    borderRadius: 10,
-    minWidth: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-    borderWidth: 1.5,
-    borderColor: Colors.bgPrimary,
-  },
-  badgeText: {
-    color: Colors.white,
-    fontSize: 9,
-    fontWeight: '700',
-    lineHeight: 11,
-  },
-});

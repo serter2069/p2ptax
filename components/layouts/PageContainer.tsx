@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, ViewStyle } from 'react-native';
 import { useResponsive } from '../../lib/hooks/useResponsive';
-import { Spacing } from '../../constants/Colors';
 
 interface PageContainerProps {
   children: React.ReactNode;
@@ -27,10 +26,9 @@ export function PageContainer({
 
   return (
     <View
+      className={`flex-1 w-full ${!noPadding ? 'px-4' : ''}`}
       style={[
-        styles.container,
         isDesktop && { maxWidth, alignSelf: 'center' as const },
-        !noPadding && styles.padding,
         style,
       ]}
     >
@@ -38,13 +36,3 @@ export function PageContainer({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: '100%',
-  },
-  padding: {
-    paddingHorizontal: Spacing.lg,
-  },
-});

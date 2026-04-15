@@ -3,14 +3,13 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
-  StyleSheet,
   ActivityIndicator,
   Platform,
 } from 'react-native';
 import { api } from '../lib/api';
-import { Colors, Spacing, Typography, BorderRadius } from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 
 interface IfnsItem {
   id: string;
@@ -79,48 +78,60 @@ export function IfnsSearch({ onSelect, selected, placeholder }: IfnsSearchProps)
 
   if (selected) {
     return (
-      <View style={styles.selectedContainer}>
-        <View style={styles.selectedInfo}>
-          <Text style={styles.selectedName} numberOfLines={2}>{selected.name}</Text>
-          <Text style={styles.selectedCity}>{selected.city.name}</Text>
+      <View className="flex-row items-center bg-bgSecondary border border-brandPrimary rounded-md p-2 gap-2">
+        <View className="flex-1 gap-[2px]">
+          <Text className="text-[13px] text-textPrimary font-medium" numberOfLines={2}>{selected.name}</Text>
+          <Text className="text-[11px] text-brandPrimary">{selected.city.name}</Text>
         </View>
-        <TouchableOpacity onPress={handleClear} style={styles.clearBtn} activeOpacity={0.7}>
-          <Text style={styles.clearBtnText}>x</Text>
-        </TouchableOpacity>
+        <Pressable onPress={handleClear} className="w-7 h-7 rounded-full bg-textMuted items-center justify-center">
+          <Text className="text-white text-sm font-bold leading-4">x</Text>
+        </Pressable>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.inputRow}>
+    <View className="relative z-20">
+      <View className="flex-row items-center">
         <TextInput
-          style={[styles.input, { outlineStyle: 'none' } as any]}
+          className="flex-1 border border-border rounded-md py-2 px-3 text-[15px] text-textPrimary bg-bgPrimary min-h-[44px]"
+          style={{ outlineStyle: 'none' } as any}
           value={query}
           onChangeText={setQuery}
           placeholder={placeholder || 'Введите номер или название инспекции...'}
           placeholderTextColor={Colors.textMuted}
           autoCorrect={false}
         />
-        {loading && <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.spinner} />}
+        {loading && <ActivityIndicator size="small" color={Colors.brandPrimary} className="absolute right-3" />}
       </View>
 
       {showDropdown && results.length > 0 && (
-        <View style={styles.dropdown}>
-          <ScrollView style={styles.dropdownScroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+        <View
+          className="absolute top-full left-0 right-0 mt-1 bg-bgCard border border-border rounded-md z-30"
+          style={Platform.OS === 'web'
+            ? { boxShadow: '0 4px 16px rgba(15, 36, 71, 0.12)' } as any
+            : {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 10,
+              }
+          }
+        >
+          <ScrollView className="max-h-60" nestedScrollEnabled keyboardShouldPersistTaps="handled">
             {results.map((item) => (
-              <TouchableOpacity
+              <Pressable
                 key={item.id}
-                style={styles.dropdownItem}
+                className="py-2 px-3 border-b border-bgSecondary"
                 onPress={() => handleSelect(item)}
-                activeOpacity={0.7}
               >
-                <Text style={styles.dropdownName} numberOfLines={2}>{item.name}</Text>
-                <Text style={styles.dropdownCity}>{item.city.name}</Text>
+                <Text className="text-[13px] text-textPrimary font-medium" numberOfLines={2}>{item.name}</Text>
+                <Text className="text-[11px] text-brandPrimary mt-[2px]">{item.city.name}</Text>
                 {item.address && (
-                  <Text style={styles.dropdownAddress} numberOfLines={1}>{item.address}</Text>
+                  <Text className="text-[11px] text-textMuted mt-[2px]" numberOfLines={1}>{item.address}</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
@@ -128,112 +139,3 @@ export function IfnsSearch({ onSelect, selected, placeholder }: IfnsSearchProps)
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-    zIndex: 20,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgPrimary,
-    minHeight: 44,
-  },
-  spinner: {
-    position: 'absolute',
-    right: 12,
-  },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    marginTop: 4,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    zIndex: 30,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 4px 16px rgba(15, 36, 71, 0.12)' }
-      : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.12,
-          shadowRadius: 8,
-          elevation: 10,
-        }),
-  },
-  dropdownScroll: {
-    maxHeight: 240,
-  },
-  dropdownItem: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgSecondary,
-  },
-  dropdownName: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  dropdownCity: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    marginTop: 2,
-  },
-  dropdownAddress: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  selectedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  selectedInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  selectedName: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  selectedCity: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-  },
-  clearBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.textMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clearBtnText: {
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: Typography.fontWeight.bold,
-    lineHeight: 16,
-  },
-});

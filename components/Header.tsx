@@ -2,11 +2,9 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
-  StyleSheet,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Spacing, Typography } from '../constants/Colors';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 
 export interface BreadcrumbItem {
@@ -34,63 +32,59 @@ export function Header({ title, showBack = false, rightAction, onBackPress, brea
     }
   };
 
-  const titleStyle = isMobile ? styles.titleCentered : styles.titleLeft;
-
   return (
-    <View style={styles.container}>
+    <View className="flex-row items-center h-14 px-5 bg-bgSecondary border-b border-border">
       {isMobile ? (
-        // Mobile: left spacer | centered title | right action
         <>
-          <View style={styles.left}>
+          <View className="w-12 items-start">
             {showBack && (
-              <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{top:12,bottom:12,left:12,right:12}}>
-                <Text style={styles.backIcon}>{'←'}</Text>
-              </TouchableOpacity>
+              <Pressable onPress={handleBack} className="p-1" hitSlop={{top:12,bottom:12,left:12,right:12}}>
+                <Text className="text-xl text-textPrimary">{'←'}</Text>
+              </Pressable>
             )}
           </View>
 
-          <Text style={titleStyle} numberOfLines={1}>
+          <Text className="flex-1 text-center text-[16px] font-semibold text-textPrimary" numberOfLines={1}>
             {title}
           </Text>
 
-          <View style={styles.right}>
+          <View className="w-12 items-end">
             {rightAction ?? null}
           </View>
         </>
       ) : (
-        // Desktop/tablet: back (if needed) | left-aligned title | right spacer + action
         <>
           {showBack && (
-            <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{top:12,bottom:12,left:12,right:12}}>
-              <Text style={styles.backIcon}>{'←'}</Text>
-            </TouchableOpacity>
+            <Pressable onPress={handleBack} className="p-1" hitSlop={{top:12,bottom:12,left:12,right:12}}>
+              <Text className="text-xl text-textPrimary">{'←'}</Text>
+            </Pressable>
           )}
 
-          <View style={styles.titleArea}>
+          <View className="flex-1">
             {breadcrumbs && breadcrumbs.length > 0 ? (
-              <View style={styles.breadcrumbRow}>
+              <View className="flex-row items-center mb-[2px] ml-2">
                 {breadcrumbs.map((crumb, i) => (
                   <React.Fragment key={i}>
                     {i > 0 ? (
-                      <Text style={styles.breadcrumbSep}>{' / '}</Text>
+                      <Text className="text-[11px] text-textMuted">{' / '}</Text>
                     ) : null}
                     {crumb.route ? (
-                      <TouchableOpacity onPress={() => router.push(crumb.route as any)} activeOpacity={0.7}>
-                        <Text style={styles.breadcrumbLink}>{crumb.label}</Text>
-                      </TouchableOpacity>
+                      <Pressable onPress={() => router.push(crumb.route as any)}>
+                        <Text className="text-[11px] text-textAccent font-medium">{crumb.label}</Text>
+                      </Pressable>
                     ) : (
-                      <Text style={styles.breadcrumbCurrent}>{crumb.label}</Text>
+                      <Text className="text-[11px] text-textMuted font-medium">{crumb.label}</Text>
                     )}
                   </React.Fragment>
                 ))}
               </View>
             ) : null}
-            <Text style={titleStyle} numberOfLines={1}>
+            <Text className="text-left text-lg font-semibold text-textPrimary ml-2" numberOfLines={1}>
               {title}
             </Text>
           </View>
 
-          <View style={styles.rightWide}>
+          <View className="ml-auto items-end">
             {rightAction ?? null}
           </View>
         </>
@@ -98,71 +92,3 @@ export function Header({ title, showBack = false, rightAction, onBackPress, brea
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 56,
-    paddingHorizontal: Spacing.xl,
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  left: {
-    width: 48,
-    alignItems: 'flex-start',
-  },
-  right: {
-    width: 48,
-    alignItems: 'flex-end',
-  },
-  titleArea: {
-    flex: 1,
-  },
-  titleCentered: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  titleLeft: {
-    textAlign: 'left',
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    marginLeft: Spacing.sm,
-  },
-  breadcrumbRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-    marginLeft: Spacing.sm,
-  },
-  breadcrumbLink: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textAccent,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  breadcrumbSep: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  breadcrumbCurrent: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  rightWide: {
-    marginLeft: 'auto' as any,
-    alignItems: 'flex-end',
-  },
-  backBtn: {
-    padding: Spacing.xs,
-  },
-  backIcon: {
-    fontSize: Typography.fontSize.xl,
-    color: Colors.textPrimary,
-  },
-});

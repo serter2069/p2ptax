@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  TouchableOpacity,
+  Pressable,
   TextInput,
   ViewStyle,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../constants/Colors';
+import { Feather } from '@expo/vector-icons';
+import { Colors } from '../constants/Colors';
 import { secureStorage } from '../stores/storage';
 import { api } from '../lib/api';
 import { IfnsSearch } from './IfnsSearch';
@@ -95,22 +94,21 @@ export function QuickRequestForm({ style, containerStyle }: QuickRequestFormProp
   if (submitted) {
     return (
       <View style={outerStyle}>
-        <View style={f.successWrap}>
-          <Ionicons name="checkmark-circle" size={48} color={Colors.statusSuccess} />
-          <Text style={f.successTitle}>Заявка отправлена</Text>
-          <Text style={f.successText}>
+        <View className="items-center gap-3 py-12">
+          <Feather name="check-circle" size={48} color={Colors.statusSuccess} />
+          <Text className="text-2xl font-semibold text-textPrimary">Заявка отправлена</Text>
+          <Text className="text-[16px] text-textSecondary text-center leading-6 max-w-[360px]">
             Специалисты свяжутся с вами в ближайшее время.
           </Text>
-          <TouchableOpacity
-            style={f.btn}
+          <Pressable
+            className="bg-brandPrimary rounded-md py-4 items-center w-full mt-8"
             onPress={() => router.push('/(auth)/email')}
-            activeOpacity={0.85}
           >
-            <Text style={f.btnText}>Войти и отслеживать</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleNewRequest} activeOpacity={0.7}>
-            <Text style={f.linkText}>Подать новую заявку</Text>
-          </TouchableOpacity>
+            <Text className="text-white font-semibold text-[16px]">Войти и отслеживать</Text>
+          </Pressable>
+          <Pressable onPress={handleNewRequest}>
+            <Text className="text-brandPrimary text-[13px] font-medium text-center mt-3">Подать новую заявку</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -118,26 +116,26 @@ export function QuickRequestForm({ style, containerStyle }: QuickRequestFormProp
 
   return (
     <View style={outerStyle}>
-      <Text style={f.label}>ТИП УСЛУГИ</Text>
-      <View style={f.chipsRow}>
+      <Text className="text-[11px] font-medium tracking-widest text-textMuted mb-2 mt-6">ТИП УСЛУГИ</Text>
+      <View className="flex-row flex-wrap gap-2">
         {categories.map((cat) => (
-          <TouchableOpacity
+          <Pressable
             key={cat.slug}
-            style={[f.chip, serviceType === cat.name && f.chipSelected]}
+            className={`px-4 py-[10px] rounded-md border ${serviceType === cat.name ? 'bg-brandPrimary border-brandPrimary' : 'bg-bgCard border-border'}`}
             onPress={() => setServiceType(cat.name)}
-            activeOpacity={0.7}
           >
-            <Text style={[f.chipText, serviceType === cat.name && f.chipTextSelected]}>
+            <Text className={`text-[13px] font-medium ${serviceType === cat.name ? 'text-white' : 'text-textPrimary'}`}>
               {cat.name}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
 
-      <Text style={f.label}>ОПИШИТЕ СИТУАЦИЮ</Text>
+      <Text className="text-[11px] font-medium tracking-widest text-textMuted mb-2 mt-6">ОПИШИТЕ СИТУАЦИЮ</Text>
       <TextInput
         testID="quick-request-description"
-        style={[f.textarea, { outlineStyle: 'none' } as any]}
+        className="border border-border rounded-md p-3 text-textPrimary bg-bgCard min-h-[100px] text-[16px] leading-6"
+        style={{ outlineStyle: 'none', textAlignVertical: 'top' } as any}
         placeholder="Что произошло? С чем нужна помощь?"
         placeholderTextColor={Colors.textMuted}
         value={description}
@@ -147,116 +145,25 @@ export function QuickRequestForm({ style, containerStyle }: QuickRequestFormProp
         maxLength={500}
       />
 
-      <Text style={f.label}>ИФНС (НЕОБЯЗАТЕЛЬНО)</Text>
+      <Text className="text-[11px] font-medium tracking-widest text-textMuted mb-2 mt-6">ИФНС (НЕОБЯЗАТЕЛЬНО)</Text>
       <IfnsSearch
         selected={selectedIfns}
         onSelect={setSelectedIfns}
         placeholder="Номер или название ИФНС..."
       />
 
-      {error ? <Text style={f.error}>{error}</Text> : null}
+      {error ? <Text className="text-statusError text-[13px] mt-1">{error}</Text> : null}
 
-      <TouchableOpacity
+      <Pressable
         testID="quick-request-submit"
-        style={[f.btn, submitting && { opacity: 0.6 }]}
+        className={`bg-brandPrimary rounded-md py-4 items-center w-full mt-8 ${submitting ? 'opacity-60' : ''}`}
         onPress={handleSubmit}
-        activeOpacity={0.85}
         disabled={submitting}
       >
-        <Text style={f.btnText}>
-          {submitting ? 'Отправка...' : 'Найти специалиста →'}
+        <Text className="text-white font-semibold text-[16px]">
+          {submitting ? 'Отправка...' : 'Найти специалиста \u2192'}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }
-
-const f = StyleSheet.create({
-  label: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: '500',
-    letterSpacing: 1,
-    color: Colors.textMuted,
-    marginBottom: 8,
-    marginTop: 24,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  chipSelected: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: '500',
-  },
-  chipTextSelected: {
-    color: Colors.white,
-  },
-  textarea: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgCard,
-    minHeight: 100,
-    textAlignVertical: 'top',
-    fontSize: Typography.fontSize.md,
-    lineHeight: 24,
-  },
-  error: {
-    color: Colors.statusError,
-    fontSize: Typography.fontSize.sm,
-    marginTop: Spacing.xs,
-  },
-  btn: {
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    paddingVertical: 16,
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 32,
-  },
-  btnText: {
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: Typography.fontSize.md,
-  },
-  linkText: {
-    color: Colors.brandPrimary,
-    fontSize: Typography.fontSize.sm,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginTop: Spacing.md,
-  },
-  successWrap: {
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: 48,
-  },
-  successTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  successText: {
-    fontSize: Typography.fontSize.md,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 360,
-  },
-});

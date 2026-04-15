@@ -3,10 +3,9 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { Colors, Spacing, BorderRadius, Typography } from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 
 interface InputProps {
   value: string;
@@ -60,9 +59,15 @@ export function Input({
   const resolvedMinHeight = multiline ? (minHeight ?? 80) : undefined;
   const resolvedTextAlignVertical = textAlignVertical ?? (multiline ? 'top' : undefined);
 
+  const borderColor = error
+    ? Colors.statusError
+    : focused
+      ? Colors.brandPrimary
+      : Colors.border;
+
   return (
-    <View style={[styles.wrapper, style]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+    <View className="gap-1" style={style}>
+      {label ? <Text className="text-[13px] font-medium text-textSecondary mb-[2px]">{label}</Text> : null}
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -82,72 +87,18 @@ export function Input({
         multiline={multiline}
         numberOfLines={numberOfLines}
         textAlignVertical={resolvedTextAlignVertical}
+        className={`bg-bgCard border rounded-md px-4 py-3 text-[15px] text-textPrimary ${!multiline ? 'h-12 py-0' : ''} ${!editable ? 'opacity-50' : ''}`}
         style={[
-          styles.input,
-          !multiline && styles.inputSingleLine,
+          { borderColor },
           multiline && resolvedMinHeight ? { minHeight: resolvedMinHeight } : null,
-          focused && styles.inputFocused,
-          error ? styles.inputError : null,
-          !editable && styles.inputDisabled,
           { outlineStyle: 'none' as any },
         ]}
       />
       {showCharCount && maxLength != null ? (
-        <Text style={styles.charCount}>{value.length}/{maxLength}</Text>
+        <Text className="text-[11px] text-textMuted text-right mt-[2px]">{value.length}/{maxLength}</Text>
       ) : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {hint && !error ? <Text style={styles.hint}>{hint}</Text> : null}
+      {error ? <Text className="text-[11px] text-statusError mt-[2px]">{error}</Text> : null}
+      {hint && !error ? <Text className="text-[11px] text-textMuted mt-[2px]">{hint}</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    gap: Spacing.xs,
-  },
-  label: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    marginBottom: 2,
-  },
-  input: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  inputSingleLine: {
-    height: 48,
-    paddingVertical: 0,
-  },
-  charCount: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'right',
-    marginTop: 2,
-  },
-  inputFocused: {
-    borderColor: Colors.brandPrimary,
-  },
-  inputError: {
-    borderColor: Colors.statusError,
-  },
-  inputDisabled: {
-    opacity: 0.5,
-  },
-  error: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-    marginTop: 2,
-  },
-  hint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-});

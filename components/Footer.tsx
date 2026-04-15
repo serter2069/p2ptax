@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, Spacing } from '../constants/Colors';
 
 interface FooterProps {
   isWide?: boolean;
@@ -11,24 +10,24 @@ export function Footer({ isWide = false }: FooterProps) {
   const router = useRouter();
 
   return (
-    <View style={styles.footer}>
-      <View style={[styles.footerInner, isWide && styles.footerInnerWide]}>
-        <View style={styles.footerLogoRow}>
-          <View style={styles.footerLogoCircle}>
-            <Text style={styles.footerLogoInitial}>Н</Text>
+    <View className="w-full bg-textPrimary py-6 px-4 items-center border-t border-white/[0.08]">
+      <View className={`w-full max-w-[1100px] flex-col items-center gap-4 ${isWide ? 'flex-row justify-between' : ''}`}>
+        <View className="flex-row items-center gap-2">
+          <View className="w-7 h-7 rounded-full bg-brandPrimary items-center justify-center">
+            <Text className="text-[13px] font-bold text-white">H</Text>
           </View>
-          <Text style={styles.footerLogo}>Налоговик</Text>
+          <Text className="text-lg font-bold text-white">Налоговик</Text>
         </View>
-        <View style={[styles.footerLinks, isWide && styles.footerLinksWide]}>
-          <TouchableOpacity onPress={() => router.push('/specialists')} activeOpacity={0.7}>
-            <Text style={styles.footerLink}>Специалисты</Text>
-          </TouchableOpacity>
-          <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity onPress={() => router.push('/requests')} activeOpacity={0.7}>
-            <Text style={styles.footerLink}>Запросы</Text>
-          </TouchableOpacity>
-          <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity
+        <View className={`flex-row items-center gap-3 flex-wrap justify-center ${isWide ? 'gap-4' : ''}`}>
+          <Pressable onPress={() => router.push('/specialists')}>
+            <Text className="text-[15px] text-white/[0.65] font-medium">Специалисты</Text>
+          </Pressable>
+          <Text className="text-[15px] text-white/[0.35]">·</Text>
+          <Pressable onPress={() => router.push('/requests')}>
+            <Text className="text-[15px] text-white/[0.65] font-medium">Запросы</Text>
+          </Pressable>
+          <Text className="text-[15px] text-white/[0.35]">·</Text>
+          <Pressable
             onPress={() => {
               if (Platform.OS === 'web') {
                 router.push('/');
@@ -37,97 +36,26 @@ export function Footer({ isWide = false }: FooterProps) {
                 }, 300);
               }
             }}
-            activeOpacity={0.7}
           >
-            <Text style={styles.footerLink}>О платформе</Text>
-          </TouchableOpacity>
-          <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity onPress={() => router.push('/support' as any)} activeOpacity={0.7}>
-            <Text style={styles.footerLink}>Контакты</Text>
-          </TouchableOpacity>
-          <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity onPress={() => router.push('/privacy' as any)} activeOpacity={0.7}>
-            <Text style={styles.footerLink}>Политика конфиденциальности</Text>
-          </TouchableOpacity>
-          <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity onPress={() => router.push('/terms' as any)} activeOpacity={0.7}>
-            <Text style={styles.footerLink}>Пользовательское соглашение</Text>
-          </TouchableOpacity>
+            <Text className="text-[15px] text-white/[0.65] font-medium">О платформе</Text>
+          </Pressable>
+          <Text className="text-[15px] text-white/[0.35]">·</Text>
+          <Pressable onPress={() => router.push('/support' as any)}>
+            <Text className="text-[15px] text-white/[0.65] font-medium">Контакты</Text>
+          </Pressable>
+          <Text className="text-[15px] text-white/[0.35]">·</Text>
+          <Pressable onPress={() => router.push('/privacy' as any)}>
+            <Text className="text-[15px] text-white/[0.65] font-medium">Политика конфиденциальности</Text>
+          </Pressable>
+          <Text className="text-[15px] text-white/[0.35]">·</Text>
+          <Pressable onPress={() => router.push('/terms' as any)}>
+            <Text className="text-[15px] text-white/[0.65] font-medium">Пользовательское соглашение</Text>
+          </Pressable>
         </View>
-        <Text style={styles.footerCopy}>
+        <Text className="text-[13px] text-white/[0.35]">
           {`\u00A9 ${new Date().getFullYear()} Налоговик`}
         </Text>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  footer: {
-    width: '100%',
-    backgroundColor: Colors.textPrimary,
-    paddingVertical: Spacing['2xl'],
-    paddingHorizontal: Spacing.lg,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-  },
-  footerInner: {
-    width: '100%',
-    maxWidth: 1100,
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: Spacing.lg,
-  },
-  footerInnerWide: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  footerLogoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  footerLogoCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerLogoInitial: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  footerLogo: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  footerLinksWide: {
-    gap: Spacing.lg,
-  },
-  footerLink: {
-    fontSize: Typography.fontSize.base,
-    color: 'rgba(255,255,255,0.65)',
-    fontWeight: Typography.fontWeight.medium,
-  },
-  footerDot: {
-    fontSize: Typography.fontSize.base,
-    color: 'rgba(255,255,255,0.35)',
-  },
-  footerCopy: {
-    fontSize: Typography.fontSize.sm,
-    color: 'rgba(255,255,255,0.35)',
-  },
-});

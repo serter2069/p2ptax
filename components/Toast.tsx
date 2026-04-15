@@ -3,11 +3,10 @@ import {
   Animated,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Colors, BorderRadius, Typography } from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 import { toast, ToastMessage } from '../lib/toast';
 
 const AUTO_DISMISS_MS = 3000;
@@ -49,9 +48,26 @@ function ToastItem({ item, onDismiss }: { item: ToastMessage; onDismiss: (id: st
   const colors = TYPE_STYLES[item.type];
 
   return (
-    <Animated.View style={[styles.item, { backgroundColor: colors.bg, opacity }]}>
-      <Pressable onPress={fadeOut} style={styles.itemInner}>
-        <Text style={[styles.text, { color: colors.text }]}>{item.message}</Text>
+    <Animated.View
+      className="mb-2 rounded-[10px] max-w-[480px] w-[90%] shadow-sm"
+      style={[
+        { backgroundColor: colors.bg, opacity },
+        {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 4,
+        },
+      ]}
+    >
+      <Pressable onPress={fadeOut} className="px-4 py-3">
+        <Text
+          className="text-[13px] font-medium"
+          style={{ color: colors.text, lineHeight: 13 * 1.5 }}
+        >
+          {item.message}
+        </Text>
       </Pressable>
     </Animated.View>
   );
@@ -84,42 +100,14 @@ export function ToastContainer() {
   if (items.length === 0) return null;
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View
+      className="absolute left-0 right-0 z-[9999] items-center"
+      style={{ top: Platform.OS === 'web' ? 16 : 56 }}
+      pointerEvents="box-none"
+    >
       {items.map((item) => (
         <ToastItem key={item.id} item={item} onDismiss={handleDismiss} />
       ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: Platform.OS === 'web' ? 16 : 56,
-    left: 0,
-    right: 0,
-    zIndex: 9999,
-    alignItems: 'center',
-    pointerEvents: 'box-none',
-  },
-  item: {
-    marginBottom: 8,
-    borderRadius: BorderRadius.lg,
-    maxWidth: 480,
-    width: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  itemInner: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  text: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    lineHeight: Typography.fontSize.sm * Typography.lineHeight.normal,
-  },
-});

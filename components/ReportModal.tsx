@@ -3,18 +3,18 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   Modal,
-  StyleSheet,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { complaints } from '../lib/api/endpoints';
 import { ApiError } from '../lib/api';
 import { toast } from '../lib/toast';
+import { Colors } from '../constants/Colors';
 
 const REASONS = [
   { value: 'spam', label: 'Спам' },
@@ -22,17 +22,6 @@ const REASONS = [
   { value: 'inappropriate', label: 'Неприемлемое поведение' },
   { value: 'other', label: 'Другое' },
 ] as const;
-
-const B = {
-  action: '#1A5BA8',
-  primary: '#0F2447',
-  bg: '#F4F8FC',
-  muted: '#4A6080',
-  border: '#C8D8EA',
-  white: '#FFFFFF',
-  error: '#D32F2F',
-  bgError: 'rgba(211,47,47,0.08)',
-};
 
 interface ReportModalProps {
   visible: boolean;
@@ -80,187 +69,77 @@ export function ReportModal({ visible, onClose, targetUserId }: ReportModalProps
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <KeyboardAvoidingView
-        style={styles.overlay}
+        className="flex-1 bg-black/50 items-center justify-center px-4"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.card}>
+        <View className="w-full max-w-[440px] bg-white rounded-xl overflow-hidden">
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Ionicons name="flag-outline" size={18} color={B.error} />
-              <Text style={styles.title}>Пожаловаться</Text>
+          <View className="flex-row items-center justify-between border-b border-border px-5 py-3.5">
+            <View className="flex-row items-center gap-2">
+              <Feather name="flag" size={18} color={Colors.statusError} />
+              <Text className="text-lg font-bold text-textPrimary">Пожаловаться</Text>
             </View>
-            <TouchableOpacity onPress={handleClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={22} color={B.muted} />
-            </TouchableOpacity>
+            <Pressable onPress={handleClose}>
+              <Feather name="x" size={22} color={Colors.textMuted} />
+            </Pressable>
           </View>
 
-          <ScrollView style={styles.body}>
+          <ScrollView className="px-5 py-4 max-h-[400px]">
             {/* Reason selector */}
-            <Text style={styles.label}>Причина</Text>
-            <View style={styles.reasonList}>
+            <Text className="text-xs font-semibold text-textMuted uppercase tracking-wide mb-2">Причина</Text>
+            <View className="gap-1.5">
               {REASONS.map((r) => (
-                <TouchableOpacity
+                <Pressable
                   key={r.value}
-                  style={[styles.reasonItem, reason === r.value && styles.reasonItemActive]}
+                  className={`flex-row items-center gap-[10px] py-[10px] px-3 rounded-lg border ${reason === r.value ? 'border-brandPrimary bg-brandPrimary/[0.04]' : 'border-border bg-white'}`}
                   onPress={() => setReason(r.value)}
-                  activeOpacity={0.7}
                 >
-                  <View style={[styles.radio, reason === r.value && styles.radioActive]}>
-                    {reason === r.value && <View style={styles.radioDot} />}
+                  <View
+                    className={`w-[18px] h-[18px] rounded-full border-2 items-center justify-center ${reason === r.value ? 'border-brandPrimary' : 'border-border'}`}
+                  >
+                    {reason === r.value && <View className="w-2 h-2 rounded-full bg-brandPrimary" />}
                   </View>
-                  <Text style={[styles.reasonLabel, reason === r.value && styles.reasonLabelActive]}>
+                  <Text className={`text-[15px] text-textPrimary ${reason === r.value ? 'font-semibold' : ''}`}>
                     {r.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
 
             {/* Comment */}
-            <Text style={[styles.label, { marginTop: 16 }]}>Комментарий (необязательно)</Text>
+            <Text className="text-xs font-semibold text-textMuted uppercase tracking-wide mb-2 mt-4">Комментарий (необязательно)</Text>
             <TextInput
-              style={[styles.textInput, { outlineStyle: 'none' } as any]}
+              className="border border-border rounded-lg p-3 text-textPrimary text-sm bg-bgSurface min-h-[80px]"
+              style={{ outlineStyle: 'none', textAlignVertical: 'top' } as any}
               value={comment}
               onChangeText={setComment}
               placeholder="Опишите ситуацию подробнее..."
-              placeholderTextColor={B.muted}
+              placeholderTextColor={Colors.textMuted}
               multiline
               numberOfLines={3}
               maxLength={2000}
-              textAlignVertical="top"
             />
           </ScrollView>
 
           {/* Actions */}
-          <View style={styles.actions}>
-            <TouchableOpacity onPress={handleClose} style={styles.cancelBtn} activeOpacity={0.7}>
-              <Text style={styles.cancelText}>Отмена</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+          <View className="flex-row gap-[10px] px-5 py-3.5 border-t border-border">
+            <Pressable onPress={handleClose} className="flex-1 h-11 rounded-lg border border-border items-center justify-center">
+              <Text className="text-sm font-semibold text-textMuted">Отмена</Text>
+            </Pressable>
+            <Pressable
               onPress={handleSubmit}
               disabled={!reason || submitting}
-              style={[styles.submitBtn, (!reason || submitting) && styles.submitBtnDisabled]}
-              activeOpacity={0.8}
+              className={`flex-1 h-11 rounded-lg bg-statusError items-center justify-center ${(!reason || submitting) ? 'opacity-40' : ''}`}
             >
               {submitting ? (
-                <ActivityIndicator size="small" color={B.white} />
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.submitText}>Отправить</Text>
+                <Text className="text-sm font-semibold text-white">Отправить</Text>
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 440,
-    backgroundColor: B.white,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: B.border,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { fontSize: 18, fontWeight: '700', color: B.primary },
-  body: { paddingHorizontal: 20, paddingVertical: 16, maxHeight: 400 },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: B.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  reasonList: { gap: 6 },
-  reasonItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: B.border,
-    backgroundColor: B.white,
-  },
-  reasonItemActive: {
-    borderColor: B.action,
-    backgroundColor: 'rgba(26,91,168,0.04)',
-  },
-  radio: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: B.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioActive: { borderColor: B.action },
-  radioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: B.action,
-  },
-  reasonLabel: { fontSize: 15, color: B.primary },
-  reasonLabelActive: { fontWeight: '600' },
-  textInput: {
-    borderWidth: 1,
-    borderColor: B.border,
-    borderRadius: 8,
-    padding: 12,
-    color: B.primary,
-    fontSize: 14,
-    backgroundColor: B.bg,
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: B.border,
-  },
-  cancelBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: B.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelText: { fontSize: 14, fontWeight: '600', color: B.muted },
-  submitBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: B.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitBtnDisabled: { opacity: 0.4 },
-  submitText: { fontSize: 14, fontWeight: '600', color: B.white },
-});

@@ -1,16 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   ActivityIndicator,
-  StyleSheet,
   ViewStyle,
-  TextStyle,
   View,
   Platform,
   Animated,
 } from 'react-native';
-import { Colors, Spacing, BorderRadius, Typography } from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'white' | 'outline-white';
 
@@ -31,6 +29,26 @@ const hoverBg: Record<string, string> = {
   outline: 'rgba(26,91,168,0.06)',
   white: '#F0F4FA',
   'outline-white': 'rgba(255,255,255,0.15)',
+};
+
+const variantClasses: Record<string, string> = {
+  primary: 'bg-brandPrimary',
+  secondary: 'bg-bgCard border border-border',
+  ghost: 'bg-transparent',
+  danger: 'bg-statusError',
+  outline: 'bg-transparent border-2 border-brandPrimary',
+  white: 'bg-white',
+  'outline-white': 'bg-transparent border-2 border-white',
+};
+
+const labelClasses: Record<string, string> = {
+  primary: 'text-white',
+  secondary: 'text-textPrimary',
+  ghost: 'text-brandPrimary',
+  danger: 'text-white',
+  outline: 'text-brandPrimary',
+  white: 'text-brandPrimary',
+  'outline-white': 'text-white',
 };
 
 const webTransition = Platform.OS === 'web'
@@ -76,109 +94,36 @@ export function Button({
     }).start();
   }
 
+  const indicatorColor = (variant === 'primary' || variant === 'danger' || variant === 'outline-white')
+    ? '#FFFFFF'
+    : (variant === 'ghost' || variant === 'outline')
+      ? Colors.brandPrimary
+      : Colors.textPrimary;
+
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={isDisabled}
-      style={[
-        styles.base,
-        styles[variant],
-        isDisabled && styles.disabled,
-        webTransition,
-        hoverStyle,
-        style,
-      ]}
-      activeOpacity={0.7}
+      className={`h-12 rounded-md items-center justify-center px-5 ${variantClasses[variant]} ${isDisabled ? 'opacity-45' : ''}`}
+      style={[webTransition, hoverStyle, style]}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       dataSet={{ hoverManaged: '1' }}
       {...(webProps as any)}
     >
       {loading ? (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator
-            size="small"
-            color={variant === 'primary' || variant === 'danger' || variant === 'outline-white' ? '#FFFFFF' : variant === 'ghost' || variant === 'outline' ? Colors.brandPrimary : Colors.textPrimary}
-          />
+        <View className="flex-row items-center">
+          <ActivityIndicator size="small" color={indicatorColor} />
         </View>
       ) : (
-        <Text style={[styles.label, styles[`${variant}Label` as keyof typeof styles] as TextStyle]}>
+        <Text className={`text-[15px] font-semibold ${labelClasses[variant]}`}>
           {children}
         </Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    height: 48,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  primary: {
-    backgroundColor: Colors.brandPrimary,
-  },
-  secondary: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  danger: {
-    backgroundColor: Colors.statusError,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#1A5BA8',
-  },
-  white: {
-    backgroundColor: '#FFFFFF',
-  },
-  'outline-white': {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  label: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  primaryLabel: {
-    color: '#FFFFFF',
-  },
-  secondaryLabel: {
-    color: Colors.textPrimary,
-  },
-  ghostLabel: {
-    color: Colors.brandPrimary,
-  },
-  dangerLabel: {
-    color: '#FFFFFF',
-  },
-  outlineLabel: {
-    color: '#1A5BA8',
-  },
-  whiteLabel: {
-    color: '#1A5BA8',
-  },
-  'outline-whiteLabel': {
-    color: '#FFFFFF',
-  },
-});
