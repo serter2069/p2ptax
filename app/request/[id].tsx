@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -216,7 +217,7 @@ function ResponseCard({
 export default function RequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user, role } = useAuth();
+  const { user, role, isAuthenticated } = useAuth();
 
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [responses, setResponses] = useState<ResponseItem[]>([]);
@@ -225,6 +226,7 @@ export default function RequestDetailScreen() {
   const [error, setError] = useState(false);
   const [closing, setClosing] = useState(false);
   const [startingThread, setStartingThread] = useState(false);
+  const [message, setMessage] = useState('');
 
   const isOwner = request?.clientId && user?.id === request.clientId;
   const isSpecialist = role === 'SPECIALIST';
@@ -287,10 +289,10 @@ export default function RequestDetailScreen() {
   }, [id, fetchData]);
 
   const handleStartThread = useCallback(
-    async (specialistId: string) => {
+    async (otherUserId: string) => {
       try {
         setStartingThread(true);
-        const res = await threadsApi.startThread(specialistId);
+        const res = await threadsApi.startThread(otherUserId);
         const thread = res.data as { id: string };
         router.push(`/chat/${thread.id}` as never);
       } catch {
@@ -304,16 +306,21 @@ export default function RequestDetailScreen() {
 
   const handleResponsePress = useCallback(
     (item: ResponseItem) => {
-      // Navigate to chat with this specialist
       handleStartThread(item.specialist.id);
     },
     [handleStartThread],
   );
 
+  // Specialist writes to client (request owner)
   const handleSpecialistRespond = useCallback(() => {
     if (!request?.clientId) return;
     handleStartThread(request.clientId);
   }, [request, handleStartThread]);
+
+  // Non-authenticated user: redirect to auth with return URL
+  const handleAuthRedirect = useCallback(() => {
+    router.push(`/(auth)/email?redirectTo=/request/${id}` as never);
+  }, [router, id]);
 
   // -------------------------------------------------------------------------
   // Loading / Error states
@@ -420,6 +427,17 @@ export default function RequestDetailScreen() {
         {/* Status Flow */}
         <StatusFlow currentStatus={request.status} />
 
+        {/* Response count badge (non-owner, public view) */}
+        {!isOwner && request._count && request._count.responses > 0 && (
+          <View style={s.responseCountBadge}>
+            <Feather name="users" size={14} color={Colors.brandPrimary} />
+            <Text style={s.responseCountText}>
+              {request._count.responses}{' '}
+              {request._count.responses === 1 ? 'специалист откликнулся' : 'специалистов откликнулись'}
+            </Text>
+          </View>
+        )}
+
         {/* Responses Section — only for owner */}
         {isOwner && (
           <View style={s.section}>
@@ -450,20 +468,9 @@ export default function RequestDetailScreen() {
           </View>
         )}
 
-        {/* Non-owner info: response count */}
-        {!isOwner && request._count && (
-          <View style={s.responseCountBadge}>
-            <Feather name="users" size={14} color={Colors.brandPrimary} />
-            <Text style={s.responseCountText}>
-              {request._count.responses}{' '}
-              {request._count.responses === 1 ? 'специалист откликнулся' : 'специалистов откликнулись'}
-            </Text>
-          </View>
-        )}
-
         {/* Actions */}
         <View style={s.actions}>
-          {/* Client: close request */}
+          {/* Owner: close request */}
           {isOwner && isOpen && (
             <Pressable
               style={s.closeBtn}
@@ -481,22 +488,67 @@ export default function RequestDetailScreen() {
             </Pressable>
           )}
 
-          {/* Specialist: respond / write */}
-          {isSpecialist && isOpen && (
-            <Pressable
-              style={s.writeBtn}
-              onPress={handleSpecialistRespond}
-              disabled={startingThread}
-            >
-              {startingThread ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <>
-                  <Feather name="send" size={16} color={Colors.white} />
-                  <Text style={s.writeBtnText}>Написать</Text>
-                </>
-              )}
-            </Pressable>
+          {/* Authenticated specialist: message input + send */}
+          {isAuthenticated && isSpecialist && isOpen && (
+            <View style={s.messageSection}>
+              <Text style={s.messageSectionLabel}>Написать клиенту</Text>
+              <TextInput
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                placeholder="Напишите первое сообщение клиенту..."
+                placeholderTextColor={Colors.textMuted}
+                style={s.messageInput}
+              />
+              <Pressable
+                style={s.writeBtn}
+                onPress={handleSpecialistRespond}
+                disabled={startingThread}
+              >
+                {startingThread ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <>
+                    <Feather name="send" size={16} color={Colors.white} />
+                    <Text style={s.writeBtnText}>Написать</Text>
+                  </>
+                )}
+              </Pressable>
+              <View style={s.hintRow}>
+                <Feather name="info" size={14} color={Colors.textMuted} />
+                <Text style={s.hintText}>
+                  После отправки вы будете перенаправлены в чат
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Not authenticated: auth-gated CTA */}
+          {!isAuthenticated && isOpen && (
+            <View style={s.messageSection}>
+              <Text style={s.messageSectionLabel}>Написать клиенту</Text>
+              <TextInput
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                placeholder="Напишите первое сообщение клиенту..."
+                placeholderTextColor={Colors.textMuted}
+                style={s.messageInput}
+              />
+              <Pressable
+                style={s.writeBtn}
+                onPress={handleAuthRedirect}
+              >
+                <Feather name="log-in" size={16} color={Colors.white} />
+                <Text style={s.writeBtnText}>Войдите, чтобы написать</Text>
+              </Pressable>
+              <View style={s.authHintCard}>
+                <Feather name="info" size={16} color={Colors.brandPrimary} style={{ marginTop: 1 }} />
+                <Text style={s.authHintText}>
+                  После нажатия вы будете перенаправлены на авторизацию, а сообщение будет отправлено после входа
+                </Text>
+              </View>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -628,7 +680,7 @@ const s = StyleSheet.create({
     flex: 1,
     height: 2,
     backgroundColor: Colors.borderLight,
-    marginBottom: 18, // align with dot (above label)
+    marginBottom: 18,
   },
   statusLineActive: {
     backgroundColor: Colors.brandPrimary,
@@ -772,19 +824,73 @@ const s = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.statusError,
   },
+
+  // Message section (specialist or unauth)
+  messageSection: {
+    gap: Spacing.md,
+  },
+  messageSectionLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textSecondary,
+  },
+  messageInput: {
+    minHeight: 100,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.white,
+    padding: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    textAlignVertical: 'top',
+  },
+
   writeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    height: 44,
+    height: 48,
     borderRadius: BorderRadius.btn,
     backgroundColor: Colors.brandPrimary,
   },
   writeBtnText: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.white,
+  },
+
+  // Hint row (authenticated)
+  hintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+  },
+  hintText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+
+  // Auth hint card (not authenticated)
+  authHintCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    backgroundColor: Colors.bgSurface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  authHintText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    lineHeight: Typography.fontSize.sm * Typography.lineHeight.normal,
+    color: Colors.textSecondary,
   },
 
   // Error state
