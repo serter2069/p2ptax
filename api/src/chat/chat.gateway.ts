@@ -14,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { ChatService } from './chat.service';
+import { RequestsService } from '../requests/requests.service';
 import type {
   SendMessagePayload,
   MarkReadPayload,
@@ -57,6 +58,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly chatService: ChatService,
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly requestsService: RequestsService,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
@@ -201,6 +203,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(room).emit('message:new', message);
     // Keep legacy event for backward compatibility
     this.server.to(room).emit('message_received', message);
+
+    // Auto-transition request to IN_PROGRESS when specialist sends a message
+    if (client.data.role === 'SPECIALIST') {
+      this.requestsService
+        .autoTransitionToInProgress(client.data.userId, [thread.participant1Id, thread.participant2Id])
+        .catch((err) => this.logger.error('Failed to auto-transition request status', err?.message));
+    }
 
     // Email notification for offline recipient — fire-and-forget
     const recipientId =

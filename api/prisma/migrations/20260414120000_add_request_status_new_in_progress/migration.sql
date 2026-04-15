@@ -1,0 +1,3 @@
+-- Add NEW and IN_PROGRESS values to RequestStatus enum
+ALTER TYPE "RequestStatus" ADD VALUE IF NOT EXISTS 'NEW' BEFORE 'OPEN';
+ALTER TYPE "RequestStatus" ADD VALUE IF NOT EXISTS 'IN_PROGRESS' AFTER 'OPEN';

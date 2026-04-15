@@ -32,7 +32,7 @@ export class RequestsService {
 
   async findRecent(limit = 5) {
     return this.prisma.request.findMany({
-      where: { status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] } },
+      where: { status: { in: [RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON] } },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
@@ -92,7 +92,7 @@ export class RequestsService {
 
     const maxRequests = await this.getMaxRequests();
     const openCount = await this.prisma.request.count({
-      where: { clientId, status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] } },
+      where: { clientId, status: { in: [RequestStatus.NEW, RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON] } },
     });
     if (openCount >= maxRequests) {
       throw new UnprocessableEntityException(
@@ -152,7 +152,7 @@ export class RequestsService {
     // #1855: Sanitize page to prevent negative skip
     const pageNum = Math.max(1, parseInt(page as unknown as string) || 1);
 
-    const where: any = { status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] } };
+    const where: any = { status: { in: [RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON] } };
     // #1849: Case-insensitive city filter
     if (city) where.city = { equals: city, mode: 'insensitive' };
     // #1801: Category filter (case-insensitive contains)
@@ -208,7 +208,7 @@ export class RequestsService {
     const [totalRequests, activeRequests, totalResponses, acceptedResponses] =
       await Promise.all([
         this.prisma.request.count({ where: { clientId } }),
-        this.prisma.request.count({ where: { clientId, status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] } } }),
+        this.prisma.request.count({ where: { clientId, status: { in: [RequestStatus.NEW, RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON] } } }),
         this.prisma.response.count({
           where: { request: { clientId } },
         }),
@@ -324,7 +324,8 @@ export class RequestsService {
       include: { client: { select: { id: true, email: true, notifyNewResponses: true } } },
     });
     if (!request) throw new NotFoundException('Request not found');
-    if (request.status !== RequestStatus.OPEN && request.status !== RequestStatus.CLOSING_SOON) {
+    const acceptableForResponse = new Set<RequestStatus>([RequestStatus.NEW, RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON]);
+    if (!acceptableForResponse.has(request.status)) {
       throw new BadRequestException('Request is not open for responses');
     }
 
@@ -362,10 +363,14 @@ export class RequestsService {
         },
       });
 
-      // Update lastActivityAt on the request
+      // Update lastActivityAt and auto-transition to IN_PROGRESS if NEW or OPEN
+      const statusUpdate: Record<string, unknown> = { lastActivityAt: new Date() };
+      if (request.status === RequestStatus.NEW || request.status === RequestStatus.OPEN) {
+        statusUpdate.status = RequestStatus.IN_PROGRESS;
+      }
       await tx.request.update({
         where: { id: requestId },
-        data: { lastActivityAt: new Date() },
+        data: statusUpdate,
       });
 
       // Create thread between specialist and client (chat-first flow)
@@ -419,6 +424,42 @@ export class RequestsService {
         },
       },
     });
+  }
+
+  /**
+   * Auto-transition request to IN_PROGRESS when a specialist sends the first message.
+   * Called from ChatGateway. Only transitions from OPEN or NEW.
+   */
+  async autoTransitionToInProgress(specialistId: string, threadParticipantIds: [string, string]): Promise<void> {
+    // Find requests where this specialist responded and the other participant is the client
+    const [p1, p2] = threadParticipantIds;
+    const otherUserId = p1 === specialistId ? p2 : p1;
+
+    const responses = await this.prisma.response.findMany({
+      where: {
+        specialistId,
+        request: {
+          clientId: otherUserId,
+          status: { in: [RequestStatus.NEW, RequestStatus.OPEN] },
+        },
+      },
+      select: { requestId: true },
+    });
+
+    if (responses.length === 0) return;
+
+    const requestIds = responses.map((r) => r.requestId);
+    const { count } = await this.prisma.request.updateMany({
+      where: {
+        id: { in: requestIds },
+        status: { in: [RequestStatus.NEW, RequestStatus.OPEN] },
+      },
+      data: { status: RequestStatus.IN_PROGRESS },
+    });
+
+    if (count > 0) {
+      this.logger.log(`Auto-transitioned ${count} request(s) to IN_PROGRESS (specialist: ${specialistId})`);
+    }
   }
 
   /**
@@ -476,8 +517,8 @@ export class RequestsService {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');
     if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
-    if (request.status !== RequestStatus.OPEN) {
-      throw new BadRequestException('Can only delete requests with OPEN status');
+    if (request.status !== RequestStatus.NEW && request.status !== RequestStatus.OPEN) {
+      throw new BadRequestException('Can only delete requests with NEW or OPEN status');
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -500,8 +541,8 @@ export class RequestsService {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');
     if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
-    if (request.status !== RequestStatus.OPEN) {
-      throw new BadRequestException('Can only edit requests with OPEN status');
+    if (request.status !== RequestStatus.NEW && request.status !== RequestStatus.OPEN) {
+      throw new BadRequestException('Can only edit requests with NEW or OPEN status');
     }
 
     const data: Record<string, unknown> = {};
@@ -522,6 +563,11 @@ export class RequestsService {
   }
 
   async updateStatus(clientId: string, requestId: string, status: RequestStatus) {
+    // Validate enum value
+    if (!Object.values(RequestStatus).includes(status)) {
+      throw new BadRequestException(`Invalid status: ${status}`);
+    }
+
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');
     if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
@@ -533,8 +579,10 @@ export class RequestsService {
 
     // Transition matrix: defines all valid moves
     const ALLOWED_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
-      [RequestStatus.OPEN]: [RequestStatus.CLOSING_SOON, RequestStatus.CLOSED, RequestStatus.CANCELLED],
-      [RequestStatus.CLOSING_SOON]: [RequestStatus.OPEN, RequestStatus.CLOSED, RequestStatus.CANCELLED],
+      [RequestStatus.NEW]: [RequestStatus.OPEN, RequestStatus.CANCELLED],
+      [RequestStatus.OPEN]: [RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON, RequestStatus.CLOSED, RequestStatus.CANCELLED],
+      [RequestStatus.IN_PROGRESS]: [RequestStatus.CLOSED, RequestStatus.CANCELLED],
+      [RequestStatus.CLOSING_SOON]: [RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSED, RequestStatus.CANCELLED],
       // CLOSED and CANCELLED are final — no transitions allowed
     };
 
@@ -656,8 +704,9 @@ export class RequestsService {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');
     if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
-    if (request.status !== RequestStatus.OPEN && request.status !== RequestStatus.CLOSING_SOON) {
-      throw new BadRequestException('Can only extend requests with OPEN or CLOSING_SOON status');
+    const extendableStatuses = new Set<RequestStatus>([RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON]);
+    if (!extendableStatuses.has(request.status)) {
+      throw new BadRequestException('Can only extend requests with OPEN, IN_PROGRESS, or CLOSING_SOON status');
     }
     if (request.extensionsCount >= MAX_EXTENSIONS) {
       throw new BadRequestException(`Maximum number of extensions (${MAX_EXTENSIONS}) reached`);
@@ -683,7 +732,7 @@ export class RequestsService {
 
     const requests = await this.prisma.request.findMany({
       where: {
-        status: RequestStatus.OPEN,
+        status: { in: [RequestStatus.OPEN, RequestStatus.IN_PROGRESS] },
         lastActivityAt: { lt: cutoff },
       },
       include: {
@@ -724,7 +773,7 @@ export class RequestsService {
 
     const { count } = await this.prisma.request.updateMany({
       where: {
-        status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] },
+        status: { in: [RequestStatus.NEW, RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON] },
         lastActivityAt: { lt: cutoff },
       },
       data: { status: RequestStatus.CLOSED },
