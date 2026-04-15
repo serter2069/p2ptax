@@ -2,30 +2,29 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
-  SafeAreaView,
+  ScrollView,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
-  StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-import { Card } from '../../components/Card';
-import { EmptyState } from '../../components/EmptyState';
+import { Colors } from '../../constants/Colors';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+type ResponseStatus = 'sent' | 'viewed' | 'accepted' | 'deactivated';
+type FilterKey = 'all' | 'active' | 'deactivated';
+
 interface ResponseItem {
   id: string;
   comment: string;
   price: number;
   deadline: string;
-  status: 'sent' | 'viewed' | 'accepted' | 'deactivated';
+  status: ResponseStatus;
   createdAt: string;
   request: {
     id: string;
@@ -39,69 +38,226 @@ interface ResponseItem {
 }
 
 // ---------------------------------------------------------------------------
-// Status config
+// Config
 // ---------------------------------------------------------------------------
-const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  sent: { label: 'Ожидает', bg: '#fef3cd', text: '#92400e' },
-  viewed: { label: 'Просмотрен', bg: '#dbeafe', text: '#1d4ed8' },
-  accepted: { label: 'Принят', bg: '#d1fae5', text: '#065f46' },
-  deactivated: { label: 'Отклонён', bg: '#f3f4f6', text: '#6b7280' },
+const STATUS_CONFIG: Record<ResponseStatus, { label: string; bgClass: string; textClass: string; icon: string }> = {
+  sent: { label: 'Отправлен', bgClass: 'bg-blue-50', textClass: 'text-statusInfo', icon: 'send' },
+  viewed: { label: 'Просмотрен', bgClass: 'bg-amber-50', textClass: 'text-statusWarning', icon: 'eye' },
+  accepted: { label: 'Принят', bgClass: 'bg-green-50', textClass: 'text-statusSuccess', icon: 'check-circle' },
+  deactivated: { label: 'Деактивирован', bgClass: 'bg-red-50', textClass: 'text-statusError', icon: 'x-circle' },
 };
 
-const REQUEST_STATUS_LABELS: Record<string, string> = {
-  NEW: 'Новая',
-  OPEN: 'Открыта',
-  IN_PROGRESS: 'В работе',
-  CLOSING_SOON: 'Скоро закрытие',
-  CLOSED: 'Закрыта',
-  CANCELLED: 'Отменена',
+const STATUS_ICON_COLORS: Record<ResponseStatus, string> = {
+  sent: Colors.statusInfo,
+  viewed: Colors.statusWarning,
+  accepted: Colors.statusSuccess,
+  deactivated: Colors.statusError,
 };
+
+const FILTER_TABS: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: 'Все' },
+  { key: 'active', label: 'Активные' },
+  { key: 'deactivated', label: 'Деактивированные' },
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+function filterResponses(items: ResponseItem[], tab: FilterKey): ResponseItem[] {
+  if (tab === 'active') return items.filter((r) => r.status !== 'deactivated');
+  if (tab === 'deactivated') return items.filter((r) => r.status === 'deactivated');
+  return items;
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffHours < 1) return 'только что';
-  if (diffHours < 24) return `${diffHours} ч. назад`;
-  if (diffDays < 7) return `${diffDays} дн. назад`;
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function formatPrice(price: number): string {
   return price.toLocaleString('ru-RU') + ' \u20BD';
 }
 
-// ---------------------------------------------------------------------------
-// Filter tabs
-// ---------------------------------------------------------------------------
-const FILTER_TABS = [
-  { label: 'Все', value: '' },
-  { label: 'Активные', value: 'active' },
-  { label: 'Принятые', value: 'accepted' },
-  { label: 'Архив', value: 'archive' },
-];
-
-function filterResponses(items: ResponseItem[], filter: string): ResponseItem[] {
-  switch (filter) {
-    case 'active':
-      return items.filter((r) => r.status === 'sent' || r.status === 'viewed');
-    case 'accepted':
-      return items.filter((r) => r.status === 'accepted');
-    case 'archive':
-      return items.filter((r) => r.status === 'deactivated' || ['CLOSED', 'CANCELLED'].includes(r.request.status));
-    default:
-      return items;
-  }
+function pluralResponses(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} отклик`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} отклика`;
+  return `${n} откликов`;
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// Status Badge
+// ---------------------------------------------------------------------------
+function StatusBadge({ status }: { status: ResponseStatus }) {
+  const cfg = STATUS_CONFIG[status];
+  return (
+    <View className={`ml-auto flex-row items-center gap-1 rounded-full px-2 py-0.5 ${cfg.bgClass}`}>
+      <Feather name={cfg.icon as any} size={12} color={STATUS_ICON_COLORS[status]} />
+      <Text className={`text-xs font-medium ${cfg.textClass}`}>{cfg.label}</Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Filter Chips
+// ---------------------------------------------------------------------------
+function FilterChips({ active, onChange }: { active: FilterKey; onChange: (f: FilterKey) => void }) {
+  return (
+    <View className="flex-row gap-2">
+      {FILTER_TABS.map((f) => (
+        <Pressable
+          key={f.key}
+          onPress={() => onChange(f.key)}
+          className={`h-9 items-center justify-center rounded-full border px-4 ${
+            active === f.key
+              ? 'border-brandPrimary bg-brandPrimary'
+              : 'border-border bg-white'
+          }`}
+        >
+          <Text
+            className={`text-sm ${
+              active === f.key ? 'font-semibold text-white' : 'font-medium text-textMuted'
+            }`}
+          >
+            {f.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Response Card
+// ---------------------------------------------------------------------------
+function ResponseCard({
+  item,
+  onNavigate,
+}: {
+  item: ResponseItem;
+  onNavigate: (id: string) => void;
+}) {
+  const isAccepted = item.status === 'accepted';
+
+  return (
+    <Pressable onPress={() => onNavigate(item.request.id)}>
+      <View className="gap-2 rounded-xl border border-borderLight bg-white p-4 shadow-sm">
+        {/* Title */}
+        <Text className="text-base font-semibold text-textPrimary" numberOfLines={2}>
+          {item.request.title || item.request.description}
+        </Text>
+
+        {/* Meta: city */}
+        <View className="flex-row items-center gap-1">
+          <Feather name="map-pin" size={12} color={Colors.textMuted} />
+          <Text className="text-xs text-textMuted">{item.request.city}</Text>
+        </View>
+
+        {/* Info row: price, deadline, status */}
+        <View className="mt-0.5 flex-row items-center gap-3">
+          <View className="flex-row items-center gap-1">
+            <Feather name="dollar-sign" size={12} color={Colors.textMuted} />
+            <Text className="text-base font-semibold text-textPrimary">{formatPrice(item.price)}</Text>
+          </View>
+          <View className="flex-row items-center gap-1">
+            <Feather name="calendar" size={12} color={Colors.textMuted} />
+            <Text className="text-base font-semibold text-textPrimary">{formatDate(item.deadline)}</Text>
+          </View>
+          <StatusBadge status={item.status} />
+        </View>
+
+        {/* Response date */}
+        <View className="flex-row items-center gap-1">
+          <Feather name="clock" size={12} color={Colors.textMuted} />
+          <Text className="text-xs text-textMuted">Отклик: {formatDate(item.createdAt)}</Text>
+        </View>
+
+        {/* Chat button for accepted */}
+        {isAccepted && (
+          <View className="mt-0.5 flex-row gap-2">
+            <Pressable
+              className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4 shadow-sm"
+              onPress={() => onNavigate(item.request.id)}
+            >
+              <Feather name="message-circle" size={16} color={Colors.white} />
+              <Text className="text-sm font-semibold text-white">Перейти в чат</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Loading Skeleton
+// ---------------------------------------------------------------------------
+function LoadingSkeleton() {
+  return (
+    <View className="gap-4 p-4">
+      <View className="flex-row items-center gap-2">
+        <View className="h-5 w-5 rounded bg-bgSurface" />
+        <View className="flex-1 gap-1">
+          <View className="h-5 w-1/2 rounded bg-bgSurface" />
+          <View className="h-3.5 w-1/3 rounded bg-bgSurface" />
+        </View>
+      </View>
+      <View className="flex-row gap-2">
+        <View className="h-9 w-14 rounded-full bg-bgSurface" />
+        <View className="h-9 w-20 rounded-full bg-bgSurface" />
+        <View className="h-9 w-28 rounded-full bg-bgSurface" />
+      </View>
+      {[1, 2, 3].map((i) => (
+        <View key={i} className="h-40 w-full rounded-xl bg-bgSurface" />
+      ))}
+      <View className="items-center pt-2">
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Empty State
+// ---------------------------------------------------------------------------
+function EmptyResponsesState({ onBrowse }: { onBrowse: () => void }) {
+  return (
+    <View className="items-center gap-3 py-12">
+      <View className="h-[72px] w-[72px] items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+        <Feather name="send" size={40} color={Colors.brandPrimary} />
+      </View>
+      <Text className="text-lg font-semibold text-textPrimary">
+        Вы ещё не откликались на заявки
+      </Text>
+      <Text className="max-w-[280px] text-center text-sm text-textMuted">
+        Найдите подходящие заявки и предложите свои услуги клиентам
+      </Text>
+      <Pressable
+        className="mt-1 h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary px-8 shadow-sm"
+        onPress={onBrowse}
+      >
+        <Feather name="search" size={16} color={Colors.white} />
+        <Text className="text-base font-semibold text-white">Посмотреть заявки</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Empty Filter State
+// ---------------------------------------------------------------------------
+function EmptyFilterState() {
+  return (
+    <View className="items-center gap-2 py-12">
+      <Feather name="filter" size={36} color={Colors.textMuted} />
+      <Text className="text-base text-textMuted">Нет откликов в этой категории</Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Component
 // ---------------------------------------------------------------------------
 export default function MyResponsesTab() {
   const router = useRouter();
@@ -111,7 +267,7 @@ export default function MyResponsesTab() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState<FilterKey>('all');
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -140,86 +296,33 @@ export default function MyResponsesTab() {
     fetchData(true);
   }
 
+  function handleNavigate(requestId: string) {
+    router.push(`/requests/${requestId}` as any);
+  }
+
   const filtered = filterResponses(items, filter);
 
-  // Stats
-  const activeCount = items.filter((r) => r.status === 'sent' || r.status === 'viewed').length;
-  const acceptedCount = items.filter((r) => r.status === 'accepted').length;
-
-  // ---------------------------------------------------------------------------
-  // Render card
-  // ---------------------------------------------------------------------------
-  function renderCard({ item }: { item: ResponseItem }) {
-    const statusCfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.sent;
-    const reqStatusLabel = REQUEST_STATUS_LABELS[item.request.status] || item.request.status;
-
+  // Loading
+  if (loading) {
     return (
-      <TouchableOpacity
-        onPress={() => router.push(`/requests/${item.request.id}` as any)}
-        activeOpacity={0.8}
-        style={styles.cardWrapper}
-      >
-        <Card padding={Spacing.lg} variant="elevated">
-          {/* Top row: response status + date */}
-          <View style={styles.topRow}>
-            <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
-              <Text style={[styles.statusText, { color: statusCfg.text }]}>
-                {statusCfg.label}
-              </Text>
-            </View>
-            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-          </View>
-
-          {/* Request title */}
-          {item.request.title ? (
-            <Text style={styles.cardTitle} numberOfLines={2}>
-              {item.request.title}
-            </Text>
-          ) : (
-            <Text style={styles.cardTitle} numberOfLines={2}>
-              {item.request.description}
-            </Text>
-          )}
-
-          {/* Your comment snippet */}
-          <Text style={styles.commentSnippet} numberOfLines={2}>
-            {item.comment}
-          </Text>
-
-          {/* Tags: city, request status */}
-          <View style={styles.tagsRow}>
-            <View style={styles.cityChip}>
-              <Feather name="map-pin" size={10} color={Colors.textSecondary} />
-              <Text style={styles.cityText}>{item.request.city}</Text>
-            </View>
-            <View style={styles.reqStatusChip}>
-              <Text style={styles.reqStatusText}>{reqStatusLabel}</Text>
-            </View>
-          </View>
-
-          {/* Footer: price + deadline */}
-          <View style={styles.cardFooter}>
-            <Text style={styles.priceText}>{formatPrice(item.price)}</Text>
-            <View style={styles.deadlineChip}>
-              <Feather name="clock" size={12} color={Colors.textMuted} />
-              <Text style={styles.deadlineText}>
-                до {new Date(item.deadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-              </Text>
-            </View>
-          </View>
-        </Card>
-      </TouchableOpacity>
+      <View className="flex-1 bg-white">
+        <LoadingSkeleton />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={renderCard}
+    <View className="flex-1 bg-white">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          padding: 16,
+          gap: 16,
+          maxWidth: isMobile ? undefined : 700,
+          alignSelf: isMobile ? undefined : 'center',
+          width: '100%',
+        }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.listContent, !isMobile && styles.listContentWide]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -227,274 +330,63 @@ export default function MyResponsesTab() {
             tintColor={Colors.brandPrimary}
           />
         }
-        ListHeaderComponent={
-          <View style={[styles.headerBox, !isMobile && styles.headerBoxWide]}>
-            <Text style={styles.pageTitle}>Мои отклики</Text>
-
-            {/* Stats */}
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{items.length}</Text>
-                <Text style={styles.statLabel}>Всего</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{activeCount}</Text>
-                <Text style={styles.statLabel}>Активных</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{acceptedCount}</Text>
-                <Text style={styles.statLabel}>Принятых</Text>
-              </View>
-            </View>
-
-            {/* Filter tabs */}
-            <View style={styles.filterRow}>
-              {FILTER_TABS.map((f) => {
-                const active = f.value === filter;
-                return (
-                  <TouchableOpacity
-                    key={f.value || '__all__'}
-                    onPress={() => setFilter(f.value)}
-                    style={[styles.filterChip, active && styles.filterChipActive]}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                      {f.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+      >
+        {/* Error */}
+        {error && items.length === 0 ? (
+          <View className="items-center gap-3 py-12">
+            <Feather name="wifi-off" size={48} color={Colors.textMuted} />
+            <Text className="text-lg font-semibold text-textPrimary">Ошибка загрузки</Text>
+            <Text className="max-w-[280px] text-center text-sm text-textMuted">{error}</Text>
+            <Pressable
+              className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary px-6"
+              onPress={() => fetchData()}
+            >
+              <Text className="text-sm font-semibold text-white">Повторить</Text>
+            </Pressable>
           </View>
-        }
-        ListEmptyComponent={
-          loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color={Colors.brandPrimary} />
+        ) : items.length === 0 ? (
+          /* Empty — no responses */
+          <>
+            <View className="flex-row items-center gap-2">
+              <Feather name="mail" size={20} color={Colors.brandPrimary} />
+              <Text className="text-xl font-bold text-textPrimary">Мои отклики</Text>
             </View>
-          ) : error ? (
-            <EmptyState
-              icon="alert-circle-outline"
-              title="Ошибка загрузки"
-              subtitle={error}
-              ctaLabel="Повторить"
-              onCtaPress={() => fetchData()}
-            />
-          ) : (
-            <EmptyState
-              icon="paper-plane-outline"
-              title="Откликов пока нет"
-              subtitle={
-                filter
-                  ? 'Нет откликов с таким статусом'
-                  : 'Откликайтесь на заявки из ленты, и они появятся здесь'
-              }
-              ctaLabel={filter ? 'Сбросить фильтр' : 'Перейти к ленте'}
-              onCtaPress={() => {
-                if (filter) {
-                  setFilter('');
-                } else {
-                  router.push('/(tabs)/feed' as any);
-                }
-              }}
-            />
-          )
-        }
-      />
-    </SafeAreaView>
+            <EmptyResponsesState onBrowse={() => router.push('/(tabs)/feed' as any)} />
+          </>
+        ) : (
+          /* Populated */
+          <>
+            {/* Header */}
+            <View className="flex-row items-center gap-2">
+              <Feather name="mail" size={20} color={Colors.brandPrimary} />
+              <View className="flex-1">
+                <Text className="text-xl font-bold text-textPrimary">Мои отклики</Text>
+                <Text className="text-base text-textMuted">{pluralResponses(items.length)}</Text>
+              </View>
+            </View>
+
+            {/* Filters */}
+            <FilterChips active={filter} onChange={setFilter} />
+
+            {/* List or empty filter */}
+            {filtered.length === 0 ? (
+              <EmptyFilterState />
+            ) : (
+              <View className="gap-3">
+                {filtered.map((item) => (
+                  <ResponseCard
+                    key={item.id}
+                    item={item}
+                    onNavigate={handleNavigate}
+                  />
+                ))}
+              </View>
+            )}
+          </>
+        )}
+
+        <View className="h-8" />
+      </ScrollView>
+    </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-  },
-  listContentWide: {
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 700,
-  },
-
-  // Header
-  headerBox: {
-    gap: Spacing.md,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
-  },
-  headerBoxWide: {
-    maxWidth: 700,
-  },
-  pageTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  statValue: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.brandPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-
-  // Filters
-  filterRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  filterChip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-    minHeight: 40,
-    justifyContent: 'center',
-  },
-  filterChipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  filterChipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  filterChipTextActive: {
-    color: Colors.white,
-  },
-
-  // Card
-  cardWrapper: {
-    width: '100%',
-    marginBottom: Spacing.md,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  statusBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  dateText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  cardTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-    marginBottom: Spacing.xs,
-  },
-  commentSnippet: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    lineHeight: 20,
-    marginBottom: Spacing.md,
-    fontStyle: 'italic',
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-    marginBottom: Spacing.sm,
-  },
-  cityChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  cityText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  reqStatusChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  reqStatusText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  priceText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.bold,
-  },
-  deadlineChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  deadlineText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-
-  // Loading
-  loadingBox: {
-    paddingTop: Spacing['4xl'],
-    alignItems: 'center',
-  },
-});
