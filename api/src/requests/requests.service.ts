@@ -11,6 +11,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { InAppNotificationService } from '../notifications/in-app-notification.service';
+import { StorageService } from '../storage/storage.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { CreateQuickRequestDto } from './dto/create-quick-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
@@ -30,6 +31,7 @@ export class RequestsService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private inAppNotifService: InAppNotificationService,
+    private storageService: StorageService,
   ) {}
 
   async findRecent(limit = 5) {
@@ -796,5 +798,41 @@ export class RequestsService {
     });
 
     this.logger.log(`autoCloseStale: ${count} requests auto-closed`);
+  }
+
+  /**
+   * Upload documents to a request. Stores files in S3 and appends metadata to the request's documents JSON field.
+   * Only the request owner can upload, and only for NEW or OPEN requests.
+   */
+  async uploadDocuments(clientId: string, requestId: string, files: Express.Multer.File[]) {
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
+    if (request.status !== RequestStatus.NEW && request.status !== RequestStatus.OPEN) {
+      throw new BadRequestException('Can only upload documents to requests with NEW or OPEN status');
+    }
+
+    const existingDocs = (request.documents as any[]) || [];
+    const newDocs: { key: string; name: string; mimeType: string; size: number; uploadedAt: string }[] = [];
+
+    for (const file of files) {
+      const key = `requests/${requestId}/${Date.now()}-${file.originalname}`;
+      await this.storageService.uploadBuffer(key, file.buffer, file.mimetype);
+      newDocs.push({
+        key,
+        name: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+      });
+    }
+
+    const allDocs = [...existingDocs, ...newDocs];
+
+    return this.prisma.request.update({
+      where: { id: requestId },
+      data: { documents: allDocs },
+      select: { id: true, documents: true },
+    });
   }
 }

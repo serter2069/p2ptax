@@ -229,7 +229,7 @@ export class PromotionsService {
         reminderSent: false,
       },
       include: {
-        specialist: { select: { email: true } },
+        specialist: { select: { id: true, email: true } },
       },
     });
 
@@ -238,6 +238,7 @@ export class PromotionsService {
         await this.emailService.notifyPromotionExpiringSoon(
           promo.specialist.email,
           promo.city,
+          promo.specialist.id,
         ).catch((err) =>
           this.logger.error(`Failed to send expiry reminder for promotion ${promo.id}`, err),
         );

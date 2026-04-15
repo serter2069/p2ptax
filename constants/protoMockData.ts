@@ -40,6 +40,7 @@ export interface MockRequest {
   createdAt: string;
   clientName: string;
   messageCount: number;
+  responseCount: number;
 }
 
 export const MOCK_REQUESTS: MockRequest[] = [
@@ -54,6 +55,7 @@ export const MOCK_REQUESTS: MockRequest[] = [
     createdAt: '2026-04-08',
     clientName: 'Елена Васильева',
     messageCount: 0,
+    responseCount: 0,
   },
   {
     id: '2',
@@ -66,6 +68,7 @@ export const MOCK_REQUESTS: MockRequest[] = [
     createdAt: '2026-04-07',
     clientName: 'Дмитрий Козлов',
     messageCount: 3,
+    responseCount: 2,
   },
   {
     id: '3',
@@ -78,6 +81,7 @@ export const MOCK_REQUESTS: MockRequest[] = [
     createdAt: '2026-04-05',
     clientName: 'Татьяна Фёдорова',
     messageCount: 5,
+    responseCount: 4,
   },
   {
     id: '4',
@@ -90,6 +94,7 @@ export const MOCK_REQUESTS: MockRequest[] = [
     createdAt: '2026-03-20',
     clientName: 'Елена Васильева',
     messageCount: 2,
+    responseCount: 1,
   },
   {
     id: '5',
@@ -102,6 +107,7 @@ export const MOCK_REQUESTS: MockRequest[] = [
     createdAt: '2026-03-15',
     clientName: 'Дмитрий Козлов',
     messageCount: 1,
+    responseCount: 1,
   },
 ];
 
