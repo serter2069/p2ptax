@@ -469,7 +469,7 @@ export default function AdminModeration() {
     setActionLoading((prev) => ({ ...prev, [s.id]: true }));
     try {
       const newBadges = [...new Set([...s.badges, VERIFIED_BADGE])];
-      await api.patch(`/specialists/${s.user.id}/badges`, { badges: newBadges });
+      await api.patch(`/admin/specialists/${s.user.id}/badges`, { badges: newBadges });
       const updated = { ...s, badges: newBadges };
       setSpecialists((prev) =>
         prev.map((item) => (item.id === s.id ? updated : item)),
@@ -487,7 +487,7 @@ export default function AdminModeration() {
     setActionLoading((prev) => ({ ...prev, [s.id]: true }));
     try {
       const newBadges = s.badges.filter((b) => b !== VERIFIED_BADGE);
-      await api.patch(`/specialists/${s.user.id}/badges`, { badges: newBadges });
+      await api.patch(`/admin/specialists/${s.user.id}/badges`, { badges: newBadges });
       const updated = { ...s, badges: newBadges };
       setSpecialists((prev) =>
         prev.map((item) => (item.id === s.id ? updated : item)),

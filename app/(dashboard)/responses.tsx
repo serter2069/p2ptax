@@ -87,7 +87,7 @@ export default function ResponsesScreen() {
     if (!isRefresh) setLoading(true);
     setError('');
     try {
-      const requests = await api.get<RequestFromAPI[]>('/requests/mine');
+      const requests = await api.get<RequestFromAPI[]>('/requests/my');
       // Flatten: collect all non-deactivated responses across all requests
       const flat: ResponseListItem[] = [];
       for (const req of requests) {
