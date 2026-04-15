@@ -6,6 +6,8 @@ import { pageRegistry, PAGE_GROUPS } from '../../constants/pageRegistry';
 import type { PageEntry } from '../../constants/pageRegistry';
 
 const GROUP_LABELS: Record<string, string> = {
+  Overview: 'Обзор',
+  Brand: 'Бренд',
   Auth: 'Авторизация',
   Onboarding: 'Онбординг',
   Dashboard: 'Кабинет клиента',
@@ -15,6 +17,8 @@ const GROUP_LABELS: Record<string, string> = {
 };
 
 const GROUP_COLORS: Record<string, string> = {
+  Overview: '#6B7280',
+  Brand: '#EC4899',
   Auth: '#6366F1',
   Onboarding: '#8B5CF6',
   Dashboard: '#1A5BA8',
