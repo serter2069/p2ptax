@@ -13,7 +13,6 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../constants/Colors';
 import { requests as requestsApi } from '../../lib/api/endpoints';
-import { NotificationBell } from '../../components/NotificationBell';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,35 +57,35 @@ function RequestCard({ item, onPress }: { item: RequestItem; onPress: () => void
   return (
     <Pressable
       onPress={onPress}
-      className="gap-2 rounded-[14px] border border-[#BAE6FD] bg-white p-4"
+      className="gap-2 rounded-xl border border-borderLight bg-white p-4"
       style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}
     >
       {/* Header: title + badge */}
       <View className="flex-row items-start justify-between gap-2">
-        <Text className="flex-1 text-[15px] font-semibold text-textPrimary" numberOfLines={2}>
+        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={2}>
           {item.title}
         </Text>
         <View className="rounded-full px-2 py-[2px]" style={{ backgroundColor: st.bg }}>
-          <Text className="text-[11px] font-semibold" style={{ color: st.color }}>{st.label}</Text>
+          <Text className="text-xs font-semibold" style={{ color: st.color }}>{st.label}</Text>
         </View>
       </View>
 
       {/* Meta: service, fns, city */}
       <View className="flex-row flex-wrap items-center gap-1">
         <Feather name="briefcase" size={12} color={Colors.textMuted} />
-        <Text className="text-[13px] text-textMuted">{item.serviceType}</Text>
+        <Text className="text-xs text-textMuted">{item.serviceType}</Text>
         {item.fnsName ? (
           <>
-            <Text className="text-[11px] text-[#BAE6FD]">{'·'}</Text>
+            <Text className="text-xs text-border">{'·'}</Text>
             <Feather name="home" size={12} color={Colors.textMuted} />
-            <Text className="text-[13px] text-textMuted" numberOfLines={1}>{item.fnsName}</Text>
+            <Text className="text-xs text-textMuted" numberOfLines={1}>{item.fnsName}</Text>
           </>
         ) : null}
         {item.city ? (
           <>
-            <Text className="text-[11px] text-[#BAE6FD]">{'·'}</Text>
+            <Text className="text-xs text-border">{'·'}</Text>
             <Feather name="map-pin" size={12} color={Colors.textMuted} />
-            <Text className="text-[13px] text-textMuted">{item.city}</Text>
+            <Text className="text-xs text-textMuted">{item.city}</Text>
           </>
         ) : null}
       </View>
@@ -95,12 +94,12 @@ function RequestCard({ item, onPress }: { item: RequestItem; onPress: () => void
       <View className="flex-row items-center gap-2">
         <View className="flex-1 flex-row items-center gap-1">
           <Feather name="calendar" size={12} color={Colors.textMuted} />
-          <Text className="text-[13px] text-textMuted">{dateStr}</Text>
+          <Text className="text-xs text-textMuted">{dateStr}</Text>
         </View>
         {item.messageCount > 0 && (
           <View className="flex-row items-center gap-1">
             <Feather name="message-circle" size={12} color={Colors.brandPrimary} />
-            <Text className="text-[13px] font-medium text-brandPrimary">{item.messageCount} сообщ.</Text>
+            <Text className="text-xs font-medium text-brandPrimary">{item.messageCount} сообщ.</Text>
           </View>
         )}
         <Feather name="chevron-right" size={16} color={Colors.textMuted} />
@@ -132,19 +131,19 @@ function LoadingState() {
       </View>
       {/* Tab skeleton */}
       <View className="flex-row gap-1">
-        <View className="h-10 flex-1 items-center justify-center rounded-[12px] bg-bgSurface">
+        <View className="h-10 flex-1 items-center justify-center rounded-xl bg-bgSurface">
           <SkeletonBlock width="70%" height={14} />
         </View>
-        <View className="h-10 flex-1 items-center justify-center rounded-[12px] bg-bgSurface">
+        <View className="h-10 flex-1 items-center justify-center rounded-xl bg-bgSurface">
           <SkeletonBlock width="70%" height={14} />
         </View>
-        <View className="h-10 flex-1 items-center justify-center rounded-[12px] bg-bgSurface">
+        <View className="h-10 flex-1 items-center justify-center rounded-xl bg-bgSurface">
           <SkeletonBlock width="50%" height={14} />
         </View>
       </View>
       {/* Card skeletons */}
       {[1, 2, 3].map((i) => (
-        <View key={i} className="rounded-[14px] border border-[#BAE6FD] bg-white p-4">
+        <View key={i} className="rounded-xl border border-borderLight bg-white p-4">
           <View className="flex-row justify-between">
             <SkeletonBlock width="65%" height={16} />
             <SkeletonBlock width={60} height={22} radius={9999} />
@@ -188,18 +187,18 @@ function EmptyState({ tab, onCreatePress }: { tab: TabKey; onCreatePress: () => 
 
   return (
     <View className="flex-1 items-center justify-center gap-3 p-4">
-      <View className="h-[72px] w-[72px] items-center justify-center rounded-full border border-[#BAE6FD] bg-bgSurface">
+      <View className="h-[72px] w-[72px] items-center justify-center rounded-full border border-borderLight bg-bgSurface">
         <Feather name="file-text" size={40} color={Colors.brandPrimary} />
       </View>
       <Text className="text-lg font-semibold text-textPrimary">{t.title}</Text>
-      <Text className="max-w-[280px] text-center text-[15px] text-textMuted">{t.subtitle}</Text>
+      <Text className="max-w-[280px] text-center text-base text-textMuted">{t.subtitle}</Text>
       {tab !== 'completed' && (
         <Pressable
-          className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-[12px] bg-brandPrimary px-6"
+          className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary px-6"
           onPress={onCreatePress}
         >
-          <Feather name="plus" size={16} color="#FFFFFF" />
-          <Text className="text-[13px] font-semibold text-white">Создать заявку</Text>
+          <Feather name="plus" size={16} color={Colors.white} />
+          <Text className="text-xs font-semibold text-white">Создать заявку</Text>
         </Pressable>
       )}
     </View>
@@ -217,13 +216,13 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
         <Feather name="alert-triangle" size={36} color={Colors.statusError} />
       </View>
       <Text className="text-lg font-semibold text-textPrimary">Ошибка загрузки</Text>
-      <Text className="max-w-[280px] text-center text-[15px] text-textMuted">Не удалось загрузить список заявок</Text>
+      <Text className="max-w-[280px] text-center text-base text-textMuted">Не удалось загрузить список заявок</Text>
       <Pressable
-        className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-[12px] bg-brandPrimary px-6"
+        className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary px-6"
         onPress={onRetry}
       >
-        <Feather name="refresh-cw" size={16} color="#FFFFFF" />
-        <Text className="text-[13px] font-semibold text-white">Попробовать снова</Text>
+        <Feather name="refresh-cw" size={16} color={Colors.white} />
+        <Text className="text-xs font-semibold text-white">Попробовать снова</Text>
       </Pressable>
     </View>
   );
@@ -288,19 +287,16 @@ export default function RequestsTab() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
+      {/* Header — proto: title + add button only */}
       <View className="flex-row items-center justify-between px-4 pb-3 pt-8">
         <Text className="text-xl font-bold text-textPrimary">Мои заявки</Text>
-        <View className="flex-row items-center gap-3">
-          <NotificationBell />
-          <Pressable
-            className="flex-row items-center gap-1 rounded-[12px] bg-brandPrimary px-3 py-2"
-            onPress={goToCreate}
-          >
-            <Feather name="plus" size={16} color="#FFFFFF" />
-            <Text className="text-[13px] font-semibold text-white">Новая</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          className="flex-row items-center gap-1 rounded-xl bg-brandPrimary px-3 py-2"
+          onPress={goToCreate}
+        >
+          <Feather name="plus" size={16} color={Colors.white} />
+          <Text className="text-sm font-semibold text-white">Новая</Text>
+        </Pressable>
       </View>
 
       {/* Tabs */}
@@ -309,14 +305,14 @@ export default function RequestsTab() {
           <Pressable
             key={t.key}
             onPress={() => setTab(t.key)}
-            className={`h-10 flex-1 items-center justify-center rounded-[12px] border ${
+            className={`h-10 flex-1 items-center justify-center rounded-xl border ${
               tab === t.key
                 ? 'border-brandPrimary bg-brandPrimary'
-                : 'border-[#BAE6FD] bg-white'
+                : 'border-border bg-white'
             }`}
           >
             <Text
-              className={`text-[11px] ${
+              className={`text-xs ${
                 tab === t.key ? 'font-semibold text-white' : 'font-medium text-textMuted'
               }`}
             >
@@ -358,7 +354,7 @@ export default function RequestsTab() {
           style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 8 }}
           onPress={goToCreate}
         >
-          <Feather name="plus" size={24} color="#FFFFFF" />
+          <Feather name="plus" size={24} color={Colors.white} />
         </Pressable>
       )}
     </SafeAreaView>
