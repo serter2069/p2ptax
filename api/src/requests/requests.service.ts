@@ -41,6 +41,7 @@ export class RequestsService {
         description: true,
         city: true,
         category: true,
+        serviceType: true,
         budget: true,
         createdAt: true,
         _count: { select: { responses: true } },
@@ -76,7 +77,8 @@ export class RequestsService {
     const title = dto.title;
     const description = dto.description;
     const city = dto.city;
-    const category = dto.category || dto.serviceType || null;
+    const category = dto.category || null;
+    const serviceType = dto.serviceType || null;
 
     if (!title || title.trim().length < 3) {
       throw new BadRequestException('title is required and must be at least 3 characters');
@@ -106,6 +108,7 @@ export class RequestsService {
         city,
         ifnsId: dto.ifnsId ?? null,
         ifnsName: dto.ifnsName ?? null,
+        serviceType,
         budget: dto.budget ?? null,
         category,
       },
@@ -292,6 +295,7 @@ export class RequestsService {
         ifnsName: true,
         budget: true,
         category: true,
+        serviceType: true,
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -346,7 +350,7 @@ export class RequestsService {
     });
     if (existing) throw new ConflictException('Already responded to this request');
 
-    // Create response (thread is created later in acceptResponse)
+    // Chat-first model: create Response + Thread + first Message in one transaction
     const result = await this.prisma.$transaction(async (tx) => {
       const response = await tx.response.create({
         data: {
@@ -364,7 +368,29 @@ export class RequestsService {
         data: { lastActivityAt: new Date() },
       });
 
-      return { response };
+      // Create thread between specialist and client (chat-first flow)
+      const clientId = request.client.id;
+      const [p1, p2] =
+        specialistId < clientId
+          ? [specialistId, clientId]
+          : [clientId, specialistId];
+
+      const thread = await tx.thread.upsert({
+        where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
+        create: { participant1Id: p1, participant2Id: p2 },
+        update: {},
+      });
+
+      // Create first message in the thread from the specialist's comment
+      const message = await tx.message.create({
+        data: {
+          threadId: thread.id,
+          senderId: specialistId,
+          content: dto.comment,
+        },
+      });
+
+      return { response, thread: { id: thread.id }, message: { id: message.id } };
     });
 
     // Notify client about new response — fire-and-forget
@@ -469,7 +495,7 @@ export class RequestsService {
   async updateFields(
     clientId: string,
     requestId: string,
-    dto: { description?: string; city?: string; budget?: number | null; category?: string | null },
+    dto: { description?: string; city?: string; budget?: number | null; category?: string | null; serviceType?: string | null },
   ) {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');
@@ -483,6 +509,7 @@ export class RequestsService {
     if (dto.city !== undefined) data.city = dto.city;
     if (dto.budget !== undefined) data.budget = dto.budget;
     if (dto.category !== undefined) data.category = dto.category;
+    if (dto.serviceType !== undefined) data.serviceType = dto.serviceType;
 
     if (Object.keys(data).length === 0) {
       throw new BadRequestException('No fields to update');

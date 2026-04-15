@@ -168,6 +168,7 @@ model Request {
   city             String
   ifnsId           String?
   ifnsName         String?
+  serviceType      String?       // "Выездная проверка" | "Камеральная проверка" | "Отдел оперативного контроля" | null ("Не знаю")
   budget           Int?
   category         String?
   documents        Json          @default("[]")
