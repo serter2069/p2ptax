@@ -58,6 +58,16 @@ export const users = {
     return client.patch('/users/me', data);
   },
 
+  checkUsername(username: string) {
+    return client.get<{ available: boolean }>('/users/check-username', {
+      params: { username },
+    });
+  },
+
+  setUsername(data: { username: string; firstName?: string; lastName?: string }) {
+    return client.patch('/users/me/username', data);
+  },
+
   getSettings() {
     return client.get('/users/me/settings');
   },
