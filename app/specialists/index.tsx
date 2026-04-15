@@ -1,33 +1,29 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
+  Pressable,
   TextInput,
+  ActivityIndicator,
+  ScrollView,
+  useWindowDimensions,
+  SafeAreaView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { useCities, useFnsSearch, FnsOfficeItem } from '../../hooks/useFnsData';
 import { Avatar } from '../../components/Avatar';
-import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
-import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
 import { Footer } from '../../components/Footer';
-import { Stars } from '../../components/Stars';
-import { useBreakpoints } from '../../hooks/useBreakpoints';
-import { useFnsSearch, useCities, FnsOfficeItem } from '../../hooks/useFnsData';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
+const PAGE_SIZE = 20;
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 interface SpecialistItem {
   nick: string;
   displayName: string | null;
@@ -40,7 +36,6 @@ interface SpecialistItem {
   badges: string[];
   promoted: boolean;
   promotionTier: number;
-  fnsDepartmentsData: Array<{ office: string; departments: string[] }> | null;
   activity: { responseCount: number; avgRating: number | null; reviewCount: number };
 }
 
@@ -52,23 +47,238 @@ interface ServiceCategory {
   sortOrder: number;
 }
 
-export default function SpecialistsCatalogScreen() {
-  const router = useRouter();
-  const { isMobile, contentMaxWidth } = useBreakpoints();
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function pluralize(n: number): string {
+  const abs = Math.abs(n) % 100;
+  const last = abs % 10;
+  if (abs >= 11 && abs <= 19) return 'специалистов';
+  if (last === 1) return 'специалист';
+  if (last >= 2 && last <= 4) return 'специалиста';
+  return 'специалистов';
+}
 
-  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
+function Stars({ rating }: { rating: number | null }) {
+  if (rating === null) return null;
+  return (
+    <View className="flex-row gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Feather key={i} name="star" size={13} color={i <= Math.round(rating) ? '#D97706' : '#BAE6FD'} />
+      ))}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Dropdown
+// ---------------------------------------------------------------------------
+function DropdownSelect({ label, icon, value, options, onSelect, placeholder, disabled }: {
+  label: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  value: string;
+  options: { label: string; value: string }[];
+  onSelect: (v: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <View className="flex-1 gap-1" style={{ zIndex: 10 }}>
+      <Text className="text-xs font-semibold text-slate-500 uppercase">{label}</Text>
+      <Pressable
+        className={`h-11 bg-white border rounded-lg px-3 flex-row items-center gap-2 ${
+          open ? 'border-sky-600' : 'border-sky-200'
+        } ${disabled ? 'opacity-50' : ''}`}
+        onPress={() => !disabled && setOpen(!open)}
+      >
+        <Feather name={icon} size={14} color={value ? '#0284C7' : '#94A3B8'} />
+        <Text className={`flex-1 text-sm ${value ? 'text-slate-900' : 'text-slate-400'}`} numberOfLines={1}>
+          {value ? options.find(o => o.value === value)?.label || value : placeholder}
+        </Text>
+        <Feather name={open ? 'chevron-up' : 'chevron-down'} size={14} color="#94A3B8" />
+      </Pressable>
+      {open && (
+        <View className="bg-white border border-sky-200 rounded-xl mt-1 shadow-sm" style={{ position: 'absolute', top: 52, left: 0, right: 0, zIndex: 100 }}>
+          <ScrollView style={{ maxHeight: 192 }} nestedScrollEnabled>
+            <Pressable className="px-3 py-2" onPress={() => { onSelect(''); setOpen(false); }}>
+              <Text className={`text-sm ${!value ? 'text-sky-600 font-semibold' : 'text-slate-900'}`}>Все</Text>
+            </Pressable>
+            {options.map((opt) => (
+              <Pressable key={opt.value} className="px-3 py-2" onPress={() => { onSelect(opt.value); setOpen(false); }}>
+                <Text className={`text-sm ${value === opt.value ? 'text-sky-600 font-semibold' : 'text-slate-900'}`}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Specialist Card
+// ---------------------------------------------------------------------------
+const TIER_BADGE_CONFIG: Record<number, { bg: string; border: string; color: string; label: string }> = {
+  3: { bg: '#FFF7ED', border: '#F59E0B', color: '#D97706', label: 'TOP' },
+  2: { bg: '#F3F0FF', border: '#8B5CF6', color: '#7C3AED', label: 'Featured' },
+  1: { bg: '#EFF6FF', border: '#3B82F6', color: '#2563EB', label: 'PRO' },
+};
+
+function SpecialistCard({ specialist, onPress }: {
+  specialist: SpecialistItem;
+  onPress: () => void;
+}) {
+  const displayName = specialist.displayName || `@${specialist.nick}`;
+  const isVerified = specialist.badges.includes('verified');
+  const tierCfg = specialist.promoted ? TIER_BADGE_CONFIG[specialist.promotionTier] : null;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`bg-white rounded-xl p-4 gap-3 ${specialist.promoted ? 'border-2' : 'border border-sky-100'}`}
+      style={{
+        minWidth: 280,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: specialist.promoted ? 0.1 : 0.06,
+        shadowRadius: specialist.promoted ? 4 : 2,
+        elevation: specialist.promoted ? 4 : 2,
+        ...(tierCfg ? { borderColor: tierCfg.border } : {}),
+      }}
+    >
+      {/* Promoted badge */}
+      {specialist.promoted && tierCfg && (
+        <View className="flex-row items-center gap-1 self-start px-2 py-0.5 rounded-full border" style={{ backgroundColor: tierCfg.bg, borderColor: tierCfg.border }}>
+          <Feather name="zap" size={11} color={tierCfg.color} />
+          <Text style={{ fontSize: 10, fontWeight: '600', color: tierCfg.color }}>{tierCfg.label}</Text>
+        </View>
+      )}
+      {/* Header: avatar + info */}
+      <View className="flex-row gap-3">
+        <Avatar name={displayName} imageUri={specialist.avatarUrl || undefined} size="lg" />
+        <View className="flex-1 gap-0.5">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-base font-semibold text-slate-900" numberOfLines={1}>{displayName}</Text>
+            {isVerified && (
+              <View className="flex-row items-center gap-0.5 bg-green-50 px-1.5 py-0.5 rounded-full">
+                <Feather name="check-circle" size={10} color="#15803D" />
+                <Text className="text-[10px] text-green-700 font-medium">Проверен</Text>
+              </View>
+            )}
+          </View>
+          {specialist.headline && (
+            <Text className="text-sm text-slate-500" numberOfLines={2}>{specialist.headline}</Text>
+          )}
+          <View className="flex-row items-center gap-1">
+            <Feather name="map-pin" size={12} color="#94A3B8" />
+            <Text className="text-sm text-slate-400" numberOfLines={1}>
+              {specialist.cities.length > 0 ? specialist.cities.join(', ') : 'Не указано'}
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-1 mt-0.5">
+            <Stars rating={specialist.activity.avgRating} />
+            {specialist.activity.avgRating !== null && (
+              <Text className="text-sm font-bold text-slate-900">{specialist.activity.avgRating.toFixed(1)}</Text>
+            )}
+            {specialist.activity.reviewCount > 0 && (
+              <Text className="text-xs text-slate-400">({specialist.activity.reviewCount})</Text>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* Member since */}
+      {specialist.memberSince > 0 && (
+        <View className="flex-row items-center gap-1">
+          <Feather name="calendar" size={12} color="#94A3B8" />
+          <Text className="text-xs text-slate-400">На сайте с {specialist.memberSince} г.</Text>
+        </View>
+      )}
+
+      {/* Services chips */}
+      {specialist.services.length > 0 && (
+        <View className="flex-row flex-wrap gap-1.5">
+          {specialist.services.slice(0, 4).map((svc) => (
+            <View key={svc} className="bg-sky-50 px-2 py-1 rounded-full">
+              <Text className="text-xs font-medium text-sky-600">{svc}</Text>
+            </View>
+          ))}
+          {specialist.services.length > 4 && (
+            <View className="bg-slate-100 px-2 py-1 rounded-full">
+              <Text className="text-xs font-medium text-slate-500">+{specialist.services.length - 4}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Button */}
+      <Pressable className="h-10 rounded-xl items-center justify-center border border-sky-600 flex-row gap-1" onPress={onPress}>
+        <Text className="text-sm font-medium text-sky-600">Подробнее</Text>
+        <Feather name="chevron-right" size={16} color="#0284C7" />
+      </Pressable>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Loading skeleton
+// ---------------------------------------------------------------------------
+function SkeletonCard() {
+  return (
+    <View className="bg-white rounded-xl p-4 border border-sky-100 gap-3" style={{ minWidth: 280 }}>
+      <View className="flex-row gap-3">
+        <View className="w-12 h-12 rounded-full bg-sky-50" />
+        <View className="flex-1 gap-1.5">
+          <View className="h-4 w-3/4 bg-sky-50 rounded" />
+          <View className="h-3 w-1/2 bg-sky-50 rounded" />
+          <View className="h-3 w-2/5 bg-sky-50 rounded" />
+        </View>
+      </View>
+      <View className="h-3 w-4/5 bg-sky-50 rounded" />
+      <View className="flex-row gap-1.5">
+        <View className="h-6 w-24 bg-sky-50 rounded-full" />
+        <View className="h-6 w-16 bg-sky-50 rounded-full" />
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MAIN PAGE
+// ---------------------------------------------------------------------------
+export default function SpecialistsCatalogScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = !isDesktop && width >= 768;
+  const router = useRouter();
+
+  // Data state
   const [items, setItems] = useState<SpecialistItem[]>([]);
+  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const [selectedCategory, setSelectedCategory] = useState('');
+  // Filter state
   const [selectedCity, setSelectedCity] = useState('');
-  const [selectedSort, setSelectedSort] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedFns, setSelectedFns] = useState<FnsOfficeItem[]>([]);
+  const [searchText, setSearchText] = useState('');
+
+  // FNS search
+  const [fnsQuery, setFnsQuery] = useState('');
+  const { results: fnsSearchResults } = useFnsSearch(fnsQuery, 300);
+  const fnsDropdown = fnsSearchResults
+    .filter((o) => !selectedFns.some((s) => s.code === o.code))
+    .slice(0, 8);
+
+  // Cities & categories
+  const { cities: apiCities } = useCities();
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
 
   useEffect(() => {
     api.get<ServiceCategory[]>('/categories')
@@ -76,19 +286,14 @@ export default function SpecialistsCatalogScreen() {
       .catch(() => {});
   }, []);
 
-  const { cities: apiCities } = useCities();
-  const [fnsQuery, setFnsQuery] = useState('');
-  const { results: fnsSearchResults } = useFnsSearch(fnsQuery, 300);
-
-  // FNS dropdown: filter API search results to exclude already selected
-  const fnsDropdown = fnsSearchResults
-    .filter((o) => !selectedFns.some((s) => s.code === o.code))
-    .slice(0, 8);
+  const cityOptions = useMemo(() =>
+    apiCities.map(c => ({ label: c.name, value: c.name })),
+    [apiCities],
+  );
 
   const fnsFilterParam = selectedFns.map((o) => o.name).join(',');
 
-  const PAGE_SIZE = 20;
-
+  // Fetch specialists
   const fetchSpecialists = useCallback(async (pageNum: number, append = false) => {
     if (append) {
       setLoadingMore(true);
@@ -101,7 +306,7 @@ export default function SpecialistsCatalogScreen() {
       if (fnsFilterParam) params.set('fns', fnsFilterParam);
       if (selectedCategory) params.set('category', selectedCategory);
       if (selectedCity) params.set('city', selectedCity);
-      if (selectedSort) params.set('sort', selectedSort);
+      if (searchText.trim()) params.set('search', searchText.trim());
       params.set('page', String(pageNum));
       params.set('limit', String(PAGE_SIZE));
 
@@ -109,6 +314,7 @@ export default function SpecialistsCatalogScreen() {
         `/specialists?${params.toString()}`,
       );
       setItems((prev) => append ? [...prev, ...data.items] : data.items);
+      setTotal(data.total);
       setPage(pageNum);
       setHasMore(pageNum < data.pages);
     } catch (err) {
@@ -120,629 +326,281 @@ export default function SpecialistsCatalogScreen() {
     } finally {
       setLoading(false);
       setLoadingMore(false);
-      setRefreshing(false);
     }
-  }, [fnsFilterParam, selectedCategory]);
+  }, [fnsFilterParam, selectedCategory, selectedCity, searchText]);
 
+  // Refetch on filter change
   useEffect(() => {
     fetchSpecialists(1, false);
-  }, [fnsFilterParam, selectedCategory]);
+  }, [fnsFilterParam, selectedCategory, selectedCity]);
 
-  function handleRefresh() {
-    setRefreshing(true);
-    fetchSpecialists(1, false);
-  }
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSpecialists(1, false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
-  function handleLoadMore() {
+  const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
       fetchSpecialists(page + 1, true);
     }
-  }
-
-  const specialists = items;
-
-  const TIER_BADGE_STYLES: Record<number, { bg: string; border: string; color: string; label: string }> = {
-    3: { bg: '#FFF7ED', border: '#F59E0B', color: '#D97706', label: 'TOP' },
-    2: { bg: '#F3F0FF', border: '#8B5CF6', color: '#7C3AED', label: 'Featured' },
-    1: { bg: '#EFF6FF', border: '#3B82F6', color: '#2563EB', label: 'PRO' },
   };
 
-  function renderSpecialist({ item }: { item: SpecialistItem }) {
-    const isVerified = item.badges.includes('verified');
-    const displayName = item.displayName || `@${item.nick}`;
-    const tierStyle = item.promoted ? TIER_BADGE_STYLES[item.promotionTier] : null;
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
+  };
 
-    return (
-      <TouchableOpacity
-        onPress={() => router.push(`/specialists/${item.nick}`)}
-        activeOpacity={0.8}
-        style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
-      >
-        <View style={[styles.card, isMobile && styles.cardMobile, item.promoted && styles.cardPromoted, item.promoted && tierStyle && { borderColor: tierStyle.border }]}>
-          {/* Promoted badge */}
-          {item.promoted && tierStyle && (
-            <View style={[styles.promotedBadge, { backgroundColor: tierStyle.bg, borderColor: tierStyle.border }]}>
-              <Ionicons name="rocket" size={11} color={tierStyle.color} />
-              <Text style={[styles.promotedBadgeText, { color: tierStyle.color }]}>{tierStyle.label}</Text>
-            </View>
-          )}
-          {/* Top row: avatar + name/headline/city */}
-          <View style={styles.cardHeader}>
-            <Avatar name={displayName} imageUri={item.avatarUrl || undefined} size="lg" />
-            <View style={styles.cardInfo}>
-              <View style={styles.nameRow}>
-                <Text style={styles.displayName} numberOfLines={1}>
-                  {displayName}
-                </Text>
-                {isVerified && (
-                  <View style={styles.verifiedBadge}>
-                    <Ionicons name="shield-checkmark" size={12} color="#1A7848" />
-                    <Text style={styles.verifiedText}>Проверен</Text>
-                  </View>
-                )}
-              </View>
-              {item.headline && (
-                <Text style={styles.headline} numberOfLines={2}>
-                  {item.headline}
-                </Text>
-              )}
-              <Text style={styles.cityText} numberOfLines={1}>
-                {item.cities.length > 0 ? item.cities.join(', ') : ''}
-                {item.cities.length > 0 && item.memberSince ? ' \u00B7 ' : ''}
-                {item.memberSince ? `на сайте с ${item.memberSince}` : ''}
-              </Text>
-            </View>
-          </View>
+  const clearAllFilters = () => {
+    setSelectedCity('');
+    setSelectedCategory('');
+    setSelectedFns([]);
+    setSearchText('');
+    setFnsQuery('');
+  };
 
-          {/* Rating */}
-          <View style={styles.metaRow}>
-            <Stars
-              rating={item.activity.avgRating}
-              reviewCount={item.activity.reviewCount}
-              size="sm"
-              showEmpty={false}
-            />
-          </View>
-
-          {/* Services chips */}
-          {item.services.length > 0 && (
-            <View style={styles.servicesRow}>
-              {item.services.slice(0, 4).map((svc, idx) => (
-                <Text key={idx} style={styles.serviceChip} numberOfLines={1}>
-                  {svc}
-                </Text>
-              ))}
-              {item.services.length > 4 && (
-                <Text style={styles.serviceMore}>
-                  +{item.services.length - 4}
-                </Text>
-              )}
-            </View>
-          )}
-
-        </View>
-      </TouchableOpacity>
-    );
-  }
-
-  const filtersMaxWidth = isMobile ? 430 : (contentMaxWidth as number);
+  const hasFilters = selectedCity || selectedCategory || selectedFns.length > 0 || searchText.trim();
+  const gridCols = isDesktop ? 3 : isTablet ? 2 : 1;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView className="flex-1 bg-white">
       <Stack.Screen options={{ title: 'Каталог специалистов — Налоговик' }} />
       <Head>
         <title>Каталог специалистов — Налоговик</title>
-        <meta name="description" content="Каталог проверенных налоговых консультантов и юристов. Выберите специалиста по городу, категории и рейтингу." />
+        <meta name="description" content="Каталог проверенных налоговых консультантов и юристов. Выберите специалиста по городу, ИФНС и категории." />
         <meta property="og:title" content="Каталог специалистов — Налоговик" />
-        <meta property="og:description" content="Каталог проверенных налоговых консультантов и юристов. Выберите специалиста по городу, категории и рейтингу." />
+        <meta property="og:description" content="Каталог проверенных налоговых консультантов и юристов." />
         <meta property="og:url" content={`${APP_URL}/specialists`} />
+        <meta property="og:type" content="website" />
       </Head>
       <LandingHeader />
-      <Header
-        title="Каталог специалистов"
-        rightAction={
-          <TouchableOpacity onPress={() => router.push('/search')} hitSlop={{top:12,bottom:12,left:12,right:12}}>
-            <Ionicons name="search" size={22} color={Colors.textPrimary} />
-          </TouchableOpacity>
-        }
-      />
 
-      <FlatList
-        data={specialists}
-        keyExtractor={(item) => item.nick}
-        renderItem={renderSpecialist}
-        numColumns={isMobile ? 1 : 2}
-        key={isMobile ? 'single' : 'double'}
-        columnWrapperStyle={isMobile ? undefined : { gap: 16 }}
-        contentContainerStyle={[
-          styles.listContent,
-          !isMobile && styles.listContentWide,
-        ]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={Colors.brandPrimary}
-          />
-        }
-        ListHeaderComponent={
-          <View style={[styles.filters, { maxWidth: filtersMaxWidth }]}>
-            {/* Service category chips */}
-            <View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                <TouchableOpacity
-                  onPress={() => setSelectedCategory('')}
-                  style={[styles.chip, selectedCategory === '' && styles.chipActive]}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.chipText, selectedCategory === '' && styles.chipTextActive]}>
-                    Все
-                  </Text>
-                </TouchableOpacity>
-                {serviceCategories.map((cat) => {
-                  const isActive = cat.name === selectedCategory;
-                  return (
-                    <TouchableOpacity
-                      key={cat.id}
-                      onPress={() => setSelectedCategory(cat.name)}
-                      style={[styles.chip, isActive && styles.chipActive]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                        {cat.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
+        <View className="w-full max-w-5xl mx-auto px-4 py-5 gap-4" style={{ zIndex: 20 }}>
+          {/* Header */}
+          <View className="gap-0.5">
+            <Text className="text-xl font-bold text-slate-900">Каталог специалистов</Text>
+            <Text className="text-sm text-slate-400">
+              {loading ? 'Загрузка...' : `${total} ${pluralize(total)} найдено`}
+            </Text>
+          </View>
 
-            {/* FNS search */}
-            <View style={styles.searchSection}>
-              <TextInput
-                style={styles.searchInput}
-                value={fnsQuery}
-                onChangeText={setFnsQuery}
-                placeholder="Ваша ИФНС..."
-                placeholderTextColor={Colors.textMuted}
-                autoCorrect={false}
-              />
-              {fnsDropdown.length > 0 && (
-                <View style={styles.fnsDropdown}>
-                  <Text style={styles.fnsDropdownHeader}>Инспекции ФНС</Text>
-                  {fnsDropdown.map((office) => (
-                    <TouchableOpacity
-                      key={office.code}
-                      onPress={() => {
-                        setSelectedFns((prev) => [...prev, office]);
-                        setFnsQuery('');
-                      }}
-                      style={styles.fnsDropdownItem}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.fnsDropdownName} numberOfLines={2}>
-                        {office.name}
-                      </Text>
-                      <Text style={styles.fnsDropdownCity}>{office.city.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {/* Selected ИФНС chips */}
-            {selectedFns.length > 0 && (
-              <View style={styles.fnsChipsRow}>
-                {selectedFns.map((office) => (
-                  <TouchableOpacity
-                    key={office.code}
-                    onPress={() =>
-                      setSelectedFns((prev) => prev.filter((o) => o.code !== office.code))
-                    }
-                    style={styles.fnsChip}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.fnsChipText} numberOfLines={1}>
-                      {office.name} ({office.city.name})
-                    </Text>
-                    <Text style={styles.fnsChipRemove}>x</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          {/* Search */}
+          <View className="flex-row items-center gap-2 bg-white border border-sky-200 rounded-lg px-3 h-11">
+            <Feather name="search" size={16} color="#94A3B8" />
+            <TextInput
+              className="flex-1 text-sm text-slate-900"
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder="Поиск по имени, услугам..."
+              placeholderTextColor="#94A3B8"
+              autoCorrect={false}
+            />
+            {searchText.length > 0 && (
+              <Pressable onPress={() => setSearchText('')}>
+                <Feather name="x" size={16} color="#94A3B8" />
+              </Pressable>
             )}
           </View>
-        }
-        ListEmptyComponent={
-          loading ? (
-            <View style={styles.skeletonContainer}>
+
+          {/* Category chips */}
+          {serviceCategories.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+            >
+              <Pressable
+                className={`px-3 py-1.5 rounded-full border ${
+                  selectedCategory === '' ? 'bg-sky-600 border-sky-600' : 'bg-white border-sky-200'
+                }`}
+                style={{ minHeight: 36, justifyContent: 'center' }}
+                onPress={() => setSelectedCategory('')}
+              >
+                <Text className={`text-sm ${selectedCategory === '' ? 'text-white font-semibold' : 'text-slate-600'}`}>
+                  Все
+                </Text>
+              </Pressable>
+              {serviceCategories.map((cat) => {
+                const isActive = cat.name === selectedCategory;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    className={`px-3 py-1.5 rounded-full border ${
+                      isActive ? 'bg-sky-600 border-sky-600' : 'bg-white border-sky-200'
+                    }`}
+                    style={{ minHeight: 36, justifyContent: 'center' }}
+                    onPress={() => setSelectedCategory(isActive ? '' : cat.name)}
+                  >
+                    <Text className={`text-sm ${isActive ? 'text-white font-semibold' : 'text-slate-600'}`}>
+                      {cat.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* Filters row: City + FNS */}
+          <View className={`gap-3 ${isDesktop ? 'flex-row' : ''}`} style={{ zIndex: 30 }}>
+            <DropdownSelect
+              label="Город"
+              icon="map-pin"
+              value={selectedCity}
+              options={cityOptions}
+              onSelect={handleCityChange}
+              placeholder="Выберите город"
+            />
+            <View className="flex-1 gap-1" style={{ zIndex: 20 }}>
+              <Text className="text-xs font-semibold text-slate-500 uppercase">ИФНС</Text>
+              <View className="relative">
+                <View className="h-11 bg-white border border-sky-200 rounded-lg px-3 flex-row items-center gap-2">
+                  <Feather name="home" size={14} color={selectedFns.length > 0 ? '#0284C7' : '#94A3B8'} />
+                  <TextInput
+                    className="flex-1 text-sm text-slate-900"
+                    value={fnsQuery}
+                    onChangeText={setFnsQuery}
+                    placeholder={selectedFns.length > 0 ? 'Добавить ещё...' : 'Поиск ИФНС...'}
+                    placeholderTextColor="#94A3B8"
+                    autoCorrect={false}
+                  />
+                </View>
+                {fnsDropdown.length > 0 && (
+                  <View
+                    className="bg-white border border-sky-200 rounded-xl mt-1 shadow-sm"
+                    style={{ position: 'absolute', top: 44, left: 0, right: 0, zIndex: 100, maxHeight: 200 }}
+                  >
+                    <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                      {fnsDropdown.map((office) => (
+                        <Pressable
+                          key={office.code}
+                          className="px-3 py-2 border-b border-sky-50"
+                          onPress={() => {
+                            setSelectedFns((prev) => [...prev, office]);
+                            setFnsQuery('');
+                          }}
+                        >
+                          <Text className="text-sm text-slate-900 font-medium" numberOfLines={2}>{office.name}</Text>
+                          <Text className="text-xs text-sky-600 mt-0.5">{office.city.name}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* Selected FNS chips */}
+          {selectedFns.length > 0 && (
+            <View className="flex-row flex-wrap gap-1.5">
+              {selectedFns.map((office) => (
+                <Pressable
+                  key={office.code}
+                  className="flex-row items-center gap-1 px-2 py-1 rounded-full bg-sky-50 border border-sky-600"
+                  onPress={() => setSelectedFns((prev) => prev.filter((o) => o.code !== office.code))}
+                >
+                  <Text className="text-xs font-medium text-sky-600" numberOfLines={1} style={{ maxWidth: 160 }}>
+                    {office.name}
+                  </Text>
+                  <Feather name="x" size={12} color="#0284C7" />
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          {/* Active filters summary */}
+          {hasFilters && (
+            <View className="flex-row items-center gap-2">
+              <Pressable onPress={clearAllFilters}>
+                <Text className="text-xs font-medium text-red-600">Сбросить все фильтры</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+
+        {/* Results */}
+        <View className="w-full max-w-5xl mx-auto px-4 gap-3">
+          {loading ? (
+            <View className={`gap-3 ${gridCols > 1 ? 'flex-row flex-wrap' : ''}`}>
               {Array.from({ length: 6 }).map((_, i) => (
-                <View key={i} style={[styles.card, styles.cardWrapperMobile, { overflow: 'hidden' }]}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.skeletonAvatar} />
-                    <View style={styles.cardInfo}>
-                      <View style={styles.skeletonLine} />
-                      <View style={[styles.skeletonLine, { width: '60%' }]} />
-                      <View style={[styles.skeletonLine, { width: '40%' }]} />
-                    </View>
-                  </View>
-                  <View style={[styles.skeletonLine, { width: '80%', marginTop: Spacing.sm }]} />
-                  <View style={{ flexDirection: 'row', gap: 4, marginTop: Spacing.sm }}>
-                    <View style={[styles.skeletonChip]} />
-                    <View style={[styles.skeletonChip, { width: 60 }]} />
-                  </View>
+                <View key={i} style={gridCols > 1 ? { flex: 1, minWidth: 280, maxWidth: `${100 / gridCols}%` } : undefined}>
+                  <SkeletonCard />
                 </View>
               ))}
             </View>
           ) : error ? (
-            <EmptyState
-              icon="alert-circle-outline"
-              title="Ошибка загрузки"
-              subtitle={error}
-              ctaLabel="Повторить"
-              onCtaPress={() => fetchSpecialists(1, false)}
-            />
-          ) : (
-            <EmptyState
-              icon="search-outline"
-              title="Специалистов не найдено"
-              subtitle="Попробуйте изменить фильтры"
-            />
-          )
-        }
-        ListFooterComponent={
-          <>
-            {hasMore && specialists.length > 0 ? (
-              <View style={styles.loadMoreBox}>
-                {loadingMore ? (
-                  <ActivityIndicator size="small" color={Colors.brandPrimary} />
-                ) : (
-                  <Button
-                    onPress={handleLoadMore}
-                    variant="secondary"
-                    style={styles.loadMoreBtn}
-                  >
-                    Загрузить ещё
-                  </Button>
-                )}
+            <View className="items-center py-10 gap-3">
+              <View className="w-16 h-16 rounded-full bg-red-50 items-center justify-center">
+                <Feather name="alert-circle" size={32} color="#DC2626" />
               </View>
-            ) : null}
-            <Footer isWide={!isMobile} />
-          </>
-        }
-      />
+              <Text className="text-lg font-semibold text-slate-900">Ошибка загрузки</Text>
+              <Text className="text-sm text-slate-400 text-center max-w-xs">{error}</Text>
+              <Pressable
+                className="px-6 py-2 bg-sky-600 rounded-lg mt-2"
+                onPress={() => fetchSpecialists(1, false)}
+              >
+                <Text className="text-sm font-medium text-white">Повторить</Text>
+              </Pressable>
+            </View>
+          ) : items.length === 0 ? (
+            <View className="items-center py-10 gap-3">
+              <View className="w-16 h-16 rounded-full bg-sky-50 items-center justify-center">
+                <Feather name="search" size={32} color="#94A3B8" />
+              </View>
+              <Text className="text-lg font-semibold text-slate-900">Специалисты не найдены</Text>
+              <Text className="text-sm text-slate-400 text-center max-w-xs">
+                Попробуйте изменить параметры фильтрации
+              </Text>
+              {hasFilters && (
+                <Pressable
+                  className="px-6 py-2 border border-sky-600 rounded-lg mt-2"
+                  onPress={clearAllFilters}
+                >
+                  <Text className="text-sm font-medium text-sky-600">Сбросить фильтры</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <>
+              <View className={`gap-3 ${gridCols > 1 ? 'flex-row flex-wrap' : ''}`}>
+                {items.map((sp) => (
+                  <View
+                    key={sp.nick}
+                    style={gridCols > 1 ? { width: `${(100 / gridCols) - 1}%` } : undefined}
+                  >
+                    <SpecialistCard
+                      specialist={sp}
+                      onPress={() => router.push(`/specialists/${sp.nick}`)}
+                    />
+                  </View>
+                ))}
+              </View>
+
+              {/* Load more */}
+              {hasMore && (
+                <View className="items-center py-4">
+                  {loadingMore ? (
+                    <ActivityIndicator size="small" color="#0284C7" />
+                  ) : (
+                    <Pressable
+                      className="px-8 py-3 border border-sky-600 rounded-xl"
+                      onPress={handleLoadMore}
+                    >
+                      <Text className="text-sm font-medium text-sky-600">Показать ещё</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+        </View>
+
+        <View className="w-full max-w-5xl mx-auto px-4 mt-6">
+          <Footer isWide={isDesktop} />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-    alignItems: 'center',
-  },
-  listContentWide: {
-    alignItems: 'stretch',
-  },
-  columnWrapper: {
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  filters: {
-    width: '100%',
-    gap: Spacing.md,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
-  },
-  filterLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-    marginBottom: Spacing.sm,
-    paddingLeft: Spacing.xs,
-  },
-  searchSection: {
-    position: 'relative',
-    zIndex: 20,
-    overflow: 'visible',
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgCard,
-    width: '100%',
-  },
-  fnsDropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    marginTop: 4,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    zIndex: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  fnsDropdownHeader: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-    paddingBottom: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  fnsDropdownItem: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgSecondary,
-  },
-  fnsDropdownName: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  fnsDropdownCity: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    marginTop: 2,
-  },
-  fnsChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-  fnsChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.statusBg.accent,
-  },
-  fnsChipText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textAccent,
-    fontWeight: Typography.fontWeight.medium,
-    maxWidth: 160,
-  },
-  fnsChipRemove: {
-    fontSize: 14,
-    color: Colors.textAccent,
-    lineHeight: 16,
-  },
-  // Card styles
-  cardWrapperMobile: {
-    width: '100%',
-    maxWidth: 430,
-    marginBottom: Spacing.sm,
-  },
-  cardWrapperGrid: {
-    flex: 1,
-    marginBottom: Spacing.sm,
-  },
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    ...Shadows.sm,
-  },
-  cardMobile: {
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.brandPrimary,
-  },
-  cardPromoted: {
-    borderWidth: 1.5,
-    borderLeftWidth: 4,
-  },
-  promotedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 4,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    marginBottom: Spacing.xs,
-  },
-  promotedBadgeText: {
-    fontSize: 10,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    alignItems: 'center',
-  },
-  cardInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  displayName: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  headline: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: 1,
-  },
-  cityText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    marginTop: 1,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: Spacing.sm,
-  },
-  experienceText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#E8F5ED',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-  },
-  verifiedText: {
-    fontSize: 10,
-    color: '#1A7848',
-    fontWeight: Typography.fontWeight.medium,
-  },
-  tenureBadge: {
-    backgroundColor: '#EDF4FF',
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: BorderRadius.sm,
-  },
-  tenureBadgeText: {
-    fontSize: 10,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  servicesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: Spacing.sm,
-  },
-  serviceChip: {
-    fontSize: 11,
-    color: '#4A6B88',
-    backgroundColor: '#F0F4FA',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
-  },
-  serviceMore: {
-    fontSize: 11,
-    color: '#4A6B88',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  cardFooter: {
-    marginTop: Spacing.sm,
-    alignItems: 'flex-end',
-  },
-  detailsBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-    backgroundColor: 'transparent',
-  },
-  detailsBtnText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.xs,
-  },
-  chip: {
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  chipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-    borderWidth: 2,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  chipTextActive: {
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  loadingBox: {
-    paddingTop: Spacing['4xl'],
-    alignItems: 'center',
-  },
-  skeletonContainer: {
-    width: '100%',
-    maxWidth: 430,
-    gap: Spacing.sm,
-  },
-  skeletonAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.bgSecondary,
-  },
-  skeletonLine: {
-    height: 12,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.bgSecondary,
-    width: '100%',
-    marginBottom: 4,
-  },
-  skeletonChip: {
-    width: 80,
-    height: 20,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.bgSecondary,
-  },
-  loadMoreBox: {
-    width: '100%',
-    maxWidth: 430,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
-    alignSelf: 'center',
-  },
-  loadMoreBtn: {
-    width: '100%',
-  },
-});
