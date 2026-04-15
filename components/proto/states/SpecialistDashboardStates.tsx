@@ -38,7 +38,7 @@ function RequestCard({ r }: { r: typeof REQUESTS[0] }) {
       </View>
       <Pressable className="mt-1 h-10 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
         <Feather name="send" size={14} color={Colors.white} />
-        <Text className="text-sm font-semibold text-white">Откликнуться</Text>
+        <Text className="text-sm font-semibold text-white">Написать по заявке</Text>
       </Pressable>
     </View>
   );
@@ -55,10 +55,10 @@ function PopulatedState() {
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <View>
         <Text className="text-xl font-bold text-textPrimary">Добрый день, Алексей!</Text>
-        <Text className="text-sm text-textMuted">Ваши заявки и отклики</Text>
+        <Text className="text-sm text-textMuted">Ваши заявки и сообщения</Text>
       </View>
       <View className="flex-row gap-2">
-        <StatCard icon="send" label="Отклики" value="5" color={Colors.brandPrimary} />
+        <StatCard icon="send" label="Сообщения" value="5" color={Colors.brandPrimary} />
         <StatCard icon="star" label="Рейтинг" value="4.8" color={Colors.statusWarning} />
         <StatCard icon="dollar-sign" label="Заработок" value="32 500 ₽" color={Colors.statusSuccess} />
       </View>
@@ -83,7 +83,7 @@ function EmptyState() {
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <Text className="text-xl font-bold text-textPrimary">Добрый день, Алексей!</Text>
       <View className="flex-row gap-2">
-        <StatCard icon="send" label="Отклики" value="0" color={Colors.textMuted} />
+        <StatCard icon="send" label="Сообщения" value="0" color={Colors.textMuted} />
         <StatCard icon="star" label="Рейтинг" value="—" color={Colors.textMuted} />
         <StatCard icon="dollar-sign" label="Заработок" value="0 ₽" color={Colors.textMuted} />
       </View>

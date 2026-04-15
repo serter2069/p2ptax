@@ -214,7 +214,7 @@ const s = StyleSheet.create({
     height: 40, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
     borderRadius: BorderRadius.card, paddingHorizontal: Spacing.md, marginBottom: Spacing.xs,
   },
-  searchInput: { flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textPrimary, paddingVertical: 0 },
+  searchInput: { flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textPrimary, paddingVertical: 0, outlineStyle: 'none' as any },
   searchEmpty: { alignItems: 'center', paddingVertical: Spacing['2xl'] },
   searchEmptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
 

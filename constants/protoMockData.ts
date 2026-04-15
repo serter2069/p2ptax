@@ -151,24 +151,27 @@ export const MOCK_RESPONSES: MockResponse[] = [
   },
 ];
 
+export interface MockMessageAttachment {
+  name: string;
+  size: string;
+  type: 'pdf' | 'image';
+}
+
 export interface MockMessage {
   id: string;
   text: string;
   fromMe: boolean;
   time: string;
+  read?: boolean;
+  attachment?: MockMessageAttachment;
 }
 
 export const MOCK_MESSAGES: MockMessage[] = [
-  { id: '1', text: 'Здравствуйте! Интересует ваше предложение по декларации 3-НДФЛ.', fromMe: true, time: '10:30' },
-  { id: '2', text: 'Добрый день! Да, готов помочь. Какие документы у вас на руках?', fromMe: false, time: '10:32' },
-  { id: '3', text: 'Есть справка 2-НДФЛ, договор купли-продажи квартиры и акт приёма-передачи.', fromMe: true, time: '10:35' },
-  { id: '4', text: 'Отлично, этого достаточно. Ещё понадобится копия паспорта и реквизиты для возврата.', fromMe: false, time: '10:37' },
-  { id: '5', text: 'Хорошо, подготовлю всё. Когда можно начать?', fromMe: true, time: '10:40' },
-  { id: '6', text: 'Можем начать завтра. Пришлите сканы документов, и я приступлю.', fromMe: false, time: '10:42' },
-  { id: '7', text: 'Договорились! Отправлю сегодня вечером.', fromMe: true, time: '10:45' },
-  { id: '8', text: 'Жду. Если возникнут вопросы по документам — пишите.', fromMe: false, time: '10:46' },
-  { id: '9', text: 'Скажите, а сколько обычно занимает возврат после подачи?', fromMe: true, time: '11:00' },
-  { id: '10', text: 'Обычно 3-4 месяца с момента подачи. Но бывает и быстрее, если всё оформлено корректно.', fromMe: false, time: '11:03' },
+  { id: '1', text: 'Здравствуйте! Мне нужна помощь с декларацией 3-НДФЛ за 2025 год.', fromMe: true, time: '10:30', read: true },
+  { id: '2', text: 'Добрый день! Подскажите, пожалуйста, какие доходы нужно отразить?', fromMe: false, time: '10:32', read: true },
+  { id: '3', text: 'Продажа квартиры и зарплата. Вот документы:', fromMe: true, time: '10:35', read: true, attachment: { name: 'Договор_купли_продажи.pdf', size: '1.2 МБ', type: 'pdf' } },
+  { id: '4', text: 'Спасибо, получил. Подготовлю декларацию в течение 2 дней.', fromMe: false, time: '10:37', read: true, attachment: { name: 'Чек-лист_документов.pdf', size: '89 КБ', type: 'pdf' } },
+  { id: '5', text: '', fromMe: true, time: '10:40', read: false, attachment: { name: 'Справка_2НДФЛ.jpg', size: '340 КБ', type: 'image' } },
 ];
 
 export interface MockThread {

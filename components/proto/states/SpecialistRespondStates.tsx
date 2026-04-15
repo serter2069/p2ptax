@@ -5,9 +5,7 @@ import { StateSection } from '../StateSection';
 import { Colors } from '../../../constants/Colors';
 
 function IdleState() {
-  const [price, setPrice] = useState('4 500');
   const [message, setMessage] = useState('Здравствуйте! Готов помочь с декларацией. Опыт — 8 лет, 200+ успешных деклараций.');
-  const [deadline, setDeadline] = useState('2 рабочих дня');
 
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
@@ -31,51 +29,23 @@ function IdleState() {
         </View>
       </View>
 
-      <View className="gap-4">
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">Ваша цена *</Text>
-          <View className="h-12 flex-row items-center gap-2 rounded-lg border border-borderLight bg-white px-3">
-            <Feather name="dollar-sign" size={16} color={Colors.textMuted} />
-            <TextInput
-              value={price}
-              onChangeText={setPrice}
-              placeholder="Стоимость в рублях"
-              placeholderTextColor={Colors.textMuted}
-              keyboardType="number-pad"
-              className="flex-1 text-base text-textPrimary"
-              style={{ outlineStyle: 'none' as any }}
-            />
-            <Text className="text-sm text-textMuted">₽</Text>
-          </View>
-        </View>
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">Сообщение клиенту *</Text>
-          <TextInput
-            value={message}
-            onChangeText={setMessage}
-            multiline
-            className="min-h-[100px] rounded-lg border border-borderLight bg-white p-3 text-base text-textPrimary"
-            style={{ textAlignVertical: 'top', outlineStyle: 'none' as any }}
-          />
-          <Text className="self-end text-xs text-textMuted">{message.length}/500</Text>
-        </View>
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">Срок выполнения *</Text>
-          <View className="h-12 flex-row items-center gap-2 rounded-lg border border-borderLight bg-white px-3">
-            <Feather name="clock" size={16} color={Colors.textMuted} />
-            <TextInput
-              value={deadline}
-              onChangeText={setDeadline}
-              className="flex-1 text-base text-textPrimary"
-              style={{ outlineStyle: 'none' as any }}
-            />
-          </View>
-        </View>
+      <View className="gap-1">
+        <Text className="text-sm font-medium text-textSecondary">Сообщение клиенту</Text>
+        <TextInput
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          placeholder="Напишите первое сообщение клиенту..."
+          placeholderTextColor={Colors.textMuted}
+          className="min-h-[100px] rounded-lg border border-borderLight bg-white p-3 text-base text-textPrimary"
+          style={{ textAlignVertical: 'top', outlineStyle: 'none' as any }}
+        />
+        <Text className="self-end text-xs text-textMuted">{message.length}/500</Text>
       </View>
 
       <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
         <Feather name="send" size={16} color={Colors.white} />
-        <Text className="text-base font-semibold text-white">Отправить отклик</Text>
+        <Text className="text-base font-semibold text-white">Написать по заявке</Text>
       </Pressable>
       <Pressable className="items-center py-2">
         <Text className="text-sm text-textMuted">Отмена</Text>
@@ -106,7 +76,7 @@ function ErrorState() {
         <View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: Colors.statusBg.error }}>
           <Feather name="alert-circle" size={32} color={Colors.statusError} />
         </View>
-        <Text className="text-lg font-semibold text-textPrimary">Не удалось отправить отклик</Text>
+        <Text className="text-lg font-semibold text-textPrimary">Не удалось отправить сообщение</Text>
         <Text className="max-w-[280px] text-center text-sm text-textMuted">
           Проверьте подключение и попробуйте снова.
         </Text>

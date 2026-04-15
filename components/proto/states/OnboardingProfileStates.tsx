@@ -110,7 +110,7 @@ function ProfileScreen({ initialFilled, uploading }: {
 export function OnboardingProfileStates() {
   return (
     <ScrollView className="flex-1 bg-white">
-      <View className="w-full max-w-md self-center px-4 py-8">
+      <View className="w-full max-w-lg self-center px-4 py-8">
         <Text className="mb-4 text-lg font-bold text-textPrimary">Screen: Onboarding Profile</Text>
 
         <Text className="mb-2 text-sm font-medium text-textMuted">IDLE</Text>
