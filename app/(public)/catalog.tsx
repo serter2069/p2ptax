@@ -124,19 +124,41 @@ function DropdownSelect({ label, icon, value, options, onSelect, placeholder, di
 // ---------------------------------------------------------------------------
 // Specialist Card
 // ---------------------------------------------------------------------------
+const TIER_BADGE_CONFIG: Record<number, { bg: string; border: string; color: string; label: string }> = {
+  3: { bg: '#FFF7ED', border: '#F59E0B', color: '#D97706', label: 'TOP' },
+  2: { bg: '#F3F0FF', border: '#8B5CF6', color: '#7C3AED', label: 'Featured' },
+  1: { bg: '#EFF6FF', border: '#3B82F6', color: '#2563EB', label: 'PRO' },
+};
+
 function SpecialistCard({ specialist, onPress }: {
   specialist: SpecialistItem;
   onPress: () => void;
 }) {
   const displayName = specialist.displayName || `@${specialist.nick}`;
   const isVerified = specialist.badges.includes('verified');
+  const tierCfg = specialist.promoted ? TIER_BADGE_CONFIG[specialist.promotionTier] : null;
 
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white rounded-xl p-4 border border-sky-100 gap-3"
-      style={{ minWidth: 280, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}
+      className={`bg-white rounded-xl p-4 gap-3 ${specialist.promoted ? 'border-2' : 'border border-sky-100'}`}
+      style={{
+        minWidth: 280,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: specialist.promoted ? 0.1 : 0.06,
+        shadowRadius: specialist.promoted ? 4 : 2,
+        elevation: specialist.promoted ? 4 : 2,
+        ...(tierCfg ? { borderColor: tierCfg.border } : {}),
+      }}
     >
+      {/* Promoted badge */}
+      {specialist.promoted && tierCfg && (
+        <View className="flex-row items-center gap-1 self-start px-2 py-0.5 rounded-full border" style={{ backgroundColor: tierCfg.bg, borderColor: tierCfg.border }}>
+          <Feather name="zap" size={11} color={tierCfg.color} />
+          <Text style={{ fontSize: 10, fontWeight: '600', color: tierCfg.color }}>{tierCfg.label}</Text>
+        </View>
+      )}
       {/* Header: avatar + info */}
       <View className="flex-row gap-3">
         <Avatar name={displayName} imageUri={specialist.avatarUrl || undefined} size="lg" />

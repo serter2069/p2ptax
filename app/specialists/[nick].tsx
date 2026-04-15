@@ -325,6 +325,21 @@ export default function PublicSpecialistProfileScreen() {
 
       {/* Badges row */}
       <View style={styles.badgesRow}>
+        {profile.promoted && (
+          <View style={[styles.badge, {
+            backgroundColor: profile.promotionTier === 3 ? '#FFF7ED' : profile.promotionTier === 2 ? '#F3F0FF' : '#EFF6FF',
+            borderColor: profile.promotionTier === 3 ? '#F59E0B' : profile.promotionTier === 2 ? '#8B5CF6' : '#3B82F6',
+          }]}>
+            <Ionicons name="rocket" size={14} color={profile.promotionTier === 3 ? '#D97706' : profile.promotionTier === 2 ? '#7C3AED' : '#2563EB'} />
+            <Text style={{
+              fontSize: 12,
+              fontWeight: '600',
+              color: profile.promotionTier === 3 ? '#D97706' : profile.promotionTier === 2 ? '#7C3AED' : '#2563EB',
+            }}>
+              {profile.promotionTier === 3 ? 'TOP' : profile.promotionTier === 2 ? 'Featured' : 'PRO'}
+            </Text>
+          </View>
+        )}
         {isVerified && (
           <View style={[styles.badge, styles.badgeSuccess]}>
             <Ionicons name="shield-checkmark" size={14} color={B.success} />

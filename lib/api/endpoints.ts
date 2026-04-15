@@ -318,6 +318,26 @@ export const notifications = {
 };
 
 // ---------------------------------------------------------------------------
+// Promotions
+// ---------------------------------------------------------------------------
+export const promotions = {
+  /** Get available promotion prices (public, no auth) */
+  getPrices(city?: string) {
+    return client.get('/promotions/prices', { params: city ? { city } : undefined });
+  },
+
+  /** Purchase a promotion (specialist only) */
+  purchase(data: { city: string; tier: string; periodMonths?: number; idempotencyKey?: string }) {
+    return client.post('/promotions/purchase', data);
+  },
+
+  /** Get my promotions */
+  getMyPromotions() {
+    return client.get('/promotions/my');
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Search
 // ---------------------------------------------------------------------------
 export const search = {
