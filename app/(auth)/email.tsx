@@ -44,7 +44,7 @@ export default function EmailScreen() {
       await api.post('/auth/request-otp', { email: trimmed });
       const redirectParam = redirectTo ? `&redirectTo=${encodeURIComponent(redirectTo)}` : '';
       router.push(
-        `/(auth)/auth-otp?email=${encodeURIComponent(trimmed)}&role=${role}${redirectParam}`,
+        `/(auth)/otp?email=${encodeURIComponent(trimmed)}&role=${role}${redirectParam}`,
       );
     } catch (err) {
       if (err instanceof ApiError) {

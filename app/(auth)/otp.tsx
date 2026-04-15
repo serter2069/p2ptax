@@ -1,27 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { View, Text, Pressable, TextInput, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Button } from '../../components/Button';
-import { LandingHeader } from '../../components/LandingHeader';
-import { Footer } from '../../components/Footer';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Feather } from '@expo/vector-icons';
 import { api, ApiError, setRefreshToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { secureStorage } from '../../stores/storage';
-import { AuthProgress } from '../../components/AuthProgress';
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
+const MAX_ATTEMPTS = 3;
 
 interface VerifyOtpResponse {
   accessToken: string;
@@ -57,9 +44,8 @@ export default function OtpScreen() {
   const [timer, setTimer] = useState(RESEND_SECONDS);
   const [resending, setResending] = useState(false);
   const [attemptsUsed, setAttemptsUsed] = useState(0);
-  const MAX_ATTEMPTS = 3;
 
-  const inputs = useRef<(TextInput | null)[]>([]);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
   const submittedRef = useRef(false);
 
   // Countdown timer
@@ -73,10 +59,10 @@ export default function OtpScreen() {
 
   function handleDigitChange(value: string, index: number) {
     // Accept paste of full code
-    if (value.length === CODE_LENGTH && /^\d+$/.test(value)) {
+    if (value.length >= CODE_LENGTH && /^\d+$/.test(value)) {
       const next = value.split('').slice(0, CODE_LENGTH);
       setDigits(next);
-      inputs.current[CODE_LENGTH - 1]?.focus();
+      inputRefs.current[CODE_LENGTH - 1]?.focus();
       return;
     }
 
@@ -87,7 +73,7 @@ export default function OtpScreen() {
     if (error) setError('');
 
     if (digit && index < CODE_LENGTH - 1) {
-      inputs.current[index + 1]?.focus();
+      inputRefs.current[index + 1]?.focus();
     }
   }
 
@@ -96,7 +82,7 @@ export default function OtpScreen() {
       const next = [...digits];
       next[index - 1] = '';
       setDigits(next);
-      inputs.current[index - 1]?.focus();
+      inputRefs.current[index - 1]?.focus();
     }
   }
 
@@ -104,7 +90,7 @@ export default function OtpScreen() {
     if (loading || submittedRef.current) return;
     submittedRef.current = true;
     if (code.length < CODE_LENGTH) {
-      setError('Введите все 6 цифр кода');
+      setError('Введите все 6 цифр');
       submittedRef.current = false;
       return;
     }
@@ -126,15 +112,11 @@ export default function OtpScreen() {
         username: res.user.username,
         isNewUser: res.isNewUser,
       });
-      // New users: specialist → onboarding, client → dashboard
-      // Returning users go to dashboard
       if (res.isNewUser) {
         if (res.user.role === 'SPECIALIST') {
           router.replace('/(onboarding)/username');
         } else {
-          // Client: clear isNewUser flag and go to dashboard
           await clearNewUser();
-          // Check for pending quick request
           const pendingRaw = await secureStorage.getItem('p2ptax_pending_request');
           if (pendingRaw) {
             try {
@@ -150,11 +132,10 @@ export default function OtpScreen() {
           router.replace('/(dashboard)');
         }
       } else {
-        // Check for pending quick request saved before login
         const pendingRaw = await secureStorage.getItem('p2ptax_pending_request');
         if (pendingRaw && res.user.role === 'CLIENT') {
           try {
-            await secureStorage.removeItem('p2ptax_pending_request'); // remove BEFORE post (race condition guard)
+            await secureStorage.removeItem('p2ptax_pending_request');
             const pendingData = JSON.parse(pendingRaw);
             const created = await api.post<{ id: string }>('/requests', pendingData);
             router.replace(`/(dashboard)/my-requests/${created.id}` as any);
@@ -176,7 +157,7 @@ export default function OtpScreen() {
     } finally {
       setLoading(false);
     }
-  }, [code, email, role, login, router, loading]);
+  }, [code, email, role, login, router, loading, clearNewUser, redirectTo]);
 
   // Auto-submit when all digits filled
   useEffect(() => {
@@ -193,7 +174,8 @@ export default function OtpScreen() {
       await api.post('/auth/request-otp', { email });
       setDigits(Array(CODE_LENGTH).fill(''));
       setTimer(RESEND_SECONDS);
-      inputs.current[0]?.focus();
+      setAttemptsUsed(0);
+      inputRefs.current[0]?.focus();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -206,205 +188,146 @@ export default function OtpScreen() {
   }
 
   const isComplete = code.length === CODE_LENGTH;
+  const isDev = process.env.EXPO_PUBLIC_API_URL?.includes('localhost') || process.env.NODE_ENV === 'development';
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <LandingHeader />
+    <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        style={styles.kav}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.formArea}>
-          <View style={styles.container}>
-            <AuthProgress step={2} />
-
+          <View className="flex-1 items-center px-4 py-8">
             {/* Back */}
-            <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
-              <Text style={styles.backText}>← Назад</Text>
-            </TouchableOpacity>
-
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Введите код из письма</Text>
-              <Text style={styles.subtitle}>
-                Мы отправили 6-значный код на{' '}
-                <Text style={styles.emailHighlight}>{email}</Text>
-              </Text>
+            <View className="w-full max-w-sm">
+              <Pressable
+                onPress={() => router.back()}
+                className="flex-row items-center gap-1 py-1"
+                accessibilityRole="button"
+                accessibilityLabel="Изменить email"
+              >
+                <Feather name="arrow-left" size={20} color="#475569" />
+                <Text className="text-sm text-textSecondary">Изменить email</Text>
+              </Pressable>
             </View>
 
-            {/* OTP boxes */}
-            <View style={styles.otpRow}>
-              {digits.map((d, i) => (
-                <TextInput
+            {/* Header */}
+            <View className="mt-6 items-center gap-2">
+              <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
+                <Feather name="mail" size={28} color="#0284C7" />
+              </View>
+              <Text className="text-xl font-bold text-textPrimary">Введите код</Text>
+              <View className="flex-row flex-wrap justify-center items-center">
+                <Text className="text-base text-textMuted">Код отправлен на </Text>
+                <Text className="text-base font-medium text-textPrimary">{email}</Text>
+              </View>
+            </View>
+
+            {/* OTP inputs */}
+            <View className="mt-5 flex-row justify-center gap-2">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <View
                   key={i}
-                  ref={(ref) => { inputs.current[i] = ref; }}
-                  value={d}
-                  onChangeText={(v) => handleDigitChange(v, i)}
-                  onKeyPress={({ nativeEvent }) =>
-                    handleKeyPress(nativeEvent.key, i)
-                  }
-                  keyboardType="number-pad"
-                  maxLength={CODE_LENGTH} // allow paste
-                  style={[
-                    styles.otpBox,
-                    d ? styles.otpBoxFilled : null,
-                    error ? styles.otpBoxError : null,
-                  ]}
-                  selectionColor={Colors.brandPrimary}
-                  textAlign="center"
-                />
+                  className={`h-14 w-12 items-center justify-center rounded-lg border-2 ${
+                    error
+                      ? 'border-red-500 bg-red-50'
+                      : digits[i]
+                        ? 'border-brandPrimary bg-bgSecondary'
+                        : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <TextInput
+                    ref={(ref) => { inputRefs.current[i] = ref; }}
+                    value={digits[i]}
+                    onChangeText={(v) => handleDigitChange(v, i)}
+                    onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
+                    keyboardType="number-pad"
+                    maxLength={CODE_LENGTH}
+                    selectTextOnFocus
+                    editable={!loading}
+                    className="h-full w-full text-center text-2xl font-bold text-textPrimary"
+                    style={{ outlineStyle: 'none' as any }}
+                  />
+                </View>
               ))}
             </View>
 
             {/* Error */}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? (
+              <View className="mt-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
+                <Feather name="alert-circle" size={14} color="#DC2626" />
+                <Text className="text-sm font-medium text-red-600">{error}</Text>
+              </View>
+            ) : null}
 
             {/* Attempt counter */}
             {attemptsUsed > 0 && attemptsUsed < MAX_ATTEMPTS && (
-              <Text style={styles.attemptText}>
+              <Text className="mt-2 text-sm text-textMuted">
                 Попытка {attemptsUsed} из {MAX_ATTEMPTS}
               </Text>
             )}
 
+            {/* Max attempts reached */}
+            {attemptsUsed >= MAX_ATTEMPTS && (
+              <View className="mt-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
+                <Feather name="alert-circle" size={14} color="#DC2626" />
+                <Text className="text-sm font-medium text-red-600">
+                  Превышено количество попыток. Запросите новый код.
+                </Text>
+              </View>
+            )}
+
             {/* Submit */}
-            <Button
+            <Pressable
               onPress={handleVerify}
-              loading={loading}
-              disabled={!isComplete || loading}
-              style={styles.btn}
+              disabled={loading || !isComplete || attemptsUsed >= MAX_ATTEMPTS}
+              className={`mt-4 h-12 w-full max-w-xs items-center justify-center rounded-lg bg-brandPrimary ${
+                loading || !isComplete || attemptsUsed >= MAX_ATTEMPTS ? 'opacity-60' : ''
+              }`}
             >
-              Войти
-            </Button>
+              <Text className="text-base font-semibold text-white">
+                {loading ? 'Проверка...' : 'Подтвердить'}
+              </Text>
+            </Pressable>
 
             {/* Resend */}
-            <View style={styles.resendRow}>
+            <View className="mt-3 flex-row items-center gap-1">
               {timer > 0 ? (
-                <Text style={styles.timerText}>
-                  Отправить повторно через {timer} с
-                </Text>
+                <>
+                  <Feather name="clock" size={14} color="#94A3B8" />
+                  <Text className="text-sm text-textMuted">
+                    Отправить повторно через {timer} сек
+                  </Text>
+                </>
               ) : (
-                <TouchableOpacity
+                <Pressable
                   onPress={handleResend}
                   disabled={resending}
-                  accessibilityRole="button"
-                  accessibilityLabel="Отправить код повторно"
-                  accessibilityState={{ disabled: resending }}
+                  className="flex-row items-center gap-1"
                 >
-                  <Text style={styles.resendText}>
+                  <Feather name="refresh-cw" size={14} color="#0284C7" />
+                  <Text className="text-sm font-medium text-brandPrimary">
                     {resending ? 'Отправляем...' : 'Отправить код повторно'}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
 
+            {/* Dev mode hint */}
+            {isDev && (
+              <View className="mt-6 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3">
+                <Text className="text-xs text-yellow-700">
+                  В режиме разработки код: 000000
+                </Text>
+              </View>
+            )}
           </View>
-          </View>
-          <Footer />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  kav: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-  },
-  formArea: {
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing['2xl'],
-    alignItems: 'center',
-  },
-  back: {
-    alignSelf: 'flex-start',
-    paddingVertical: Spacing.sm,
-  },
-  backText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-  },
-  header: {
-    alignSelf: 'stretch',
-    gap: Spacing.sm,
-    marginTop: Spacing.xl,
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  emailHighlight: {
-    color: Colors.textAccent,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  otpRow: {
-    flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'center',
-  },
-  otpBox: {
-    width: 50,
-    height: 58,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  otpBoxFilled: {
-    borderColor: Colors.brandPrimary,
-  },
-  otpBoxError: {
-    borderColor: Colors.statusError,
-  },
-  error: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    textAlign: 'center',
-  },
-  attemptText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-  btn: {
-    width: '100%',
-  },
-  resendRow: {
-    alignItems: 'center',
-  },
-  timerText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  resendText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-});

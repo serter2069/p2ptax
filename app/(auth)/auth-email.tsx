@@ -34,7 +34,7 @@ export default function AuthEmailScreen() {
         ? `&redirectTo=${encodeURIComponent(params.redirectTo)}`
         : '';
 
-      router.push(`/(auth)/auth-otp?email=${encodeURIComponent(trimmed)}${redirectParam}` as any);
+      router.push(`/(auth)/otp?email=${encodeURIComponent(trimmed)}${redirectParam}` as any);
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 429) {
