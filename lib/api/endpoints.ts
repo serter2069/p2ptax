@@ -96,6 +96,10 @@ export const requests = {
   updateRequest(id: string, data: Record<string, unknown>) {
     return client.patch(`/requests/${id}`, data);
   },
+
+  getResponses(id: string) {
+    return client.get(`/requests/${id}/responses`);
+  },
 };
 
 // ---------------------------------------------------------------------------
