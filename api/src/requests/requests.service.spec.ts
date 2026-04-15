@@ -2,11 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RequestsService } from './requests.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
+import { InAppNotificationService } from '../notifications/in-app-notification.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
 // Minimal enums to avoid needing full Prisma client generation
 const RequestStatus = {
+  NEW: 'NEW',
   OPEN: 'OPEN',
+  IN_PROGRESS: 'IN_PROGRESS',
   CLOSING_SOON: 'CLOSING_SOON',
   CLOSED: 'CLOSED',
   CANCELLED: 'CANCELLED',
@@ -16,6 +19,7 @@ describe('RequestsService — lifecycle features', () => {
   let service: RequestsService;
   let prisma: any;
   let emailService: any;
+  let inAppNotifService: any;
 
   beforeEach(async () => {
     prisma = {
@@ -35,6 +39,9 @@ describe('RequestsService — lifecycle features', () => {
       thread: {
         upsert: jest.fn(),
       },
+      message: {
+        create: jest.fn(),
+      },
       setting: {
         findUnique: jest.fn(),
       },
@@ -47,11 +54,16 @@ describe('RequestsService — lifecycle features', () => {
       notifyRequestClosingSoon: jest.fn(),
     };
 
+    inAppNotifService = {
+      create: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RequestsService,
         { provide: PrismaService, useValue: prisma },
         { provide: EmailService, useValue: emailService },
+        { provide: InAppNotificationService, useValue: inAppNotifService },
       ],
     }).compile();
 
@@ -186,7 +198,7 @@ describe('RequestsService — lifecycle features', () => {
       expect(prisma.request.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            status: RequestStatus.OPEN,
+            status: { in: [RequestStatus.OPEN, RequestStatus.IN_PROGRESS] },
             lastActivityAt: { lt: expect.any(Date) },
           }),
         }),
@@ -228,7 +240,7 @@ describe('RequestsService — lifecycle features', () => {
 
       expect(prisma.request.updateMany).toHaveBeenCalledWith({
         where: {
-          status: { in: [RequestStatus.OPEN, RequestStatus.CLOSING_SOON] },
+          status: { in: [RequestStatus.NEW, RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON] },
           lastActivityAt: { lt: expect.any(Date) },
         },
         data: { status: RequestStatus.CLOSED },
@@ -249,6 +261,7 @@ describe('RequestsService — lifecycle features', () => {
       clientId: 'client-1',
       status: RequestStatus.OPEN,
       city: 'Moscow',
+      title: 'Tax help',
       client: { id: 'client-1', email: 'c@test.com', notifyNewResponses: false },
     };
 
@@ -259,9 +272,10 @@ describe('RequestsService — lifecycle features', () => {
       prisma.response.create.mockResolvedValue({ id: 'resp-1' });
       prisma.request.update.mockResolvedValue({ ...baseRequest, lastActivityAt: new Date() });
       prisma.thread.upsert.mockResolvedValue({ id: 'thread-1' });
+      prisma.message.create.mockResolvedValue({ id: 'msg-1' });
     });
 
-    it('should update lastActivityAt when a new response is created', async () => {
+    it('should update lastActivityAt and transition to IN_PROGRESS when a new response is created', async () => {
       await service.respond('specialist-1', 'req-resp-1', {
         comment: 'I can help',
         price: 5000,
@@ -270,20 +284,31 @@ describe('RequestsService — lifecycle features', () => {
 
       expect(prisma.request.update).toHaveBeenCalledWith({
         where: { id: 'req-resp-1' },
-        data: { lastActivityAt: expect.any(Date) },
+        data: expect.objectContaining({
+          lastActivityAt: expect.any(Date),
+          status: RequestStatus.IN_PROGRESS,
+        }),
       });
     });
 
-    it('should NOT create a thread (thread is created only in acceptResponse)', async () => {
+    it('should create thread and first message in chat-first flow', async () => {
       const result = await service.respond('specialist-1', 'req-resp-1', {
         comment: 'I can help',
         price: 5000,
         deadline: new Date(Date.now() + 86400000).toISOString() as any,
       });
 
-      expect(prisma.thread.upsert).not.toHaveBeenCalled();
+      expect(prisma.thread.upsert).toHaveBeenCalled();
+      expect(prisma.message.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          threadId: 'thread-1',
+          senderId: 'specialist-1',
+          content: 'I can help',
+        }),
+      });
       expect(result.response).toBeDefined();
-      expect(result).not.toHaveProperty('thread');
+      expect(result.thread).toBeDefined();
+      expect(result.message).toBeDefined();
     });
   });
 
