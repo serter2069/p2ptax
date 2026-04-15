@@ -57,3 +57,8 @@ api/uploads/
 .idea/
 worktrees/
 tests/__pycache__/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
