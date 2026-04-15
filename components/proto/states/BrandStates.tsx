@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../../constants/Colors';
 
@@ -183,66 +183,66 @@ function ButtonsSection({ isDesktop }: { isDesktop: boolean }) {
 
       <Text style={bs.subLabel}>Primary</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
-        <View style={bs.btnPrimary}>
+        <Pressable style={bs.btnPrimary} onPress={() => {}}>
           <Text style={bs.btnPrimaryText}>Default</Text>
-        </View>
-        <View style={[bs.btnPrimary, { backgroundColor: Colors.brandPrimaryHover }]}>
+        </Pressable>
+        <Pressable style={[bs.btnPrimary, { backgroundColor: Colors.brandPrimaryHover }]} onPress={() => {}}>
           <Text style={bs.btnPrimaryText}>Hover</Text>
-        </View>
-        <View style={[bs.btnPrimary, { backgroundColor: Colors.brandSecondary }]}>
+        </Pressable>
+        <Pressable style={[bs.btnPrimary, { backgroundColor: Colors.brandSecondary }]} onPress={() => {}}>
           <Text style={bs.btnPrimaryText}>Pressed</Text>
-        </View>
-        <View style={[bs.btnPrimary, bs.btnDisabled]}>
+        </Pressable>
+        <Pressable style={[bs.btnPrimary, bs.btnDisabled]} disabled onPress={() => {}}>
           <Text style={bs.btnPrimaryText}>Disabled</Text>
-        </View>
+        </Pressable>
       </View>
 
       <Text style={bs.subLabel}>Secondary / Outline / Ghost</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
-        <View style={bs.btnSecondary}>
+        <Pressable style={bs.btnSecondary} onPress={() => {}}>
           <Text style={bs.btnSecondaryText}>Secondary</Text>
-        </View>
-        <View style={bs.btnOutline}>
+        </Pressable>
+        <Pressable style={bs.btnOutline} onPress={() => {}}>
           <Text style={bs.btnOutlineText}>Outline</Text>
-        </View>
-        <View style={bs.btnGhost}>
+        </Pressable>
+        <Pressable style={bs.btnGhost} onPress={() => {}}>
           <Text style={bs.btnGhostText}>Ghost</Text>
-        </View>
+        </Pressable>
       </View>
 
       <Text style={bs.subLabel}>Semantic</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
-        <View style={bs.btnDestructive}>
+        <Pressable style={bs.btnDestructive} onPress={() => {}}>
           <Feather name="trash-2" size={14} color={Colors.white} />
           <Text style={bs.btnPrimaryText}>Delete</Text>
-        </View>
-        <View style={bs.btnSuccess}>
+        </Pressable>
+        <Pressable style={bs.btnSuccess} onPress={() => {}}>
           <Feather name="check" size={14} color={Colors.white} />
           <Text style={bs.btnPrimaryText}>Confirm</Text>
-        </View>
-        <View style={bs.btnWarning}>
+        </Pressable>
+        <Pressable style={bs.btnWarning} onPress={() => {}}>
           <Feather name="alert-triangle" size={14} color={Colors.white} />
           <Text style={bs.btnPrimaryText}>Warning</Text>
-        </View>
+        </Pressable>
       </View>
 
       <Text style={bs.subLabel}>With Icons + Sizes</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
-        <View style={bs.btnLarge}>
+        <Pressable style={bs.btnLarge} onPress={() => {}}>
           <Feather name="plus" size={18} color={Colors.white} />
           <Text style={bs.btnLargeText}>Large Button</Text>
-        </View>
-        <View style={bs.btnIconPrimary}>
+        </Pressable>
+        <Pressable style={bs.btnIconPrimary} onPress={() => {}}>
           <Feather name="send" size={14} color={Colors.white} />
           <Text style={bs.btnPrimaryText}>Send</Text>
-        </View>
-        <View style={bs.btnIconOutline}>
+        </Pressable>
+        <Pressable style={bs.btnIconOutline} onPress={() => {}}>
           <Feather name="filter" size={14} color={Colors.brandPrimary} />
           <Text style={bs.btnOutlineText}>Filter</Text>
-        </View>
-        <View style={bs.btnSmall}>
+        </Pressable>
+        <Pressable style={bs.btnSmall} onPress={() => {}}>
           <Text style={bs.btnSmallText}>Small</Text>
-        </View>
+        </Pressable>
       </View>
     </View>
   );
@@ -259,28 +259,44 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Empty</Text>
           <View style={bs.inputWrap}>
-            <Text style={bs.inputPlaceholder}>Placeholder text...</Text>
+            <TextInput
+              style={bs.textInput}
+              placeholder="Placeholder text..."
+              placeholderTextColor={Colors.textMuted}
+            />
           </View>
         </View>
 
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Focused</Text>
           <View style={[bs.inputWrap, bs.inputFocused]}>
-            <Text style={bs.inputValue}>Typing here|</Text>
+            <TextInput
+              style={bs.textInput}
+              defaultValue="Typing here"
+              placeholderTextColor={Colors.textMuted}
+            />
           </View>
         </View>
 
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Filled</Text>
           <View style={bs.inputWrap}>
-            <Text style={bs.inputValue}>ivan@mail.ru</Text>
+            <TextInput
+              style={bs.textInput}
+              defaultValue="ivan@mail.ru"
+              placeholderTextColor={Colors.textMuted}
+            />
           </View>
         </View>
 
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Error</Text>
           <View style={[bs.inputWrap, bs.inputError]}>
-            <Text style={bs.inputValue}>bad-value</Text>
+            <TextInput
+              style={bs.textInput}
+              defaultValue="bad-value"
+              placeholderTextColor={Colors.textMuted}
+            />
           </View>
           <View style={bs.errorRow}>
             <Feather name="alert-circle" size={12} color={Colors.statusError} />
@@ -291,7 +307,12 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Disabled</Text>
           <View style={[bs.inputWrap, bs.inputDisabledWrap]}>
-            <Text style={bs.inputDisabledText}>Disabled field</Text>
+            <TextInput
+              style={[bs.textInput, { color: Colors.textMuted }]}
+              defaultValue="Disabled field"
+              editable={false}
+              placeholderTextColor={Colors.textMuted}
+            />
           </View>
         </View>
 
@@ -299,7 +320,11 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
           <Text style={bs.inputStateLabel}>With Icon</Text>
           <View style={[bs.inputWrap, bs.inputWithIconWrap]}>
             <Feather name="search" size={16} color={Colors.textMuted} />
-            <Text style={bs.inputPlaceholder}>Search...</Text>
+            <TextInput
+              style={[bs.textInput, { flex: 1 }]}
+              placeholder="Search..."
+              placeholderTextColor={Colors.textMuted}
+            />
           </View>
         </View>
       </View>
@@ -342,19 +367,19 @@ function BadgesSection({ isDesktop }: { isDesktop: boolean }) {
 
       <Text style={bs.subLabel}>Service Tags</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
-        <View style={bs.tag}>
+        <Pressable style={bs.tag} onPress={() => {}}>
           <Text style={bs.tagText}>3-NDFL</Text>
-        </View>
-        <View style={bs.tag}>
+        </Pressable>
+        <Pressable style={bs.tag} onPress={() => {}}>
           <Text style={bs.tagText}>IP registration</Text>
-        </View>
-        <View style={[bs.tag, bs.tagActive]}>
+        </Pressable>
+        <Pressable style={[bs.tag, bs.tagActive]} onPress={() => {}}>
           <Feather name="check" size={11} color={Colors.brandPrimary} />
           <Text style={[bs.tagText, { color: Colors.brandPrimary }]}>Tax audit</Text>
-        </View>
-        <View style={bs.tag}>
+        </Pressable>
+        <Pressable style={bs.tag} onPress={() => {}}>
           <Text style={bs.tagText}>Consulting</Text>
-        </View>
+        </Pressable>
       </View>
     </View>
   );
@@ -466,10 +491,10 @@ function LogoBlock() {
 
 function NotifBell({ hasNotif = false }: { hasNotif?: boolean }) {
   return (
-    <View>
+    <Pressable onPress={() => {}}>
       <Feather name="bell" size={20} color={Colors.textSecondary} />
       {hasNotif && <View style={ns.redDot} />}
-    </View>
+    </Pressable>
   );
 }
 
@@ -490,10 +515,10 @@ function DesktopPublicHeader() {
       <View style={ns.headerBar}>
         <LogoBlock />
         <View style={ns.navLinks}>
-          <Text style={[ns.navLink, ns.navLinkActive]}>Glavnaya</Text>
-          <Text style={ns.navLink}>Specialisty</Text>
-          <Text style={ns.navLink}>Zayavki</Text>
-          <Text style={ns.navLink}>Tarify</Text>
+          <Pressable onPress={() => {}}><Text style={[ns.navLink, ns.navLinkActive]}>Glavnaya</Text></Pressable>
+          <Pressable onPress={() => {}}><Text style={ns.navLink}>Specialisty</Text></Pressable>
+          <Pressable onPress={() => {}}><Text style={ns.navLink}>Zayavki</Text></Pressable>
+          <Pressable onPress={() => {}}><Text style={ns.navLink}>Tarify</Text></Pressable>
         </View>
         <View style={ns.headerRight}>
           <Pressable style={ns.navBtnOutline}>
@@ -530,13 +555,15 @@ function MobilePublicHeader() {
         <View style={ns.drawerPanel}>
           <View style={ns.drawerTop}>
             <LogoBlock />
-            <Feather name="x" size={22} color={Colors.textPrimary} />
+            <Pressable onPress={() => {}}>
+              <Feather name="x" size={22} color={Colors.textPrimary} />
+            </Pressable>
           </View>
           <View style={ns.drawerLinks}>
-            <Text style={[ns.drawerLink, ns.drawerLinkActive]}>Glavnaya</Text>
-            <Text style={ns.drawerLink}>Specialisty</Text>
-            <Text style={ns.drawerLink}>Zayavki</Text>
-            <Text style={ns.drawerLink}>Tarify</Text>
+            <Pressable onPress={() => {}}><Text style={[ns.drawerLink, ns.drawerLinkActive]}>Glavnaya</Text></Pressable>
+            <Pressable onPress={() => {}}><Text style={ns.drawerLink}>Specialisty</Text></Pressable>
+            <Pressable onPress={() => {}}><Text style={ns.drawerLink}>Zayavki</Text></Pressable>
+            <Pressable onPress={() => {}}><Text style={ns.drawerLink}>Tarify</Text></Pressable>
           </View>
           <View style={ns.drawerDivider} />
           <View style={ns.drawerButtons}>
@@ -586,7 +613,7 @@ function BottomTabBar({ tabs, activeId, label }: {
         {tabs.map((tab) => {
           const active = tab.id === activeId;
           return (
-            <View key={tab.id} style={ns.tabItem}>
+            <Pressable key={tab.id} style={ns.tabItem} onPress={() => {}}>
               <View>
                 <Feather
                   name={tab.icon as any}
@@ -597,7 +624,7 @@ function BottomTabBar({ tabs, activeId, label }: {
               </View>
               <Text style={[ns.tabLabel, active && ns.tabLabelActive]}>{tab.label}</Text>
               {active && <View style={ns.tabIndicator} />}
-            </View>
+            </Pressable>
           );
         })}
       </View>
@@ -686,10 +713,10 @@ function AdminNavSection() {
           {ADMIN_ITEMS.map((item) => {
             const active = item.id === 'dashboard';
             return (
-              <View key={item.id} style={[ns.adminTab, active && ns.adminTabActive]}>
+              <Pressable key={item.id} style={[ns.adminTab, active && ns.adminTabActive]} onPress={() => {}}>
                 <Feather name={item.icon} size={14} color={active ? Colors.brandPrimary : Colors.textMuted} />
                 <Text style={[ns.adminTabText, active && ns.adminTabTextActive]}>{item.label}</Text>
-              </View>
+              </Pressable>
             );
           })}
         </View>
@@ -704,10 +731,10 @@ function AdminNavSection() {
           {ADMIN_ITEMS.map((item) => {
             const active = item.id === 'moderation';
             return (
-              <View key={item.id} style={[ns.adminTab, active && ns.adminTabActive]}>
+              <Pressable key={item.id} style={[ns.adminTab, active && ns.adminTabActive]} onPress={() => {}}>
                 <Feather name={item.icon} size={14} color={active ? Colors.brandPrimary : Colors.textMuted} />
                 <Text style={[ns.adminTabText, active && ns.adminTabTextActive]}>{item.label}</Text>
-              </View>
+              </Pressable>
             );
           })}
         </View>
@@ -723,10 +750,10 @@ function BackNavSection() {
       <Text style={ns.sectionTitle}>Inner Page Header</Text>
       <Text style={ns.sectionDesc}>Back navigation for detail pages</Text>
       <View style={ns.backHeaderBar}>
-        <View style={ns.backLeft}>
+        <Pressable style={ns.backLeft} onPress={() => {}}>
           <Feather name="arrow-left" size={20} color={Colors.brandPrimary} />
           <Text style={ns.backTitle}>Zayavki</Text>
-        </View>
+        </Pressable>
         <Pressable>
           <Feather name="more-vertical" size={20} color={Colors.textMuted} />
         </Pressable>
@@ -1093,6 +1120,13 @@ const bs = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+  },
+  textInput: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    flex: 1,
+    height: '100%' as any,
+    padding: 0,
   },
   inputPlaceholder: {
     fontSize: Typography.fontSize.base,
