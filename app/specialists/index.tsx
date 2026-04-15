@@ -141,9 +141,16 @@ export default function SpecialistsCatalogScreen() {
 
   const specialists = items;
 
+  const TIER_BADGE_STYLES: Record<number, { bg: string; border: string; color: string; label: string }> = {
+    3: { bg: '#FFF7ED', border: '#F59E0B', color: '#D97706', label: 'TOP' },
+    2: { bg: '#F3F0FF', border: '#8B5CF6', color: '#7C3AED', label: 'Featured' },
+    1: { bg: '#EFF6FF', border: '#3B82F6', color: '#2563EB', label: 'PRO' },
+  };
+
   function renderSpecialist({ item }: { item: SpecialistItem }) {
     const isVerified = item.badges.includes('verified');
     const displayName = item.displayName || `@${item.nick}`;
+    const tierStyle = item.promoted ? TIER_BADGE_STYLES[item.promotionTier] : null;
 
     return (
       <TouchableOpacity
@@ -151,7 +158,14 @@ export default function SpecialistsCatalogScreen() {
         activeOpacity={0.8}
         style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
       >
-        <View style={[styles.card, isMobile && styles.cardMobile]}>
+        <View style={[styles.card, isMobile && styles.cardMobile, item.promoted && styles.cardPromoted, item.promoted && tierStyle && { borderColor: tierStyle.border }]}>
+          {/* Promoted badge */}
+          {item.promoted && tierStyle && (
+            <View style={[styles.promotedBadge, { backgroundColor: tierStyle.bg, borderColor: tierStyle.border }]}>
+              <Ionicons name="rocket" size={11} color={tierStyle.color} />
+              <Text style={[styles.promotedBadgeText, { color: tierStyle.color }]}>{tierStyle.label}</Text>
+            </View>
+          )}
           {/* Top row: avatar + name/headline/city */}
           <View style={styles.cardHeader}>
             <Avatar name={displayName} imageUri={item.avatarUrl || undefined} size="lg" />
@@ -542,6 +556,25 @@ const styles = StyleSheet.create({
   cardMobile: {
     borderLeftWidth: 4,
     borderLeftColor: Colors.brandPrimary,
+  },
+  cardPromoted: {
+    borderWidth: 1.5,
+    borderLeftWidth: 4,
+  },
+  promotedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    marginBottom: Spacing.xs,
+  },
+  promotedBadgeText: {
+    fontSize: 10,
+    fontWeight: Typography.fontWeight.semibold,
   },
   cardHeader: {
     flexDirection: 'row',
