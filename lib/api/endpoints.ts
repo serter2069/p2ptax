@@ -117,6 +117,10 @@ export const requests = {
   getResponses(id: string) {
     return client.get(`/requests/${id}/responses`);
   },
+
+  getMyResponses() {
+    return client.get('/requests/my-responses');
+  },
 };
 
 // ---------------------------------------------------------------------------
