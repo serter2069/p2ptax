@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../lib/api';
+import { useAuth } from '../../stores/authStore';
 import { Colors } from '../../constants/Colors';
 
 // ---------------------------------------------------------------------------
@@ -54,35 +55,27 @@ interface FnsItem {
   city?: { id: string; name: string };
 }
 
+type TabKey = 'new' | 'inProgress' | 'completed';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 6) return 'Доброй ночи';
+  if (h < 12) return 'Доброе утро';
+  if (h < 18) return 'Добрый день';
+  return 'Добрый вечер';
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function pluralSpecialists(n: number): string {
-  if (n === 0) return '0 специалистов написали';
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${n} специалист написал`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} специалиста написали`;
-  return `${n} специалистов написали`;
-}
-
-function getMemberYear(dateStr?: string): number {
-  if (!dateStr) return new Date().getFullYear();
-  return new Date(dateStr).getFullYear();
-}
-
-function getAuthorInitials(name?: string): string {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0]} ${parts[1][0]}.`;
-  }
-  return parts[0];
+function formatBudget(budget?: number | null): string {
+  if (budget == null) return '';
+  return `${budget.toLocaleString('ru-RU')} \u20BD`;
 }
 
 // ---------------------------------------------------------------------------
@@ -113,34 +106,31 @@ function CityFnsPicker({
 
   const summary = city
     ? selectedFnsIds.length > 0
-      ? `${city} / ${selectedFnsIds.length} ФНС`
+      ? `${city} / ${selectedFnsIds.length} \u0424\u041D\u0421`
       : city
     : '';
 
   return (
     <View className="gap-2">
-      {/* Main picker button */}
       <Pressable onPress={() => setOpenLevel(openLevel ? null : 'city')}>
         <View className={`h-11 flex-row items-center gap-2 rounded-lg border px-3 ${openLevel ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
           <Feather name="map-pin" size={16} color={Colors.textMuted} />
           <Text className={`flex-1 text-sm ${summary ? 'text-textPrimary' : 'text-textMuted'}`}>
-            {summary || 'Город и ФНС'}
+            {summary || '\u0413\u043E\u0440\u043E\u0434 \u0438 \u0424\u041D\u0421'}
           </Text>
           <Feather name={openLevel ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
         </View>
       </Pressable>
 
-      {/* Cascading panel */}
       {openLevel && (
         <View className="overflow-hidden rounded-lg border border-borderLight bg-white shadow-sm">
-          {/* Tabs: City / FNS */}
           <View className="flex-row border-b border-bgSecondary">
             <Pressable
               className={`flex-1 items-center py-2.5 ${openLevel === 'city' ? 'border-b-2 border-brandPrimary' : ''}`}
               onPress={() => setOpenLevel('city')}
             >
               <Text className={`text-xs font-semibold ${openLevel === 'city' ? 'text-brandPrimary' : city ? 'text-textPrimary' : 'text-textMuted'}`}>
-                {city || 'Город'}
+                {city || '\u0413\u043E\u0440\u043E\u0434'}
               </Text>
             </Pressable>
             <Pressable
@@ -149,12 +139,11 @@ function CityFnsPicker({
               disabled={!city}
             >
               <Text className={`text-xs font-semibold ${openLevel === 'fns' ? 'text-brandPrimary' : selectedFnsIds.length > 0 ? 'text-textPrimary' : 'text-textMuted'}`}>
-                {selectedFnsIds.length > 0 ? `ФНС (${selectedFnsIds.length})` : 'ФНС'}
+                {selectedFnsIds.length > 0 ? `\u0424\u041D\u0421 (${selectedFnsIds.length})` : '\u0424\u041D\u0421'}
               </Text>
             </Pressable>
           </View>
 
-          {/* Options */}
           <ScrollView style={{ maxHeight: 200 }}>
             {openLevel === 'city' && (
               <>
@@ -202,7 +191,6 @@ function CityFnsPicker({
         </View>
       )}
 
-      {/* Selected FNS chips */}
       {selectedFnsIds.length > 0 && (
         <View className="flex-row flex-wrap gap-2">
           {selectedFnsIds.map((fnsId) => (
@@ -218,100 +206,58 @@ function CityFnsPicker({
 }
 
 // ---------------------------------------------------------------------------
-// RequestFeedCard — matches prototype layout
+// RequestCard — proto-matching card with "Откликнуться" button
 // ---------------------------------------------------------------------------
-function RequestFeedCard({
-  title,
-  description,
-  city,
-  fns,
-  service,
-  date,
-  author,
-  memberSince,
-  messageCount,
-  onMessage,
-  onDetails,
+function RequestCard({
+  item,
+  onRespond,
 }: {
-  title: string;
-  description: string;
-  city: string;
-  fns: string;
-  service: string;
-  date: string;
-  author: string;
-  memberSince: number;
-  messageCount: number;
-  onMessage: () => void;
-  onDetails: () => void;
+  item: RequestItem;
+  onRespond: () => void;
 }) {
+  const title = item.title || item.description.slice(0, 60);
+  const service = item.serviceType || item.category || '';
+  const budget = formatBudget(item.budget);
+
   return (
     <View
       className="gap-2 rounded-xl border border-borderLight bg-white p-4"
       style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}
     >
-      <View className="flex-row items-start justify-between gap-2">
-        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={2}>{title}</Text>
-        <Text className="text-xs text-textMuted">{date}</Text>
-      </View>
-      <Text className="text-sm leading-5 text-textSecondary" numberOfLines={2}>{description}</Text>
-      <View className="flex-row flex-wrap gap-2">
-        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
-          <Feather name="map-pin" size={11} color={Colors.brandPrimary} />
-          <Text className="text-xs font-medium text-brandPrimary">{city}</Text>
-        </View>
-        {fns ? (
-          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
-            <Feather name="home" size={11} color={Colors.brandPrimary} />
-            <Text className="text-xs font-medium text-brandPrimary">{fns}</Text>
-          </View>
-        ) : null}
+      <Text className="text-base font-semibold text-textPrimary" numberOfLines={2}>{title}</Text>
+      <View className="flex-row items-center gap-1">
+        <Text className="text-xs text-textMuted">{item.city}</Text>
         {service ? (
-          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
-            <Feather name="briefcase" size={11} color={Colors.brandPrimary} />
-            <Text className="text-xs font-medium text-brandPrimary">{service}</Text>
-          </View>
+          <>
+            <Text className="text-xs text-borderLight">{'\u00B7'}</Text>
+            <Text className="text-xs text-textMuted">{service}</Text>
+          </>
         ) : null}
       </View>
-      {/* Author + date row */}
-      <View className="mt-1 flex-row items-center justify-between border-t border-borderLight pt-2">
-        <View className="flex-row items-center gap-2">
-          <View className="h-7 w-7 items-center justify-center rounded-full bg-bgSecondary">
-            <Feather name="user" size={14} color={Colors.textMuted} />
-          </View>
-          <View>
-            <Text className="text-sm font-medium text-textPrimary">{author}</Text>
-            <Text className="text-xs text-textMuted">на сайте с {memberSince} г.</Text>
-          </View>
-        </View>
+      <View className="flex-row items-center justify-between">
+        {budget ? (
+          <Text className="text-sm font-semibold text-brandPrimary">{budget}</Text>
+        ) : (
+          <View />
+        )}
+        <Text className="text-xs text-textMuted">{formatDate(item.createdAt)}</Text>
       </View>
-      {/* Response count */}
-      <View className="flex-row items-center gap-1.5">
-        <Feather name="message-circle" size={12} color={messageCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
-        <Text className={messageCount > 0 ? 'text-xs font-semibold text-brandPrimary' : 'text-xs text-textMuted'}>
-          {pluralSpecialists(messageCount)}
-        </Text>
-      </View>
-      {/* Action buttons */}
-      <View className="mt-1 flex-row gap-2">
-        <Pressable onPress={onMessage} className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
-          <Feather name="send" size={14} color={Colors.white} />
-          <Text className="text-sm font-semibold text-white">Написать по заявке</Text>
-        </Pressable>
-        <Pressable onPress={onDetails} className="h-10 flex-row items-center justify-center gap-1.5 rounded-lg border border-borderLight px-4">
-          <Feather name="eye" size={14} color={Colors.textPrimary} />
-          <Text className="text-sm font-medium text-textPrimary">Подробнее</Text>
-        </Pressable>
-      </View>
+      <Pressable
+        className="mt-1 h-10 items-center justify-center rounded-lg bg-brandPrimary"
+        onPress={onRespond}
+      >
+        <Text className="text-sm font-semibold text-white">Откликнуться</Text>
+      </Pressable>
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main Feed Component
+// Main Feed Component — Specialist Dashboard (proto: SpecialistDashboardStates)
 // ---------------------------------------------------------------------------
 export default function SpecialistFeedTab() {
   const router = useRouter();
+  const { user } = useAuth();
 
   // Feed data
   const [items, setItems] = useState<RequestItem[]>([]);
@@ -325,6 +271,9 @@ export default function SpecialistFeedTab() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
+  // Tab state (proto: Новые / В работе / Завершены)
+  const [activeTab, setActiveTab] = useState<TabKey>('new');
+
   // Filter state
   const [filterCityId, setFilterCityId] = useState('');
   const [filterCityName, setFilterCityName] = useState('');
@@ -334,6 +283,15 @@ export default function SpecialistFeedTab() {
   // City/FNS data from API
   const [cities, setCities] = useState<CityItem[]>([]);
   const [fnsList, setFnsList] = useState<FnsItem[]>([]);
+
+  // Derived counts per tab
+  const newItems = items.filter((r) => r.status === 'NEW' || r.status === 'OPEN' || r.status === 'ACTIVE');
+  const inProgressItems = items.filter((r) => r.status === 'IN_PROGRESS' || r.status === 'CLOSING_SOON');
+  const completedItems = items.filter((r) => r.status === 'COMPLETED' || r.status === 'CLOSED' || r.status === 'CANCELLED');
+
+  const visibleItems = activeTab === 'new' ? newItems : activeTab === 'inProgress' ? inProgressItems : completedItems;
+
+  const userName = user?.username || user?.email?.split('@')[0] || '';
 
   // Load cities on mount
   useEffect(() => {
@@ -379,6 +337,7 @@ export default function SpecialistFeedTab() {
           params.set('ifns_ids', selectedFnsIds.join(','));
         }
         params.set('page', String(pageNum));
+        params.set('pageSize', '50'); // fetch more to allow client-side tab filtering
 
         const data = await api.get<FeedResponse>(`/requests?${params.toString()}`);
 
@@ -458,31 +417,26 @@ export default function SpecialistFeedTab() {
   // Render
   // ---------------------------------------------------------------------------
   function renderCard({ item }: { item: RequestItem }) {
-    const serviceLabel = item.serviceType || item.category || '';
-
     return (
       <View className="mb-3">
-        <RequestFeedCard
-          title={item.title || item.description.slice(0, 60)}
-          description={item.description}
-          city={item.city}
-          fns={item.ifnsName || ''}
-          service={serviceLabel}
-          date={formatDate(item.createdAt)}
-          author={getAuthorInitials(item.client?.name)}
-          memberSince={getMemberYear(item.client?.createdAt)}
-          messageCount={item._count.responses}
-          onMessage={() => router.push(`/requests/${item.id}?respond=1` as any)}
-          onDetails={() => router.push(`/requests/${item.id}` as any)}
+        <RequestCard
+          item={item}
+          onRespond={() => router.push(`/specialist/respond/${item.id}` as any)}
         />
       </View>
     );
   }
 
+  const TAB_CONFIG: { key: TabKey; label: string; count: number; color: string }[] = [
+    { key: 'new', label: 'Новые', count: newItems.length, color: Colors.brandPrimary },
+    { key: 'inProgress', label: 'В работе', count: inProgressItems.length, color: Colors.statusWarning },
+    { key: 'completed', label: 'Завершены', count: completedItems.length, color: Colors.statusSuccess },
+  ];
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <FlatList
-        data={items}
+        data={visibleItems}
         keyExtractor={(item) => item.id}
         renderItem={renderCard}
         showsVerticalScrollIndicator={false}
@@ -498,13 +452,55 @@ export default function SpecialistFeedTab() {
         onEndReachedThreshold={0.3}
         ListHeaderComponent={
           <View className="gap-4 pb-4">
-            {/* Header */}
-            <View>
-              <Text className="text-xl font-bold text-textPrimary">Заявки</Text>
-              <Text className="mt-0.5 text-sm text-textMuted">{total} активных заявок</Text>
+            {/* Greeting — proto: "Добрый день, {name}!" */}
+            <Text className="text-xl font-bold text-textPrimary">
+              {getGreeting()}{userName ? `, ${userName}` : ''}!
+            </Text>
+
+            {/* Promo banner placeholder */}
+            <View className="h-[88px] items-center justify-center rounded-xl bg-bgSecondary">
+              <Text className="text-sm text-textMuted">Промо-баннер</Text>
             </View>
 
-            {/* Unified City/FNS filter */}
+            {/* Stat cards — proto: 3 cards (Новые / В работе / Завершены) */}
+            <View className="flex-row gap-2">
+              {TAB_CONFIG.map((t) => (
+                <Pressable
+                  key={t.key}
+                  className="flex-1 items-center rounded-xl border border-borderLight bg-white p-3"
+                  style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}
+                  onPress={() => setActiveTab(t.key)}
+                >
+                  <Text className="text-[22px] font-bold" style={{ color: t.color }}>{t.count}</Text>
+                  <Text className="mt-0.5 text-xs text-textMuted">{t.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Tab buttons — proto: Новые / В работе / Завершены */}
+            <View className="flex-row gap-2">
+              {TAB_CONFIG.map((t) => (
+                <Pressable
+                  key={t.key}
+                  className={`h-9 flex-1 items-center justify-center rounded-lg border ${
+                    activeTab === t.key
+                      ? 'border-brandPrimary bg-brandPrimary'
+                      : 'border-borderLight bg-white'
+                  }`}
+                  onPress={() => setActiveTab(t.key)}
+                >
+                  <Text
+                    className={`text-xs font-medium ${
+                      activeTab === t.key ? 'font-semibold text-white' : 'text-textMuted'
+                    }`}
+                  >
+                    {t.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Filters */}
             <View className="gap-3 rounded-xl border border-borderLight bg-bgSecondary p-4">
               <View className="flex-row items-center gap-2">
                 <Feather name="sliders" size={14} color={Colors.brandPrimary} />
@@ -552,12 +548,10 @@ export default function SpecialistFeedTab() {
             </View>
           ) : (
             <View className="items-center gap-3 py-10">
-              <View className="h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
-                <Feather name="inbox" size={32} color={Colors.textMuted} />
-              </View>
-              <Text className="text-lg font-semibold text-textPrimary">Нет заявок</Text>
-              <Text className="max-w-[260px] text-center text-sm text-textMuted">
-                Попробуйте изменить параметры фильтров
+              <Feather name="inbox" size={48} color={Colors.textMuted} />
+              <Text className="text-lg font-bold text-textPrimary">Пока нет заявок</Text>
+              <Text className="max-w-[260px] text-center text-sm leading-5 text-textMuted">
+                Новые заявки от клиентов появятся здесь. Убедитесь, что ваш профиль заполнен, чтобы получать больше заявок.
               </Text>
             </View>
           )
