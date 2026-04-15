@@ -13,8 +13,8 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   CANCELLED: { label: 'Отменена', color: Colors.statusError, bg: Colors.statusBg.error },
 };
 
-function RequestCard({ title, service, city, status, date, responses }: {
-  title: string; service: string; city: string; status: string; date: string; responses: number;
+function RequestCard({ title, service, fns, city, status, date, messageCount }: {
+  title: string; service: string; fns: string; city: string; status: string; date: string; messageCount: number;
 }) {
   const st = STATUS_MAP[status] || STATUS_MAP.NEW;
   return (
@@ -29,6 +29,9 @@ function RequestCard({ title, service, city, status, date, responses }: {
         <Feather name="briefcase" size={12} color={Colors.textMuted} />
         <Text style={s.metaItem}>{service}</Text>
         <Text style={s.metaDot}>{'·'}</Text>
+        <Feather name="home" size={12} color={Colors.textMuted} />
+        <Text style={s.metaItem}>{fns}</Text>
+        <Text style={s.metaDot}>{'·'}</Text>
         <Feather name="map-pin" size={12} color={Colors.textMuted} />
         <Text style={s.metaItem}>{city}</Text>
       </View>
@@ -37,10 +40,10 @@ function RequestCard({ title, service, city, status, date, responses }: {
           <Feather name="calendar" size={12} color={Colors.textMuted} />
           <Text style={s.date}>{date}</Text>
         </View>
-        {responses > 0 && (
+        {messageCount > 0 && (
           <View style={s.responsesBadge}>
-            <Feather name="message-circle" size={12} color={Colors.statusSuccess} />
-            <Text style={s.responses}>{responses} откликов</Text>
+            <Feather name="message-circle" size={12} color={Colors.brandPrimary} />
+            <Text style={[s.responses, { color: Colors.brandPrimary }]}>{messageCount} сообщ.</Text>
           </View>
         )}
         <Feather name="chevron-right" size={16} color={Colors.textMuted} />
@@ -88,8 +91,8 @@ function DefaultRequests() {
       </View>
       {visibleRequests.map((r) => (
         <RequestCard
-          key={r.id} title={r.title} service={r.service}
-          city={r.city} status={r.status} date={r.createdAt} responses={r.responseCount}
+          key={r.id} title={r.title} service={r.service} fns={r.fns}
+          city={r.city} status={r.status} date={r.createdAt} messageCount={r.messageCount}
         />
       ))}
     </View>

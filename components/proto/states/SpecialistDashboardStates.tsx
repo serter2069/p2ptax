@@ -17,9 +17,9 @@ function StatCard({ icon, label, value, color }: { icon: string; label: string; 
 }
 
 const REQUESTS = [
-  { id: '1', title: 'Декларация 3-НДФЛ за 2025 год', city: 'Москва', fns: 'ИФНС №46', service: 'Камеральная проверка', budget: '5 000 ₽', date: '12.04.2026' },
-  { id: '2', title: 'Регистрация ИП — срочно', city: 'Новосибирск', fns: 'МРИ ФНС №12', service: 'Выездная проверка', budget: '8 000 ₽', date: '11.04.2026' },
-  { id: '3', title: 'Оптимизация налогов для ООО', city: 'Москва', fns: 'ИФНС №15', service: 'Оперативный контроль', budget: '15 000 ₽', date: '10.04.2026' },
+  { id: '1', title: 'Заполнить декларацию 3-НДФЛ за 2025 год', city: 'Москва', fns: 'ФНС №46 по г. Москве', service: '3-НДФЛ', messageCount: 0, date: '12.04.2026' },
+  { id: '2', title: 'Регистрация ИП — срочно', city: 'Новосибирск', fns: 'ФНС №12 по г. Новосибирску', service: 'Регистрация ИП', messageCount: 2, date: '11.04.2026' },
+  { id: '3', title: 'Налоговый вычет за квартиру', city: 'Москва', fns: 'ФНС №15 по г. Москве', service: 'Налоговый вычет', messageCount: 1, date: '10.04.2026' },
 ];
 
 function RequestCard({ r }: { r: typeof REQUESTS[0] }) {
@@ -33,8 +33,13 @@ function RequestCard({ r }: { r: typeof REQUESTS[0] }) {
         <Text className="text-xs text-textMuted">{r.service}</Text>
       </View>
       <View className="flex-row items-center justify-between">
-        <Text className="text-base font-semibold text-brandPrimary">{r.budget}</Text>
         <Text className="text-xs text-textMuted">{r.date}</Text>
+        {r.messageCount > 0 && (
+          <View className="flex-row items-center gap-1">
+            <Feather name="message-circle" size={12} color={Colors.brandPrimary} />
+            <Text className="text-xs font-medium text-brandPrimary">{r.messageCount} сообщ.</Text>
+          </View>
+        )}
       </View>
       <Pressable className="mt-1 h-10 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
         <Feather name="send" size={14} color={Colors.white} />

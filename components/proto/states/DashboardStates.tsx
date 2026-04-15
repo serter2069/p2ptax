@@ -101,7 +101,7 @@ function QuickActions() {
       </Pressable>
       <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white">
         <Feather name="list" size={16} color={Colors.brandPrimary} />
-        <Text className="text-sm font-medium text-brandPrimary">Все заявки</Text>
+        <Text className="text-sm font-medium text-brandPrimary">Мои заявки</Text>
       </Pressable>
       <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white">
         <Feather name="message-circle" size={16} color={Colors.brandPrimary} />
@@ -147,8 +147,8 @@ function DefaultDashboard() {
         </View>
         <RequestCard
           title="Заполнить декларацию 3-НДФЛ за 2025 год"
-          service="Декларация"
-          fns="ИФНС №46"
+          service="3-НДФЛ"
+          fns="ФНС №46 по г. Москве"
           city="Москва"
           date="08.04.2026"
           messageCount={2}
@@ -157,8 +157,8 @@ function DefaultDashboard() {
         />
         <RequestCard
           title="Регистрация ИП на УСН"
-          service="Регистрация"
-          fns="МРИ ФНС №12"
+          service="Регистрация ИП"
+          fns="ФНС №12 по г. Новосибирску"
           city="Новосибирск"
           date="07.04.2026"
           messageCount={4}
@@ -166,9 +166,9 @@ function DefaultDashboard() {
           statusColor={Colors.statusWarning}
         />
         <RequestCard
-          title="Оптимизация налогов для ООО"
-          service="Консультация"
-          fns="ИФНС №15"
+          title="Налоговый вычет за квартиру"
+          service="Налоговый вычет"
+          fns="ФНС №15 по г. Москве"
           city="Москва"
           date="05.04.2026"
           messageCount={0}
@@ -305,8 +305,8 @@ function UnreadDashboard() {
         </View>
         <RequestCard
           title="Заполнить декларацию 3-НДФЛ за 2025 год"
-          service="Декларация"
-          fns="ИФНС №46"
+          service="3-НДФЛ"
+          fns="ФНС №46 по г. Москве"
           city="Москва"
           date="08.04.2026"
           messageCount={2}
@@ -315,8 +315,8 @@ function UnreadDashboard() {
         />
         <RequestCard
           title="Регистрация ИП на УСН"
-          service="Регистрация"
-          fns="МРИ ФНС №12"
+          service="Регистрация ИП"
+          fns="ФНС №12 по г. Новосибирску"
           city="Новосибирск"
           date="07.04.2026"
           messageCount={1}
@@ -411,8 +411,8 @@ function StatusChangeDashboard() {
         </View>
         <RequestCard
           title="Заполнить декларацию 3-НДФЛ за 2025 год"
-          service="Декларация"
-          fns="ИФНС №46"
+          service="3-НДФЛ"
+          fns="ФНС №46 по г. Москве"
           city="Москва"
           date="08.04.2026"
           messageCount={2}
@@ -420,9 +420,9 @@ function StatusChangeDashboard() {
           statusColor={Colors.statusWarning}
         />
         <RequestCard
-          title="Оптимизация налогов для ООО"
-          service="Консультация"
-          fns="ИФНС №15"
+          title="Налоговый вычет за квартиру"
+          service="Налоговый вычет"
+          fns="ФНС №15 по г. Москве"
           city="Москва"
           date="05.04.2026"
           messageCount={0}
