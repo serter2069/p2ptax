@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { useResponsive } from '../../lib/hooks/useResponsive';
 import { Sidebar, SidebarNavItem, NavGroup } from '../Sidebar';
 import { Colors } from '../../constants/Colors';
@@ -33,26 +33,14 @@ export function SidebarLayout({
   }
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: Colors.bgPrimary }}>
       <Sidebar
         items={navItems}
         userEmail={userEmail}
         onLogout={onLogout}
         width={SIDEBAR_WIDTH}
       />
-      <View style={styles.content}>{children}</View>
+      <View style={{ flex: 1, overflow: 'hidden' as any }}>{children}</View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: Colors.bgPrimary,
-  },
-  content: {
-    flex: 1,
-    overflow: 'hidden' as any,
-  },
-});
