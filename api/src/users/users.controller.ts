@@ -1,12 +1,13 @@
-import { Controller, Delete, Get, Patch, Post, Body, Request, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Delete, Get, Patch, Post, Query, Body, Request, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { IsString, IsArray, IsBoolean, IsOptional, IsIn, Length, Matches, MinLength, ArrayMinSize, IsEmail } from 'class-validator';
 import { Throttle } from '@nestjs/throttler';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard, Public } from '../auth/jwt-auth.guard';
 import { EmailThrottlerGuard } from '../auth/email-throttler.guard';
+import { IpThrottlerGuard } from '../auth/ip-throttler.guard';
 import { UsersService } from './users.service';
 import { StorageService } from '../storage/storage.service';
 
@@ -117,6 +118,20 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly storageService: StorageService,
   ) {}
+
+  /**
+   * GET /users/check-username?username=xxx
+   * Public endpoint — no auth required. IP rate-limited.
+   * Returns { available: boolean }
+   */
+  @Public()
+  @UseGuards(IpThrottlerGuard)
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
+  @Get('check-username')
+  checkUsername(@Query('username') username?: string) {
+    if (!username) return { available: false };
+    return this.usersService.checkUsernameAvailability(username);
+  }
 
   /** GET /users/me — return current user profile */
   @Get('me')

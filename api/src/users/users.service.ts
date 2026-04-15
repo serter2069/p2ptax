@@ -4,7 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService, TokenPair } from '../auth/auth.service';
 import { EmailService } from '../notifications/email.service';
 
-const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
+const USERNAME_REGEX = /^[a-zA-Z0-9_-]+$/;
+const USERNAME_CHECK_REGEX = /^[a-zA-Z0-9_-]+$/;
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 @Injectable()
@@ -16,6 +17,29 @@ export class UsersService {
     private readonly authService: AuthService,
     private readonly emailService: EmailService,
   ) {}
+
+  /**
+   * Check if a username (nick) is available for SpecialistProfile.
+   * Case-insensitive check. Returns { available: false } for invalid format.
+   */
+  async checkUsernameAvailability(username: string): Promise<{ available: boolean }> {
+    // Validate format: 3-30 chars, alphanumeric + dash + underscore
+    if (username.length < 3 || username.length > 30 || !USERNAME_CHECK_REGEX.test(username)) {
+      return { available: false };
+    }
+
+    // Case-insensitive check against SpecialistProfile.nick
+    const existing = await this.prisma.specialistProfile.findFirst({
+      where: { nick: { equals: username, mode: 'insensitive' } },
+    });
+
+    // Also check User.username (case-insensitive)
+    const existingUser = await this.prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
+    });
+
+    return { available: !existing && !existingUser };
+  }
 
   /** Return current user profile (id, email, role, username, firstName, lastName, phone, avatarUrl). */
   async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null; firstName: string | null; lastName: string | null; phone: string | null; avatarUrl: string | null }> {
