@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Typography, Spacing } from '../../constants/Colors';
 
-export default function WorkAreaScreen() {
+export default function PublicRequestsScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Рабочая область</Text>
-      <Text style={styles.subtitle}>Work area onboarding placeholder</Text>
+      <Text style={styles.title}>Публичные заявки</Text>
+      <Text style={styles.subtitle}>Public requests feed placeholder</Text>
     </View>
   );
 }
