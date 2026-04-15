@@ -1,126 +1,106 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 
-function Screen({ initialFilled, uploading, uploadProgress }: {
-  initialFilled?: boolean; uploading?: boolean; uploadProgress?: number;
+function ProfileScreen({ initialFilled, uploading }: {
+  initialFilled?: boolean; uploading?: boolean;
 }) {
-  const [about, setAbout] = useState(initialFilled ? 'Налоговый консультант с опытом работы 8 лет. Специализация — НДФЛ, имущественные вычеты, регистрация ИП.' : '');
-  const [price, setPrice] = useState(initialFilled ? '2 000' : '');
+  const [description, setDescription] = useState(initialFilled ? 'Налоговый консультант, 8 лет опыта. Специализация — НДФЛ, вычеты, ИП.' : '');
+  const [phone, setPhone] = useState(initialFilled ? '+79001234567' : '');
+  const [telegram, setTelegram] = useState(initialFilled ? '@elena_tax' : '');
   const [hasPhoto, setHasPhoto] = useState(!!initialFilled);
-  const [isUploading, setIsUploading] = useState(!!uploading);
-  const progress = uploadProgress ?? 0;
-
-  const charCount = about.length;
-  const maxChars = 500;
-  const isComplete = about.length >= 20 && price.length > 0;
+  const maxChars = 1000;
 
   return (
-    <View style={s.container}>
+    <View className="flex-1 bg-white px-4 py-6">
       {/* Progress */}
-      <View style={s.progressWrap}>
-        <View style={s.progressTrack}>
-          <View style={[s.progressBar, { width: '100%' }]} />
-        </View>
-        <Text style={s.step}>Шаг 3 из 3</Text>
+      <View className="mb-1 h-1 rounded-full bg-bgSecondary">
+        <View className="h-1 rounded-full bg-green-600" style={{ width: '100%' }} />
       </View>
+      <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 3 из 3</Text>
 
-      <View style={s.headerWrap}>
-        <Text style={s.title}>Расскажите о себе</Text>
-        <Text style={s.subtitle}>Эта информация поможет клиентам выбрать именно вас</Text>
-      </View>
+      <Text className="text-xl font-bold text-textPrimary">Расскажите о себе</Text>
+      <Text className="mb-4 text-base text-textMuted">Эта информация поможет клиентам выбрать вас</Text>
 
       {/* Avatar */}
-      <View style={s.avatarSection}>
-        <View style={s.avatarWrap}>
-          {hasPhoto ? (
-            <View style={s.avatarFilled}>
-              <Feather name="user" size={32} color={Colors.white} />
-            </View>
-          ) : (
-            <View style={s.avatar}>
-              <Feather name="user" size={32} color={Colors.brandPrimary} />
-            </View>
-          )}
-          {isUploading && (
-            <View style={s.uploadOverlay}>
-              <ActivityIndicator size="small" color={Colors.white} />
-              <Text style={s.uploadPercent}>{progress}%</Text>
+      <View className="mb-4 flex-row items-center gap-4">
+        <View className={`h-16 w-16 items-center justify-center rounded-full ${hasPhoto ? 'bg-brandPrimary' : 'border-2 border-dashed border-gray-300 bg-bgSecondary'}`}>
+          <Feather name="user" size={28} color={hasPhoto ? '#fff' : '#0284C7'} />
+          {uploading && (
+            <View className="absolute inset-0 items-center justify-center rounded-full bg-black/50">
+              <Text className="text-xs font-bold text-white">45%</Text>
             </View>
           )}
         </View>
-        <View style={s.avatarInfo}>
-          <Pressable style={s.avatarBtn} onPress={() => { setIsUploading(true); setTimeout(() => { setIsUploading(false); setHasPhoto(true); }, 1500); }}>
-            <Feather name="camera" size={14} color={Colors.brandPrimary} />
-            <Text style={s.avatarBtnText}>{hasPhoto ? 'Изменить фото' : 'Загрузить фото'}</Text>
+        <View>
+          <Pressable className="flex-row items-center gap-1" onPress={() => setHasPhoto(true)}>
+            <Feather name="camera" size={14} color="#0284C7" />
+            <Text className="text-base font-medium text-brandPrimary">{hasPhoto ? 'Изменить фото' : 'Загрузить фото'}</Text>
           </Pressable>
-          <Text style={s.avatarHint}>JPG или PNG, до 5 МБ</Text>
+          <Text className="text-xs text-textMuted">JPG или PNG, до 5 МБ</Text>
         </View>
       </View>
 
-      {/* About */}
-      <View style={s.field}>
-        <View style={s.labelRow}>
-          <Text style={s.label}>О себе</Text>
-          <Text style={[s.charCount, charCount > maxChars ? s.charCountError : null]}>
-            {charCount}/{maxChars}
-          </Text>
+      {/* Description */}
+      <View className="mb-3">
+        <View className="mb-1 flex-row items-center justify-between">
+          <Text className="text-sm font-medium text-textSecondary">О себе</Text>
+          <Text className={`text-xs ${description.length > maxChars ? 'text-red-600' : 'text-textMuted'}`}>{description.length}/{maxChars}</Text>
         </View>
         <TextInput
-          value={about}
-          onChangeText={setAbout}
-          placeholder="Расскажите о вашем опыте и специализации..."
-          placeholderTextColor={Colors.textMuted}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Расскажите о вашем опыте..."
+          placeholderTextColor="#94A3B8"
           multiline
-          style={s.textarea}
+          className="rounded-lg border border-gray-200 p-3 text-base text-textPrimary"
+          style={{ minHeight: 80, textAlignVertical: 'top', outlineStyle: 'none' as any }}
           maxLength={maxChars}
         />
       </View>
 
-      {/* Price */}
-      <View style={s.field}>
-        <Text style={s.label}>Стоимость консультации (руб.)</Text>
-        <View style={s.priceWrap}>
-          <Text style={s.priceCurrency}>P</Text>
+      {/* Phone */}
+      <View className="mb-3">
+        <Text className="mb-1 text-sm font-medium text-textSecondary">Телефон</Text>
+        <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
+          <Feather name="phone" size={16} color="#94A3B8" />
           <TextInput
-            value={price}
-            onChangeText={setPrice}
-            placeholder="2 000"
-            placeholderTextColor={Colors.textMuted}
-            style={s.priceInput}
-            keyboardType="numeric"
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="+7XXXXXXXXXX"
+            placeholderTextColor="#94A3B8"
+            className="flex-1 text-base text-textPrimary"
+            style={{ outlineStyle: 'none' as any }}
+            keyboardType="phone-pad"
           />
-          {price.length > 0 && <Text style={s.priceUnit}>/ консультация</Text>}
         </View>
       </View>
 
-      {/* Completeness indicator */}
-      <View style={s.completenessRow}>
-        <View style={s.completenessItem}>
-          <Feather name={hasPhoto ? 'check-circle' : 'circle'} size={16} color={hasPhoto ? Colors.statusSuccess : Colors.textMuted} />
-          <Text style={[s.completenessText, hasPhoto && s.completenessTextDone]}>Фото</Text>
-        </View>
-        <View style={s.completenessItem}>
-          <Feather name={about.length >= 20 ? 'check-circle' : 'circle'} size={16} color={about.length >= 20 ? Colors.statusSuccess : Colors.textMuted} />
-          <Text style={[s.completenessText, about.length >= 20 && s.completenessTextDone]}>Описание</Text>
-        </View>
-        <View style={s.completenessItem}>
-          <Feather name={price.length > 0 ? 'check-circle' : 'circle'} size={16} color={price.length > 0 ? Colors.statusSuccess : Colors.textMuted} />
-          <Text style={[s.completenessText, price.length > 0 && s.completenessTextDone]}>Цена</Text>
+      {/* Telegram */}
+      <View className="mb-4">
+        <Text className="mb-1 text-sm font-medium text-textSecondary">Telegram</Text>
+        <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
+          <Feather name="send" size={16} color="#94A3B8" />
+          <TextInput
+            value={telegram}
+            onChangeText={setTelegram}
+            placeholder="@username"
+            placeholderTextColor="#94A3B8"
+            className="flex-1 text-base text-textPrimary"
+            style={{ outlineStyle: 'none' as any }}
+          />
         </View>
       </View>
 
       {/* Buttons */}
-      <View style={s.buttonRow}>
-        <Pressable style={s.btnBack}>
-          <Feather name="arrow-left" size={16} color={Colors.textSecondary} />
-          <Text style={s.btnBackText}>Назад</Text>
+      <View className="flex-row gap-3">
+        <Pressable className="h-12 flex-row items-center justify-center gap-1 rounded-lg border border-gray-200 px-4">
+          <Feather name="arrow-left" size={16} color="#475569" />
+          <Text className="text-base font-medium text-textSecondary">Назад</Text>
         </Pressable>
-        <Pressable style={[s.btn, !isComplete && s.btnDisabled]} disabled={!isComplete}>
-          <Feather name="check" size={16} color={Colors.white} />
-          <Text style={s.btnText}>Завершить</Text>
+        <Pressable className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
+          <Feather name="check" size={16} color="#fff" />
+          <Text className="text-base font-semibold text-white">Завершить</Text>
         </Pressable>
       </View>
     </View>
@@ -129,254 +109,25 @@ function Screen({ initialFilled, uploading, uploadProgress }: {
 
 export function OnboardingProfileStates() {
   return (
-    <>
-      <StateSection title="DEFAULT">
-        <Screen />
-      </StateSection>
+    <ScrollView className="flex-1 bg-white">
+      <View className="w-full max-w-md self-center px-4 py-8">
+        <Text className="mb-4 text-lg font-bold text-textPrimary">Screen: Onboarding Profile</Text>
 
-      <StateSection title="UPLOADING">
-        <Screen uploading uploadProgress={45} />
-      </StateSection>
+        <Text className="mb-2 text-sm font-medium text-textMuted">IDLE</Text>
+        <View className="mb-6 rounded-xl border border-gray-200 overflow-hidden" style={{ height: 620 }}>
+          <ProfileScreen />
+        </View>
 
-      <StateSection title="COMPLETE">
-        <Screen initialFilled />
-      </StateSection>
-    </>
+        <Text className="mb-2 text-sm font-medium text-textMuted">UPLOADING</Text>
+        <View className="mb-6 rounded-xl border border-gray-200 overflow-hidden" style={{ height: 620 }}>
+          <ProfileScreen uploading />
+        </View>
+
+        <Text className="mb-2 text-sm font-medium text-textMuted">COMPLETE</Text>
+        <View className="mb-6 rounded-xl border border-gray-200 overflow-hidden" style={{ height: 620 }}>
+          <ProfileScreen initialFilled />
+        </View>
+      </View>
+    </ScrollView>
   );
 }
-
-const s = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: Spacing['2xl'],
-    gap: Spacing.lg,
-    backgroundColor: Colors.bgPrimary,
-  },
-
-  // Progress
-  progressWrap: {
-    gap: Spacing.sm,
-  },
-  progressTrack: {
-    height: 4,
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: Colors.statusSuccess,
-    borderRadius: 2,
-  },
-  step: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-
-  // Header
-  headerWrap: {
-    gap: Spacing.xs,
-  },
-  title: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-    lineHeight: 22,
-  },
-
-  // Avatar
-  avatarSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.lg,
-    paddingVertical: Spacing.sm,
-  },
-  avatarWrap: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-  },
-  avatarFilled: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  uploadOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  uploadPercent: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.bold,
-  },
-  avatarInfo: {
-    gap: Spacing.xs,
-  },
-  avatarBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  avatarBtnText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  avatarHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-
-  // Fields
-  field: {
-    gap: Spacing.sm,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  label: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-  },
-  charCount: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  charCountError: {
-    color: Colors.statusError,
-  },
-  textarea: {
-    minHeight: 100,
-    backgroundColor: Colors.bgPrimary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.input,
-    padding: Spacing.lg,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    textAlignVertical: 'top',
-    lineHeight: 22,
-  },
-  priceWrap: {
-    height: 48,
-    backgroundColor: Colors.bgPrimary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.input,
-    paddingHorizontal: Spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  priceCurrency: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textMuted,
-  },
-  priceInput: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    paddingVertical: 0,
-  },
-  priceUnit: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-
-  // Completeness
-  completenessRow: {
-    flexDirection: 'row',
-    gap: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgSecondary,
-  },
-  completenessItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  completenessText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  completenessTextDone: {
-    color: Colors.statusSuccess,
-    fontWeight: Typography.fontWeight.medium,
-  },
-
-  // Buttons
-  buttonRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.xs,
-  },
-  btnBack: {
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.btn,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  btnBackText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  btn: {
-    flex: 1,
-    height: 48,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.btn,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  btnDisabled: {
-    opacity: 0.45,
-  },
-  btnText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-});
