@@ -1,0 +1,153 @@
+import { client } from './client';
+import {
+  setAccessToken,
+  setRefreshToken,
+  getRefreshToken,
+  clearTokens,
+} from './storage';
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export const auth = {
+  requestOtp(email: string) {
+    return client.post<{ message: string }>('/auth/request-otp', { email });
+  },
+
+  async verifyOtp(email: string, code: string) {
+    const res = await client.post<AuthTokens>('/auth/verify-otp', { email, code });
+    await setAccessToken(res.data.accessToken);
+    await setRefreshToken(res.data.refreshToken);
+    return res;
+  },
+
+  async refresh() {
+    const refreshToken = await getRefreshToken();
+    const res = await client.post<AuthTokens>('/auth/refresh', { refreshToken });
+    await setAccessToken(res.data.accessToken);
+    if (res.data.refreshToken) {
+      await setRefreshToken(res.data.refreshToken);
+    }
+    return res;
+  },
+
+  async logout() {
+    const refreshToken = await getRefreshToken();
+    try {
+      await client.post('/auth/logout', { refreshToken });
+    } finally {
+      await clearTokens();
+    }
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+export const users = {
+  getMe() {
+    return client.get('/users/me');
+  },
+
+  updateMe(data: Record<string, unknown>) {
+    return client.patch('/users/me', data);
+  },
+
+  getSettings() {
+    return client.get('/users/me/settings');
+  },
+
+  updateSettings(data: Record<string, unknown>) {
+    return client.patch('/users/me/settings', data);
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Requests
+// ---------------------------------------------------------------------------
+export const requests = {
+  getMyRequests(params?: Record<string, unknown>) {
+    return client.get('/requests/my', { params });
+  },
+
+  createRequest(data: Record<string, unknown>) {
+    return client.post('/requests', data);
+  },
+
+  getRequest(id: string) {
+    return client.get(`/requests/${id}`);
+  },
+
+  updateRequest(id: string, data: Record<string, unknown>) {
+    return client.patch(`/requests/${id}`, data);
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Specialists
+// ---------------------------------------------------------------------------
+export const specialists = {
+  getSpecialists(params?: Record<string, unknown>) {
+    return client.get('/specialists', { params });
+  },
+
+  getSpecialist(nick: string) {
+    return client.get(`/specialists/${nick}`);
+  },
+
+  getFeatured() {
+    return client.get('/specialists/featured');
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Threads (Chat)
+// ---------------------------------------------------------------------------
+export const threads = {
+  getThreads() {
+    return client.get('/chat');
+  },
+
+  getMessages(threadId: string, params?: Record<string, unknown>) {
+    return client.get(`/chat/${threadId}/messages`, { params });
+  },
+
+  sendMessage(threadId: string, content: string) {
+    return client.post(`/chat/${threadId}/messages`, { content });
+  },
+
+  startThread(userId: string) {
+    return client.post('/chat/start', { userId });
+  },
+};
+
+// ---------------------------------------------------------------------------
+// IFNS
+// ---------------------------------------------------------------------------
+export const ifns = {
+  getCities() {
+    return client.get('/ifns/cities');
+  },
+
+  getIfns(params?: Record<string, unknown>) {
+    return client.get('/ifns', { params });
+  },
+
+  searchIfns(query: string) {
+    return client.get('/ifns/search', { params: { query } });
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+export const stats = {
+  getLandingStats() {
+    return client.get('/stats/landing');
+  },
+};
