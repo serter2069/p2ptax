@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   ScrollView,
-  TouchableOpacity,
-  Switch,
+  Pressable,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   TextInput,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
@@ -20,7 +19,7 @@ import { useAuth } from '../../stores/authStore';
 import { api, ApiError } from '../../lib/api';
 import { isAdmin } from '../../lib/adminEmails';
 import { Header } from '../../components/Header';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 
 interface MyReview {
   id: string;
@@ -43,6 +42,53 @@ interface NotificationSettings {
 
 const NOTIF_KEY_RESPONSES = '@p2ptax_notif_responses';
 const NOTIF_KEY_MESSAGES = '@p2ptax_notif_messages';
+
+// ---------------------------------------------------------------------------
+// Toggle (matching proto pattern)
+// ---------------------------------------------------------------------------
+function Toggle({
+  label,
+  sublabel,
+  value,
+  onValueChange,
+  disabled,
+}: {
+  label: string;
+  sublabel?: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  const trackColor = value ? Colors.brandPrimary : '#D1D5DB';
+  return (
+    <Pressable
+      className="flex-row items-center justify-between"
+      onPress={() => !disabled && onValueChange(!value)}
+      style={{ opacity: disabled ? 0.5 : 1 }}
+    >
+      <View className="mr-3 flex-1">
+        <Text className="text-sm text-textSecondary">{label}</Text>
+        {sublabel ? <Text className="text-xs text-textMuted">{sublabel}</Text> : null}
+      </View>
+      <View
+        className="h-7 w-12 justify-center rounded-full px-0.5"
+        style={{ backgroundColor: trackColor }}
+      >
+        <View
+          className="h-[22px] w-[22px] rounded-full bg-white"
+          style={{
+            alignSelf: value ? 'flex-end' : 'flex-start',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+            elevation: 2,
+          }}
+        />
+      </View>
+    </Pressable>
+  );
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -85,7 +131,6 @@ export default function SettingsScreen() {
         AsyncStorage.setItem(NOTIF_KEY_MESSAGES, String(data.new_messages)).catch(() => {});
       })
       .catch(() => {
-        // Fallback to AsyncStorage if API unavailable
         Promise.all([
           AsyncStorage.getItem(NOTIF_KEY_RESPONSES),
           AsyncStorage.getItem(NOTIF_KEY_MESSAGES),
@@ -110,7 +155,6 @@ export default function SettingsScreen() {
         await AsyncStorage.setItem(NOTIF_KEY_MESSAGES, String(value));
       }
     } catch {
-      // Revert on failure
       setNotifSettings((s) => ({ ...s, [key]: prev }));
     }
   }
@@ -181,8 +225,7 @@ export default function SettingsScreen() {
       setEmailChangeError('Введите новый email');
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmed)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setEmailChangeError('Введите корректный email');
       return;
     }
@@ -229,231 +272,230 @@ export default function SettingsScreen() {
     setEmailChangeError('');
   }
 
+  const displayEmail = user?.email ?? '\u2014';
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView className="flex-1 bg-white">
       {isMobile && <Header title="Настройки" showBack />}
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.container}>
-          {/* Account section */}
-          <Text style={styles.sectionTitle}>Аккаунт</Text>
-          <View style={styles.card}>
-            {/* Email row — readonly display */}
-            <View style={styles.row}>
-              <View style={styles.rowTextBlock}>
-                <Text style={styles.rowLabel}>Email</Text>
-                <Text style={styles.rowHint} numberOfLines={1}>{user?.email ?? '—'}</Text>
-              </View>
-            </View>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ alignItems: 'center', paddingVertical: 24, paddingBottom: 48 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="w-full max-w-[430px] px-5 gap-5">
+            {/* Page title */}
+            <Text className="text-xl font-bold text-textPrimary">Настройки</Text>
 
-            {/* Email change flow */}
-            {emailChangeStep === 'idle' && (
-              <View style={styles.emailChangeBtnRow}>
-                <TouchableOpacity
-                  style={styles.emailChangeBtn}
+            {/* ============ Account ============ */}
+            <View className="gap-3 rounded-xl border border-borderLight p-4">
+              <Text className="text-base font-semibold text-textPrimary">Аккаунт</Text>
+
+              {/* Email — readonly */}
+              <View className="gap-1">
+                <Text className="text-sm font-medium text-textMuted">Email</Text>
+                <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
+                  <Feather name="mail" size={16} color={Colors.textMuted} />
+                  <Text className="ml-2 flex-1 text-base text-textSecondary" numberOfLines={1}>
+                    {displayEmail}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Email change flow */}
+              {emailChangeStep === 'idle' && (
+                <Pressable
+                  className="h-10 items-center justify-center rounded-lg border bg-bgSecondary"
+                  style={{ borderColor: Colors.brandPrimary + '60' }}
                   onPress={handleStartEmailChange}
-                  activeOpacity={0.75}
                 >
-                  <Text style={styles.emailChangeBtnText}>Изменить email</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+                  <Text className="text-sm font-medium" style={{ color: Colors.brandPrimary }}>
+                    Изменить email
+                  </Text>
+                </Pressable>
+              )}
 
-            {emailChangeStep === 'email_input' && (
-              <View style={styles.emailChangeFormBlock}>
-                <Text style={styles.emailChangeFormLabel}>Новый email</Text>
-                <TextInput
-                  style={styles.emailChangeInput}
-                  value={newEmail}
-                  onChangeText={(t) => { setNewEmail(t); setEmailChangeError(''); }}
-                  placeholder="example@email.com"
-                  placeholderTextColor={Colors.textMuted}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!emailChangeLoading}
-                />
-                {emailChangeError ? (
-                  <Text style={styles.emailChangeErrorText}>{emailChangeError}</Text>
-                ) : null}
-                <View style={styles.emailChangeActions}>
-                  <TouchableOpacity
-                    style={[styles.emailChangeActionBtn, styles.emailChangeActionBtnSecondary]}
-                    onPress={handleCancelEmailChange}
-                    disabled={emailChangeLoading}
-                    activeOpacity={0.75}
+              {emailChangeStep === 'email_input' && (
+                <View className="gap-2">
+                  <Text className="text-sm text-textSecondary">Новый email</Text>
+                  <TextInput
+                    className="h-11 rounded-lg border border-borderLight bg-bgSecondary px-3 text-base text-textPrimary"
+                    value={newEmail}
+                    onChangeText={(t) => { setNewEmail(t); setEmailChangeError(''); }}
+                    placeholder="example@email.com"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!emailChangeLoading}
+                  />
+                  {emailChangeError ? (
+                    <Text className="text-xs" style={{ color: Colors.statusError }}>
+                      {emailChangeError}
+                    </Text>
+                  ) : null}
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      className="flex-1 h-10 rounded-lg items-center justify-center border border-borderLight bg-bgSecondary"
+                      onPress={handleCancelEmailChange}
+                      disabled={emailChangeLoading}
+                    >
+                      <Text className="text-sm font-medium text-textSecondary">Отмена</Text>
+                    </Pressable>
+                    <Pressable
+                      className="flex-1 h-10 rounded-lg items-center justify-center"
+                      style={{
+                        backgroundColor: Colors.brandPrimary,
+                        opacity: emailChangeLoading ? 0.6 : 1,
+                      }}
+                      onPress={handleRequestEmailChange}
+                      disabled={emailChangeLoading}
+                    >
+                      {emailChangeLoading ? (
+                        <ActivityIndicator size="small" color={Colors.white} />
+                      ) : (
+                        <Text className="text-sm font-medium text-white">Получить код</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+
+              {emailChangeStep === 'otp_input' && (
+                <View className="gap-2">
+                  <Text className="text-sm text-textSecondary">
+                    Код отправлен на {newEmail.trim().toLowerCase()}
+                  </Text>
+                  <TextInput
+                    className="h-11 rounded-lg border border-borderLight bg-bgSecondary px-3 text-center text-lg text-textPrimary"
+                    style={{ letterSpacing: 4 }}
+                    value={emailOtpCode}
+                    onChangeText={(t) => { setEmailOtpCode(t.replace(/\D/g, '').slice(0, 6)); setEmailChangeError(''); }}
+                    placeholder="000000"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    editable={!emailChangeLoading}
+                  />
+                  {emailChangeError ? (
+                    <Text className="text-xs" style={{ color: Colors.statusError }}>
+                      {emailChangeError}
+                    </Text>
+                  ) : null}
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      className="flex-1 h-10 rounded-lg items-center justify-center border border-borderLight bg-bgSecondary"
+                      onPress={handleCancelEmailChange}
+                      disabled={emailChangeLoading}
+                    >
+                      <Text className="text-sm font-medium text-textSecondary">Отмена</Text>
+                    </Pressable>
+                    <Pressable
+                      className="flex-1 h-10 rounded-lg items-center justify-center"
+                      style={{
+                        backgroundColor: Colors.brandPrimary,
+                        opacity: emailChangeLoading ? 0.6 : 1,
+                      }}
+                      onPress={handleConfirmEmailChange}
+                      disabled={emailChangeLoading}
+                    >
+                      {emailChangeLoading ? (
+                        <ActivityIndicator size="small" color={Colors.white} />
+                      ) : (
+                        <Text className="text-sm font-medium text-white">Подтвердить</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+
+              {emailChangeStep === 'success' && (
+                <View className="gap-2">
+                  <Text
+                    className="text-base font-medium text-center py-2"
+                    style={{ color: Colors.statusSuccess }}
                   >
-                    <Text style={styles.emailChangeActionBtnSecondaryText}>Отмена</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.emailChangeActionBtn, styles.emailChangeActionBtnPrimary, emailChangeLoading && styles.emailChangeActionBtnDisabled]}
-                    onPress={handleRequestEmailChange}
-                    disabled={emailChangeLoading}
-                    activeOpacity={0.75}
+                    Email успешно изменён
+                  </Text>
+                  <Pressable
+                    className="h-10 rounded-lg items-center justify-center"
+                    style={{ backgroundColor: Colors.brandPrimary }}
+                    onPress={handleEmailChangeSuccess}
                   >
-                    {emailChangeLoading ? (
-                      <ActivityIndicator size="small" color={Colors.white} />
-                    ) : (
-                      <Text style={styles.emailChangeActionBtnPrimaryText}>Получить код</Text>
-                    )}
-                  </TouchableOpacity>
+                    <Text className="text-sm font-medium text-white">Готово</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Role */}
+              <View className="gap-1">
+                <Text className="text-sm font-medium text-textMuted">Роль</Text>
+                <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
+                  <Feather name="user" size={16} color={Colors.textMuted} />
+                  <Text className="ml-2 flex-1 text-base text-textSecondary">
+                    {user?.role === 'SPECIALIST' ? 'Специалист' : 'Заказчик'}
+                  </Text>
                 </View>
               </View>
-            )}
 
-            {emailChangeStep === 'otp_input' && (
-              <View style={styles.emailChangeFormBlock}>
-                <Text style={styles.emailChangeFormLabel}>
-                  Код отправлен на {newEmail.trim().toLowerCase()}
-                </Text>
-                <TextInput
-                  style={[styles.emailChangeInput, styles.emailChangeOtpInput]}
-                  value={emailOtpCode}
-                  onChangeText={(t) => { setEmailOtpCode(t.replace(/\D/g, '').slice(0, 6)); setEmailChangeError(''); }}
-                  placeholder="000000"
-                  placeholderTextColor={Colors.textMuted}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  editable={!emailChangeLoading}
-                />
-                {emailChangeError ? (
-                  <Text style={styles.emailChangeErrorText}>{emailChangeError}</Text>
-                ) : null}
-                <View style={styles.emailChangeActions}>
-                  <TouchableOpacity
-                    style={[styles.emailChangeActionBtn, styles.emailChangeActionBtnSecondary]}
-                    onPress={handleCancelEmailChange}
-                    disabled={emailChangeLoading}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={styles.emailChangeActionBtnSecondaryText}>Отмена</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.emailChangeActionBtn, styles.emailChangeActionBtnPrimary, emailChangeLoading && styles.emailChangeActionBtnDisabled]}
-                    onPress={handleConfirmEmailChange}
-                    disabled={emailChangeLoading}
-                    activeOpacity={0.75}
-                  >
-                    {emailChangeLoading ? (
-                      <ActivityIndicator size="small" color={Colors.white} />
-                    ) : (
-                      <Text style={styles.emailChangeActionBtnPrimaryText}>Подтвердить</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {emailChangeStep === 'success' && (
-              <View style={styles.emailChangeFormBlock}>
-                <Text style={styles.emailChangeSuccessText}>Email успешно изменён</Text>
-                <TouchableOpacity
-                  style={[styles.emailChangeActionBtn, styles.emailChangeActionBtnPrimary]}
-                  onPress={handleEmailChangeSuccess}
-                  activeOpacity={0.75}
-                >
-                  <Text style={styles.emailChangeActionBtnPrimaryText}>Готово</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <View style={styles.divider} />
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>Роль</Text>
-              <Text style={styles.rowValue}>
-                {user?.role === 'SPECIALIST' ? 'Специалист' : 'Заказчик'}
-              </Text>
-            </View>
-            {user?.role === 'SPECIALIST' && (
-              <>
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={styles.row}
+              {/* Edit profile link — specialist only */}
+              {user?.role === 'SPECIALIST' && (
+                <Pressable
+                  className="h-10 flex-row items-center justify-center gap-2 rounded-lg border"
+                  style={{ borderColor: Colors.brandPrimary + '60' }}
                   onPress={() => router.push('/(dashboard)/profile')}
-                  activeOpacity={0.7}
                 >
-                  <Text style={styles.rowLabel}>Редактировать профиль</Text>
-                  <Text style={styles.rowArrow}>{'>'}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+                  <Feather name="edit-2" size={14} color={Colors.brandPrimary} />
+                  <Text className="text-sm font-medium" style={{ color: Colors.brandPrimary }}>
+                    Редактировать профиль
+                  </Text>
+                </Pressable>
+              )}
+            </View>
 
-          {/* Notifications section */}
-          <Text style={styles.sectionTitle}>Уведомления</Text>
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <View style={styles.rowTextBlock}>
-                <Text style={styles.rowLabel}>Новые отклики</Text>
-                <Text style={styles.rowHint}>Уведомления о новых откликах на ваши запросы</Text>
-              </View>
+            {/* ============ Notifications ============ */}
+            <View className="gap-3 rounded-xl border border-borderLight p-4">
+              <Text className="text-base font-semibold text-textPrimary">Уведомления</Text>
               {notifLoading ? (
                 <ActivityIndicator size="small" color={Colors.brandPrimary} />
               ) : (
-                <Switch
-                  value={notifSettings.new_responses}
-                  onValueChange={(v) => handleNotifToggle('new_responses', v)}
-                  trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
-                  thumbColor={Colors.textPrimary}
-                  accessibilityLabel="Новые отклики"
-                />
+                <>
+                  <Toggle
+                    label="Новые отклики"
+                    sublabel="Уведомления о новых откликах на ваши запросы"
+                    value={notifSettings.new_responses}
+                    onValueChange={(v) => handleNotifToggle('new_responses', v)}
+                  />
+                  <Toggle
+                    label="Новые сообщения"
+                    sublabel="Уведомления о новых сообщениях в чатах"
+                    value={notifSettings.new_messages}
+                    onValueChange={(v) => handleNotifToggle('new_messages', v)}
+                  />
+                  <Toggle
+                    label="Автозакрытие"
+                    sublabel="Уведомления об автоматическом закрытии запросов"
+                    value={true}
+                    onValueChange={() => {}}
+                    disabled
+                  />
+                </>
               )}
             </View>
-            <View style={styles.divider} />
-            <View style={styles.row}>
-              <View style={styles.rowTextBlock}>
-                <Text style={styles.rowLabel}>Новые сообщения</Text>
-                <Text style={styles.rowHint}>Уведомления о новых сообщениях в чатах</Text>
-              </View>
-              {notifLoading ? (
-                <ActivityIndicator size="small" color={Colors.brandPrimary} />
-              ) : (
-                <Switch
-                  value={notifSettings.new_messages}
-                  onValueChange={(v) => handleNotifToggle('new_messages', v)}
-                  trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
-                  thumbColor={Colors.textPrimary}
-                  accessibilityLabel="Новые сообщения"
-                />
-              )}
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.row}>
-              <View style={styles.rowTextBlock}>
-                <Text style={styles.rowLabel}>Автозакрытие</Text>
-                <Text style={styles.rowHint}>Уведомления об автоматическом закрытии запросов</Text>
-              </View>
-              <Switch
-                value={true}
-                disabled={true}
-                trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
-                thumbColor={Colors.textPrimary}
-                accessibilityLabel="Автозакрытие"
-              />
-            </View>
-          </View>
 
-          {/* My Reviews — CLIENT only */}
-          {user?.role === 'CLIENT' && (
-            <>
-              <Text style={styles.sectionTitle}>Мои отзывы</Text>
-              <View style={styles.card}>
+            {/* ============ My Reviews — CLIENT only ============ */}
+            {user?.role === 'CLIENT' && (
+              <View className="gap-3 rounded-xl border border-borderLight p-4">
+                <Text className="text-base font-semibold text-textPrimary">Мои отзывы</Text>
                 {reviewsLoading ? (
-                  <View style={styles.row}>
-                    <ActivityIndicator size="small" color={Colors.brandPrimary} />
-                  </View>
+                  <ActivityIndicator size="small" color={Colors.brandPrimary} />
                 ) : myReviews.length === 0 ? (
-                  <View style={styles.row}>
-                    <Text style={styles.rowLabel}>Вы пока не оставляли отзывов</Text>
-                  </View>
+                  <Text className="text-sm text-textMuted">Вы пока не оставляли отзывов</Text>
                 ) : (
                   myReviews.map((review, idx) => {
                     const specName =
@@ -463,16 +505,20 @@ export default function SettingsScreen() {
                     const stars = Array.from({ length: 5 }, (_, i) => (i < review.rating ? '\u2605' : '\u2606')).join('');
                     return (
                       <View key={review.id}>
-                        {idx > 0 && <View style={styles.divider} />}
-                        <View style={styles.reviewRow}>
-                          <View style={styles.reviewHeader}>
-                            <Text style={styles.reviewSpecialist} numberOfLines={1}>{specName}</Text>
-                            <Text style={styles.reviewRating}>{stars} {review.rating}/5</Text>
+                        {idx > 0 && <View className="h-px bg-borderLight" />}
+                        <View className="gap-1">
+                          <View className="flex-row justify-between items-center">
+                            <Text className="text-base font-medium flex-1 text-textPrimary" numberOfLines={1}>
+                              {specName}
+                            </Text>
+                            <Text className="text-sm font-medium ml-2" style={{ color: Colors.brandPrimary }}>
+                              {stars} {review.rating}/5
+                            </Text>
                           </View>
                           {review.comment ? (
-                            <Text style={styles.reviewComment} numberOfLines={3}>{review.comment}</Text>
+                            <Text className="text-sm text-textSecondary" numberOfLines={3}>{review.comment}</Text>
                           ) : null}
-                          <Text style={styles.reviewDate}>
+                          <Text className="text-xs text-textMuted">
                             {new Date(review.createdAt).toLocaleDateString('ru-RU', {
                               day: 'numeric', month: 'short', year: 'numeric',
                             })}
@@ -483,268 +529,59 @@ export default function SettingsScreen() {
                   })
                 )}
               </View>
-            </>
-          )}
+            )}
 
-          {/* Admin section — visible only for admin emails */}
-          {isAdmin(user?.email) ? (
-            <>
-              <Text style={styles.sectionTitle}>Администрирование</Text>
-              <View style={styles.card}>
-                <TouchableOpacity
-                  style={styles.row}
+            {/* ============ Admin ============ */}
+            {isAdmin(user?.email) && (
+              <View className="gap-3 rounded-xl border border-borderLight p-4">
+                <Text className="text-base font-semibold text-textPrimary">Администрирование</Text>
+                <Pressable
+                  className="h-10 flex-row items-center justify-center gap-2 rounded-lg border border-borderLight"
                   onPress={() => router.push('/(admin)')}
-                  activeOpacity={0.7}
                 >
-                  <Text style={styles.rowLabel}>Панель администратора</Text>
-                  <Text style={styles.rowArrow}>{'>'}</Text>
-                </TouchableOpacity>
+                  <Feather name="shield" size={16} color={Colors.textMuted} />
+                  <Text className="text-sm font-medium text-textPrimary">Панель администратора</Text>
+                  <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+                </Pressable>
               </View>
-            </>
-          ) : null}
+            )}
 
-          {/* Actions section */}
-          <Text style={styles.sectionTitle}>Действия</Text>
-          <View style={styles.card}>
-            <TouchableOpacity style={styles.row} onPress={handleLogout} activeOpacity={0.7}>
-              <Text style={styles.rowLabel}>Выйти из аккаунта</Text>
-              <Text style={styles.rowArrow}>{'>'}</Text>
-            </TouchableOpacity>
-          </View>
+            {/* ============ Logout ============ */}
+            <Pressable
+              className="h-12 flex-row items-center justify-center gap-2 rounded-xl"
+              style={{ backgroundColor: Colors.statusBg.error }}
+              onPress={handleLogout}
+            >
+              <Feather name="log-out" size={18} color={Colors.statusError} />
+              <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>
+                Выйти из аккаунта
+              </Text>
+            </Pressable>
 
-          {/* Danger zone */}
-          <Text style={[styles.sectionTitle, styles.dangerTitle]}>Опасная зона</Text>
-          <View style={[styles.card, styles.cardDanger]}>
-            <TouchableOpacity
-              style={styles.row}
+            {/* ============ Delete account ============ */}
+            <Pressable
+              className="h-12 flex-row items-center justify-center gap-2 rounded-xl border"
+              style={{ borderColor: Colors.statusBg.error }}
               onPress={handleDeleteAccount}
-              activeOpacity={0.7}
               disabled={deleting}
             >
               {deleting ? (
                 <ActivityIndicator size="small" color={Colors.statusError} />
               ) : (
                 <>
-                  <Text style={styles.deleteText}>Удалить аккаунт</Text>
-                  <Text style={styles.rowArrow}>{'>'}</Text>
+                  <Feather name="trash-2" size={18} color={Colors.statusError} />
+                  <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>
+                    Удалить аккаунт
+                  </Text>
                 </>
               )}
-            </TouchableOpacity>
+            </Pressable>
+            <Text className="text-xs text-textMuted px-1">
+              Удаление аккаунта необратимо. Все данные будут удалены.
+            </Text>
           </View>
-          <Text style={styles.deleteHint}>
-            Удаление аккаунта необратимо. Все данные будут удалены.
-          </Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-    paddingBottom: Spacing['4xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xs,
-    paddingHorizontal: Spacing.xs,
-  },
-  dangerTitle: {
-    color: Colors.statusError,
-  },
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-    ...Shadows.sm,
-  },
-  cardDanger: {
-    borderColor: Colors.statusError + '40',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
-    minHeight: 52,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.xl,
-  },
-  rowTextBlock: {
-    flex: 1,
-    gap: 2,
-  },
-  rowLabel: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  rowHint: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  rowValue: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-    maxWidth: '55%',
-    textAlign: 'right',
-  },
-  rowArrow: {
-    fontSize: Typography.fontSize.md,
-    color: Colors.textMuted,
-    marginLeft: Spacing.sm,
-  },
-  deleteText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.statusError,
-    flex: 1,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  deleteHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    paddingHorizontal: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
-  reviewRow: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
-    gap: 4,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  reviewSpecialist: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  reviewRating: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-    marginLeft: Spacing.sm,
-  },
-  reviewComment: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  reviewDate: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  // Email change styles
-  emailChangeBtnRow: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.lg,
-  },
-  emailChangeBtn: {
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary + '60',
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-  },
-  emailChangeBtnText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  emailChangeFormBlock: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  emailChangeFormLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  emailChangeInput: {
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  emailChangeOtpInput: {
-    letterSpacing: 4,
-    textAlign: 'center',
-    fontSize: Typography.fontSize.lg,
-  },
-  emailChangeErrorText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-  },
-  emailChangeSuccessText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.statusSuccess,
-    fontWeight: Typography.fontWeight.medium,
-    textAlign: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  emailChangeActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  emailChangeActionBtn: {
-    flex: 1,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-  },
-  emailChangeActionBtnPrimary: {
-    backgroundColor: Colors.brandPrimary,
-  },
-  emailChangeActionBtnSecondary: {
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  emailChangeActionBtnDisabled: {
-    opacity: 0.6,
-  },
-  emailChangeActionBtnPrimaryText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  emailChangeActionBtnSecondaryText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-});
