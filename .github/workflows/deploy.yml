@@ -5,62 +5,7 @@ on:
     branches: [development]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install API dependencies
-        working-directory: ./api
-        run: npm ci
-
-      - name: Generate Prisma client
-        working-directory: ./api
-        run: npx prisma generate
-
-      - name: Build API (type check)
-        working-directory: ./api
-        run: npm run build
-
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build frontend (web)
-        run: npm run build:web
-
   deploy:
-    needs: [lint, validate, build]
     runs-on: self-hosted
     steps:
       - name: Checkout
@@ -72,14 +17,17 @@ jobs:
           node-version: '20'
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm install --prefer-offline
+
+      - name: Lint
+        run: npm run lint
 
       - name: Build frontend (web)
         run: npx expo export --platform web
 
       - name: Install API dependencies
         working-directory: ./api
-        run: npm ci
+        run: npm install --prefer-offline
 
       - name: Generate Prisma client
         working-directory: ./api
@@ -131,7 +79,7 @@ jobs:
 
       - name: Verify staging
         run: |
-          sleep 5
+          sleep 3
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://p2ptax.smartlaunchhub.com/api/health || echo "000")
           echo "Health check HTTP status: $HTTP_STATUS"
           curl -s https://p2ptax.smartlaunchhub.com/api/health
