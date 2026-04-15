@@ -13,6 +13,8 @@ import Head from 'expo-router/head';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/Colors';
 import { requests as requestsApi, ifns as ifnsApi } from '../../lib/api/endpoints';
+import { useAuth } from '../../stores/authStore';
+import { api } from '../../lib/api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -280,9 +282,11 @@ function CityFnsPicker({
 function RequestFeedCard({
   item,
   onPress,
+  isOutOfRegion,
 }: {
   item: PublicRequest;
   onPress: () => void;
+  isOutOfRegion?: boolean;
 }) {
   const responseCount = item._count?.responses ?? 0;
   const serviceLabel = getServiceLabel(item.serviceType, item.category);
@@ -291,6 +295,11 @@ function RequestFeedCard({
     <Pressable style={s.card} onPress={onPress}>
       <View style={s.cardHeader}>
         <Text style={s.cardTitle} numberOfLines={1}>{item.title}</Text>
+        {isOutOfRegion && (
+          <View style={s.outOfRegionBadge}>
+            <Text style={s.outOfRegionText}>Не ваш регион</Text>
+          </View>
+        )}
         <Feather name="chevron-right" size={16} color={Colors.textMuted} />
       </View>
 
@@ -385,6 +394,10 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 
 export default function PublicRequestsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Specialist cities (only fetched when user is SPECIALIST)
+  const [specialistCities, setSpecialistCities] = useState<string[]>([]);
 
   // Data
   const [items, setItems] = useState<PublicRequest[]>([]);
@@ -437,6 +450,16 @@ export default function PublicRequestsScreen() {
       setLoadingFns(false);
     });
   }, [filterCity]);
+
+  // Fetch specialist cities on mount (only for specialists)
+  useEffect(() => {
+    if (user?.role !== 'SPECIALIST') return;
+    api.get<{ cities: string[] }>('/specialists/me').then((profile) => {
+      setSpecialistCities(profile.cities ?? []);
+    }).catch(() => {
+      // Silently fail — badge just won't show if profile unavailable
+    });
+  }, [user?.role]);
 
   // Fetch requests
   const fetchRequests = useCallback(async (opts: { refresh?: boolean; nextPage?: number } = {}) => {
@@ -580,7 +603,13 @@ export default function PublicRequestsScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={renderHeader}
       renderItem={({ item }) => (
-        <RequestFeedCard item={item} onPress={() => goToDetail(item.id)} />
+        <RequestFeedCard
+          item={item}
+          onPress={() => goToDetail(item.id)}
+          isOutOfRegion={
+            specialistCities.length > 0 && !!item.city && !specialistCities.includes(item.city)
+          }
+        />
       )}
       ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
       ListEmptyComponent={<EmptyState hasFilters={hasFilters} />}
@@ -873,5 +902,21 @@ const s = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.white,
+  },
+
+  // Cross-city badge
+  outOfRegionBadge: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginRight: Spacing.xs,
+  },
+  outOfRegionText: {
+    fontSize: Typography.fontSize.xs,
+    color: '#6B7280',
+    fontWeight: Typography.fontWeight.medium,
   },
 });
