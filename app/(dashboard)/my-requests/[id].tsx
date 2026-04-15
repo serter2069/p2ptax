@@ -40,6 +40,7 @@ interface RequestDetail {
   clientId: string;
   description: string;
   city: string;
+  ifnsName?: string | null;
   budget?: number | null;
   category?: string | null;
   status: string;
@@ -232,6 +233,12 @@ export default function MyRequestDetailScreen() {
                 <Feather name="map-pin" size={14} color={Colors.textMuted} />
                 <Text className="text-sm text-textMuted">{request.city}</Text>
               </View>
+              {request.ifnsName && (
+                <View className="flex-row items-center gap-2">
+                  <Feather name="home" size={14} color={Colors.textMuted} />
+                  <Text className="text-sm text-textMuted">{request.ifnsName}</Text>
+                </View>
+              )}
               {request.category && (
                 <View className="flex-row items-center gap-2">
                   <Feather name="briefcase" size={14} color={Colors.textMuted} />

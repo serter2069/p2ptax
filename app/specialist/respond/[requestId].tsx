@@ -36,8 +36,6 @@ export default function SpecialistRespondScreen() {
   const [error, setError] = useState('');
 
   const [comment, setComment] = useState('');
-  const [price, setPrice] = useState('');
-  const [deadline, setDeadline] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [alreadyResponded, setAlreadyResponded] = useState(false);
@@ -75,25 +73,6 @@ export default function SpecialistRespondScreen() {
     return () => { cancelled = true; };
   }, [requestId]);
 
-  const getTomorrowDate = useCallback(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
-  }, []);
-
-  const getPriceError = useCallback((): string => {
-    if (price === '') return 'Введите стоимость';
-    const parsedPrice = parseInt(price, 10);
-    if (isNaN(parsedPrice) || parsedPrice < 0) return 'Стоимость должна быть >= 0';
-    return '';
-  }, [price]);
-
-  const getDeadlineError = useCallback((): string => {
-    if (!deadline) return 'Выберите срок выполнения';
-    if (deadline < getTomorrowDate()) return 'Срок должен быть в будущем';
-    return '';
-  }, [deadline, getTomorrowDate]);
-
   const getCommentError = useCallback((): string => {
     const trimmed = comment.trim();
     if (trimmed.length < 10) return 'Минимум 10 символов';
@@ -102,8 +81,8 @@ export default function SpecialistRespondScreen() {
   }, [comment]);
 
   const isFormValid = useCallback(() => {
-    return !getPriceError() && !getDeadlineError() && !getCommentError();
-  }, [getPriceError, getDeadlineError, getCommentError]);
+    return !getCommentError();
+  }, [getCommentError]);
 
   const handleSubmit = useCallback(async () => {
     if (!requestId || !isFormValid()) return;
@@ -114,8 +93,6 @@ export default function SpecialistRespondScreen() {
     try {
       await api.post(`/requests/${requestId}/respond`, {
         comment: comment.trim(),
-        price: parseInt(price, 10),
-        deadline,
       });
 
       if (Platform.OS === 'web') {
@@ -138,7 +115,7 @@ export default function SpecialistRespondScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [requestId, comment, price, deadline, isFormValid, router]);
+  }, [requestId, comment, isFormValid, router]);
 
   if (!user || user.role !== 'SPECIALIST') {
     return null;
@@ -251,48 +228,7 @@ export default function SpecialistRespondScreen() {
         {/* Response form */}
         {!alreadyResponded && (
           <>
-            {/* Price */}
-            <View className="gap-1">
-              <Text className="text-sm font-medium text-textSecondary">Стоимость, руб.</Text>
-              <TextInput
-                value={price}
-                onChangeText={(text) => setPrice(text.replace(/[^0-9]/g, ''))}
-                placeholder="0"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="numeric"
-                editable={!submitting}
-                testID="price-input"
-                className={`rounded-lg border bg-white p-3 text-base text-textPrimary ${
-                  price !== '' && getPriceError() ? 'border-statusError' : 'border-borderLight'
-                }`}
-                style={{ outlineStyle: 'none' as any }}
-              />
-              {price !== '' && getPriceError() ? (
-                <Text className="text-xs text-statusError" testID="price-error">{getPriceError()}</Text>
-              ) : null}
-            </View>
-
-            {/* Deadline */}
-            <View className="gap-1">
-              <Text className="text-sm font-medium text-textSecondary">Срок выполнения</Text>
-              <TextInput
-                value={deadline}
-                onChangeText={setDeadline}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.textMuted}
-                editable={!submitting}
-                testID="deadline-input"
-                className={`rounded-lg border bg-white p-3 text-base text-textPrimary ${
-                  deadline !== '' && getDeadlineError() ? 'border-statusError' : 'border-borderLight'
-                }`}
-                style={{ outlineStyle: 'none' as any }}
-              />
-              {deadline !== '' && getDeadlineError() ? (
-                <Text className="text-xs text-statusError" testID="deadline-error">{getDeadlineError()}</Text>
-              ) : null}
-            </View>
-
-            {/* Comment / Message */}
+            {/* Message */}
             <View className="gap-1">
               <Text className="text-sm font-medium text-textSecondary">Сообщение клиенту</Text>
               <TextInput
