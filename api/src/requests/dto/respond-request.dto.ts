@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength, IsInt, Min, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsInt, Min, IsDateString, IsOptional } from 'class-validator';
 
 export class RespondRequestDto {
   @IsString()
@@ -6,10 +6,12 @@ export class RespondRequestDto {
   @MaxLength(500)
   comment!: string;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  price!: number;
+  price?: number;
 
+  @IsOptional()
   @IsDateString()
-  deadline!: string;
+  deadline?: string;
 }

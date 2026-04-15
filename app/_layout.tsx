@@ -4,7 +4,6 @@ import { ActivityIndicator, AppState, Platform, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import Head from 'expo-router/head';
 import { AuthProvider, useAuth } from '../stores/authStore';
-import { AuthProvider as NewAuthProvider } from '../lib/auth';
 import { isAdmin } from '../lib/adminEmails';
 import { Colors } from '../constants/Colors';
 import { tryRefreshTokens } from '../lib/api';
@@ -146,12 +145,10 @@ export default function RootLayout() {
         <meta property="og:type" content="website" />
       </Head>
       <ErrorBoundary>
-        <NewAuthProvider>
-          <AuthProvider>
-            <RootNavigator />
-            <ToastContainer />
-          </AuthProvider>
-        </NewAuthProvider>
+        <AuthProvider>
+          <RootNavigator />
+          <ToastContainer />
+        </AuthProvider>
       </ErrorBoundary>
     </>
   );

@@ -96,6 +96,8 @@ client.interceptors.response.use(
         const message = data?.message || 'Произошла ошибка запроса';
         toast.error(message);
       }
+    } else if (status === 401) {
+      // 401 is handled by the refresh interceptor below — skip toast
     } else if (!error.response && error.message !== 'canceled') {
       // Network error (no response at all)
       toast.error('Нет соединения с сервером');
