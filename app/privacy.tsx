@@ -38,6 +38,10 @@ export default function PrivacyScreen() {
     <SafeAreaView style={styles.safe}>
       <Head>
         <title>Политика конфиденциальности — Налоговик</title>
+        <meta name="description" content="Политика конфиденциальности платформы Налоговик. Как мы обрабатываем и защищаем ваши данные." />
+        <meta property="og:title" content="Политика конфиденциальности — Налоговик" />
+        <meta property="og:description" content="Политика конфиденциальности платформы Налоговик." />
+        <meta property="og:type" content="website" />
       </Head>
       <Stack.Screen options={{ headerShown: false }} />
       <LandingHeader />

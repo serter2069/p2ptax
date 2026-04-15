@@ -39,6 +39,10 @@ export default function TermsScreen() {
     <SafeAreaView style={styles.safe}>
       <Head>
         <title>Пользовательское соглашение — Налоговик</title>
+        <meta name="description" content="Пользовательское соглашение платформы Налоговик. Условия использования сервиса." />
+        <meta property="og:title" content="Пользовательское соглашение — Налоговик" />
+        <meta property="og:description" content="Пользовательское соглашение платформы Налоговик." />
+        <meta property="og:type" content="website" />
       </Head>
       <Stack.Screen options={{ headerShown: false }} />
       <LandingHeader />

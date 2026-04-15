@@ -355,6 +355,7 @@ export default function CatalogScreen() {
         <meta property="og:title" content="Каталог специалистов — Налоговик" />
         <meta property="og:description" content="Каталог проверенных налоговых консультантов и юристов." />
         <meta property="og:url" content={`${APP_URL}/catalog`} />
+        <meta property="og:type" content="website" />
       </Head>
       <LandingHeader />
 

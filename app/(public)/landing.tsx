@@ -525,6 +525,7 @@ export default function LandingScreen() {
         <meta property="og:title" content="Налоговик — найдите налогового специалиста" />
         <meta property="og:description" content="Подбираем специалиста по вашей ИФНС и конкретной ситуации." />
         <meta property="og:url" content={APP_URL} />
+        <meta property="og:type" content="website" />
       </Head>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Header />
