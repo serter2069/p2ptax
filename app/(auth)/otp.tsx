@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, TextInput, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Pressable, TextInput, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { api, ApiError, setRefreshToken } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { secureStorage } from '../../stores/storage';
+import { Colors } from '../../constants/Colors';
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -201,44 +202,40 @@ export default function OtpScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 items-center px-4 py-8">
+          <View className="flex-1 items-center px-6 py-6" style={{ gap: 24 }}>
             {/* Back */}
-            <View className="w-full max-w-sm">
+            <View className="w-full" style={{ maxWidth: 300 }}>
               <Pressable
                 onPress={() => router.back()}
                 className="flex-row items-center gap-1 py-1"
                 accessibilityRole="button"
                 accessibilityLabel="Изменить email"
               >
-                <Feather name="arrow-left" size={20} color="#475569" />
-                <Text className="text-sm text-textSecondary">Изменить email</Text>
+                <Feather name="arrow-left" size={20} color={Colors.brandPrimary} />
+                <Text className="text-sm" style={{ color: Colors.brandPrimary }}>Изменить email</Text>
               </Pressable>
             </View>
 
-            {/* Header */}
-            <View className="mt-6 items-center gap-2">
-              <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
-                <Feather name="mail" size={28} color="#0284C7" />
-              </View>
-              <Text className="text-xl font-bold text-textPrimary">Введите код</Text>
-              <View className="flex-row flex-wrap justify-center items-center">
-                <Text className="text-base text-textMuted">Код отправлен на </Text>
-                <Text className="text-base font-medium text-textPrimary">{email}</Text>
-              </View>
+            {/* Header — matching proto: title + subtitle with email */}
+            <View className="items-center" style={{ gap: 4, marginTop: 24 }}>
+              <Text className="text-xl font-bold" style={{ color: Colors.textPrimary }}>Введите код</Text>
+              <Text className="text-sm" style={{ color: Colors.textMuted }}>Код отправлен на {email}</Text>
             </View>
 
-            {/* OTP inputs */}
-            <View className="mt-5 flex-row justify-center gap-2">
+            {/* OTP inputs — proto: 44x52, border 1.5, borderRadius 6 */}
+            <View className="flex-row justify-center" style={{ gap: 8 }}>
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <View
                   key={i}
-                  className={`h-14 w-12 items-center justify-center rounded-lg border-2 ${
-                    error
-                      ? 'border-red-500 bg-red-50'
-                      : digits[i]
-                        ? 'border-brandPrimary bg-bgSecondary'
-                        : 'border-gray-200 bg-white'
-                  }`}
+                  className="items-center justify-center"
+                  style={{
+                    width: 44,
+                    height: 52,
+                    borderWidth: 1.5,
+                    borderColor: error ? Colors.statusError : digits[i] ? Colors.brandPrimary : Colors.border,
+                    borderRadius: 6,
+                    backgroundColor: Colors.bgCard,
+                  }}
                 >
                   <TextInput
                     ref={(ref) => { inputRefs.current[i] = ref; }}
@@ -249,77 +246,72 @@ export default function OtpScreen() {
                     maxLength={CODE_LENGTH}
                     selectTextOnFocus
                     editable={!loading}
-                    className="h-full w-full text-center text-2xl font-bold text-textPrimary"
-                    style={{ outlineStyle: 'none' as any }}
+                    className="h-full w-full text-center font-bold"
+                    style={{
+                      fontSize: 22,
+                      color: error ? Colors.statusError : Colors.textPrimary,
+                      outlineStyle: 'none' as any,
+                    }}
                   />
                 </View>
               ))}
             </View>
 
-            {/* Error */}
+            {/* Error — proto: simple text, xs size */}
             {error ? (
-              <View className="mt-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
-                <Feather name="alert-circle" size={14} color="#DC2626" />
-                <Text className="text-sm font-medium text-red-600">{error}</Text>
-              </View>
+              <Text className="text-center" style={{ fontSize: 11, color: Colors.statusError }}>{error}</Text>
             ) : null}
 
             {/* Attempt counter */}
             {attemptsUsed > 0 && attemptsUsed < MAX_ATTEMPTS && (
-              <Text className="mt-2 text-sm text-textMuted">
+              <Text className="text-sm" style={{ color: Colors.textMuted }}>
                 Попытка {attemptsUsed} из {MAX_ATTEMPTS}
               </Text>
             )}
 
             {/* Max attempts reached */}
             {attemptsUsed >= MAX_ATTEMPTS && (
-              <View className="mt-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
-                <Feather name="alert-circle" size={14} color="#DC2626" />
-                <Text className="text-sm font-medium text-red-600">
-                  Превышено количество попыток. Запросите новый код.
-                </Text>
-              </View>
+              <Text className="text-center" style={{ fontSize: 11, color: Colors.statusError }}>
+                Превышено количество попыток. Запросите новый код.
+              </Text>
             )}
 
-            {/* Submit */}
+            {/* Submit — proto: h48, maxWidth 300, borderRadius 6 */}
             <Pressable
               onPress={handleVerify}
               disabled={loading || !isComplete || attemptsUsed >= MAX_ATTEMPTS}
-              className={`mt-4 h-12 w-full max-w-xs items-center justify-center rounded-lg bg-brandPrimary ${
-                loading || !isComplete || attemptsUsed >= MAX_ATTEMPTS ? 'opacity-60' : ''
-              }`}
+              className="items-center justify-center w-full"
+              style={{
+                height: 48,
+                backgroundColor: Colors.brandPrimary,
+                borderRadius: 6,
+                maxWidth: 300,
+                opacity: loading || !isComplete || attemptsUsed >= MAX_ATTEMPTS ? 0.7 : 1,
+              }}
             >
-              <Text className="text-base font-semibold text-white">
-                {loading ? 'Проверка...' : 'Подтвердить'}
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <Text className="font-semibold" style={{ fontSize: 15, color: Colors.white }}>Подтвердить</Text>
+              )}
             </Pressable>
 
-            {/* Resend */}
-            <View className="mt-3 flex-row items-center gap-1">
-              {timer > 0 ? (
-                <>
-                  <Feather name="clock" size={14} color="#94A3B8" />
-                  <Text className="text-sm text-textMuted">
-                    Отправить повторно через {timer} сек
-                  </Text>
-                </>
-              ) : (
-                <Pressable
-                  onPress={handleResend}
-                  disabled={resending}
-                  className="flex-row items-center gap-1"
-                >
-                  <Feather name="refresh-cw" size={14} color="#0284C7" />
-                  <Text className="text-sm font-medium text-brandPrimary">
-                    {resending ? 'Отправляем...' : 'Отправить код повторно'}
-                  </Text>
-                </Pressable>
-              )}
-            </View>
+            {/* Resend — proto: plain text, no icons */}
+            {timer > 0 ? (
+              <Text className="text-sm" style={{ color: Colors.textMuted }}>
+                Отправить код повторно через {timer} сек
+              </Text>
+            ) : (
+              <Pressable onPress={handleResend} disabled={resending}>
+                <Text className="text-sm font-medium" style={{ color: Colors.brandPrimary }}>
+                  {resending ? 'Отправляем...' : 'Отправить код повторно'}
+                </Text>
+              </Pressable>
+            )}
 
             {/* Dev mode hint */}
             {isDev && (
-              <View className="mt-6 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3">
+              <View className="rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3">
                 <Text className="text-xs text-yellow-700">
                   В режиме разработки код: 000000
                 </Text>

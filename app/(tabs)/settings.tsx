@@ -9,7 +9,6 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
 import { api } from '../../lib/api';
@@ -35,9 +34,11 @@ interface SpecialistProfile {
 const APP_VERSION = '1.0.0';
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Sub-components — matching proto SettingsStates
 // ---------------------------------------------------------------------------
-function Toggle({
+
+/** Proto-matching toggle: 44x24 track, 20x20 dot */
+function ToggleRow({
   label,
   value,
   onValueChange,
@@ -48,31 +49,113 @@ function Toggle({
   onValueChange: (v: boolean) => void;
   disabled?: boolean;
 }) {
-  const trackColor = value ? Colors.brandPrimary : '#D1D5DB';
   return (
     <Pressable
       className="flex-row items-center justify-between"
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.bgSecondary,
+        opacity: disabled ? 0.5 : 1,
+      }}
       onPress={() => !disabled && onValueChange(!value)}
-      style={{ opacity: disabled ? 0.5 : 1 }}
     >
-      <Text className="mr-3 flex-1 text-sm text-textSecondary">{label}</Text>
+      <Text className="flex-1 text-sm" style={{ color: Colors.textPrimary }}>{label}</Text>
       <View
-        className="h-7 w-12 justify-center rounded-full px-0.5"
-        style={{ backgroundColor: trackColor }}
+        className="justify-center"
+        style={{
+          width: 44,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: value ? Colors.brandPrimary : Colors.border,
+          paddingHorizontal: 2,
+        }}
       >
         <View
-          className="h-[22px] w-[22px] rounded-full bg-white"
+          className="rounded-full bg-white"
           style={{
+            width: 20,
+            height: 20,
+            borderRadius: 10,
             alignSelf: value ? 'flex-end' : 'flex-start',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.2,
-            shadowRadius: 2,
-            elevation: 2,
           }}
         />
       </View>
     </Pressable>
+  );
+}
+
+/** Proto-matching setting row with label, optional value, and ">" arrow */
+function SettingRow({
+  label,
+  value,
+  danger,
+  onPress,
+}: {
+  label: string;
+  value?: string;
+  danger?: boolean;
+  onPress?: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center justify-between"
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.bgSecondary,
+      }}
+    >
+      <Text
+        className="flex-1 text-sm"
+        style={{ color: danger ? Colors.statusError : Colors.textPrimary }}
+      >
+        {label}
+      </Text>
+      {value ? (
+        <Text className="text-sm" style={{ color: Colors.textMuted, marginRight: 8 }}>
+          {value}
+        </Text>
+      ) : null}
+      <Text className="text-sm" style={{ color: Colors.textMuted }}>{'>'}</Text>
+    </Pressable>
+  );
+}
+
+/** Proto-matching section title: uppercase, letterSpacing */
+function SectionTitle({ text }: { text: string }) {
+  return (
+    <Text
+      className="font-semibold"
+      style={{
+        fontSize: 13,
+        color: Colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+      }}
+    >
+      {text}
+    </Text>
+  );
+}
+
+/** Proto-matching card wrapper */
+function Card({ children, danger }: { children: React.ReactNode; danger?: boolean }) {
+  return (
+    <View
+      style={{
+        backgroundColor: Colors.bgCard,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: danger ? Colors.statusBg.error : Colors.border,
+        overflow: 'hidden',
+      }}
+    >
+      {children}
+    </View>
   );
 }
 
@@ -256,12 +339,11 @@ export default function SettingsTab() {
   }, [logout, router]);
 
   const displayEmail = user?.email || '';
-  const displayPhone = profile?.phone || null;
 
   return (
     <ScrollView
       className="flex-1 bg-white"
-      contentContainerStyle={{ padding: 16, gap: 20 }}
+      contentContainerStyle={{ padding: 16, gap: 16 }}
       keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
@@ -271,90 +353,91 @@ export default function SettingsTab() {
         />
       }
     >
-      {/* Page title */}
-      <Text className="text-xl font-bold text-textPrimary">Настройки</Text>
+      {/* Page title — proto: lg/bold */}
+      <Text
+        className="font-bold"
+        style={{ fontSize: 18, color: Colors.textPrimary }}
+      >
+        Настройки
+      </Text>
 
-      {/* ============ Account card ============ */}
-      <View className="gap-3 rounded-xl border border-borderLight p-4">
-        <Text className="text-base font-semibold text-textPrimary">Аккаунт</Text>
-
-        {/* Email — read-only */}
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textMuted">Email</Text>
-          <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
-            <Feather name="mail" size={16} color={Colors.textMuted} />
-            <Text className="ml-2 flex-1 text-base text-textSecondary" numberOfLines={1}>
-              {displayEmail || '\u2014'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Phone — with edit icon (matching proto) */}
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textMuted">Телефон</Text>
-          <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
-            <Feather name="phone" size={16} color={Colors.textMuted} />
-            <Text className="ml-2 flex-1 text-base text-textSecondary">
-              {displayPhone || '\u2014'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* ============ Notifications (2 toggles matching proto) ============ */}
-      <View className="gap-3 rounded-xl border border-borderLight p-4">
-        <Text className="text-base font-semibold text-textPrimary">Уведомления</Text>
-        <Toggle
-          label="Email-уведомления"
-          value={notifSettings.new_responses}
-          onValueChange={(v) => handleNotifToggle('new_responses', v)}
-        />
-        <Toggle
-          label="Push-уведомления"
-          value={notifSettings.new_messages}
-          onValueChange={(v) => handleNotifToggle('new_messages', v)}
-        />
-      </View>
-
-      {/* ============ Public profile toggle (matching proto) ============ */}
-      {isSpecialist && (
-        <View className="gap-3 rounded-xl border border-borderLight p-4">
-          <Text className="text-base font-semibold text-textPrimary">Публичный профиль</Text>
-          <Toggle
-            label="Профиль виден всем"
-            value={publicProfile}
-            onValueChange={handleTogglePublicProfile}
-            disabled={savingPublicProfile}
+      {/* ============ Notifications — proto order: first section ============ */}
+      <View style={{ gap: 8 }}>
+        <SectionTitle text="Уведомления" />
+        <Card>
+          <ToggleRow
+            label="Email-уведомления"
+            value={notifSettings.new_responses}
+            onValueChange={(v) => handleNotifToggle('new_responses', v)}
           />
+          <ToggleRow
+            label="Push-уведомления"
+            value={notifSettings.new_messages}
+            onValueChange={(v) => handleNotifToggle('new_messages', v)}
+          />
+        </Card>
+      </View>
+
+      {/* ============ Account — proto: rows with value + arrow ============ */}
+      <View style={{ gap: 8 }}>
+        <SectionTitle text="Аккаунт" />
+        <Card>
+          <SettingRow label="Email" value={displayEmail || '\u2014'} />
+          <SettingRow label="Язык" value="Русский" />
+        </Card>
+      </View>
+
+      {/* ============ Public profile toggle (specialist only) ============ */}
+      {isSpecialist && (
+        <View style={{ gap: 8 }}>
+          <SectionTitle text="Публичный профиль" />
+          <Card>
+            <ToggleRow
+              label="Профиль виден всем"
+              value={publicProfile}
+              onValueChange={handleTogglePublicProfile}
+              disabled={savingPublicProfile}
+            />
+          </Card>
         </View>
       )}
+
+      {/* ============ Other — proto: privacy, terms, version ============ */}
+      <View style={{ gap: 8 }}>
+        <SectionTitle text="Прочее" />
+        <Card>
+          <SettingRow label="Политика конфиденциальности" />
+          <SettingRow label="Условия использования" />
+          <SettingRow label="Версия" value={APP_VERSION} />
+        </Card>
+      </View>
 
       {/* ============ Admin ============ */}
       {isAdmin(user?.email) && (
-        <View className="gap-3 rounded-xl border border-borderLight p-4">
-          <Text className="text-base font-semibold text-textPrimary">Администрирование</Text>
-          <Pressable
-            className="h-10 flex-row items-center justify-center gap-2 rounded-lg border border-borderLight"
-            onPress={() => router.push('/(admin)')}
-          >
-            <Feather name="shield" size={16} color={Colors.textMuted} />
-            <Text className="text-sm font-medium text-textPrimary">Панель администратора</Text>
-            <Feather name="chevron-right" size={16} color={Colors.textMuted} />
-          </Pressable>
+        <View style={{ gap: 8 }}>
+          <SectionTitle text="Администрирование" />
+          <Card>
+            <SettingRow
+              label="Панель администратора"
+              onPress={() => router.push('/(admin)')}
+            />
+          </Card>
         </View>
       )}
 
-      {/* ============ Logout ============ */}
-      <Pressable
-        className="h-12 flex-row items-center justify-center gap-2 rounded-xl"
-        style={{ backgroundColor: Colors.statusBg.error }}
-        onPress={() => setShowLogoutConfirm(true)}
-      >
-        <Feather name="log-out" size={18} color={Colors.statusError} />
-        <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>
-          Выйти из аккаунта
-        </Text>
-      </Pressable>
+      {/* ============ Danger zone — proto: error border card ============ */}
+      <Card danger>
+        <SettingRow
+          label="Выйти из аккаунта"
+          danger
+          onPress={() => setShowLogoutConfirm(true)}
+        />
+        <SettingRow
+          label="Удалить аккаунт"
+          danger
+          onPress={() => setShowDeleteConfirm(true)}
+        />
+      </Card>
 
       {showLogoutConfirm && (
         <ConfirmCard
@@ -366,18 +449,6 @@ export default function SettingsTab() {
         />
       )}
 
-      {/* ============ Delete account ============ */}
-      <Pressable
-        className="h-12 flex-row items-center justify-center gap-2 rounded-xl border"
-        style={{ borderColor: Colors.statusBg.error }}
-        onPress={() => setShowDeleteConfirm(true)}
-      >
-        <Feather name="trash-2" size={18} color={Colors.statusError} />
-        <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>
-          Удалить аккаунт
-        </Text>
-      </Pressable>
-
       {showDeleteConfirm && (
         <ConfirmCard
           message="Это действие необратимо. Все ваши данные будут удалены."
@@ -387,11 +458,6 @@ export default function SettingsTab() {
           loading={deleteLoading}
         />
       )}
-
-      {/* Version */}
-      <Text className="text-xs text-center text-textMuted">
-        Версия {APP_VERSION}
-      </Text>
     </ScrollView>
   );
 }
