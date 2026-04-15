@@ -184,6 +184,31 @@ export const stats = {
 };
 
 // ---------------------------------------------------------------------------
+// Reviews
+// ---------------------------------------------------------------------------
+export const reviews = {
+  create(data: { specialistNick: string; requestId: string; rating: number; comment?: string }) {
+    return client.post('/reviews', data);
+  },
+
+  getMyReviews() {
+    return client.get('/reviews/my');
+  },
+
+  getBySpecialist(nick: string, page = 1) {
+    return client.get(`/reviews/specialist/${nick}`, { params: { page } });
+  },
+
+  getPublic(limit = 6) {
+    return client.get('/reviews/public', { params: { limit } });
+  },
+
+  checkEligibility(nick: string) {
+    return client.get(`/reviews/eligibility/${nick}`);
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Upload
 // ---------------------------------------------------------------------------
 export const upload = {
