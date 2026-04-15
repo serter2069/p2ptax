@@ -182,6 +182,7 @@ model Request {
 
   responses   Response[]
   reviews     Review[]
+  threads     Thread[]
 
   @@index([clientId])
   @@index([city, status])
@@ -214,6 +215,8 @@ model Thread {
   participant1   User     @relation("ThreadParticipant1", fields: [participant1Id], references: [id])
   participant2Id String
   participant2   User     @relation("ThreadParticipant2", fields: [participant2Id], references: [id])
+  requestId      String?
+  request        Request? @relation(fields: [requestId], references: [id])
   createdAt      DateTime @default(now())
 
   messages       Message[]

@@ -55,7 +55,7 @@ export class ChatController {
     @Request() req: { user: { id: string } },
     @Body() dto: StartThreadDto,
   ) {
-    return this.chatService.startThread(req.user.id, dto.otherUserId);
+    return this.chatService.startThread(req.user.id, dto.otherUserId, dto.requestId);
   }
 
   // POST /threads/start — upsert thread (legacy alias)
@@ -64,7 +64,7 @@ export class ChatController {
     @Request() req: { user: { id: string } },
     @Body() dto: StartThreadDto,
   ) {
-    return this.chatService.startThread(req.user.id, dto.otherUserId);
+    return this.chatService.startThread(req.user.id, dto.otherUserId, dto.requestId);
   }
 
   @Get(':id/messages')

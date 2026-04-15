@@ -289,12 +289,12 @@ export default function RequestDetailScreen() {
   }, [id, fetchData]);
 
   const handleStartThread = useCallback(
-    async (otherUserId: string) => {
+    async (otherUserId: string, requestId?: string) => {
       try {
         setStartingThread(true);
-        const res = await threadsApi.startThread(otherUserId);
-        const thread = res.data as { id: string };
-        router.push(`/chat/${thread.id}` as never);
+        const res = await threadsApi.startThread(otherUserId, requestId);
+        const thread = res.data as { threadId: string };
+        router.push(`/(dashboard)/messages/${thread.threadId}` as never);
       } catch {
         Alert.alert('Ошибка', 'Не удалось начать чат');
       } finally {
@@ -306,16 +306,17 @@ export default function RequestDetailScreen() {
 
   const handleResponsePress = useCallback(
     (item: ResponseItem) => {
-      handleStartThread(item.specialist.id);
+      // Navigate to chat with this specialist, linked to this request
+      handleStartThread(item.specialist.id, id);
     },
-    [handleStartThread],
+    [handleStartThread, id],
   );
 
   // Specialist writes to client (request owner)
   const handleSpecialistRespond = useCallback(() => {
     if (!request?.clientId) return;
-    handleStartThread(request.clientId);
-  }, [request, handleStartThread]);
+    handleStartThread(request.clientId, id);
+  }, [request, handleStartThread, id]);
 
   // Non-authenticated user: redirect to auth with return URL
   const handleAuthRedirect = useCallback(() => {
