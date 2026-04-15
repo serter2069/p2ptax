@@ -15,7 +15,7 @@ import { useAuth } from '../../../stores/authStore';
 import { api, ApiError } from '../../../lib/api';
 import { Avatar } from '../../../components/Avatar';
 import { Header } from '../../../components/Header';
-import { EmptyState } from '../../../components/EmptyState';
+import { EmptyState } from '../../../components/ui/EmptyState';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 
 interface ThreadParticipant {

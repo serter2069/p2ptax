@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../../lib/api';
 import { Colors } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
-import { EmptyState } from '../../../components/EmptyState';
+import { EmptyState } from '../../../components/ui/EmptyState';
 import { useAuth } from '../../../stores/authStore';
 import { ReviewForm } from '../../../components/ReviewForm';
 
