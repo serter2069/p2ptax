@@ -3,39 +3,22 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   SafeAreaView,
   TextInput,
   Alert,
   Modal,
-  Platform,
-  StyleSheet,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { Avatar } from '../../components/Avatar';
-import { Stars } from '../../components/Stars';
 import { LandingHeader } from '../../components/LandingHeader';
 import { EmptyState } from '../../components/EmptyState';
 import { ReportModal } from '../../components/ReportModal';
-import { useBreakpoints } from '../../hooks/useBreakpoints';
-
-// Brand tokens (same as specialists/[nick])
-const B = {
-  action: '#1A5BA8',
-  primary: '#0F2447',
-  bg: '#F4F8FC',
-  muted: '#4A6080',
-  border: '#C8D8EA',
-  success: '#1A7840',
-  white: '#FFFFFF',
-  bgAction: 'rgba(26,91,168,0.08)',
-  bgSuccess: 'rgba(26,120,64,0.10)',
-};
 
 interface SpecialistProfile {
   id: string;
@@ -75,14 +58,42 @@ interface ReviewsResponse {
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 
-function getReviewerInitials(review: ReviewItem): string {
-  const name = review.client.username || `U${review.client.id.slice(0, 3)}`;
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <View className="flex-row gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <Feather key={i} name="star" size={size} color={i <= rating ? '#F59E0B' : '#E2E8F0'} />
+      ))}
+    </View>
+  );
 }
 
-// FNS modal showing all FNS offices + departments
+function ReviewItemCard({ review }: { review: ReviewItem }) {
+  const author = review.client.username
+    ? `@${review.client.username}`
+    : `Пользователь #${review.client.id.slice(0, 4)}`;
+  const date = new Date(review.createdAt).toLocaleDateString('ru-RU');
+
+  return (
+    <View className="gap-1 border-b border-bgSecondary py-3">
+      <View className="flex-row justify-between">
+        <View className="flex-row items-center gap-1">
+          <Feather name="user" size={14} color="#94A3B8" />
+          <Text className="text-base font-semibold text-textPrimary">{author}</Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <Feather name="calendar" size={12} color="#94A3B8" />
+          <Text className="text-sm text-textMuted">{date}</Text>
+        </View>
+      </View>
+      <Stars rating={review.rating} />
+      {review.comment ? (
+        <Text className="text-base leading-6 text-textSecondary">{review.comment}</Text>
+      ) : null}
+    </View>
+  );
+}
+
 function FnsModal({
   visible,
   onClose,
@@ -94,36 +105,35 @@ function FnsModal({
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderLeft}>
-              <Ionicons name="business-outline" size={18} color={B.action} />
-              <Text style={styles.modalTitle}>ФНС и услуги</Text>
+      <View className="flex-1 items-center justify-center bg-black/50 px-4">
+        <View className="w-full max-w-lg rounded-2xl bg-white">
+          <View className="flex-row items-center justify-between border-b border-gray-200 px-5 py-4">
+            <View className="flex-row items-center gap-2">
+              <Feather name="briefcase" size={18} color="#0284C7" />
+              <Text className="text-lg font-bold text-textPrimary">ФНС и услуги</Text>
             </View>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={22} color={B.muted} />
-            </TouchableOpacity>
+            <Pressable onPress={onClose} className="rounded-full p-1">
+              <Feather name="x" size={22} color="#64748B" />
+            </Pressable>
           </View>
-          <ScrollView style={styles.modalScroll}>
+          <ScrollView className="max-h-96 px-5 py-3">
             {fnsData.map((group, idx) => (
               <View
                 key={group.office}
-                style={[styles.fnsGroup, idx < fnsData.length - 1 && styles.fnsGroupBorder]}
+                className={`gap-2 py-3 ${idx < fnsData.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
-                <View style={styles.fnsOfficeBadge}>
-                  <Ionicons name="business-outline" size={12} color={B.action} />
-                  <Text style={styles.fnsOfficeName}>{group.office}</Text>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="home" size={14} color="#64748B" />
+                  <Text className="text-base font-semibold text-textPrimary">{group.office}</Text>
                 </View>
-                {group.departments.length > 0 && (
-                  <View style={styles.fnsDeptRow}>
-                    {group.departments.map((dept) => (
-                      <View key={dept} style={styles.fnsDeptChip}>
-                        <Text style={styles.fnsDeptText}>{dept}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
+                <View className="flex-row flex-wrap gap-2 pl-6">
+                  {group.departments.map((dept) => (
+                    <View key={dept} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
+                      <Feather name="check" size={12} color="#0284C7" />
+                      <Text className="text-sm text-brandPrimary">{dept}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -137,7 +147,6 @@ export default function SpecialistProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const { isMobile, isDesktop } = useBreakpoints();
 
   const [profile, setProfile] = useState<SpecialistProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,7 +227,6 @@ export default function SpecialistProfileScreen() {
       const resp = await api.post<{ threadId: string }>('/threads/start', {
         otherUserId: profile.userId,
       });
-      // Send the initial message
       await api.post(`/threads/${resp.threadId}/messages`, {
         content: message.trim(),
       });
@@ -234,10 +242,10 @@ export default function SpecialistProfileScreen() {
   // --- Loading state ---
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView className="flex-1 bg-white">
         <LandingHeader />
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={B.action} />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#0284C7" />
         </View>
       </SafeAreaView>
     );
@@ -246,7 +254,7 @@ export default function SpecialistProfileScreen() {
   // --- Error state ---
   if (error || !profile) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView className="flex-1 bg-white">
         <LandingHeader />
         <EmptyState
           icon="alert-circle-outline"
@@ -260,7 +268,8 @@ export default function SpecialistProfileScreen() {
 
   const displayName = profile.displayName || `@${profile.nick}`;
   const sinceYear = new Date(profile.createdAt).getFullYear();
-  const isVerified = profile.badges.includes('verified');
+  const avgRating = profile.activity.avgRating ?? 0;
+  const reviewCount = profile.activity.reviewCount;
 
   // Build FNS data
   const fnsData: Array<{ office: string; departments: string[] }> =
@@ -278,244 +287,8 @@ export default function SpecialistProfileScreen() {
     ? `Налоговый консультант в ${profile.cities.join(', ')}`
     : 'Налоговый консультант на платформе Налоговик';
 
-  // --- Sidebar / profile header ---
-  const renderSidebar = () => (
-    <View style={[styles.sidebarCard, isDesktop && styles.sidebarCardDesktop]}>
-      {isMobile ? (
-        <View style={styles.mobileHeroRow}>
-          <Avatar name={displayName} imageUri={profile.avatarUrl || undefined} size="xl" />
-          <View style={styles.mobileHeroInfo}>
-            <Text style={styles.heroName}>{displayName}</Text>
-            {profile.headline && <Text style={styles.heroHeadline}>{profile.headline}</Text>}
-            {profile.cities.length > 0 && (
-              <View style={styles.cityRow}>
-                <Ionicons name="location-outline" size={14} color={B.muted} />
-                <Text style={styles.heroCity}>{profile.cities.join(', ')}</Text>
-              </View>
-            )}
-            <View style={styles.ratingRow}>
-              <Stars
-                rating={profile.activity.avgRating}
-                reviewCount={profile.activity.reviewCount}
-                size="sm"
-                showEmpty
-              />
-            </View>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.desktopHeroCol}>
-          <Avatar name={displayName} imageUri={profile.avatarUrl || undefined} size="xl" />
-          <Text style={styles.heroNameDesktop}>{displayName}</Text>
-          {profile.headline && <Text style={styles.heroHeadline}>{profile.headline}</Text>}
-          {profile.cities.length > 0 && (
-            <View style={styles.cityRow}>
-              <Ionicons name="location-outline" size={14} color={B.muted} />
-              <Text style={styles.heroCity}>{profile.cities.join(', ')}</Text>
-            </View>
-          )}
-          <View style={styles.ratingRow}>
-            <Stars
-              rating={profile.activity.avgRating}
-              reviewCount={profile.activity.reviewCount}
-              size="md"
-              showEmpty
-            />
-          </View>
-        </View>
-      )}
-
-      {/* Badges */}
-      <View style={styles.badgesRow}>
-        {isVerified && (
-          <View style={[styles.badge, styles.badgeSuccess]}>
-            <Ionicons name="shield-checkmark" size={14} color={B.success} />
-            <Text style={styles.badgeSuccessText}>Проверен</Text>
-          </View>
-        )}
-        {profile.experience != null && (
-          <View style={[styles.badge, styles.badgeAction]}>
-            <Ionicons name="briefcase-outline" size={14} color={B.action} />
-            <Text style={styles.badgeActionText}>
-              {profile.experience} {profile.experience === 1 ? 'год' : profile.experience >= 2 && profile.experience <= 4 ? 'года' : 'лет'} опыта
-            </Text>
-          </View>
-        )}
-        <View style={[styles.badge, styles.badgeNeutral]}>
-          <Ionicons name="calendar-outline" size={14} color={B.muted} />
-          <Text style={styles.badgeNeutralText}>С {sinceYear} года</Text>
-        </View>
-      </View>
-
-      {/* Report button */}
-      {user && user.userId !== profile.userId && (
-        <TouchableOpacity
-          onPress={() => setReportModalVisible(true)}
-          style={styles.reportBtn}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="flag-outline" size={14} color={B.muted} />
-          <Text style={styles.reportBtnText}>Пожаловаться</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  // --- Content sections ---
-  const renderContent = () => (
-    <View style={styles.contentSections}>
-      {/* About */}
-      {profile.bio && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>О специалисте</Text>
-          <Text style={styles.bodyText}>{profile.bio}</Text>
-        </View>
-      )}
-
-      {/* FNS & Services — first 2 inline, rest in modal */}
-      {fnsData.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>ФНС и услуги</Text>
-          {fnsData.slice(0, 2).map((group, idx) => (
-            <View key={group.office} style={[styles.fnsGroup, idx > 0 && { marginTop: 10 }]}>
-              <View style={styles.fnsOfficeBadge}>
-                <Ionicons name="business-outline" size={12} color={B.action} />
-                <Text style={styles.fnsOfficeName}>{group.office}</Text>
-              </View>
-              {group.departments.length > 0 && (
-                <View style={styles.fnsDeptRow}>
-                  {group.departments.map((dept) => (
-                    <View key={dept} style={styles.fnsDeptChip}>
-                      <Text style={styles.fnsDeptText}>{dept}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-          ))}
-          {fnsData.length > 2 && (
-            <TouchableOpacity
-              onPress={() => setFnsModalVisible(true)}
-              style={styles.showAllBtn}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.showAllBtnText}>Все ФНС ({fnsData.length})</Text>
-              <Ionicons name="chevron-forward" size={16} color={B.action} />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Services list */}
-      {profile.services.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Услуги</Text>
-          <View style={styles.servicesList}>
-            {profile.services.map((svc, idx) => {
-              const sep = svc.match(/^(.+?)\s*(?:—|-{1,3})\s*(.+)$/);
-              const name = sep ? sep[1].trim() : svc.trim();
-              const price = sep ? sep[2].trim() : undefined;
-              return (
-                <View key={idx} style={styles.serviceRow}>
-                  <Text style={styles.serviceDot}>·</Text>
-                  <Text style={styles.serviceText}>{name}</Text>
-                  {price ? <Text style={styles.servicePrice}>{price}</Text> : null}
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Reviews */}
-      <View style={styles.section}>
-        <View style={styles.reviewsHeaderRow}>
-          <Text style={styles.sectionLabel}>
-            Отзывы{reviewsTotal > 0 ? ` (${reviewsTotal})` : ''}
-          </Text>
-        </View>
-
-        {reviews.length === 0 && !reviewsLoading ? (
-          <Text style={styles.emptyText}>Отзывов пока нет</Text>
-        ) : (
-          <View style={styles.reviewsList}>
-            {reviews.slice(0, reviewsPage === 1 && reviews.length > 3 ? 3 : reviews.length).map((review) => (
-              <View key={review.id} style={styles.reviewRow}>
-                <View style={styles.reviewMeta}>
-                  <View style={styles.reviewerAvatar}>
-                    <Text style={styles.reviewerInitials}>{getReviewerInitials(review)}</Text>
-                  </View>
-                  <View style={styles.reviewerInfo}>
-                    <Text style={styles.reviewAuthor}>
-                      {review.client.username ? `@${review.client.username}` : `Пользователь #${review.client.id.slice(0, 4)}`}
-                    </Text>
-                    <Text style={styles.reviewDate}>
-                      {new Date(review.createdAt).toLocaleDateString('ru-RU')}
-                    </Text>
-                  </View>
-                  <Stars rating={review.rating} size="sm" />
-                </View>
-                {review.comment ? (
-                  <Text style={styles.reviewComment}>{review.comment}</Text>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {reviewsLoading && (
-          <ActivityIndicator size="small" color={B.action} style={{ marginTop: 12 }} />
-        )}
-
-        {canShowMoreReviews && !reviewsLoading && (
-          <TouchableOpacity
-            onPress={() => loadReviews(reviewsPage + 1)}
-            style={styles.loadMoreBtn}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.loadMoreText}>Все отзывы ({reviewsTotal})</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Contact / Message section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Написать специалисту</Text>
-        <TextInput
-          style={styles.textInput}
-          value={message}
-          onChangeText={setMessage}
-          placeholder="Опишите вашу задачу или задайте вопрос..."
-          placeholderTextColor={B.muted}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-        />
-        <TouchableOpacity
-          onPress={handleSendMessage}
-          disabled={!message.trim() || sendingMessage}
-          style={[styles.sendBtn, (!message.trim() || sendingMessage) && styles.sendBtnDisabled]}
-          activeOpacity={0.8}
-        >
-          {sendingMessage ? (
-            <ActivityIndicator size="small" color={B.white} />
-          ) : (
-            <Text style={styles.sendBtnText}>
-              {user ? 'Отправить' : 'Войти и написать'}
-            </Text>
-          )}
-        </TouchableOpacity>
-        {!user && (
-          <Text style={styles.guestHint}>
-            Для связи со специалистом необходимо войти или зарегистрироваться
-          </Text>
-        )}
-      </View>
-    </View>
-  );
-
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView className="flex-1 bg-white">
       <Stack.Screen options={{ title: pageTitle }} />
       <Head>
         <title>{pageTitle}</title>
@@ -526,26 +299,172 @@ export default function SpecialistProfileScreen() {
         <meta property="og:type" content="profile" />
       </Head>
       <LandingHeader />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={[styles.pageContainer, isDesktop && styles.pageContainerDesktop]}>
-          {isDesktop ? (
-            <View style={styles.desktopRow}>
-              <View style={styles.desktopLeft}>{renderSidebar()}</View>
-              <View style={styles.desktopRight}>{renderContent()}</View>
+      <ScrollView className="flex-1 bg-white">
+        <View className="gap-4 p-4">
+          {/* Profile card */}
+          <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <View className="flex-row gap-4">
+              <Avatar name={displayName} imageUri={profile.avatarUrl || undefined} size="xl" />
+              <View className="flex-1 gap-1">
+                <Text className="text-xl font-bold text-textPrimary">{displayName}</Text>
+                {profile.cities.length > 0 && (
+                  <View className="flex-row items-center gap-1">
+                    <Feather name="map-pin" size={14} color="#94A3B8" />
+                    <Text className="text-base text-textMuted">{profile.cities.join(', ')}</Text>
+                  </View>
+                )}
+                <View className="flex-row items-center gap-1">
+                  <Stars rating={Math.round(avgRating)} size={16} />
+                  <Text className="text-sm text-textMuted">
+                    {avgRating > 0 ? avgRating.toFixed(1) : '0'} ({reviewCount} отзывов)
+                  </Text>
+                </View>
+                <View className="mt-1 flex-row items-center gap-1">
+                  <Feather name="clock" size={13} color="#94A3B8" />
+                  <Text className="text-sm text-textMuted">На сайте с {sinceYear} г.</Text>
+                </View>
+              </View>
             </View>
-          ) : (
-            <View style={styles.mobileColumn}>
-              {renderSidebar()}
-              {renderContent()}
+
+            {/* About */}
+            {profile.bio && (
+              <Text className="text-base leading-6 text-textSecondary">{profile.bio}</Text>
+            )}
+          </View>
+
+          {/* FNS preview (first 2 open) + modal for rest */}
+          {fnsData.length > 0 && (
+            <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <View className="flex-row items-center gap-2">
+                <Feather name="briefcase" size={16} color="#0284C7" />
+                <Text className="text-lg font-semibold text-textPrimary">ФНС и услуги</Text>
+              </View>
+
+              {fnsData.slice(0, 2).map((group, idx) => (
+                <View key={group.office} className={`gap-2 ${idx > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
+                  <View className="flex-row items-center gap-2">
+                    <Feather name="home" size={14} color="#64748B" />
+                    <Text className="text-base font-medium text-textPrimary">{group.office}</Text>
+                  </View>
+                  <View className="flex-row flex-wrap gap-2 pl-6">
+                    {group.departments.map((dept) => (
+                      <View key={dept} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
+                        <Feather name="check" size={12} color="#0284C7" />
+                        <Text className="text-sm text-brandPrimary">{dept}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ))}
+
+              {fnsData.length > 2 && (
+                <Pressable
+                  onPress={() => setFnsModalVisible(true)}
+                  className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary py-2.5"
+                >
+                  <Text className="text-sm font-semibold text-brandPrimary">
+                    Все ФНС и услуги ({fnsData.length})
+                  </Text>
+                  <Feather name="chevron-right" size={16} color="#0284C7" />
+                </Pressable>
+              )}
             </View>
+          )}
+
+          <FnsModal
+            visible={fnsModalVisible}
+            onClose={() => setFnsModalVisible(false)}
+            fnsData={fnsData}
+          />
+
+          {/* Reviews */}
+          <View className="gap-3">
+            <View className="flex-row items-center gap-2">
+              <Feather name="message-square" size={16} color="#0284C7" />
+              <Text className="text-lg font-semibold text-textPrimary">Отзывы</Text>
+              {reviewsTotal > 0 && (
+                <Pressable className="ml-auto flex-row items-center">
+                  <Text className="text-base font-medium text-brandPrimary">Все {reviewsTotal}</Text>
+                  <Feather name="chevron-right" size={16} color="#0284C7" />
+                </Pressable>
+              )}
+            </View>
+
+            {reviews.length === 0 && !reviewsLoading ? (
+              <Text className="py-4 text-sm text-textMuted">Отзывов пока нет</Text>
+            ) : (
+              reviews.map((r) => <ReviewItemCard key={r.id} review={r} />)
+            )}
+
+            {reviewsLoading && (
+              <ActivityIndicator size="small" color="#0284C7" style={{ marginTop: 12 }} />
+            )}
+
+            {canShowMoreReviews && !reviewsLoading && (
+              <Pressable
+                onPress={() => loadReviews(reviewsPage + 1)}
+                className="mt-2 items-center py-2"
+              >
+                <Text className="text-sm font-semibold text-brandPrimary">
+                  Все отзывы ({reviewsTotal})
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Message textarea */}
+          <View className="gap-2">
+            <View className="flex-row items-center gap-2">
+              <Feather name="edit-3" size={16} color="#0284C7" />
+              <Text className="text-lg font-semibold text-textPrimary">Написать специалисту</Text>
+            </View>
+            <TextInput
+              className="min-h-[100px] rounded-lg bg-white p-3 text-base text-textPrimary"
+              style={{ borderWidth: 1, borderColor: '#E5E7EB', outlineStyle: 'none' } as any}
+              placeholder="Опишите вашу задачу или задайте вопрос..."
+              placeholderTextColor="#94A3B8"
+              multiline
+              textAlignVertical="top"
+              value={message}
+              onChangeText={setMessage}
+            />
+            <Pressable
+              className={`mt-1 h-12 flex-row items-center justify-center gap-2 rounded-lg shadow-sm ${
+                message.trim() && !sendingMessage ? 'bg-brandPrimary' : 'bg-gray-300'
+              }`}
+              disabled={!message.trim() || sendingMessage}
+              onPress={handleSendMessage}
+            >
+              {sendingMessage ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Feather name="send" size={18} color="#FFFFFF" />
+                  <Text className="text-base font-semibold text-white">
+                    {user ? 'Отправить' : 'Войти и написать'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+            {!user && (
+              <Text className="mt-1 text-center text-xs text-textMuted">
+                Для связи со специалистом необходимо войти или зарегистрироваться
+              </Text>
+            )}
+          </View>
+
+          {/* Report button */}
+          {user && user.userId !== profile.userId && (
+            <Pressable
+              onPress={() => setReportModalVisible(true)}
+              className="flex-row items-center justify-center gap-1.5 py-2"
+            >
+              <Feather name="flag" size={14} color="#94A3B8" />
+              <Text className="text-sm text-textMuted">Пожаловаться</Text>
+            </Pressable>
           )}
         </View>
       </ScrollView>
-      <FnsModal
-        visible={fnsModalVisible}
-        onClose={() => setFnsModalVisible(false)}
-        fnsData={fnsData}
-      />
       {profile && user && (
         <ReportModal
           visible={reportModalVisible}
@@ -556,204 +475,3 @@ export default function SpecialistProfileScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: B.bg },
-  scroll: { flexGrow: 1, alignItems: 'center', paddingBottom: 48 },
-  centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  pageContainer: { width: '100%', maxWidth: 430, paddingHorizontal: 16, paddingTop: 16 },
-  pageContainerDesktop: { maxWidth: 1100, paddingHorizontal: 32, paddingTop: 24 },
-
-  desktopRow: { flexDirection: 'row', gap: 32, alignItems: 'flex-start' },
-  desktopLeft: {
-    width: '30%',
-    ...(Platform.OS === 'web' ? { position: 'sticky' as any, top: 24 } : {}),
-  },
-  desktopRight: { flex: 1 },
-  mobileColumn: { gap: 24 },
-
-  // Sidebar
-  sidebarCard: {
-    backgroundColor: B.white,
-    borderWidth: 1,
-    borderColor: B.border,
-    borderRadius: 10,
-    padding: 20,
-    gap: 16,
-  },
-  sidebarCardDesktop: { alignItems: 'center' },
-
-  mobileHeroRow: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
-  mobileHeroInfo: { flex: 1, gap: 4 },
-  desktopHeroCol: { alignItems: 'center', gap: 8 },
-
-  heroName: { fontSize: 18, fontWeight: '700', color: B.primary, letterSpacing: -0.3 },
-  heroNameDesktop: { fontSize: 22, fontWeight: '700', color: B.primary, textAlign: 'center', letterSpacing: -0.5 },
-  heroHeadline: { fontSize: 15, color: B.primary, fontStyle: 'italic' as const, lineHeight: 22 },
-  heroCity: { fontSize: 13, color: B.muted },
-  cityRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  ratingRow: { marginTop: 4 },
-
-  // Badges
-  badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12 },
-  badgeSuccess: { backgroundColor: B.bgSuccess },
-  badgeSuccessText: { fontSize: 11, fontWeight: '600', color: B.success },
-  badgeAction: { backgroundColor: B.bgAction },
-  badgeActionText: { fontSize: 11, fontWeight: '600', color: B.action },
-  badgeNeutral: { backgroundColor: '#EBF3FB' },
-  badgeNeutralText: { fontSize: 11, fontWeight: '600', color: B.muted },
-
-  // Content sections
-  contentSections: { gap: 0 },
-  section: {
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: B.border,
-  },
-
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: B.muted,
-    marginBottom: 12,
-  },
-
-  bodyText: { fontSize: 15, color: B.primary, lineHeight: 24 },
-
-  // FNS
-  fnsGroup: { gap: 6, marginBottom: 10 },
-  fnsGroupBorder: { borderBottomWidth: 1, borderBottomColor: '#EBF3FB', paddingBottom: 12 },
-  fnsOfficeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: B.bgAction,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  fnsOfficeName: { fontSize: 13, color: B.action, fontWeight: '600' },
-  fnsDeptRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingLeft: 18 },
-  fnsDeptChip: {
-    backgroundColor: '#EBF3FB',
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-  },
-  fnsDeptText: { fontSize: 11, color: B.muted, fontWeight: '500' },
-
-  showAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: B.action,
-    borderRadius: 6,
-    paddingVertical: 10,
-  },
-  showAllBtnText: { fontSize: 13, color: B.action, fontWeight: '600' },
-
-  // Services
-  servicesList: { gap: 10 },
-  serviceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  serviceDot: { fontSize: 18, color: B.action, lineHeight: 22 },
-  serviceText: { flex: 1, fontSize: 15, color: B.primary, lineHeight: 22 },
-  servicePrice: { fontSize: 14, color: B.action, fontWeight: '600', flexShrink: 0 },
-
-  // Reviews
-  reviewsHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 0,
-  },
-  emptyText: { fontSize: 14, color: B.muted, paddingVertical: 16 },
-  reviewsList: { gap: 16, marginTop: 12 },
-  reviewRow: { gap: 8 },
-  reviewMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  reviewerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: B.action,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reviewerInitials: { color: B.white, fontSize: 12, fontWeight: '700' },
-  reviewerInfo: { flex: 1, gap: 1 },
-  reviewAuthor: { fontSize: 13, fontWeight: '600', color: B.primary },
-  reviewDate: { fontSize: 11, color: B.muted },
-  reviewComment: { fontSize: 14, color: B.muted, lineHeight: 21, paddingLeft: 42 },
-  loadMoreBtn: { marginTop: 12, alignItems: 'center', paddingVertical: 10 },
-  loadMoreText: { fontSize: 14, color: B.action, fontWeight: '600' },
-
-  // Message / Contact
-  textInput: {
-    borderWidth: 1,
-    borderColor: B.border,
-    borderRadius: 6,
-    padding: 12,
-    color: B.primary,
-    fontSize: 14,
-    backgroundColor: B.white,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  sendBtn: {
-    backgroundColor: B.action,
-    height: 48,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    width: '100%',
-  },
-  sendBtnDisabled: { opacity: 0.5 },
-  sendBtnText: { color: B.white, fontSize: 15, fontWeight: '600' },
-  guestHint: { fontSize: 12, color: B.muted, textAlign: 'center', lineHeight: 18, marginTop: 8 },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 500,
-    backgroundColor: B.white,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: B.border,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  modalHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: B.primary },
-  modalScroll: { maxHeight: 400, paddingHorizontal: 20, paddingVertical: 12 },
-
-  // Report
-  reportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-  },
-  reportBtnText: { fontSize: 13, color: B.muted, fontWeight: '500' },
-});
