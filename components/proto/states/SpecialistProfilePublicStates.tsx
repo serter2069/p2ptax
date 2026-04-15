@@ -1,23 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 
 const MOCK_SPECIALIST = {
   name: 'Алексей Петров',
   city: 'Москва',
-  memberSince: 2024,
+  memberSince: 2022,
   avatar: null,
   rating: 4.8,
   reviewCount: 12,
-  about: 'Специализируюсь на налоговом консультировании для физических лиц и ИП. Опыт работы с ФНС более 5 лет.',
+  about: `Специализируюсь на сопровождении налоговых проверок для юридических лиц и индивидуальных предпринимателей. Более 10 лет опыта работы в сфере налогового консультирования.
+
+Основные направления работы:
+— Подготовка к выездным налоговым проверкам: анализ рисков, систематизация документации, разработка стратегии защиты интересов налогоплательщика.
+— Сопровождение камеральных проверок: подготовка пояснений, ответы на требования ФНС, представление интересов в налоговых органах.
+— Работа с отделом оперативного контроля: консультирование по вопросам оперативных мероприятий, подготовка ответов на запросы.
+
+Имею успешный опыт работы со сложными случаями: крупные доначисления, встречные проверки, проверки по цепочкам контрагентов. Регулярно повышаю квалификацию, слежу за изменениями в налоговом законодательстве.
+
+Работаю в нескольких ФНС города Москвы, что позволяет оперативно решать вопросы клиентов в разных районах. Консультирую как лично, так и дистанционно.
+
+Гарантирую конфиденциальность и индивидуальный подход к каждому клиенту. Первая консультация — бесплатно.`,
   fnsServices: [
-    { fns: 'ФНС №15 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'] },
-    { fns: 'ФНС №46 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка'] },
+    { fns: 'ФНС №15 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка'] },
+    { fns: 'ФНС №46 по г. Москве', services: ['Камеральная проверка', 'Отдел оперативного контроля'] },
+    { fns: 'ФНС №7 по г. Москве', services: ['Выездная проверка'] },
+    { fns: 'ФНС №1 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'] },
+    { fns: 'ФНС №33 по г. Москве', services: ['Камеральная проверка'] },
   ],
   reviews: [
-    { author: 'Мария К.', date: '2024-03-15', rating: 5, text: 'Отличный специалист, помог с камеральной проверкой' },
-    { author: 'Иван С.', date: '2024-02-20', rating: 4, text: 'Быстро и профессионально' },
+    { author: 'Мария К.', date: '15.03.2024', rating: 5, text: 'Отличный специалист, помог с камеральной проверкой' },
+    { author: 'Иван С.', date: '20.02.2024', rating: 4, text: 'Быстро и профессионально сопроводил выездную проверку' },
   ],
 };
 
@@ -50,8 +64,55 @@ function ReviewItem({ author, rating, text, date }: { author: string; rating: nu
   );
 }
 
-function ProfileScreen({ initialMessage = '' }: { initialMessage?: string }) {
+function FnsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const spec = MOCK_SPECIALIST;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View className="flex-1 items-center justify-center bg-black/50 px-4">
+        <View className="w-full max-w-lg rounded-2xl bg-white">
+          {/* Header */}
+          <View className="flex-row items-center justify-between border-b border-gray-200 px-5 py-4">
+            <View className="flex-row items-center gap-2">
+              <Feather name="briefcase" size={18} color="#0284C7" />
+              <Text className="text-lg font-bold text-textPrimary">ФНС и услуги</Text>
+            </View>
+            <Pressable onPress={onClose} className="rounded-full p-1">
+              <Feather name="x" size={22} color="#64748B" />
+            </Pressable>
+          </View>
+
+          {/* Scrollable FNS list */}
+          <ScrollView className="max-h-96 px-5 py-3">
+            {spec.fnsServices.map((group, idx) => (
+              <View
+                key={group.fns}
+                className={`gap-2 py-3 ${idx < spec.fnsServices.length - 1 ? 'border-b border-gray-100' : ''}`}
+              >
+                <View className="flex-row items-center gap-2">
+                  <Feather name="home" size={14} color="#64748B" />
+                  <Text className="text-base font-semibold text-textPrimary">{group.fns}</Text>
+                </View>
+                <View className="flex-row flex-wrap gap-2 pl-6">
+                  {group.services.map((svc) => (
+                    <View key={svc} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
+                      <Feather name="check" size={12} color="#0284C7" />
+                      <Text className="text-sm text-brandPrimary">{svc}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function ProfileScreen({ initialMessage = '', initialFnsOpen = false }: { initialMessage?: string; initialFnsOpen?: boolean }) {
   const [message, setMessage] = useState(initialMessage);
+  const [fnsModalVisible, setFnsModalVisible] = useState(initialFnsOpen);
   const spec = MOCK_SPECIALIST;
 
   return (
@@ -80,29 +141,27 @@ function ProfileScreen({ initialMessage = '' }: { initialMessage?: string }) {
               </View>
             </View>
           </View>
+
+          {/* About — long text */}
           <Text className="text-base leading-6 text-textSecondary">{spec.about}</Text>
         </View>
 
-        {/* FNS Services */}
-        <View className="gap-3">
+        {/* FNS button */}
+        <Pressable
+          onPress={() => setFnsModalVisible(true)}
+          className="flex-row items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm"
+        >
           <View className="flex-row items-center gap-2">
             <Feather name="briefcase" size={16} color="#0284C7" />
-            <Text className="text-lg font-semibold text-textPrimary">Услуги</Text>
+            <Text className="text-base font-semibold text-brandPrimary">ФНС и услуги</Text>
           </View>
-          {spec.fnsServices.map((group) => (
-            <View key={group.fns} className="gap-2">
-              <Text className="text-sm font-medium text-textMuted">{group.fns}</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {group.services.map((svc) => (
-                  <View key={svc} className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-3 py-1.5">
-                    <Feather name="check" size={12} color="#0284C7" />
-                    <Text className="text-sm text-brandPrimary">{svc}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ))}
-        </View>
+          <View className="flex-row items-center gap-1">
+            <Text className="text-sm text-textMuted">{spec.fnsServices.length} ФНС</Text>
+            <Feather name="chevron-right" size={18} color="#94A3B8" />
+          </View>
+        </Pressable>
+
+        <FnsModal visible={fnsModalVisible} onClose={() => setFnsModalVisible(false)} />
 
         {/* Reviews */}
         <View className="gap-3">
@@ -126,8 +185,8 @@ function ProfileScreen({ initialMessage = '' }: { initialMessage?: string }) {
             <Text className="text-lg font-semibold text-textPrimary">Написать специалисту</Text>
           </View>
           <TextInput
-            className="min-h-[100px] rounded-lg border border-gray-200 bg-white p-3 text-base text-textPrimary"
-            style={{ outlineStyle: 'none' } as any}
+            className="min-h-[100px] rounded-lg bg-white p-3 text-base text-textPrimary"
+            style={{ borderWidth: 1, borderColor: '#E5E7EB', outlineStyle: 'none' } as any}
             placeholder="Опишите вашу задачу или задайте вопрос..."
             placeholderTextColor="#94A3B8"
             multiline
@@ -154,8 +213,8 @@ export function SpecialistProfilePublicStates() {
       <StateSection title="DEFAULT">
         <ProfileScreen />
       </StateSection>
-      <StateSection title="TYPING_MESSAGE">
-        <ProfileScreen initialMessage="Здравствуйте! Мне нужна помощь с сопровождением выездной проверки. Подскажите, какие документы потребуются?" />
+      <StateSection title="FNS_POPUP_OPEN">
+        <ProfileScreen initialFnsOpen />
       </StateSection>
     </>
   );
