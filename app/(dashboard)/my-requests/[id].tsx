@@ -239,35 +239,35 @@ export default function MyRequestDetailScreen() {
               {request.description}
             </Text>
 
-            {/* Meta */}
+            {/* Meta — label:value rows matching proto */}
             <View className="gap-2">
-              <View className="flex-row items-center gap-2">
-                <Feather name="map-pin" size={14} color={Colors.textMuted} />
-                <Text className="text-sm text-textMuted">{request.city}</Text>
+              <View className="flex-row justify-between">
+                <Text className="text-xs text-textMuted">Город</Text>
+                <Text className="text-xs font-medium text-textPrimary">{request.city}</Text>
               </View>
-              {request.ifnsName && (
-                <View className="flex-row items-center gap-2">
-                  <Feather name="home" size={14} color={Colors.textMuted} />
-                  <Text className="text-sm text-textMuted">{request.ifnsName}</Text>
+              {request.category && (
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-textMuted">Услуга</Text>
+                  <Text className="text-xs font-medium text-textPrimary">{request.category}</Text>
                 </View>
               )}
-              {request.category && (
-                <View className="flex-row items-center gap-2">
-                  <Feather name="briefcase" size={14} color={Colors.textMuted} />
-                  <Text className="text-sm text-textMuted">{request.category}</Text>
+              {request.ifnsName && (
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-textMuted">ФНС</Text>
+                  <Text className="text-xs font-medium text-textPrimary">{request.ifnsName}</Text>
                 </View>
               )}
               {request.budget != null && (
-                <View className="flex-row items-center gap-2">
-                  <Feather name="credit-card" size={14} color={Colors.textMuted} />
-                  <Text className="text-sm text-textMuted">
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-textMuted">Бюджет</Text>
+                  <Text className="text-xs font-medium text-textPrimary">
                     {request.budget.toLocaleString('ru-RU')} ₽
                   </Text>
                 </View>
               )}
-              <View className="flex-row items-center gap-2">
-                <Feather name="calendar" size={14} color={Colors.textMuted} />
-                <Text className="text-sm text-textMuted">{formatShortDate(request.createdAt)}</Text>
+              <View className="flex-row justify-between">
+                <Text className="text-xs text-textMuted">Дата</Text>
+                <Text className="text-xs font-medium text-textPrimary">{formatShortDate(request.createdAt)}</Text>
               </View>
             </View>
 
@@ -309,23 +309,29 @@ export default function MyRequestDetailScreen() {
           </View>
 
           {/* ---- Responses section ---- */}
+          {/* ---- Responses section (proto layout) ---- */}
+          <Text className="text-base font-semibold text-textPrimary">
+            Отклики ({request.responses.length})
+          </Text>
+
           {request.responses.length === 0 ? (
-            /* Empty state — no messages yet */
-            <View className="items-center gap-3 py-8">
-              <View className="h-16 w-16 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
-                <Feather name="clock" size={32} color={Colors.brandPrimary} />
+            isClosed ? (
+              <View className="items-center gap-2 py-8">
+                <Text className="text-base font-semibold text-textPrimary">Заявка закрыта</Text>
+                <Text className="text-center text-sm text-textMuted">
+                  Эта заявка была завершена или отменена
+                </Text>
               </View>
-              <Text className="text-base font-semibold text-textPrimary">Ожидание сообщений</Text>
-              <Text className="max-w-[280px] text-center text-sm text-textMuted">
-                Специалисты рассматривают вашу заявку. Обычно первые сообщения приходят в течение часа.
-              </Text>
-            </View>
+            ) : (
+              <View className="items-center gap-2 py-8">
+                <Text className="text-base font-semibold text-textPrimary">Пока нет откликов</Text>
+                <Text className="text-center text-sm text-textMuted">
+                  Специалисты увидят вашу заявку и смогут предложить свои услуги
+                </Text>
+              </View>
+            )
           ) : (
             <View className="gap-3">
-              <Text className="text-base font-semibold text-textPrimary">
-                Сообщения ({request.responses.length})
-              </Text>
-
               {request.responses.map((resp) => {
                 const displayName =
                   resp.specialist?.specialistProfile?.displayName
@@ -337,82 +343,79 @@ export default function MyRequestDetailScreen() {
                 const canReview = isClosed && nick && !reviewedNicks.has(nick);
 
                 return (
-                  <View key={resp.id} className="gap-3">
-                    <Pressable
-                      className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3"
-                      onPress={() => handleStartDialog(resp.specialist.id)}
-                    >
-                      {/* Avatar */}
+                  <View key={resp.id} className="gap-2 rounded-xl border border-borderLight bg-white p-4">
+                    {/* Header: avatar + name/city + price */}
+                    <View className="flex-row items-center gap-3">
                       <View className="h-10 w-10 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
                         <Text className="text-sm font-bold text-brandPrimary">{initials}</Text>
                       </View>
-
-                      {/* Content */}
                       <View className="flex-1">
-                        <View className="flex-row items-center justify-between">
-                          <Text className="text-sm font-semibold text-textPrimary">{displayName}</Text>
-                          <Text className="text-xs text-textMuted">{formatTime(resp.createdAt)}</Text>
-                        </View>
-                        <Text className="text-xs text-textMuted" numberOfLines={1}>
-                          {resp.comment}
-                        </Text>
+                        <Text className="text-sm font-semibold text-textPrimary">{displayName}</Text>
+                        <Text className="text-xs text-textMuted">{request.city}</Text>
                       </View>
-                    </Pressable>
+                    </View>
 
-                    {/* Action buttons below response card */}
-                    <View className="flex-row gap-2 px-1">
-                      {nick && (
-                        <Pressable
-                          className="h-9 flex-1 flex-row items-center justify-center gap-1 rounded-lg border border-borderLight"
-                          onPress={() => router.push(`/specialists/${nick}`)}
-                        >
-                          <Feather name="user" size={13} color={Colors.textSecondary} />
-                          <Text className="text-xs font-medium text-textSecondary">Профиль</Text>
-                        </Pressable>
-                      )}
+                    {/* Rating row */}
+                    <View className="flex-row items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Feather key={i} name="star" size={14} color={i <= 4 ? Colors.statusWarning : Colors.borderLight} />
+                      ))}
+                      <Text className="ml-1 text-xs text-textMuted">{formatTime(resp.createdAt)}</Text>
+                    </View>
+
+                    {/* Message */}
+                    <Text className="text-sm leading-5 text-textSecondary" numberOfLines={2}>
+                      {resp.comment}
+                    </Text>
+
+                    {/* Action buttons inside card (proto: Принять / Написать) */}
+                    <View className="flex-row gap-2">
                       <Pressable
-                        className="h-9 flex-1 flex-row items-center justify-center gap-1 rounded-lg border border-brandPrimary"
+                        className="h-9 flex-1 items-center justify-center rounded-lg bg-brandPrimary"
                         onPress={() => handleStartDialog(resp.specialist.id)}
                         disabled={startingDialogId !== null}
                       >
                         {startingDialogId === resp.specialist.id ? (
-                          <ActivityIndicator size="small" color={Colors.brandPrimary} />
+                          <ActivityIndicator size="small" color={Colors.white} />
                         ) : (
-                          <>
-                            <Feather name="message-circle" size={13} color={Colors.brandPrimary} />
-                            <Text className="text-xs font-medium text-brandPrimary">Написать</Text>
-                          </>
+                          <Text className="text-sm font-semibold text-white">Принять</Text>
                         )}
                       </Pressable>
-                      {canReview && reviewingNick !== nick && (
-                        <Pressable
-                          className="h-9 flex-1 flex-row items-center justify-center gap-1 rounded-lg bg-brandPrimary"
-                          onPress={() => setReviewingNick(nick)}
-                        >
-                          <Feather name="star" size={13} color="#FFFFFF" />
-                          <Text className="text-xs font-medium text-white">Отзыв</Text>
-                        </Pressable>
-                      )}
+                      <Pressable
+                        className="h-9 flex-1 items-center justify-center rounded-lg border border-borderLight"
+                        onPress={() => handleStartDialog(resp.specialist.id)}
+                      >
+                        <Text className="text-sm font-medium text-textPrimary">Написать</Text>
+                      </Pressable>
                     </View>
+
+                    {/* Review button for closed requests */}
+                    {canReview && reviewingNick !== nick && (
+                      <Pressable
+                        className="h-9 flex-row items-center justify-center gap-1 rounded-lg bg-brandPrimary"
+                        onPress={() => setReviewingNick(nick)}
+                      >
+                        <Feather name="star" size={13} color="#FFFFFF" />
+                        <Text className="text-xs font-medium text-white">Оставить отзыв</Text>
+                      </Pressable>
+                    )}
 
                     {/* Inline review form */}
                     {canReview && reviewingNick === nick && (
-                      <View className="mt-1">
-                        <ReviewForm
-                          specialistNick={nick}
-                          requestId={request.id}
-                          onSuccess={() => {
-                            setReviewingNick(null);
-                            setReviewedNicks((prev) => new Set(prev).add(nick));
-                            if (Platform.OS === 'web') {
-                              alert('Спасибо! Ваш отзыв отправлен.');
-                            } else {
-                              Alert.alert('Спасибо!', 'Ваш отзыв отправлен.');
-                            }
-                          }}
-                          onCancel={() => setReviewingNick(null)}
-                        />
-                      </View>
+                      <ReviewForm
+                        specialistNick={nick}
+                        requestId={request.id}
+                        onSuccess={() => {
+                          setReviewingNick(null);
+                          setReviewedNicks((prev) => new Set(prev).add(nick));
+                          if (Platform.OS === 'web') {
+                            alert('Спасибо! Ваш отзыв отправлен.');
+                          } else {
+                            Alert.alert('Спасибо!', 'Ваш отзыв отправлен.');
+                          }
+                        }}
+                        onCancel={() => setReviewingNick(null)}
+                      />
                     )}
                   </View>
                 );
