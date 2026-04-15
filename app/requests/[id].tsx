@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
-import { BackHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 
 const MOCK_REQUEST = {
   title: 'Выездная проверка ООО «Ромашка»',
@@ -23,7 +23,7 @@ export default function PublicRequestDetailPage() {
 
   return (
     <View className="flex-1 bg-white">
-      <BackHeader title="Заявка" />
+      <Header variant="back" backTitle="Заявка" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View className="gap-3 rounded-xl border border-borderLight bg-white p-5">
           <View className="flex-row items-center justify-between">

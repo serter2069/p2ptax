@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Switch } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
-import { AppHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 import { BottomNav } from '../../components/BottomNav';
 
 export default function SettingsPage() {
@@ -13,7 +13,7 @@ export default function SettingsPage() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader />
+      <Header variant="auth" />
       <View className="flex-1 p-4 gap-4">
         <Text className="text-xl font-bold text-textPrimary">Настройки</Text>
 

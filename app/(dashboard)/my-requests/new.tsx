@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { MOCK_CITIES, MOCK_SERVICES, MOCK_FNS } from '../../../constants/protoMockData';
-import { BackHeader } from '../../../components/AppHeader';
+import { Header } from '../../../components/Header';
 
 function LocationServicePicker({ city, fns, service, onCityChange, onFnsChange, onServiceChange }: {
   city: string; fns: string; service: string;
@@ -68,7 +68,7 @@ export default function NewRequestPage() {
 
   return (
     <View className="flex-1 bg-white">
-      <BackHeader title="Новая заявка" />
+      <Header variant="back" backTitle="Новая заявка" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
         <LocationServicePicker city={city} fns={fns} service={service} onCityChange={setCity} onFnsChange={setFns} onServiceChange={setService} />
         <View className="gap-1">

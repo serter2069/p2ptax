@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } fro
 import { Feather } from '@expo/vector-icons';
 import { Colors, Shadows } from '../constants/Colors';
 import { MOCK_CITIES, MOCK_FNS, MOCK_SERVICES } from '../constants/protoMockData';
-import { LandingHeader } from '../components/LandingHeader';
+import { Header } from '../components/Header';
 
 function useLayout() {
   const { width } = useWindowDimensions();
@@ -85,7 +85,7 @@ export default function LandingPage() {
 
   return (
     <ScrollView className="flex-1 bg-white">
-      <LandingHeader />
+      <Header variant="guest" />
       {/* Hero */}
       <View className="bg-white px-5" style={{ paddingTop: 40, paddingBottom: 40 }}>
         <View className="w-full self-center" style={{ maxWidth: 800 }}>

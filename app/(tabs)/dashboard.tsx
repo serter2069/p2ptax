@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
-import { AppHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 import { BottomNav } from '../../components/BottomNav';
 
 function getGreeting(): string {
@@ -90,7 +90,7 @@ function MessagePreview({ initials, name, snippet, time, unread }: {
 export default function DashboardPage() {
   return (
     <View className="flex-1 bg-white">
-      <AppHeader hasNotif />
+      <Header variant="auth" hasNotif />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View className="flex-row items-start justify-between">
           <View className="flex-1">

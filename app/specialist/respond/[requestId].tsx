@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-import { BackHeader } from '../../../components/AppHeader';
+import { Header } from '../../../components/Header';
 
 export default function SpecialistRespondPage() {
   const [message, setMessage] = useState('Здравствуйте! Готов помочь с декларацией. Опыт — 8 лет, 200+ успешных деклараций.');
 
   return (
     <View className="flex-1 bg-white">
-      <BackHeader title="Написать по заявке" />
+      <Header variant="back" backTitle="Написать по заявке" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View className="gap-2 rounded-xl border border-borderLight bg-white p-4">
           <View className="self-start rounded-full bg-bgSecondary px-2 py-0.5">

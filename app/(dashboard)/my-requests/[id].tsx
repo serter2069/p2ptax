@@ -2,12 +2,12 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-import { BackHeader } from '../../../components/AppHeader';
+import { Header } from '../../../components/Header';
 
 export default function RequestDetailPage() {
   return (
     <View className="flex-1 bg-white">
-      <BackHeader title="Заявка" />
+      <Header variant="back" backTitle="Заявка" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View className="gap-4 rounded-xl border border-borderLight bg-white p-4">
           <View className="flex-row items-start justify-between gap-2">

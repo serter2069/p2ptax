@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
-import { AppHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 import { BottomNav } from '../../components/BottomNav';
 
 export default function ProfilePage() {
@@ -13,7 +13,7 @@ export default function ProfilePage() {
   if (editMode) {
     return (
       <View className="flex-1 bg-white">
-        <AppHeader />
+        <Header variant="auth" />
         <View className="flex-1 p-4 gap-4">
           <View className="flex-row items-center gap-4">
             <View className="h-16 w-16 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
@@ -51,7 +51,7 @@ export default function ProfilePage() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader />
+      <Header variant="auth" />
       <View className="flex-1 p-4 gap-4">
         <View className="flex-row items-center gap-4">
           <View className="h-16 w-16 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
