@@ -121,6 +121,10 @@ export const requests = {
   getMyResponses() {
     return client.get('/requests/my-responses');
   },
+
+  extendRequest(id: string) {
+    return client.post(`/requests/${id}/extend`);
+  },
 };
 
 // ---------------------------------------------------------------------------
