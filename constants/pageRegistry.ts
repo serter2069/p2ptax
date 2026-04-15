@@ -48,14 +48,62 @@ export const PAGE_GROUPS: PageGroup[] = [
 export const pageRegistry: PageEntry[] = [
   // Brand
   { id: 'brand', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none' },
+  // Auth
+  { id: 'auth-email', title: 'Вход — Email', group: 'Auth', route: '/auth-email', stateCount: 1, nav: 'auth' },
+  { id: 'auth-otp', title: 'Вход — Код', group: 'Auth', route: '/auth-otp', stateCount: 1, nav: 'auth' },
+  // Onboarding
+  { id: 'onboarding-username', title: 'Онбординг — Имя', group: 'Onboarding', route: '/onboarding-username', stateCount: 1, nav: 'auth' },
+  { id: 'onboarding-profile', title: 'Онбординг — Профиль', group: 'Onboarding', route: '/onboarding-profile', stateCount: 1, nav: 'auth' },
+  { id: 'work-area', title: 'Онбординг — Город/ФНС', group: 'Onboarding', route: '/work-area', stateCount: 1, nav: 'auth' },
+  // Public
+  { id: 'landing', title: 'Главная', group: 'Public', route: '/landing', stateCount: 3, nav: 'public' },
+  { id: 'specialists-catalog', title: 'Каталог специалистов', group: 'Public', route: '/specialists-catalog', stateCount: 4, nav: 'public' },
+  { id: 'specialist-public-profile', title: 'Профиль специалиста', group: 'Public', route: '/specialist-public-profile', stateCount: 1, nav: 'public' },
+  { id: 'public-requests-feed', title: 'Лента заявок', group: 'Public', route: '/public-requests-feed', stateCount: 1, nav: 'public' },
+  { id: 'public-request-detail', title: 'Заявка (публичная)', group: 'Public', route: '/public-request-detail', stateCount: 3, nav: 'public' },
+  { id: 'terms', title: 'Условия', group: 'Public', route: '/terms', stateCount: 2, nav: 'public' },
+  // Dashboard (Client)
+  { id: 'dashboard', title: 'Главная клиента', group: 'Dashboard', route: '/dashboard', stateCount: 11, nav: 'client', activeTab: 'home' },
+  { id: 'my-requests', title: 'Мои заявки', group: 'Dashboard', route: '/my-requests', stateCount: 4, nav: 'client', activeTab: 'requests' },
+  { id: 'new-request', title: 'Новая заявка', group: 'Dashboard', route: '/new-request', stateCount: 2, nav: 'client' },
+  { id: 'request-detail', title: 'Детали заявки', group: 'Dashboard', route: '/request-detail', stateCount: 6, nav: 'client' },
+  { id: 'responses', title: 'Отклики на заявку', group: 'Dashboard', route: '/responses', stateCount: 12, nav: 'client' },
+  { id: 'messages', title: 'Сообщения', group: 'Dashboard', route: '/messages', stateCount: 4, nav: 'client', activeTab: 'messages' },
+  { id: 'chat-thread', title: 'Чат', group: 'Dashboard', route: '/chat-thread', stateCount: 3, nav: 'client' },
+  { id: 'client-settings', title: 'Настройки клиента', group: 'Dashboard', route: '/client-settings', stateCount: 1, nav: 'client', activeTab: 'profile' },
+  // Specialist
+  { id: 'specialist-dashboard', title: 'Главная специалиста', group: 'Specialist', route: '/specialist-dashboard', stateCount: 4, nav: 'specialist' },
+  { id: 'my-responses', title: 'Мои отклики', group: 'Specialist', route: '/my-responses', stateCount: 4, nav: 'specialist' },
+  { id: 'specialist-respond', title: 'Откликнуться', group: 'Specialist', route: '/specialist-respond', stateCount: 2, nav: 'specialist' },
+  { id: 'specialist-settings', title: 'Настройки специалиста', group: 'Specialist', route: '/specialist-settings', stateCount: 1, nav: 'specialist' },
+  // Other
+  { id: 'not-found', title: '404', group: 'Public', route: '/not-found', stateCount: 1, nav: 'none' },
 ];
 
 export const PAGE_TRANSITIONS: Record<string, { to: string; action: string }[]> = {
   'brand': [],
+  'landing': [{ to: 'auth-email', action: 'Войти' }, { to: 'specialists-catalog', action: 'Каталог' }, { to: 'public-requests-feed', action: 'Заявки' }],
+  'auth-email': [{ to: 'auth-otp', action: 'Отправить код' }],
+  'auth-otp': [{ to: 'onboarding-username', action: 'Первый вход' }, { to: 'dashboard', action: 'Вход' }],
+  'onboarding-username': [{ to: 'onboarding-profile', action: 'Далее' }],
+  'onboarding-profile': [{ to: 'work-area', action: 'Далее' }],
+  'work-area': [{ to: 'dashboard', action: 'Завершить' }],
+  'dashboard': [{ to: 'new-request', action: 'Новая заявка' }, { to: 'request-detail', action: 'Открыть заявку' }],
+  'my-requests': [{ to: 'request-detail', action: 'Открыть заявку' }, { to: 'new-request', action: 'Новая заявка' }],
+  'request-detail': [{ to: 'responses', action: 'Посмотреть отклики' }, { to: 'chat-thread', action: 'Написать' }],
+  'responses': [{ to: 'chat-thread', action: 'Написать специалисту' }],
+  'messages': [{ to: 'chat-thread', action: 'Открыть чат' }],
+  'specialists-catalog': [{ to: 'specialist-public-profile', action: 'Открыть профиль' }],
+  'specialist-dashboard': [{ to: 'specialist-respond', action: 'Откликнуться' }, { to: 'my-responses', action: 'Мои отклики' }],
+  'my-responses': [{ to: 'chat-thread', action: 'Написать клиенту' }],
 };
 
 export const ROLE_PAGES: Record<string, string[]> = {
-  public: ['brand'],
+  public: ['brand', 'landing', 'specialists-catalog', 'specialist-public-profile', 'public-requests-feed', 'public-request-detail', 'terms', 'not-found'],
+  auth: ['auth-email', 'auth-otp'],
+  onboarding: ['onboarding-username', 'onboarding-profile', 'work-area'],
+  client: ['dashboard', 'my-requests', 'new-request', 'request-detail', 'responses', 'messages', 'chat-thread', 'client-settings'],
+  specialist: ['specialist-dashboard', 'my-responses', 'specialist-respond', 'specialist-settings'],
 };
 
 // ---------------------------------------------------------------------------

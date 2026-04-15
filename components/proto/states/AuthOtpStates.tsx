@@ -1,403 +1,141 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 
-function OtpScreen({ initialCode, initialError, initialResendTimer, initialLoading, initialAttempts, maxedOut }: {
+function OtpScreen({ initialCode, initialError, initialResendTimer, initialLoading }: {
   initialCode?: string; initialError?: string; initialResendTimer?: number; initialLoading?: boolean;
-  initialAttempts?: number; maxedOut?: boolean;
 }) {
   const [digits, setDigits] = useState<string[]>(
     initialCode ? initialCode.split('').slice(0, 6) : ['', '', '', '', '', '']
   );
   const [error, setError] = useState(initialError || '');
   const [loading, setLoading] = useState(!!initialLoading);
-  const [resendTimer, setResendTimer] = useState(initialResendTimer ?? 0);
-  const [attempts, setAttempts] = useState(initialAttempts ?? 0);
+  const [resendTimer] = useState(initialResendTimer ?? 0);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   const handleDigitChange = (index: number, value: string) => {
-    if (maxedOut) return;
     if (value.length > 1) value = value.slice(-1);
     if (value && !/^\d$/.test(value)) return;
-
-    const newDigits = [...digits];
-    newDigits[index] = value;
-    setDigits(newDigits);
+    const next = [...digits];
+    next[index] = value;
+    setDigits(next);
     if (error) setError('');
-
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyPress = (index: number, key: string) => {
-    if (key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
+    if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
   const handleSubmit = () => {
-    const code = digits.join('');
-    if (code.length < 6) {
-      setError('Введите все 6 цифр');
-      return;
-    }
+    if (digits.join('').length < 6) { setError('Введите все 6 цифр'); return; }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      if (code !== '000000') {
-        const newAttempts = attempts + 1;
-        setAttempts(newAttempts);
-        if (newAttempts >= 5) {
-          setError('Превышено число попыток. Запросите новый код.');
-        } else {
-          setError(`Неверный код. Осталось ${5 - newAttempts} попыток`);
-        }
-      }
-    }, 1500);
+    setTimeout(() => setLoading(false), 1500);
   };
-
-  const handleResend = () => {
-    if (resendTimer > 0) return;
-    setResendTimer(60);
-    setDigits(['', '', '', '', '', '']);
-    setError('');
-    setAttempts(0);
-    const interval = setInterval(() => {
-      setResendTimer((prev) => {
-        if (prev <= 1) { clearInterval(interval); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const isLocked = maxedOut || attempts >= 5;
 
   return (
-    <View style={s.container}>
-      {/* Back button */}
-      <View style={s.backRow}>
-        <Pressable style={s.backBtn}>
-          <Feather name="arrow-left" size={20} color={Colors.textSecondary} />
-          <Text style={s.backText}>Изменить email</Text>
+    <View className="flex-1 items-center bg-white px-4 py-8">
+      {/* Back */}
+      <View className="w-full max-w-sm">
+        <Pressable className="flex-row items-center gap-1 py-1">
+          <Feather name="arrow-left" size={20} color="#475569" />
+          <Text className="text-sm text-textSecondary">Изменить email</Text>
         </Pressable>
       </View>
 
-      <View style={s.header}>
-        <View style={[s.iconWrap, isLocked ? s.iconWrapError : null]}>
-          <Feather name={isLocked ? 'lock' : 'mail'} size={28} color={isLocked ? Colors.statusError : Colors.brandPrimary} />
+      {/* Header */}
+      <View className="mt-6 items-center gap-2">
+        <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
+          <Feather name="mail" size={28} color="#0284C7" />
         </View>
-        <Text style={s.title}>{isLocked ? 'Доступ заблокирован' : 'Введите код'}</Text>
-        {isLocked ? (
-          <Text style={s.subtitle}>Слишком много неверных попыток</Text>
-        ) : (
-          <View style={s.emailRow}>
-            <Text style={s.subtitle}>Код отправлен на </Text>
-            <Text style={s.emailHighlight}>elena@mail.ru</Text>
-          </View>
-        )}
+        <Text className="text-xl font-bold text-textPrimary">Введите код</Text>
+        <View className="flex-row items-center">
+          <Text className="text-base text-textMuted">Код отправлен на </Text>
+          <Text className="text-base font-medium text-textPrimary">elena@mail.ru</Text>
+        </View>
       </View>
 
-      {/* Code inputs */}
-      <View style={s.codeRow}>
+      {/* OTP inputs */}
+      <View className="mt-5 flex-row justify-center gap-2">
         {[0, 1, 2, 3, 4, 5].map((i) => (
-          <View key={i} style={[
-            s.codeBox,
-            error ? s.codeBoxError : null,
-            digits[i] ? s.codeBoxFilled : null,
-            isLocked ? s.codeBoxLocked : null,
-          ]}>
+          <View
+            key={i}
+            className={`h-14 w-12 items-center justify-center rounded-lg border-2 ${error ? 'border-red-500 bg-red-50' : digits[i] ? 'border-brandPrimary bg-bgSecondary' : 'border-gray-200 bg-white'}`}
+          >
             <TextInput
               ref={(ref) => { inputRefs.current[i] = ref; }}
               value={digits[i]}
               onChangeText={(v) => handleDigitChange(i, v)}
-              onKeyPress={(e) => handleKeyPress(i, e.nativeEvent.key)}
               keyboardType="number-pad"
               maxLength={1}
-              style={[s.codeInput, error ? s.codeCharError : null, isLocked ? s.codeCharLocked : null]}
               selectTextOnFocus
-              editable={!isLocked && !loading}
+              editable={!loading}
+              className="h-full w-full text-center text-2xl font-bold text-textPrimary"
+              style={{ outlineStyle: 'none' as any }}
             />
           </View>
         ))}
       </View>
 
-      {/* Error message */}
+      {/* Error */}
       {error ? (
-        <View style={s.errorRow}>
-          <Feather name="alert-circle" size={14} color={Colors.statusError} />
-          <Text style={s.error}>{error}</Text>
+        <View className="mt-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
+          <Feather name="alert-circle" size={14} color="#DC2626" />
+          <Text className="text-sm font-medium text-red-600">{error}</Text>
         </View>
       ) : null}
 
-      {/* Attempts indicator */}
-      {attempts > 0 && attempts < 5 && !error && (
-        <View style={s.attemptsRow}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <View key={i} style={[s.attemptDot, i < attempts ? s.attemptDotUsed : null]} />
-          ))}
-        </View>
-      )}
+      {/* Submit */}
+      <Pressable
+        onPress={handleSubmit}
+        disabled={loading}
+        className={`mt-4 h-12 w-full max-w-xs items-center justify-center rounded-lg bg-brandPrimary ${loading ? 'opacity-60' : ''}`}
+      >
+        <Text className="text-base font-semibold text-white">
+          {loading ? 'Проверка...' : 'Подтвердить'}
+        </Text>
+      </Pressable>
 
-      {/* Submit button */}
-      {!isLocked && (
-        <Pressable onPress={handleSubmit} disabled={loading} style={[s.btn, loading ? s.btnDisabled : null]}>
-          {loading ? (
-            <ActivityIndicator size="small" color={Colors.white} />
-          ) : (
-            <Text style={s.btnText}>Подтвердить</Text>
-          )}
-        </Pressable>
-      )}
-
-      {/* Locked: request new code */}
-      {isLocked && (
-        <Pressable onPress={handleResend} style={s.btnOutline}>
-          <Feather name="refresh-cw" size={16} color={Colors.brandPrimary} />
-          <Text style={s.btnOutlineText}>Запросить новый код</Text>
-        </Pressable>
-      )}
-
-      {/* Resend timer */}
-      {!isLocked && (
-        <Pressable onPress={handleResend} disabled={resendTimer > 0}>
-          {resendTimer > 0 ? (
-            <View style={s.resendRow}>
-              <Feather name="clock" size={14} color={Colors.textMuted} />
-              <Text style={s.resend}>Отправить повторно через {resendTimer} сек</Text>
-            </View>
-          ) : (
-            <View style={s.resendRow}>
-              <Feather name="refresh-cw" size={14} color={Colors.brandPrimary} />
-              <Text style={s.resendActive}>Отправить код повторно</Text>
-            </View>
-          )}
-        </Pressable>
-      )}
+      {/* Resend */}
+      <View className="mt-3 flex-row items-center gap-1">
+        {resendTimer > 0 ? (
+          <>
+            <Feather name="clock" size={14} color="#94A3B8" />
+            <Text className="text-sm text-textMuted">Отправить повторно через {resendTimer} сек</Text>
+          </>
+        ) : (
+          <>
+            <Feather name="refresh-cw" size={14} color="#0284C7" />
+            <Text className="text-sm font-medium text-brandPrimary">Отправить код повторно</Text>
+          </>
+        )}
+      </View>
     </View>
   );
 }
 
 export function AuthOtpStates() {
   return (
-    <>
-      <StateSection title="DEFAULT">
-        <OtpScreen initialResendTimer={57} />
-      </StateSection>
+    <ScrollView className="flex-1 bg-white">
+      <View className="w-full max-w-md self-center px-4 py-8">
+        <Text className="mb-4 text-lg font-bold text-textPrimary">Screen: Auth OTP</Text>
 
-      <StateSection title="RESEND_AVAILABLE">
-        <OtpScreen initialResendTimer={0} />
-      </StateSection>
+        <Text className="mb-2 text-sm font-medium text-textMuted">IDLE</Text>
+        <View className="mb-6 rounded-xl border border-gray-200 overflow-hidden" style={{ height: 480 }}>
+          <OtpScreen initialResendTimer={57} />
+        </View>
 
-      <StateSection title="ERROR">
-        <OtpScreen initialCode="123456" initialError="Неверный код. Осталось 3 попытки" initialAttempts={2} initialResendTimer={34} />
-      </StateSection>
+        <Text className="mb-2 text-sm font-medium text-textMuted">VERIFYING</Text>
+        <View className="mb-6 rounded-xl border border-gray-200 overflow-hidden" style={{ height: 480 }}>
+          <OtpScreen initialCode="000000" initialLoading initialResendTimer={12} />
+        </View>
 
-      <StateSection title="LOADING">
-        <OtpScreen initialCode="000000" initialLoading initialResendTimer={12} />
-      </StateSection>
+        <Text className="mb-2 text-sm font-medium text-textMuted">ERROR</Text>
+        <View className="mb-6 rounded-xl border border-gray-200 overflow-hidden" style={{ height: 480 }}>
+          <OtpScreen initialCode="123456" initialError="Неверный код. Осталось 3 попытки" initialResendTimer={34} />
+        </View>
 
-      <StateSection title="MAX_ATTEMPTS">
-        <OtpScreen initialCode="999999" maxedOut initialError="Превышено число попыток. Запросите новый код." initialAttempts={5} />
-      </StateSection>
-    </>
+        <Text className="mb-2 text-sm font-medium text-textMuted">RESEND AVAILABLE</Text>
+        <View className="mb-6 rounded-xl border border-gray-200 overflow-hidden" style={{ height: 480 }}>
+          <OtpScreen initialResendTimer={0} />
+        </View>
+      </View>
+    </ScrollView>
   );
 }
-
-const s = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: Spacing['2xl'],
-    gap: Spacing.lg,
-    alignItems: 'center',
-    backgroundColor: Colors.bgPrimary,
-  },
-
-  // Back
-  backRow: {
-    width: '100%',
-    maxWidth: 360,
-    alignItems: 'flex-start',
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.xs,
-  },
-  backText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-
-  // Header
-  header: {
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: Spacing.lg,
-  },
-  iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xs,
-  },
-  iconWrapError: {
-    backgroundColor: Colors.statusBg.error,
-  },
-  title: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  emailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-  },
-  emailHighlight: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-
-  // Code inputs
-  codeRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    justifyContent: 'center',
-    marginTop: Spacing.md,
-  },
-  codeBox: {
-    width: 48,
-    height: 56,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.input,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.bgPrimary,
-  },
-  codeBoxError: {
-    borderColor: Colors.statusError,
-    backgroundColor: Colors.statusBg.error,
-  },
-  codeBoxFilled: {
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.bgSecondary,
-  },
-  codeBoxLocked: {
-    borderColor: Colors.statusError,
-    backgroundColor: Colors.statusBg.error,
-    opacity: 0.6,
-  },
-  codeInput: {
-    fontSize: 24,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    width: '100%',
-    height: '100%',
-  },
-  codeCharError: {
-    color: Colors.statusError,
-  },
-  codeCharLocked: {
-    color: Colors.statusError,
-  },
-
-  // Error
-  errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.statusBg.error,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-  },
-  error: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    fontWeight: Typography.fontWeight.medium,
-  },
-
-  // Attempts
-  attemptsRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  attemptDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.border,
-  },
-  attemptDotUsed: {
-    backgroundColor: Colors.statusWarning,
-  },
-
-  // Button
-  btn: {
-    height: 48,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.btn,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    maxWidth: 320,
-    ...Shadows.sm,
-  },
-  btnDisabled: {
-    backgroundColor: Colors.brandPrimaryHover,
-  },
-  btnText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-
-  // Outline button (locked state)
-  btnOutline: {
-    height: 48,
-    borderWidth: 1.5,
-    borderColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.btn,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    maxWidth: 320,
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  btnOutlineText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.brandPrimary,
-  },
-
-  // Resend
-  resendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
-  resend: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  resendActive: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-});
