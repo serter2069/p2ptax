@@ -25,62 +25,14 @@ jobs:
       - name: Build frontend (web)
         run: npx expo export --platform web
 
-      - name: Install API dependencies
-        working-directory: ./api
-        run: npm install --legacy-peer-deps
-
-      - name: Generate Prisma client
-        working-directory: ./api
-        run: npx prisma generate
-
-      - name: Build API
-        working-directory: ./api
-        run: npm run build
-
-      - name: Run DB migrations
-        continue-on-error: true
-        working-directory: ./api
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STG }}
-        run: DOPPLER_TOKEN="$DOPPLER_TOKEN" doppler run -- npx prisma migrate deploy
-
-      - name: Deploy to server
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STG }}
+      - name: Deploy frontend
         run: |
           DEPLOY_DIR="/var/www/p2ptax"
-
           sudo mkdir -p $DEPLOY_DIR/web
           sudo rsync -av --delete dist/ $DEPLOY_DIR/web/
-
-          sudo mkdir -p $DEPLOY_DIR/api
-          sudo rsync -av --delete api/dist/ $DEPLOY_DIR/api/dist/
-          sudo rsync -av --delete api/node_modules/ $DEPLOY_DIR/api/node_modules/
-          sudo rsync -av api/prisma/ $DEPLOY_DIR/api/prisma/
-          sudo cp api/package.json $DEPLOY_DIR/api/package.json
-
           echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" | sudo tee $DEPLOY_DIR/web/version.json
-
-          DOPPLER_TOKEN="$DOPPLER_TOKEN" doppler secrets download --no-file --format env > /tmp/p2ptax.env
-          sudo cp /tmp/p2ptax.env $DEPLOY_DIR/api/.env
-          rm /tmp/p2ptax.env
-
-          cd $DEPLOY_DIR/api
-          sudo pm2 restart p2ptax-api --update-env || sudo pm2 start dist/main.js --name p2ptax-api
-          sudo pm2 save
-
-      - name: Install proto-viewer
-        run: sudo npm i -g github:serter2069/proto-viewer
-
-      - name: Restart proto-viewer
-        run: |
-          sudo pm2 restart proto-p2ptax --update-env || echo "proto-p2ptax not running, skipping"
-          sudo pm2 save
 
       - name: Verify staging
         run: |
-          sleep 3
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://p2ptax.smartlaunchhub.com/api/health || echo "000")
-          echo "Health check HTTP status: $HTTP_STATUS"
-          curl -s https://p2ptax.smartlaunchhub.com/api/health
+          sleep 2
           curl -s https://p2ptax.smartlaunchhub.com/version.json
