@@ -1,250 +1,242 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
-import { MOCK_REQUESTS, MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
+import { Colors } from '../../../constants/Colors';
+
+// ---------------------------------------------------------------------------
+// Mock Data
+// ---------------------------------------------------------------------------
+const MOCK_CITIES = ['Москва', 'Санкт-Петербург', 'Казань'];
+
+const MOCK_FNS: Record<string, string[]> = {
+  'Москва': ['ФНС №15', 'ФНС №46', 'ФНС №7'],
+  'Санкт-Петербург': ['ФНС №1', 'ФНС №25'],
+  'Казань': ['ФНС №3', 'ФНС №14'],
+};
+
+const MOCK_SERVICES = ['3-НДФЛ', 'Регистрация ИП', 'Налоговый вычет', 'Налоговая проверка', 'Ликвидация ИП'];
+
+const MOCK_REQUESTS = [
+  { id: 1, title: 'Помощь с 3-НДФЛ', description: 'Нужна помощь с заполнением декларации 3-НДФЛ за 2023 год', city: 'Москва', fns: 'ФНС №15', service: '3-НДФЛ', date: '2024-03-10', responseCount: 3 },
+  { id: 2, title: 'Регистрация ИП', description: 'Хочу зарегистрировать ИП, нужна консультация по документам', city: 'Москва', fns: 'ФНС №46', service: 'Регистрация ИП', date: '2024-03-09', responseCount: 5 },
+  { id: 3, title: 'Налоговый вычет за квартиру', description: 'Купил квартиру, хочу получить налоговый вычет', city: 'Санкт-Петербург', fns: 'ФНС №1', service: 'Налоговый вычет', date: '2024-03-08', responseCount: 1 },
+  { id: 4, title: 'Проверка от налоговой', description: 'Пришло уведомление о камеральной проверке, нужна помощь', city: 'Казань', fns: 'ФНС №3', service: 'Налоговая проверка', date: '2024-03-07', responseCount: 0 },
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function useLayout() {
-  const { width } = useWindowDimensions();
-  return { isDesktop: width >= 768 };
+function pluralResponses(n: number): string {
+  if (n === 0) return '0 откликов';
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} отклик`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} отклика`;
+  return `${n} откликов`;
+}
+
+// ---------------------------------------------------------------------------
+// Dropdown Picker
+// ---------------------------------------------------------------------------
+function DropdownPicker({ label, value, placeholder, options, open, onToggle, onSelect }: {
+  label: string;
+  value: string;
+  placeholder: string;
+  options: string[];
+  open: boolean;
+  onToggle: () => void;
+  onSelect: (v: string) => void;
+}) {
+  return (
+    <View className="gap-1">
+      <Text className="text-xs font-semibold uppercase tracking-wider text-textSecondary">{label}</Text>
+      <Pressable onPress={onToggle}>
+        <View className="h-11 flex-row items-center justify-between rounded-lg border border-borderLight bg-white px-3">
+          <Text className={value ? 'text-sm text-textPrimary' : 'text-sm text-textMuted'}>
+            {value || placeholder}
+          </Text>
+          <Feather name="chevron-down" size={14} color={Colors.textMuted} />
+        </View>
+      </Pressable>
+      {open && (
+        <View className="overflow-hidden rounded-lg border border-borderLight bg-white" style={{ maxHeight: 200 }}>
+          <Pressable onPress={() => onSelect('')} className="border-b border-bgSecondary px-3 py-2.5">
+            <Text className="text-sm text-textMuted">{placeholder}</Text>
+          </Pressable>
+          {options.map((opt) => (
+            <Pressable key={opt} onPress={() => onSelect(opt)} className="border-b border-bgSecondary px-3 py-2.5">
+              <Text className={value === opt ? 'text-sm font-semibold text-brandPrimary' : 'text-sm text-textPrimary'}>{opt}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Request Card
 // ---------------------------------------------------------------------------
-function RequestFeedCard({ title, description, city, service, budget, date, responseCount }: {
-  title: string; description: string; city: string; service: string; budget: string; date: string; responseCount: number;
+function RequestFeedCard({ title, description, city, fns, service, date, responseCount }: {
+  title: string; description: string; city: string; fns: string; service: string; date: string; responseCount: number;
 }) {
   return (
-    <Pressable style={s.card}>
-      <View style={s.cardHeader}>
-        <Text style={s.cardTitle} numberOfLines={1}>{title}</Text>
+    <Pressable className="gap-2 rounded-xl border border-borderLight bg-white p-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}>
+      <View className="flex-row items-center justify-between">
+        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={1}>{title}</Text>
         <Feather name="chevron-right" size={16} color={Colors.textMuted} />
       </View>
-      <Text style={s.cardDesc} numberOfLines={2}>{description}</Text>
-      <View style={s.cardTags}>
-        <View style={s.tag}>
+      <Text className="text-sm leading-5 text-textSecondary" numberOfLines={2}>{description}</Text>
+      <View className="flex-row flex-wrap gap-2">
+        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
           <Feather name="map-pin" size={11} color={Colors.brandPrimary} />
-          <Text style={s.tagText}>{city}</Text>
+          <Text className="text-xs font-medium text-brandPrimary">{city}</Text>
         </View>
-        <View style={s.tag}>
+        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
+          <Feather name="home" size={11} color={Colors.brandPrimary} />
+          <Text className="text-xs font-medium text-brandPrimary">{fns}</Text>
+        </View>
+        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
           <Feather name="briefcase" size={11} color={Colors.brandPrimary} />
-          <Text style={s.tagText}>{service}</Text>
+          <Text className="text-xs font-medium text-brandPrimary">{service}</Text>
         </View>
       </View>
-      <View style={s.cardBottom}>
-        <Text style={s.budget}>{budget}</Text>
-        <View style={s.cardMeta}>
-          <Feather name="message-circle" size={12} color={Colors.textMuted} />
-          <Text style={s.metaText}>{responseCount}</Text>
-          <View style={s.metaDot} />
-          <Text style={s.metaText}>{date}</Text>
+      <View className="mt-1 flex-row items-center justify-between border-t border-borderLight pt-2">
+        <View className="flex-row items-center gap-1.5">
+          <Feather name="message-circle" size={12} color={responseCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
+          <Text className={responseCount > 0 ? 'text-xs font-semibold text-brandPrimary' : 'text-xs text-textMuted'}>
+            {pluralResponses(responseCount)}
+          </Text>
         </View>
+        <Text className="text-xs text-textMuted">{date}</Text>
       </View>
     </Pressable>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Skeleton Card
+// State 1: Feed with all requests, filters open (no filter selected)
 // ---------------------------------------------------------------------------
-function SkeletonCard() {
-  return (
-    <View style={[s.card, { opacity: 0.6 }]}>
-      <View style={[s.skelLine, { width: '70%', height: 16 }]} />
-      <View style={[s.skelLine, { width: '100%' }]} />
-      <View style={[s.skelLine, { width: '45%' }]} />
-      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-        <View style={[s.skelLine, { width: 80 }]} />
-        <View style={[s.skelLine, { width: 100 }]} />
-      </View>
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// POPULATED state
-// ---------------------------------------------------------------------------
-function PopulatedState() {
-  const [showFilters, setShowFilters] = useState(false);
+function FeedState() {
   const [filterCity, setFilterCity] = useState('');
+  const [filterFns, setFilterFns] = useState('');
   const [filterService, setFilterService] = useState('');
-  const [showCityPicker, setShowCityPicker] = useState(false);
-  const [showServicePicker, setShowServicePicker] = useState(false);
+  const [openPicker, setOpenPicker] = useState<'city' | 'fns' | 'service' | null>(null);
+
+  // FNS options depend on selected city
+  const fnsOptions = filterCity ? (MOCK_FNS[filterCity] || []) : Object.values(MOCK_FNS).flat();
+
+  // Reset dependent filters when city changes
+  const handleCitySelect = (v: string) => {
+    setFilterCity(v);
+    setFilterFns('');
+    setFilterService('');
+    setOpenPicker(null);
+  };
+
+  const handleFnsSelect = (v: string) => {
+    setFilterFns(v);
+    setFilterService('');
+    setOpenPicker(null);
+  };
+
+  const handleServiceSelect = (v: string) => {
+    setFilterService(v);
+    setOpenPicker(null);
+  };
 
   const requests = MOCK_REQUESTS.filter((r) => {
-    if (r.status === 'CANCELLED') return false;
     if (filterCity && r.city !== filterCity) return false;
+    if (filterFns && r.fns !== filterFns) return false;
     if (filterService && r.service !== filterService) return false;
     return true;
   });
 
+  const hasFilters = !!(filterCity || filterFns || filterService);
+
   return (
-    <View style={s.container}>
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       {/* Header */}
-      <View style={s.topBar}>
-        <View>
-          <Text style={s.pageTitle}>Заявки</Text>
-          <Text style={s.pageSubtitle}>{requests.length} активных заявок</Text>
-        </View>
-        <Pressable onPress={() => setShowFilters(!showFilters)} style={[s.filterToggle, showFilters && s.filterToggleActive]}>
-          <Feather name="sliders" size={16} color={showFilters ? Colors.white : Colors.brandPrimary} />
-          <Text style={[s.filterToggleText, showFilters && s.filterToggleTextActive]}>
-            {showFilters ? 'Скрыть' : 'Фильтры'}
-          </Text>
-        </Pressable>
+      <View>
+        <Text className="text-xl font-bold text-textPrimary">Заявки</Text>
+        <Text className="mt-0.5 text-sm text-textMuted">{requests.length} активных заявок</Text>
       </View>
 
-      {/* Filters */}
-      {showFilters && (
-        <View style={s.filterPanel}>
-          <View style={s.filterGroup}>
-            <Text style={s.filterLabel}>Город</Text>
-            <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowServicePicker(false); }}>
-              <View style={s.filterSelect}>
-                <Text style={filterCity ? s.filterSelectValue : s.filterSelectPlaceholder}>
-                  {filterCity || 'Все города'}
-                </Text>
-                <Feather name="chevron-down" size={14} color={Colors.textMuted} />
-              </View>
-            </Pressable>
-            {showCityPicker && (
-              <View style={s.pickerList}>
-                <Pressable onPress={() => { setFilterCity(''); setShowCityPicker(false); }} style={s.pickerItem}>
-                  <Text style={s.pickerText}>Все города</Text>
-                </Pressable>
-                {MOCK_CITIES.map((c) => (
-                  <Pressable key={c} onPress={() => { setFilterCity(c); setShowCityPicker(false); }} style={s.pickerItem}>
-                    <Text style={[s.pickerText, filterCity === c && s.pickerTextActive]}>{c}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-          <View style={s.filterGroup}>
-            <Text style={s.filterLabel}>Услуга</Text>
-            <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); }}>
-              <View style={s.filterSelect}>
-                <Text style={filterService ? s.filterSelectValue : s.filterSelectPlaceholder}>
-                  {filterService || 'Все услуги'}
-                </Text>
-                <Feather name="chevron-down" size={14} color={Colors.textMuted} />
-              </View>
-            </Pressable>
-            {showServicePicker && (
-              <View style={s.pickerList}>
-                <Pressable onPress={() => { setFilterService(''); setShowServicePicker(false); }} style={s.pickerItem}>
-                  <Text style={s.pickerText}>Все услуги</Text>
-                </Pressable>
-                {MOCK_SERVICES.map((svc) => (
-                  <Pressable key={svc.id} onPress={() => { setFilterService(svc.name); setShowServicePicker(false); }} style={s.pickerItem}>
-                    <Text style={[s.pickerText, filterService === svc.name && s.pickerTextActive]}>{svc.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-          {(filterCity || filterService) && (
-            <Pressable onPress={() => { setFilterCity(''); setFilterService(''); }} style={s.filterResetBtn}>
-              <Feather name="x" size={14} color={Colors.textMuted} />
-              <Text style={s.filterResetText}>Сбросить</Text>
-            </Pressable>
-          )}
+      {/* Filters — always open */}
+      <View className="gap-3 rounded-xl border border-borderLight bg-bgSecondary p-4">
+        <View className="flex-row items-center gap-2">
+          <Feather name="sliders" size={14} color={Colors.brandPrimary} />
+          <Text className="text-sm font-semibold text-textPrimary">Фильтры</Text>
         </View>
-      )}
 
-      {/* List */}
+        <DropdownPicker
+          label="Город"
+          value={filterCity}
+          placeholder="Все города"
+          options={MOCK_CITIES}
+          open={openPicker === 'city'}
+          onToggle={() => setOpenPicker(openPicker === 'city' ? null : 'city')}
+          onSelect={handleCitySelect}
+        />
+
+        <DropdownPicker
+          label="ФНС"
+          value={filterFns}
+          placeholder="Все ФНС"
+          options={fnsOptions}
+          open={openPicker === 'fns'}
+          onToggle={() => setOpenPicker(openPicker === 'fns' ? null : 'fns')}
+          onSelect={handleFnsSelect}
+        />
+
+        <DropdownPicker
+          label="Услуга"
+          value={filterService}
+          placeholder="Все услуги"
+          options={MOCK_SERVICES}
+          open={openPicker === 'service'}
+          onToggle={() => setOpenPicker(openPicker === 'service' ? null : 'service')}
+          onSelect={handleServiceSelect}
+        />
+
+        {hasFilters && (
+          <Pressable
+            onPress={() => { setFilterCity(''); setFilterFns(''); setFilterService(''); setOpenPicker(null); }}
+            className="flex-row items-center justify-center gap-1.5 py-1"
+          >
+            <Feather name="x" size={14} color={Colors.textMuted} />
+            <Text className="text-sm text-textMuted">Сбросить фильтры</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Request cards */}
       {requests.length === 0 ? (
-        <View style={s.emptyWrap}>
-          <View style={s.emptyIconWrap}>
+        <View className="items-center gap-3 py-10">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
             <Feather name="inbox" size={32} color={Colors.textMuted} />
           </View>
-          <Text style={s.emptyTitle}>Нет заявок</Text>
-          <Text style={s.emptyText}>Попробуйте изменить параметры фильтров</Text>
+          <Text className="text-lg font-semibold text-textPrimary">Нет заявок</Text>
+          <Text className="max-w-[260px] text-center text-sm text-textMuted">Попробуйте изменить параметры фильтров</Text>
         </View>
       ) : (
-        requests.map((r) => (
-          <RequestFeedCard
-            key={r.id}
-            title={r.title}
-            description={r.description}
-            city={r.city}
-            service={r.service}
-            budget={r.budget}
-            date={r.createdAt}
-            responseCount={r.responseCount}
-          />
-        ))
+        <View className="gap-3">
+          {requests.map((r) => (
+            <RequestFeedCard
+              key={r.id}
+              title={r.title}
+              description={r.description}
+              city={r.city}
+              fns={r.fns}
+              service={r.service}
+              date={r.date}
+              responseCount={r.responseCount}
+            />
+          ))}
+        </View>
       )}
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// EMPTY state
-// ---------------------------------------------------------------------------
-function EmptyState() {
-  return (
-    <View style={s.container}>
-      <View style={s.topBar}>
-        <Text style={s.pageTitle}>Заявки</Text>
-      </View>
-      <View style={s.emptyWrap}>
-        <View style={s.emptyIconWrap}>
-          <Feather name="file-text" size={36} color={Colors.textMuted} />
-        </View>
-        <Text style={s.emptyTitle}>Заявок пока нет</Text>
-        <Text style={s.emptyText}>Новые заявки появятся здесь, когда клиенты оставят запросы</Text>
-      </View>
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// LOADING state
-// ---------------------------------------------------------------------------
-function LoadingState() {
-  return (
-    <View style={s.container}>
-      <View style={s.topBar}>
-        <View>
-          <View style={[s.skelLine, { width: 100, height: 18 }]} />
-          <View style={[s.skelLine, { width: 140, marginTop: 6 }]} />
-        </View>
-        <View style={[s.skelLine, { width: 80, height: 32, borderRadius: BorderRadius.btn }]} />
-      </View>
-      <SkeletonCard />
-      <SkeletonCard />
-      <SkeletonCard />
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// ERROR state
-// ---------------------------------------------------------------------------
-function ErrorState() {
-  return (
-    <View style={s.container}>
-      <View style={s.topBar}>
-        <Text style={s.pageTitle}>Заявки</Text>
-      </View>
-      <View style={s.errorWrap}>
-        <View style={s.errorIconWrap}>
-          <Feather name="wifi-off" size={32} color={Colors.statusError} />
-        </View>
-        <Text style={s.errorTitle}>Ошибка загрузки</Text>
-        <Text style={s.errorText}>Не удалось загрузить заявки. Проверьте подключение к интернету.</Text>
-        <Pressable style={s.retryBtn}>
-          <Feather name="refresh-cw" size={14} color={Colors.white} />
-          <Text style={s.retryBtnText}>Попробовать снова</Text>
-        </Pressable>
-      </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -253,181 +245,10 @@ function ErrorState() {
 // ---------------------------------------------------------------------------
 export function PublicRequestsStates() {
   return (
-    <View style={{ gap: Spacing['4xl'] }}>
-      <StateSection title="POPULATED" pageId="public-requests">
-        <PopulatedState />
-      </StateSection>
-
-      <StateSection title="EMPTY" pageId="public-requests">
-        <EmptyState />
-      </StateSection>
-
-      <StateSection title="LOADING" pageId="public-requests">
-        <LoadingState />
-      </StateSection>
-
-      <StateSection title="ERROR" pageId="public-requests">
-        <ErrorState />
+    <View style={{ gap: 40 }}>
+      <StateSection title="FEED" pageId="public-requests">
+        <FeedState />
       </StateSection>
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// STYLES
-// ---------------------------------------------------------------------------
-const s = StyleSheet.create({
-  container: { padding: Spacing.xl, gap: Spacing.md },
-
-  // Top bar
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  pageSubtitle: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, marginTop: 2 },
-
-  // Filter toggle
-  filterToggle: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.btn,
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  filterToggleActive: { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary },
-  filterToggleText: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
-  filterToggleTextActive: { color: Colors.white },
-
-  // Cards
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary, flex: 1 },
-  cardDesc: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
-  cardTags: { flexDirection: 'row', gap: Spacing.sm },
-  tag: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  tagText: { fontSize: Typography.fontSize.xs, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
-  cardBottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
-    paddingTop: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  budget: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.brandPrimary },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: Colors.textMuted },
-
-  // Filters
-  filterPanel: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    gap: Spacing.md,
-    ...Shadows.sm,
-  },
-  filterGroup: { gap: Spacing.xs },
-  filterLabel: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  filterSelect: {
-    height: 40,
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.input,
-    paddingHorizontal: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  filterSelectPlaceholder: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-  filterSelectValue: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
-  filterResetBtn: {
-    height: 36,
-    borderRadius: BorderRadius.btn,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: Spacing.xs,
-  },
-  filterResetText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-
-  // Picker
-  pickerList: {
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    borderRadius: BorderRadius.card,
-    backgroundColor: Colors.bgCard,
-    overflow: 'hidden',
-    maxHeight: 200,
-    ...Shadows.md,
-  },
-  pickerItem: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  pickerText: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
-  pickerTextActive: { color: Colors.brandPrimary, fontWeight: Typography.fontWeight.semibold },
-
-  // Empty
-  emptyWrap: { alignItems: 'center', paddingVertical: Spacing['4xl'], gap: Spacing.md },
-  emptyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 260 },
-
-  // Error
-  errorWrap: { alignItems: 'center', paddingVertical: Spacing['4xl'], gap: Spacing.md },
-  errorIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.statusBg.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  errorText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 280 },
-  retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.brandPrimary,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.btn,
-    marginTop: Spacing.sm,
-  },
-  retryBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
-
-  // Skeleton
-  skelLine: { height: 12, borderRadius: 4, backgroundColor: Colors.bgSecondary },
-});
