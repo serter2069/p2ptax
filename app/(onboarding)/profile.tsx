@@ -41,16 +41,12 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { completeOnboarding, login, user } = useAuth();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [telegram, setTelegram] = useState('');
   const [bio, setBio] = useState('');
   const [hasPhoto, setHasPhoto] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const isSpecialist = user?.role === 'SPECIALIST';
 
   function handlePhoneChange(text: string) {
     setPhone(formatPhone(text));
@@ -68,14 +64,10 @@ export default function ProfileScreen() {
     setError('');
     setLoading(true);
     try {
-      // Save firstName, lastName, phone to User model
+      // Save phone to User model
       const profileData: Record<string, string> = {};
-      const trimmedFirstName = firstName.trim();
-      const trimmedLastName = lastName.trim();
       const rawPhone = unformatPhone(phone);
 
-      if (trimmedFirstName) profileData.firstName = trimmedFirstName;
-      if (trimmedLastName) profileData.lastName = trimmedLastName;
       if (rawPhone.length > 1) profileData.phone = '+' + rawPhone;
 
       if (Object.keys(profileData).length > 0) {
@@ -99,10 +91,6 @@ export default function ProfileScreen() {
       };
 
       if (fnsOffices.length > 0) specialistBody.fnsOffices = fnsOffices;
-
-      // Build display name from first + last name
-      const displayName = [trimmedFirstName, trimmedLastName].filter(Boolean).join(' ');
-      if (displayName) specialistBody.displayName = displayName;
 
       const trimmedBio = bio.trim();
       const trimmedTelegram = telegram.trim();
@@ -206,67 +194,33 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* First name */}
+            {/* Bio */}
             <View className="mb-3">
-              <Text className="mb-1 text-sm font-medium text-textSecondary">Имя</Text>
-              <View className="h-12 flex-row items-center rounded-lg border border-gray-200 px-4">
-                <TextInput
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  placeholder="Иван"
-                  placeholderTextColor="#94A3B8"
-                  className="flex-1 text-base text-textPrimary"
-                  style={{ outlineStyle: 'none' as any }}
-                  autoCapitalize="words"
-                />
+              <View className="mb-1 flex-row items-center justify-between">
+                <Text className="text-sm font-medium text-textSecondary">О себе</Text>
+                <Text
+                  className={`text-xs ${
+                    bio.length > MAX_BIO_CHARS ? 'text-red-600' : 'text-textMuted'
+                  }`}
+                >
+                  {bio.length}/{MAX_BIO_CHARS}
+                </Text>
               </View>
+              <TextInput
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Расскажите о вашем опыте..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                className="rounded-lg border border-gray-200 p-3 text-base text-textPrimary"
+                style={{
+                  minHeight: 80,
+                  textAlignVertical: 'top',
+                  outlineStyle: 'none' as any,
+                }}
+                maxLength={MAX_BIO_CHARS}
+              />
             </View>
-
-            {/* Last name */}
-            <View className="mb-3">
-              <Text className="mb-1 text-sm font-medium text-textSecondary">Фамилия</Text>
-              <View className="h-12 flex-row items-center rounded-lg border border-gray-200 px-4">
-                <TextInput
-                  value={lastName}
-                  onChangeText={setLastName}
-                  placeholder="Иванов"
-                  placeholderTextColor="#94A3B8"
-                  className="flex-1 text-base text-textPrimary"
-                  style={{ outlineStyle: 'none' as any }}
-                  autoCapitalize="words"
-                />
-              </View>
-            </View>
-
-            {/* Bio (specialists only) */}
-            {isSpecialist && (
-              <View className="mb-3">
-                <View className="mb-1 flex-row items-center justify-between">
-                  <Text className="text-sm font-medium text-textSecondary">О себе</Text>
-                  <Text
-                    className={`text-xs ${
-                      bio.length > MAX_BIO_CHARS ? 'text-red-600' : 'text-textMuted'
-                    }`}
-                  >
-                    {bio.length}/{MAX_BIO_CHARS}
-                  </Text>
-                </View>
-                <TextInput
-                  value={bio}
-                  onChangeText={setBio}
-                  placeholder="Расскажите о вашем опыте..."
-                  placeholderTextColor="#94A3B8"
-                  multiline
-                  className="rounded-lg border border-gray-200 p-3 text-base text-textPrimary"
-                  style={{
-                    minHeight: 80,
-                    textAlignVertical: 'top',
-                    outlineStyle: 'none' as any,
-                  }}
-                  maxLength={MAX_BIO_CHARS}
-                />
-              </View>
-            )}
 
             {/* Phone */}
             <View className="mb-3">
