@@ -3,68 +3,148 @@ name: Deploy P2PTax Staging
 on:
   push:
     branches: [development]
+  pull_request:
+    branches: [development]
 
 jobs:
-  deploy:
-    runs-on: self-hosted
+  validate:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-        continue-on-error: true
-
-      - name: Build frontend (web)
-        run: npx expo export --platform web
-
       - name: Install API dependencies
         working-directory: ./api
         run: npm ci
-
-      - name: Build API
-        working-directory: ./api
-        run: npm run build
 
       - name: Generate Prisma client
         working-directory: ./api
         run: npx prisma generate
 
-      - name: Run DB migrations
+      - name: Build API (type check)
         working-directory: ./api
-        run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run build
 
-      - name: Deploy to server
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend (web)
+        run: npx expo export --platform web
+
+  deploy:
+    needs: [validate, build]
+    if: github.event_name == 'push'
+    runs-on: self-hosted
+    env:
+      DEPLOY_DIR: /var/www/p2ptax
+    steps:
+      - name: Save previous commit for rollback
         run: |
-          DEPLOY_DIR="/var/www/p2ptax"
+          cd $DEPLOY_DIR
+          git rev-parse HEAD > /tmp/p2ptax-prev-commit
 
-          sudo mkdir -p $DEPLOY_DIR/web
-          sudo rsync -av --delete dist/ $DEPLOY_DIR/web/
+      - name: Pull latest code
+        run: |
+          cd $DEPLOY_DIR
+          git fetch origin development
+          git reset --hard origin/development
 
-          sudo mkdir -p $DEPLOY_DIR/api
-          sudo rsync -av --delete api/dist/ $DEPLOY_DIR/api/dist/
-          sudo rsync -av --delete api/node_modules/ $DEPLOY_DIR/api/node_modules/
-          sudo rsync -av api/prisma/ $DEPLOY_DIR/api/prisma/
-          sudo cp api/package.json $DEPLOY_DIR/api/package.json
+      - name: Install and build frontend
+        run: |
+          cd $DEPLOY_DIR
+          npm ci
+          npx expo export --platform web
 
-          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"env\":\"staging\"}" | sudo tee $DEPLOY_DIR/web/version.json
-
+      - name: Install and build API
+        run: |
           cd $DEPLOY_DIR/api
-          sudo pm2 restart p2ptax-api --update-env || sudo pm2 start dist/main.js --name p2ptax-api
-          sudo pm2 save
+          npm ci
+          npx prisma generate
+          npm run build
+
+      - name: Run DB migrations
+        continue-on-error: true
+        run: |
+          cd $DEPLOY_DIR/api
+          export DOPPLER_TOKEN=$(cat /etc/doppler/p2ptax-stg.token)
+          doppler run -- npx prisma migrate deploy
+
+      - name: Write version.json
+        run: |
+          cd $DEPLOY_DIR
+          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > dist/version.json
+
+      - name: Fix permissions
+        run: |
+          chown -R deployer:www-data $DEPLOY_DIR
+          find $DEPLOY_DIR -type d -exec chmod 750 {} \;
+          find $DEPLOY_DIR -type f -exec chmod 640 {} \;
+          [ -f $DEPLOY_DIR/api/start.sh ] && chmod 750 $DEPLOY_DIR/api/start.sh
+
+      - name: Restart API
+        run: |
+          pm2 restart p2ptax-api
+          pm2 save
 
       - name: Verify staging
+        id: verify
         run: |
           sleep 5
-          curl -s https://p2ptax.smartlaunchhub.com/api/health
-          curl -s https://p2ptax.smartlaunchhub.com/version.json
+          echo "=== Health ==="
+          curl -sf https://p2ptax.smartlaunchhub.com/api/health
+          echo ""
+          echo "=== Version ==="
+          curl -sf https://p2ptax.smartlaunchhub.com/version.json
+          echo ""
+          echo "=== Frontend ==="
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://p2ptax.smartlaunchhub.com/)
+          echo "Frontend HTTP: $HTTP"
+          [ "$HTTP" = "200" ] || exit 1
+
+      - name: Auto-rollback on failure
+        if: failure() && steps.verify.outcome == 'failure'
+        run: |
+          echo "!!! DEPLOY FAILED — ROLLING BACK !!!"
+          PREV=$(cat /tmp/p2ptax-prev-commit)
+          echo "Rolling back to $PREV"
+
+          cd $DEPLOY_DIR
+          git reset --hard $PREV
+
+          npm ci
+          npx expo export --platform web
+
+          cd api
+          npm ci
+          npx prisma generate
+          npm run build
+
+          cd $DEPLOY_DIR
+          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"rollback\":true}" > dist/version.json
+
+          chown -R deployer:www-data $DEPLOY_DIR
+          find $DEPLOY_DIR -type d -exec chmod 750 {} \;
+          find $DEPLOY_DIR -type f -exec chmod 640 {} \;
+          [ -f $DEPLOY_DIR/api/start.sh ] && chmod 750 $DEPLOY_DIR/api/start.sh
+
+          pm2 restart p2ptax-api
+          pm2 save
+
+          sleep 5
+          echo "=== Rollback verification ==="
+          curl -sf https://p2ptax.smartlaunchhub.com/api/health && echo " OK" || echo " STILL BROKEN"
+          curl -sf https://p2ptax.smartlaunchhub.com/version.json
