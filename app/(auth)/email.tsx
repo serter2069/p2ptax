@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../lib/api';
@@ -48,7 +48,12 @@ export default function EmailScreen() {
       className="flex-1 bg-white"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View className="flex-1 items-center justify-center px-4 py-8">
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+      <View className="flex-1 items-center px-4 py-8">
         {/* Logo */}
         <View className="mb-8 items-center gap-2">
           <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
@@ -122,6 +127,7 @@ export default function EmailScreen() {
           {'Нажимая кнопку, вы соглашаетесь с\nусловиями использования'}
         </Text>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
