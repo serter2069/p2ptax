@@ -23,6 +23,8 @@ module.exports = {
         statusWarning: '#D97706',
         statusError: '#DC2626',
         statusInfo: '#0284C7',
+        border: '#BAE6FD',
+        borderLight: '#E0F2FE',
       },
     },
   },
