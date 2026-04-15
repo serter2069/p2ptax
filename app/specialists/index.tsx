@@ -224,7 +224,14 @@ export default function SpecialistsCatalogScreen() {
         <meta property="og:url" content={`${APP_URL}/specialists`} />
       </Head>
       <LandingHeader />
-      <Header title="Каталог специалистов" />
+      <Header
+        title="Каталог специалистов"
+        rightAction={
+          <TouchableOpacity onPress={() => router.push('/search')} hitSlop={{top:12,bottom:12,left:12,right:12}}>
+            <Ionicons name="search" size={22} color={Colors.textPrimary} />
+          </TouchableOpacity>
+        }
+      />
 
       <FlatList
         data={specialists}

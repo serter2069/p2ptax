@@ -15,6 +15,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
@@ -430,7 +431,14 @@ export default function RequestsFeedScreen() {
         <meta property="og:url" content={`${APP_URL}/requests`} />
       </Head>
       <LandingHeader />
-      <Header title="Лента запросов" />
+      <Header
+        title="Лента запросов"
+        rightAction={
+          <TouchableOpacity onPress={() => router.push('/search')} hitSlop={{top:12,bottom:12,left:12,right:12}}>
+            <Ionicons name="search" size={22} color={Colors.textPrimary} />
+          </TouchableOpacity>
+        }
+      />
 
       <FlatList
         key={numColumns}
