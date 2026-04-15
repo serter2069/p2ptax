@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Image, Platform, Alert, Share, TextInput } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Image, Platform, Alert, Share, TextInput, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
@@ -45,6 +45,17 @@ interface SpecialistProfile {
   promotionTier: number;
   activity: { responseCount: number; avgRating: number | null; reviewCount: number };
   createdAt: string;
+}
+
+interface SimilarSpecialist {
+  nick: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  headline: string | null;
+  cities: string[];
+  services: string[];
+  badges: string[];
+  activity: { avgRating: number | null; reviewCount: number };
 }
 
 interface ReviewItem {
@@ -105,6 +116,8 @@ export default function PublicSpecialistProfileScreen() {
   const [complaintDescription, setComplaintDescription] = useState('');
   const [complaintLoading, setComplaintLoading] = useState(false);
 
+  const [similarSpecialists, setSimilarSpecialists] = useState<SimilarSpecialist[]>([]);
+
   useEffect(() => {
     if (!nick) return;
     let cancelled = false;
@@ -159,6 +172,17 @@ export default function PublicSpecialistProfileScreen() {
       .then(setEligibility)
       .catch(() => setEligibility(null));
   }, [nick, user]);
+
+  useEffect(() => {
+    if (!profile || profile.cities.length === 0) return;
+    const city = profile.cities[0];
+    api.get<{ items: SimilarSpecialist[] }>(`/specialists?city=${encodeURIComponent(city)}&limit=6`)
+      .then((data) => {
+        const filtered = (data.items || []).filter((s) => s.nick !== profile.nick);
+        setSimilarSpecialists(filtered.slice(0, 6));
+      })
+      .catch(() => setSimilarSpecialists([]));
+  }, [profile]);
 
   async function handleWrite() {
     if (!user) {
@@ -449,6 +473,62 @@ export default function PublicSpecialistProfileScreen() {
     </View>
   );
 
+  // --- Similar specialists ---
+  const renderSimilarSpecialists = () => {
+    if (similarSpecialists.length === 0) return null;
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>Похожие специалисты</Text>
+        <FlatList
+          data={similarSpecialists}
+          keyExtractor={(item) => item.nick}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.similarList}
+          renderItem={({ item }) => {
+            const name = item.displayName || `@${item.nick}`;
+            const isVerified = item.badges.includes('verified');
+            return (
+              <TouchableOpacity
+                onPress={() => router.push(`/specialists/${item.nick}` as any)}
+                style={styles.similarCard}
+                activeOpacity={0.8}
+              >
+                <Avatar name={name} imageUri={item.avatarUrl || undefined} size="md" />
+                <View style={styles.similarCardInfo}>
+                  <View style={styles.similarNameRow}>
+                    <Text style={styles.similarName} numberOfLines={1}>{name}</Text>
+                    {isVerified && (
+                      <Ionicons name="shield-checkmark" size={12} color={B.success} />
+                    )}
+                  </View>
+                  {item.headline && (
+                    <Text style={styles.similarHeadline} numberOfLines={2}>{item.headline}</Text>
+                  )}
+                  {item.services.length > 0 && (
+                    <Text style={styles.similarService} numberOfLines={1}>{item.services[0]}</Text>
+                  )}
+                  {item.cities.length > 0 && (
+                    <Text style={styles.similarCity} numberOfLines={1}>{item.cities[0]}</Text>
+                  )}
+                  {item.activity.avgRating !== null && (
+                    <View style={styles.similarRatingRow}>
+                      <Ionicons name="star" size={11} color="#D97706" />
+                      <Text style={styles.similarRating}>{item.activity.avgRating.toFixed(1)}</Text>
+                      {item.activity.reviewCount > 0 && (
+                        <Text style={styles.similarReviewCount}>({item.activity.reviewCount})</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </View>
+    );
+  };
+
   // --- Content sections ---
   const renderContent = () => (
     <View style={styles.contentSections}>
@@ -652,6 +732,8 @@ export default function PublicSpecialistProfileScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {renderSimilarSpecialists()}
     </View>
   );
 
@@ -937,4 +1019,25 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   fnsDeptText: { fontSize: 11, color: B.muted, fontWeight: '500' as const },
+
+  // Similar specialists
+  similarList: { gap: 12, paddingVertical: 4, paddingHorizontal: 2 },
+  similarCard: {
+    width: 180,
+    backgroundColor: B.white,
+    borderWidth: 1,
+    borderColor: B.border,
+    borderRadius: 10,
+    padding: 14,
+    gap: 10,
+  },
+  similarCardInfo: { gap: 4 },
+  similarNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  similarName: { flex: 1, fontSize: 13, fontWeight: '700', color: B.primary },
+  similarHeadline: { fontSize: 12, color: B.muted, lineHeight: 18 },
+  similarService: { fontSize: 11, color: B.action, fontWeight: '500' },
+  similarCity: { fontSize: 11, color: B.muted },
+  similarRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
+  similarRating: { fontSize: 12, fontWeight: '700', color: B.primary },
+  similarReviewCount: { fontSize: 11, color: B.muted },
 });
