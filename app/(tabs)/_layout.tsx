@@ -1,8 +1,7 @@
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../stores/authStore';
 import { useResponsive } from '../../lib/hooks/useResponsive';
@@ -17,38 +16,39 @@ interface TabConfig {
   icon: FeatherIcon;
 }
 
+// Prototype: Client tabs — home, file-text, message-circle, user
 const CLIENT_TABS: TabConfig[] = [
-  { name: 'dashboard', title: 'Главная', icon: 'home' },
-  { name: 'requests', title: 'Заявки', icon: 'file-text' },
-  { name: 'messages', title: 'Сообщения', icon: 'message-circle' },
-  { name: 'settings', title: 'Настройки', icon: 'settings' },
+  { name: 'dashboard', title: 'Glavnaya', icon: 'home' },
+  { name: 'requests', title: 'Zayavki', icon: 'file-text' },
+  { name: 'messages', title: 'Soobscheniya', icon: 'message-circle' },
+  { name: 'settings', title: 'Profil', icon: 'user' },
 ];
 
+// Prototype: Specialist tabs — briefcase, send, message-circle, user
 const SPECIALIST_TABS: TabConfig[] = [
-  { name: 'feed', title: 'Лента', icon: 'list' },
-  { name: 'my-responses', title: 'Отклики', icon: 'send' },
-  { name: 'messages', title: 'Сообщения', icon: 'message-circle' },
-  { name: 'dashboard', title: 'Профиль', icon: 'user' },
-  { name: 'settings', title: 'Настройки', icon: 'settings' },
+  { name: 'feed', title: 'Kabinet', icon: 'briefcase' },
+  { name: 'my-responses', title: 'Otkliki', icon: 'send' },
+  { name: 'messages', title: 'Soobscheniya', icon: 'message-circle' },
+  { name: 'dashboard', title: 'Profil', icon: 'user' },
 ];
 
 const ALL_TAB_NAMES = ['dashboard', 'requests', 'messages', 'settings', 'feed', 'my-responses'];
 
-// Sidebar nav groups for desktop view (built dynamically for badge counts)
+// Sidebar nav groups for desktop view
 function buildClientSidebarNav(unreadNotifs: number): NavGroup[] {
   return [
     {
       items: [
-        { label: 'Главная', icon: 'home-outline', route: '/(tabs)/dashboard', segment: 'dashboard' },
-        { label: 'Заявки', icon: 'document-text-outline', route: '/(tabs)/requests', segment: 'requests' },
+        { label: 'Glavnaya', icon: 'home', route: '/(tabs)/dashboard', segment: 'dashboard' },
+        { label: 'Zayavki', icon: 'file-text', route: '/(tabs)/requests', segment: 'requests' },
       ],
     },
     {
-      label: 'Личное',
+      label: 'Lichnoe',
       items: [
-        { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(tabs)/messages', segment: 'messages' },
-        { label: 'Уведомления', icon: 'notifications-outline', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
-        { label: 'Настройки', icon: 'settings-outline', route: '/(tabs)/settings', segment: 'settings' },
+        { label: 'Soobscheniya', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
+        { label: 'Uvedomleniya', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
+        { label: 'Profil', icon: 'user', route: '/(tabs)/settings', segment: 'settings' },
       ],
     },
   ];
@@ -58,17 +58,16 @@ function buildSpecialistSidebarNav(unreadNotifs: number): NavGroup[] {
   return [
     {
       items: [
-        { label: 'Лента', icon: 'list-outline', route: '/(tabs)/feed', segment: 'feed' },
-        { label: 'Мои отклики', icon: 'send-outline', route: '/(tabs)/my-responses', segment: 'my-responses' },
+        { label: 'Kabinet', icon: 'briefcase', route: '/(tabs)/feed', segment: 'feed' },
+        { label: 'Otkliki', icon: 'send', route: '/(tabs)/my-responses', segment: 'my-responses' },
       ],
     },
     {
-      label: 'Личное',
+      label: 'Lichnoe',
       items: [
-        { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(tabs)/messages', segment: 'messages' },
-        { label: 'Уведомления', icon: 'notifications-outline', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
-        { label: 'Профиль', icon: 'person-outline', route: '/(tabs)/dashboard', segment: 'dashboard' },
-        { label: 'Настройки', icon: 'settings-outline', route: '/(tabs)/settings', segment: 'settings' },
+        { label: 'Soobscheniya', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
+        { label: 'Uvedomleniya', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
+        { label: 'Profil', icon: 'user', route: '/(tabs)/dashboard', segment: 'dashboard' },
       ],
     },
   ];
@@ -102,13 +101,14 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: isMobile
           ? {
-              backgroundColor: Colors.bgPrimary,
+              backgroundColor: Colors.bgCard,
               borderTopColor: Colors.borderLight,
               borderTopWidth: 1,
+              height: 60,
             }
           : { display: 'none' },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
         },
       }}
@@ -136,14 +136,14 @@ export default function TabsLayout() {
   // Desktop: sidebar + content
   if (!isMobile) {
     return (
-      <View style={styles.desktopContainer}>
+      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: Colors.bgPrimary }}>
         <Sidebar
           items={sidebarNav}
           userEmail={user?.username || user?.email?.split('@')[0]}
           onLogout={handleLogout}
           width={SIDEBAR_WIDTH}
         />
-        <View style={styles.desktopContent}>{tabs}</View>
+        <View style={{ flex: 1, overflow: 'hidden' as any }}>{tabs}</View>
       </View>
     );
   }
@@ -151,15 +151,3 @@ export default function TabsLayout() {
   // Mobile: regular bottom tabs
   return tabs;
 }
-
-const styles = StyleSheet.create({
-  desktopContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: Colors.bgPrimary,
-  },
-  desktopContent: {
-    flex: 1,
-    overflow: 'hidden' as any,
-  },
-});

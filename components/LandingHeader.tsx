@@ -2,15 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
-  StyleSheet,
+  Pressable,
   Platform,
   Animated,
 } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { useAuth } from '../stores/authStore';
-import { Colors, Typography } from '../constants/Colors';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../constants/Colors';
 
 interface NavLinkConfig {
   label: string;
@@ -20,9 +20,33 @@ interface NavLinkConfig {
 }
 
 const NAV_LINKS: NavLinkConfig[] = [
-  { label: 'Специалисты', route: '/specialists', segment: 'specialists' },
-  { label: 'Запросы', route: '/requests', segment: 'requests' },
+  { label: 'Glavnaya', route: '/', segment: '(index)' },
+  { label: 'Specialisty', route: '/specialists', segment: 'specialists' },
+  { label: 'Zayavki', route: '/requests', segment: 'requests' },
+  { label: 'Tarify', route: '/pricing', segment: 'pricing' },
 ];
+
+function LogoBlock({ onPress }: { onPress?: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+      <View style={{
+        width: 28,
+        height: 28,
+        borderRadius: BorderRadius.md,
+        backgroundColor: Colors.brandPrimary,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <Feather name="shield" size={16} color={Colors.white} />
+      </View>
+      <Text style={{
+        fontSize: Typography.fontSize.lg,
+        fontWeight: Typography.fontWeight.bold,
+        color: Colors.textPrimary,
+      }}>Nalogovik</Text>
+    </Pressable>
+  );
+}
 
 export function LandingHeader() {
   const router = useRouter();
@@ -50,306 +74,272 @@ export function LandingHeader() {
     return segments.includes(link.segment as any);
   }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.inner}>
-        {/* Left: Logo */}
-        <TouchableOpacity
-          onPress={() => router.push('/')}
-          activeOpacity={0.8}
-          style={styles.logoRow}
-        >
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoInitial}>Н</Text>
-          </View>
-          <Text style={styles.logoText}>Налоговик</Text>
-        </TouchableOpacity>
+  const goHome = () => router.push('/');
 
-        {/* Center: Nav links (desktop only) */}
+  return (
+    <View style={{
+      width: '100%',
+      zIndex: 100,
+      backgroundColor: Colors.bgCard,
+      ...Platform.select({
+        web: {
+          position: 'sticky' as any,
+          top: 0,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        },
+        default: {
+          ...Shadows.sm,
+        },
+      }),
+    }}>
+      {/* Header bar */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 56,
+        paddingHorizontal: Spacing.lg,
+        maxWidth: 1100,
+        width: '100%',
+        alignSelf: 'center',
+      }}>
+        <LogoBlock onPress={goHome} />
+
+        {/* Desktop nav links */}
         {isDesktop && (
-          <View style={styles.navLinks}>
+          <View style={{
+            flexDirection: 'row',
+            gap: Spacing.xl,
+            marginLeft: Spacing['3xl'],
+            flex: 1,
+          }}>
             {NAV_LINKS.map((link) => {
               const active = isLinkActive(link);
               return (
-                <TouchableOpacity
+                <Pressable
                   key={link.label}
                   onPress={() => {
                     if (link.onPress) link.onPress();
                     else if (link.route) router.push(link.route as any);
                   }}
-                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.navLink, active && styles.navLinkActive]}>
+                  <Text style={{
+                    fontSize: Typography.fontSize.sm,
+                    fontWeight: active ? Typography.fontWeight.semibold : Typography.fontWeight.medium,
+                    color: active ? Colors.brandPrimary : Colors.textSecondary,
+                  }}>
                     {link.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
         )}
 
-        {/* Right: Auth buttons (desktop only) or burger (tablet + mobile) */}
+        {/* Spacer for mobile */}
+        {!isDesktop && <View style={{ flex: 1 }} />}
+
+        {/* Right side */}
         {!isDesktop ? (
-          <TouchableOpacity
-            onPress={() => setMenuOpen((v) => !v)}
-            activeOpacity={0.7}
-            style={styles.burgerBtn}
-          >
-            <View style={styles.burgerLine} />
-            <View style={styles.burgerLine} />
-            <View style={styles.burgerLine} />
-          </TouchableOpacity>
+          <Pressable onPress={() => setMenuOpen((v) => !v)}>
+            <Feather name={menuOpen ? 'x' : 'menu'} size={22} color={Colors.textPrimary} />
+          </Pressable>
         ) : user ? (
-          <View style={styles.rightButtons}>
-            <TouchableOpacity
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+            <Pressable
               onPress={() => router.push('/(dashboard)')}
-              activeOpacity={0.8}
-              style={styles.btnRegister}
+              style={{
+                backgroundColor: Colors.brandPrimary,
+                paddingHorizontal: Spacing.lg,
+                paddingVertical: Spacing.sm,
+                borderRadius: BorderRadius.btn,
+              }}
             >
-              <Text style={styles.btnRegisterLabel}>Кабинет</Text>
-            </TouchableOpacity>
+              <Text style={{
+                color: Colors.white,
+                fontSize: Typography.fontSize.sm,
+                fontWeight: Typography.fontWeight.semibold,
+              }}>Kabinet</Text>
+            </Pressable>
           </View>
         ) : (
-          <View style={styles.rightButtons}>
-            <TouchableOpacity
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+            <Pressable
               onPress={() => router.push('/(auth)/email')}
-              activeOpacity={0.8}
-              style={styles.btnLogin}
+              style={{
+                borderWidth: 1,
+                borderColor: Colors.brandPrimary,
+                paddingHorizontal: Spacing.lg,
+                paddingVertical: Spacing.sm,
+                borderRadius: BorderRadius.btn,
+              }}
             >
-              <Text style={styles.btnLoginLabel}>Войти</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+              <Text style={{
+                color: Colors.brandPrimary,
+                fontSize: Typography.fontSize.sm,
+                fontWeight: Typography.fontWeight.semibold,
+              }}>Voyti</Text>
+            </Pressable>
+            <Pressable
               onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
-              activeOpacity={0.7}
+              style={{
+                backgroundColor: Colors.brandPrimary,
+                paddingHorizontal: Spacing.lg,
+                paddingVertical: Spacing.sm,
+                borderRadius: BorderRadius.btn,
+              }}
             >
-              <Text style={styles.specialistLink}>Для специалистов</Text>
-            </TouchableOpacity>
+              <Text style={{
+                color: Colors.white,
+                fontSize: Typography.fontSize.sm,
+                fontWeight: Typography.fontWeight.semibold,
+              }}>Razmestit zayavku</Text>
+            </Pressable>
           </View>
         )}
       </View>
 
-      {/* Mobile menu overlay — closes menu on outside tap */}
+      {/* Mobile: overlay to close menu */}
       {!isDesktop && menuOpen && (
-        <TouchableOpacity
-          activeOpacity={1}
+        <Pressable
           onPress={() => setMenuOpen(false)}
-          style={styles.menuOverlay}
+          style={{
+            ...Platform.select({
+              web: { position: 'fixed' as any },
+              default: { position: 'absolute' as any },
+            }),
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.2)',
+            zIndex: 9,
+          }}
         />
       )}
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile drawer panel (slides from right) */}
       {!isDesktop && menuOpen && (
-        <Animated.View style={[styles.mobileMenu, { opacity: menuAnim, transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }] }]}>
-          {NAV_LINKS.map((link) => {
-            const active = isLinkActive(link);
-            return (
-              <TouchableOpacity
-                key={link.label}
-                onPress={() => {
-                  setMenuOpen(false);
-                  if (link.onPress) link.onPress();
-                  else if (link.route) router.push(link.route as any);
-                }}
-                activeOpacity={0.7}
-                style={styles.mobileMenuItem}
-              >
-                <Text style={[styles.mobileMenuText, active && styles.mobileMenuTextActive]}>
-                  {link.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        <Animated.View style={{
+          ...Platform.select({
+            web: { position: 'fixed' as any },
+            default: { position: 'absolute' as any },
+          }),
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 280,
+          backgroundColor: Colors.bgCard,
+          padding: Spacing.xl,
+          zIndex: 200,
+          opacity: menuAnim,
+          ...Platform.select({
+            web: {
+              boxShadow: '-4px 0 16px rgba(0,0,0,0.1)',
+            },
+            default: {
+              ...Shadows.lg,
+            },
+          }),
+        }}>
+          {/* Drawer top: logo + close */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: Spacing.lg,
+          }}>
+            <LogoBlock onPress={() => { setMenuOpen(false); goHome(); }} />
+            <Pressable onPress={() => setMenuOpen(false)}>
+              <Feather name="x" size={22} color={Colors.textPrimary} />
+            </Pressable>
+          </View>
+
+          {/* Drawer links */}
+          <View style={{ gap: Spacing.lg }}>
+            {NAV_LINKS.map((link) => {
+              const active = isLinkActive(link);
+              return (
+                <Pressable
+                  key={link.label}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    if (link.onPress) link.onPress();
+                    else if (link.route) router.push(link.route as any);
+                  }}
+                >
+                  <Text style={{
+                    fontSize: Typography.fontSize.md,
+                    fontWeight: active ? Typography.fontWeight.semibold : Typography.fontWeight.medium,
+                    color: active ? Colors.brandPrimary : Colors.textSecondary,
+                  }}>
+                    {link.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Divider */}
+          <View style={{
+            height: 1,
+            backgroundColor: Colors.borderLight,
+            marginVertical: Spacing.lg,
+          }} />
+
+          {/* Drawer buttons */}
           {user ? (
-            <TouchableOpacity
+            <Pressable
               onPress={() => { setMenuOpen(false); router.push('/(dashboard)'); }}
-              activeOpacity={0.8}
-              style={[styles.btnRegister, { alignSelf: 'stretch', marginTop: 8 }]}
+              style={{
+                backgroundColor: Colors.brandPrimary,
+                paddingVertical: Spacing.md,
+                borderRadius: BorderRadius.btn,
+                alignItems: 'center',
+              }}
             >
-              <Text style={styles.btnRegisterLabel}>Кабинет</Text>
-            </TouchableOpacity>
+              <Text style={{
+                color: Colors.white,
+                fontSize: Typography.fontSize.sm,
+                fontWeight: Typography.fontWeight.semibold,
+              }}>Kabinet</Text>
+            </Pressable>
           ) : (
-            <>
-              <TouchableOpacity
+            <View style={{ gap: Spacing.sm }}>
+              <Pressable
                 onPress={() => { setMenuOpen(false); router.push('/(auth)/email'); }}
-                activeOpacity={0.8}
-                style={[styles.btnLogin, { alignSelf: 'stretch', marginTop: 8 }]}
+                style={{
+                  borderWidth: 1,
+                  borderColor: Colors.brandPrimary,
+                  paddingVertical: Spacing.md,
+                  borderRadius: BorderRadius.btn,
+                  alignItems: 'center',
+                }}
               >
-                <Text style={styles.btnLoginLabel}>Войти</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+                <Text style={{
+                  color: Colors.brandPrimary,
+                  fontSize: Typography.fontSize.sm,
+                  fontWeight: Typography.fontWeight.semibold,
+                }}>Voyti</Text>
+              </Pressable>
+              <Pressable
                 onPress={() => { setMenuOpen(false); router.push('/(auth)/email?role=SPECIALIST'); }}
-                activeOpacity={0.8}
-                style={[styles.btnRegister, { alignSelf: 'stretch', marginTop: 4 }]}
+                style={{
+                  backgroundColor: Colors.brandPrimary,
+                  paddingVertical: Spacing.md,
+                  borderRadius: BorderRadius.btn,
+                  alignItems: 'center',
+                }}
               >
-                <Text style={styles.btnRegisterLabel}>Для специалистов</Text>
-              </TouchableOpacity>
-            </>
+                <Text style={{
+                  color: Colors.white,
+                  fontSize: Typography.fontSize.sm,
+                  fontWeight: Typography.fontWeight.semibold,
+                }}>Razmestit zayavku</Text>
+              </Pressable>
+            </View>
           )}
         </Animated.View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    height: 64,
-    backgroundColor: Colors.bgCard,
-    zIndex: 100,
-    ...Platform.select({
-      web: {
-        position: 'sticky' as any,
-        top: 0,
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        elevation: 2,
-      },
-    }),
-  },
-  inner: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    maxWidth: 1100,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  logoCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoInitial: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: 0.2,
-  },
-  navLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 28,
-  },
-  navLink: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-  navLinkActive: {
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  rightButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  btnLogin: {
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-  },
-  btnLoginLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.brandPrimary,
-  },
-  btnRegister: {
-    height: 38,
-    borderRadius: 8,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-  },
-  btnRegisterLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  burgerBtn: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-  },
-  burgerLine: {
-    width: 22,
-    height: 2,
-    backgroundColor: Colors.textPrimary,
-    borderRadius: 1,
-  },
-  menuOverlay: {
-    position: 'absolute' as any,
-    top: 64,
-    left: 0,
-    right: 0,
-    bottom: -9999,
-    zIndex: 9,
-  },
-  mobileMenu: {
-    ...Platform.select({
-      web: { position: 'absolute' as any },
-      default: { position: 'absolute' as any },
-    }),
-    top: 64,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.bgCard,
-    padding: 16,
-    zIndex: 200,
-    ...Platform.select({
-      web: { boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)' },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 16,
-        elevation: 4,
-      },
-    }),
-  },
-  mobileMenuItem: {
-    paddingVertical: 12,
-  },
-  mobileMenuText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-  mobileMenuTextActive: {
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  specialistLink: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    textDecorationLine: 'underline',
-  },
-});

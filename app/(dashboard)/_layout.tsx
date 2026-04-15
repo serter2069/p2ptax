@@ -4,68 +4,72 @@ import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
 import { Colors } from '../../constants/Colors';
 import { ResponsiveLayout } from '../../components/ResponsiveLayout';
-import { NavGroup, SidebarNavItem } from '../../components/Sidebar';
+import { NavGroup } from '../../components/Sidebar';
 import { BottomTabItem } from '../../components/BottomTabBar';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
+// Client sidebar groups (Feather icons)
 const CLIENT_NAV_GROUPS: NavGroup[] = [
   {
     items: [
-      { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
-      { label: 'Мои запросы', icon: 'document-text-outline', route: '/(dashboard)/my-requests', segment: 'my-requests' },
-      { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'feed' },
+      { label: 'Glavnaya', icon: 'home', route: '/(dashboard)', segment: 'index' },
+      { label: 'Moi zayavki', icon: 'file-text', route: '/(dashboard)/my-requests', segment: 'my-requests' },
+      { label: 'Lenta zayavok', icon: 'list', route: '/requests', segment: 'feed' },
     ],
   },
   {
     items: [
-      { label: 'Специалисты', icon: 'search-outline', route: '/specialists', segment: 'specialists' },
+      { label: 'Specialisty', icon: 'search', route: '/specialists', segment: 'specialists' },
     ],
   },
   {
-    label: 'Личное',
+    label: 'Lichnoe',
     items: [
-      { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages', badgeCount: 0 },
-      { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
+      { label: 'Soobscheniya', icon: 'message-circle', route: '/(dashboard)/messages', segment: 'messages', badgeCount: 0 },
+      { label: 'Nastroiki', icon: 'settings', route: '/(dashboard)/settings', segment: 'settings' },
     ],
   },
 ];
 
+// Specialist sidebar groups (Feather icons)
 const SPECIALIST_NAV_GROUPS: NavGroup[] = [
   {
     items: [
-      { label: 'Главная', icon: 'home-outline', route: '/specialist/dashboard', segment: 'specialist-dashboard' },
-      { label: 'Запросы города', icon: 'location-outline', route: '/(dashboard)/city-requests', segment: 'city-requests' },
-      { label: 'Лента запросов', icon: 'newspaper-outline', route: '/requests', segment: 'requests' },
+      { label: 'Kabinet', icon: 'briefcase', route: '/specialist/dashboard', segment: 'specialist-dashboard' },
+      { label: 'Zayavki goroda', icon: 'map-pin', route: '/(dashboard)/city-requests', segment: 'city-requests' },
+      { label: 'Lenta zayavok', icon: 'list', route: '/requests', segment: 'requests' },
     ],
   },
   {
     items: [
-      { label: 'Мои отклики', icon: 'checkmark-circle-outline', route: '/(dashboard)/responses', segment: 'responses' },
-      { label: 'Мой профиль', icon: 'person-outline', route: '/(dashboard)/profile', segment: 'profile' },
-      { label: 'Продвижение', icon: 'rocket-outline', route: '/(dashboard)/promotion', segment: 'promotion' },
+      { label: 'Moi otkliki', icon: 'send', route: '/(dashboard)/responses', segment: 'responses' },
+      { label: 'Moi profil', icon: 'user', route: '/(dashboard)/profile', segment: 'profile' },
+      { label: 'Prodvizhenie', icon: 'trending-up', route: '/(dashboard)/promotion', segment: 'promotion' },
     ],
   },
   {
-    label: 'Личное',
+    label: 'Lichnoe',
     items: [
-      { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages', badgeCount: 0 },
-      { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
+      { label: 'Soobscheniya', icon: 'message-circle', route: '/(dashboard)/messages', segment: 'messages', badgeCount: 0 },
+      { label: 'Nastroiki', icon: 'settings', route: '/(dashboard)/settings', segment: 'settings' },
     ],
   },
 ];
 
+// Client mobile bottom tabs (Feather icons matching prototype)
 const CLIENT_TAB_ITEMS: BottomTabItem[] = [
-  { label: 'Главная', icon: 'home-outline', route: '/(dashboard)', segment: 'index' },
-  { label: 'Запросы', icon: 'newspaper-outline', route: '/(dashboard)/my-requests', segment: 'my-requests' },
-  { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
-  { label: 'Настройки', icon: 'settings-outline', route: '/(dashboard)/settings', segment: 'settings' },
+  { label: 'Glavnaya', icon: 'home', route: '/(dashboard)', segment: 'index' },
+  { label: 'Zayavki', icon: 'file-text', route: '/(dashboard)/my-requests', segment: 'my-requests' },
+  { label: 'Soobscheniya', icon: 'message-circle', route: '/(dashboard)/messages', segment: 'messages' },
+  { label: 'Profil', icon: 'user', route: '/(dashboard)/settings', segment: 'settings' },
 ];
 
+// Specialist mobile bottom tabs (Feather icons matching prototype)
 const SPECIALIST_TAB_ITEMS: BottomTabItem[] = [
-  { label: 'Главная', icon: 'home-outline', route: '/specialist/dashboard', segment: 'specialist-dashboard' },
-  { label: 'Запросы', icon: 'location-outline', route: '/(dashboard)/city-requests', segment: 'city-requests' },
-  { label: 'Сообщения', icon: 'chatbubble-outline', route: '/(dashboard)/messages', segment: 'messages' },
-  { label: 'Профиль', icon: 'person-outline', route: '/(dashboard)/profile', segment: 'profile' },
+  { label: 'Kabinet', icon: 'briefcase', route: '/specialist/dashboard', segment: 'specialist-dashboard' },
+  { label: 'Otkliki', icon: 'send', route: '/(dashboard)/responses', segment: 'responses' },
+  { label: 'Soobscheniya', icon: 'message-circle', route: '/(dashboard)/messages', segment: 'messages' },
+  { label: 'Profil', icon: 'user', route: '/(dashboard)/profile', segment: 'profile' },
 ];
 
 export default function DashboardLayout() {

@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { Sidebar, SidebarNavItem, NavGroup } from './Sidebar';
 import { BottomTabBar, BottomTabItem } from './BottomTabBar';
-import { Colors, Spacing } from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -29,8 +29,8 @@ export function ResponsiveLayout({
 
   if (isMobile) {
     return (
-      <View style={styles.mobileContainer}>
-        <View style={styles.mobileContent}>
+      <View style={{ flex: 1, backgroundColor: Colors.bgPrimary }}>
+        <View style={{ flex: 1 }}>
           {children}
         </View>
         {tabItems && tabItems.length > 0 ? (
@@ -41,35 +41,16 @@ export function ResponsiveLayout({
   }
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: Colors.bgPrimary }}>
       <Sidebar
         items={navItems}
         userEmail={userEmail}
         onLogout={onLogout}
         width={sidebarWidth}
       />
-      <View style={styles.content}>
+      <View style={{ flex: 1, overflow: 'hidden' as any }}>
         {children}
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: Colors.bgPrimary,
-  },
-  content: {
-    flex: 1,
-    overflow: 'hidden' as any,
-  },
-  mobileContainer: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  mobileContent: {
-    flex: 1,
-  },
-});
