@@ -14,6 +14,12 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
 import { ChatService } from './chat.service';
+import type {
+  SendMessagePayload,
+  MarkReadPayload,
+  TypingPayload,
+  JoinThreadPayload,
+} from './chat.types';
 
 interface AuthenticatedSocket extends Socket {
   data: { userId: string; email: string; role: string };
@@ -29,6 +35,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(ChatGateway.name);
   private readonly rateLimits = new Map<string, { count: number; resetAt: number }>();
+
+  /** userId → Set of socketIds — tracks online presence */
+  private readonly onlineUsers = new Map<string, Set<string>>();
 
   private checkRateLimit(userId: string, key: string, maxPerMin: number): boolean {
     const mapKey = `${userId}:${key}`;
@@ -77,6 +86,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.data.email = payload.email;
       client.data.role = payload.role;
 
+      // Track online presence
+      const sockets = this.onlineUsers.get(payload.sub);
+      if (sockets) {
+        sockets.add(client.id);
+      } else {
+        this.onlineUsers.set(payload.sub, new Set([client.id]));
+        // First socket for this user — broadcast online status
+        this.server.emit('user:online', { userId: payload.sub });
+      }
+
       this.logger.log(`Authenticated: ${client.data.email} (${client.id})`);
     } catch {
       client.emit('error', { message: 'Invalid token' });
@@ -85,13 +104,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: AuthenticatedSocket) {
+    const userId = client.data?.userId;
+    if (userId) {
+      const sockets = this.onlineUsers.get(userId);
+      if (sockets) {
+        sockets.delete(client.id);
+        if (sockets.size === 0) {
+          this.onlineUsers.delete(userId);
+          // Last socket gone — broadcast offline status
+          this.server.emit('user:offline', { userId });
+        }
+      }
+    }
     this.logger.log(`Disconnected: ${client.data?.email ?? client.id}`);
+  }
+
+  /** Returns list of currently online user IDs */
+  getOnlineUserIds(): string[] {
+    return Array.from(this.onlineUsers.keys());
   }
 
   @SubscribeMessage('join_thread')
   async handleJoinThread(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { threadId: string },
+    @MessageBody() data: JoinThreadPayload,
   ) {
     if (!client.data?.userId) {
       throw new WsException('Not authenticated');
@@ -112,13 +148,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: {
-      threadId: string;
-      content: string;
-      attachmentUrl?: string;
-      attachmentType?: string;
-      attachmentName?: string;
-    },
+    @MessageBody() data: SendMessagePayload,
   ) {
     if (!client.data?.userId) {
       throw new WsException('Not authenticated');
@@ -168,6 +198,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
 
     const room = `thread:${data.threadId}`;
+    this.server.to(room).emit('message:new', message);
+    // Keep legacy event for backward compatibility
     this.server.to(room).emit('message_received', message);
 
     // Email notification for offline recipient — fire-and-forget
@@ -182,10 +214,43 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('typing')
-  async handleTyping(
+  @SubscribeMessage('typing:start')
+  handleTypingStart(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { threadId: string },
+    @MessageBody() data: TypingPayload,
+  ) {
+    if (!client.data?.userId) return;
+
+    if (!this.checkRateLimit(client.data.userId, 'typing', 60)) {
+      return;
+    }
+
+    const room = `thread:${data.threadId}`;
+    client.to(room).emit('typing:start', {
+      threadId: data.threadId,
+      userId: client.data.userId,
+    });
+  }
+
+  @SubscribeMessage('typing:stop')
+  handleTypingStop(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: TypingPayload,
+  ) {
+    if (!client.data?.userId) return;
+
+    const room = `thread:${data.threadId}`;
+    client.to(room).emit('typing:stop', {
+      threadId: data.threadId,
+      userId: client.data.userId,
+    });
+  }
+
+  // Keep legacy 'typing' event for backward compatibility
+  @SubscribeMessage('typing')
+  handleTyping(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: TypingPayload,
   ) {
     if (!client.data?.userId) return;
 
@@ -204,7 +269,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('mark_read')
   async handleMarkRead(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { messageId: string },
+    @MessageBody() data: MarkReadPayload,
   ) {
     if (!client.data?.userId) {
       throw new WsException('Not authenticated');
@@ -218,6 +283,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Broadcast to the whole thread room so the sender sees the read status
     const room = `thread:${updated.threadId}`;
+    this.server.to(room).emit('message:read', { messageId: updated.id, readAt: updated.readAt });
+    // Keep legacy event for backward compatibility
     this.server.to(room).emit('message_read', { messageId: updated.id, readAt: updated.readAt });
   }
 
@@ -232,7 +299,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       select: { email: true, notifyNewMessages: true },
     });
     if (recipient?.email && recipient.notifyNewMessages) {
-      this.emailService.notifyNewMessage(recipient.email, senderEmail, threadId);
+      this.emailService.notifyNewMessage(recipient.email, senderEmail, threadId, recipientId);
     }
   }
 
