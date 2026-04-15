@@ -64,7 +64,7 @@ SELECT
     sp."id",
     i."id"
 FROM "specialist_profiles" sp,
-     json_array_elements(sp."fnsDepartmentsData") AS fns_entry,
+     jsonb_array_elements(sp."fnsDepartmentsData") AS fns_entry,
      "ifns" i
 WHERE sp."fnsDepartmentsData" IS NOT NULL
   AND i."name" = fns_entry->>'office'
@@ -79,11 +79,11 @@ SELECT DISTINCT
     i."id",
     s."id"
 FROM "specialist_profiles" sp,
-     json_array_elements(sp."fnsDepartmentsData") AS fns_entry,
-     json_array_elements(fns_entry->'departments') AS dept_name,
+     jsonb_array_elements(sp."fnsDepartmentsData") AS fns_entry,
+     jsonb_array_elements(fns_entry->'departments') AS dept_name,
      "ifns" i,
      "services" s
 WHERE sp."fnsDepartmentsData" IS NOT NULL
   AND i."name" = fns_entry->>'office'
-  AND s."name" = dept_name
+  AND s."name" = dept_name#>>'{}'
 ON CONFLICT ("specialistId", "fnsId", "serviceId") DO NOTHING;
