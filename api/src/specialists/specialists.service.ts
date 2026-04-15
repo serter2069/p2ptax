@@ -217,7 +217,7 @@ export class SpecialistsService {
     if (limit > 50) limit = 50;
     if (limit < 1) limit = 1;
     const now = new Date();
-    const profileWhere: any = { displayName: { not: null } };
+    const profileWhere: any = { displayName: { not: null }, isAvailable: true };
     if (city) {
       // Support comma-separated list of cities (multi-select)
       const cityList = city.split(',').map((c) => c.trim()).filter(Boolean);
