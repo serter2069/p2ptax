@@ -113,6 +113,10 @@ export const specialists = {
   getFeatured() {
     return client.get('/specialists/featured');
   },
+
+  saveWorkAreas(workAreas: { fnsId: string; departments: string[] }[]) {
+    return client.post('/specialists/work-areas', { workAreas });
+  },
 };
 
 // ---------------------------------------------------------------------------
