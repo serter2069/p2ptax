@@ -423,10 +423,10 @@ model Complaint {
   id         String           @id @default(cuid())
   reporterId String
   reporter   User             @relation("ComplaintReporter", fields: [reporterId], references: [id])
-  targetId   String
+  targetId   String           @map("targetUserId")
   target     User             @relation("ComplaintTarget", fields: [targetId], references: [id])
   reason     ComplaintReason
-  comment    String?
+  comment    String?          @map("description")
   status     ComplaintStatus  @default(PENDING)
   createdAt  DateTime         @default(now())
 
