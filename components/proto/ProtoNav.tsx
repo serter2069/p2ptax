@@ -65,7 +65,6 @@ function ClientNav({ activeTab = 'home' }: { activeTab?: string }) {
 function SpecialistNav({ activeTab = 'dashboard' }: { activeTab?: string }) {
   const tabs = [
     { id: 'dashboard', icon: 'briefcase' as const, label: 'Заявки' },
-    { id: 'responses', icon: 'send' as const, label: 'Отклики' },
     { id: 'messages', icon: 'message-circle' as const, label: 'Сообщения' },
     { id: 'profile', icon: 'user' as const, label: 'Профиль' },
   ];
