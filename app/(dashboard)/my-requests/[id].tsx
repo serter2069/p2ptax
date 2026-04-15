@@ -2,19 +2,18 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
+import { Colors } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
-import { Card } from '../../../components/Card';
-import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 import { useAuth } from '../../../stores/authStore';
 import { ReviewForm } from '../../../components/ReviewForm';
@@ -47,6 +46,40 @@ interface RequestDetail {
   createdAt: string;
   _count: { responses: number };
   responses: ResponseItem[];
+}
+
+function formatShortDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getStatusLabel(status: string) {
+  if (status === 'OPEN') return 'Активная';
+  if (status === 'CLOSED') return 'Закрыта';
+  return status;
+}
+
+function getStatusColor(status: string) {
+  if (status === 'OPEN') return Colors.statusSuccess;
+  if (status === 'CLOSED') return Colors.textMuted;
+  return Colors.statusWarning;
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function formatTime(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  if (diff < 86400000) {
+    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+  if (diff < 172800000) return 'вчера';
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 }
 
 export default function MyRequestDetailScreen() {
@@ -98,21 +131,14 @@ export default function MyRequestDetailScreen() {
       setRequest((prev) => prev ? { ...prev, status: 'CLOSED' } : prev);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Ошибка при закрытии';
-      Alert.alert('Ошибка', msg);
+      if (Platform.OS === 'web') {
+        alert(msg);
+      } else {
+        Alert.alert('Ошибка', msg);
+      }
     } finally {
       setClosingId(false);
     }
-  }
-
-  function formatDate(iso: string) {
-    const d = new Date(iso);
-    return d.toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   }
 
   async function handleStartDialog(specialistId: string) {
@@ -123,7 +149,11 @@ export default function MyRequestDetailScreen() {
       router.push(`/(dashboard)/messages/${resp.threadId}`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Не удалось открыть диалог';
-      Alert.alert('Ошибка', msg);
+      if (Platform.OS === 'web') {
+        alert(msg);
+      } else {
+        Alert.alert('Ошибка', msg);
+      }
     } finally {
       setStartingDialogId(null);
     }
@@ -131,18 +161,18 @@ export default function MyRequestDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View className="flex-1 bg-white">
         <Header title="Запрос" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Запрос' }]} />
-        <View style={styles.loadingBox}>
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error || !request) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View className="flex-1 bg-white">
         <Header title="Запрос" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Запрос' }]} />
         <EmptyState
           icon="alert-circle-outline"
@@ -151,15 +181,22 @@ export default function MyRequestDetailScreen() {
           ctaLabel="Повторить"
           onCtaPress={() => fetchDetail()}
         />
-      </SafeAreaView>
+      </View>
     );
   }
 
+  const statusLabel = getStatusLabel(request.status);
+  const statusColor = getStatusColor(request.status);
+  const isOwner = user?.userId === request.clientId;
+  const isOpen = request.status === 'OPEN';
+  const isClosed = request.status === 'CLOSED';
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-white">
       <Header title="Запрос" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Запрос' }]} />
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        className="flex-1 bg-white"
+        contentContainerStyle={{ padding: 16, gap: 16, alignItems: 'center' }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -169,295 +206,202 @@ export default function MyRequestDetailScreen() {
           />
         }
       >
-        <View style={styles.container}>
-          {/* Request info */}
-          <Card padding={Spacing.xl}>
-            <View style={styles.metaRow}>
-              <View style={styles.cityChip}>
-                <Text style={styles.cityText}>{request.city}</Text>
-              </View>
-              <View style={[styles.statusChip, request.status !== 'OPEN' && styles.statusChipClosed]}>
-                <Text style={[styles.statusText, request.status !== 'OPEN' && styles.statusTextClosed]}>
-                  {request.status === 'OPEN' ? 'Открыт' : 'Закрыт'}
+        <View className="w-full max-w-screen-sm gap-4">
+          {/* ---- Request Info Card ---- */}
+          <View className="gap-4 rounded-xl border border-borderLight bg-white p-4">
+            {/* Title + status */}
+            <View className="flex-row items-start justify-between gap-2">
+              <Text className="flex-1 text-lg font-bold text-textPrimary">
+                {request.category || 'Налоговый запрос'}
+              </Text>
+              <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: statusColor + '18' }}>
+                <Text className="text-xs font-semibold" style={{ color: statusColor }}>
+                  {statusLabel}
                 </Text>
               </View>
             </View>
 
-            <Text style={styles.description}>{request.description}</Text>
+            {/* Description */}
+            <Text className="text-base leading-6 text-textSecondary">
+              {request.description}
+            </Text>
 
-            {(request.budget != null || request.category) ? (
-              <View style={styles.tagsRow}>
-                {request.category ? (
-                  <View style={styles.categoryChip}>
-                    <Text style={styles.categoryText}>{request.category}</Text>
-                  </View>
-                ) : null}
-                {request.budget != null ? (
-                  <Text style={styles.budgetText}>Бюджет: {request.budget.toLocaleString('ru-RU')} ₽</Text>
-                ) : null}
+            {/* Meta */}
+            <View className="gap-2">
+              <View className="flex-row items-center gap-2">
+                <Feather name="map-pin" size={14} color={Colors.textMuted} />
+                <Text className="text-sm text-textMuted">{request.city}</Text>
               </View>
-            ) : null}
+              {request.category && (
+                <View className="flex-row items-center gap-2">
+                  <Feather name="briefcase" size={14} color={Colors.textMuted} />
+                  <Text className="text-sm text-textMuted">{request.category}</Text>
+                </View>
+              )}
+              {request.budget != null && (
+                <View className="flex-row items-center gap-2">
+                  <Feather name="credit-card" size={14} color={Colors.textMuted} />
+                  <Text className="text-sm text-textMuted">
+                    {request.budget.toLocaleString('ru-RU')} ₽
+                  </Text>
+                </View>
+              )}
+              <View className="flex-row items-center gap-2">
+                <Feather name="calendar" size={14} color={Colors.textMuted} />
+                <Text className="text-sm text-textMuted">{formatShortDate(request.createdAt)}</Text>
+              </View>
+            </View>
 
-            <Text style={styles.dateLabel}>{formatDate(request.createdAt)}</Text>
-
-            {request.status === 'CLOSED' && request.responses.length > 0 && (
-              <View style={styles.reviewBanner}>
-                <Text style={styles.reviewBannerText}>
+            {/* Review banner for closed requests */}
+            {isClosed && request.responses.length > 0 && (
+              <View className="rounded-lg border border-borderLight bg-bgSurface p-3">
+                <Text className="text-center text-sm leading-5 text-brandPrimary">
                   Заявка закрыта. Оставьте отзыв специалисту, чтобы помочь другим клиентам.
                 </Text>
               </View>
             )}
 
-            {request.status === 'OPEN' && user?.userId === request.clientId && (
-              <View style={styles.actionRow}>
-                <Button
+            {/* Actions */}
+            {isOpen && isOwner && (
+              <View className="flex-row gap-2">
+                <Pressable
+                  className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-lg border border-brandPrimary"
                   onPress={() => router.push(`/(dashboard)/my-requests/edit/${request.id}`)}
-                  variant="secondary"
-                  style={styles.actionBtn}
                 >
-                  Редактировать
-                </Button>
-                <Button
+                  <Feather name="edit-2" size={14} color={Colors.brandPrimary} />
+                  <Text className="text-sm font-medium text-brandPrimary">Редактировать</Text>
+                </Pressable>
+                <Pressable
+                  className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-lg border border-statusError bg-statusError/10"
                   onPress={handleClose}
-                  variant="danger"
-                  loading={closingId}
                   disabled={closingId}
-                  style={styles.actionBtn}
                 >
-                  Закрыть запрос
-                </Button>
+                  {closingId ? (
+                    <ActivityIndicator size="small" color={Colors.statusError} />
+                  ) : (
+                    <>
+                      <Feather name="x-circle" size={14} color={Colors.statusError} />
+                      <Text className="text-sm font-medium text-statusError">Закрыть</Text>
+                    </>
+                  )}
+                </Pressable>
               </View>
             )}
-          </Card>
+          </View>
 
-          {/* Responses */}
-          <Text style={styles.sectionTitle}>
-            Отклики ({request.responses.length})
-          </Text>
-
+          {/* ---- Responses section ---- */}
           {request.responses.length === 0 ? (
-            <EmptyState
-              icon="mail-outline"
-              title="Пока нет откликов"
-              subtitle="Специалисты скоро увидят ваш запрос"
-            />
+            /* Empty state — no messages yet */
+            <View className="items-center gap-3 py-8">
+              <View className="h-16 w-16 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+                <Feather name="clock" size={32} color={Colors.brandPrimary} />
+              </View>
+              <Text className="text-base font-semibold text-textPrimary">Ожидание сообщений</Text>
+              <Text className="max-w-[280px] text-center text-sm text-textMuted">
+                Специалисты рассматривают вашу заявку. Обычно первые сообщения приходят в течение часа.
+              </Text>
+            </View>
           ) : (
-            request.responses.map((resp) => {
-              const nick = resp.specialist?.specialistProfile?.nick;
-              const canReview = request.status === 'CLOSED' && nick && !reviewedNicks.has(nick);
-              return (
-                <Card key={resp.id} padding={Spacing.lg}>
-                  <View style={styles.responseHeader}>
-                    <Text style={styles.specialistEmail}>
-                      {resp.specialist?.specialistProfile?.displayName
-                        || resp.specialist?.specialistProfile?.nick
-                        || resp.specialist?.email?.split('@')[0]}
-                    </Text>
-                    <Text style={styles.responseDateText}>{formatDate(resp.createdAt)}</Text>
-                  </View>
-                  <Text style={styles.responseMessage}>{resp.message}</Text>
-                  <View style={styles.responseActions}>
-                    {nick ? (
-                      <Button
-                        onPress={() => router.push(`/specialists/${nick}`)}
-                        variant="ghost"
-                        style={styles.profileBtn}
-                      >
-                        Посмотреть профиль
-                      </Button>
-                    ) : null}
-                    <Button
+            <View className="gap-3">
+              <Text className="text-base font-semibold text-textPrimary">
+                Сообщения ({request.responses.length})
+              </Text>
+
+              {request.responses.map((resp) => {
+                const displayName =
+                  resp.specialist?.specialistProfile?.displayName
+                  || resp.specialist?.specialistProfile?.nick
+                  || resp.specialist?.email?.split('@')[0]
+                  || '??';
+                const initials = getInitials(displayName);
+                const nick = resp.specialist?.specialistProfile?.nick;
+                const canReview = isClosed && nick && !reviewedNicks.has(nick);
+
+                return (
+                  <View key={resp.id} className="gap-3">
+                    <Pressable
+                      className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3"
                       onPress={() => handleStartDialog(resp.specialist.id)}
-                      variant="secondary"
-                      loading={startingDialogId === resp.specialist.id}
-                      disabled={startingDialogId !== null}
-                      style={styles.dialogBtn}
                     >
-                      Начать диалог
-                    </Button>
-                    {canReview && reviewingNick !== nick && (
-                      <Button
-                        onPress={() => setReviewingNick(nick)}
-                        variant="primary"
-                        style={styles.dialogBtn}
+                      {/* Avatar */}
+                      <View className="h-10 w-10 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+                        <Text className="text-sm font-bold text-brandPrimary">{initials}</Text>
+                      </View>
+
+                      {/* Content */}
+                      <View className="flex-1">
+                        <View className="flex-row items-center justify-between">
+                          <Text className="text-sm font-semibold text-textPrimary">{displayName}</Text>
+                          <Text className="text-xs text-textMuted">{formatTime(resp.createdAt)}</Text>
+                        </View>
+                        <Text className="text-xs text-textMuted" numberOfLines={1}>
+                          {resp.message}
+                        </Text>
+                      </View>
+                    </Pressable>
+
+                    {/* Action buttons below response card */}
+                    <View className="flex-row gap-2 px-1">
+                      {nick && (
+                        <Pressable
+                          className="h-9 flex-1 flex-row items-center justify-center gap-1 rounded-lg border border-borderLight"
+                          onPress={() => router.push(`/specialists/${nick}`)}
+                        >
+                          <Feather name="user" size={13} color={Colors.textSecondary} />
+                          <Text className="text-xs font-medium text-textSecondary">Профиль</Text>
+                        </Pressable>
+                      )}
+                      <Pressable
+                        className="h-9 flex-1 flex-row items-center justify-center gap-1 rounded-lg border border-brandPrimary"
+                        onPress={() => handleStartDialog(resp.specialist.id)}
+                        disabled={startingDialogId !== null}
                       >
-                        Оставить отзыв
-                      </Button>
+                        {startingDialogId === resp.specialist.id ? (
+                          <ActivityIndicator size="small" color={Colors.brandPrimary} />
+                        ) : (
+                          <>
+                            <Feather name="message-circle" size={13} color={Colors.brandPrimary} />
+                            <Text className="text-xs font-medium text-brandPrimary">Написать</Text>
+                          </>
+                        )}
+                      </Pressable>
+                      {canReview && reviewingNick !== nick && (
+                        <Pressable
+                          className="h-9 flex-1 flex-row items-center justify-center gap-1 rounded-lg bg-brandPrimary"
+                          onPress={() => setReviewingNick(nick)}
+                        >
+                          <Feather name="star" size={13} color="#FFFFFF" />
+                          <Text className="text-xs font-medium text-white">Отзыв</Text>
+                        </Pressable>
+                      )}
+                    </View>
+
+                    {/* Inline review form */}
+                    {canReview && reviewingNick === nick && (
+                      <View className="mt-1">
+                        <ReviewForm
+                          specialistNick={nick}
+                          requestId={request.id}
+                          onSuccess={() => {
+                            setReviewingNick(null);
+                            setReviewedNicks((prev) => new Set(prev).add(nick));
+                            if (Platform.OS === 'web') {
+                              alert('Спасибо! Ваш отзыв отправлен.');
+                            } else {
+                              Alert.alert('Спасибо!', 'Ваш отзыв отправлен.');
+                            }
+                          }}
+                          onCancel={() => setReviewingNick(null)}
+                        />
+                      </View>
                     )}
                   </View>
-                  {canReview && reviewingNick === nick && (
-                    <View style={styles.reviewFormWrap}>
-                      <ReviewForm
-                        specialistNick={nick}
-                        requestId={request.id}
-                        onSuccess={() => {
-                          setReviewingNick(null);
-                          setReviewedNicks((prev) => new Set(prev).add(nick));
-                          Alert.alert('Спасибо!', 'Ваш отзыв отправлен.');
-                        }}
-                        onCancel={() => setReviewingNick(null)}
-                      />
-                    </View>
-                  )}
-                </Card>
-              );
-            })
+                );
+              })}
+            </View>
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  loadingBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  cityChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  cityText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  statusChip: {
-    backgroundColor: Colors.statusBg.success,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-  },
-  statusChipClosed: {
-    backgroundColor: Colors.statusBg.warning,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusSuccess,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  statusTextClosed: {
-    color: Colors.textMuted,
-  },
-  description: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-    marginBottom: Spacing.md,
-  },
-  dateLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.lg,
-  },
-  actionBtn: {
-    flex: 1,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  categoryChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  categoryText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  budgetText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    marginTop: Spacing.md,
-  },
-  responseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  specialistEmail: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textAccent,
-  },
-  responseDateText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  responseMessage: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-    marginBottom: Spacing.md,
-  },
-  responseActions: {
-    gap: Spacing.sm,
-  },
-  profileBtn: {
-    width: '100%',
-  },
-  dialogBtn: {
-    width: '100%',
-  },
-  reviewFormWrap: {
-    marginTop: Spacing.md,
-  },
-  reviewBanner: {
-    backgroundColor: '#EBF3FB',
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: '#C8D8EA',
-  },
-  reviewBannerText: {
-    fontSize: Typography.fontSize.sm,
-    color: '#1A5BA8',
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-});
