@@ -38,7 +38,6 @@ interface SpecialistProfile {
   fnsDepartmentsData: Array<{ office: string; departments: string[] }> | null;
   services: string[];
   badges: string[];
-  contacts: string | null;
   phone: string | null;
   telegram: string | null;
   whatsapp: string | null;
