@@ -1,22 +1,8 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { LandingHeader } from '../../components/LandingHeader';
-import { Footer } from '../../components/Footer';
-import { Input } from '../../components/Input';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../lib/api';
-import { useBreakpoints } from '../../hooks/useBreakpoints';
-import { AuthProgress } from '../../components/AuthProgress';
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -25,17 +11,17 @@ function isValidEmail(email: string): boolean {
 export default function EmailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ role?: string; redirectTo?: string }>();
+  const role = (params.role === 'SPECIALIST' ? 'SPECIALIST' : 'CLIENT') as 'CLIENT' | 'SPECIALIST';
   const redirectTo = params.redirectTo as string | undefined;
 
-  const { isMobile } = useBreakpoints();
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(role: 'CLIENT' | 'SPECIALIST') {
+  async function handleSubmit() {
     const trimmed = email.trim();
-    if (!isValidEmail(trimmed)) {
-      setError('Введите корректный email');
+    if (!trimmed || !isValidEmail(trimmed)) {
+      setError('Введите корректный email адрес');
       return;
     }
     setError('');
@@ -58,223 +44,84 @@ export default function EmailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <LandingHeader />
-      <KeyboardAvoidingView
-        style={styles.kav}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.formArea}>
-            <View style={[styles.container, !isMobile && styles.containerWide]}>
-              <AuthProgress step={1} />
-
-              {/* Back */}
-              <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back} accessibilityRole="button" accessibilityLabel="Назад">
-                <Text style={styles.backText}>← Назад</Text>
-              </TouchableOpacity>
-
-              {/* Header */}
-              <View style={styles.header}>
-                <Text style={styles.title}>Введите email</Text>
-                <Text style={styles.subtitle}>
-                  Мы отправим вам код для входа. Если вы новый пользователь — аккаунт создастся автоматически.
-                </Text>
-              </View>
-
-              {/* Form */}
-              <View style={styles.form}>
-                <Input
-                  label="Email"
-                  value={email}
-                  onChangeText={(t) => {
-                    setEmail(t);
-                    if (error) setError('');
-                  }}
-                  placeholder="you@example.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoFocus
-                  error={error}
-                  returnKeyType="go"
-                />
-              </View>
-
-              <Text style={styles.hint}>
-                Вход и регистрация — одно действие. Просто введите email.
-              </Text>
-
-              {/* Role buttons */}
-              <View style={styles.roleButtons}>
-                <TouchableOpacity
-                  style={styles.roleCard}
-                  onPress={() => handleSubmit('CLIENT')}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Войти как клиент"
-                >
-                  <Text style={styles.roleCardIcon}>{'\u{1F50D}'}</Text>
-                  <Text style={styles.roleCardTitle}>Я ищу специалиста</Text>
-                  <Text style={styles.roleCardDesc}>
-                    Опубликую запрос и получу предложения от консультантов
-                  </Text>
-                  <View style={styles.roleCardBtn}>
-                    <Text style={styles.roleCardBtnText}>
-                      {loading ? 'Отправляем...' : 'Получить код'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.roleCard, styles.roleCardSpecialist]}
-                  onPress={() => handleSubmit('SPECIALIST')}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Войти как специалист"
-                >
-                  <Text style={styles.roleCardIcon}>{'\u{1F4BC}'}</Text>
-                  <Text style={styles.roleCardTitleSpecialist}>Я специалист</Text>
-                  <Text style={styles.roleCardDescSpecialist}>
-                    Буду получать заявки от клиентов и предлагать свои услуги
-                  </Text>
-                  <View style={[styles.roleCardBtn, styles.roleCardBtnSpecialist]}>
-                    <Text style={styles.roleCardBtnTextSpecialist}>
-                      {loading ? 'Отправляем...' : 'Получить код'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
+    <KeyboardAvoidingView
+      className="flex-1 bg-white"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View className="flex-1 items-center justify-center px-4 py-8">
+        {/* Logo */}
+        <View className="mb-8 items-center gap-2">
+          <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
+            <Feather name="shield" size={28} color="#0284C7" />
           </View>
-          <Footer />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          <Text className="text-2xl font-bold text-textPrimary">Налоговик</Text>
+          <Text className="text-base text-textMuted">Найдите налогового специалиста</Text>
+        </View>
+
+        {/* Card */}
+        <View className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6">
+          <Text className="mb-1 text-center text-lg font-bold text-textPrimary">
+            Войти или зарегистрироваться
+          </Text>
+          <Text className="mb-4 text-center text-sm text-textMuted">
+            Отправим код подтверждения на ваш email
+          </Text>
+
+          <Text className="mb-1 text-sm font-medium text-textSecondary">Email</Text>
+          <View
+            className={`mb-2 h-12 flex-row items-center gap-2 rounded-lg border px-4 ${
+              error ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'
+            } ${loading ? 'opacity-60' : ''}`}
+          >
+            <Feather name="mail" size={18} color={error ? '#DC2626' : '#94A3B8'} />
+            <TextInput
+              value={email}
+              onChangeText={(t) => {
+                setEmail(t);
+                if (error) setError('');
+              }}
+              placeholder="your@email.com"
+              placeholderTextColor="#94A3B8"
+              className="flex-1 text-base text-textPrimary"
+              style={{ outlineStyle: 'none' as any }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoFocus
+              editable={!loading}
+              onSubmitEditing={handleSubmit}
+              returnKeyType="go"
+            />
+            {email.length > 0 && !loading && (
+              <Pressable onPress={() => setEmail('')} hitSlop={8}>
+                <Feather name="x-circle" size={16} color="#94A3B8" />
+              </Pressable>
+            )}
+          </View>
+
+          {error ? (
+            <View className="mb-2 flex-row items-center gap-1">
+              <Feather name="alert-circle" size={14} color="#DC2626" />
+              <Text className="text-sm text-red-600">{error}</Text>
+            </View>
+          ) : null}
+
+          <Pressable
+            onPress={handleSubmit}
+            disabled={loading}
+            className={`mt-1 h-12 items-center justify-center rounded-lg bg-brandPrimary ${
+              loading ? 'opacity-60' : ''
+            }`}
+          >
+            <Text className="text-base font-semibold text-white">
+              {loading ? 'Отправка...' : 'Отправить код'}
+            </Text>
+          </Pressable>
+        </View>
+
+        <Text className="mt-6 text-center text-xs text-textMuted">
+          {'Нажимая кнопку, вы соглашаетесь с\nусловиями использования'}
+        </Text>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  kav: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-  },
-  formArea: {
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing['2xl'],
-  },
-  containerWide: {
-    maxWidth: 520,
-  },
-  back: {
-    alignSelf: 'flex-start',
-    paddingVertical: Spacing.sm,
-  },
-  backText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-  },
-  header: {
-    gap: Spacing.sm,
-    marginTop: Spacing.xl,
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  form: {
-    gap: Spacing.lg,
-  },
-  hint: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-  roleButtons: {
-    gap: Spacing.lg,
-  },
-  roleCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing['2xl'],
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  roleCardSpecialist: {
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.statusBg.accent,
-  },
-  roleCardIcon: {
-    fontSize: 36,
-    marginBottom: Spacing.xs,
-  },
-  roleCardTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  roleCardTitleSpecialist: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.brandPrimary,
-    textAlign: 'center',
-  },
-  roleCardDesc: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  roleCardDescSpecialist: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textAccent,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  roleCardBtn: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xl,
-    marginTop: Spacing.xs,
-  },
-  roleCardBtnSpecialist: {
-    backgroundColor: Colors.brandPrimary,
-  },
-  roleCardBtnText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  roleCardBtnTextSpecialist: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: '#FFFFFF',
-  },
-});
