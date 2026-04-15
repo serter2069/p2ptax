@@ -461,7 +461,7 @@ export class UsersService {
 
       // 1. Complaints (reference User directly)
       await tx.complaint.deleteMany({ where: { reporterId: userId } });
-      await tx.complaint.deleteMany({ where: { targetUserId: userId } });
+      await tx.complaint.deleteMany({ where: { targetId: userId } });
 
       // 2. Reviews (reference User and Request)
       await tx.review.deleteMany({ where: { clientId: userId } });

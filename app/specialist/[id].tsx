@@ -21,6 +21,7 @@ import { Avatar } from '../../components/Avatar';
 import { Stars } from '../../components/Stars';
 import { LandingHeader } from '../../components/LandingHeader';
 import { EmptyState } from '../../components/EmptyState';
+import { ReportModal } from '../../components/ReportModal';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 // Brand tokens (same as specialists/[nick])
@@ -151,6 +152,7 @@ export default function SpecialistProfileScreen() {
 
   const [message, setMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
 
   // Fetch specialist profile
   useEffect(() => {
@@ -344,6 +346,18 @@ export default function SpecialistProfileScreen() {
           <Text style={styles.badgeNeutralText}>С {sinceYear} года</Text>
         </View>
       </View>
+
+      {/* Report button */}
+      {user && user.userId !== profile.userId && (
+        <TouchableOpacity
+          onPress={() => setReportModalVisible(true)}
+          style={styles.reportBtn}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="flag-outline" size={14} color={B.muted} />
+          <Text style={styles.reportBtnText}>Пожаловаться</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -532,6 +546,13 @@ export default function SpecialistProfileScreen() {
         onClose={() => setFnsModalVisible(false)}
         fnsData={fnsData}
       />
+      {profile && user && (
+        <ReportModal
+          visible={reportModalVisible}
+          onClose={() => setReportModalVisible(false)}
+          targetUserId={profile.userId}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -725,4 +746,14 @@ const styles = StyleSheet.create({
   modalHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   modalTitle: { fontSize: 18, fontWeight: '700', color: B.primary },
   modalScroll: { maxHeight: 400, paddingHorizontal: 20, paddingVertical: 12 },
+
+  // Report
+  reportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  reportBtnText: { fontSize: 13, color: B.muted, fontWeight: '500' },
 });

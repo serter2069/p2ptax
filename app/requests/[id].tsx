@@ -18,10 +18,12 @@ import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/Button';
 import { Header } from '../../components/Header';
 import { LandingHeader } from '../../components/LandingHeader';
 import { EmptyState } from '../../components/EmptyState';
+import { ReportModal } from '../../components/ReportModal';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 interface RequestDetail {
@@ -68,6 +70,9 @@ export default function PublicRequestDetailScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [respondMessage, setRespondMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Report modal state
+  const [reportModalVisible, setReportModalVisible] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -211,12 +216,23 @@ export default function PublicRequestDetailScreen() {
         <View style={[styles.container, !isMobile && styles.containerWide]}>
           {/* Status badge */}
           <View style={styles.statusRow}>
-            <View style={[styles.statusChip, !isOpen && styles.statusChipClosed]}>
-              <Text style={[styles.statusText, !isOpen && styles.statusTextClosed]}>
-                {isOpen ? 'Открыт' : request.status === 'CLOSED' ? 'Закрыт' : request.status}
-              </Text>
+            <View style={styles.statusRowLeft}>
+              <View style={[styles.statusChip, !isOpen && styles.statusChipClosed]}>
+                <Text style={[styles.statusText, !isOpen && styles.statusTextClosed]}>
+                  {isOpen ? 'Открыт' : request.status === 'CLOSED' ? 'Закрыт' : request.status}
+                </Text>
+              </View>
+              <Text style={styles.dateText}>{formatDate(request.createdAt)}</Text>
             </View>
-            <Text style={styles.dateText}>{formatDate(request.createdAt)}</Text>
+            {user && request.client && user.userId !== request.client.id && (
+              <TouchableOpacity
+                onPress={() => setReportModalVisible(true)}
+                activeOpacity={0.7}
+                style={styles.reportBtn}
+              >
+                <Ionicons name="flag-outline" size={16} color={Colors.textMuted} />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Description */}
@@ -302,6 +318,15 @@ export default function PublicRequestDetailScreen() {
         </View>
       </ScrollView>
 
+      {/* Report modal */}
+      {request.client && user && (
+        <ReportModal
+          visible={reportModalVisible}
+          onClose={() => setReportModalVisible(false)}
+          targetUserId={request.client.id}
+        />
+      )}
+
       {/* Respond modal */}
       <Modal
         visible={modalVisible}
@@ -378,6 +403,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  statusRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  reportBtn: {
+    padding: 8,
   },
   statusChip: {
     backgroundColor: Colors.statusBg.success,

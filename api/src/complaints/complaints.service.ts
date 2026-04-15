@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateComplaintDto } from './dto/create-complaint.dto';
+import { UpdateComplaintStatusDto } from './dto/update-complaint-status.dto';
 
 const PAGE_SIZE = 20;
 
@@ -14,8 +16,18 @@ export class ComplaintsService {
 
   async create(reporterId: string, dto: CreateComplaintDto) {
     // Cannot report yourself
-    if (reporterId === dto.targetUserId) {
+    if (reporterId === dto.targetId) {
       throw new BadRequestException('You cannot report yourself');
+    }
+
+    // One complaint per user per target
+    const existing = await this.prisma.complaint.findUnique({
+      where: {
+        reporterId_targetId: { reporterId, targetId: dto.targetId },
+      },
+    });
+    if (existing) {
+      throw new ConflictException('Вы уже подавали жалобу на этого пользователя');
     }
 
     // Rate limit: max 5 complaints per reporter per 24 hours
@@ -34,7 +46,7 @@ export class ComplaintsService {
 
     // Verify target user exists
     const target = await this.prisma.user.findUnique({
-      where: { id: dto.targetUserId },
+      where: { id: dto.targetId },
       select: { id: true },
     });
     if (!target) {
@@ -44,9 +56,9 @@ export class ComplaintsService {
     return this.prisma.complaint.create({
       data: {
         reporterId,
-        targetUserId: dto.targetUserId,
+        targetId: dto.targetId,
         reason: dto.reason,
-        description: dto.description ?? null,
+        comment: dto.comment ?? null,
       },
       select: {
         id: true,
@@ -78,5 +90,19 @@ export class ComplaintsService {
       this.prisma.complaint.count(),
     ]);
     return { items, total, page, pageSize: PAGE_SIZE };
+  }
+
+  async adminUpdateStatus(id: string, dto: UpdateComplaintStatusDto) {
+    const complaint = await this.prisma.complaint.findUnique({
+      where: { id },
+    });
+    if (!complaint) {
+      throw new NotFoundException('Complaint not found');
+    }
+
+    return this.prisma.complaint.update({
+      where: { id },
+      data: { status: dto.status },
+    });
   }
 }
