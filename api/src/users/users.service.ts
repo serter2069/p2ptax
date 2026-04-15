@@ -135,6 +135,7 @@ export class UsersService {
     services: string[],
     fnsOffices?: string[],
     fnsServices?: Array<{ fnsId: string; serviceNames: string[] }>,
+    profileFields?: { displayName?: string; bio?: string; telegram?: string },
   ): Promise<{ ok: true }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -157,6 +158,12 @@ export class UsersService {
 
     const trimmedFnsOffices = (fnsOffices ?? []).map((f) => f.trim()).filter(Boolean);
 
+    // Optional profile fields (displayName, bio, telegram) from onboarding step 3
+    const extraFields: Record<string, string> = {};
+    if (profileFields?.displayName) extraFields.displayName = profileFields.displayName.trim();
+    if (profileFields?.bio) extraFields.bio = profileFields.bio.trim();
+    if (profileFields?.telegram) extraFields.telegram = profileFields.telegram.trim();
+
     if (existing) {
       // Update existing profile and ensure role is SPECIALIST
       await this.prisma.$transaction([
@@ -166,6 +173,7 @@ export class UsersService {
             cities: trimmedCities,
             services: trimmedServices,
             ...(trimmedFnsOffices.length > 0 && { fnsOffices: trimmedFnsOffices }),
+            ...extraFields,
             profileComplete,
           },
         }),
@@ -193,6 +201,7 @@ export class UsersService {
             services: trimmedServices,
             fnsOffices: trimmedFnsOffices,
             badges: [],
+            ...extraFields,
             profileComplete,
           },
         }),
