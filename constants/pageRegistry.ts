@@ -48,16 +48,14 @@ export const PAGE_GROUPS: PageGroup[] = [
 export const pageRegistry: PageEntry[] = [
   // Brand
   { id: 'brand', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none' },
-  { id: 'nav-components', title: 'Navigation Components', group: 'Brand', route: '/proto/nav', stateCount: 1, nav: 'none' },
 ];
 
 export const PAGE_TRANSITIONS: Record<string, { to: string; action: string }[]> = {
   'brand': [],
-  'nav-components': [],
 };
 
 export const ROLE_PAGES: Record<string, string[]> = {
-  public: ['brand', 'nav-components'],
+  public: ['brand'],
 };
 
 // ---------------------------------------------------------------------------
