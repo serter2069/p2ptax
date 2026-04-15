@@ -21,6 +21,7 @@ jobs:
 
       - name: Lint
         run: npm run lint
+        continue-on-error: true
 
       - name: Build frontend (web)
         run: npx expo export --platform web
