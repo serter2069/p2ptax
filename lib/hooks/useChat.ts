@@ -2,7 +2,6 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '../api';
 import {
   getSocket,
-  disconnectSocket,
   useSocket,
   type TypedSocket,
   type MessageReceivedEvent,
@@ -208,7 +207,6 @@ export function useChat({ threadId, userId, token }: UseChatOptions): UseChatRet
       socket.off('typing:start', onTyping);
       socket.off('typing', onTyping);
       if (typingTimer.current) clearTimeout(typingTimer.current);
-      disconnectSocket();
     };
   }, [token, threadId, userId]);
 
