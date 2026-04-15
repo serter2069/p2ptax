@@ -27,10 +27,10 @@ jobs:
 
       - name: Deploy frontend
         run: |
-          DEPLOY_DIR="/var/www/p2ptax"
-          sudo mkdir -p $DEPLOY_DIR/web
-          sudo rsync -av --delete dist/ $DEPLOY_DIR/web/
-          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" | sudo tee $DEPLOY_DIR/web/version.json
+          DEPLOY_DIR="/var/www/p2ptax-web"
+          sudo mkdir -p $DEPLOY_DIR
+          sudo rsync -av --delete dist/ $DEPLOY_DIR/
+          echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" | sudo tee $DEPLOY_DIR/version.json
 
       - name: Verify staging
         run: |
