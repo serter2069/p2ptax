@@ -536,7 +536,7 @@ export class RequestsService {
   async updateFields(
     clientId: string,
     requestId: string,
-    dto: { description?: string; city?: string; budget?: number | null; category?: string | null; serviceType?: string | null },
+    dto: { title?: string; description?: string; city?: string; budget?: number | null; category?: string | null; serviceType?: string | null; ifnsId?: string; ifnsName?: string },
   ) {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Request not found');
@@ -546,11 +546,14 @@ export class RequestsService {
     }
 
     const data: Record<string, unknown> = {};
+    if (dto.title !== undefined) data.title = dto.title;
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.city !== undefined) data.city = dto.city;
     if (dto.budget !== undefined) data.budget = dto.budget;
     if (dto.category !== undefined) data.category = dto.category;
     if (dto.serviceType !== undefined) data.serviceType = dto.serviceType;
+    if (dto.ifnsId !== undefined) data.ifnsId = dto.ifnsId;
+    if (dto.ifnsName !== undefined) data.ifnsName = dto.ifnsName;
 
     if (Object.keys(data).length === 0) {
       throw new BadRequestException('No fields to update');

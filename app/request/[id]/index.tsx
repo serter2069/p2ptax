@@ -13,9 +13,9 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/Colors';
-import { requests as requestsApi, threads as threadsApi } from '../../lib/api/endpoints';
-import { useAuth } from '../../lib/auth';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../../constants/Colors';
+import { requests as requestsApi, threads as threadsApi } from '../../../lib/api/endpoints';
+import { useAuth } from '../../../lib/auth';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -471,6 +471,17 @@ export default function RequestDetailScreen() {
 
         {/* Actions */}
         <View style={s.actions}>
+          {/* Owner: edit request (only NEW/OPEN) */}
+          {isOwner && (request.status === 'NEW' || request.status === 'OPEN') && (
+            <Pressable
+              style={s.editBtn}
+              onPress={() => router.push(`/request/${id}/edit` as never)}
+            >
+              <Feather name="edit-2" size={16} color={Colors.brandPrimary} />
+              <Text style={s.editBtnText}>Редактировать</Text>
+            </Pressable>
+          )}
+
           {/* Owner: close request */}
           {isOwner && isOpen && (
             <Pressable
@@ -809,6 +820,22 @@ const s = StyleSheet.create({
 
   // Actions
   actions: { gap: Spacing.md },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    height: 44,
+    borderRadius: BorderRadius.btn,
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
+    backgroundColor: Colors.white,
+  },
+  editBtnText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.brandPrimary,
+  },
   closeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
