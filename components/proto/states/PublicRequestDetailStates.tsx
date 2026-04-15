@@ -1,101 +1,189 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
+import { Colors } from '../../../constants/Colors';
+
+const MOCK_REQUEST = {
+  title: 'Помощь с 3-НДФЛ',
+  description:
+    'Нужна помощь с заполнением декларации 3-НДФЛ за 2023 год. Есть доходы от продажи квартиры и нужно правильно рассчитать налог. Также интересует возможность получения налогового вычета.',
+  city: 'Москва',
+  fns: 'ФНС №15 по г. Москве',
+  service: '3-НДФЛ',
+  date: '10 марта 2024',
+  author: 'Мария К.',
+  responseCount: 3,
+  isPublic: true,
+};
 
 // ---------------------------------------------------------------------------
-// DEFAULT state -- full detail
+// Shared request card
 // ---------------------------------------------------------------------------
-function DefaultState() {
+function RequestCard() {
   return (
-    <View style={s.container}>
-      {/* Breadcrumb */}
-      <View style={s.breadcrumb}>
-        <Text style={s.breadcrumbLink}>Заявки</Text>
-        <Feather name="chevron-right" size={14} color={Colors.textMuted} />
-        <Text style={s.breadcrumbCurrent}>Детали заявки</Text>
+    <View className="gap-3 rounded-xl border border-borderLight bg-white p-5">
+      {/* Status + date */}
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center gap-1.5 rounded-full bg-[#DCFCE7] px-2 py-0.5">
+          <View className="h-1.5 w-1.5 rounded-full bg-[#15803D]" />
+          <Text className="text-xs font-semibold text-[#15803D]">Активна</Text>
+        </View>
+        <Text className="text-xs text-textMuted">{MOCK_REQUEST.date}</Text>
       </View>
 
-      {/* Main card */}
-      <View style={s.detailCard}>
-        <View style={s.cardHeaderRow}>
-          <View style={[s.statusBadge, { backgroundColor: Colors.statusBg.success }]}>
-            <View style={s.statusDot} />
-            <Text style={[s.statusText, { color: Colors.statusSuccess }]}>Активна</Text>
-          </View>
-          <Text style={s.dateText}>08.04.2026</Text>
+      {/* Title */}
+      <Text className="text-xl font-bold leading-7 text-textPrimary">{MOCK_REQUEST.title}</Text>
+
+      {/* Description */}
+      <Text className="text-base leading-6 text-textSecondary">{MOCK_REQUEST.description}</Text>
+
+      {/* Tags */}
+      <View className="flex-row flex-wrap gap-2">
+        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+          <Feather name="map-pin" size={12} color={Colors.brandPrimary} />
+          <Text className="text-xs font-medium text-brandPrimary">{MOCK_REQUEST.city}</Text>
         </View>
-
-        <Text style={s.title}>Заполнить декларацию 3-НДФЛ за 2025 год</Text>
-
-        <Text style={s.desc}>
-          Нужно заполнить и подать декларацию 3-НДФЛ для получения налогового вычета за покупку квартиры. Документы готовы, нужен специалист, который знает процедуру и поможет всё оформить корректно.
-        </Text>
-
-        <View style={s.tags}>
-          <View style={s.tag}>
-            <Feather name="map-pin" size={12} color={Colors.brandPrimary} />
-            <Text style={s.tagText}>Москва</Text>
-          </View>
-          <View style={s.tag}>
-            <Feather name="briefcase" size={12} color={Colors.brandPrimary} />
-            <Text style={s.tagText}>Декларация 3-НДФЛ</Text>
-          </View>
-        </View>
-
-        <View style={s.divider} />
-
-        <View style={s.metaGrid}>
-          <View style={s.metaItem}>
-            <Text style={s.metaLabel}>Бюджет</Text>
-            <Text style={s.metaValue}>3 000 -- 5 000 RUB</Text>
-          </View>
-          <View style={s.metaItem}>
-            <Text style={s.metaLabel}>Клиент</Text>
-            <Text style={s.metaValue}>Елена В.</Text>
-          </View>
-          <View style={s.metaItem}>
-            <Text style={s.metaLabel}>Откликов</Text>
-            <Text style={s.metaValue}>3</Text>
-          </View>
+        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+          <Feather name="briefcase" size={12} color={Colors.brandPrimary} />
+          <Text className="text-xs font-medium text-brandPrimary">{MOCK_REQUEST.service}</Text>
         </View>
       </View>
 
-      {/* CTA */}
-      <Pressable style={s.respondBtn}>
-        <Feather name="send" size={16} color={Colors.white} />
-        <Text style={s.respondBtnText}>Откликнуться</Text>
-      </Pressable>
+      {/* Divider */}
+      <View className="h-px bg-borderLight" />
 
-      <View style={s.hintRow}>
-        <Feather name="info" size={14} color={Colors.textMuted} />
-        <Text style={s.hintText}>Для отклика необходимо войти как специалист</Text>
+      {/* Meta */}
+      <View className="flex-row flex-wrap gap-5">
+        <View className="gap-0.5">
+          <Text className="text-xs uppercase tracking-wide text-textMuted">ФНС</Text>
+          <Text className="text-base font-semibold text-textPrimary">{MOCK_REQUEST.fns}</Text>
+        </View>
+        <View className="gap-0.5">
+          <Text className="text-xs uppercase tracking-wide text-textMuted">Клиент</Text>
+          <Text className="text-base font-semibold text-textPrimary">{MOCK_REQUEST.author}</Text>
+        </View>
+        <View className="gap-0.5">
+          <Text className="text-xs uppercase tracking-wide text-textMuted">Откликов</Text>
+          <Text className="text-base font-semibold text-textPrimary">{MOCK_REQUEST.responseCount}</Text>
+        </View>
       </View>
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// LOADING state
+// State 1: Authorized user — textarea + file attachment + send
 // ---------------------------------------------------------------------------
-function LoadingState() {
+function AuthorizedState() {
+  const [message, setMessage] = useState('');
+
   return (
-    <View style={s.container}>
-      <View style={s.detailCard}>
-        <View style={[s.skelLine, { width: 80, height: 20 }]} />
-        <View style={[s.skelLine, { width: '90%', height: 20, marginTop: Spacing.md }]} />
-        <View style={[s.skelLine, { width: '100%', marginTop: Spacing.sm }]} />
-        <View style={[s.skelLine, { width: '80%' }]} />
-        <View style={[s.skelLine, { width: '60%' }]} />
-        <View style={s.divider} />
-        <View style={{ flexDirection: 'row', gap: Spacing.lg }}>
-          <View style={[s.skelLine, { width: 100, height: 14 }]} />
-          <View style={[s.skelLine, { width: 80, height: 14 }]} />
-        </View>
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <RequestCard />
+
+      {/* Response count badge */}
+      <View className="flex-row items-center gap-2 rounded-lg bg-bgSecondary px-3 py-2">
+        <Feather name="users" size={14} color={Colors.brandPrimary} />
+        <Text className="text-sm text-textSecondary">
+          <Text className="font-semibold text-brandPrimary">{MOCK_REQUEST.responseCount} специалиста</Text> уже написали
+        </Text>
       </View>
-      <View style={[s.skelLine, { width: '100%', height: 48, borderRadius: BorderRadius.btn }]} />
-    </View>
+
+      {/* Message input */}
+      <View className="gap-2">
+        <Text className="text-sm font-medium text-textSecondary">Написать клиенту</Text>
+        <TextInput
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          placeholder="Напишите первое сообщение клиенту..."
+          placeholderTextColor={Colors.textMuted}
+          className="min-h-[100px] rounded-lg border border-borderLight bg-white p-3 text-base text-textPrimary"
+          style={{ textAlignVertical: 'top', outlineStyle: 'none' as any }}
+        />
+      </View>
+
+      {/* Send row: attachment + send button */}
+      <View className="flex-row items-center gap-3">
+        <Pressable className="h-12 w-12 items-center justify-center rounded-lg border border-borderLight bg-white">
+          <Feather name="paperclip" size={20} color={Colors.textMuted} />
+        </Pressable>
+        <Pressable className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
+          <Feather name="send" size={16} color={Colors.white} />
+          <Text className="text-base font-semibold text-white">Отправить</Text>
+        </Pressable>
+      </View>
+
+      {/* Hint */}
+      <View className="flex-row items-center justify-center gap-1.5">
+        <Feather name="info" size={14} color={Colors.textMuted} />
+        <Text className="text-center text-sm text-textMuted">
+          После отправки вы будете перенаправлены в чат
+        </Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// State 2: Unauthorized user — login prompt instead of textarea
+// ---------------------------------------------------------------------------
+function UnauthorizedState() {
+  return (
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <RequestCard />
+
+      {/* Response count badge */}
+      <View className="flex-row items-center gap-2 rounded-lg bg-bgSecondary px-3 py-2">
+        <Feather name="users" size={14} color={Colors.brandPrimary} />
+        <Text className="text-sm text-textSecondary">
+          <Text className="font-semibold text-brandPrimary">{MOCK_REQUEST.responseCount} специалиста</Text> уже написали
+        </Text>
+      </View>
+
+      {/* Login CTA */}
+      <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary bg-bgSecondary">
+        <Feather name="log-in" size={16} color={Colors.brandPrimary} />
+        <Text className="text-base font-semibold text-brandPrimary">Войдите, чтобы написать</Text>
+      </Pressable>
+
+      {/* Hint */}
+      <View className="flex-row items-center justify-center gap-1.5">
+        <Feather name="info" size={14} color={Colors.textMuted} />
+        <Text className="text-center text-sm text-textMuted">
+          Для отклика необходимо войти или зарегистрироваться
+        </Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// State 3: Message sent — success with redirect note
+// ---------------------------------------------------------------------------
+function MessageSentState() {
+  return (
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <RequestCard />
+
+      {/* Success block */}
+      <View className="items-center gap-3 rounded-xl border border-[#DCFCE7] bg-[#F0FDF4] p-5">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7]">
+          <Feather name="check" size={24} color="#15803D" />
+        </View>
+        <Text className="text-lg font-semibold text-textPrimary">Сообщение отправлено</Text>
+        <Text className="text-center text-sm leading-5 text-textSecondary">
+          Ваше сообщение доставлено клиенту. Вы будете перенаправлены в чат для продолжения общения.
+        </Text>
+      </View>
+
+      {/* Redirect note */}
+      <View className="flex-row items-center justify-center gap-1.5 rounded-lg bg-bgSecondary px-3 py-2">
+        <Feather name="arrow-right" size={14} color={Colors.brandPrimary} />
+        <Text className="text-sm text-brandPrimary">Переход в чат через 3 сек...</Text>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -104,91 +192,18 @@ function LoadingState() {
 // ---------------------------------------------------------------------------
 export function PublicRequestDetailStates() {
   return (
-    <View style={{ gap: Spacing['4xl'] }}>
-      <StateSection title="DEFAULT" pageId="public-request-detail">
-        <DefaultState />
+    <View style={{ gap: 40 }}>
+      <StateSection title="AUTHORIZED" pageId="public-request-detail">
+        <AuthorizedState />
       </StateSection>
 
-      <StateSection title="LOADING" pageId="public-request-detail">
-        <LoadingState />
+      <StateSection title="UNAUTHORIZED" pageId="public-request-detail">
+        <UnauthorizedState />
+      </StateSection>
+
+      <StateSection title="MESSAGE_SENT" pageId="public-request-detail">
+        <MessageSentState />
       </StateSection>
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// STYLES
-// ---------------------------------------------------------------------------
-const s = StyleSheet.create({
-  container: { padding: Spacing.xl, gap: Spacing.lg },
-
-  // Breadcrumb
-  breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  breadcrumbLink: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
-  breadcrumbCurrent: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-
-  // Detail card
-  detailCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    padding: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    gap: Spacing.md,
-    ...Shadows.sm,
-  },
-  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.full,
-  },
-  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.statusSuccess },
-  statusText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold },
-  dateText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-
-  title: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary, lineHeight: 28 },
-  desc: { fontSize: Typography.fontSize.base, color: Colors.textSecondary, lineHeight: 22 },
-
-  tags: { flexDirection: 'row', gap: Spacing.sm },
-  tag: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.full,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  tagText: { fontSize: Typography.fontSize.xs, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
-
-  divider: { height: 1, backgroundColor: Colors.borderLight },
-
-  metaGrid: { flexDirection: 'row', gap: Spacing.xl, flexWrap: 'wrap' },
-  metaItem: { gap: 2 },
-  metaLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  metaValue: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-
-  // CTA
-  respondBtn: {
-    height: 48,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.btn,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  respondBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
-
-  // Hint
-  hintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  hintText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center' },
-
-  // Skeleton
-  skelLine: { height: 12, borderRadius: 4, backgroundColor: Colors.bgSecondary },
-});
