@@ -230,7 +230,8 @@ function RequestFeedCard({
   author,
   memberSince,
   messageCount,
-  onPress,
+  onMessage,
+  onDetails,
 }: {
   title: string;
   description: string;
@@ -241,17 +242,17 @@ function RequestFeedCard({
   author: string;
   memberSince: number;
   messageCount: number;
-  onPress: () => void;
+  onMessage: () => void;
+  onDetails: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
+    <View
       className="gap-2 rounded-xl border border-borderLight bg-white p-4"
       style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}
     >
-      <View className="flex-row items-center justify-between">
-        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={1}>{title}</Text>
-        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+      <View className="flex-row items-start justify-between gap-2">
+        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={2}>{title}</Text>
+        <Text className="text-xs text-textMuted">{date}</Text>
       </View>
       <Text className="text-sm leading-5 text-textSecondary" numberOfLines={2}>{description}</Text>
       <View className="flex-row flex-wrap gap-2">
@@ -283,7 +284,6 @@ function RequestFeedCard({
             <Text className="text-xs text-textMuted">на сайте с {memberSince} г.</Text>
           </View>
         </View>
-        <Text className="text-xs text-textMuted">{date}</Text>
       </View>
       {/* Response count */}
       <View className="flex-row items-center gap-1.5">
@@ -292,7 +292,18 @@ function RequestFeedCard({
           {pluralSpecialists(messageCount)}
         </Text>
       </View>
-    </Pressable>
+      {/* Action buttons */}
+      <View className="mt-1 flex-row gap-2">
+        <Pressable onPress={onMessage} className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
+          <Feather name="send" size={14} color={Colors.white} />
+          <Text className="text-sm font-semibold text-white">Написать по заявке</Text>
+        </Pressable>
+        <Pressable onPress={onDetails} className="h-10 flex-row items-center justify-center gap-1.5 rounded-lg border border-borderLight px-4">
+          <Feather name="eye" size={14} color={Colors.textPrimary} />
+          <Text className="text-sm font-medium text-textPrimary">Подробнее</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -461,7 +472,8 @@ export default function SpecialistFeedTab() {
           author={getAuthorInitials(item.client?.name)}
           memberSince={getMemberYear(item.client?.createdAt)}
           messageCount={item._count.responses}
-          onPress={() => router.push(`/requests/${item.id}` as any)}
+          onMessage={() => router.push(`/requests/${item.id}?respond=1` as any)}
+          onDetails={() => router.push(`/requests/${item.id}` as any)}
         />
       </View>
     );
