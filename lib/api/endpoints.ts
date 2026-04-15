@@ -75,6 +75,19 @@ export const users = {
   updateSettings(data: Record<string, unknown>) {
     return client.patch('/users/me/settings', data);
   },
+
+  /** Step 1: send OTP to the new email address */
+  requestEmailChange(newEmail: string) {
+    return client.post<{ message: string }>('/users/me/change-email/request', { newEmail });
+  },
+
+  /** Step 2: verify OTP, update email, return new tokens */
+  confirmEmailChange(newEmail: string, code: string) {
+    return client.post<{ accessToken: string; refreshToken: string; email: string }>(
+      '/users/me/change-email/confirm',
+      { newEmail, code },
+    );
+  },
 };
 
 // ---------------------------------------------------------------------------
