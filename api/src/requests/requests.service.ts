@@ -10,6 +10,7 @@ import {
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../notifications/email.service';
+import { InAppNotificationService } from '../notifications/in-app-notification.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { CreateQuickRequestDto } from './dto/create-quick-request.dto';
 import { RespondRequestDto } from './dto/respond-request.dto';
@@ -28,6 +29,7 @@ export class RequestsService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private inAppNotifService: InAppNotificationService,
   ) {}
 
   async findRecent(limit = 5) {
@@ -402,6 +404,15 @@ export class RequestsService {
     if (request.client.notifyNewResponses) {
       this.emailService.notifyNewResponse(request.client.email, requestId, specialistId, request.client.id);
     }
+
+    // In-app notification for the client
+    this.inAppNotifService.create({
+      userId: request.client.id,
+      type: 'NEW_RESPONSE',
+      title: 'Новый отклик',
+      body: `Специалист откликнулся на заявку "${request.title}"`,
+      data: { requestId, responseId: result.response.id },
+    }).catch(() => {});
 
     return result;
   }

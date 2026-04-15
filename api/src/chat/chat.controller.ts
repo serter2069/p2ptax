@@ -18,6 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { randomUUID } from 'crypto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StorageService } from '../storage/storage.service';
+import { InAppNotificationService } from '../notifications/in-app-notification.service';
 import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
 import { StartThreadDto } from './dto/start-thread.dto';
@@ -42,6 +43,7 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly chatGateway: ChatGateway,
     private readonly storageService: StorageService,
+    private readonly inAppNotifService: InAppNotificationService,
   ) {}
 
   @Get()
@@ -171,6 +173,15 @@ export class ChatController {
     if (!recipientOnline) {
       this.chatGateway.notifyRecipientAsync(recipientId, req.user.email, threadId).catch(() => {});
     }
+
+    // In-app notification for the recipient
+    this.inAppNotifService.create({
+      userId: recipientId,
+      type: 'NEW_MESSAGE',
+      title: 'Новое сообщение',
+      body: dto.content?.trim()?.slice(0, 100) || 'Вложение',
+      data: { threadId },
+    }).catch(() => {});
 
     return message;
   }

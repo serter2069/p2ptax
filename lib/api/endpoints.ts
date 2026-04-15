@@ -235,6 +235,27 @@ export const complaints = {
 };
 
 // ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+export const notifications = {
+  list(page = 1) {
+    return client.get('/notifications', { params: { page } });
+  },
+
+  unreadCount() {
+    return client.get<{ count: number }>('/notifications/unread-count');
+  },
+
+  markRead(id: string) {
+    return client.patch(`/notifications/${id}/read`);
+  },
+
+  markAllRead() {
+    return client.post('/notifications/read-all');
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Upload
 // ---------------------------------------------------------------------------
 export const upload = {

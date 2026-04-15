@@ -13,6 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/Colors';
 import { requests as requestsApi } from '../../lib/api/endpoints';
+import { NotificationBell } from '../../components/NotificationBell';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -217,10 +218,13 @@ export default function RequestsTab() {
       {/* Header */}
       <View style={s.topBar}>
         <Text style={s.pageTitle}>Мои заявки</Text>
-        <Pressable style={s.addBtn} onPress={goToCreate}>
-          <Feather name="plus" size={16} color={Colors.white} />
-          <Text style={s.addBtnText}>Новая</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <NotificationBell />
+          <Pressable style={s.addBtn} onPress={goToCreate}>
+            <Feather name="plus" size={16} color={Colors.white} />
+            <Text style={s.addBtnText}>Новая</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Tabs */}

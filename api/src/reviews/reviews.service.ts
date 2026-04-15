@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { InAppNotificationService } from '../notifications/in-app-notification.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { RequestStatus } from '@prisma/client';
 
@@ -13,7 +14,10 @@ const PAGE_SIZE = 20;
 
 @Injectable()
 export class ReviewsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private inAppNotifService: InAppNotificationService,
+  ) {}
 
   async create(clientId: string, dto: CreateReviewDto) {
     // Resolve specialist by nick
@@ -66,7 +70,7 @@ export class ReviewsService {
       throw new ConflictException('You have already reviewed this specialist for this request');
     }
 
-    return this.prisma.review.create({
+    const review = await this.prisma.review.create({
       data: {
         clientId,
         specialistId,
@@ -75,6 +79,17 @@ export class ReviewsService {
         comment: dto.comment ?? null,
       },
     });
+
+    // In-app notification for the specialist
+    this.inAppNotifService.create({
+      userId: specialistId,
+      type: 'REVIEW',
+      title: 'Новый отзыв',
+      body: `Клиент оставил отзыв: ${dto.rating} из 5`,
+      data: { reviewId: review.id, requestId: dto.requestId },
+    }).catch(() => {});
+
+    return review;
   }
 
   async listByClient(clientId: string) {
