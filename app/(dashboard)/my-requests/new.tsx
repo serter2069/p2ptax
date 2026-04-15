@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { api, ApiError } from '../../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
@@ -19,6 +21,18 @@ import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { IfnsSearch } from '../../../components/IfnsSearch';
 import { useBreakpoints } from '../../../hooks/useBreakpoints';
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'];
+
+interface SelectedFile {
+  uri: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
 
 const TAX_CATEGORIES = [
   'НДС',
@@ -44,9 +58,92 @@ export default function CreateRequestScreen() {
   const [selectedIfns, setSelectedIfns] = useState<any>(null);
   const [budget, setBudget] = useState('');
   const [category, setCategory] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
+  const [fileError, setFileError] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ title?: string; description?: string; city?: string; budget?: string }>({});
   const scrollViewRef = useRef<ScrollView>(null);
+
+  function addFiles(files: SelectedFile[]) {
+    setFileError(undefined);
+    const remaining = MAX_FILES - selectedFiles.length;
+    if (remaining <= 0) {
+      setFileError(`Максимум ${MAX_FILES} файлов`);
+      return;
+    }
+    const toAdd: SelectedFile[] = [];
+    for (const f of files) {
+      if (toAdd.length >= remaining) {
+        setFileError(`Максимум ${MAX_FILES} файлов`);
+        break;
+      }
+      const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
+      if (!ALLOWED_MIME_TYPES.includes(f.mimeType) && !ALLOWED_EXTENSIONS.includes(ext)) {
+        setFileError('Допустимые форматы: PDF, JPG, PNG');
+        continue;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        setFileError('Максимальный размер файла — 10 МБ');
+        continue;
+      }
+      toAdd.push(f);
+    }
+    if (toAdd.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...toAdd]);
+    }
+  }
+
+  function removeFile(index: number) {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setFileError(undefined);
+  }
+
+  async function pickDocument() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf'],
+        multiple: true,
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const files: SelectedFile[] = result.assets.map((a) => ({
+        uri: a.uri,
+        name: a.name ?? 'document.pdf',
+        mimeType: a.mimeType ?? 'application/pdf',
+        size: a.size ?? 0,
+      }));
+      addFiles(files);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось выбрать документ');
+    }
+  }
+
+  async function pickImage() {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.8,
+      });
+      if (result.canceled) return;
+      const files: SelectedFile[] = result.assets.map((a) => {
+        const uriParts = a.uri.split('/');
+        const fileName = a.fileName ?? uriParts[uriParts.length - 1] ?? 'image.jpg';
+        const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+        let mimeType = 'image/jpeg';
+        if (ext === 'png') mimeType = 'image/png';
+        return {
+          uri: a.uri,
+          name: fileName,
+          mimeType,
+          size: a.fileSize ?? 0,
+        };
+      });
+      addFiles(files);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось выбрать изображение');
+    }
+  }
 
   function validate(): boolean {
     const e: typeof errors = {};
@@ -71,6 +168,19 @@ export default function CreateRequestScreen() {
     return Object.keys(e).length === 0;
   }
 
+  async function uploadFiles(requestId: string) {
+    if (selectedFiles.length === 0) return;
+    const formData = new FormData();
+    for (const file of selectedFiles) {
+      formData.append('files', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType,
+      } as any);
+    }
+    await api.upload(`/requests/${requestId}/documents`, formData);
+  }
+
   async function handleSubmit() {
     if (!validate()) return;
     setLoading(true);
@@ -87,7 +197,13 @@ export default function CreateRequestScreen() {
       }
       if (budget.trim()) body.budget = Number(budget.trim());
       if (category) body.category = category;
-      await api.post('/requests', body);
+      const created = await api.post<{ id: string }>('/requests', body);
+      try {
+        await uploadFiles(created.id);
+      } catch (uploadErr) {
+        const msg = uploadErr instanceof ApiError ? uploadErr.message : 'Файлы не удалось загрузить';
+        Alert.alert('Запрос создан', `Но файлы не загружены: ${msg}`);
+      }
       router.replace('/(dashboard)/my-requests');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Не удалось создать запрос';
@@ -220,6 +336,47 @@ export default function CreateRequestScreen() {
               </View>
             </View>
 
+            <View style={styles.field}>
+              <Text style={styles.label}>Документы (необязательно, до {MAX_FILES} файлов)</Text>
+              <Text style={styles.fileHint}>PDF, JPG, PNG — макс. 10 МБ каждый</Text>
+              <View style={styles.fileButtonsRow}>
+                <TouchableOpacity
+                  style={styles.fileButton}
+                  onPress={pickDocument}
+                  activeOpacity={0.7}
+                  disabled={selectedFiles.length >= MAX_FILES}
+                >
+                  <Text style={styles.fileButtonText}>📄 PDF</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.fileButton}
+                  onPress={pickImage}
+                  activeOpacity={0.7}
+                  disabled={selectedFiles.length >= MAX_FILES}
+                >
+                  <Text style={styles.fileButtonText}>🖼 Фото</Text>
+                </TouchableOpacity>
+              </View>
+              {selectedFiles.length > 0 && (
+                <View style={styles.fileChipsRow}>
+                  {selectedFiles.map((file, index) => (
+                    <View key={`${file.name}-${index}`} style={styles.fileChip}>
+                      <Text style={styles.fileChipText} numberOfLines={1}>
+                        {file.name}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => removeFile(index)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Text style={styles.fileChipRemove}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+              {fileError && <Text style={styles.errorText}>{fileError}</Text>}
+            </View>
+
           </View>
         </ScrollView>
         <View style={styles.stickyBottom}>
@@ -344,5 +501,56 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#FFFFFF',
+  },
+  fileHint: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textMuted,
+  },
+  fileButtonsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  fileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  fileButtonText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  fileChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  fileChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
+    maxWidth: 220,
+  },
+  fileChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textPrimary,
+    flexShrink: 1,
+  },
+  fileChipRemove: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.statusError,
+    fontWeight: Typography.fontWeight.bold,
   },
 });
