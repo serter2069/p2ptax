@@ -186,11 +186,10 @@ export class SpecialistsService {
     const activity = await this.computeActivity(profile.userId);
     const fnsGroupedByCity = this.groupFnsByCity(profile.specialistFns, profile.specialistServices);
 
-    // Strip internal IDs from public profile response; contacts only for authenticated users
-    const { id: _id, userId: _userId, contacts, specialistFns: _sf, specialistServices: _ss, ...publicProfile } = profile;
+    // Strip internal IDs from public profile response; structured contact fields are public
+    const { id: _id, userId: _userId, specialistFns: _sf, specialistServices: _ss, ...publicProfile } = profile;
     return {
       ...publicProfile,
-      ...(requestingUser ? { contacts } : {}),
       activity,
       rating: activity.avgRating,
       reviewCount: activity.reviewCount,

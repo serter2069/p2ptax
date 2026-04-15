@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Image, Platform, Alert, Share, TextInput, FlatList } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, SafeAreaView, Image, Platform, Alert, Share, TextInput, FlatList, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { api, ApiError } from '../../lib/api';
@@ -41,6 +41,11 @@ interface SpecialistProfile {
   services: string[];
   badges: string[];
   contacts: string | null;
+  phone: string | null;
+  telegram: string | null;
+  whatsapp: string | null;
+  officeAddress: string | null;
+  workingHours: string | null;
   promoted: boolean;
   promotionTier: number;
   activity: { responseCount: number; avgRating: number | null; reviewCount: number };
@@ -607,20 +612,61 @@ export default function PublicSpecialistProfileScreen() {
         </View>
       )}
 
-      {profile.contacts && user?.role !== 'SPECIALIST' && (
+      {(profile.phone || profile.telegram || profile.whatsapp || profile.officeAddress || profile.workingHours) && (
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Связаться</Text>
-          {user ? (
-            <Text style={styles.bodyText}>{profile.contacts}</Text>
-          ) : (
-            <TouchableOpacity
-              onPress={() => router.push(`/(auth)/email?redirectTo=/specialists/${profile.nick}` as any)}
-              activeOpacity={0.8}
-              style={styles.ghostBtn}
-            >
-              <Text style={styles.ghostBtnText}>Войдите чтобы увидеть контакты</Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.contactsList}>
+            {profile.phone && (
+              <TouchableOpacity
+                style={styles.contactRow}
+                onPress={() => Linking.openURL(`tel:${profile.phone}`)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="call-outline" size={18} color={B.action} />
+                <Text style={styles.contactLink}>{profile.phone}</Text>
+              </TouchableOpacity>
+            )}
+            {profile.telegram && (
+              <TouchableOpacity
+                style={styles.contactRow}
+                onPress={() => {
+                  const handle = profile.telegram!.replace(/^@/, '');
+                  Linking.openURL(`https://t.me/${handle}`);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="paper-plane-outline" size={18} color={B.action} />
+                <Text style={styles.contactLink}>
+                  {profile.telegram.startsWith('@') ? profile.telegram : `@${profile.telegram}`}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {profile.whatsapp && (
+              <TouchableOpacity
+                style={styles.contactRow}
+                onPress={() => {
+                  const num = profile.whatsapp!.replace(/\D/g, '');
+                  Linking.openURL(`https://wa.me/${num}`);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-whatsapp" size={18} color={B.action} />
+                <Text style={styles.contactLink}>{profile.whatsapp}</Text>
+              </TouchableOpacity>
+            )}
+            {profile.officeAddress && (
+              <View style={styles.contactRow}>
+                <Ionicons name="location-outline" size={18} color={B.muted} />
+                <Text style={styles.contactText}>{profile.officeAddress}</Text>
+              </View>
+            )}
+            {profile.workingHours && (
+              <View style={styles.contactRow}>
+                <Ionicons name="time-outline" size={18} color={B.muted} />
+                <Text style={styles.contactText}>{profile.workingHours}</Text>
+              </View>
+            )}
+          </View>
         </View>
       )}
 
@@ -933,6 +979,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   ghostBtnText: { fontSize: 13, color: B.action, fontWeight: '500' },
+
+  // Contacts
+  contactsList: { gap: 12 },
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  contactLink: { fontSize: 15, color: B.action, lineHeight: 22, flex: 1 },
+  contactText: { fontSize: 15, color: B.primary, lineHeight: 22, flex: 1 },
 
   // Reviews header
   reviewsHeaderRow: {
