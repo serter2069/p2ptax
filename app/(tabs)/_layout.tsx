@@ -49,6 +49,7 @@ function buildClientSidebarNav(unreadNotifs: number): NavGroup[] {
         { label: 'Сообщения', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
         { label: 'Уведомления', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
         { label: 'Профиль', icon: 'user', route: '/(tabs)/profile', segment: 'profile' },
+        { label: 'Настройки', icon: 'settings', route: '/(tabs)/settings', segment: 'settings' },
       ],
     },
   ];
@@ -68,6 +69,7 @@ function buildSpecialistSidebarNav(unreadNotifs: number): NavGroup[] {
         { label: 'Сообщения', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
         { label: 'Уведомления', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
         { label: 'Профиль', icon: 'user', route: '/(tabs)/dashboard', segment: 'dashboard' },
+        { label: 'Настройки', icon: 'settings', route: '/(tabs)/settings', segment: 'settings' },
       ],
     },
   ];
@@ -102,14 +104,17 @@ export default function TabsLayout() {
         tabBarStyle: isMobile
           ? {
               backgroundColor: Colors.bgCard,
-              borderTopColor: Colors.borderLight,
+              borderTopColor: Colors.border,
               borderTopWidth: 1,
-              height: 60,
+              height: 56,
             }
           : { display: 'none' },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '600',
+          fontWeight: '500',
+        },
+        tabBarItemStyle: {
+          gap: 2,
         },
       }}
     >

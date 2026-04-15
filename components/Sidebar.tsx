@@ -55,9 +55,9 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
           paddingHorizontal: Spacing.md,
           borderRadius: BorderRadius.md,
           ...(active ? {
-            backgroundColor: Colors.brandPrimary + '22',
-            borderWidth: 1,
-            borderColor: Colors.brandPrimary + '44',
+            backgroundColor: Colors.brandPrimary + '10',
+            borderLeftWidth: 3,
+            borderLeftColor: Colors.brandPrimary,
           } : {}),
         }}
         onPress={() => router.push(item.route as any)}
