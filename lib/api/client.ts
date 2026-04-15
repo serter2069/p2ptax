@@ -11,6 +11,7 @@ import {
   setRefreshToken,
   clearTokens,
 } from './storage';
+import { toast } from '../toast';
 
 // ---------------------------------------------------------------------------
 // Base URL
@@ -79,8 +80,36 @@ function processQueue(error: unknown, token: string | null = null) {
   failedQueue = [];
 }
 
+// ---------------------------------------------------------------------------
+// Response interceptor — error toasts for non-401 errors
+// ---------------------------------------------------------------------------
 client.interceptors.response.use(
-  (response) => response,
+  undefined,
+  (error: AxiosError) => {
+    const status = error.response?.status;
+
+    if (status && status !== 401) {
+      if (status >= 500) {
+        toast.error('Ошибка сервера, попробуйте позже');
+      } else if (status >= 400) {
+        const data = error.response?.data as { message?: string } | undefined;
+        const message = data?.message || 'Произошла ошибка запроса';
+        toast.error(message);
+      }
+    } else if (!error.response && error.message !== 'canceled') {
+      // Network error (no response at all)
+      toast.error('Нет соединения с сервером');
+    }
+
+    return Promise.reject(error);
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Response interceptor — 401 refresh + retry with queue
+// ---------------------------------------------------------------------------
+client.interceptors.response.use(
+  undefined,
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
