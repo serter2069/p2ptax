@@ -184,8 +184,10 @@ export default function SettingsTab() {
   const isSpecialist = user?.role === 'SPECIALIST';
 
   // Notification toggles
-  const [emailNotif, setEmailNotif] = useState(true);
-  const [pushNotif, setPushNotif] = useState(false);
+  const [notifSettings, setNotifSettings] = useState<{ new_responses: boolean; new_messages: boolean }>({
+    new_responses: true,
+    new_messages: true,
+  });
 
   // Confirm modals
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -219,13 +221,13 @@ export default function SettingsTab() {
       // Load notification settings
       promises.push(
         users
-          .getSettings()
-          .then((res: { data: Record<string, unknown> }) => {
+          .getNotificationSettings()
+          .then((res: { data: { new_responses: boolean; new_messages: boolean } }) => {
             if (res.data) {
-              if (typeof res.data.emailNotifications === 'boolean')
-                setEmailNotif(res.data.emailNotifications);
-              if (typeof res.data.pushNotifications === 'boolean')
-                setPushNotif(res.data.pushNotifications);
+              setNotifSettings({
+                new_responses: typeof res.data.new_responses === 'boolean' ? res.data.new_responses : true,
+                new_messages: typeof res.data.new_messages === 'boolean' ? res.data.new_messages : true,
+              });
             }
           })
           .catch(() => {}),
@@ -270,23 +272,15 @@ export default function SettingsTab() {
   }, [fetchData]);
 
   // ---- Notification toggles ----
-  const handleToggleEmail = useCallback(async (v: boolean) => {
-    setEmailNotif(v);
+  const handleNotifToggle = useCallback(async (key: 'new_responses' | 'new_messages', v: boolean) => {
+    const prev = notifSettings[key];
+    setNotifSettings((s) => ({ ...s, [key]: v }));
     try {
-      await users.updateSettings({ emailNotifications: v });
+      await users.updateNotificationSettings({ [key]: v });
     } catch {
-      setEmailNotif(!v);
+      setNotifSettings((s) => ({ ...s, [key]: prev }));
     }
-  }, []);
-
-  const handleTogglePush = useCallback(async (v: boolean) => {
-    setPushNotif(v);
-    try {
-      await users.updateSettings({ pushNotifications: v });
-    } catch {
-      setPushNotif(!v);
-    }
-  }, []);
+  }, [notifSettings]);
 
   // ---- Availability toggle (specialist) ----
   const handleToggleAvailability = useCallback(async (val: boolean) => {
@@ -524,21 +518,26 @@ export default function SettingsTab() {
           <Text style={s.sectionTitle}>Уведомления</Text>
           <SectionCard>
             <ToggleRow
-              label="Email-уведомления"
-              sublabel={
-                isSpecialist
-                  ? 'Новые запросы в ваших городах'
-                  : 'Отклики специалистов и сообщения'
-              }
+              label="Новые отклики"
+              sublabel="Уведомления о новых откликах на ваши запросы"
               icon="mail"
-              value={emailNotif}
-              onToggle={handleToggleEmail}
+              value={notifSettings.new_responses}
+              onToggle={(v) => handleNotifToggle('new_responses', v)}
             />
             <ToggleRow
-              label="Push-уведомления"
-              icon="bell"
-              value={pushNotif}
-              onToggle={handleTogglePush}
+              label="Новые сообщения"
+              sublabel="Уведомления о новых сообщениях в чатах"
+              icon="message-square"
+              value={notifSettings.new_messages}
+              onToggle={(v) => handleNotifToggle('new_messages', v)}
+            />
+            <ToggleRow
+              label="Автозакрытие"
+              sublabel="Уведомления об автоматическом закрытии запросов"
+              icon="clock"
+              value={true}
+              onToggle={() => {}}
+              disabled
               last
             />
           </SectionCard>
