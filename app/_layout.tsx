@@ -8,6 +8,8 @@ import { AuthProvider as NewAuthProvider } from '../lib/auth';
 import { isAdmin } from '../lib/adminEmails';
 import { Colors } from '../constants/Colors';
 import { tryRefreshTokens } from '../lib/api';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { ToastContainer } from '../components/Toast';
 
 const PROACTIVE_INTERVAL_MS = 20 * 60 * 1000; // 20 minutes
 const VISIBILITY_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
@@ -143,11 +145,14 @@ export default function RootLayout() {
         <meta property="og:description" content="Сервис поиска налоговых специалистов" />
         <meta property="og:type" content="website" />
       </Head>
-      <NewAuthProvider>
-        <AuthProvider>
-          <RootNavigator />
-        </AuthProvider>
-      </NewAuthProvider>
+      <ErrorBoundary>
+        <NewAuthProvider>
+          <AuthProvider>
+            <RootNavigator />
+            <ToastContainer />
+          </AuthProvider>
+        </NewAuthProvider>
+      </ErrorBoundary>
     </>
   );
 }
