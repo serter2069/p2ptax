@@ -35,7 +35,9 @@ export default function SpecialistRespondScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [price, setPrice] = useState('');
   const [comment, setComment] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [alreadyResponded, setAlreadyResponded] = useState(false);
@@ -73,6 +75,13 @@ export default function SpecialistRespondScreen() {
     return () => { cancelled = true; };
   }, [requestId]);
 
+  const getPriceError = useCallback((): string => {
+    if (!price.trim()) return 'Укажите стоимость';
+    const num = parseInt(price.replace(/\s/g, ''), 10);
+    if (isNaN(num) || num <= 0) return 'Укажите корректную сумму';
+    return '';
+  }, [price]);
+
   const getCommentError = useCallback((): string => {
     const trimmed = comment.trim();
     if (trimmed.length < 10) return 'Минимум 10 символов';
@@ -80,9 +89,17 @@ export default function SpecialistRespondScreen() {
     return '';
   }, [comment]);
 
+  const getDeadlineError = useCallback((): string => {
+    if (!deadline.trim()) return ''; // optional field
+    const d = new Date(deadline);
+    if (isNaN(d.getTime())) return 'Неверный формат даты';
+    if (d <= new Date()) return 'Дата должна быть в будущем';
+    return '';
+  }, [deadline]);
+
   const isFormValid = useCallback(() => {
-    return !getCommentError();
-  }, [getCommentError]);
+    return !getPriceError() && !getCommentError() && !getDeadlineError();
+  }, [getPriceError, getCommentError, getDeadlineError]);
 
   const handleSubmit = useCallback(async () => {
     if (!requestId || !isFormValid()) return;
@@ -91,9 +108,14 @@ export default function SpecialistRespondScreen() {
     setSubmitError('');
 
     try {
-      await api.post(`/requests/${requestId}/respond`, {
+      const body: { comment: string; price: number; deadline?: string } = {
         comment: comment.trim(),
-      });
+        price: parseInt(price.replace(/\s/g, ''), 10),
+      };
+      if (deadline.trim()) {
+        body.deadline = new Date(deadline).toISOString();
+      }
+      await api.post(`/requests/${requestId}/respond`, body);
 
       if (Platform.OS === 'web') {
         alert('Your response has been sent');
@@ -115,7 +137,7 @@ export default function SpecialistRespondScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [requestId, comment, isFormValid, router]);
+  }, [requestId, price, comment, deadline, isFormValid, router]);
 
   if (!user || user.role !== 'SPECIALIST') {
     return null;
@@ -228,9 +250,30 @@ export default function SpecialistRespondScreen() {
         {/* Response form */}
         {!alreadyResponded && (
           <>
+            {/* Price */}
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Ваша цена *</Text>
+              <TextInput
+                value={price}
+                onChangeText={setPrice}
+                placeholder="Укажите стоимость в рублях"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                editable={!submitting}
+                testID="price-input"
+                className={`h-12 rounded-lg border bg-white px-3 text-base text-textPrimary ${
+                  price !== '' && getPriceError() ? 'border-statusError' : 'border-borderLight'
+                }`}
+                style={{ outlineStyle: 'none' as any }}
+              />
+              {price !== '' && getPriceError() ? (
+                <Text className="text-xs text-statusError" testID="price-error">{getPriceError()}</Text>
+              ) : null}
+            </View>
+
             {/* Message */}
             <View className="gap-1">
-              <Text className="text-sm font-medium text-textSecondary">Сообщение клиенту</Text>
+              <Text className="text-sm font-medium text-textSecondary">Сообщение клиенту *</Text>
               <TextInput
                 value={comment}
                 onChangeText={setComment}
@@ -252,6 +295,26 @@ export default function SpecialistRespondScreen() {
               ) : null}
             </View>
 
+            {/* Deadline */}
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Срок выполнения</Text>
+              <TextInput
+                value={deadline}
+                onChangeText={setDeadline}
+                placeholder="ГГГГ-ММ-ДД"
+                placeholderTextColor={Colors.textMuted}
+                editable={!submitting}
+                testID="deadline-input"
+                className={`h-12 rounded-lg border bg-white px-3 text-base text-textPrimary ${
+                  deadline !== '' && getDeadlineError() ? 'border-statusError' : 'border-borderLight'
+                }`}
+                style={{ outlineStyle: 'none' as any }}
+              />
+              {deadline !== '' && getDeadlineError() ? (
+                <Text className="text-xs text-statusError" testID="deadline-error">{getDeadlineError()}</Text>
+              ) : null}
+            </View>
+
             {submitError && !alreadyResponded ? (
               <Text className="text-center text-sm text-statusError">{submitError}</Text>
             ) : null}
@@ -269,7 +332,7 @@ export default function SpecialistRespondScreen() {
               ) : (
                 <>
                   <Feather name="send" size={16} color={Colors.white} />
-                  <Text className="text-base font-semibold text-white">Написать по заявке</Text>
+                  <Text className="text-base font-semibold text-white">Отправить отклик</Text>
                 </>
               )}
             </Pressable>
