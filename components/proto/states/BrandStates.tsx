@@ -256,7 +256,7 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
       <Text style={bs.sectionDesc}>Текстовые поля во всех состояниях</Text>
 
       <View style={[bs.inputGrid, isDesktop && bs.inputGridDesktop]}>
-        <View style={bs.inputGroup}>
+        <View style={[bs.inputGroup, isDesktop && bs.inputGroupDesktop]}>
           <Text style={bs.inputStateLabel}>Пустое</Text>
           <TextInput
             style={[bs.inputWrap, bs.textInput]}
@@ -265,7 +265,7 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
           />
         </View>
 
-        <View style={bs.inputGroup}>
+        <View style={[bs.inputGroup, isDesktop && bs.inputGroupDesktop]}>
           <Text style={bs.inputStateLabel}>В фокусе</Text>
           <TextInput
             style={[bs.inputWrap, bs.inputFocused, bs.textInput]}
@@ -274,7 +274,7 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
           />
         </View>
 
-        <View style={bs.inputGroup}>
+        <View style={[bs.inputGroup, isDesktop && bs.inputGroupDesktop]}>
           <Text style={bs.inputStateLabel}>Заполненное</Text>
           <TextInput
             style={[bs.inputWrap, bs.textInput]}
@@ -283,7 +283,7 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
           />
         </View>
 
-        <View style={bs.inputGroup}>
+        <View style={[bs.inputGroup, isDesktop && bs.inputGroupDesktop]}>
           <Text style={bs.inputStateLabel}>Ошибка</Text>
           <TextInput
             style={[bs.inputWrap, bs.inputError, bs.textInput]}
@@ -296,7 +296,7 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
           </View>
         </View>
 
-        <View style={bs.inputGroup}>
+        <View style={[bs.inputGroup, isDesktop && bs.inputGroupDesktop]}>
           <Text style={bs.inputStateLabel}>Неактивное</Text>
           <TextInput
             style={[bs.inputWrap, bs.inputDisabledWrap, bs.textInput, { color: Colors.textMuted }]}
@@ -306,7 +306,7 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
           />
         </View>
 
-        <View style={bs.inputGroup}>
+        <View style={[bs.inputGroup, isDesktop && bs.inputGroupDesktop]}>
           <Text style={bs.inputStateLabel}>С иконкой</Text>
           <View style={[bs.inputWrap, bs.inputWithIconWrap]}>
             <Feather name="search" size={16} color={Colors.textMuted} />
@@ -955,7 +955,8 @@ const bs = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.lg,
   },
-  inputGroup: { gap: Spacing.xs, minWidth: 200, flex: 1 },
+  inputGroup: { gap: Spacing.xs, width: '100%' as any },
+  inputGroupDesktop: { minWidth: 200, flex: 1, width: 'auto' as any },
   inputStateLabel: {
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.semibold,
