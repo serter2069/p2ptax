@@ -73,11 +73,14 @@ function RootNavigator() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inDashboardGroup = segments[0] === '(dashboard)';
+    const inTabsGroup = segments[0] === '(tabs)';
     const inAdminGroup = segments[0] === '(admin)';
     const inOnboardingGroup = segments[0] === '(onboarding)';
+    const inPublicGroup = segments[0] === '(public)';
     // Public routes that guests can access freely
     const isPublicRoute =
-      segments[0] === 'specialists' || segments[0] === 'requests' || segments[0] === 'pricing' || segments[0] === 'v2' || segments[0] === 'proto';
+      segments[0] === 'specialists' || segments[0] === 'requests' || segments[0] === 'pricing' || segments[0] === 'v2' || segments[0] === 'proto' || inPublicGroup;
+    const inProtectedArea = inDashboardGroup || inTabsGroup;
 
     // New user must complete onboarding (specialist) or goes to dashboard (client)
     if (user && user.isNewUser && !inOnboardingGroup && !inAuthGroup) {
@@ -86,7 +89,7 @@ function RootNavigator() {
         router.replace('/(onboarding)/username');
       } else {
         // Client: skip onboarding entirely
-        router.replace('/(dashboard)');
+        router.replace('/(tabs)/requests');
       }
       return;
     }
@@ -96,17 +99,17 @@ function RootNavigator() {
       isRedirectingRef.current = true;
       router.replace('/');
     } else if (user && inAuthGroup && !user.isNewUser) {
-      // Already authenticated (and onboarded) still in auth group → dashboard
+      // Already authenticated (and onboarded) still in auth group → tabs
       isRedirectingRef.current = true;
-      router.replace('/(dashboard)');
-    } else if (user && !inDashboardGroup && !isPublicRoute && segments[0] === undefined) {
-      // Authenticated user on landing → redirect to dashboard
+      router.replace('/(tabs)/requests');
+    } else if (user && !inProtectedArea && !isPublicRoute && segments[0] === undefined) {
+      // Authenticated user on landing → redirect to tabs
       isRedirectingRef.current = true;
-      router.replace('/(dashboard)');
+      router.replace('/(tabs)/requests');
     } else if (user && inAdminGroup && !isAdmin(user.email)) {
-      // Non-admin trying to access admin section → redirect to dashboard
+      // Non-admin trying to access admin section → redirect to tabs
       isRedirectingRef.current = true;
-      router.replace('/(dashboard)');
+      router.replace('/(tabs)/requests');
     } else {
       isRedirectingRef.current = false;
     }

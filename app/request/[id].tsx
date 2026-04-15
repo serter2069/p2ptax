@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing } from '../../constants/Colors';
 
-export default function WorkAreaScreen() {
+export default function RequestDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Рабочая область</Text>
-      <Text style={styles.subtitle}>Work area onboarding placeholder</Text>
+      <Text style={styles.title}>Request Detail</Text>
+      <Text style={styles.subtitle}>Request #{id}</Text>
     </View>
   );
 }
