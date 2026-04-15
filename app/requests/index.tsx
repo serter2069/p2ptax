@@ -481,7 +481,7 @@ export default function RequestsFeedScreen() {
               <View style={styles.searchBar}>
                 <Text style={styles.searchIcon}>&#x1F50D;</Text>
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { outlineStyle: 'none' } as any]}
                   value={cityFilter}
                   onChangeText={setCityFilter}
                   placeholder="Поиск по городу..."
@@ -587,7 +587,7 @@ export default function RequestsFeedScreen() {
                   ) : (
                     <View style={styles.ifnsInputWrapper}>
                       <TextInput
-                        style={styles.ifnsInput}
+                        style={[styles.ifnsInput, { outlineStyle: 'none' } as any]}
                         value={ifnsQuery}
                         onChangeText={setIfnsQuery}
                         placeholder="Номер или название..."
@@ -751,7 +751,7 @@ export default function RequestsFeedScreen() {
               multiline
               numberOfLines={4}
               maxLength={500}
-              style={styles.messageInput}
+              style={[styles.messageInput, { outlineStyle: 'none' } as any]}
               autoFocus
             />
             <Text style={styles.charCounter}>{respondMessage.length}/500</Text>

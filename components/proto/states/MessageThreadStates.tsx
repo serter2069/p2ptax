@@ -163,7 +163,7 @@ function DefaultChat() {
               onChangeText={setInputText}
               placeholder="Введите сообщение..."
               placeholderTextColor={Colors.textMuted}
-              style={s.chatInput}
+              style={[s.chatInput, { outlineStyle: 'none' } as any]}
               onSubmitEditing={handleSend}
               returnKeyType="send"
             />
@@ -240,7 +240,7 @@ function EmptyChat() {
           <TextInput
             placeholder="Введите сообщение..."
             placeholderTextColor={Colors.textMuted}
-            style={s.chatInput}
+            style={[s.chatInput, { outlineStyle: 'none' } as any]}
           />
           <Pressable style={[s.sendBtn, s.sendBtnDisabled]}>
             <Feather name="arrow-up" size={18} color={Colors.white} />

@@ -396,6 +396,7 @@ export default function SpecialistsCatalogScreen() {
               placeholder="Поиск по имени, услугам..."
               placeholderTextColor="#94A3B8"
               autoCorrect={false}
+              style={{ outlineStyle: 'none' } as any}
             />
             {searchText.length > 0 && (
               <Pressable onPress={() => setSearchText('')}>
@@ -464,6 +465,7 @@ export default function SpecialistsCatalogScreen() {
                     placeholder={selectedFns.length > 0 ? 'Добавить ещё...' : 'Поиск ИФНС...'}
                     placeholderTextColor="#94A3B8"
                     autoCorrect={false}
+                    style={{ outlineStyle: 'none' } as any}
                   />
                 </View>
                 {fnsDropdown.length > 0 && (

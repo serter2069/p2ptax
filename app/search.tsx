@@ -268,7 +268,7 @@ export default function SearchScreen() {
         <Ionicons name="search" size={20} color={Colors.textMuted} style={styles.searchIcon} />
         <TextInput
           ref={inputRef}
-          style={styles.searchInput}
+          style={[styles.searchInput, { outlineStyle: 'none' } as any]}
           value={query}
           onChangeText={setQuery}
           placeholder="Поиск заявок и специалистов..."

@@ -514,6 +514,7 @@ export default function MySpecialistProfileScreen() {
                 autoCapitalize="words"
                 returnKeyType="done"
                 onSubmitEditing={addCity}
+                style={{ outlineStyle: 'none' } as any}
               />
               <Pressable className="w-11 h-11 bg-brandPrimary rounded-lg items-center justify-center" onPress={addCity}>
                 <Text className="text-2xl text-textPrimary leading-7">+</Text>
@@ -548,6 +549,7 @@ export default function MySpecialistProfileScreen() {
                 autoCapitalize="sentences"
                 returnKeyType="done"
                 onSubmitEditing={addService}
+                style={{ outlineStyle: 'none' } as any}
               />
               <Pressable className="w-11 h-11 bg-brandPrimary rounded-lg items-center justify-center" onPress={addService}>
                 <Text className="text-2xl text-textPrimary leading-7">+</Text>
@@ -581,6 +583,7 @@ export default function MySpecialistProfileScreen() {
                 className="flex-1 h-11 bg-white border border-border rounded-lg px-5 text-base text-textPrimary"
                 autoCapitalize="none"
                 returnKeyType="done"
+                style={{ outlineStyle: 'none' } as any}
               />
             </View>
             {fnsSearchResults.length > 0 && (() => {

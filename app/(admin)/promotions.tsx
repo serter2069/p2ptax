@@ -128,7 +128,7 @@ export default function AdminPromotions() {
             <Text style={styles.sectionTitle}>Настройка цен</Text>
             <View style={styles.priceEditor}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { outlineStyle: 'none' } as any]}
                 placeholder="Город"
                 placeholderTextColor={Colors.textMuted}
                 value={editCity}
@@ -150,7 +150,7 @@ export default function AdminPromotions() {
                 ))}
               </View>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { outlineStyle: 'none' } as any]}
                 placeholder="Цена (руб.)"
                 placeholderTextColor={Colors.textMuted}
                 value={editPrice}

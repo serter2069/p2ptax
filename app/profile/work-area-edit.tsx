@@ -403,7 +403,7 @@ export default function WorkAreaEditScreen() {
             <View style={styles.searchRow}>
               <Feather name="search" size={18} color={Colors.textMuted} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { outlineStyle: 'none' } as any]}
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Find city..."

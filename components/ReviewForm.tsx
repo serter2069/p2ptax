@@ -66,7 +66,7 @@ export function ReviewForm({ specialistNick, requestId, onSuccess, onCancel }: R
 
       <Text style={styles.label}>Комментарий (необязательно)</Text>
       <TextInput
-        style={styles.textInput}
+        style={[styles.textInput, { outlineStyle: 'none' } as any]}
         value={comment}
         onChangeText={setComment}
         placeholder="Расскажите о своём опыте..."

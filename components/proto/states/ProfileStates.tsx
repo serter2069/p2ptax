@@ -68,11 +68,11 @@ function DefaultProfile() {
         <View style={s.form}>
           <View style={s.field}>
             <Text style={s.label}>Имя</Text>
-            <TextInput value={name} onChangeText={setName} style={s.input} />
+            <TextInput value={name} onChangeText={setName} style={[s.input, { outlineStyle: 'none' } as any]} />
           </View>
           <View style={s.field}>
             <Text style={s.label}>Email</Text>
-            <TextInput value="elena@mail.ru" editable={false} style={[s.input, s.inputDisabled]} />
+            <TextInput value="elena@mail.ru" editable={false} style={[s.input, s.inputDisabled, { outlineStyle: 'none' } as any]} />
             <View style={s.hintRow}>
               <Feather name="lock" size={12} color={Colors.textMuted} />
               <Text style={s.hint}>Email нельзя изменить</Text>
@@ -80,7 +80,7 @@ function DefaultProfile() {
           </View>
           <View style={s.field}>
             <Text style={s.label}>Город</Text>
-            <TextInput value={city} onChangeText={setCity} style={s.input} />
+            <TextInput value={city} onChangeText={setCity} style={[s.input, { outlineStyle: 'none' } as any]} />
           </View>
         </View>
         <View style={s.actions}>

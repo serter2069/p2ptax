@@ -527,7 +527,7 @@ export default function CityRequestsScreen() {
               multiline
               numberOfLines={4}
               maxLength={500}
-              style={styles.messageInput}
+              style={[styles.messageInput, { outlineStyle: 'none' } as any]}
               autoFocus
             />
             <Text style={styles.charCounter}>{message.length}/500</Text>

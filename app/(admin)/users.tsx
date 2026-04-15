@@ -393,7 +393,7 @@ export default function AdminUsers() {
               placeholder="Поиск по имени, email..."
               placeholderTextColor={Colors.textMuted}
               className="flex-1 text-[15px] text-slate-900"
-              style={{ paddingVertical: 0 }}
+              style={{ paddingVertical: 0, outlineStyle: 'none' } as any}
             />
             {search.length > 0 && (
               <Pressable onPress={() => setSearch('')}>
