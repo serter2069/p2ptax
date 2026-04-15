@@ -14,6 +14,7 @@ const CLIENT_NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Glavnaya', icon: 'home', route: '/(dashboard)', segment: 'index' },
       { label: 'Moi zayavki', icon: 'file-text', route: '/(dashboard)/my-requests', segment: 'my-requests' },
+      { label: 'Otkliki', icon: 'inbox', route: '/(dashboard)/responses', segment: 'responses' },
       { label: 'Lenta zayavok', icon: 'list', route: '/requests', segment: 'feed' },
     ],
   },
@@ -60,6 +61,7 @@ const SPECIALIST_NAV_GROUPS: NavGroup[] = [
 const CLIENT_TAB_ITEMS: BottomTabItem[] = [
   { label: 'Glavnaya', icon: 'home', route: '/(dashboard)', segment: 'index' },
   { label: 'Zayavki', icon: 'file-text', route: '/(dashboard)/my-requests', segment: 'my-requests' },
+  { label: 'Otkliki', icon: 'inbox', route: '/(dashboard)/responses', segment: 'responses' },
   { label: 'Soobscheniya', icon: 'message-circle', route: '/(dashboard)/messages', segment: 'messages' },
   { label: 'Profil', icon: 'user', route: '/(dashboard)/settings', segment: 'settings' },
 ];
