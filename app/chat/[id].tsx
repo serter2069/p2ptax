@@ -19,11 +19,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../stores/authStore';
 import { api } from '../../lib/api';
-import { getSocket, disconnectSocket } from '../../lib/socket';
+import { useChat, type ChatMessage } from '../../lib/hooks/useChat';
 import { Header } from '../../components/Header';
 import { EmptyState } from '../../components/EmptyState';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import type { Socket } from 'socket.io-client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,25 +31,6 @@ interface Attachment {
   url: string;
   type: string; // "IMAGE" | "DOCUMENT"
   name: string;
-}
-
-interface Message {
-  id: string;
-  threadId: string;
-  senderId: string;
-  content: string;
-  readAt: string | null;
-  createdAt: string;
-  attachmentUrl?: string | null;
-  attachmentType?: string | null;
-  attachmentName?: string | null;
-}
-
-interface MessagesResponse {
-  messages: Message[];
-  total: number;
-  page: number;
-  pages: number;
 }
 
 interface SpecialistProfile {
@@ -70,7 +50,7 @@ interface ThreadItem {
   id: string;
   participant1: ThreadParticipant;
   participant2: ThreadParticipant;
-  lastMessage: Message | null;
+  lastMessage: ChatMessage | null;
   createdAt: string;
 }
 
@@ -104,53 +84,43 @@ export default function ChatThreadScreen() {
   const { user, token } = useAuth();
   const { isMobile } = useBreakpoints();
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
   const [otherName, setOtherName] = useState('');
   const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
-  const [typingVisible, setTypingVisible] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<Attachment | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
 
-  const flatListRef = useRef<FlatList<Message>>(null);
-  const socketRef = useRef<Socket | null>(null);
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flatListRef = useRef<FlatList<ChatMessage>>(null);
 
   // ---------------------------------------------------------------------------
-  // Load initial messages + resolve other participant name
+  // Chat hook — messages, send, typing, read receipts via WS + REST
   // ---------------------------------------------------------------------------
-  const fetchData = useCallback(async () => {
-    if (!threadId) return;
-    setLoading(true);
-    setLoadError(false);
-    try {
-      const [msgData, threads] = await Promise.all([
-        api.get<MessagesResponse>(`/threads/${threadId}/messages?page=1`),
-        api.get<ThreadItem[]>('/threads'),
-      ]);
+  const {
+    messages,
+    loading,
+    loadError,
+    sending,
+    typingVisible,
+    hasMore,
+    loadingMore,
+    connectionState,
+    sendMessage,
+    loadMore,
+    reload,
+    emitTyping,
+  } = useChat({
+    threadId,
+    userId: user?.userId,
+    token,
+  });
 
-      const totalPages = msgData.pages ?? 1;
-      // If more than 1 page, load the last page first (newest messages)
-      if (totalPages > 1) {
-        const lastPageData = await api.get<MessagesResponse>(
-          `/threads/${threadId}/messages?page=${totalPages}`,
-        );
-        setMessages(lastPageData.messages ?? []);
-        setPage(totalPages);
-        setHasMore(totalPages > 1);
-      } else {
-        setMessages(msgData.messages ?? []);
-        setPage(1);
-        setHasMore(false);
-      }
-
+  // ---------------------------------------------------------------------------
+  // Resolve other participant name
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!threadId || !user) return;
+    api.get<ThreadItem[]>('/threads').then((threads) => {
       const thread = threads.find((t) => t.id === threadId);
-      if (thread && user) {
+      if (thread) {
         const other =
           thread.participant1.id === user.userId
             ? thread.participant2
@@ -160,107 +130,8 @@ export default function ChatThreadScreen() {
           profile?.displayName || profile?.nick || other.name || other.email.split('@')[0],
         );
       }
-    } catch {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
+    }).catch(() => {});
   }, [threadId, user]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // ---------------------------------------------------------------------------
-  // Load older messages (pagination)
-  // ---------------------------------------------------------------------------
-  const loadMoreMessages = useCallback(async () => {
-    if (!threadId || loadingMore || !hasMore) return;
-    setLoadingMore(true);
-    try {
-      const prevPage = page - 1;
-      const msgData = await api.get<MessagesResponse>(
-        `/threads/${threadId}/messages?page=${prevPage}`,
-      );
-      const older = msgData.messages ?? [];
-      if (older.length > 0) {
-        setMessages((prev) => {
-          const existingIds = new Set(prev.map((m) => m.id));
-          const newMsgs = older.filter((m) => !existingIds.has(m.id));
-          return [...newMsgs, ...prev];
-        });
-        setPage(prevPage);
-      }
-      setHasMore(prevPage > 1);
-    } catch {
-      // silently fail — user can retry by scrolling up again
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [threadId, page, hasMore, loadingMore]);
-
-  // ---------------------------------------------------------------------------
-  // WebSocket
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (!token || !threadId) return;
-
-    const socket = getSocket(token);
-    socketRef.current = socket;
-
-    function onConnect() {
-      socket.emit('join_thread', { threadId });
-    }
-
-    function onNewMessage(msg: Message) {
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-      // Auto-mark as read if we are the recipient
-      if (msg.senderId !== user?.userId) {
-        socket.emit('mark_read', { messageId: msg.id });
-      }
-    }
-
-    function onMessageRead(data: { messageId: string; readAt: string }) {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === data.messageId ? { ...m, readAt: data.readAt } : m,
-        ),
-      );
-    }
-
-    function onTyping(data: { threadId: string; userId: string }) {
-      if (data.userId !== user?.userId) {
-        setTypingVisible(true);
-        if (typingTimer.current) clearTimeout(typingTimer.current);
-        typingTimer.current = setTimeout(() => setTypingVisible(false), 2500);
-      }
-    }
-
-    if (socket.connected) onConnect();
-
-    socket.on('connect', onConnect);
-    socket.on('message:new', onNewMessage);
-    socket.on('message_received', onNewMessage);
-    socket.on('message:read', onMessageRead);
-    socket.on('message_read', onMessageRead);
-    socket.on('typing:start', onTyping);
-    socket.on('typing', onTyping);
-
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('message:new', onNewMessage);
-      socket.off('message_received', onNewMessage);
-      socket.off('message:read', onMessageRead);
-      socket.off('message_read', onMessageRead);
-      socket.off('typing:start', onTyping);
-      socket.off('typing', onTyping);
-      if (typingTimer.current) clearTimeout(typingTimer.current);
-      disconnectSocket();
-    };
-  }, [token, threadId, user]);
 
   // ---------------------------------------------------------------------------
   // Auto-scroll on new messages
@@ -279,9 +150,7 @@ export default function ChatThreadScreen() {
   // ---------------------------------------------------------------------------
   function handleInputChange(text: string) {
     setInput(text);
-    if (socketRef.current?.connected && threadId) {
-      socketRef.current.emit('typing:start', { threadId });
-    }
+    emitTyping();
   }
 
   // ---------------------------------------------------------------------------
@@ -395,7 +264,7 @@ export default function ChatThreadScreen() {
   }
 
   // ---------------------------------------------------------------------------
-  // Send message (WS primary, REST fallback)
+  // Send message
   // ---------------------------------------------------------------------------
   async function handleSend() {
     const content = input.trim();
@@ -407,66 +276,20 @@ export default function ChatThreadScreen() {
     setInput('');
     const attachmentToSend = pendingAttachment;
     setPendingAttachment(null);
-    setSending(true);
-
-    // Optimistic update
-    const optimisticMsg: Message = {
-      id: `optimistic-${Date.now()}`,
-      threadId: threadId!,
-      senderId: user!.userId,
-      content,
-      readAt: null,
-      createdAt: new Date().toISOString(),
-      attachmentUrl: attachmentToSend?.url ?? null,
-      attachmentType: attachmentToSend?.type ?? null,
-      attachmentName: attachmentToSend?.name ?? null,
-    };
-    setMessages((prev) => [...prev, optimisticMsg]);
 
     try {
-      const payload = {
-        threadId,
-        content,
-        ...(attachmentToSend && {
-          attachmentUrl: attachmentToSend.url,
-          attachmentType: attachmentToSend.type,
-          attachmentName: attachmentToSend.name,
-        }),
-      };
-
-      if (socketRef.current?.connected) {
-        socketRef.current.emit('send_message', payload);
-      } else {
-        const message = await api.post<Message>(
-          `/threads/${threadId}/messages`,
-          {
-            content,
-            ...(attachmentToSend && {
-              attachmentUrl: attachmentToSend.url,
-              attachmentType: attachmentToSend.type,
-              attachmentName: attachmentToSend.name,
-            }),
-          },
-        );
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === message.id)) return prev;
-          return [...prev, message];
-        });
-      }
+      await sendMessage(content, attachmentToSend);
     } catch {
-      // Restore on failure
+      // Restore input on failure
       setInput(content);
       if (attachmentToSend) setPendingAttachment(attachmentToSend);
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
-    } finally {
-      setSending(false);
     }
   }
 
   // ---------------------------------------------------------------------------
   // Render helpers
   // ---------------------------------------------------------------------------
-  function renderAttachmentContent(item: Message, isMe: boolean) {
+  function renderAttachmentContent(item: ChatMessage, isMe: boolean) {
     if (!item.attachmentUrl) return null;
 
     if (item.attachmentType === 'IMAGE') {
@@ -501,7 +324,7 @@ export default function ChatThreadScreen() {
     );
   }
 
-  function renderMessage({ item, index }: { item: Message; index: number }) {
+  function renderMessage({ item, index }: { item: ChatMessage; index: number }) {
     const isMe = item.senderId === user?.userId;
     const prevItem = index > 0 ? messages[index - 1] : null;
     const showDate =
@@ -562,6 +385,12 @@ export default function ChatThreadScreen() {
   const canSend = !!(input.trim() || pendingAttachment);
 
   // ---------------------------------------------------------------------------
+  // Connection status banner
+  // ---------------------------------------------------------------------------
+  const showConnectionBanner =
+    connectionState === 'reconnecting' || connectionState === 'disconnected';
+
+  // ---------------------------------------------------------------------------
   // UI
   // ---------------------------------------------------------------------------
   return (
@@ -574,6 +403,16 @@ export default function ChatThreadScreen() {
           { label: otherName || 'Диалог' },
         ]}
       />
+
+      {showConnectionBanner && (
+        <View style={styles.connectionBanner}>
+          <Text style={styles.connectionText}>
+            {connectionState === 'reconnecting'
+              ? 'Переподключение...'
+              : 'Нет соединения'}
+          </Text>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -589,7 +428,7 @@ export default function ChatThreadScreen() {
             icon="alert-circle-outline"
             title="Не удалось загрузить сообщения"
             ctaLabel="Повторить"
-            onCtaPress={fetchData}
+            onCtaPress={reload}
           />
         ) : messages.length === 0 ? (
           <EmptyState
@@ -613,7 +452,7 @@ export default function ChatThreadScreen() {
                 hasMore &&
                 !loadingMore
               ) {
-                loadMoreMessages();
+                loadMore();
               }
             }}
             scrollEventThrottle={200}
@@ -732,6 +571,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  connectionBanner: {
+    backgroundColor: '#f59e0b',
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+  },
+  connectionText: {
+    color: '#fff',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: '600',
   },
   msgList: {
     paddingHorizontal: Spacing.md,
