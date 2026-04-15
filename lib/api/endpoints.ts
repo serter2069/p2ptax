@@ -182,3 +182,24 @@ export const stats = {
     return client.get('/stats/landing');
   },
 };
+
+// ---------------------------------------------------------------------------
+// Upload
+// ---------------------------------------------------------------------------
+export const upload = {
+  /** Upload avatar for current user. Returns updated user profile with avatarUrl. */
+  avatar(formData: FormData) {
+    return client.post('/users/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /** Upload file attachment in a chat thread. Returns { url, signedUrl, type, name }. */
+  chatAttachment(threadId: string, formData: FormData) {
+    return client.post<{ url: string; signedUrl: string; type: string; name: string }>(
+      `/threads/${threadId}/upload`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
+};
