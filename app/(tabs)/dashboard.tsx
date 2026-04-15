@@ -6,15 +6,12 @@ import {
   RefreshControl,
   Pressable,
   ActivityIndicator,
-  StyleSheet,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
 import { dashboard, requests, threads } from '../../lib/api/endpoints';
-import { Colors, Typography, Spacing, Shadows, BorderRadius } from '../../constants/Colors';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { StatusBadge } from '../../components/ui/StatusBadge';
+import { Colors } from '../../constants/Colors';
 import { NotificationBell } from '../../components/NotificationBell';
 
 // ---------------------------------------------------------------------------
@@ -26,6 +23,7 @@ interface DashboardStats {
   activeRequests: number;
   totalResponses: number;
   acceptedResponses: number;
+  completedRequests?: number;
 }
 
 interface RequestItem {
@@ -33,186 +31,331 @@ interface RequestItem {
   title: string;
   city: string;
   status: string;
+  service?: string;
+  fnsName?: string;
   createdAt: string;
-  _count?: { responses: number };
+  _count?: { responses: number; messages?: number };
 }
 
 interface ThreadItem {
   id: string;
   participant1: { id: string; name: string };
   participant2: { id: string; name: string };
-  lastMessage: { content: string; senderId: string; createdAt: string; readAt: string | null } | null;
+  lastMessage: {
+    content: string;
+    senderId: string;
+    createdAt: string;
+    readAt: string | null;
+  } | null;
   createdAt: string;
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const STATUS_CONFIG: Record<string, { label: string; bg: string; fg: string; icon?: string }> = {
-  OPEN: { label: 'Открыта', bg: Colors.statusBg.success, fg: Colors.statusSuccess, icon: 'clock' },
-  CLOSING_SOON: { label: 'Скоро закроется', bg: Colors.statusBg.warning, fg: Colors.statusWarning, icon: 'alert-circle' },
-  CLOSED: { label: 'Закрыта', bg: Colors.statusBg.neutral, fg: Colors.statusNeutral },
-  CANCELLED: { label: 'Отменена', bg: Colors.statusBg.error, fg: Colors.statusError },
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 6) return 'Доброй ночи';
+  if (h < 12) return 'Доброе утро';
+  if (h < 18) return 'Добрый день';
+  return 'Добрый вечер';
+}
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  OPEN: { label: 'Новая', color: Colors.brandPrimary },
+  CLOSING_SOON: { label: 'В работе', color: Colors.statusWarning },
+  CLOSED: { label: 'Закрыта', color: Colors.statusNeutral },
+  CANCELLED: { label: 'Отменена', color: Colors.statusError },
 };
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatMessageTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if (diffMin < 1) return 'сейчас';
+  if (diffMin < 60) return `${diffMin} мин`;
+  if (diffMin < 1440) {
+    const hours = Math.floor(diffMin / 60);
+    return `${hours} ч`;
+  }
+  if (diffMin < 2880) return 'вчера';
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
-// ---------------------------------------------------------------------------
-// Skeleton
-// ---------------------------------------------------------------------------
-function SkeletonBox({ width, height }: { width: number | string; height: number }) {
-  return (
-    <View
-      style={[
-        {
-          width: width as any,
-          height,
-          backgroundColor: Colors.borderLight,
-          borderRadius: BorderRadius.md,
-        },
-      ]}
-    />
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <View style={styles.container}>
-      <View style={{ gap: Spacing.sm, marginBottom: Spacing['2xl'] }}>
-        <SkeletonBox width="60%" height={28} />
-        <SkeletonBox width="40%" height={16} />
-      </View>
-      <View style={styles.statsRow}>
-        {[1, 2, 3].map((i) => (
-          <View key={i} style={[styles.statCard, { flex: 1 }]}>
-            <SkeletonBox width={40} height={32} />
-            <SkeletonBox width="80%" height={14} />
-          </View>
-        ))}
-      </View>
-      <View style={{ gap: Spacing.md, marginTop: Spacing['2xl'] }}>
-        {[1, 2, 3].map((i) => (
-          <SkeletonBox key={i} width="100%" height={72} />
-        ))}
-      </View>
-    </View>
-  );
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 // ---------------------------------------------------------------------------
-// Stat Card
+// Sub-components
 // ---------------------------------------------------------------------------
 function StatCard({
   icon,
-  value,
   label,
+  value,
   color,
 }: {
   icon: string;
-  value: number;
   label: string;
+  value: number;
   color: string;
 }) {
   return (
-    <View style={[styles.statCard, { flex: 1 }]}>
-      <View style={[styles.statIconWrap, { backgroundColor: color + '18' }]}>
+    <View className="flex-1 items-center gap-1 rounded-xl border border-borderLight bg-white p-3">
+      <View
+        className="h-9 w-9 items-center justify-center rounded-full"
+        style={{ backgroundColor: color + '15' }}
+      >
         <Feather name={icon as any} size={18} color={color} />
       </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text className="text-lg font-bold" style={{ color }}>
+        {value}
+      </Text>
+      <Text className="text-xs text-textMuted">{label}</Text>
     </View>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Request Card
-// ---------------------------------------------------------------------------
-function RequestCard({ item, onPress }: { item: RequestItem; onPress: () => void }) {
-  const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.OPEN;
+function QuickActions() {
   return (
-    <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <StatusBadge label={cfg.label} bg={cfg.bg} fg={cfg.fg} icon={cfg.icon} />
-      </View>
-      <View style={styles.cardMeta}>
-        <Feather name="map-pin" size={12} color={Colors.textMuted} />
-        <Text style={styles.cardMetaText}>{item.city}</Text>
-        <Feather name="users" size={12} color={Colors.textMuted} style={{ marginLeft: Spacing.sm }} />
-        <Text style={styles.cardMetaText}>{item._count?.responses ?? 0} откликов</Text>
-        <Text style={[styles.cardMetaText, { marginLeft: 'auto' }]}>{formatDate(item.createdAt)}</Text>
-      </View>
-    </Pressable>
+    <View className="flex-row gap-2">
+      <Pressable
+        className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-brandPrimary"
+        onPress={() => router.push('/create-request')}
+      >
+        <Feather name="plus" size={16} color={Colors.white} />
+        <Text className="text-sm font-semibold text-white">Новая заявка</Text>
+      </Pressable>
+      <Pressable
+        className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white"
+        onPress={() => router.navigate('/(tabs)/requests')}
+      >
+        <Feather name="list" size={16} color={Colors.brandPrimary} />
+        <Text className="text-sm font-medium text-brandPrimary">Мои заявки</Text>
+      </Pressable>
+      <Pressable
+        className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white"
+        onPress={() => router.navigate('/(tabs)/messages')}
+      >
+        <Feather name="message-circle" size={16} color={Colors.brandPrimary} />
+        <Text className="text-sm font-medium text-brandPrimary">Сообщения</Text>
+      </Pressable>
+    </View>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Thread Card
-// ---------------------------------------------------------------------------
-function ThreadCard({
+function RequestCard({
   item,
-  userId,
   onPress,
 }: {
-  item: ThreadItem;
-  userId: string;
+  item: RequestItem;
   onPress: () => void;
 }) {
-  const other = item.participant1.id === userId ? item.participant2 : item.participant1;
-  const isUnread =
-    item.lastMessage && item.lastMessage.senderId !== userId && !item.lastMessage.readAt;
+  const cfg = STATUS_MAP[item.status] ?? STATUS_MAP.OPEN;
+  const messageCount = item._count?.messages ?? item._count?.responses ?? 0;
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.cardHeader}>
-        <View style={styles.threadAvatarWrap}>
-          <Feather name="user" size={16} color={Colors.textMuted} />
-        </View>
-        <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-          <Text style={[styles.cardTitle, isUnread && styles.unreadText]} numberOfLines={1}>
-            {other.name}
+    <Pressable className="gap-2 rounded-xl border border-borderLight bg-white p-4" onPress={onPress}>
+      <View className="flex-row items-start justify-between gap-2">
+        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={2}>
+          {item.title}
+        </Text>
+        <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: cfg.color + '18' }}>
+          <Text className="text-xs font-semibold" style={{ color: cfg.color }}>
+            {cfg.label}
           </Text>
-          {item.lastMessage ? (
-            <Text style={[styles.threadPreview, isUnread && styles.unreadText]} numberOfLines={1}>
-              {item.lastMessage.content}
-            </Text>
-          ) : (
-            <Text style={styles.threadPreview}>Нет сообщений</Text>
-          )}
         </View>
-        {isUnread && <View style={styles.unreadDot} />}
-        {item.lastMessage && (
-          <Text style={styles.threadDate}>{formatDate(item.lastMessage.createdAt)}</Text>
+      </View>
+      <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
+        {item.service && (
+          <View className="flex-row items-center gap-1">
+            <Feather name="briefcase" size={12} color={Colors.textMuted} />
+            <Text className="text-xs text-textMuted">{item.service}</Text>
+          </View>
+        )}
+        {item.fnsName && (
+          <View className="flex-row items-center gap-1">
+            <Feather name="home" size={12} color={Colors.textMuted} />
+            <Text className="text-xs text-textMuted">{item.fnsName}</Text>
+          </View>
+        )}
+        <View className="flex-row items-center gap-1">
+          <Feather name="map-pin" size={12} color={Colors.textMuted} />
+          <Text className="text-xs text-textMuted">{item.city}</Text>
+        </View>
+      </View>
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center gap-1">
+          <Feather name="calendar" size={12} color={Colors.textMuted} />
+          <Text className="text-xs text-textMuted">{formatDate(item.createdAt)}</Text>
+        </View>
+        {messageCount > 0 && (
+          <View className="flex-row items-center gap-1">
+            <Feather name="message-circle" size={12} color={Colors.brandPrimary} />
+            <Text className="text-xs font-medium text-brandPrimary">
+              {messageCount} сообщ.
+            </Text>
+          </View>
         )}
       </View>
     </Pressable>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Section Header
-// ---------------------------------------------------------------------------
-function SectionHeader({
-  title,
-  onViewAll,
+function MessagePreview({
+  initials,
+  name,
+  snippet,
+  time,
+  unread,
+  onPress,
 }: {
-  title: string;
-  onViewAll?: () => void;
+  initials: string;
+  name: string;
+  snippet: string;
+  time: string;
+  unread?: boolean;
+  onPress: () => void;
 }) {
   return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {onViewAll && (
-        <Pressable onPress={onViewAll} hitSlop={8}>
-          <Text style={styles.viewAllText}>Смотреть все</Text>
+    <Pressable
+      className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3"
+      onPress={onPress}
+    >
+      <View className="h-10 w-10 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+        <Text className="text-sm font-bold text-brandPrimary">{initials}</Text>
+      </View>
+      <View className="flex-1">
+        <View className="flex-row items-center justify-between">
+          <Text
+            className={`text-sm ${unread ? 'font-bold text-textPrimary' : 'font-medium text-textPrimary'}`}
+          >
+            {name}
+          </Text>
+          <Text className="text-xs text-textMuted">{time}</Text>
+        </View>
+        <Text
+          className={`text-xs ${unread ? 'font-medium text-textSecondary' : 'text-textMuted'}`}
+          numberOfLines={1}
+        >
+          {snippet}
+        </Text>
+      </View>
+      {unread && <View className="h-2.5 w-2.5 rounded-full bg-brandPrimary" />}
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Loading skeleton
+// ---------------------------------------------------------------------------
+function LoadingDashboard() {
+  return (
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 24 }}>
+      {/* Greeting skeleton */}
+      <View className="gap-2">
+        <View className="h-6 w-3/5 rounded-md bg-bgSurface" />
+        <View className="h-4 w-2/5 rounded-md bg-bgSurface" />
+      </View>
+
+      {/* Stats skeleton */}
+      <View className="flex-row gap-2">
+        {[1, 2, 3].map((i) => (
+          <View key={i} className="flex-1 items-center gap-2 rounded-xl border border-borderLight p-3">
+            <View className="h-9 w-9 rounded-full bg-bgSurface" />
+            <View className="h-5 w-8 rounded bg-bgSurface" />
+            <View className="h-3 w-12 rounded bg-bgSurface" />
+          </View>
+        ))}
+      </View>
+
+      {/* Actions skeleton */}
+      <View className="h-10 w-full rounded-xl bg-bgSurface" />
+
+      {/* Request cards skeleton */}
+      <View className="gap-3">
+        <View className="h-5 w-2/5 rounded bg-bgSurface" />
+        {[1, 2].map((i) => (
+          <View key={i} className="gap-2 rounded-xl border border-borderLight p-4">
+            <View className="h-4 w-4/5 rounded bg-bgSurface" />
+            <View className="h-3 w-3/5 rounded bg-bgSurface" />
+            <View className="h-3 w-2/5 rounded bg-bgSurface" />
+          </View>
+        ))}
+      </View>
+
+      <View className="items-center pt-2">
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+      </View>
+    </ScrollView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Empty state
+// ---------------------------------------------------------------------------
+function EmptyDashboard({ userName }: { userName: string }) {
+  return (
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <View>
+        <Text className="text-xl font-bold text-textPrimary">
+          {getGreeting()}{userName ? `, ${userName}` : ''}!
+        </Text>
+        <Text className="text-sm text-textMuted">Добро пожаловать в Налоговик</Text>
+      </View>
+
+      <View className="items-center gap-3 py-10">
+        <View className="h-[72px] w-[72px] items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+          <Feather name="file-text" size={36} color={Colors.brandPrimary} />
+        </View>
+        <Text className="text-lg font-semibold text-textPrimary">Пока нет заявок</Text>
+        <Text className="max-w-[280px] text-center text-sm text-textMuted">
+          Создайте первую заявку, чтобы найти налогового специалиста для решения вашей задачи
+        </Text>
+        <Pressable
+          className="mt-2 h-12 w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary"
+          onPress={() => router.push('/create-request')}
+        >
+          <Feather name="plus" size={18} color={Colors.white} />
+          <Text className="text-base font-semibold text-white">Создать первую заявку</Text>
         </Pressable>
-      )}
-    </View>
+      </View>
+
+      {/* How it works */}
+      <View className="gap-3">
+        <Text className="text-base font-semibold text-textPrimary">Как это работает</Text>
+        {[
+          { num: '1', title: 'Опишите задачу', desc: 'Укажите тип услуги, город и ФНС' },
+          { num: '2', title: 'Получите сообщения', desc: 'Специалисты напишут вам в чат' },
+          { num: '3', title: 'Выберите лучшего', desc: 'Общайтесь, сравните и договоритесь' },
+        ].map((h) => (
+          <View
+            key={h.num}
+            className="flex-row items-start gap-3 rounded-xl border border-borderLight bg-white p-3"
+          >
+            <View className="h-7 w-7 items-center justify-center rounded-full bg-brandPrimary">
+              <Text className="text-sm font-bold text-white">{h.num}</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm font-semibold text-textPrimary">{h.title}</Text>
+              <Text className="text-xs text-textMuted">{h.desc}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
@@ -223,12 +366,14 @@ export default function DashboardTab() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentRequests, setRecentRequests] = useState<RequestItem[]>([]);
   const [recentThreads, setRecentThreads] = useState<ThreadItem[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
+      setError(false);
       const [statsRes, requestsRes, threadsRes] = await Promise.all([
         dashboard.getStats().catch(() => null),
         requests.getMyRequests().catch(() => null),
@@ -242,8 +387,13 @@ export default function DashboardTab() {
       if (threadsRes?.data) {
         setRecentThreads((threadsRes.data as ThreadItem[]).slice(0, 3));
       }
+
+      // If all three failed, show error state
+      if (!statsRes?.data && !requestsRes?.data && !threadsRes?.data) {
+        setError(true);
+      }
     } catch {
-      // errors already caught per-request
+      setError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -260,251 +410,184 @@ export default function DashboardTab() {
   }, [fetchData]);
 
   const unreadCount = recentThreads.filter(
-    (t) => t.lastMessage && t.lastMessage.senderId !== user?.userId && !t.lastMessage.readAt,
+    (t) =>
+      t.lastMessage &&
+      t.lastMessage.senderId !== user?.userId &&
+      !t.lastMessage.readAt,
   ).length;
-
-  if (loading) return <DashboardSkeleton />;
 
   const userName = user?.username || user?.email?.split('@')[0] || '';
 
+  // Loading state
+  if (loading) return <LoadingDashboard />;
+
+  // Empty state — no requests at all
+  const isEmpty = recentRequests.length === 0 && recentThreads.length === 0;
+  if (isEmpty && !error) return <EmptyDashboard userName={userName} />;
+
+  // Error state
+  if (error && recentRequests.length === 0) {
+    return (
+      <ScrollView
+        className="flex-1 bg-white"
+        contentContainerStyle={{ padding: 16, gap: 16, flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brandPrimary} />
+        }
+      >
+        <Feather name="wifi-off" size={48} color={Colors.textMuted} />
+        <Text className="text-lg font-semibold text-textPrimary">Ошибка загрузки</Text>
+        <Text className="max-w-[280px] text-center text-sm text-textMuted">
+          Не удалось загрузить данные. Потяните вниз, чтобы попробовать снова.
+        </Text>
+      </ScrollView>
+    );
+  }
+
+  // Populated state (default / unread)
+  const hasUnread = unreadCount > 0;
+
   return (
     <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brandPrimary} />}
+      className="flex-1 bg-white"
+      contentContainerStyle={{ padding: 16, gap: 16 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brandPrimary} />
+      }
     >
-      {/* Welcome */}
-      <View style={styles.welcomeSection}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.welcomeTitle}>
-            {'\u{1F44B}'} {userName ? `${userName}` : 'Добро пожаловать'}
+      {/* Greeting */}
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1">
+          <Text className="text-xl font-bold text-textPrimary">
+            {getGreeting()}{userName ? `, ${userName}` : ''}!
           </Text>
-          <NotificationBell />
+          <Text className="text-sm text-textMuted">
+            {hasUnread
+              ? `У вас ${unreadCount} непрочитанных сообщения`
+              : 'Ваши заявки и сообщения'}
+          </Text>
         </View>
-        <Text style={styles.welcomeSubtitle}>Ваш личный кабинет</Text>
+        <NotificationBell />
       </View>
 
       {/* Stats */}
-      <View style={styles.statsRow}>
+      <View className="flex-row gap-2">
         <StatCard
           icon="file-text"
+          label="Активные"
           value={stats?.activeRequests ?? 0}
-          label="Активные заявки"
           color={Colors.brandPrimary}
         />
         <StatCard
           icon="message-circle"
-          value={unreadCount}
-          label="Новые сообщения"
-          color={Colors.statusWarning}
+          label={hasUnread ? 'Непрочитано' : 'Сообщения'}
+          value={hasUnread ? unreadCount : (stats?.totalResponses ?? 0)}
+          color={hasUnread ? Colors.statusError : Colors.statusSuccess}
         />
         <StatCard
-          icon="users"
-          value={stats?.totalResponses ?? 0}
-          label="Откликов"
-          color={Colors.statusSuccess}
+          icon="check-circle"
+          label="Завершены"
+          value={stats?.completedRequests ?? 0}
+          color={Colors.textMuted}
         />
       </View>
 
-      {/* Recent Requests */}
-      <SectionHeader
-        title="Последние заявки"
-        onViewAll={recentRequests.length > 0 ? () => router.navigate('/(tabs)/requests') : undefined}
-      />
-      {recentRequests.length > 0 ? (
-        recentRequests.map((req) => (
-          <RequestCard key={req.id} item={req} onPress={() => router.push(`/request/${req.id}`)} />
-        ))
-      ) : (
-        <EmptyState
-          icon="file-text"
-          title="Нет заявок"
-          description="Создайте первую заявку, чтобы найти специалиста"
-          buttonLabel="Создать заявку"
-          onButtonPress={() => router.push('/create-request')}
-        />
-      )}
+      {/* Quick actions */}
+      <QuickActions />
 
-      {/* CTA when no active requests */}
-      {stats && stats.activeRequests === 0 && recentRequests.length > 0 && (
-        <Pressable style={styles.ctaButton} onPress={() => router.push('/create-request')}>
-          <Feather name="plus" size={18} color={Colors.white} />
-          <Text style={styles.ctaText}>Создать заявку</Text>
+      {/* Unread messages banner */}
+      {hasUnread && (
+        <Pressable
+          className="flex-row items-center gap-3 rounded-xl bg-bgSurface p-4"
+          onPress={() => router.navigate('/(tabs)/messages')}
+        >
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-brandPrimary">
+            <Feather name="message-circle" size={20} color={Colors.white} />
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm font-semibold text-textPrimary">
+              {unreadCount} новых сообщения
+            </Text>
+            <Text className="text-xs text-textMuted">
+              Специалисты ответили на ваши заявки
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={Colors.textMuted} />
         </Pressable>
       )}
 
-      {/* Recent Messages */}
-      <SectionHeader
-        title="Сообщения"
-        onViewAll={recentThreads.length > 0 ? () => router.navigate('/(tabs)/messages') : undefined}
-      />
-      {recentThreads.length > 0 ? (
-        recentThreads.map((thread) => (
-          <ThreadCard
-            key={thread.id}
-            item={thread}
-            userId={user?.userId ?? ''}
-            onPress={() => router.push(`/chat/${thread.id}`)}
-          />
-        ))
-      ) : (
-        <EmptyState
-          icon="message-circle"
-          title="Нет сообщений"
-          description="Сообщения появятся, когда специалисты откликнутся на вашу заявку"
-        />
-      )}
+      {/* Active requests */}
+      <View className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-textPrimary">Активные заявки</Text>
+          {recentRequests.length > 0 && (
+            <Pressable onPress={() => router.navigate('/(tabs)/requests')}>
+              <Text className="text-sm font-medium text-brandPrimary">Все заявки</Text>
+            </Pressable>
+          )}
+        </View>
+        {recentRequests.length > 0 ? (
+          recentRequests.map((req) => (
+            <RequestCard
+              key={req.id}
+              item={req}
+              onPress={() => router.push(`/request/${req.id}`)}
+            />
+          ))
+        ) : (
+          <View className="items-center gap-2 py-6">
+            <Feather name="file-text" size={24} color={Colors.textMuted} />
+            <Text className="text-sm text-textMuted">Нет активных заявок</Text>
+          </View>
+        )}
+      </View>
 
-      <View style={{ height: Spacing['3xl'] }} />
+      {/* Recent messages */}
+      <View className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-textPrimary">Новые сообщения</Text>
+          {recentThreads.length > 0 && (
+            <Pressable onPress={() => router.navigate('/(tabs)/messages')}>
+              <Text className="text-sm font-medium text-brandPrimary">Все сообщения</Text>
+            </Pressable>
+          )}
+        </View>
+        {recentThreads.length > 0 ? (
+          recentThreads.map((thread) => {
+            const other =
+              thread.participant1.id === user?.userId
+                ? thread.participant2
+                : thread.participant1;
+            const isUnread =
+              thread.lastMessage &&
+              thread.lastMessage.senderId !== user?.userId &&
+              !thread.lastMessage.readAt;
+
+            return (
+              <MessagePreview
+                key={thread.id}
+                initials={getInitials(other.name)}
+                name={other.name}
+                snippet={thread.lastMessage?.content ?? 'Нет сообщений'}
+                time={
+                  thread.lastMessage
+                    ? formatMessageTime(thread.lastMessage.createdAt)
+                    : ''
+                }
+                unread={!!isUnread}
+                onPress={() => router.push(`/chat/${thread.id}`)}
+              />
+            );
+          })
+        ) : (
+          <View className="items-center gap-2 py-6">
+            <Feather name="message-circle" size={24} color={Colors.textMuted} />
+            <Text className="text-sm text-textMuted">Нет сообщений</Text>
+          </View>
+        )}
+      </View>
+
+      <View className="h-8" />
     </ScrollView>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-    backgroundColor: Colors.bgSecondary,
-  },
-  container: {
-    padding: Spacing.lg,
-    paddingTop: Spacing['3xl'],
-  },
-  welcomeSection: {
-    marginBottom: Spacing.xl,
-  },
-  welcomeTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  welcomeSubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xxs,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.xl,
-  },
-  statCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    padding: Spacing.md,
-    alignItems: 'center',
-    gap: Spacing.xxs,
-    ...Shadows.sm,
-  },
-  statIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xxs,
-  },
-  statValue: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  viewAllText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    ...Shadows.sm,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-    gap: Spacing.xxs,
-  },
-  cardMetaText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  threadAvatarWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  threadPreview: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  unreadText: {
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.brandPrimary,
-    marginLeft: Spacing.sm,
-  },
-  threadDate: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginLeft: Spacing.sm,
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.btn,
-    paddingVertical: Spacing.md,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  ctaText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-});
