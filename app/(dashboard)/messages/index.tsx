@@ -2,10 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
@@ -16,7 +14,7 @@ import { api, ApiError } from '../../../lib/api';
 import { Avatar } from '../../../components/Avatar';
 import { Header } from '../../../components/Header';
 import { EmptyState } from '../../../components/ui/EmptyState';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors } from '../../../constants/Colors';
 
 interface ThreadParticipant {
   id: string;
@@ -42,7 +40,6 @@ interface ThreadItem {
 }
 
 function getDisplayName(participant: ThreadParticipant): string {
-  // Backend returns name = displayName || nick || email prefix
   if (participant.name) return participant.name;
   const local = participant.email.split('@')[0] ?? '';
   return local.charAt(0).toUpperCase() + local.slice(1);
@@ -126,7 +123,7 @@ export default function MessagesScreen() {
     );
   }
 
-  function renderItem({ item, index }: { item: ThreadItem; index: number }) {
+  function renderItem({ item }: { item: ThreadItem }) {
     const other = getOtherParticipant(item);
     const unread = isUnread(item);
     const displayName = getDisplayName(other);
@@ -138,47 +135,61 @@ export default function MessagesScreen() {
       : 'Нет сообщений';
 
     return (
-      <TouchableOpacity
-        style={styles.row}
+      <Pressable
+        className="flex-row items-center w-full max-w-[430px] px-4 py-3 bg-bgPrimary"
         onPress={() => router.push(`/(dashboard)/messages/${item.id}`)}
-        activeOpacity={0.7}
       >
-        <View style={styles.avatarWrap}>
+        <View className="relative mr-3">
           <Avatar name={initials} size="md" />
-          {unread && <View style={styles.unreadDot} />}
+          {unread && (
+            <View
+              className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-bgPrimary"
+              style={{ backgroundColor: Colors.brandPrimary }}
+            />
+          )}
         </View>
 
-        <View style={styles.info}>
-          <View style={styles.infoTop}>
-            <Text style={[styles.displayName, unread && styles.displayNameBold]} numberOfLines={1}>
+        <View className="flex-1 gap-1">
+          <View className="flex-row items-center justify-between">
+            <Text
+              className={`flex-1 text-base mr-2 text-textPrimary ${unread ? 'font-semibold' : 'font-normal'}`}
+              numberOfLines={1}
+            >
               {displayName}
             </Text>
-            <View style={styles.timeRow}>
-              {unread && <View style={styles.unreadBadge} />}
+            <View className="flex-row items-center shrink-0">
+              {unread && (
+                <View
+                  className="w-2 h-2 rounded-full mr-1"
+                  style={{ backgroundColor: Colors.brandPrimary }}
+                />
+              )}
               {item.lastMessage && (
-                <Text style={[styles.time, unread && styles.timeBold]}>
+                <Text
+                  className={`text-xs shrink-0 ${unread ? 'font-medium text-brandPrimary' : 'text-textMuted'}`}
+                >
                   {formatTime(item.lastMessage.createdAt)}
                 </Text>
               )}
             </View>
           </View>
           <Text
-            style={[styles.preview, unread && styles.previewBold]}
+            className={`text-sm ${unread ? 'font-medium text-textSecondary' : 'text-textMuted'}`}
             numberOfLines={1}
           >
             {previewText}
           </Text>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       {isMobile && <Header title="Диалоги" showBack />}
 
       {loading ? (
-        <View style={styles.center}>
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
       ) : (
@@ -186,11 +197,18 @@ export default function MessagesScreen() {
           data={threads}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={[
-            styles.list,
-            threads.length === 0 && styles.listEmpty,
-          ]}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          contentContainerStyle={{
+            paddingTop: 8,
+            paddingBottom: 32,
+            alignItems: 'center',
+            ...(threads.length === 0 ? { flex: 1, justifyContent: 'center' } : {}),
+          }}
+          ItemSeparatorComponent={() => (
+            <View
+              className="h-px w-full max-w-[430px]"
+              style={{ backgroundColor: Colors.border, marginLeft: 72 }}
+            />
+          )}
           ListEmptyComponent={
             error ? (
               <EmptyState
@@ -222,106 +240,6 @@ export default function MessagesScreen() {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  list: {
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing['3xl'],
-    alignItems: 'center',
-  },
-  listEmpty: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.bgPrimary,
-  },
-  avatarWrap: {
-    position: 'relative',
-    marginRight: Spacing.md,
-  },
-  unreadDot: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.brandPrimary,
-    borderWidth: 2,
-    borderColor: Colors.bgPrimary,
-  },
-  unreadBadge: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.brandPrimary,
-    marginRight: Spacing.xs,
-  },
-  info: {
-    flex: 1,
-    gap: 4,
-  },
-  infoTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  displayName: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.regular,
-    color: Colors.textPrimary,
-    marginRight: Spacing.sm,
-  },
-  displayNameBold: {
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  time: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    flexShrink: 0,
-  },
-  timeBold: {
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  preview: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  previewBold: {
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: Colors.border,
-    width: '100%',
-    maxWidth: 430,
-    marginLeft: 72,
-  },
-});

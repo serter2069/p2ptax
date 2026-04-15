@@ -6,12 +6,11 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  StyleSheet,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { notifications as notifApi } from '../lib/api/endpoints';
-import { Colors, Typography, Spacing, BorderRadius } from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -82,22 +81,33 @@ function NotificationItem({
   const iconColor = TYPE_COLORS[item.type] || Colors.textMuted;
 
   return (
-    <Pressable onPress={onPress} style={[s.item, !item.isRead && s.itemUnread]}>
-      <View style={[s.iconWrap, { backgroundColor: iconColor + '18' }]}>
+    <Pressable
+      onPress={onPress}
+      className={`flex-row items-center gap-3 py-3 border-b border-borderLight ${!item.isRead ? 'bg-bgSecondary -mx-4 px-4 rounded-lg' : ''}`}
+    >
+      <View
+        className="w-10 h-10 rounded-full items-center justify-center"
+        style={{ backgroundColor: iconColor + '18' }}
+      >
         <Feather name={iconName} size={18} color={iconColor} />
       </View>
-      <View style={s.itemBody}>
-        <View style={s.itemTop}>
-          <Text style={[s.itemTitle, !item.isRead && s.itemTitleBold]} numberOfLines={1}>
+      <View className="flex-1 gap-0.5">
+        <View className="flex-row justify-between items-center">
+          <Text
+            className={`text-base flex-1 mr-2 text-textPrimary ${!item.isRead ? 'font-bold' : 'font-medium'}`}
+            numberOfLines={1}
+          >
             {item.title}
           </Text>
-          <Text style={s.itemTime}>{formatDate(item.createdAt)}</Text>
+          <Text className="text-xs text-textMuted">{formatDate(item.createdAt)}</Text>
         </View>
-        <Text style={s.itemText} numberOfLines={2}>
+        <Text className="text-sm text-textSecondary leading-5" numberOfLines={2}>
           {item.body}
         </Text>
       </View>
-      {!item.isRead && <View style={s.unreadDot} />}
+      {!item.isRead && (
+        <View className="w-2 h-2 rounded-full" style={{ backgroundColor: Colors.brandPrimary }} />
+      )}
     </Pressable>
   );
 }
@@ -163,14 +173,12 @@ export default function NotificationsScreen() {
 
   const handlePress = useCallback(
     async (item: Notification) => {
-      // Mark as read
       if (!item.isRead) {
         notifApi.markRead(item.id).catch(() => {});
         setItems((prev) =>
           prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n)),
         );
       }
-      // Navigate based on type
       const data = item.data || {};
       if (item.type === 'NEW_MESSAGE' && data.threadId) {
         router.push(`/chat/${data.threadId}`);
@@ -212,7 +220,7 @@ export default function NotificationsScreen() {
 
   if (loading) {
     return (
-      <View style={s.centered}>
+      <View className="flex-1 bg-bgPrimary items-center justify-center p-5 gap-3">
         <ActivityIndicator size="large" color={Colors.brandPrimary} />
       </View>
     );
@@ -220,20 +228,23 @@ export default function NotificationsScreen() {
 
   if (items.length === 0) {
     return (
-      <View style={s.container}>
-        <View style={s.header}>
+      <View className="flex-1 bg-bgPrimary">
+        <View className="flex-row items-center justify-between px-4 pt-5 pb-3">
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
           </Pressable>
-          <Text style={s.pageTitle}>Уведомления</Text>
+          <Text className="text-lg font-bold text-textPrimary">Уведомления</Text>
           <View style={{ width: 22 }} />
         </View>
-        <View style={s.centered}>
-          <View style={s.emptyIconWrap}>
+        <View className="flex-1 items-center justify-center p-5 gap-3">
+          <View
+            className="w-[72px] h-[72px] rounded-full items-center justify-center border border-border"
+            style={{ backgroundColor: Colors.bgSurface }}
+          >
             <Feather name="bell-off" size={36} color={Colors.textMuted} />
           </View>
-          <Text style={s.emptyTitle}>Нет уведомлений</Text>
-          <Text style={s.emptyText}>
+          <Text className="text-lg font-semibold text-textPrimary">Нет уведомлений</Text>
+          <Text className="text-sm text-textMuted text-center max-w-[280px]">
             Здесь будут появляться уведомления о новых сообщениях, откликах и отзывах
           </Text>
         </View>
@@ -242,16 +253,16 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <View style={s.container}>
+    <View className="flex-1 bg-bgPrimary">
       {/* Header */}
-      <View style={s.header}>
+      <View className="flex-row items-center justify-between px-4 pt-5 pb-3">
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
         </Pressable>
-        <Text style={s.pageTitle}>Уведомления</Text>
+        <Text className="text-lg font-bold text-textPrimary">Уведомления</Text>
         {hasUnread ? (
           <Pressable onPress={markAllRead} hitSlop={8}>
-            <Text style={s.markAllText}>Прочитать все</Text>
+            <Text className="text-sm font-semibold text-brandPrimary">Прочитать все</Text>
           </Pressable>
         ) : (
           <View style={{ width: 22 }} />
@@ -263,11 +274,15 @@ export default function NotificationsScreen() {
         keyExtractor={(d) => d.key}
         renderItem={({ item: d }) => {
           if (d.type === 'header') {
-            return <Text style={s.sectionHeader}>{d.title}</Text>;
+            return (
+              <Text className="text-xs font-semibold text-textMuted uppercase tracking-wider mt-4 mb-2">
+                {d.title}
+              </Text>
+            );
           }
           return <NotificationItem item={d.item} onPress={() => handlePress(d.item)} />;
         }}
-        contentContainerStyle={s.list}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -282,7 +297,7 @@ export default function NotificationsScreen() {
             <ActivityIndicator
               size="small"
               color={Colors.brandPrimary}
-              style={{ paddingVertical: Spacing.lg }}
+              style={{ paddingVertical: 16 }}
             />
           ) : null
         }
@@ -290,128 +305,3 @@ export default function NotificationsScreen() {
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-const s = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  centered: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl,
-    gap: Spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
-  },
-  pageTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  markAllText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.brandPrimary,
-  },
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-  },
-  sectionHeader: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  itemUnread: {
-    backgroundColor: Colors.bgSecondary,
-    marginHorizontal: -Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.md,
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  itemBody: {
-    flex: 1,
-    gap: 2,
-  },
-  itemTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  itemTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  itemTitleBold: {
-    fontWeight: Typography.fontWeight.bold,
-  },
-  itemTime: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  itemText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: Typography.fontSize.sm * Typography.lineHeight.normal,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.brandPrimary,
-  },
-  emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.bgSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  emptyTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  emptyText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-});

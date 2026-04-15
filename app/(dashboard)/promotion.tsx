@@ -2,19 +2,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   Alert,
   RefreshControl,
-  TouchableOpacity,
-  Modal,
   Pressable,
+  Modal,
 } from 'react-native';
 import { api, ApiError } from '../../lib/api';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 
 interface PromotionItem {
@@ -108,7 +105,6 @@ export default function PromotionScreen() {
     }
   }, []);
 
-  // Fetch specialist profile cities on mount
   useEffect(() => {
     (async () => {
       try {
@@ -170,31 +166,37 @@ export default function PromotionScreen() {
   const expiredPromotions = promotions.filter((p) => isExpired(p.expiresAt));
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       {isMobile && <Header title="Продвижение" showBack />}
       {loading ? (
-        <View style={styles.center}>
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />
           }
         >
-          <View style={styles.container}>
+          <View className="w-full max-w-[430px] px-5 gap-3">
             {/* Status banner */}
-            <View style={[styles.statusCard, activePromotions.length > 0 ? styles.statusActive : styles.statusInactive]}>
-              <Text style={styles.statusIcon}>{activePromotions.length > 0 ? '\uD83D\uDE80' : '\uD83D\uDCC4'}</Text>
-              <View style={styles.statusInfo}>
-                <Text style={styles.statusTitle}>
+            <View
+              className="flex-row items-center gap-3 rounded-xl p-4 border shadow-sm"
+              style={{
+                backgroundColor: activePromotions.length > 0 ? Colors.bgSecondary : Colors.bgCard,
+                borderColor: activePromotions.length > 0 ? Colors.statusSuccess : Colors.border,
+              }}
+            >
+              <Text className="text-[28px]">{activePromotions.length > 0 ? '\uD83D\uDE80' : '\uD83D\uDCC4'}</Text>
+              <View className="flex-1 gap-0.5">
+                <Text className="text-base font-semibold text-textPrimary">
                   {activePromotions.length > 0
                     ? `Активно ${activePromotions.length} продвижени${activePromotions.length === 1 ? 'е' : 'я'}`
                     : 'Продвижение не активно'}
                 </Text>
-                <Text style={styles.statusSubtitle}>
+                <Text className="text-sm text-textSecondary leading-[18px]">
                   {activePromotions.length > 0
                     ? 'Ваш профиль показывается выше в каталоге'
                     : 'Подключите продвижение, чтобы получать больше клиентов'}
@@ -203,31 +205,38 @@ export default function PromotionScreen() {
             </View>
 
             {/* CTA button */}
-            <TouchableOpacity style={styles.purchaseBtn} onPress={handlePurchase} activeOpacity={0.85}>
-              <Text style={styles.purchaseBtnText}>Подключить продвижение</Text>
-            </TouchableOpacity>
+            <Pressable
+              className="h-[52px] rounded-lg items-center justify-center shadow-sm"
+              style={{ backgroundColor: Colors.brandPrimary }}
+              onPress={handlePurchase}
+            >
+              <Text className="text-base font-semibold text-white">Подключить продвижение</Text>
+            </Pressable>
 
             {error ? (
-              <Text style={styles.errorText}>{error}</Text>
+              <Text className="text-sm text-statusError text-center">{error}</Text>
             ) : null}
 
             {/* Active promotions */}
             {activePromotions.length > 0 && (
               <>
-                <Text style={styles.sectionLabel}>Активные</Text>
+                <Text className="text-xs font-semibold text-textMuted uppercase tracking-wider mt-2">Активные</Text>
                 {activePromotions.map((p) => (
-                  <View key={p.id} style={styles.promoCard}>
-                    <View style={styles.promoCardHeader}>
-                      <View style={[styles.tierBadge, { backgroundColor: TIER_COLORS[p.tier] + '22', borderColor: TIER_COLORS[p.tier] + '55' }]}>
-                        <Text style={[styles.tierLabel, { color: TIER_COLORS[p.tier] }]}>{TIER_LABELS[p.tier]}</Text>
+                  <View key={p.id} className="bg-bgCard rounded-lg p-4 border border-border gap-2 shadow-sm">
+                    <View className="flex-row items-center gap-2">
+                      <View
+                        className="py-0.5 px-2 rounded border"
+                        style={{ backgroundColor: TIER_COLORS[p.tier] + '22', borderColor: TIER_COLORS[p.tier] + '55' }}
+                      >
+                        <Text className="text-xs font-semibold" style={{ color: TIER_COLORS[p.tier] }}>{TIER_LABELS[p.tier]}</Text>
                       </View>
-                      <Text style={styles.promoCity}>{p.city}</Text>
+                      <Text className="text-sm font-medium text-textPrimary">{p.city}</Text>
                     </View>
-                    <View style={styles.promoDates}>
-                      <Text style={styles.promoDaysLeft}>
-                        Осталось дней: <Text style={styles.promoDaysNum}>{daysLeft(p.expiresAt)}</Text>
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-sm text-textSecondary">
+                        Осталось дней: <Text className="font-bold text-brandPrimary">{daysLeft(p.expiresAt)}</Text>
                       </Text>
-                      <Text style={styles.promoExpiry}>до {formatDate(p.expiresAt)}</Text>
+                      <Text className="text-xs text-textMuted">до {formatDate(p.expiresAt)}</Text>
                     </View>
                   </View>
                 ))}
@@ -237,16 +246,16 @@ export default function PromotionScreen() {
             {/* Expired promotions */}
             {expiredPromotions.length > 0 && (
               <>
-                <Text style={styles.sectionLabel}>История</Text>
+                <Text className="text-xs font-semibold text-textMuted uppercase tracking-wider mt-2">История</Text>
                 {expiredPromotions.slice(0, 5).map((p) => (
-                  <View key={p.id} style={[styles.promoCard, styles.promoCardExpired]}>
-                    <View style={styles.promoCardHeader}>
-                      <View style={styles.tierBadgeExpired}>
-                        <Text style={styles.tierLabelExpired}>{TIER_LABELS[p.tier]}</Text>
+                  <View key={p.id} className="bg-bgCard rounded-lg p-4 border border-border gap-2 shadow-sm" style={{ opacity: 0.6 }}>
+                    <View className="flex-row items-center gap-2">
+                      <View className="py-0.5 px-2 rounded bg-bgSecondary border border-borderLight">
+                        <Text className="text-xs font-semibold text-textMuted">{TIER_LABELS[p.tier]}</Text>
                       </View>
-                      <Text style={styles.promoCityExpired}>{p.city}</Text>
+                      <Text className="text-sm text-textMuted">{p.city}</Text>
                     </View>
-                    <Text style={styles.promoExpiryExpired}>Истёк {formatDate(p.expiresAt)}</Text>
+                    <Text className="text-xs text-textMuted">Истёк {formatDate(p.expiresAt)}</Text>
                   </View>
                 ))}
               </>
@@ -254,19 +263,19 @@ export default function PromotionScreen() {
 
             {/* Empty state hint */}
             {promotions.length === 0 && !error && (
-              <View style={styles.infoCard}>
-                <Text style={styles.infoTitle}>Как работает продвижение?</Text>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoItemIcon}>{'\u2B50'}</Text>
-                  <Text style={styles.infoItemText}><Text style={styles.bold}>Топ</Text> — первое место в каталоге вашего города</Text>
+              <View className="bg-bgCard rounded-xl p-4 border border-border gap-3 mt-2">
+                <Text className="text-base font-semibold text-textPrimary mb-1">Как работает продвижение?</Text>
+                <View className="flex-row items-start gap-2">
+                  <Text className="text-[16px] leading-[22px]">{'\u2B50'}</Text>
+                  <Text className="flex-1 text-sm text-textSecondary leading-5"><Text className="font-semibold text-textPrimary">Топ</Text> — первое место в каталоге вашего города</Text>
                 </View>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoItemIcon}>{'\uD83D\uDD25'}</Text>
-                  <Text style={styles.infoItemText}><Text style={styles.bold}>Выделенное</Text> — карточка выделяется цветом и значком</Text>
+                <View className="flex-row items-start gap-2">
+                  <Text className="text-[16px] leading-[22px]">{'\uD83D\uDD25'}</Text>
+                  <Text className="flex-1 text-sm text-textSecondary leading-5"><Text className="font-semibold text-textPrimary">Выделенное</Text> — карточка выделяется цветом и значком</Text>
                 </View>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoItemIcon}>{'\u2705'}</Text>
-                  <Text style={styles.infoItemText}><Text style={styles.bold}>Базовое</Text> — повышенный приоритет в выдаче</Text>
+                <View className="flex-row items-start gap-2">
+                  <Text className="text-[16px] leading-[22px]">{'\u2705'}</Text>
+                  <Text className="flex-1 text-sm text-textSecondary leading-5"><Text className="font-semibold text-textPrimary">Базовое</Text> — повышенный приоритет в выдаче</Text>
                 </View>
               </View>
             )}
@@ -276,382 +285,95 @@ export default function PromotionScreen() {
 
       {/* Purchase Modal */}
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-          <Pressable style={styles.modalCard} onPress={() => { /* prevent close on card tap */ }}>
-            <Text style={styles.modalTitle}>Подключить продвижение</Text>
+        <Pressable
+          className="flex-1 items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onPress={() => setModalVisible(false)}
+        >
+          <Pressable className="w-full max-w-[430px] bg-bgCard rounded-xl p-5 gap-3 shadow-sm" onPress={() => {}}>
+            <Text className="text-lg font-semibold text-textPrimary text-center">Подключить продвижение</Text>
 
             {/* City selector */}
-            <Text style={styles.modalLabel}>Город</Text>
-            <View style={styles.chipRow}>
+            <Text className="text-sm font-semibold text-textSecondary mt-1">Город</Text>
+            <View className="flex-row flex-wrap gap-2">
               {profileCities.map((city) => (
-                <TouchableOpacity
+                <Pressable
                   key={city}
-                  style={[styles.chip, selectedCity === city && styles.chipActive]}
+                  className={`py-2 px-3 rounded-lg border ${selectedCity === city ? 'border-brandPrimary' : 'border-border bg-bgSecondary'}`}
+                  style={selectedCity === city ? { borderColor: Colors.brandPrimary, backgroundColor: Colors.brandPrimary + '15' } : undefined}
                   onPress={() => setSelectedCity(city)}
-                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.chipText, selectedCity === city && styles.chipTextActive]}>{city}</Text>
-                </TouchableOpacity>
+                  <Text className={`text-sm ${selectedCity === city ? 'text-brandPrimary font-semibold' : 'text-textSecondary'}`}>{city}</Text>
+                </Pressable>
               ))}
             </View>
 
             {/* Tier selector */}
-            <Text style={styles.modalLabel}>Тариф</Text>
-            <View style={styles.chipRow}>
+            <Text className="text-sm font-semibold text-textSecondary mt-1">Тариф</Text>
+            <View className="flex-row flex-wrap gap-2">
               {(['BASIC', 'FEATURED', 'TOP'] as Tier[]).map((tier) => (
-                <TouchableOpacity
+                <Pressable
                   key={tier}
-                  style={[styles.chip, selectedTier === tier && styles.chipActive]}
+                  className={`py-2 px-3 rounded-lg border ${selectedTier === tier ? 'border-brandPrimary' : 'border-border bg-bgSecondary'}`}
+                  style={selectedTier === tier ? { borderColor: Colors.brandPrimary, backgroundColor: Colors.brandPrimary + '15' } : undefined}
                   onPress={() => setSelectedTier(tier)}
-                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.chipText, selectedTier === tier && styles.chipTextActive]}>
+                  <Text className={`text-sm ${selectedTier === tier ? 'text-brandPrimary font-semibold' : 'text-textSecondary'}`}>
                     {TIER_LABELS[tier]} ({TIER_PRICES[tier]})
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
 
             {/* Period selector */}
-            <Text style={styles.modalLabel}>Период</Text>
-            <View style={styles.chipRow}>
+            <Text className="text-sm font-semibold text-textSecondary mt-1">Период</Text>
+            <View className="flex-row flex-wrap gap-2">
               {PERIOD_OPTIONS.map((opt) => (
-                <TouchableOpacity
+                <Pressable
                   key={opt.value}
-                  style={[styles.chip, selectedPeriod === opt.value && styles.chipActive]}
+                  className={`py-2 px-3 rounded-lg border ${selectedPeriod === opt.value ? 'border-brandPrimary' : 'border-border bg-bgSecondary'}`}
+                  style={selectedPeriod === opt.value ? { borderColor: Colors.brandPrimary, backgroundColor: Colors.brandPrimary + '15' } : undefined}
                   onPress={() => setSelectedPeriod(opt.value)}
-                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.chipText, selectedPeriod === opt.value && styles.chipTextActive]}>{opt.label}</Text>
-                </TouchableOpacity>
+                  <Text className={`text-sm ${selectedPeriod === opt.value ? 'text-brandPrimary font-semibold' : 'text-textSecondary'}`}>{opt.label}</Text>
+                </Pressable>
               ))}
             </View>
 
-            {/* Error */}
-            {purchaseError ? <Text style={styles.modalError}>{purchaseError}</Text> : null}
+            {purchaseError ? <Text className="text-sm text-statusError text-center">{purchaseError}</Text> : null}
 
-            {/* Success */}
             {purchaseSuccess ? (
-              <View style={styles.successBanner}>
-                <Text style={styles.successText}>Активировано</Text>
+              <View className="rounded-lg py-2 items-center" style={{ backgroundColor: Colors.bgSecondary }}>
+                <Text className="text-sm font-semibold" style={{ color: Colors.statusSuccess }}>Активировано</Text>
               </View>
             ) : null}
 
-            {/* CTA */}
-            <TouchableOpacity
-              style={[
-                styles.modalCta,
-                (purchasing || purchaseSuccess) && styles.modalCtaDisabled,
-                purchaseSuccess && styles.modalCtaSuccess,
-              ]}
+            <Pressable
+              className="h-12 rounded-lg items-center justify-center mt-2"
+              style={{
+                backgroundColor: purchaseSuccess ? Colors.statusSuccess : Colors.brandPrimary,
+                opacity: (purchasing || purchaseSuccess) ? 0.7 : 1,
+              }}
               onPress={handleConfirmPurchase}
-              activeOpacity={0.85}
               disabled={purchasing || purchaseSuccess}
             >
               {purchasing ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : purchaseSuccess ? (
-                <Text style={styles.modalCtaText}>Активировано</Text>
+                <Text className="text-base font-semibold text-white">Активировано</Text>
               ) : (
-                <Text style={styles.modalCtaText}>
-                  Оплатить {calcTotal(selectedTier, selectedPeriod)} \u20BD
+                <Text className="text-base font-semibold text-white">
+                  Оплатить {calcTotal(selectedTier, selectedPeriod)} {'\u20BD'}
                 </Text>
               )}
-            </TouchableOpacity>
+            </Pressable>
 
-            {/* Cancel */}
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCancel} activeOpacity={0.7}>
-              <Text style={styles.modalCancelText}>Отмена</Text>
-            </TouchableOpacity>
+            <Pressable onPress={() => setModalVisible(false)} className="items-center py-2">
+              <Text className="text-sm text-textMuted">Отмена</Text>
+            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.md,
-  },
-  statusCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    ...Shadows.sm,
-  },
-  statusActive: {
-    backgroundColor: Colors.statusBg.success,
-    borderColor: Colors.statusSuccess,
-  },
-  statusInactive: {
-    backgroundColor: Colors.bgCard,
-    borderColor: Colors.border,
-  },
-  statusIcon: {
-    fontSize: 28,
-  },
-  statusInfo: {
-    flex: 1,
-    gap: 3,
-  },
-  statusTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  statusSubtitle: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  purchaseBtn: {
-    height: 52,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.sm,
-  },
-  purchaseBtnText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: '#FFFFFF',
-  },
-  errorText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    textAlign: 'center',
-  },
-  sectionLabel: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: Spacing.sm,
-  },
-  promoCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  promoCardExpired: {
-    opacity: 0.6,
-  },
-  promoCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  tierBadge: {
-    paddingVertical: 3,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  tierLabel: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  tierBadgeExpired: {
-    paddingVertical: 3,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  tierLabelExpired: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textMuted,
-  },
-  promoCity: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  promoCityExpired: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  promoDates: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  promoDaysLeft: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  promoDaysNum: {
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.brandPrimary,
-  },
-  promoExpiry: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  promoExpiryExpired: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  infoCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  infoTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-  },
-  infoItemIcon: {
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  infoItemText: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-  bold: {
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.lg,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 430,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    gap: Spacing.md,
-    ...Shadows.sm,
-  },
-  modalTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  modalLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgSecondary,
-  },
-  chipActive: {
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.brandPrimary + '15',
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  chipTextActive: {
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  modalError: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    textAlign: 'center',
-  },
-  successBanner: {
-    backgroundColor: Colors.statusBg.success,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    alignItems: 'center',
-  },
-  successText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.statusSuccess,
-  },
-  modalCta: {
-    height: 48,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.sm,
-  },
-  modalCtaDisabled: {
-    opacity: 0.7,
-  },
-  modalCtaSuccess: {
-    backgroundColor: Colors.statusSuccess,
-    opacity: 1,
-  },
-  modalCtaText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: '#FFFFFF',
-  },
-  modalCancel: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  modalCancelText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-});

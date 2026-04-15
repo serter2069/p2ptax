@@ -2,19 +2,17 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
+  Pressable,
   TextInput,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { api } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 
 interface PromotionItem {
@@ -110,77 +108,82 @@ export default function AdminPromotions() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <Header title="Продвижения" showBack />
       <KeyboardAvoidingView
-        style={styles.flex}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />
           }
         >
-          <View style={styles.container}>
+          <View className="w-full max-w-lg px-5 gap-3">
             {/* Price editor */}
-            <Text style={styles.sectionTitle}>Настройка цен</Text>
-            <View style={styles.priceEditor}>
+            <Text className="text-sm font-semibold text-textMuted uppercase tracking-wider mt-3">Настройка цен</Text>
+            <View className="bg-bgCard rounded-xl p-4 border border-border gap-3 shadow-sm">
               <TextInput
-                style={[styles.input, { outlineStyle: 'none' } as any]}
+                className="h-11 rounded-lg border border-border px-3 text-base text-textPrimary bg-bgSecondary"
+                style={{ outlineStyle: 'none' } as any}
                 placeholder="Город"
                 placeholderTextColor={Colors.textMuted}
                 value={editCity}
                 onChangeText={setEditCity}
                 autoCapitalize="words"
               />
-              <View style={styles.tierRow}>
+              <View className="flex-row gap-2">
                 {(['BASIC', 'FEATURED', 'TOP'] as const).map((t) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={t}
-                    style={[styles.tierBtn, editTier === t && styles.tierBtnActive]}
+                    className={`flex-1 py-2 rounded-lg items-center border ${editTier === t ? 'border-brandPrimary' : 'border-border bg-bgSecondary'}`}
+                    style={editTier === t ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
                     onPress={() => setEditTier(t)}
-                    activeOpacity={0.75}
                   >
-                    <Text style={[styles.tierBtnText, editTier === t && styles.tierBtnTextActive]}>
+                    <Text className={`text-xs font-medium ${editTier === t ? 'text-white' : 'text-textSecondary'}`}>
                       {TIER_LABELS[t]}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
               <TextInput
-                style={[styles.input, { outlineStyle: 'none' } as any]}
+                className="h-11 rounded-lg border border-border px-3 text-base text-textPrimary bg-bgSecondary"
+                style={{ outlineStyle: 'none' } as any}
                 placeholder="Цена (руб.)"
                 placeholderTextColor={Colors.textMuted}
                 value={editPrice}
                 onChangeText={setEditPrice}
                 keyboardType="numeric"
               />
-              <TouchableOpacity
-                style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+              <Pressable
+                className="h-11 rounded-lg items-center justify-center"
+                style={{
+                  backgroundColor: Colors.brandPrimary,
+                  opacity: saving ? 0.5 : 1,
+                }}
                 onPress={handleSavePrice}
                 disabled={saving}
-                activeOpacity={0.75}
               >
                 {saving ? (
                   <ActivityIndicator size="small" color={Colors.textPrimary} />
                 ) : (
-                  <Text style={styles.saveBtnText}>Сохранить цену</Text>
+                  <Text className="text-base font-semibold text-white">Сохранить цену</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             {/* Current prices */}
             {prices.length > 0 ? (
               <>
-                <Text style={styles.sectionTitle}>Текущие цены</Text>
-                <View style={styles.priceTable}>
+                <Text className="text-sm font-semibold text-textMuted uppercase tracking-wider mt-3">Текущие цены</Text>
+                <View className="bg-bgCard rounded-xl border border-border overflow-hidden">
                   {prices.map((p, i) => (
-                    <View key={i} style={styles.priceRow}>
-                      <Text style={styles.priceCity}>{p.city}</Text>
-                      <Text style={styles.priceTier}>{TIER_LABELS[p.tier] ?? p.tier}</Text>
-                      <Text style={styles.priceValue}>{p.price} руб.</Text>
+                    <View key={i} className="flex-row items-center px-4 py-2 border-b border-border">
+                      <Text className="flex-1 text-sm text-textPrimary">{p.city}</Text>
+                      <Text className="w-[90px] text-sm text-textSecondary">{TIER_LABELS[p.tier] ?? p.tier}</Text>
+                      <Text className="w-[80px] text-right text-sm font-semibold text-textAccent">{p.price} руб.</Text>
                     </View>
                   ))}
                 </View>
@@ -188,33 +191,45 @@ export default function AdminPromotions() {
             ) : null}
 
             {/* Active promotions list */}
-            <Text style={styles.sectionTitle}>
+            <Text className="text-sm font-semibold text-textMuted uppercase tracking-wider mt-3">
               Активные продвижения
               {promotions.length > 0 ? ` (${promotions.length})` : ''}
             </Text>
 
             {loading ? (
-              <ActivityIndicator size="large" color={Colors.brandPrimary} style={styles.loader} />
+              <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginVertical: 24 }} />
             ) : error ? (
-              <Text style={styles.errorText}>{error}</Text>
+              <Text className="text-sm text-statusError text-center py-4">{error}</Text>
             ) : promotions.length === 0 ? (
-              <Text style={styles.emptyText}>Нет продвижений</Text>
+              <Text className="text-base text-textMuted text-center py-6">Нет продвижений</Text>
             ) : (
-              <View style={styles.list}>
+              <View className="gap-2">
                 {promotions.map((p) => (
-                  <View key={p.id} style={[styles.card, isExpired(p.expiresAt) && styles.cardExpired]}>
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.cardNick}>
+                  <View
+                    key={p.id}
+                    className="bg-bgCard rounded-xl p-4 border border-border gap-2 shadow-sm"
+                    style={isExpired(p.expiresAt) ? { borderColor: Colors.borderLight, opacity: 0.6 } : undefined}
+                  >
+                    <View className="flex-row items-center justify-between gap-2">
+                      <Text className="flex-1 text-sm font-medium text-textPrimary">
                         {p.specialist.specialistProfile?.nick
                           ? `@${p.specialist.specialistProfile.nick}`
                           : p.specialist.email}
                       </Text>
-                      <View style={[styles.tierPill, styles[`tier${p.tier}` as keyof typeof styles] as any]}>
-                        <Text style={styles.tierPillText}>{TIER_LABELS[p.tier]}</Text>
+                      <View
+                        className="px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: p.tier === 'BASIC' ? Colors.bgSecondary : p.tier === 'FEATURED' ? '#F5F3FF' : '#FEF3C7',
+                        }}
+                      >
+                        <Text className="text-xs font-semibold text-textPrimary">{TIER_LABELS[p.tier]}</Text>
                       </View>
                     </View>
-                    <Text style={styles.cardCity}>{p.city}</Text>
-                    <Text style={[styles.cardExpiry, isExpired(p.expiresAt) && styles.cardExpiryExpired]}>
+                    <Text className="text-sm text-textSecondary">{p.city}</Text>
+                    <Text
+                      className="text-xs"
+                      style={{ color: isExpired(p.expiresAt) ? Colors.statusError : Colors.textMuted }}
+                    >
                       {isExpired(p.expiresAt) ? 'Истёк' : 'До'}: {formatDate(p.expiresAt)}
                     </Text>
                   </View>
@@ -224,199 +239,6 @@ export default function AdminPromotions() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  flex: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: Spacing.md,
-  },
-  priceEditor: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.md,
-    ...Shadows.sm,
-  },
-  input: {
-    height: 44,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgSecondary,
-  },
-  tierRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  tierBtn: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-  },
-  tierBtnActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  tierBtnText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-  },
-  tierBtnTextActive: {
-    color: Colors.white,
-  },
-  saveBtn: {
-    height: 44,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnDisabled: {
-    opacity: 0.5,
-  },
-  saveBtnText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-  priceTable: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  priceCity: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-  },
-  priceTier: {
-    width: 90,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  priceValue: {
-    width: 80,
-    textAlign: 'right',
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textAccent,
-  },
-  loader: {
-    marginVertical: Spacing['2xl'],
-  },
-  errorText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    textAlign: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  emptyText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  list: {
-    gap: Spacing.sm,
-  },
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  cardExpired: {
-    borderColor: Colors.borderLight,
-    opacity: 0.6,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
-  },
-  cardNick: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  tierPill: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-  },
-  tierBASIC: {
-    backgroundColor: Colors.statusBg.info,
-  },
-  tierFEATURED: {
-    backgroundColor: Colors.statusBg.accent,
-  },
-  tierTOP: {
-    backgroundColor: Colors.statusBg.warning,
-  },
-  tierPillText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  cardCity: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  cardExpiry: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  cardExpiryExpired: {
-    color: Colors.statusError,
-  },
-});

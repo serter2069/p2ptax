@@ -3,13 +3,11 @@ import {
   Alert,
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   FlatList,
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
+  Pressable,
   Modal,
   TextInput,
   KeyboardAvoidingView,
@@ -18,7 +16,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { api, ApiError } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -57,13 +55,9 @@ export default function CityRequestsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  // Track already-responded request IDs optimistically
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
-  // Track seen request IDs (persisted in AsyncStorage)
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
-  // Category filter (client-side)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  // Pagination state per city
   const [cityPages, setCityPages] = useState<Record<string, number>>({});
   const [cityHasMore, setCityHasMore] = useState<Record<string, boolean>>({});
   const [loadingMoreCity, setLoadingMoreCity] = useState<string | null>(null);
@@ -71,7 +65,6 @@ export default function CityRequestsScreen() {
   const SEEN_STORAGE_KEY = 'p2ptax_seen_city_requests';
   const SEEN_CAP = 500;
 
-  // Load seen IDs from AsyncStorage
   const loadSeenIds = useCallback(async () => {
     try {
       const raw = await AsyncStorage.getItem(SEEN_STORAGE_KEY);
@@ -80,21 +73,19 @@ export default function CityRequestsScreen() {
         setSeenIds(new Set(arr));
       }
     } catch {
-      // Silently ignore storage errors — feature degrades gracefully
+      // Silently ignore
     }
   }, []);
 
-  // Persist a set of seen IDs, capped at SEEN_CAP most recent entries
   const persistSeenIds = useCallback(async (ids: Set<string>) => {
     try {
       const arr = Array.from(ids).slice(-SEEN_CAP);
       await AsyncStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(arr));
     } catch {
-      // Silently ignore storage errors
+      // Silently ignore
     }
   }, []);
 
-  // Mark a single request as seen
   const markAsSeen = useCallback(
     (id: string) => {
       setSeenIds((prev) => {
@@ -108,14 +99,11 @@ export default function CityRequestsScreen() {
     [persistSeenIds],
   );
 
-  // Mark all currently loaded requests as seen
   const markAllSeen = useCallback(() => {
     setSeenIds((prev) => {
       const next = new Set(prev);
-      // will be populated after requests are loaded
       return next;
     });
-    // Use functional form to access latest requests
     setRequests((currentRequests) => {
       setSeenIds((prev) => {
         const next = new Set(prev);
@@ -140,7 +128,6 @@ export default function CityRequestsScreen() {
         return;
       }
 
-      // Fetch open requests for each city in parallel (page 1)
       const results = await Promise.all(
         cities.map((city) =>
           api
@@ -149,7 +136,6 @@ export default function CityRequestsScreen() {
         ),
       );
 
-      // Track pagination per city
       const pages: Record<string, number> = {};
       const hasMore: Record<string, boolean> = {};
       cities.forEach((city, idx) => {
@@ -171,7 +157,6 @@ export default function CityRequestsScreen() {
         }
       }
 
-      // Sort newest first
       merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setRequests(merged);
     } catch (err) {
@@ -187,28 +172,21 @@ export default function CityRequestsScreen() {
   }, []);
 
   useEffect(() => {
-    // Load seen IDs in parallel with data fetch so first render has correct state
     loadSeenIds();
     fetchData();
-
-    // Poll for new requests every 30 seconds
     const intervalId = setInterval(() => {
       fetchData(true);
     }, 30_000);
-
     return () => clearInterval(intervalId);
   }, [fetchData, loadSeenIds]);
 
   function handleRefresh() {
     setRefreshing(true);
-    // Keep existing respondedIds — do NOT reset on pull-to-refresh
     fetchData(true);
   }
 
   function openRespond(id: string) {
-    // Mark as seen when specialist opens the respond dialog
     markAsSeen(id);
-    // Alert.alert does not work on React Native Web — open modal directly
     setRespondingId(id);
     setMessage('');
     setModalVisible(true);
@@ -283,43 +261,43 @@ export default function CityRequestsScreen() {
     const alreadyResponded = respondedIds.has(item.id);
     const isNew = !seenIds.has(item.id) && !alreadyResponded;
     return (
-      <View style={styles.cardWrapper}>
-        <Card padding={Spacing.lg}>
-          <View style={styles.metaRow}>
-            <View style={styles.metaLeft}>
-              <View style={styles.cityChip}>
-                <Text style={styles.cityText}>{item.city}</Text>
+      <View className="w-full max-w-[430px] mb-3">
+        <Card padding={16}>
+          <View className="flex-row justify-between items-center mb-2">
+            <View className="flex-row items-center gap-1 shrink">
+              <View className="bg-bgSecondary px-2 py-0.5 rounded-full border border-borderLight">
+                <Text className="text-xs text-textSecondary font-medium">{item.city}</Text>
               </View>
               {item.category ? (
-                <View style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>{item.category}</Text>
+                <View className="bg-bgSecondary px-2 py-0.5 rounded-full border border-borderLight">
+                  <Text className="text-xs text-textMuted font-medium">{item.category}</Text>
                 </View>
               ) : null}
               {isNew && (
-                <View style={styles.newBadge}>
-                  <Text style={styles.newBadgeText}>Новый</Text>
+                <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: Colors.bgSecondary }}>
+                  <Text className="text-xs font-semibold" style={{ color: Colors.statusInfo }}>Новый</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+            <Text className="text-xs text-textMuted">{formatDate(item.createdAt)}</Text>
           </View>
-          <Text style={styles.description} numberOfLines={4}>
+          <Text className="text-base text-textPrimary leading-[22px] mb-3" numberOfLines={4}>
             {item.description.length > 200
               ? item.description.slice(0, 200) + '...'
               : item.description}
           </Text>
-          <View style={styles.footer}>
-            <Text style={styles.responsesText}>Откликов: {item._count.responses}</Text>
+          <View className="pt-2 border-t border-border mb-3">
+            <Text className="text-xs text-textMuted">Откликов: {item._count.responses}</Text>
           </View>
           {alreadyResponded ? (
-            <View style={styles.respondedBadge}>
-              <Text style={styles.respondedText}>Отклик отправлен</Text>
+            <View className="rounded-lg py-2 items-center" style={{ backgroundColor: Colors.bgSecondary }}>
+              <Text className="text-sm font-medium" style={{ color: Colors.statusSuccess }}>Отклик отправлен</Text>
             </View>
           ) : (
             <Button
               onPress={() => openRespond(item.id)}
               variant="primary"
-              style={styles.respondBtn}
+              style={{ width: '100%' }}
             >
               Откликнуться
             </Button>
@@ -332,7 +310,7 @@ export default function CityRequestsScreen() {
   const renderContent = () => {
     if (loading) {
       return (
-        <View style={styles.center}>
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
       );
@@ -383,7 +361,6 @@ export default function CityRequestsScreen() {
     return null;
   };
 
-  // Unique categories from loaded requests (client-side filter)
   const uniqueCategories = React.useMemo(() => {
     const cats = new Set<string>();
     for (const r of requests) {
@@ -392,7 +369,6 @@ export default function CityRequestsScreen() {
     return Array.from(cats).sort();
   }, [requests]);
 
-  // Filtered requests by selected category
   const filteredRequests = React.useMemo(() => {
     if (!selectedCategory) return requests;
     return requests.filter((r) => r.category === selectedCategory);
@@ -401,77 +377,63 @@ export default function CityRequestsScreen() {
   const content = renderContent();
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       {isMobile && <Header title="Запросы в моих городах" showBack />}
 
       {myCities.length > 0 && !loading && !error && (
-        <View style={styles.citiesBar}>
-          <Text style={styles.citiesText}>
+        <View className="px-4 py-2 bg-bgSecondary border-b border-border items-center gap-1">
+          <Text className="text-xs text-textMuted max-w-[430px] w-full">
             {'Города: '}{myCities.join(', ')}
           </Text>
           {requests.some((r) => !seenIds.has(r.id) && !respondedIds.has(r.id)) && (
-            <TouchableOpacity onPress={markAllSeen} style={styles.markAllBtn}>
-              <Text style={styles.markAllText}>Отметить все прочитанными</Text>
-            </TouchableOpacity>
+            <Pressable onPress={markAllSeen} className="max-w-[430px] w-full">
+              <Text className="text-xs text-brandPrimary font-medium">Отметить все прочитанными</Text>
+            </Pressable>
           )}
         </View>
       )}
 
       {/* Category filter chips */}
       {uniqueCategories.length > 0 && !loading && !error && (
-        <View style={styles.categoryBar}>
+        <View className="py-2 border-b border-border bg-bgPrimary">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 4 }}
           >
-            <TouchableOpacity
-              style={[
-                styles.categoryFilterChip,
-                !selectedCategory && styles.categoryFilterChipActive,
-              ]}
+            <Pressable
+              className={`px-3 py-1.5 rounded-full border ${!selectedCategory ? 'border-brandPrimary' : 'border-border bg-bgSecondary'}`}
+              style={!selectedCategory ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
               onPress={() => setSelectedCategory(null)}
             >
-              <Text
-                style={[
-                  styles.categoryFilterText,
-                  !selectedCategory && styles.categoryFilterTextActive,
-                ]}
-              >
+              <Text className={`text-xs font-medium ${!selectedCategory ? 'text-white' : 'text-textSecondary'}`}>
                 Все
               </Text>
-            </TouchableOpacity>
+            </Pressable>
             {uniqueCategories.map((cat) => (
-              <TouchableOpacity
+              <Pressable
                 key={cat}
-                style={[
-                  styles.categoryFilterChip,
-                  selectedCategory === cat && styles.categoryFilterChipActive,
-                ]}
+                className={`px-3 py-1.5 rounded-full border ${selectedCategory === cat ? 'border-brandPrimary' : 'border-border bg-bgSecondary'}`}
+                style={selectedCategory === cat ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
                 onPress={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
               >
-                <Text
-                  style={[
-                    styles.categoryFilterText,
-                    selectedCategory === cat && styles.categoryFilterTextActive,
-                  ]}
-                >
+                <Text className={`text-xs font-medium ${selectedCategory === cat ? 'text-white' : 'text-textSecondary'}`}>
                   {cat}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
       )}
 
       {content ? (
-        <View style={styles.contentFlex}>{content}</View>
+        <View className="flex-1">{content}</View>
       ) : (
         <FlatList
           data={filteredRequests}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, alignItems: 'center', paddingTop: 12 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -482,22 +444,22 @@ export default function CityRequestsScreen() {
           }
           ListFooterComponent={
             myCities.some((c) => cityHasMore[c]) ? (
-              <View style={styles.loadMoreWrap}>
+              <View className="w-full max-w-[430px] gap-2 mb-4">
                 {myCities.filter((c) => cityHasMore[c]).map((city) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={city}
-                    style={styles.loadMoreBtn}
+                    className="bg-bgCard border border-border rounded-lg py-3 items-center"
                     onPress={() => loadMoreForCity(city)}
                     disabled={loadingMoreCity === city}
                   >
                     {loadingMoreCity === city ? (
                       <ActivityIndicator size="small" color={Colors.brandPrimary} />
                     ) : (
-                      <Text style={styles.loadMoreText}>
+                      <Text className="text-sm text-brandPrimary font-medium">
                         {`Ещё запросы: ${city}`}
                       </Text>
                     )}
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
             ) : null
@@ -513,12 +475,13 @@ export default function CityRequestsScreen() {
         onRequestClose={closeModal}
       >
         <KeyboardAvoidingView
-          style={styles.modalOverlay}
+          className="flex-1 justify-end"
+          style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Ваш отклик</Text>
-            <Text style={styles.modalHint}>Кратко опишите, как вы можете помочь</Text>
+          <View className="bg-bgCard rounded-t-2xl p-6 gap-3 self-center w-full max-w-[430px]">
+            <Text className="text-lg font-semibold text-textPrimary">Ваш отклик</Text>
+            <Text className="text-sm text-textMuted -mt-1">Кратко опишите, как вы можете помочь</Text>
             <TextInput
               value={message}
               onChangeText={setMessage}
@@ -527,12 +490,13 @@ export default function CityRequestsScreen() {
               multiline
               numberOfLines={4}
               maxLength={500}
-              style={[styles.messageInput, { outlineStyle: 'none' } as any]}
+              className="bg-bgSecondary border border-border rounded-lg p-4 text-base text-textPrimary min-h-[100px]"
+              style={{ outlineStyle: 'none', textAlignVertical: 'top' } as any}
               autoFocus
             />
-            <Text style={styles.charCounter}>{message.length}/500</Text>
-            <View style={styles.modalBtns}>
-              <Button onPress={closeModal} variant="ghost" style={styles.modalBtn}>
+            <Text className="text-xs text-textMuted text-right -mt-1">{message.length}/500</Text>
+            <View className="flex-row gap-2 mt-1">
+              <Button onPress={closeModal} variant="ghost" style={{ flex: 1 }}>
                 Отмена
               </Button>
               <Button
@@ -540,7 +504,7 @@ export default function CityRequestsScreen() {
                 variant="primary"
                 loading={submitting}
                 disabled={submitting}
-                style={styles.modalBtn}
+                style={{ flex: 1 }}
               >
                 Отправить
               </Button>
@@ -548,239 +512,6 @@ export default function CityRequestsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  contentFlex: {
-    flex: 1,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  citiesBar: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  citiesText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    maxWidth: 430,
-    width: '100%',
-  },
-  markAllBtn: {
-    maxWidth: 430,
-    width: '100%',
-  },
-  markAllText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-    alignItems: 'center',
-    paddingTop: Spacing.md,
-  },
-  cardWrapper: {
-    width: '100%',
-    maxWidth: 430,
-    marginBottom: Spacing.md,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  metaLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    flexShrink: 1,
-  },
-  newBadge: {
-    backgroundColor: Colors.statusBg.info,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-  },
-  newBadgeText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusInfo,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  categoryBar: {
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.bgPrimary,
-  },
-  categoryScroll: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.xs,
-  },
-  categoryFilterChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  categoryFilterChipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  categoryFilterText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  categoryFilterTextActive: {
-    color: '#fff',
-  },
-  categoryChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  categoryText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  cityChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  cityText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  dateText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  description: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-    marginBottom: Spacing.md,
-  },
-  footer: {
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    marginBottom: Spacing.md,
-  },
-  responsesText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  respondBtn: {
-    width: '100%',
-  },
-  respondedBadge: {
-    backgroundColor: Colors.statusBg.success,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-  },
-  respondedText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusSuccess,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  loadMoreWrap: {
-    width: '100%',
-    maxWidth: 430,
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  loadMoreBtn: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-  },
-  loadMoreText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: Colors.bgCard,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    padding: Spacing['2xl'],
-    gap: Spacing.md,
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 430,
-  },
-  modalTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  modalHint: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    marginTop: -Spacing.xs,
-  },
-  messageInput: {
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  charCounter: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'right',
-    marginTop: -Spacing.xs,
-  },
-  modalBtns: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  modalBtn: {
-    flex: 1,
-  },
-});

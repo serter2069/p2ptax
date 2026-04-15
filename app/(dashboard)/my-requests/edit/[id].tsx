@@ -3,18 +3,16 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { api, ApiError } from '../../../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../../constants/Colors';
+import { Colors } from '../../../../constants/Colors';
 import { Header } from '../../../../components/Header';
 import { Button } from '../../../../components/Button';
 import { Input } from '../../../../components/Input';
@@ -114,34 +112,34 @@ export default function EditRequestScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View className="flex-1 bg-bgPrimary">
         <Header title="Редактирование" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Редактирование' }]} />
-        <View style={styles.loadingBox}>
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <Header title="Редактирование" showBack />
       <KeyboardAvoidingView
-        style={styles.flex}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={[styles.container, !isMobile && { maxWidth: 680 }]}>
-            <Text style={styles.subtitle}>
+          <View className={`w-full px-5 gap-5 ${isMobile ? 'max-w-[430px]' : 'max-w-[680px]'}`}>
+            <Text className="text-base text-textSecondary leading-[22px]">
               Измените данные запроса
             </Text>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Описание</Text>
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textSecondary mb-0.5">Описание</Text>
               <TextInput
                 value={description}
                 onChangeText={(t) => {
@@ -154,18 +152,14 @@ export default function EditRequestScreen() {
                 multiline={true}
                 numberOfLines={4}
                 maxLength={2000}
-                style={[
-                  styles.descriptionInput,
-                  errors.description ? styles.descriptionInputError : null,
-                  { outlineStyle: 'none' } as any,
-                ]}
-                textAlignVertical="top"
+                className={`min-h-[100px] bg-bgCard border rounded-lg px-4 py-3 text-base text-textPrimary ${errors.description ? 'border-statusError' : 'border-border'}`}
+                style={{ outlineStyle: 'none', textAlignVertical: 'top' } as any}
               />
-              <View style={styles.descriptionFooter}>
+              <View className="flex-row justify-between items-center">
                 {errors.description ? (
-                  <Text style={styles.errorText}>{errors.description}</Text>
+                  <Text className="text-xs text-statusError">{errors.description}</Text>
                 ) : <View />}
-                <Text style={styles.charCounter}>{description.length}/2000</Text>
+                <Text className="text-xs text-textMuted">{description.length}/2000</Text>
               </View>
             </View>
 
@@ -193,20 +187,20 @@ export default function EditRequestScreen() {
               error={errors.budget}
             />
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Категория (необязательно)</Text>
-              <View style={styles.chipsRow}>
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textSecondary mb-0.5">Категория (необязательно)</Text>
+              <View className="flex-row flex-wrap gap-2">
                 {TAX_CATEGORIES.map((cat) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={cat}
-                    style={[styles.chip, category === cat && styles.chipActive]}
+                    className={`px-3 py-1 rounded-full border ${category === cat ? 'border-brandPrimary' : 'border-border bg-bgCard'}`}
+                    style={category === cat ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
                     onPress={() => setCategory(category === cat ? '' : cat)}
-                    activeOpacity={0.7}
                   >
-                    <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
+                    <Text className={`text-sm font-medium ${category === cat ? 'text-white' : 'text-textSecondary'}`}>
                       {cat}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
             </View>
@@ -216,109 +210,13 @@ export default function EditRequestScreen() {
               variant="primary"
               loading={saving}
               disabled={saving}
-              style={styles.submitBtn}
+              style={{ width: '100%', marginTop: 12 }}
             >
               Сохранить изменения
             </Button>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  flex: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xl,
-  },
-  loadingBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  field: {
-    gap: Spacing.xs,
-  },
-  label: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    marginBottom: 2,
-  },
-  descriptionInput: {
-    minHeight: 100,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  descriptionInputError: {
-    borderColor: Colors.statusError,
-  },
-  descriptionFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-  },
-  charCounter: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  submitBtn: {
-    width: '100%',
-    marginTop: Spacing.md,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  chipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  chipTextActive: {
-    color: '#FFFFFF',
-  },
-});

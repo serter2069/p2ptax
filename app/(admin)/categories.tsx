@@ -2,17 +2,15 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
   TextInput,
   Alert,
 } from 'react-native';
 import { api } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 
 interface ServiceCategory {
@@ -111,106 +109,110 @@ export default function AdminCategories() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <Header title="Категории услуг" showBack />
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />
         }
       >
-        <View style={styles.container}>
+        <View className="w-full max-w-lg px-5 gap-4">
           {/* Add new category form */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Добавить категорию</Text>
+          <View className="bg-bgCard rounded-xl p-4 border border-border gap-2 shadow-sm">
+            <Text className="text-sm font-semibold text-textMuted uppercase tracking-wider mt-3 mb-2">Добавить категорию</Text>
             <TextInput
-              style={[styles.input, { outlineStyle: 'none' } as any]}
+              className="border border-border rounded-lg py-2 px-3 text-base text-textPrimary bg-bgPrimary"
+              style={{ outlineStyle: 'none' } as any}
               value={newName}
               onChangeText={setNewName}
               placeholder="Название"
               placeholderTextColor={Colors.textMuted}
             />
             <TextInput
-              style={[styles.input, { outlineStyle: 'none' } as any]}
+              className="border border-border rounded-lg py-2 px-3 text-base text-textPrimary bg-bgPrimary"
+              style={{ outlineStyle: 'none' } as any}
               value={newIcon}
               onChangeText={setNewIcon}
               placeholder="Иконка (emoji, необязательно)"
               placeholderTextColor={Colors.textMuted}
             />
             <TextInput
-              style={[styles.input, { outlineStyle: 'none' } as any]}
+              className="border border-border rounded-lg py-2 px-3 text-base text-textPrimary bg-bgPrimary"
+              style={{ outlineStyle: 'none' } as any}
               value={newSortOrder}
               onChangeText={setNewSortOrder}
               placeholder="Порядок сортировки (число, необязательно)"
               placeholderTextColor={Colors.textMuted}
               keyboardType="numeric"
             />
-            <TouchableOpacity
-              style={[styles.createBtn, (saving || !newName.trim()) && styles.createBtnDisabled]}
+            <Pressable
+              className="rounded-lg py-3 items-center mt-1"
+              style={{
+                backgroundColor: Colors.brandPrimary,
+                opacity: (saving || !newName.trim()) ? 0.5 : 1,
+              }}
               onPress={handleCreate}
               disabled={saving || !newName.trim()}
-              activeOpacity={0.75}
             >
               {saving ? (
                 <ActivityIndicator size="small" color={Colors.white} />
               ) : (
-                <Text style={styles.createBtnText}>Добавить</Text>
+                <Text className="text-base font-semibold text-white">Добавить</Text>
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {/* Categories list */}
-          <Text style={styles.sectionTitle}>Список категорий</Text>
+          <Text className="text-sm font-semibold text-textMuted uppercase tracking-wider mt-3 mb-2">Список категорий</Text>
 
           {loading ? (
-            <ActivityIndicator size="large" color={Colors.brandPrimary} style={styles.loader} />
+            <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginVertical: 24 }} />
           ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
+            <Text className="text-sm text-statusError text-center py-4">{error}</Text>
           ) : categories.length === 0 ? (
-            <Text style={styles.emptyText}>Нет категорий</Text>
+            <Text className="text-sm text-textMuted text-center py-4">Нет категорий</Text>
           ) : (
-            <View style={styles.list}>
+            <View className="gap-2">
               {categories.map(cat => (
-                <View key={cat.id} style={styles.catRow}>
-                  <View style={styles.catInfo}>
-                    <Text style={styles.catIcon}>{cat.icon || '•'}</Text>
-                    <View style={styles.catTextBlock}>
-                      <Text style={[styles.catName, !cat.isActive && styles.catNameInactive]}>
+                <View key={cat.id} className="flex-row items-center bg-bgCard rounded-xl p-3 border border-border shadow-sm">
+                  <View className="flex-1 flex-row items-center gap-2">
+                    <Text className="text-[20px] w-7 text-center">{cat.icon || '•'}</Text>
+                    <View className="flex-1">
+                      <Text className={`text-base font-medium ${cat.isActive ? 'text-textPrimary' : 'text-textMuted'}`}>
                         {cat.name}
                       </Text>
-                      <Text style={styles.catMeta}>
+                      <Text className="text-xs text-textMuted mt-0.5">
                         #{cat.sortOrder}{' '}
                         {cat.isActive ? (
-                          <Text style={styles.activeLabel}>активна</Text>
+                          <Text style={{ color: '#1A7848' }}>активна</Text>
                         ) : (
-                          <Text style={styles.inactiveLabel}>скрыта</Text>
+                          <Text className="text-textMuted">скрыта</Text>
                         )}
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.catActions}>
-                    <TouchableOpacity
-                      style={styles.toggleBtn}
+                  <View className="flex-row gap-1">
+                    <Pressable
+                      className="py-1 px-2 rounded border border-brandPrimary"
                       onPress={() => handleToggleActive(cat)}
-                      activeOpacity={0.7}
                     >
-                      <Text style={styles.toggleBtnText}>
+                      <Text className="text-xs text-brandPrimary font-medium">
                         {cat.isActive ? 'Скрыть' : 'Показать'}
                       </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
+                    </Pressable>
+                    <Pressable
+                      className="py-1 px-2 rounded border border-statusError min-w-[60px] items-center"
                       onPress={() => handleDelete(cat)}
                       disabled={deletingId === cat.id}
-                      activeOpacity={0.7}
                     >
                       {deletingId === cat.id ? (
                         <ActivityIndicator size="small" color={Colors.statusError} />
                       ) : (
-                        <Text style={styles.deleteBtnText}>Удалить</Text>
+                        <Text className="text-xs text-statusError font-medium">Удалить</Text>
                       )}
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                 </View>
               ))}
@@ -218,158 +220,6 @@ export default function AdminCategories() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgPrimary,
-  },
-  createBtn: {
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-    marginTop: Spacing.xs,
-  },
-  createBtnDisabled: {
-    opacity: 0.5,
-  },
-  createBtnText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-  loader: {
-    marginVertical: Spacing['2xl'],
-  },
-  errorText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    textAlign: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  emptyText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  list: {
-    gap: Spacing.sm,
-  },
-  catRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.sm,
-  },
-  catInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  catIcon: {
-    fontSize: 20,
-    width: 28,
-    textAlign: 'center',
-  },
-  catTextBlock: {
-    flex: 1,
-  },
-  catName: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  catNameInactive: {
-    color: Colors.textMuted,
-  },
-  catMeta: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  activeLabel: {
-    color: '#1A7848',
-  },
-  inactiveLabel: {
-    color: Colors.textMuted,
-  },
-  catActions: {
-    flexDirection: 'row',
-    gap: Spacing.xs,
-  },
-  toggleBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-  },
-  toggleBtnText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  deleteBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-    borderColor: Colors.statusError,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  deleteBtnText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-    fontWeight: Typography.fontWeight.medium,
-  },
-});

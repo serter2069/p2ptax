@@ -2,15 +2,13 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { OnboardingProgress } from '../../components/OnboardingProgress';
 import { RUSSIAN_CITIES } from '../../constants/Cities';
 
@@ -28,7 +26,6 @@ export default function CitiesScreen() {
   async function handleContinue() {
     setIsLoading(true);
     try {
-      // Save cities to AsyncStorage so they survive refresh/deep links
       await AsyncStorage.setItem('onboarding_cities', JSON.stringify(selected));
       router.push({
         pathname: '/(onboarding)/fns',
@@ -40,54 +37,56 @@ export default function CitiesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24, justifyContent: 'center' }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.container}>
+        <View className="w-full max-w-lg px-5 gap-6">
           {/* Back button */}
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Text style={styles.backBtnText}>← Назад</Text>
-          </TouchableOpacity>
+          <Pressable onPress={() => router.back()} className="self-start py-2">
+            <Text className="text-base font-medium text-brandPrimary">{'\u2190'} Назад</Text>
+          </Pressable>
 
           <OnboardingProgress currentStep={2} />
 
           {/* Progress bar */}
-          <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: '50%' }]} />
+          <View className="h-1 bg-border rounded-sm overflow-hidden">
+            <View className="h-1 rounded-sm" style={{ width: '50%', backgroundColor: Colors.brandPrimary }} />
           </View>
 
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.step}>Шаг 2 из 5</Text>
-            <Text style={styles.title}>Выберите города</Text>
-            <Text style={styles.subtitle}>
+          <View className="gap-1">
+            <Text className="text-sm font-medium text-textMuted">Шаг 2 из 5</Text>
+            <Text className="text-2xl font-bold text-textPrimary">Выберите города</Text>
+            <Text className="text-base text-textSecondary leading-[22px]">
               В каких городах России вы оказываете услуги?
             </Text>
           </View>
 
           {/* City chips */}
-          <View style={styles.chipsGrid}>
+          <View className="flex-row flex-wrap gap-2">
             {RUSSIAN_CITIES.map((city) => {
               const isSelected = selected.includes(city);
               return (
-                <TouchableOpacity
+                <Pressable
                   key={city}
                   onPress={() => toggleCity(city)}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
-                  activeOpacity={0.7}
+                  className={`py-2 px-4 rounded-full border ${isSelected ? 'border-brandPrimary' : 'border-border bg-bgCard'}`}
+                  style={isSelected ? { borderColor: Colors.brandPrimary, backgroundColor: Colors.statusBg.accent } : undefined}
                 >
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                  <Text className={`text-base font-medium ${isSelected ? 'font-semibold' : 'text-textSecondary'}`}
+                    style={isSelected ? { color: Colors.textAccent } : undefined}
+                  >
                     {city}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
 
           {selected.length > 0 && (
-            <Text style={styles.selectedHint}>
+            <Text className="text-sm text-textMuted leading-[18px]">
               Выбрано: {selected.join(', ')}
             </Text>
           )}
@@ -96,123 +95,22 @@ export default function CitiesScreen() {
             onPress={handleContinue}
             disabled={selected.length === 0}
             loading={isLoading}
-            style={styles.btn}
+            style={{ width: '100%', marginTop: 8 }}
           >
             Продолжить
           </Button>
 
-          <TouchableOpacity
+          <Pressable
             onPress={async () => {
               await AsyncStorage.setItem('onboarding_cities', JSON.stringify([]));
               router.push('/(onboarding)/fns');
             }}
-            style={styles.skipBtn}
-            activeOpacity={0.7}
+            className="items-center py-2"
           >
-            <Text style={styles.skipBtnText}>Заполнить позже</Text>
-          </TouchableOpacity>
+            <Text className="text-base text-textMuted">Заполнить позже</Text>
+          </Pressable>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-    justifyContent: 'center',
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing['2xl'],
-  },
-  progressBarBg: {
-    height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: 4,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: 2,
-  },
-  header: {
-    gap: Spacing.xs,
-  },
-  step: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  chipsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  chipSelected: {
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.statusBg.accent,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  chipTextSelected: {
-    color: Colors.textAccent,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  selectedHint: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    lineHeight: 18,
-  },
-  btn: {
-    width: '100%',
-    marginTop: Spacing.sm,
-  },
-  backBtn: {
-    alignSelf: 'flex-start',
-    paddingVertical: Spacing.sm,
-  },
-  backBtnText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  skipBtn: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  skipBtnText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-  },
-});
