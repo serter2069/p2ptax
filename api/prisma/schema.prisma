@@ -64,6 +64,7 @@ model User {
   complaintsGiven     Complaint[]       @relation("ComplaintReporter")
   complaintsReceived  Complaint[]       @relation("ComplaintTarget")
   paymentRecords      PaymentRecord[]
+  notifications       Notification[]
 
   @@map("users")
 }
@@ -440,5 +441,29 @@ model Setting {
   value String
 
   @@map("settings")
+}
+
+enum NotificationType {
+  NEW_MESSAGE
+  NEW_RESPONSE
+  REQUEST_UPDATE
+  REVIEW
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 

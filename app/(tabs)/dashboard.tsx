@@ -15,6 +15,7 @@ import { dashboard, requests, threads } from '../../lib/api/endpoints';
 import { Colors, Typography, Spacing, Shadows, BorderRadius } from '../../constants/Colors';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { NotificationBell } from '../../components/NotificationBell';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -274,9 +275,12 @@ export default function DashboardTab() {
     >
       {/* Welcome */}
       <View style={styles.welcomeSection}>
-        <Text style={styles.welcomeTitle}>
-          {'\u{1F44B}'} {userName ? `${userName}` : 'Добро пожаловать'}
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.welcomeTitle}>
+            {'\u{1F44B}'} {userName ? `${userName}` : 'Добро пожаловать'}
+          </Text>
+          <NotificationBell />
+        </View>
         <Text style={styles.welcomeSubtitle}>Ваш личный кабинет</Text>
       </View>
 

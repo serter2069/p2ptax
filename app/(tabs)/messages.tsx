@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../stores/authStore';
 import { threads as threadsApi } from '../../lib/api/endpoints';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/Colors';
+import { NotificationBell } from '../../components/NotificationBell';
 
 // ---------------------------------------------------------------------------
 // Types matching backend response (ChatService.getThreads)
@@ -233,7 +234,10 @@ export default function MessagesTab() {
   return (
     <View style={s.container}>
       {/* Header */}
-      <Text style={s.pageTitle}>Сообщения</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm }}>
+        <Text style={[s.pageTitle, { marginBottom: 0, paddingHorizontal: 0 }]}>Сообщения</Text>
+        <NotificationBell />
+      </View>
 
       {/* Search bar */}
       <View style={s.searchWrap}>
