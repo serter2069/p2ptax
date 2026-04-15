@@ -6,4 +6,4 @@ export {
   setRefreshToken,
   clearTokens,
 } from './storage';
-export { auth, users, requests, specialists, threads, ifns, stats } from './endpoints';
+export { auth, users, requests, specialists, threads, ifns, stats, reviews } from './endpoints';

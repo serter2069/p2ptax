@@ -17,6 +17,7 @@ import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 import { useAuth } from '../../../stores/authStore';
+import { ReviewForm } from '../../../components/ReviewForm';
 
 interface SpecialistProfile {
   nick?: string;
@@ -58,6 +59,8 @@ export default function MyRequestDetailScreen() {
   const [error, setError] = useState('');
   const [closingId, setClosingId] = useState(false);
   const [startingDialogId, setStartingDialogId] = useState<string | null>(null);
+  const [reviewingNick, setReviewingNick] = useState<string | null>(null);
+  const [reviewedNicks, setReviewedNicks] = useState<Set<string>>(new Set());
 
   const fetchDetail = useCallback(async (isRefresh = false) => {
     if (!id) return;
@@ -197,6 +200,14 @@ export default function MyRequestDetailScreen() {
 
             <Text style={styles.dateLabel}>{formatDate(request.createdAt)}</Text>
 
+            {request.status === 'CLOSED' && request.responses.length > 0 && (
+              <View style={styles.reviewBanner}>
+                <Text style={styles.reviewBannerText}>
+                  Заявка закрыта. Оставьте отзыв специалисту, чтобы помочь другим клиентам.
+                </Text>
+              </View>
+            )}
+
             {request.status === 'OPEN' && user?.userId === request.clientId && (
               <View style={styles.actionRow}>
                 <Button
@@ -231,39 +242,66 @@ export default function MyRequestDetailScreen() {
               subtitle="Специалисты скоро увидят ваш запрос"
             />
           ) : (
-            request.responses.map((resp) => (
-              <Card key={resp.id} padding={Spacing.lg}>
-                <View style={styles.responseHeader}>
-                  <Text style={styles.specialistEmail}>
-                    {resp.specialist?.specialistProfile?.displayName
-                      || resp.specialist?.specialistProfile?.nick
-                      || resp.specialist?.email?.split('@')[0]}
-                  </Text>
-                  <Text style={styles.responseDateText}>{formatDate(resp.createdAt)}</Text>
-                </View>
-                <Text style={styles.responseMessage}>{resp.message}</Text>
-                <View style={styles.responseActions}>
-                  {resp.specialist?.specialistProfile?.nick ? (
+            request.responses.map((resp) => {
+              const nick = resp.specialist?.specialistProfile?.nick;
+              const canReview = request.status === 'CLOSED' && nick && !reviewedNicks.has(nick);
+              return (
+                <Card key={resp.id} padding={Spacing.lg}>
+                  <View style={styles.responseHeader}>
+                    <Text style={styles.specialistEmail}>
+                      {resp.specialist?.specialistProfile?.displayName
+                        || resp.specialist?.specialistProfile?.nick
+                        || resp.specialist?.email?.split('@')[0]}
+                    </Text>
+                    <Text style={styles.responseDateText}>{formatDate(resp.createdAt)}</Text>
+                  </View>
+                  <Text style={styles.responseMessage}>{resp.message}</Text>
+                  <View style={styles.responseActions}>
+                    {nick ? (
+                      <Button
+                        onPress={() => router.push(`/specialists/${nick}`)}
+                        variant="ghost"
+                        style={styles.profileBtn}
+                      >
+                        Посмотреть профиль
+                      </Button>
+                    ) : null}
                     <Button
-                      onPress={() => router.push(`/specialists/${resp.specialist.specialistProfile!.nick}`)}
-                      variant="ghost"
-                      style={styles.profileBtn}
+                      onPress={() => handleStartDialog(resp.specialist.id)}
+                      variant="secondary"
+                      loading={startingDialogId === resp.specialist.id}
+                      disabled={startingDialogId !== null}
+                      style={styles.dialogBtn}
                     >
-                      Посмотреть профиль
+                      Начать диалог
                     </Button>
-                  ) : null}
-                  <Button
-                    onPress={() => handleStartDialog(resp.specialist.id)}
-                    variant="secondary"
-                    loading={startingDialogId === resp.specialist.id}
-                    disabled={startingDialogId !== null}
-                    style={styles.dialogBtn}
-                  >
-                    Начать диалог
-                  </Button>
-                </View>
-              </Card>
-            ))
+                    {canReview && reviewingNick !== nick && (
+                      <Button
+                        onPress={() => setReviewingNick(nick)}
+                        variant="primary"
+                        style={styles.dialogBtn}
+                      >
+                        Оставить отзыв
+                      </Button>
+                    )}
+                  </View>
+                  {canReview && reviewingNick === nick && (
+                    <View style={styles.reviewFormWrap}>
+                      <ReviewForm
+                        specialistNick={nick}
+                        requestId={request.id}
+                        onSuccess={() => {
+                          setReviewingNick(null);
+                          setReviewedNicks((prev) => new Set(prev).add(nick));
+                          Alert.alert('Спасибо!', 'Ваш отзыв отправлен.');
+                        }}
+                        onCancel={() => setReviewingNick(null)}
+                      />
+                    </View>
+                  )}
+                </Card>
+              );
+            })
           )}
         </View>
       </ScrollView>
@@ -405,5 +443,21 @@ const styles = StyleSheet.create({
   },
   dialogBtn: {
     width: '100%',
+  },
+  reviewFormWrap: {
+    marginTop: Spacing.md,
+  },
+  reviewBanner: {
+    backgroundColor: '#EBF3FB',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: '#C8D8EA',
+  },
+  reviewBannerText: {
+    fontSize: Typography.fontSize.sm,
+    color: '#1A5BA8',
+    lineHeight: 20,
+    textAlign: 'center',
   },
 });
