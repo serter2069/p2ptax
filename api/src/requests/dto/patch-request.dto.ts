@@ -7,6 +7,13 @@ export class PatchRequestDto {
   status?: RequestStatus;
 
   @IsOptional()
+  @IsString({ message: 'title must be a string' })
+  @IsNotEmpty({ message: 'title cannot be empty' })
+  @MinLength(3, { message: 'title must be at least 3 characters' })
+  @MaxLength(100, { message: 'title must be at most 100 characters' })
+  title?: string;
+
+  @IsOptional()
   @IsString({ message: 'description must be a string' })
   @IsNotEmpty({ message: 'description cannot be empty' })
   @MinLength(10, { message: 'description must be at least 10 characters' })
@@ -33,4 +40,14 @@ export class PatchRequestDto {
   @IsString()
   @MaxLength(100)
   serviceType?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  ifnsId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  ifnsName?: string;
 }
