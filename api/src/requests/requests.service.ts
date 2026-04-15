@@ -318,10 +318,13 @@ export class RequestsService {
   }
 
   async respond(specialistId: string, requestId: string, dto: RespondRequestDto) {
-    // Validate deadline is in the future
-    const deadlineDate = new Date(dto.deadline);
-    if (deadlineDate <= new Date()) {
-      throw new BadRequestException('Deadline must be a future date');
+    // Validate deadline is in the future (if provided)
+    let deadlineDate: Date | undefined;
+    if (dto.deadline) {
+      deadlineDate = new Date(dto.deadline);
+      if (deadlineDate <= new Date()) {
+        throw new BadRequestException('Deadline must be a future date');
+      }
     }
 
     // Check request exists and is open
@@ -364,8 +367,8 @@ export class RequestsService {
           specialistId,
           requestId,
           comment: dto.comment,
-          price: dto.price,
-          deadline: deadlineDate,
+          price: dto.price ?? 0,
+          deadline: deadlineDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });
 
