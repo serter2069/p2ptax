@@ -83,6 +83,7 @@ export class RequestsController {
     @Query('service') service?: string,
     @Query('maxBudget') maxBudget?: string,
     @Query('ifnsId') ifnsId?: string,
+    @Query('serviceType') serviceType?: string,
   ) {
     // 'service' is an alias for 'category' (both accepted)
     const effectiveCategory = category || service;
@@ -92,6 +93,7 @@ export class RequestsController {
       effectiveCategory,
       maxBudget ? parseInt(maxBudget, 10) : undefined,
       ifnsId,
+      serviceType,
     );
   }
 

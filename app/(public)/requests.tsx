@@ -87,6 +87,86 @@ function getServiceLabel(serviceType: string | null, category: string | null): s
 }
 
 // ---------------------------------------------------------------------------
+// Service Type Picker
+// ---------------------------------------------------------------------------
+
+const SERVICE_OPTIONS = [
+  'Камеральная проверка',
+  'Выездная проверка',
+  'Отдел оперативного контроля',
+];
+
+function ServicePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <View style={{ gap: 8 }}>
+      <Pressable onPress={() => setOpen((v) => !v)}>
+        <View style={[s.pickerBtn, open ? s.pickerBtnActive : null]}>
+          <Feather name="briefcase" size={16} color={Colors.textMuted} />
+          <Text
+            style={[s.pickerBtnText, !value && s.pickerBtnPlaceholder]}
+            numberOfLines={1}
+          >
+            {value || 'Тип услуги'}
+          </Text>
+          <Feather
+            name={open ? 'chevron-up' : 'chevron-down'}
+            size={14}
+            color={Colors.textMuted}
+          />
+        </View>
+      </Pressable>
+
+      {open && (
+        <View style={s.cascadePanel}>
+          <View style={{ maxHeight: 200 }}>
+            <Pressable
+              style={s.cascadeOption}
+              onPress={() => { onChange(''); setOpen(false); }}
+            >
+              <Text style={[s.cascadeOptionText, { color: Colors.textMuted }]}>Все услуги</Text>
+            </Pressable>
+            {SERVICE_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt}
+                style={s.cascadeOption}
+                onPress={() => { onChange(opt); setOpen(false); }}
+              >
+                <Text
+                  style={[
+                    s.cascadeOptionText,
+                    value === opt && { fontWeight: '600', color: Colors.brandPrimary },
+                  ]}
+                >
+                  {opt}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {value ? (
+        <View style={s.chipRow}>
+          <Pressable style={s.chip} onPress={() => onChange('')}>
+            <Feather name="briefcase" size={11} color={Colors.brandPrimary} />
+            <Text style={s.chipText}>{value}</Text>
+            <Feather name="x" size={12} color={Colors.brandPrimary} />
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // City/FNS Cascading Picker
 // ---------------------------------------------------------------------------
 
@@ -408,6 +488,7 @@ export default function PublicRequestsScreen() {
   // Filters
   const [filterCity, setFilterCity] = useState('');
   const [filterIfnsId, setFilterIfnsId] = useState('');
+  const [filterServiceType, setFilterServiceType] = useState('');
 
   // Cities + FNS options
   const [cities, setCities] = useState<string[]>([]);
@@ -475,6 +556,7 @@ export default function PublicRequestsScreen() {
       const params: Record<string, unknown> = { page: targetPage };
       if (filterCity) params.city = filterCity;
       if (filterIfnsId) params.ifnsId = filterIfnsId;
+      if (filterServiceType) params.serviceType = filterServiceType;
 
       const res = await requestsApi.getPublicFeed(params);
       const body = res.data as {
@@ -499,7 +581,7 @@ export default function PublicRequestsScreen() {
       setRefreshing(false);
       setLoadingMore(false);
     }
-  }, [filterCity, filterIfnsId]);
+  }, [filterCity, filterIfnsId, filterServiceType]);
 
   // Initial load + re-fetch on filter change
   useEffect(() => {
@@ -526,7 +608,7 @@ export default function PublicRequestsScreen() {
     router.push(`/request/${id}` as never);
   };
 
-  const hasFilters = !!(filterCity || filterIfnsId);
+  const hasFilters = !!(filterCity || filterIfnsId || filterServiceType);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -555,7 +637,7 @@ export default function PublicRequestsScreen() {
           {hasFilters && (
             <Pressable
               style={s.resetBtn}
-              onPress={() => { setFilterCity(''); setFilterIfnsId(''); }}
+              onPress={() => { setFilterCity(''); setFilterIfnsId(''); setFilterServiceType(''); }}
             >
               <Feather name="x" size={14} color={Colors.textMuted} />
               <Text style={s.resetBtnText}>Сбросить</Text>
@@ -570,6 +652,10 @@ export default function PublicRequestsScreen() {
           onCityChange={handleCityChange}
           onIfnsChange={handleIfnsChange}
           loadingFns={loadingFns}
+        />
+        <ServicePicker
+          value={filterServiceType}
+          onChange={setFilterServiceType}
         />
       </View>
     </View>
