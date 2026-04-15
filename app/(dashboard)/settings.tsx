@@ -36,14 +36,23 @@ interface MyReview {
 
 type EmailChangeStep = 'idle' | 'email_input' | 'otp_input' | 'success';
 
-const NOTIF_KEY = '@p2ptax_email_notif';
+interface NotificationSettings {
+  new_responses: boolean;
+  new_messages: boolean;
+}
+
+const NOTIF_KEY_RESPONSES = '@p2ptax_notif_responses';
+const NOTIF_KEY_MESSAGES = '@p2ptax_notif_messages';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { isMobile } = useBreakpoints();
   const { user, logout, updateEmail } = useAuth();
 
-  const [emailNotif, setEmailNotif] = useState(true);
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>({
+    new_responses: true,
+    new_messages: true,
+  });
   const [notifLoading, setNotifLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [myReviews, setMyReviews] = useState<MyReview[]>([]);
@@ -67,32 +76,42 @@ export default function SettingsScreen() {
     }
   }, [user?.role]);
 
-  // Load notification preference from API, fallback to AsyncStorage
+  // Load notification preferences from API, fallback to AsyncStorage
   useEffect(() => {
-    api.get('/users/me/settings')
-      .then((data: any) => {
-        setEmailNotif(data.emailNotifications);
-        AsyncStorage.setItem(NOTIF_KEY, String(data.emailNotifications)).catch(() => {});
+    api.get<NotificationSettings>('/users/me/notification-settings')
+      .then((data) => {
+        setNotifSettings(data);
+        AsyncStorage.setItem(NOTIF_KEY_RESPONSES, String(data.new_responses)).catch(() => {});
+        AsyncStorage.setItem(NOTIF_KEY_MESSAGES, String(data.new_messages)).catch(() => {});
       })
       .catch(() => {
         // Fallback to AsyncStorage if API unavailable
-        AsyncStorage.getItem(NOTIF_KEY)
-          .then((val) => {
-            if (val !== null) setEmailNotif(val === 'true');
-          })
-          .catch(() => {});
+        Promise.all([
+          AsyncStorage.getItem(NOTIF_KEY_RESPONSES),
+          AsyncStorage.getItem(NOTIF_KEY_MESSAGES),
+        ]).then(([responses, messages]) => {
+          setNotifSettings({
+            new_responses: responses !== null ? responses === 'true' : true,
+            new_messages: messages !== null ? messages === 'true' : true,
+          });
+        }).catch(() => {});
       })
       .finally(() => setNotifLoading(false));
   }, []);
 
-  async function handleNotifToggle(value: boolean) {
-    setEmailNotif(value);
+  async function handleNotifToggle(key: keyof NotificationSettings, value: boolean) {
+    const prev = notifSettings[key];
+    setNotifSettings((s) => ({ ...s, [key]: value }));
     try {
-      await api.patch('/users/me/settings', { emailNotifications: value });
-      await AsyncStorage.setItem(NOTIF_KEY, String(value));
+      await api.patch('/users/me/notification-settings', { [key]: value });
+      if (key === 'new_responses') {
+        await AsyncStorage.setItem(NOTIF_KEY_RESPONSES, String(value));
+      } else {
+        await AsyncStorage.setItem(NOTIF_KEY_MESSAGES, String(value));
+      }
     } catch {
       // Revert on failure
-      setEmailNotif(!value);
+      setNotifSettings((s) => ({ ...s, [key]: prev }));
     }
   }
 
@@ -373,24 +392,52 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <View style={styles.row}>
               <View style={styles.rowTextBlock}>
-                <Text style={styles.rowLabel}>Email-уведомления</Text>
-                <Text style={styles.rowHint}>
-                  {user?.role === 'SPECIALIST'
-                    ? 'Новые запросы в ваших городах и сообщения'
-                    : 'Отклики специалистов и сообщения'}
-                </Text>
+                <Text style={styles.rowLabel}>Новые отклики</Text>
+                <Text style={styles.rowHint}>Уведомления о новых откликах на ваши запросы</Text>
               </View>
               {notifLoading ? (
                 <ActivityIndicator size="small" color={Colors.brandPrimary} />
               ) : (
                 <Switch
-                  value={emailNotif}
-                  onValueChange={handleNotifToggle}
+                  value={notifSettings.new_responses}
+                  onValueChange={(v) => handleNotifToggle('new_responses', v)}
                   trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
                   thumbColor={Colors.textPrimary}
-                  accessibilityLabel="Email-уведомления"
+                  accessibilityLabel="Новые отклики"
                 />
               )}
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.row}>
+              <View style={styles.rowTextBlock}>
+                <Text style={styles.rowLabel}>Новые сообщения</Text>
+                <Text style={styles.rowHint}>Уведомления о новых сообщениях в чатах</Text>
+              </View>
+              {notifLoading ? (
+                <ActivityIndicator size="small" color={Colors.brandPrimary} />
+              ) : (
+                <Switch
+                  value={notifSettings.new_messages}
+                  onValueChange={(v) => handleNotifToggle('new_messages', v)}
+                  trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
+                  thumbColor={Colors.textPrimary}
+                  accessibilityLabel="Новые сообщения"
+                />
+              )}
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.row}>
+              <View style={styles.rowTextBlock}>
+                <Text style={styles.rowLabel}>Автозакрытие</Text>
+                <Text style={styles.rowHint}>Уведомления об автоматическом закрытии запросов</Text>
+              </View>
+              <Switch
+                value={true}
+                disabled={true}
+                trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
+                thumbColor={Colors.textPrimary}
+                accessibilityLabel="Автозакрытие"
+              />
             </View>
           </View>
 

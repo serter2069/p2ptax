@@ -76,6 +76,14 @@ export const users = {
     return client.patch('/users/me/settings', data);
   },
 
+  getNotificationSettings() {
+    return client.get<{ new_responses: boolean; new_messages: boolean }>('/users/me/notification-settings');
+  },
+
+  updateNotificationSettings(data: { new_responses?: boolean; new_messages?: boolean }) {
+    return client.patch<{ new_responses: boolean; new_messages: boolean }>('/users/me/notification-settings', data);
+  },
+
   /** Step 1: send OTP to the new email address */
   requestEmailChange(newEmail: string) {
     return client.post<{ message: string }>('/users/me/change-email/request', { newEmail });
