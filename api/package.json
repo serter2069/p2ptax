@@ -41,6 +41,9 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1"
   },
+  "prisma": {
+    "seed": "npx ts-node prisma/seed.ts"
+  },
   "devDependencies": {
     "@nestjs/testing": "^11.1.19",
     "@types/jest": "^30.0.0",
