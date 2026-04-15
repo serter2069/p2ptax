@@ -33,6 +33,7 @@ interface SpecialistItem {
   memberSince: number;
   cities: string[];
   services: string[];
+  fnsOffices: string[];
   badges: string[];
   promoted: boolean;
   promotionTier: number;
@@ -168,9 +169,6 @@ function SpecialistCard({ specialist, onPress }: {
               </View>
             )}
           </View>
-          {specialist.headline && (
-            <Text className="text-sm text-slate-500" numberOfLines={2}>{specialist.headline}</Text>
-          )}
           <View className="flex-row items-center gap-1">
             <Feather name="map-pin" size={12} color="#94A3B8" />
             <Text className="text-sm text-slate-400" numberOfLines={1}>
@@ -197,7 +195,22 @@ function SpecialistCard({ specialist, onPress }: {
         </View>
       )}
 
-      {/* Services chips */}
+      {/* FNS blocks (matching proto structure) */}
+      {specialist.fnsOffices && specialist.fnsOffices.length > 0 && (
+        <View className="gap-2">
+          {specialist.fnsOffices.slice(0, 3).map((fns) => (
+            <View key={fns} className="flex-row items-center gap-1.5 bg-sky-50 rounded-lg px-2.5 py-1.5">
+              <Feather name="home" size={13} color="#0284C7" />
+              <Text className="text-xs font-semibold text-sky-600 flex-1" numberOfLines={1}>{fns}</Text>
+            </View>
+          ))}
+          {specialist.fnsOffices.length > 3 && (
+            <Text className="text-xs text-slate-400 ml-1">+{specialist.fnsOffices.length - 3} ещё</Text>
+          )}
+        </View>
+      )}
+
+      {/* Services list */}
       {specialist.services.length > 0 && (
         <View className="flex-row flex-wrap gap-1.5">
           {specialist.services.slice(0, 4).map((svc) => (

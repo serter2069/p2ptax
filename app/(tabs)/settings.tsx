@@ -8,13 +8,11 @@ import {
   RefreshControl,
   Alert,
   Platform,
-  TextInput,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
-import { api, ApiError } from '../../lib/api';
+import { api } from '../../lib/api';
 import { isAdmin } from '../../lib/adminEmails';
 import { users } from '../../lib/api/endpoints';
 import { Colors } from '../../constants/Colors';
@@ -31,30 +29,13 @@ interface SpecialistProfile {
   fnsOffices: string[];
   isAvailable: boolean;
   avatarUrl: string | null;
+  phone?: string | null;
 }
-
-interface MyReview {
-  id: string;
-  rating: number;
-  comment: string | null;
-  createdAt: string;
-  specialist: {
-    id: string;
-    email: string;
-    specialistProfile: {
-      nick: string;
-      displayName: string | null;
-      avatarUrl: string | null;
-    } | null;
-  };
-}
-
-type EmailChangeStep = 'idle' | 'email_input' | 'otp_input' | 'success';
 
 const APP_VERSION = '1.0.0';
 
 // ---------------------------------------------------------------------------
-// Sub-components (matching proto Toggle pattern)
+// Sub-components
 // ---------------------------------------------------------------------------
 function Toggle({
   label,
@@ -140,11 +121,11 @@ function ConfirmCard({
 // Main
 // ---------------------------------------------------------------------------
 export default function SettingsTab() {
-  const { user, logout, updateEmail } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const isSpecialist = user?.role === 'SPECIALIST';
 
-  // Notification toggles
+  // Notification toggles (2 toggles matching proto)
   const [notifSettings, setNotifSettings] = useState<{
     new_responses: boolean;
     new_messages: boolean;
@@ -153,26 +134,18 @@ export default function SettingsTab() {
     new_messages: true,
   });
 
+  // Public profile toggle
+  const [publicProfile, setPublicProfile] = useState(true);
+  const [savingPublicProfile, setSavingPublicProfile] = useState(false);
+
   // Confirm modals
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Specialist profile
+  // Specialist profile (for phone display)
   const [profile, setProfile] = useState<SpecialistProfile | null>(null);
-  const [isAvailable, setIsAvailable] = useState(true);
-  const [savingAvailability, setSavingAvailability] = useState(false);
-
-  // Client reviews
-  const [myReviews, setMyReviews] = useState<MyReview[]>([]);
-
-  // Email change
-  const [emailChangeStep, setEmailChangeStep] = useState<EmailChangeStep>('idle');
-  const [newEmail, setNewEmail] = useState('');
-  const [emailOtpCode, setEmailOtpCode] = useState('');
-  const [emailChangeLoading, setEmailChangeLoading] = useState(false);
-  const [emailChangeError, setEmailChangeError] = useState('');
 
   // Refresh
   const [refreshing, setRefreshing] = useState(false);
@@ -204,17 +177,8 @@ export default function SettingsTab() {
             .get<SpecialistProfile>('/specialists/me')
             .then((data) => {
               setProfile(data);
-              setIsAvailable(data.isAvailable ?? true);
+              setPublicProfile(data.isAvailable ?? true);
             })
-            .catch(() => {}),
-        );
-      }
-
-      if (!isSpecialist) {
-        promises.push(
-          api
-            .get<MyReview[]>('/reviews/my')
-            .then(setMyReviews)
             .catch(() => {}),
         );
       }
@@ -248,88 +212,20 @@ export default function SettingsTab() {
     [notifSettings],
   );
 
-  // ---- Availability toggle (specialist) ----
-  const handleToggleAvailability = useCallback(async (val: boolean) => {
-    setIsAvailable(val);
-    setSavingAvailability(true);
+  // ---- Public profile toggle ----
+  const handleTogglePublicProfile = useCallback(async (val: boolean) => {
+    setPublicProfile(val);
+    setSavingPublicProfile(true);
     try {
-      const updated = await api.patch<SpecialistProfile>('/specialists/me', {
+      await api.patch<SpecialistProfile>('/specialists/me', {
         isAvailable: val,
       });
-      setIsAvailable(updated.isAvailable ?? val);
     } catch {
-      setIsAvailable(!val);
+      setPublicProfile(!val);
     } finally {
-      setSavingAvailability(false);
+      setSavingPublicProfile(false);
     }
   }, []);
-
-  // ---- Email change ----
-  function handleStartEmailChange() {
-    setNewEmail('');
-    setEmailOtpCode('');
-    setEmailChangeError('');
-    setEmailChangeStep('email_input');
-  }
-
-  function handleCancelEmailChange() {
-    setEmailChangeStep('idle');
-    setNewEmail('');
-    setEmailOtpCode('');
-    setEmailChangeError('');
-  }
-
-  async function handleRequestEmailChange() {
-    const trimmed = newEmail.trim().toLowerCase();
-    if (!trimmed) {
-      setEmailChangeError('Введите новый email');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setEmailChangeError('Введите корректный email');
-      return;
-    }
-    setEmailChangeLoading(true);
-    setEmailChangeError('');
-    try {
-      await api.post('/users/me/change-email/request', { newEmail: trimmed });
-      setEmailChangeStep('otp_input');
-    } catch (err) {
-      setEmailChangeError(
-        err instanceof ApiError ? err.message : 'Ошибка отправки кода',
-      );
-    } finally {
-      setEmailChangeLoading(false);
-    }
-  }
-
-  async function handleConfirmEmailChange() {
-    const code = emailOtpCode.trim();
-    if (code.length !== 6) {
-      setEmailChangeError('Введите 6-значный код');
-      return;
-    }
-    setEmailChangeLoading(true);
-    setEmailChangeError('');
-    try {
-      const res = await api.post<{
-        accessToken: string;
-        refreshToken: string;
-        email: string;
-      }>('/users/me/change-email/confirm', {
-        newEmail: newEmail.trim().toLowerCase(),
-        code,
-      });
-      await updateEmail(res.email, res.accessToken, res.refreshToken);
-      setEmailChangeStep('success');
-    } catch (err) {
-      setEmailChangeError(
-        err instanceof ApiError ? err.message : 'Ошибка подтверждения',
-      );
-    } finally {
-      setEmailChangeLoading(false);
-    }
-  }
 
   // ---- Logout ----
   const handleLogout = useCallback(async () => {
@@ -360,337 +256,145 @@ export default function SettingsTab() {
   }, [logout, router]);
 
   const displayEmail = user?.email || '';
+  const displayPhone = profile?.phone || null;
 
   return (
-    <KeyboardAvoidingView
+    <ScrollView
       className="flex-1 bg-white"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      contentContainerStyle={{ padding: 16, gap: 20 }}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={Colors.brandPrimary}
+        />
+      }
     >
-      <ScrollView
-        className="flex-1 bg-white"
-        contentContainerStyle={{ padding: 16, gap: 20 }}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Colors.brandPrimary}
+      {/* Page title */}
+      <Text className="text-xl font-bold text-textPrimary">Настройки</Text>
+
+      {/* ============ Account card ============ */}
+      <View className="gap-3 rounded-xl border border-borderLight p-4">
+        <Text className="text-base font-semibold text-textPrimary">Аккаунт</Text>
+
+        {/* Email — read-only */}
+        <View className="gap-1">
+          <Text className="text-sm font-medium text-textMuted">Email</Text>
+          <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
+            <Feather name="mail" size={16} color={Colors.textMuted} />
+            <Text className="ml-2 flex-1 text-base text-textSecondary" numberOfLines={1}>
+              {displayEmail || '\u2014'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Phone — with edit icon (matching proto) */}
+        <View className="gap-1">
+          <Text className="text-sm font-medium text-textMuted">Телефон</Text>
+          <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
+            <Feather name="phone" size={16} color={Colors.textMuted} />
+            <Text className="ml-2 flex-1 text-base text-textSecondary">
+              {displayPhone || '\u2014'}
+            </Text>
+            <Pressable hitSlop={8} onPress={() => router.push('/profile/edit')}>
+              <Feather name="edit-2" size={16} color={Colors.brandPrimary} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {/* ============ Notifications (2 toggles matching proto) ============ */}
+      <View className="gap-3 rounded-xl border border-borderLight p-4">
+        <Text className="text-base font-semibold text-textPrimary">Уведомления</Text>
+        <Toggle
+          label="Email-уведомления"
+          value={notifSettings.new_responses}
+          onValueChange={(v) => handleNotifToggle('new_responses', v)}
+        />
+        <Toggle
+          label="Push-уведомления"
+          value={notifSettings.new_messages}
+          onValueChange={(v) => handleNotifToggle('new_messages', v)}
+        />
+      </View>
+
+      {/* ============ Public profile toggle (matching proto) ============ */}
+      {isSpecialist && (
+        <View className="gap-3 rounded-xl border border-borderLight p-4">
+          <Text className="text-base font-semibold text-textPrimary">Публичный профиль</Text>
+          <Toggle
+            label="Профиль виден всем"
+            value={publicProfile}
+            onValueChange={handleTogglePublicProfile}
+            disabled={savingPublicProfile}
           />
-        }
+        </View>
+      )}
+
+      {/* ============ Admin ============ */}
+      {isAdmin(user?.email) && (
+        <View className="gap-3 rounded-xl border border-borderLight p-4">
+          <Text className="text-base font-semibold text-textPrimary">Администрирование</Text>
+          <Pressable
+            className="h-10 flex-row items-center justify-center gap-2 rounded-lg border border-borderLight"
+            onPress={() => router.push('/(admin)')}
+          >
+            <Feather name="shield" size={16} color={Colors.textMuted} />
+            <Text className="text-sm font-medium text-textPrimary">Панель администратора</Text>
+            <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+          </Pressable>
+        </View>
+      )}
+
+      {/* ============ Logout ============ */}
+      <Pressable
+        className="h-12 flex-row items-center justify-center gap-2 rounded-xl"
+        style={{ backgroundColor: Colors.statusBg.error }}
+        onPress={() => setShowLogoutConfirm(true)}
       >
-        {/* Page title */}
-        <Text className="text-xl font-bold text-textPrimary">Настройки</Text>
-
-        {/* ============ Account card ============ */}
-        <View className="gap-3 rounded-xl border border-borderLight p-4">
-          <Text className="text-base font-semibold text-textPrimary">Аккаунт</Text>
-
-          {/* Email — readonly */}
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textMuted">Email</Text>
-            <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
-              <Feather name="mail" size={16} color={Colors.textMuted} />
-              <Text className="ml-2 flex-1 text-base text-textSecondary" numberOfLines={1}>
-                {displayEmail || '\u2014'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Email change flow */}
-          {emailChangeStep === 'idle' && (
-            <Pressable
-              className="h-10 items-center justify-center rounded-lg border bg-bgSecondary"
-              style={{ borderColor: Colors.brandPrimary + '60' }}
-              onPress={handleStartEmailChange}
-            >
-              <Text className="text-sm font-medium" style={{ color: Colors.brandPrimary }}>
-                Изменить email
-              </Text>
-            </Pressable>
-          )}
-
-          {emailChangeStep === 'email_input' && (
-            <View className="gap-2">
-              <Text className="text-sm text-textSecondary">Новый email</Text>
-              <TextInput
-                className="h-11 rounded-lg border border-borderLight bg-bgSecondary px-3 text-base text-textPrimary"
-                value={newEmail}
-                onChangeText={(t) => {
-                  setNewEmail(t);
-                  setEmailChangeError('');
-                }}
-                placeholder="example@email.com"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!emailChangeLoading}
-                style={{ outlineStyle: 'none' } as any}
-              />
-              {emailChangeError ? (
-                <Text className="text-xs" style={{ color: Colors.statusError }}>
-                  {emailChangeError}
-                </Text>
-              ) : null}
-              <View className="flex-row gap-2">
-                <Pressable
-                  className="flex-1 h-10 rounded-lg items-center justify-center border border-borderLight bg-bgSecondary"
-                  onPress={handleCancelEmailChange}
-                  disabled={emailChangeLoading}
-                >
-                  <Text className="text-sm font-medium text-textSecondary">Отмена</Text>
-                </Pressable>
-                <Pressable
-                  className="flex-1 h-10 rounded-lg items-center justify-center"
-                  style={{
-                    backgroundColor: Colors.brandPrimary,
-                    opacity: emailChangeLoading ? 0.6 : 1,
-                  }}
-                  onPress={handleRequestEmailChange}
-                  disabled={emailChangeLoading}
-                >
-                  {emailChangeLoading ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <Text className="text-sm font-medium text-white">Получить код</Text>
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          {emailChangeStep === 'otp_input' && (
-            <View className="gap-2">
-              <Text className="text-sm text-textSecondary">
-                Код отправлен на {newEmail.trim().toLowerCase()}
-              </Text>
-              <TextInput
-                className="h-11 rounded-lg border border-borderLight bg-bgSecondary px-3 text-center text-lg text-textPrimary"
-                style={{ letterSpacing: 4, outlineStyle: 'none' } as any}
-                value={emailOtpCode}
-                onChangeText={(t) => {
-                  setEmailOtpCode(t.replace(/\D/g, '').slice(0, 6));
-                  setEmailChangeError('');
-                }}
-                placeholder="000000"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="number-pad"
-                maxLength={6}
-                editable={!emailChangeLoading}
-              />
-              {emailChangeError ? (
-                <Text className="text-xs" style={{ color: Colors.statusError }}>
-                  {emailChangeError}
-                </Text>
-              ) : null}
-              <View className="flex-row gap-2">
-                <Pressable
-                  className="flex-1 h-10 rounded-lg items-center justify-center border border-borderLight bg-bgSecondary"
-                  onPress={handleCancelEmailChange}
-                  disabled={emailChangeLoading}
-                >
-                  <Text className="text-sm font-medium text-textSecondary">Отмена</Text>
-                </Pressable>
-                <Pressable
-                  className="flex-1 h-10 rounded-lg items-center justify-center"
-                  style={{
-                    backgroundColor: Colors.brandPrimary,
-                    opacity: emailChangeLoading ? 0.6 : 1,
-                  }}
-                  onPress={handleConfirmEmailChange}
-                  disabled={emailChangeLoading}
-                >
-                  {emailChangeLoading ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <Text className="text-sm font-medium text-white">Подтвердить</Text>
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          {emailChangeStep === 'success' && (
-            <View className="gap-2">
-              <Text
-                className="text-base font-medium text-center py-2"
-                style={{ color: Colors.statusSuccess }}
-              >
-                Email успешно изменён
-              </Text>
-              <Pressable
-                className="h-10 rounded-lg items-center justify-center"
-                style={{ backgroundColor: Colors.brandPrimary }}
-                onPress={() => {
-                  setEmailChangeStep('idle');
-                  setNewEmail('');
-                  setEmailOtpCode('');
-                  setEmailChangeError('');
-                }}
-              >
-                <Text className="text-sm font-medium text-white">Готово</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {/* Phone — specialist, matching prototype */}
-          {isSpecialist && (
-            <View className="gap-1">
-              <Text className="text-sm font-medium text-textMuted">Телефон</Text>
-              <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
-                <Feather name="phone" size={16} color={Colors.textMuted} />
-                <Text className="ml-2 flex-1 text-base text-textSecondary">
-                  {'\u2014'}
-                </Text>
-                <Pressable hitSlop={8} onPress={() => router.push('/profile/edit')}>
-                  <Feather name="edit-2" size={16} color={Colors.brandPrimary} />
-                </Pressable>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* ============ Notifications ============ */}
-        <View className="gap-3 rounded-xl border border-borderLight p-4">
-          <Text className="text-base font-semibold text-textPrimary">Уведомления</Text>
-          <Toggle
-            label="Email-уведомления"
-            value={notifSettings.new_responses}
-            onValueChange={(v) => handleNotifToggle('new_responses', v)}
-          />
-          <Toggle
-            label="Push-уведомления"
-            value={notifSettings.new_messages}
-            onValueChange={(v) => handleNotifToggle('new_messages', v)}
-          />
-        </View>
-
-        {/* ============ Public profile — specialist ============ */}
-        {isSpecialist && (
-          <View className="gap-3 rounded-xl border border-borderLight p-4">
-            <Text className="text-base font-semibold text-textPrimary">Публичный профиль</Text>
-            <Toggle
-              label="Профиль виден всем"
-              value={isAvailable}
-              onValueChange={handleToggleAvailability}
-              disabled={savingAvailability}
-            />
-          </View>
-        )}
-
-        {/* ============ Client reviews ============ */}
-        {!isSpecialist && myReviews.length > 0 && (
-          <View className="gap-3 rounded-xl border border-borderLight p-4">
-            <Text className="text-base font-semibold text-textPrimary">Мои отзывы</Text>
-            {myReviews.map((review, idx) => {
-              const specName =
-                review.specialist.specialistProfile?.displayName ??
-                review.specialist.specialistProfile?.nick ??
-                review.specialist.email.split('@')[0];
-              const stars = Array.from({ length: 5 }, (_, i) =>
-                i < review.rating ? '\u2605' : '\u2606',
-              ).join('');
-              return (
-                <View key={review.id}>
-                  {idx > 0 && <View className="h-px bg-borderLight" />}
-                  <View className="gap-1">
-                    <View className="flex-row justify-between items-center">
-                      <Text
-                        className="text-base font-medium flex-1 text-textPrimary"
-                        numberOfLines={1}
-                      >
-                        {specName}
-                      </Text>
-                      <Text
-                        className="text-sm font-medium ml-2"
-                        style={{ color: Colors.brandPrimary }}
-                      >
-                        {stars} {review.rating}/5
-                      </Text>
-                    </View>
-                    {review.comment ? (
-                      <Text className="text-sm text-textSecondary" numberOfLines={3}>
-                        {review.comment}
-                      </Text>
-                    ) : null}
-                    <Text className="text-xs text-textMuted">
-                      {new Date(review.createdAt).toLocaleDateString('ru-RU', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* ============ Admin ============ */}
-        {isAdmin(user?.email) && (
-          <View className="gap-3 rounded-xl border border-borderLight p-4">
-            <Text className="text-base font-semibold text-textPrimary">Администрирование</Text>
-            <Pressable
-              className="h-10 flex-row items-center justify-center gap-2 rounded-lg border border-borderLight"
-              onPress={() => router.push('/(admin)')}
-            >
-              <Feather name="shield" size={16} color={Colors.textMuted} />
-              <Text className="text-sm font-medium text-textPrimary">Панель администратора</Text>
-              <Feather name="chevron-right" size={16} color={Colors.textMuted} />
-            </Pressable>
-          </View>
-        )}
-
-        {/* ============ Logout ============ */}
-        <Pressable
-          className="h-12 flex-row items-center justify-center gap-2 rounded-xl"
-          style={{ backgroundColor: Colors.statusBg.error }}
-          onPress={() => setShowLogoutConfirm(true)}
-        >
-          <Feather name="log-out" size={18} color={Colors.statusError} />
-          <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>
-            Выйти из аккаунта
-          </Text>
-        </Pressable>
-
-        {showLogoutConfirm && (
-          <ConfirmCard
-            message="Вы уверены, что хотите выйти?"
-            confirmLabel="Выйти"
-            onCancel={() => setShowLogoutConfirm(false)}
-            onConfirm={handleLogout}
-            loading={logoutLoading}
-          />
-        )}
-
-        {/* ============ Delete account ============ */}
-        <Pressable
-          className="h-12 flex-row items-center justify-center gap-2 rounded-xl border"
-          style={{ borderColor: Colors.statusBg.error }}
-          onPress={() => setShowDeleteConfirm(true)}
-        >
-          <Feather name="trash-2" size={18} color={Colors.statusError} />
-          <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>
-            Удалить аккаунт
-          </Text>
-        </Pressable>
-
-        {showDeleteConfirm && (
-          <ConfirmCard
-            message="Это действие необратимо. Все ваши данные будут удалены."
-            confirmLabel="Удалить"
-            onCancel={() => setShowDeleteConfirm(false)}
-            onConfirm={handleDeleteAccount}
-            loading={deleteLoading}
-          />
-        )}
-
-        {/* Version */}
-        <Text className="text-xs text-center text-textMuted">
-          Версия {APP_VERSION}
+        <Feather name="log-out" size={18} color={Colors.statusError} />
+        <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>
+          Выйти из аккаунта
         </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </Pressable>
+
+      {showLogoutConfirm && (
+        <ConfirmCard
+          message="Вы уверены, что хотите выйти?"
+          confirmLabel="Выйти"
+          onCancel={() => setShowLogoutConfirm(false)}
+          onConfirm={handleLogout}
+          loading={logoutLoading}
+        />
+      )}
+
+      {/* ============ Delete account ============ */}
+      <Pressable
+        className="h-12 flex-row items-center justify-center gap-2 rounded-xl border"
+        style={{ borderColor: Colors.statusBg.error }}
+        onPress={() => setShowDeleteConfirm(true)}
+      >
+        <Feather name="trash-2" size={18} color={Colors.statusError} />
+        <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>
+          Удалить аккаунт
+        </Text>
+      </Pressable>
+
+      {showDeleteConfirm && (
+        <ConfirmCard
+          message="Это действие необратимо. Все ваши данные будут удалены."
+          confirmLabel="Удалить"
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDeleteAccount}
+          loading={deleteLoading}
+        />
+      )}
+
+      {/* Version */}
+      <Text className="text-xs text-center text-textMuted">
+        Версия {APP_VERSION}
+      </Text>
+    </ScrollView>
   );
 }
