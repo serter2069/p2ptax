@@ -411,16 +411,24 @@ enum ComplaintReason {
   other
 }
 
+enum ComplaintStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
 model Complaint {
-  id         String          @id @default(cuid())
+  id         String           @id @default(cuid())
   reporterId String
-  reporter   User            @relation("ComplaintReporter", fields: [reporterId], references: [id])
+  reporter   User             @relation("ComplaintReporter", fields: [reporterId], references: [id])
   targetId   String
-  target     User            @relation("ComplaintTarget", fields: [targetId], references: [id])
+  target     User             @relation("ComplaintTarget", fields: [targetId], references: [id])
   reason     ComplaintReason
   comment    String?
-  createdAt  DateTime        @default(now())
+  status     ComplaintStatus  @default(PENDING)
+  createdAt  DateTime         @default(now())
 
+  @@unique([reporterId, targetId])
   @@index([reporterId])
   @@index([targetId])
   @@map("complaints")

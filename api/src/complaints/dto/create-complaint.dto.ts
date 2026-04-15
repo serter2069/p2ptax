@@ -3,7 +3,7 @@ import { ComplaintReason } from '@prisma/client';
 
 export class CreateComplaintDto {
   @IsString()
-  targetUserId!: string;
+  targetId!: string;
 
   @IsEnum(ComplaintReason)
   reason!: ComplaintReason;
@@ -11,5 +11,5 @@ export class CreateComplaintDto {
   @IsString()
   @IsOptional()
   @MaxLength(2000)
-  description?: string;
+  comment?: string;
 }
