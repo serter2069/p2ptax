@@ -9,4 +9,9 @@ export class ContentController {
   getTerms() {
     return this.contentService.getTerms();
   }
+
+  @Get('privacy')
+  getPrivacy() {
+    return this.contentService.getPrivacy();
+  }
 }
