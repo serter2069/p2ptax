@@ -125,21 +125,21 @@ export default function AdminCategories() {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Добавить категорию</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { outlineStyle: 'none' } as any]}
               value={newName}
               onChangeText={setNewName}
               placeholder="Название"
               placeholderTextColor={Colors.textMuted}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { outlineStyle: 'none' } as any]}
               value={newIcon}
               onChangeText={setNewIcon}
               placeholder="Иконка (emoji, необязательно)"
               placeholderTextColor={Colors.textMuted}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { outlineStyle: 'none' } as any]}
               value={newSortOrder}
               onChangeText={setNewSortOrder}
               placeholder="Порядок сортировки (число, необязательно)"

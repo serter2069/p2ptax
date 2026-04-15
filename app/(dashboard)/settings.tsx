@@ -333,6 +333,7 @@ export default function SettingsScreen() {
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!emailChangeLoading}
+                    style={{ outlineStyle: 'none' } as any}
                   />
                   {emailChangeError ? (
                     <Text className="text-xs" style={{ color: Colors.statusError }}>
@@ -373,7 +374,7 @@ export default function SettingsScreen() {
                   </Text>
                   <TextInput
                     className="h-11 rounded-lg border border-borderLight bg-bgSecondary px-3 text-center text-lg text-textPrimary"
-                    style={{ letterSpacing: 4 }}
+                    style={{ letterSpacing: 4, outlineStyle: 'none' } as any}
                     value={emailOtpCode}
                     onChangeText={(t) => { setEmailOtpCode(t.replace(/\D/g, '').slice(0, 6)); setEmailChangeError(''); }}
                     placeholder="000000"

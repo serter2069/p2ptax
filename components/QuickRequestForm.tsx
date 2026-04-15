@@ -137,7 +137,7 @@ export function QuickRequestForm({ style, containerStyle }: QuickRequestFormProp
       <Text style={f.label}>ОПИШИТЕ СИТУАЦИЮ</Text>
       <TextInput
         testID="quick-request-description"
-        style={f.textarea}
+        style={[f.textarea, { outlineStyle: 'none' } as any]}
         placeholder="Что произошло? С чем нужна помощь?"
         placeholderTextColor={Colors.textMuted}
         value={description}

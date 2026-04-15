@@ -69,7 +69,7 @@ function InputsSection() {
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Standard</Text>
         <TextInput
-          style={[styles.input, focused === 'std' && styles.inputFocused]}
+          style={[styles.input, focused === 'std' && styles.inputFocused, { outlineStyle: 'none' } as any]}
           placeholder="Enter text..."
           placeholderTextColor={Colors.textMuted}
           value={text}
@@ -84,7 +84,7 @@ function InputsSection() {
         <View style={[styles.inputWithIcon, focused === 'icon' && styles.inputFocused]}>
           <Feather name="search" size={16} color={Colors.textMuted} />
           <TextInput
-            style={styles.inputInner}
+            style={[styles.inputInner, { outlineStyle: 'none' } as any]}
             placeholder="Search specialist..."
             placeholderTextColor={Colors.textMuted}
             onFocus={() => setFocused('icon')}
@@ -96,7 +96,7 @@ function InputsSection() {
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Error</Text>
         <TextInput
-          style={[styles.input, styles.inputError]}
+          style={[styles.input, styles.inputError, { outlineStyle: 'none' } as any]}
           value="bad-value"
           placeholderTextColor={Colors.textMuted}
         />
@@ -109,7 +109,7 @@ function InputsSection() {
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Disabled</Text>
         <TextInput
-          style={[styles.input, styles.inputDisabled]}
+          style={[styles.input, styles.inputDisabled, { outlineStyle: 'none' } as any]}
           value="Disabled input"
           editable={false}
         />

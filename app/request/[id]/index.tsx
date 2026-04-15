@@ -584,7 +584,7 @@ export default function RequestDetailScreen() {
                 multiline
                 placeholder="Напишите первое сообщение клиенту..."
                 placeholderTextColor={Colors.textMuted}
-                style={s.messageInput}
+                style={[s.messageInput, { outlineStyle: 'none' } as any]}
               />
               <Pressable
                 style={s.writeBtn}
@@ -619,7 +619,7 @@ export default function RequestDetailScreen() {
                 multiline
                 placeholder="Напишите первое сообщение клиенту..."
                 placeholderTextColor={Colors.textMuted}
-                style={s.messageInput}
+                style={[s.messageInput, { outlineStyle: 'none' } as any]}
               />
               <Pressable
                 style={s.writeBtn}

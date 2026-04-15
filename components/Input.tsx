@@ -89,6 +89,7 @@ export function Input({
           focused && styles.inputFocused,
           error ? styles.inputError : null,
           !editable && styles.inputDisabled,
+          { outlineStyle: 'none' as any },
         ]}
       />
       {showCharCount && maxLength != null ? (

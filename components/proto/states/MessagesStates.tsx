@@ -68,7 +68,7 @@ function DefaultMessages() {
           onChangeText={setSearch}
           placeholder="Поиск по сообщениям..."
           placeholderTextColor={Colors.textMuted}
-          style={s.searchInput}
+          style={[s.searchInput, { outlineStyle: 'none' } as any]}
         />
         {search.length > 0 && (
           <Pressable onPress={() => setSearch('')}>

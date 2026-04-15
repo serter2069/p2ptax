@@ -139,7 +139,7 @@ export default function FNSScreen() {
           {/* Search with dropdown */}
           <View style={styles.searchWrap}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { outlineStyle: 'none' } as any]}
               value={search}
               onChangeText={setSearch}
               placeholder="Поиск по номеру или городу..."

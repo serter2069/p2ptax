@@ -76,7 +76,7 @@ function UserListPopulated() {
           onChangeText={setSearch}
           placeholder="Поиск по имени, email..."
           placeholderTextColor={Colors.textMuted}
-          style={s.searchInput}
+          style={[s.searchInput, { outlineStyle: 'none' } as any]}
         />
         {search.length > 0 && (
           <Pressable onPress={() => setSearch('')}>
@@ -132,7 +132,7 @@ function UserListEmpty() {
         <TextInput
           value="несуществующий@email.com"
           editable={false}
-          style={s.searchInput}
+          style={[s.searchInput, { outlineStyle: 'none' } as any]}
         />
       </View>
 

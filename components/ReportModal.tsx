@@ -119,7 +119,7 @@ export function ReportModal({ visible, onClose, targetUserId }: ReportModalProps
             {/* Comment */}
             <Text style={[styles.label, { marginTop: 16 }]}>Комментарий (необязательно)</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { outlineStyle: 'none' } as any]}
               value={comment}
               onChangeText={setComment}
               placeholder="Опишите ситуацию подробнее..."

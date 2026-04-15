@@ -173,7 +173,7 @@ function CreateFormState() {
               onChangeText={setCode}
               placeholder="SUMMER2026"
               placeholderTextColor={Colors.textMuted}
-              style={s.inputInner}
+              style={[s.inputInner, { outlineStyle: 'none' } as any]}
               autoCapitalize="characters"
             />
           </View>
@@ -189,7 +189,7 @@ function CreateFormState() {
                 placeholder="30"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
-                style={s.inputInner}
+                style={[s.inputInner, { outlineStyle: 'none' } as any]}
               />
               <Text style={s.inputSuffix}>%</Text>
             </View>
@@ -203,7 +203,7 @@ function CreateFormState() {
                 placeholder="100"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
-                style={s.inputInner}
+                style={[s.inputInner, { outlineStyle: 'none' } as any]}
               />
               <Text style={s.inputSuffix}>шт</Text>
             </View>
@@ -219,7 +219,7 @@ function CreateFormState() {
               onChangeText={setExpiry}
               placeholder="31.12.2026"
               placeholderTextColor={Colors.textMuted}
-              style={s.inputInner}
+              style={[s.inputInner, { outlineStyle: 'none' } as any]}
             />
           </View>
         </View>
@@ -232,7 +232,7 @@ function CreateFormState() {
             placeholder="Описание акции..."
             placeholderTextColor={Colors.textMuted}
             multiline
-            style={s.textarea}
+            style={[s.textarea, { outlineStyle: 'none' } as any]}
           />
         </View>
       </View>

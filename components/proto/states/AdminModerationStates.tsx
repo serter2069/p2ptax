@@ -245,7 +245,7 @@ function ReviewingDetailState() {
             placeholder="Укажите причину..."
             placeholderTextColor={Colors.textMuted}
             multiline
-            style={s.rejectTextarea}
+            style={[s.rejectTextarea, { outlineStyle: 'none' } as any]}
           />
         </View>
 

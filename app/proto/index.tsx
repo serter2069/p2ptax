@@ -186,7 +186,7 @@ export default function ProtoIndex() {
             onChangeText={setSearch}
             placeholder="Поиск..."
             placeholderTextColor={Colors.textMuted}
-            style={styles.searchInput}
+            style={[styles.searchInput, { outlineStyle: 'none' } as any]}
           />
         </View>
 

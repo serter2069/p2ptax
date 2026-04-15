@@ -147,7 +147,7 @@ export default function SpecialistProfileSetupScreen() {
                   onChangeText={setCityInput}
                   placeholder="Добавить город..."
                   placeholderTextColor={Colors.textMuted}
-                  style={styles.addInput}
+                  style={[styles.addInput, { outlineStyle: 'none' } as any]}
                   autoCapitalize="words"
                   returnKeyType="done"
                   onSubmitEditing={addCity}
@@ -181,7 +181,7 @@ export default function SpecialistProfileSetupScreen() {
                   onChangeText={setServiceInput}
                   placeholder="Консультация — 3000 руб"
                   placeholderTextColor={Colors.textMuted}
-                  style={[styles.addInput, styles.addInputWide]}
+                  style={[styles.addInput, styles.addInputWide, { outlineStyle: 'none' } as any]}
                   autoCapitalize="sentences"
                   returnKeyType="done"
                   onSubmitEditing={addService}

@@ -297,7 +297,7 @@ function DetailView({
             placeholderTextColor={Colors.textMuted}
             multiline
             className="min-h-[80px] rounded-[10px] border border-borderLight bg-bgPrimary p-3 text-base text-textPrimary"
-            style={{ textAlignVertical: 'top' }}
+            style={{ textAlignVertical: 'top', outlineStyle: 'none' } as any}
           />
         </View>
 

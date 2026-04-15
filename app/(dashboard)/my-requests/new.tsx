@@ -267,6 +267,7 @@ export default function CreateRequestScreen() {
                 style={[
                   styles.descriptionInput,
                   errors.description ? styles.descriptionInputError : null,
+                  { outlineStyle: 'none' } as any,
                 ]}
                 textAlignVertical="top"
               />

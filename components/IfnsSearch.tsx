@@ -95,7 +95,7 @@ export function IfnsSearch({ onSelect, selected, placeholder }: IfnsSearchProps)
     <View style={styles.container}>
       <View style={styles.inputRow}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { outlineStyle: 'none' } as any]}
           value={query}
           onChangeText={setQuery}
           placeholder={placeholder || 'Введите номер или название инспекции...'}
