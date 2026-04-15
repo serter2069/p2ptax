@@ -85,6 +85,10 @@ export const requests = {
     return client.get('/requests/my', { params });
   },
 
+  getPublicFeed(params?: Record<string, unknown>) {
+    return client.get('/requests/public', { params });
+  },
+
   createRequest(data: Record<string, unknown>) {
     return client.post('/requests', data);
   },
