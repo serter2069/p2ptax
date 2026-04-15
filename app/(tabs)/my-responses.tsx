@@ -6,6 +6,8 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
+  Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -134,11 +136,14 @@ function FilterChips({ active, onChange }: { active: FilterKey; onChange: (f: Fi
 function ResponseCard({
   item,
   onNavigate,
+  onDeactivate,
 }: {
   item: ResponseItem;
   onNavigate: (id: string) => void;
+  onDeactivate: (id: string) => void;
 }) {
   const isAccepted = item.status === 'accepted';
+  const canDeactivate = item.status === 'sent' || item.status === 'viewed';
 
   return (
     <Pressable onPress={() => onNavigate(item.request.id)}>
@@ -173,9 +178,19 @@ function ResponseCard({
           <Text className="text-xs text-textMuted">Отклик: {formatDate(item.createdAt)}</Text>
         </View>
 
-        {/* Chat button for accepted */}
-        {isAccepted && (
-          <View className="mt-0.5 flex-row gap-2">
+        {/* Actions */}
+        <View className="mt-0.5 flex-row gap-2">
+          {canDeactivate && (
+            <Pressable
+              className="h-9 flex-row items-center gap-1.5 rounded-lg border px-3"
+              style={{ borderColor: Colors.statusError, backgroundColor: Colors.statusBg.error }}
+              onPress={(e) => { e.stopPropagation(); onDeactivate(item.id); }}
+            >
+              <Feather name="x-circle" size={16} color={Colors.statusError} />
+              <Text className="text-sm font-medium" style={{ color: Colors.statusError }}>Деактивировать</Text>
+            </Pressable>
+          )}
+          {isAccepted && (
             <Pressable
               className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4 shadow-sm"
               onPress={() => onNavigate(item.request.id)}
@@ -183,8 +198,8 @@ function ResponseCard({
               <Feather name="message-circle" size={16} color={Colors.white} />
               <Text className="text-sm font-semibold text-white">Перейти в чат</Text>
             </Pressable>
-          </View>
-        )}
+          )}
+        </View>
       </View>
     </Pressable>
   );
@@ -300,6 +315,35 @@ export default function MyResponsesTab() {
     router.push(`/requests/${requestId}` as any);
   }
 
+  async function handleDeactivate(responseId: string) {
+    const doDeactivate = async () => {
+      try {
+        await api.patch(`/responses/${responseId}`, { status: 'deactivated' });
+        setItems((prev) =>
+          prev.map((r) => (r.id === responseId ? { ...r, status: 'deactivated' as ResponseStatus } : r)),
+        );
+      } catch (err) {
+        const msg = err instanceof ApiError ? err.message : 'Не удалось деактивировать отклик.';
+        if (Platform.OS === 'web') {
+          window.alert(msg);
+        } else {
+          Alert.alert('Ошибка', msg);
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Деактивировать отклик?')) {
+        await doDeactivate();
+      }
+    } else {
+      Alert.alert('Деактивировать отклик?', 'Это действие нельзя отменить.', [
+        { text: 'Отмена', style: 'cancel' },
+        { text: 'Деактивировать', style: 'destructive', onPress: doDeactivate },
+      ]);
+    }
+  }
+
   const filtered = filterResponses(items, filter);
 
   // Loading
@@ -378,6 +422,7 @@ export default function MyResponsesTab() {
                     key={item.id}
                     item={item}
                     onNavigate={handleNavigate}
+                    onDeactivate={handleDeactivate}
                   />
                 ))}
               </View>
