@@ -56,6 +56,8 @@ interface RequestDetail {
   status: string;
   createdAt: string;
   updatedAt: string;
+  lastActivityAt?: string;
+  extensionsCount?: number;
   responses?: ResponseItem[];
   _count?: { responses: number };
 }
@@ -226,6 +228,7 @@ export default function RequestDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [extending, setExtending] = useState(false);
   const [startingThread, setStartingThread] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -287,6 +290,20 @@ export default function RequestDetailScreen() {
         },
       },
     ]);
+  }, [id, fetchData]);
+
+  const handleExtend = useCallback(async () => {
+    if (!id) return;
+    try {
+      setExtending(true);
+      await requestsApi.extendRequest(id);
+      Alert.alert('Заявка продлена', 'Срок заявки продлен на 7 дней');
+      fetchData();
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось продлить заявку');
+    } finally {
+      setExtending(false);
+    }
   }, [id, fetchData]);
 
   const handleStartThread = useCallback(
@@ -439,6 +456,51 @@ export default function RequestDetailScreen() {
 
         {/* Status Flow */}
         <StatusFlow currentStatus={request.status} />
+
+        {/* CLOSING_SOON warning banner — owner only */}
+        {isOwner && request.status === 'CLOSING_SOON' && (() => {
+          const MAX_EXTENSIONS = 3;
+          const extensionsUsed = request.extensionsCount ?? 0;
+          const remaining = MAX_EXTENSIONS - extensionsUsed;
+          const autoCloseDays = 30;
+          const lastActivity = request.lastActivityAt ? new Date(request.lastActivityAt) : new Date(request.updatedAt);
+          const closeDate = new Date(lastActivity.getTime() + autoCloseDays * 24 * 60 * 60 * 1000);
+          const daysLeft = Math.max(0, Math.ceil((closeDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+
+          return (
+            <View style={s.closingBanner}>
+              <View style={s.closingBannerHeader}>
+                <Feather name="alert-triangle" size={18} color={Colors.statusWarning} />
+                <Text style={s.closingBannerTitle}>
+                  Заявка будет автоматически закрыта через {daysLeft} {daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}
+                </Text>
+              </View>
+              <Text style={s.closingBannerSub}>
+                Осталось продлений: {remaining}/{MAX_EXTENSIONS}
+              </Text>
+              {remaining > 0 ? (
+                <Pressable
+                  style={s.extendBtn}
+                  onPress={handleExtend}
+                  disabled={extending}
+                >
+                  {extending ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <>
+                      <Feather name="refresh-cw" size={16} color={Colors.white} />
+                      <Text style={s.extendBtnText}>Продлить на 7 дней</Text>
+                    </>
+                  )}
+                </Pressable>
+              ) : (
+                <Text style={s.closingBannerNoExtend}>
+                  Все продления использованы
+                </Text>
+              )}
+            </View>
+          );
+        })()}
 
         {/* Response count badge (non-owner, public view) */}
         {!isOwner && request._count && request._count.responses > 0 && (
@@ -931,6 +993,51 @@ const s = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     lineHeight: Typography.fontSize.sm * Typography.lineHeight.normal,
     color: Colors.textSecondary,
+  },
+
+  // Closing soon banner
+  closingBanner: {
+    backgroundColor: Colors.statusBg.warning,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.statusWarning,
+  },
+  closingBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  closingBannerTitle: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  closingBannerSub: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  closingBannerNoExtend: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+  },
+  extendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    height: 44,
+    borderRadius: BorderRadius.btn,
+    backgroundColor: Colors.brandPrimary,
+    marginTop: Spacing.xs,
+  },
+  extendBtnText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.white,
   },
 
   // Error state
