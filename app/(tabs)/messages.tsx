@@ -7,13 +7,12 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  StyleSheet,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../stores/authStore';
 import { threads as threadsApi } from '../../lib/api/endpoints';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { NotificationBell } from '../../components/NotificationBell';
 
 // ---------------------------------------------------------------------------
@@ -76,6 +75,13 @@ function getInitials(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Skeleton block for loading state
+// ---------------------------------------------------------------------------
+function SkeletonBlock({ className: cls }: { className: string }) {
+  return <View className={`bg-bgSurface opacity-70 ${cls}`} />;
+}
+
+// ---------------------------------------------------------------------------
 // Thread row component
 // ---------------------------------------------------------------------------
 function ThreadItem({
@@ -97,42 +103,125 @@ function ThreadItem({
     lastMsg && !lastMsg.readAt && lastMsg.senderId !== currentUserId;
 
   const preview = lastMsg
-    ? lastMsg.content || '📎 Вложение'
+    ? lastMsg.content || 'Вложение'
     : 'Нет сообщений';
 
   const time = lastMsg ? formatTime(lastMsg.createdAt) : formatTime(thread.createdAt);
 
   return (
-    <Pressable onPress={onPress} style={s.thread}>
-      <View style={s.threadAvatar}>
-        <Text style={s.threadAvatarText}>{getInitials(other.name)}</Text>
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3 shadow-sm"
+    >
+      <View className="h-11 w-11 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+        <Text className="text-sm font-bold text-brandPrimary">{getInitials(other.name)}</Text>
       </View>
-      <View style={s.threadBody}>
-        <View style={s.threadTop}>
+      <View className="flex-1 gap-0.5">
+        <View className="flex-row items-center justify-between">
           <Text
-            style={[s.threadName, isUnread && s.threadNameBold]}
+            className={`flex-1 mr-2 text-base text-textPrimary ${isUnread ? 'font-bold' : 'font-medium'}`}
             numberOfLines={1}
           >
             {other.name}
           </Text>
-          <Text style={s.threadTime}>{time}</Text>
+          <Text className="text-xs text-textMuted">{time}</Text>
         </View>
-        <View style={s.threadBottom}>
+        <View className="flex-row items-center gap-2">
           <Text
-            style={[s.threadMsg, isUnread && s.threadMsgBold]}
+            className={`flex-1 text-sm ${isUnread ? 'font-medium text-textPrimary' : 'text-textMuted'}`}
             numberOfLines={1}
           >
             {preview}
           </Text>
           {isUnread && (
-            <View style={s.unreadBadge}>
-              <View style={s.unreadDot} />
+            <View className="h-5 min-w-[20px] items-center justify-center rounded-full bg-brandPrimary px-1.5">
+              <View className="h-2 w-2 rounded-full bg-white" />
             </View>
           )}
         </View>
       </View>
       <Feather name="chevron-right" size={16} color={Colors.textMuted} />
     </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Loading state (skeleton)
+// ---------------------------------------------------------------------------
+function LoadingState() {
+  return (
+    <View className="flex-1 bg-bgPrimary p-4 gap-2">
+      {/* Header skeleton */}
+      <View className="flex-row items-center gap-2 mb-2">
+        <SkeletonBlock className="h-6 w-2/5 rounded-md" />
+        <SkeletonBlock className="h-7 w-7 rounded-full" />
+      </View>
+
+      {/* Search skeleton */}
+      <SkeletonBlock className="h-10 w-full rounded-xl" />
+
+      {/* Thread skeletons */}
+      {[1, 2, 3, 4, 5].map((i) => (
+        <View key={i} className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3">
+          <SkeletonBlock className="h-11 w-11 rounded-full" />
+          <View className="flex-1 gap-1.5">
+            <View className="flex-row items-center justify-between">
+              <SkeletonBlock className="h-3.5 w-1/2 rounded" />
+              <SkeletonBlock className="h-3 w-10 rounded" />
+            </View>
+            <SkeletonBlock className="h-3 w-[70%] rounded" />
+          </View>
+        </View>
+      ))}
+
+      <View className="items-center pt-2">
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Empty state
+// ---------------------------------------------------------------------------
+function EmptyState() {
+  return (
+    <View className="flex-1 bg-bgPrimary items-center justify-center px-5 gap-3">
+      <View className="h-[72px] w-[72px] items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+        <Feather name="message-circle" size={36} color={Colors.brandPrimary} />
+      </View>
+      <Text className="text-lg font-semibold text-textPrimary">Нет сообщений</Text>
+      <Text className="text-sm text-textMuted text-center max-w-[280px]">
+        Когда специалист примет вашу заявку, вы сможете обсудить детали в чате
+      </Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Error state
+// ---------------------------------------------------------------------------
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View className="flex-1 bg-bgPrimary items-center justify-center px-5 gap-3">
+      <View
+        className="h-[72px] w-[72px] items-center justify-center rounded-full"
+        style={{ backgroundColor: Colors.statusBg.error }}
+      >
+        <Feather name="wifi-off" size={36} color={Colors.statusError} />
+      </View>
+      <Text className="text-lg font-semibold text-textPrimary">Нет подключения</Text>
+      <Text className="text-sm text-textMuted text-center max-w-[280px]">
+        Не удалось загрузить сообщения. Проверьте интернет.
+      </Text>
+      <Pressable
+        onPress={onRetry}
+        className="flex-row items-center justify-center gap-2 h-11 rounded-xl bg-brandPrimary px-6 mt-2"
+      >
+        <Feather name="refresh-cw" size={16} color={Colors.white} />
+        <Text className="text-sm font-semibold text-white">Попробовать снова</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -188,66 +277,55 @@ export default function MessagesTab() {
     });
   }, [threadsList, search, user?.userId]);
 
+  const totalUnread = useMemo(() => {
+    if (!user?.userId) return 0;
+    return threadsList.reduce((sum, t) => {
+      const lm = t.lastMessage;
+      if (lm && !lm.readAt && lm.senderId !== user.userId) return sum + 1;
+      return sum;
+    }, 0);
+  }, [threadsList, user?.userId]);
+
   // --- Loading state ---
   if (loading) {
-    return (
-      <View style={s.centered}>
-        <ActivityIndicator size="large" color={Colors.brandPrimary} />
-      </View>
-    );
+    return <LoadingState />;
   }
 
   // --- Error state ---
   if (error && threadsList.length === 0) {
-    return (
-      <View style={s.centered}>
-        <View style={s.errorIconWrap}>
-          <Feather name="wifi-off" size={36} color={Colors.statusError} />
-        </View>
-        <Text style={s.emptyTitle}>Нет подключения</Text>
-        <Text style={s.emptyText}>
-          Не удалось загрузить сообщения. Проверьте интернет.
-        </Text>
-        <Pressable style={s.retryBtn} onPress={onRefresh}>
-          <Feather name="refresh-cw" size={16} color={Colors.white} />
-          <Text style={s.retryBtnText}>Попробовать снова</Text>
-        </Pressable>
-      </View>
-    );
+    return <ErrorState onRetry={onRefresh} />;
   }
 
   // --- Empty state ---
   if (threadsList.length === 0) {
-    return (
-      <View style={s.centered}>
-        <View style={s.emptyIconWrap}>
-          <Feather name="message-circle" size={36} color={Colors.brandPrimary} />
-        </View>
-        <Text style={s.emptyTitle}>Нет сообщений</Text>
-        <Text style={s.emptyText}>
-          Когда специалист примет вашу заявку, вы сможете обсудить детали в чате
-        </Text>
-      </View>
-    );
+    return <EmptyState />;
   }
 
   return (
-    <View style={s.container}>
+    <View className="flex-1 bg-bgPrimary pt-4">
       {/* Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm }}>
-        <Text style={[s.pageTitle, { marginBottom: 0, paddingHorizontal: 0 }]}>Сообщения</Text>
+      <View className="flex-row items-center justify-between px-4 mb-2">
+        <View className="flex-row items-center gap-2">
+          <Text className="text-xl font-bold text-textPrimary">Сообщения</Text>
+          {totalUnread > 0 && (
+            <View className="min-w-[24px] h-6 items-center justify-center rounded-full bg-brandPrimary px-1.5">
+              <Text className="text-xs font-bold text-white">{totalUnread}</Text>
+            </View>
+          )}
+        </View>
         <NotificationBell />
       </View>
 
-      {/* Search bar */}
-      <View style={s.searchWrap}>
+      {/* Search */}
+      <View className="flex-row items-center gap-2 h-10 mx-4 mb-2 px-3 rounded-xl border border-borderLight bg-white">
         <Feather name="search" size={16} color={Colors.textMuted} />
         <TextInput
           value={search}
           onChangeText={setSearch}
           placeholder="Поиск по сообщениям..."
           placeholderTextColor={Colors.textMuted}
-          style={s.searchInput}
+          className="flex-1 text-sm text-textPrimary py-0"
+          style={{ outlineStyle: 'none' } as any}
         />
         {search.length > 0 && (
           <Pressable onPress={() => setSearch('')}>
@@ -258,8 +336,8 @@ export default function MessagesTab() {
 
       {/* Search empty */}
       {filtered.length === 0 && search.length > 0 ? (
-        <View style={s.searchEmpty}>
-          <Text style={s.searchEmptyText}>Ничего не найдено</Text>
+        <View className="items-center py-6">
+          <Text className="text-sm text-textMuted">Ничего не найдено</Text>
         </View>
       ) : (
         <FlatList
@@ -272,7 +350,7 @@ export default function MessagesTab() {
               onPress={() => router.push(`/chat/${item.id}`)}
             />
           )}
-          contentContainerStyle={s.list}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 8 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -280,193 +358,8 @@ export default function MessagesTab() {
               tintColor={Colors.brandPrimary}
             />
           }
-          ItemSeparatorComponent={() => <View style={s.separator} />}
         />
       )}
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-const s = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-    paddingTop: Spacing.lg,
-  },
-  centered: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl,
-    gap: Spacing.md,
-  },
-  pageTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-
-  // Search
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    height: 40,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.card,
-    paddingHorizontal: Spacing.md,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    paddingVertical: 0,
-    outlineStyle: 'none' as any,
-  },
-  searchEmpty: {
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  searchEmptyText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-
-  // List
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-  },
-  separator: {
-    height: 1,
-    backgroundColor: Colors.borderLight,
-  },
-
-  // Thread row
-  thread: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  threadAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.bgSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  threadAvatarText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.brandPrimary,
-  },
-  threadBody: { flex: 1, gap: 2 },
-  threadTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  threadName: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  threadNameBold: { fontWeight: Typography.fontWeight.bold },
-  threadTime: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  threadBottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  threadMsg: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  threadMsgBold: {
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  unreadBadge: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.brandPrimary,
-  },
-
-  // Empty
-  emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.bgSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  emptyTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  emptyText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-
-  // Error
-  errorIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.statusBg.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    height: 44,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.btn,
-    paddingHorizontal: Spacing['2xl'],
-    marginTop: Spacing.sm,
-  },
-  retryBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-});
