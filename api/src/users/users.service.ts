@@ -41,11 +41,11 @@ export class UsersService {
     return { available: !existing && !existingUser };
   }
 
-  /** Return current user profile (id, email, role, username, firstName, lastName, phone, avatarUrl). */
-  async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null; firstName: string | null; lastName: string | null; phone: string | null; avatarUrl: string | null }> {
+  /** Return current user profile (id, email, role, username, firstName, lastName, phone, city, avatarUrl, createdAt). */
+  async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null; firstName: string | null; lastName: string | null; phone: string | null; city: string | null; avatarUrl: string | null; createdAt: Date }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    return { id: user.id, email: user.email, role: user.role, username: user.username, firstName: user.firstName, lastName: user.lastName, phone: user.phone, avatarUrl: user.avatarUrl };
+    return { id: user.id, email: user.email, role: user.role, username: user.username, firstName: user.firstName, lastName: user.lastName, phone: user.phone, city: user.city, avatarUrl: user.avatarUrl, createdAt: user.createdAt };
   }
 
   /**
@@ -76,8 +76,8 @@ export class UsersService {
     return { id: updated.id, email: updated.email, role: updated.role };
   }
 
-  /** Update client profile fields (firstName, lastName, phone, avatarUrl). */
-  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string; avatarUrl?: string }) {
+  /** Update client profile fields (firstName, lastName, phone, city, avatarUrl). */
+  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string; city?: string; avatarUrl?: string }) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -85,6 +85,7 @@ export class UsersService {
     if (data.firstName !== undefined) updateData.firstName = data.firstName;
     if (data.lastName !== undefined) updateData.lastName = data.lastName;
     if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.city !== undefined) updateData.city = data.city;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
 
     const updated = await this.prisma.user.update({
@@ -92,7 +93,7 @@ export class UsersService {
       data: updateData,
     });
 
-    return { id: updated.id, email: updated.email, role: updated.role, username: updated.username, firstName: updated.firstName, lastName: updated.lastName, phone: updated.phone, avatarUrl: updated.avatarUrl };
+    return { id: updated.id, email: updated.email, role: updated.role, username: updated.username, firstName: updated.firstName, lastName: updated.lastName, phone: updated.phone, city: updated.city, avatarUrl: updated.avatarUrl };
   }
 
   /** Set username (+ optional firstName/lastName) for a user. */

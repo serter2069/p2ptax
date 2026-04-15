@@ -58,6 +58,10 @@ export const users = {
     return client.patch('/users/me', data);
   },
 
+  updateProfile(data: { firstName?: string; lastName?: string; city?: string }) {
+    return client.patch('/users/me/profile', data);
+  },
+
   checkUsername(username: string) {
     return client.get<{ available: boolean }>('/users/check-username', {
       params: { username },

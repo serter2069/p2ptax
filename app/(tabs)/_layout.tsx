@@ -21,7 +21,7 @@ const CLIENT_TABS: TabConfig[] = [
   { name: 'dashboard', title: 'Glavnaya', icon: 'home' },
   { name: 'requests', title: 'Zayavki', icon: 'file-text' },
   { name: 'messages', title: 'Soobscheniya', icon: 'message-circle' },
-  { name: 'settings', title: 'Profil', icon: 'user' },
+  { name: 'profile', title: 'Profil', icon: 'user' },
 ];
 
 // Prototype: Specialist tabs — briefcase, send, message-circle, user
@@ -32,7 +32,7 @@ const SPECIALIST_TABS: TabConfig[] = [
   { name: 'dashboard', title: 'Profil', icon: 'user' },
 ];
 
-const ALL_TAB_NAMES = ['dashboard', 'requests', 'messages', 'settings', 'feed', 'my-responses'];
+const ALL_TAB_NAMES = ['dashboard', 'requests', 'messages', 'settings', 'feed', 'my-responses', 'profile'];
 
 // Sidebar nav groups for desktop view
 function buildClientSidebarNav(unreadNotifs: number): NavGroup[] {
@@ -48,7 +48,7 @@ function buildClientSidebarNav(unreadNotifs: number): NavGroup[] {
       items: [
         { label: 'Soobscheniya', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
         { label: 'Uvedomleniya', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
-        { label: 'Profil', icon: 'user', route: '/(tabs)/settings', segment: 'settings' },
+        { label: 'Profil', icon: 'user', route: '/(tabs)/profile', segment: 'profile' },
       ],
     },
   ];

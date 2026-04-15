@@ -75,6 +75,11 @@ class UpdateProfileDto {
   @IsString()
   @Length(0, 30)
   phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 100)
+  city?: string;
 }
 
 class SetupSpecialistProfileDto {
