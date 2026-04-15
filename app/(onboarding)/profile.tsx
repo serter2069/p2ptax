@@ -2,29 +2,23 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Pressable,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
-import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { OnboardingProgress } from '../../components/OnboardingProgress';
 import { api, ApiError, tryRefreshTokens, getToken } from '../../lib/api';
 import { useAuth, AuthUser } from '../../stores/authStore';
 
 // Phone mask: +7 (XXX) XXX-XX-XX
 function formatPhone(raw: string): string {
-  // Keep only digits
   const digits = raw.replace(/\D/g, '');
 
-  // Ensure starts with 7
   let d = digits;
   if (d.startsWith('8')) d = '7' + d.slice(1);
   if (!d.startsWith('7') && d.length > 0) d = '7' + d;
@@ -41,6 +35,8 @@ function unformatPhone(formatted: string): string {
   return formatted.replace(/\D/g, '');
 }
 
+const MAX_BIO_CHARS = 1000;
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { completeOnboarding, login, user } = useAuth();
@@ -50,18 +46,17 @@ export default function ProfileScreen() {
   const [phone, setPhone] = useState('');
   const [telegram, setTelegram] = useState('');
   const [bio, setBio] = useState('');
+  const [hasPhoto, setHasPhoto] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const isSpecialist = user?.role === 'SPECIALIST';
 
   function handlePhoneChange(text: string) {
-    const formatted = formatPhone(text);
-    setPhone(formatted);
+    setPhone(formatPhone(text));
   }
 
   function handleTelegramChange(text: string) {
-    // Auto-prefix @ if not present
     if (text.length > 0 && !text.startsWith('@')) {
       setTelegram('@' + text);
     } else {
@@ -161,108 +156,176 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        style={styles.kav}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 32 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.container}>
-            <OnboardingProgress currentStep={3} totalSteps={3} />
-
-            {/* Progress text */}
-            <View style={styles.progressBar}>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: '100%' }]} />
-              </View>
-              <Text style={styles.stepText}>Шаг 3 из 3</Text>
+          <View className="w-full max-w-[480px] px-5">
+            {/* Progress bar */}
+            <View className="mb-1 h-1 rounded-full bg-bgSecondary">
+              <View className="h-1 rounded-full bg-green-600" style={{ width: '100%' }} />
             </View>
+            <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">
+              Шаг 3 из 3
+            </Text>
 
             {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Заполните профиль</Text>
-              <Text style={styles.subtitle}>
-                Эта информация поможет клиентам выбрать вас
-              </Text>
-            </View>
+            <Text className="text-xl font-bold text-textPrimary">Расскажите о себе</Text>
+            <Text className="mb-4 text-base text-textMuted">
+              Эта информация поможет клиентам выбрать вас
+            </Text>
 
-            {/* Avatar placeholder */}
-            <View style={styles.avatarRow}>
-              <View style={styles.avatarCircle}>
-                <Feather name="user" size={28} color={Colors.brandPrimary} />
+            {/* Avatar */}
+            <View className="mb-4 flex-row items-center gap-4">
+              <View
+                className={`h-16 w-16 items-center justify-center rounded-full ${
+                  hasPhoto
+                    ? 'bg-brandPrimary'
+                    : 'border-2 border-dashed border-gray-300 bg-bgSecondary'
+                }`}
+              >
+                <Feather name="user" size={28} color={hasPhoto ? '#fff' : '#0284C7'} />
               </View>
               <View>
-                <Pressable style={styles.avatarBtn}>
-                  <Feather name="camera" size={14} color={Colors.brandPrimary} />
-                  <Text style={styles.avatarBtnText}>Загрузить фото</Text>
+                <Pressable
+                  className="flex-row items-center gap-1"
+                  onPress={() => setHasPhoto(true)}
+                >
+                  <Feather name="camera" size={14} color="#0284C7" />
+                  <Text className="text-base font-medium text-brandPrimary">
+                    {hasPhoto ? 'Изменить фото' : 'Загрузить фото'}
+                  </Text>
                 </Pressable>
-                <Text style={styles.avatarHint}>JPG или PNG, до 5 МБ</Text>
+                <Text className="text-xs text-textMuted">JPG или PNG, до 5 МБ</Text>
               </View>
             </View>
 
-            {/* Form */}
-            <View style={styles.form}>
-              <Input
-                label="Имя"
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="Иван"
-                autoCapitalize="words"
-              />
+            {/* First name */}
+            <View className="mb-3">
+              <Text className="mb-1 text-sm font-medium text-textSecondary">Имя</Text>
+              <View className="h-12 flex-row items-center rounded-lg border border-gray-200 px-4">
+                <TextInput
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Иван"
+                  placeholderTextColor="#94A3B8"
+                  className="flex-1 text-base text-textPrimary"
+                  style={{ outlineStyle: 'none' as any }}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
 
-              <Input
-                label="Фамилия"
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Иванов"
-                autoCapitalize="words"
-              />
+            {/* Last name */}
+            <View className="mb-3">
+              <Text className="mb-1 text-sm font-medium text-textSecondary">Фамилия</Text>
+              <View className="h-12 flex-row items-center rounded-lg border border-gray-200 px-4">
+                <TextInput
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Иванов"
+                  placeholderTextColor="#94A3B8"
+                  className="flex-1 text-base text-textPrimary"
+                  style={{ outlineStyle: 'none' as any }}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
 
-              <Input
-                label="Телефон"
-                value={phone}
-                onChangeText={handlePhoneChange}
-                placeholder="+7 (XXX) XXX-XX-XX"
-                keyboardType="phone-pad"
-              />
-
-              <Input
-                label="Telegram"
-                value={telegram}
-                onChangeText={handleTelegramChange}
-                placeholder="@username"
-                autoCapitalize="none"
-              />
-
-              {isSpecialist && (
-                <Input
-                  label="О себе"
+            {/* Bio (specialists only) */}
+            {isSpecialist && (
+              <View className="mb-3">
+                <View className="mb-1 flex-row items-center justify-between">
+                  <Text className="text-sm font-medium text-textSecondary">О себе</Text>
+                  <Text
+                    className={`text-xs ${
+                      bio.length > MAX_BIO_CHARS ? 'text-red-600' : 'text-textMuted'
+                    }`}
+                  >
+                    {bio.length}/{MAX_BIO_CHARS}
+                  </Text>
+                </View>
+                <TextInput
                   value={bio}
                   onChangeText={setBio}
                   placeholder="Расскажите о вашем опыте..."
-                  autoCapitalize="sentences"
+                  placeholderTextColor="#94A3B8"
                   multiline
-                  numberOfLines={4}
-                  minHeight={100}
-                  maxLength={1000}
-                  showCharCount
+                  className="rounded-lg border border-gray-200 p-3 text-base text-textPrimary"
+                  style={{
+                    minHeight: 80,
+                    textAlignVertical: 'top',
+                    outlineStyle: 'none' as any,
+                  }}
+                  maxLength={MAX_BIO_CHARS}
                 />
-              )}
+              </View>
+            )}
 
-              {!!error && <Text style={styles.errorText}>{error}</Text>}
+            {/* Phone */}
+            <View className="mb-3">
+              <Text className="mb-1 text-sm font-medium text-textSecondary">Телефон</Text>
+              <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
+                <Feather name="phone" size={16} color="#94A3B8" />
+                <TextInput
+                  value={phone}
+                  onChangeText={handlePhoneChange}
+                  placeholder="+7 (XXX) XXX-XX-XX"
+                  placeholderTextColor="#94A3B8"
+                  className="flex-1 text-base text-textPrimary"
+                  style={{ outlineStyle: 'none' as any }}
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
 
-              <Button
-                onPress={handleSubmit}
-                loading={loading}
-                disabled={loading}
-                style={styles.btn}
+            {/* Telegram */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm font-medium text-textSecondary">Telegram</Text>
+              <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
+                <Feather name="send" size={16} color="#94A3B8" />
+                <TextInput
+                  value={telegram}
+                  onChangeText={handleTelegramChange}
+                  placeholder="@username"
+                  placeholderTextColor="#94A3B8"
+                  className="flex-1 text-base text-textPrimary"
+                  style={{ outlineStyle: 'none' as any }}
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+
+            {/* Error */}
+            {!!error && <Text className="mb-3 text-xs text-red-600">{error}</Text>}
+
+            {/* Buttons */}
+            <View className="flex-row gap-3">
+              <Pressable
+                className="h-12 flex-row items-center justify-center gap-1 rounded-lg border border-gray-200 px-4"
+                onPress={() => router.back()}
               >
-                Завершить
-              </Button>
+                <Feather name="arrow-left" size={16} color="#475569" />
+                <Text className="text-base font-medium text-textSecondary">Назад</Text>
+              </Pressable>
+              <Pressable
+                className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary ${
+                  loading ? 'opacity-50' : ''
+                }`}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                <Feather name="check" size={16} color="#fff" />
+                <Text className="text-base font-semibold text-white">
+                  {loading ? 'Сохранение...' : 'Завершить'}
+                </Text>
+              </Pressable>
             </View>
           </View>
         </ScrollView>
@@ -270,99 +333,3 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  kav: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 480,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  progressBar: {
-    gap: Spacing.xs,
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.bgSecondary,
-  },
-  progressFill: {
-    height: 4,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.statusSuccess,
-  },
-  stepText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  header: {
-    gap: Spacing.xs,
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  avatarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.lg,
-  },
-  avatarCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: Colors.textMuted,
-    backgroundColor: Colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  avatarBtnText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.brandPrimary,
-  },
-  avatarHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  form: {
-    gap: Spacing.lg,
-  },
-  errorText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-    marginTop: 2,
-  },
-  btn: {
-    width: '100%',
-    marginTop: Spacing.sm,
-  },
-});
