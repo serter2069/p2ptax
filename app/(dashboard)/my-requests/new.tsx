@@ -3,23 +3,22 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   Alert,
-  TouchableOpacity,
+  Pressable,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { api, ApiError } from '../../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius } from '../../../constants/Colors';
+import { Colors } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
-import { Button } from '../../../components/Button';
-import { Input } from '../../../components/Input';
 import { IfnsSearch } from '../../../components/IfnsSearch';
+import { Toggle } from '../../../components/ui/Toggle';
 import { useBreakpoints } from '../../../hooks/useBreakpoints';
 
 const MAX_FILES = 5;
@@ -34,19 +33,34 @@ interface SelectedFile {
   size: number;
 }
 
-const TAX_CATEGORIES = [
-  'НДС',
-  'НДФЛ',
-  'Налог на прибыль',
-  'УСН',
-  'ИП/ООО',
-  'Таможня',
-  'Налоговая проверка',
-  'Выездная проверка',
-  'Камеральная проверка',
-  'Отдел оперативного контроля',
-  'Другое',
-];
+// ---------------------------------------------------------------------------
+// File attachment item (Feather icons, NativeWind)
+// ---------------------------------------------------------------------------
+
+function FileItem({ name, size, onRemove }: { name: string; size: string; onRemove: () => void }) {
+  return (
+    <View className="flex-row items-center gap-3 rounded-lg border border-borderLight bg-bgSurface px-3 py-2">
+      <Feather name="file" size={16} color={Colors.brandPrimary} />
+      <View className="flex-1">
+        <Text className="text-sm text-textPrimary" numberOfLines={1}>{name}</Text>
+        <Text className="text-xs text-textMuted">{size}</Text>
+      </View>
+      <Pressable onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Feather name="x" size={16} color={Colors.textMuted} />
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Format file size for display
+// ---------------------------------------------------------------------------
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} КБ`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+}
 
 export default function CreateRequestScreen() {
   const router = useRouter();
@@ -57,12 +71,14 @@ export default function CreateRequestScreen() {
   const [city, setCity] = useState('');
   const [selectedIfns, setSelectedIfns] = useState<any>(null);
   const [budget, setBudget] = useState('');
-  const [category, setCategory] = useState('');
+  const [publicVisible, setPublicVisible] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [fileError, setFileError] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ title?: string; description?: string; city?: string; budget?: string }>({});
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // --- File logic (preserved) ---
 
   function addFiles(files: SelectedFile[]) {
     setFileError(undefined);
@@ -145,6 +161,8 @@ export default function CreateRequestScreen() {
     }
   }
 
+  // --- Validation (preserved) ---
+
   function validate(): boolean {
     const e: typeof errors = {};
     if (title.trim().length < 3) {
@@ -168,6 +186,8 @@ export default function CreateRequestScreen() {
     return Object.keys(e).length === 0;
   }
 
+  // --- Upload & Submit (preserved) ---
+
   async function uploadFiles(requestId: string) {
     if (selectedFiles.length === 0) return;
     const formData = new FormData();
@@ -190,13 +210,13 @@ export default function CreateRequestScreen() {
         title: title.trim(),
         description: description.trim(),
         city: effectiveCity,
+        isPublic: publicVisible,
       };
       if (selectedIfns) {
         body.ifnsId = selectedIfns.id;
         body.ifnsName = selectedIfns.name;
       }
       if (budget.trim()) body.budget = Number(budget.trim());
-      if (category) body.category = category;
       const created = await api.post<{ id: string }>('/requests', body);
       try {
         await uploadFiles(created.id);
@@ -213,74 +233,43 @@ export default function CreateRequestScreen() {
     }
   }
 
+  // --- UI (NativeWind, matching proto) ---
+
   return (
-    <SafeAreaView style={styles.safe}>
-      {isMobile && <Header title="Новый запрос" showBack breadcrumbs={[{ label: 'Мои запросы', route: '/(dashboard)/my-requests' }, { label: 'Новый запрос' }]} />}
+    <SafeAreaView className="flex-1 bg-white">
+      {isMobile && (
+        <Header
+          title="Новый запрос"
+          showBack
+          breadcrumbs={[
+            { label: 'Мои запросы', route: '/(dashboard)/my-requests' },
+            { label: 'Новый запрос' },
+          ]}
+        />
+      )}
       <KeyboardAvoidingView
-        style={styles.flex}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={styles.scroll}
+          className="flex-1"
+          contentContainerStyle={{ padding: 16, gap: 16 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={[styles.container, !isMobile && { maxWidth: 680 }]}>
-            <Text style={styles.subtitle}>
-              Опишите вашу задачу, и специалисты откликнутся
-            </Text>
+          <View className="w-full" style={!isMobile ? { maxWidth: 680, alignSelf: 'center' } : undefined}>
+            <Text className="mb-4 text-xl font-bold text-textPrimary">Новая заявка</Text>
 
             {specialist ? (
-              <Text style={styles.specialistHint}>
+              <Text className="mb-2 text-sm font-medium text-brandPrimary">
                 Запрос увидят специалисты в вашем городе
               </Text>
             ) : null}
 
-            <Input
-              label="Заголовок"
-              value={title}
-              onChangeText={(t) => {
-                if (t.length <= 100) setTitle(t);
-                if (errors.title) setErrors((e) => ({ ...e, title: undefined }));
-              }}
-              placeholder="Кратко опишите задачу"
-              autoCapitalize="sentences"
-              maxLength={100}
-              error={errors.title}
-            />
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Описание</Text>
-              <TextInput
-                value={description}
-                onChangeText={(t) => {
-                  if (t.length <= 2000) setDescription(t);
-                  if (errors.description) setErrors((e) => ({ ...e, description: undefined }));
-                }}
-                placeholder="Опишите вашу задачу подробно..."
-                placeholderTextColor={Colors.textMuted}
-                autoCapitalize="sentences"
-                multiline={true}
-                numberOfLines={4}
-                maxLength={2000}
-                style={[
-                  styles.descriptionInput,
-                  errors.description ? styles.descriptionInputError : null,
-                  { outlineStyle: 'none' } as any,
-                ]}
-                textAlignVertical="top"
-              />
-              <View style={styles.descriptionFooter}>
-                {errors.description ? (
-                  <Text style={styles.errorText}>{errors.description}</Text>
-                ) : <View />}
-                <Text style={styles.charCounter}>{description.length}/2000</Text>
-              </View>
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Налоговая инспекция</Text>
+            {/* IFNS Search (real API) */}
+            <View className="mb-4 gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Налоговая инспекция</Text>
               <IfnsSearch
                 selected={selectedIfns}
                 onSelect={(ifns) => {
@@ -294,264 +283,146 @@ export default function CreateRequestScreen() {
               />
             </View>
 
-            <Input
-              label="Город"
-              value={selectedIfns ? selectedIfns.city.name : city}
-              onChangeText={(t) => {
-                setCity(t);
-                if (selectedIfns) setSelectedIfns(null);
-                if (errors.city) setErrors((e) => ({ ...e, city: undefined }));
-              }}
-              placeholder="Например, Москва"
-              autoCapitalize="words"
-              error={errors.city}
-            />
+            {/* City */}
+            <View className="mb-4 gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Город</Text>
+              <TextInput
+                value={selectedIfns ? selectedIfns.city.name : city}
+                onChangeText={(t) => {
+                  setCity(t);
+                  if (selectedIfns) setSelectedIfns(null);
+                  if (errors.city) setErrors((e) => ({ ...e, city: undefined }));
+                }}
+                placeholder="Например, Москва"
+                placeholderTextColor={Colors.textMuted}
+                autoCapitalize="words"
+                className={`h-12 rounded-xl border bg-white px-4 text-base text-textPrimary ${errors.city ? 'border-statusError' : 'border-borderLight'}`}
+                style={{ outlineStyle: 'none' } as any}
+              />
+              {errors.city && <Text className="text-xs text-statusError">{errors.city}</Text>}
+            </View>
 
-            <Input
-              label="Бюджет (₽, необязательно)"
-              value={budget}
-              onChangeText={(t) => {
-                setBudget(t);
-                if (errors.budget) setErrors((e) => ({ ...e, budget: undefined }));
-              }}
-              placeholder="Например, 5000"
-              keyboardType="numeric"
-              error={errors.budget}
-            />
+            {/* Title */}
+            <View className="mb-4 gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Заголовок</Text>
+              <TextInput
+                value={title}
+                onChangeText={(t) => {
+                  if (t.length <= 100) setTitle(t);
+                  if (errors.title) setErrors((e) => ({ ...e, title: undefined }));
+                }}
+                placeholder="Кратко опишите задачу"
+                placeholderTextColor={Colors.textMuted}
+                autoCapitalize="sentences"
+                maxLength={100}
+                className={`h-12 rounded-xl border bg-white px-4 text-base text-textPrimary ${errors.title ? 'border-statusError' : 'border-borderLight'}`}
+                style={{ outlineStyle: 'none' } as any}
+              />
+              {errors.title && <Text className="text-xs text-statusError">{errors.title}</Text>}
+            </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Категория (необязательно)</Text>
-              <View style={styles.chipsRow}>
-                {TAX_CATEGORIES.map((cat) => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[styles.chip, category === cat && styles.chipActive]}
-                    onPress={() => setCategory(category === cat ? '' : cat)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
-                      {cat}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            {/* Description */}
+            <View className="mb-4 gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Описание</Text>
+              <TextInput
+                value={description}
+                onChangeText={(t) => {
+                  if (t.length <= 2000) setDescription(t);
+                  if (errors.description) setErrors((e) => ({ ...e, description: undefined }));
+                }}
+                placeholder="Подробно опишите, что нужно сделать..."
+                placeholderTextColor={Colors.textMuted}
+                multiline
+                maxLength={2000}
+                className={`min-h-[96px] rounded-xl border bg-white p-4 text-base text-textPrimary ${errors.description ? 'border-statusError' : 'border-borderLight'}`}
+                style={{ textAlignVertical: 'top', outlineStyle: 'none' } as any}
+              />
+              <View className="flex-row items-center justify-between">
+                {errors.description ? (
+                  <Text className="text-xs text-statusError">{errors.description}</Text>
+                ) : <View />}
+                <Text className="text-xs text-textMuted">{description.length}/2000</Text>
               </View>
             </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Документы (необязательно, до {MAX_FILES} файлов)</Text>
-              <Text style={styles.fileHint}>PDF, JPG, PNG — макс. 10 МБ каждый</Text>
-              <View style={styles.fileButtonsRow}>
-                <TouchableOpacity
-                  style={styles.fileButton}
+            {/* Budget */}
+            <View className="mb-4 gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Бюджет (необязательно)</Text>
+              <TextInput
+                value={budget}
+                onChangeText={(t) => {
+                  setBudget(t);
+                  if (errors.budget) setErrors((e) => ({ ...e, budget: undefined }));
+                }}
+                placeholder="Например, 5000"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="numeric"
+                className={`h-12 rounded-xl border bg-white px-4 text-base text-textPrimary ${errors.budget ? 'border-statusError' : 'border-borderLight'}`}
+                style={{ outlineStyle: 'none' } as any}
+              />
+              {errors.budget && <Text className="text-xs text-statusError">{errors.budget}</Text>}
+            </View>
+
+            {/* Files */}
+            <View className="mb-4 gap-2">
+              <Text className="text-sm font-medium text-textSecondary">Файлы</Text>
+              {selectedFiles.map((file, index) => (
+                <FileItem
+                  key={`${file.name}-${index}`}
+                  name={file.name}
+                  size={formatFileSize(file.size)}
+                  onRemove={() => removeFile(index)}
+                />
+              ))}
+              <View className="flex-row gap-2">
+                <Pressable
+                  className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-lg border border-dashed border-borderLight bg-bgSurface"
                   onPress={pickDocument}
-                  activeOpacity={0.7}
                   disabled={selectedFiles.length >= MAX_FILES}
+                  style={selectedFiles.length >= MAX_FILES ? { opacity: 0.5 } : undefined}
                 >
-                  <Text style={styles.fileButtonText}>📄 PDF</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.fileButton}
+                  <Feather name="file-text" size={16} color={Colors.brandPrimary} />
+                  <Text className="text-sm font-medium text-brandPrimary">PDF</Text>
+                </Pressable>
+                <Pressable
+                  className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-lg border border-dashed border-borderLight bg-bgSurface"
                   onPress={pickImage}
-                  activeOpacity={0.7}
                   disabled={selectedFiles.length >= MAX_FILES}
+                  style={selectedFiles.length >= MAX_FILES ? { opacity: 0.5 } : undefined}
                 >
-                  <Text style={styles.fileButtonText}>🖼 Фото</Text>
-                </TouchableOpacity>
+                  <Feather name="image" size={16} color={Colors.brandPrimary} />
+                  <Text className="text-sm font-medium text-brandPrimary">Фото</Text>
+                </Pressable>
               </View>
-              {selectedFiles.length > 0 && (
-                <View style={styles.fileChipsRow}>
-                  {selectedFiles.map((file, index) => (
-                    <View key={`${file.name}-${index}`} style={styles.fileChip}>
-                      <Text style={styles.fileChipText} numberOfLines={1}>
-                        {file.name}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => removeFile(index)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Text style={styles.fileChipRemove}>✕</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
-              {fileError && <Text style={styles.errorText}>{fileError}</Text>}
+              <Text className="text-xs text-textMuted">PDF, JPG, PNG до 10 МБ. Макс. {MAX_FILES} файлов.</Text>
+              {fileError && <Text className="text-xs text-statusError">{fileError}</Text>}
             </View>
 
+            {/* Public toggle */}
+            <View className="mb-4 py-1">
+              <Toggle
+                value={publicVisible}
+                onValueChange={setPublicVisible}
+                label="Показать неавторизованным"
+                sublabel="Заявку увидят без входа в аккаунт"
+              />
+            </View>
+
+            {/* Submit (inline, not sticky) */}
+            <Pressable
+              className="mt-2 h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary"
+              onPress={handleSubmit}
+              disabled={loading}
+              style={loading ? { opacity: 0.7 } : undefined}
+            >
+              <Feather name="send" size={16} color="#FFFFFF" />
+              <Text className="text-base font-semibold text-white">
+                {loading ? 'Отправка...' : 'Отправить заявку'}
+              </Text>
+            </Pressable>
           </View>
         </ScrollView>
-        <View style={styles.stickyBottom}>
-          <View style={[styles.stickyInner, !isMobile && { maxWidth: 680 }]}>
-            <Button
-              onPress={handleSubmit}
-              variant="primary"
-              loading={loading}
-              disabled={loading}
-              style={styles.submitBtn}
-            >
-              Отправить запрос
-            </Button>
-          </View>
-        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  flex: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xl,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  specialistHint: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  field: {
-    gap: Spacing.xs,
-  },
-  label: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    marginBottom: 2,
-  },
-  descriptionInput: {
-    minHeight: 100,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  descriptionInputError: {
-    borderColor: Colors.statusError,
-  },
-  descriptionFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-  },
-  charCounter: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  stickyBottom: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.bgPrimary,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl,
-    alignItems: 'center',
-  },
-  stickyInner: {
-    width: '100%',
-    maxWidth: 430,
-  },
-  submitBtn: {
-    width: '100%',
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  chipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  chipTextActive: {
-    color: '#FFFFFF',
-  },
-  fileHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  fileButtonsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  fileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  fileButtonText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  fileChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  fileChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-    maxWidth: 220,
-  },
-  fileChipText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textPrimary,
-    flexShrink: 1,
-  },
-  fileChipRemove: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    fontWeight: Typography.fontWeight.bold,
-  },
-});
