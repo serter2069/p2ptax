@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Shadows } from '../../../constants/Colors';
+import { Colors, Shadows } from '../../../constants/Colors';
 import { StateSection } from '../StateSection';
 import { MOCK_CITIES, MOCK_FNS, MOCK_SERVICES } from '../../../constants/protoMockData';
 
@@ -15,6 +15,103 @@ function useLayout() {
 }
 
 // =====================================================================
+// Cascading City / FNS / Service picker (compact for landing form)
+// =====================================================================
+
+function LandingLocationPicker({
+  city, fns, service, onCityChange, onFnsChange, onServiceChange,
+}: {
+  city: string; fns: string; service: string;
+  onCityChange: (v: string) => void; onFnsChange: (v: string) => void; onServiceChange: (v: string) => void;
+}) {
+  const [openLevel, setOpenLevel] = useState<'city' | 'fns' | 'service' | null>(null);
+  const fnsOptions = city ? (MOCK_FNS[city] || []) : [];
+
+  const summary = city
+    ? [city, fns, service].filter(Boolean).join(' / ')
+    : '';
+
+  return (
+    <View className="gap-1">
+      <Pressable onPress={() => setOpenLevel(openLevel ? null : 'city')}>
+        <View className={`min-h-[44px] flex-row items-center gap-2 rounded-xl border px-3 py-2.5 ${openLevel ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
+          <Feather name="map-pin" size={14} color={Colors.textMuted} />
+          <Text className={`flex-1 text-sm ${summary ? 'text-textPrimary' : 'text-textMuted'}`} numberOfLines={2}>
+            {summary || 'Город, ФНС и услуга'}
+          </Text>
+          <Feather name={openLevel ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
+        </View>
+      </Pressable>
+
+      {openLevel && (
+        <View className="overflow-hidden rounded-xl border border-borderLight bg-white shadow-sm">
+          {/* Step tabs */}
+          <View className="flex-row border-b border-bgSecondary">
+            <Pressable
+              className={`flex-1 items-center py-2 ${openLevel === 'city' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => setOpenLevel('city')}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'city' ? 'text-brandPrimary' : city ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {city || 'Город'}
+              </Text>
+            </Pressable>
+            <Pressable
+              className={`flex-1 items-center py-2 ${openLevel === 'fns' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => city && setOpenLevel('fns')}
+              disabled={!city}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'fns' ? 'text-brandPrimary' : fns ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {fns ? fns.replace(/^ФНС\s*/, '').substring(0, 18) : 'ФНС'}
+              </Text>
+            </Pressable>
+            <Pressable
+              className={`flex-1 items-center py-2 ${openLevel === 'service' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => fns && setOpenLevel('service')}
+              disabled={!fns}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'service' ? 'text-brandPrimary' : service ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {service || 'Услуга'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Options */}
+          <ScrollView nestedScrollEnabled style={{ maxHeight: 160 }}>
+            {openLevel === 'city' && MOCK_CITIES.map((c) => (
+              <Pressable
+                key={c}
+                className="border-b border-bgSecondary px-3 py-2.5"
+                onPress={() => { onCityChange(c); onFnsChange(''); onServiceChange(''); setOpenLevel('fns'); }}
+              >
+                <Text className={`text-sm ${city === c ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c}</Text>
+              </Pressable>
+            ))}
+            {openLevel === 'fns' && fnsOptions.map((f) => (
+              <Pressable
+                key={f}
+                className="border-b border-bgSecondary px-3 py-2.5"
+                onPress={() => { onFnsChange(f); setOpenLevel('service'); }}
+              >
+                <Text className={`text-sm ${fns === f ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f}</Text>
+              </Pressable>
+            ))}
+            {openLevel === 'service' && MOCK_SERVICES.map((s) => (
+              <Pressable
+                key={s}
+                className="border-b border-bgSecondary px-3 py-2.5"
+                onPress={() => { onServiceChange(s); setOpenLevel(null); }}
+              >
+                <Text className={`text-sm ${service === s ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{s}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// =====================================================================
 // HERO — USP headline + inline request form
 // =====================================================================
 
@@ -24,9 +121,6 @@ function HeroSection() {
   const [fns, setFns] = useState('');
   const [service, setService] = useState('');
   const [description, setDescription] = useState('');
-  const [openPicker, setOpenPicker] = useState<'city' | 'fns' | 'service' | null>(null);
-
-  const fnsOptions = city ? (MOCK_FNS[city] || []) : [];
 
   return (
     <View className="bg-white px-5" style={{ paddingTop: 40, paddingBottom: 40 }}>
@@ -62,80 +156,21 @@ function HeroSection() {
 
           {/* Right: inline request form */}
           <View className="rounded-2xl border border-borderLight bg-bgSecondary p-5" style={{ width: isDesktop ? 340 : '100%', ...Shadows.md }}>
-            <Text className="mb-4 text-lg font-bold text-textPrimary">Оставить заявку</Text>
+            <Text className="mb-1 text-lg font-bold text-textPrimary">Разместить запрос</Text>
+            <Text className="mb-4 text-sm text-textSecondary">
+              Опишите вашу ситуацию — специалисты по вашей ФНС свяжутся с вами в чате
+            </Text>
 
-            {/* City */}
-            <View className="mb-3 gap-1">
-              <Text className="text-xs font-medium text-textMuted">Город</Text>
-              <Pressable onPress={() => setOpenPicker(openPicker === 'city' ? null : 'city')}>
-                <View className="h-11 flex-row items-center rounded-xl border border-borderLight bg-white px-3">
-                  <Feather name="map-pin" size={14} color={Colors.textMuted} />
-                  <Text className={`ml-2 flex-1 text-sm ${city ? 'text-textPrimary' : 'text-textMuted'}`}>{city || 'Выберите город'}</Text>
-                  <Feather name="chevron-down" size={14} color={Colors.textMuted} />
-                </View>
-              </Pressable>
-              {openPicker === 'city' && (
-                <View className="max-h-36 rounded-xl border border-borderLight bg-white shadow-sm">
-                  <ScrollView nestedScrollEnabled>
-                    {MOCK_CITIES.map((c) => (
-                      <Pressable key={c} onPress={() => { setCity(c); setFns(''); setOpenPicker(null); }} className="border-b border-bgSecondary px-3 py-2.5">
-                        <Text className={`text-sm ${city === c ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c}</Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            {/* FNS */}
-            {city ? (
-              <View className="mb-3 gap-1">
-                <Text className="text-xs font-medium text-textMuted">ФНС</Text>
-                <Pressable onPress={() => setOpenPicker(openPicker === 'fns' ? null : 'fns')}>
-                  <View className="h-11 flex-row items-center rounded-xl border border-borderLight bg-white px-3">
-                    <Feather name="home" size={14} color={Colors.textMuted} />
-                    <Text className={`ml-2 flex-1 text-sm ${fns ? 'text-textPrimary' : 'text-textMuted'}`}>{fns || 'Выберите ФНС'}</Text>
-                    <Feather name="chevron-down" size={14} color={Colors.textMuted} />
-                  </View>
-                </Pressable>
-                {openPicker === 'fns' && (
-                  <View className="max-h-36 rounded-xl border border-borderLight bg-white shadow-sm">
-                    <ScrollView nestedScrollEnabled>
-                      {fnsOptions.map((f) => (
-                        <Pressable key={f} onPress={() => { setFns(f); setOpenPicker(null); }} className="border-b border-bgSecondary px-3 py-2.5">
-                          <Text className={`text-sm ${fns === f ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f}</Text>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-            ) : null}
-
-            {/* Service */}
-            <View className="mb-3 gap-1">
-              <Text className="text-xs font-medium text-textMuted">Услуга</Text>
-              <Pressable onPress={() => setOpenPicker(openPicker === 'service' ? null : 'service')}>
-                <View className="h-11 flex-row items-center rounded-xl border border-borderLight bg-white px-3">
-                  <Feather name="briefcase" size={14} color={Colors.textMuted} />
-                  <Text className={`ml-2 flex-1 text-sm ${service ? 'text-textPrimary' : 'text-textMuted'}`}>{service || 'Выберите услугу'}</Text>
-                  <Feather name="chevron-down" size={14} color={Colors.textMuted} />
-                </View>
-              </Pressable>
-              {openPicker === 'service' && (
-                <View className="rounded-xl border border-borderLight bg-white shadow-sm">
-                  {MOCK_SERVICES.map((s) => (
-                    <Pressable key={s} onPress={() => { setService(s); setOpenPicker(null); }} className="border-b border-bgSecondary px-3 py-2.5">
-                      <Text className={`text-sm ${service === s ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{s}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
+            {/* Unified City / FNS / Service */}
+            <View className="mb-3">
+              <LandingLocationPicker
+                city={city} fns={fns} service={service}
+                onCityChange={setCity} onFnsChange={setFns} onServiceChange={setService}
+              />
             </View>
 
             {/* Description */}
             <View className="mb-4 gap-1">
-              <Text className="text-xs font-medium text-textMuted">Опишите задачу</Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
@@ -151,6 +186,10 @@ function HeroSection() {
               <Feather name="send" size={16} color={Colors.white} />
               <Text className="text-base font-semibold text-white">Отправить заявку</Text>
             </Pressable>
+
+            <Text className="mt-2 text-center text-xs text-textMuted">
+              Бесплатно. Специалисты напишут вам сами.
+            </Text>
           </View>
         </View>
       </View>
@@ -159,18 +198,22 @@ function HeroSection() {
 }
 
 // =====================================================================
-// SPECIALISTS CAROUSEL — horizontal scroll, more cards, avatars
+// SPECIALISTS CAROUSEL — 12 cards, horizontal scroll
 // =====================================================================
 
 const SPECIALISTS = [
   { name: 'Алексей Петров', city: 'Москва', fns: 'ФНС №46', service: 'Выездная проверка', rating: 4.9, reviews: 34, since: 2020, initials: 'АП', color: '#0284C7' },
   { name: 'Елена Морозова', city: 'Москва', fns: 'ФНС №15', service: 'Камеральная проверка', rating: 4.8, reviews: 28, since: 2021, initials: 'ЕМ', color: '#059669' },
-  { name: 'Дмитрий Волков', city: 'Санкт-Петербург', fns: 'ФНС №1', service: 'Отдел оперативного контроля', rating: 4.9, reviews: 41, since: 2019, initials: 'ДВ', color: '#7C3AED' },
+  { name: 'Дмитрий Волков', city: 'СПб', fns: 'ФНС №1', service: 'Отдел оперативного контроля', rating: 4.9, reviews: 41, since: 2019, initials: 'ДВ', color: '#7C3AED' },
   { name: 'Ольга Смирнова', city: 'Новосибирск', fns: 'ФНС №12', service: 'Камеральная проверка', rating: 4.7, reviews: 19, since: 2022, initials: 'ОС', color: '#DC2626' },
   { name: 'Игорь Козлов', city: 'Казань', fns: 'ФНС №3', service: 'Выездная проверка', rating: 4.8, reviews: 23, since: 2021, initials: 'ИК', color: '#D97706' },
   { name: 'Анна Фёдорова', city: 'Екатеринбург', fns: 'ФНС №8', service: 'Камеральная проверка', rating: 4.6, reviews: 15, since: 2023, initials: 'АФ', color: '#0891B2' },
-  { name: 'Сергей Новиков', city: 'Ростов-на-Дону', fns: 'ФНС №5', service: 'Отдел оперативного контроля', rating: 4.9, reviews: 37, since: 2020, initials: 'СН', color: '#4F46E5' },
+  { name: 'Сергей Новиков', city: 'Ростов-на-Дону', fns: 'ФНС №5', service: 'Выездная проверка', rating: 4.9, reviews: 37, since: 2020, initials: 'СН', color: '#4F46E5' },
   { name: 'Мария Кузнецова', city: 'Москва', fns: 'ФНС №7', service: 'Выездная проверка', rating: 4.7, reviews: 22, since: 2022, initials: 'МК', color: '#BE185D' },
+  { name: 'Павел Тихонов', city: 'Самара', fns: 'ФНС №11', service: 'Камеральная проверка', rating: 4.8, reviews: 31, since: 2020, initials: 'ПТ', color: '#0D9488' },
+  { name: 'Наталья Соколова', city: 'Москва', fns: 'ФНС №33', service: 'Отдел оперативного контроля', rating: 4.6, reviews: 17, since: 2023, initials: 'НС', color: '#9333EA' },
+  { name: 'Виктор Лебедев', city: 'Краснодар', fns: 'ФНС №2', service: 'Выездная проверка', rating: 4.9, reviews: 44, since: 2019, initials: 'ВЛ', color: '#B91C1C' },
+  { name: 'Татьяна Миронова', city: 'СПб', fns: 'ФНС №25', service: 'Камеральная проверка', rating: 4.7, reviews: 26, since: 2021, initials: 'ТМ', color: '#1D4ED8' },
 ];
 
 function SpecialistsCarousel() {
@@ -183,12 +226,17 @@ function SpecialistsCarousel() {
         <Text className="text-2xl font-bold text-textPrimary">
           Работают на платформе
         </Text>
+        <Text className="mt-1 text-sm text-textSecondary">
+          {SPECIALISTS.length} специалистов из {new Set(SPECIALISTS.map(s => s.city)).size} городов
+        </Text>
       </View>
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+        decelerationRate="fast"
+        snapToInterval={232}
       >
         {SPECIALISTS.map((spec) => (
           <View
@@ -228,7 +276,7 @@ function SpecialistsCarousel() {
                 <Text className="text-xs font-semibold text-textPrimary">{spec.rating}</Text>
                 <Text className="text-xs text-textMuted">({spec.reviews})</Text>
               </View>
-              <Text className="text-xs text-textMuted">с {spec.since} г.</Text>
+              <Text className="text-xs text-textMuted">c {spec.since} г.</Text>
             </View>
 
             <Pressable className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg border border-brandPrimary">
@@ -348,7 +396,7 @@ function StatsSection() {
 }
 
 // =====================================================================
-// FIND SPECIALIST CTA + "I am specialist" link
+// BOTTOM CTA
 // =====================================================================
 
 function BottomCTA() {
