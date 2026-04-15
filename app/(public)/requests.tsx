@@ -9,6 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/Colors';
 import { requests as requestsApi, ifns as ifnsApi } from '../../lib/api/endpoints';
@@ -510,6 +511,13 @@ export default function PublicRequestsScreen() {
 
   const renderHeader = () => (
     <View style={{ gap: Spacing.lg }}>
+      <Head>
+        <title>Заявки — Налоговик</title>
+        <meta name="description" content="Активные заявки на налоговые услуги. Найдите клиента и предложите свои услуги." />
+        <meta property="og:title" content="Заявки — Налоговик" />
+        <meta property="og:description" content="Активные заявки на налоговые услуги. Найдите клиента и предложите свои услуги." />
+        <meta property="og:type" content="website" />
+      </Head>
       {/* Title */}
       <View>
         <Text style={s.pageTitle}>Заявки</Text>

@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../../constants/Colors';
@@ -352,9 +353,20 @@ export default function RequestDetailScreen() {
   }
 
   const st = STATUS_MAP[request.status] || STATUS_MAP.OPEN;
+  const pageTitle = `${request.title} — заявка — Налоговик`;
+  const pageDescription = request.description
+    ? request.description.slice(0, 160)
+    : 'Заявка на налоговые услуги на платформе Налоговик';
 
   return (
     <View style={s.container}>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="website" />
+      </Head>
       {/* Header */}
       <View style={s.header}>
         <Pressable style={s.backBtn} onPress={() => router.back()}>
