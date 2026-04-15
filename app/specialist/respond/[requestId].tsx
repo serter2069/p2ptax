@@ -3,20 +3,19 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
   Alert,
   Platform,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../../lib/api';
 import { useAuth } from '../../../stores/authStore';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
-import { Button } from '../../../components/Button';
+import { Colors } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
-import { EmptyState } from '../../../components/EmptyState';
 
 interface RequestInfo {
   id: string;
@@ -145,82 +144,117 @@ export default function SpecialistRespondScreen() {
     return null;
   }
 
+  // Loading state
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <Header title="Respond to request" />
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={Colors.brandPrimary} />
-        </View>
+      <SafeAreaView className="flex-1 bg-white">
+        <Header title="Откликнуться на заявку" />
+        <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+          <View className="h-32 w-full rounded-xl bg-bgSecondary" />
+          <View className="h-12 w-full rounded-lg bg-bgSecondary" />
+          <View className="h-24 w-full rounded-lg bg-bgSecondary" />
+          <View className="h-12 w-full rounded-lg bg-bgSecondary" />
+          <View className="items-center pt-4">
+            <ActivityIndicator size="small" color={Colors.brandPrimary} />
+            <Text className="mt-2 text-xs text-textMuted">Загрузка заявки...</Text>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
 
+  // Error state
   if (error || !request) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <Header title="Respond to request" />
-        <EmptyState
-          icon="alert-circle-outline"
-          title={error || 'Request not found'}
-          ctaLabel="Back to feed"
-          onCtaPress={() => router.push('/requests')}
-        />
+      <SafeAreaView className="flex-1 bg-white">
+        <Header title="Откликнуться на заявку" />
+        <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+          <View className="items-center gap-3 py-16">
+            <View
+              className="h-16 w-16 items-center justify-center rounded-full"
+              style={{ backgroundColor: Colors.statusBg.error }}
+            >
+              <Feather name="alert-circle" size={32} color={Colors.statusError} />
+            </View>
+            <Text className="text-lg font-semibold text-textPrimary">
+              {error || 'Заявка не найдена'}
+            </Text>
+            <Text className="max-w-[280px] text-center text-sm text-textMuted">
+              Проверьте подключение и попробуйте снова.
+            </Text>
+            <Pressable
+              className="mt-2 h-10 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary px-6"
+              onPress={() => router.push('/requests')}
+            >
+              <Feather name="refresh-cw" size={16} color={Colors.white} />
+              <Text className="text-sm font-semibold text-white">Попробовать снова</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <Stack.Screen options={{ title: 'Respond to request' }} />
-      <Header title="Respond to request" />
+    <SafeAreaView className="flex-1 bg-white">
+      <Stack.Screen options={{ title: 'Откликнуться на заявку' }} />
+      <Header title="Откликнуться на заявку" />
 
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        className="flex-1 bg-white"
+        contentContainerStyle={{ padding: 16, gap: 16 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.container}>
-          {/* Request info card */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Request details</Text>
-            <Text style={styles.descriptionText} numberOfLines={6}>
-              {request.description}
-            </Text>
-            <View style={styles.metaRow}>
-              <View style={styles.cityChip}>
-                <Text style={styles.cityText}>{request.city}</Text>
-              </View>
-              {request.category && (
-                <View style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>{request.category}</Text>
-                </View>
-              )}
-              {request.budget != null && (
-                <Text style={styles.budgetText}>
-                  {request.budget.toLocaleString('ru-RU')} rub.
-                </Text>
-              )}
-            </View>
+        {/* Request info card */}
+        <View className="gap-2 rounded-xl border border-borderLight bg-white p-4">
+          <View className="self-start rounded-full bg-bgSecondary px-2 py-0.5">
+            <Text className="text-xs font-medium text-textMuted">Заявка #{request.id}</Text>
           </View>
-
-          {/* Already responded notice */}
-          {alreadyResponded && (
-            <View style={styles.alreadyRespondedBox}>
-              <Text style={styles.alreadyRespondedText}>
-                You have already responded to this request
-              </Text>
+          <Text className="text-lg font-semibold text-textPrimary" numberOfLines={6}>
+            {request.description}
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+              <Feather name="map-pin" size={12} color={Colors.textMuted} />
+              <Text className="text-xs text-textMuted">{request.city}</Text>
             </View>
-          )}
+            {request.category && (
+              <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+                <Feather name="tag" size={12} color={Colors.textMuted} />
+                <Text className="text-xs text-textMuted">{request.category}</Text>
+              </View>
+            )}
+            {request.budget != null && (
+              <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+                <Feather name="dollar-sign" size={12} color={Colors.textMuted} />
+                <Text className="text-xs text-textMuted">
+                  {request.budget.toLocaleString('ru-RU')} &#8381;
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
 
-          {/* Response form */}
-          {!alreadyResponded && (
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Your response</Text>
+        {/* Already responded notice */}
+        {alreadyResponded && (
+          <View
+            className="items-center rounded-xl p-4"
+            style={{ backgroundColor: Colors.statusBg.warning }}
+          >
+            <Text className="text-center text-base font-medium" style={{ color: Colors.statusWarning }}>
+              Вы уже откликнулись на эту заявку
+            </Text>
+          </View>
+        )}
 
-              <Text style={styles.fieldLabel}>Стоимость, руб.</Text>
+        {/* Response form */}
+        {!alreadyResponded && (
+          <>
+            {/* Price */}
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Стоимость, руб.</Text>
               <TextInput
-                style={[styles.input, price !== '' && getPriceError() ? styles.inputError : null]}
                 value={price}
                 onChangeText={(text) => setPrice(text.replace(/[^0-9]/g, ''))}
                 placeholder="0"
@@ -228,211 +262,89 @@ export default function SpecialistRespondScreen() {
                 keyboardType="numeric"
                 editable={!submitting}
                 testID="price-input"
+                className={`rounded-lg border bg-white p-3 text-base text-textPrimary ${
+                  price !== '' && getPriceError() ? 'border-statusError' : 'border-borderLight'
+                }`}
+                style={{ outlineStyle: 'none' as any }}
               />
               {price !== '' && getPriceError() ? (
-                <Text style={styles.fieldError} testID="price-error">{getPriceError()}</Text>
+                <Text className="text-xs text-statusError" testID="price-error">{getPriceError()}</Text>
               ) : null}
+            </View>
 
-              <Text style={styles.fieldLabel}>Срок выполнения</Text>
+            {/* Deadline */}
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Срок выполнения</Text>
               <TextInput
-                style={[styles.input, deadline !== '' && getDeadlineError() ? styles.inputError : null]}
                 value={deadline}
                 onChangeText={setDeadline}
                 placeholder="YYYY-MM-DD"
                 placeholderTextColor={Colors.textMuted}
                 editable={!submitting}
                 testID="deadline-input"
+                className={`rounded-lg border bg-white p-3 text-base text-textPrimary ${
+                  deadline !== '' && getDeadlineError() ? 'border-statusError' : 'border-borderLight'
+                }`}
+                style={{ outlineStyle: 'none' as any }}
               />
               {deadline !== '' && getDeadlineError() ? (
-                <Text style={styles.fieldError} testID="deadline-error">{getDeadlineError()}</Text>
+                <Text className="text-xs text-statusError" testID="deadline-error">{getDeadlineError()}</Text>
               ) : null}
+            </View>
 
-              <Text style={styles.fieldLabel}>Комментарий</Text>
+            {/* Comment / Message */}
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textSecondary">Сообщение клиенту</Text>
               <TextInput
-                style={[styles.textArea, comment !== '' && getCommentError() ? styles.inputError : null]}
                 value={comment}
                 onChangeText={setComment}
-                placeholder="Describe how you can help with this request..."
+                placeholder="Напишите первое сообщение клиенту..."
                 placeholderTextColor={Colors.textMuted}
                 multiline
                 numberOfLines={6}
                 maxLength={500}
-                textAlignVertical="top"
                 editable={!submitting}
                 testID="comment-input"
+                className={`min-h-[100px] rounded-lg border bg-white p-3 text-base text-textPrimary ${
+                  comment !== '' && getCommentError() ? 'border-statusError' : 'border-borderLight'
+                }`}
+                style={{ textAlignVertical: 'top', outlineStyle: 'none' as any }}
               />
-              <Text style={styles.charCount}>
-                {comment.length}/500
-              </Text>
+              <Text className="self-end text-xs text-textMuted">{comment.length}/500</Text>
               {comment !== '' && getCommentError() ? (
-                <Text style={styles.fieldError} testID="comment-error">{getCommentError()}</Text>
+                <Text className="text-xs text-statusError" testID="comment-error">{getCommentError()}</Text>
               ) : null}
-
-              {submitError && !alreadyResponded ? (
-                <Text style={styles.errorText}>{submitError}</Text>
-              ) : null}
-
-              <Button
-                onPress={handleSubmit}
-                variant="primary"
-                loading={submitting}
-                disabled={!isFormValid() || submitting}
-                style={styles.submitBtn}
-              >
-                Send response
-              </Button>
             </View>
-          )}
-        </View>
+
+            {submitError && !alreadyResponded ? (
+              <Text className="text-center text-sm text-statusError">{submitError}</Text>
+            ) : null}
+
+            {/* Submit button */}
+            <Pressable
+              className={`h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary ${
+                (!isFormValid() || submitting) ? 'opacity-45' : ''
+              }`}
+              onPress={handleSubmit}
+              disabled={!isFormValid() || submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <>
+                  <Feather name="send" size={16} color={Colors.white} />
+                  <Text className="text-base font-semibold text-white">Написать по заявке</Text>
+                </>
+              )}
+            </Pressable>
+
+            {/* Cancel */}
+            <Pressable className="items-center py-2" onPress={() => router.back()}>
+              <Text className="text-sm text-textMuted">Отмена</Text>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingBottom: 48,
-  },
-  centerBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    gap: Spacing.md,
-  },
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    ...Shadows.sm,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-  },
-  descriptionText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-    marginBottom: Spacing.md,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  cityChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  cityText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  categoryChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  categoryText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  budgetText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  fieldLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.md,
-  },
-  input: {
-    backgroundColor: Colors.bgPrimary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  textArea: {
-    minHeight: 120,
-    backgroundColor: Colors.bgPrimary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-  },
-  charCount: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'right',
-    marginTop: Spacing.xs,
-  },
-  fieldError: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-    marginTop: Spacing.xs,
-  },
-  inputError: {
-    borderColor: Colors.statusError,
-  },
-  errorText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    marginTop: Spacing.sm,
-  },
-  submitBtn: {
-    width: '100%',
-    marginTop: Spacing.md,
-  },
-  alreadyRespondedBox: {
-    backgroundColor: Colors.statusBg.warning,
-    borderWidth: 1,
-    borderColor: Colors.statusBg.warning,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    alignItems: 'center',
-  },
-  alreadyRespondedText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.statusWarning,
-    fontWeight: Typography.fontWeight.medium,
-    textAlign: 'center',
-  },
-});
