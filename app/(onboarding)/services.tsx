@@ -2,18 +2,16 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
+  ScrollView,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { OnboardingProgress } from '../../components/OnboardingProgress';
 
 export default function ServicesScreen() {
@@ -33,7 +31,6 @@ export default function ServicesScreen() {
   const [cities, setCities] = useState<string[]>(citiesFromParams);
   const [fnsOffices, setFnsOffices] = useState<string[]>(fnsFromParams);
 
-  // Fallback: load from AsyncStorage if params are empty (deep link / refresh)
   useEffect(() => {
     async function loadFromStorage() {
       if (cities.length === 0) {
@@ -68,7 +65,6 @@ export default function ServicesScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-
   function handleChipToggle(chip: string) {
     setSelectedChips((prev) =>
       prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip],
@@ -96,7 +92,6 @@ export default function ServicesScreen() {
     setError('');
     setLoading(true);
     try {
-      // Save services to AsyncStorage and proceed to step 5 (profile)
       await AsyncStorage.setItem('onboarding_services', JSON.stringify(combined));
       router.push('/(onboarding)/profile');
     } catch (err) {
@@ -107,59 +102,59 @@ export default function ServicesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <KeyboardAvoidingView
-        style={styles.kav}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24, justifyContent: 'center' }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.container}>
+          <View className="w-full max-w-lg px-5 gap-6">
             <OnboardingProgress currentStep={4} />
 
             {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.step}>Шаг 4 из 5</Text>
-              <Text style={styles.title}>Ваши услуги</Text>
-              <Text style={styles.subtitle}>
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textMuted">Шаг 4 из 5</Text>
+              <Text className="text-2xl font-bold text-textPrimary">Ваши услуги</Text>
+              <Text className="text-base text-textSecondary leading-[22px]">
                 Расскажите, что вы умеете делать. Клиенты увидят это в вашем профиле.
               </Text>
             </View>
 
             {/* Hint */}
-            <View style={styles.hintBox}>
-              <Text style={styles.hintText}>
+            <View className="bg-bgCard rounded-lg py-2 px-4 border border-border">
+              <Text className="text-sm text-textMuted leading-[18px]">
                 Например: декларирование доходов, консультации по НДС, налоговое планирование
               </Text>
             </View>
 
             {/* Popular services chips */}
-            <View style={styles.chipsContainer}>
-              <Text style={styles.chipsLabel}>Популярные услуги</Text>
-              <View style={styles.chipsRow}>
+            <View className="gap-1">
+              <Text className="text-sm font-medium text-textSecondary mb-0.5">Популярные услуги</Text>
+              <View className="flex-row flex-wrap gap-2">
                 {POPULAR_SERVICES.map((svc) => {
                   const isActive = selectedChips.includes(svc);
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={svc}
                       onPress={() => handleChipToggle(svc)}
-                      style={[styles.chip, isActive && styles.chipActive]}
-                      activeOpacity={0.7}
+                      className={`py-1 px-2 rounded-full border ${isActive ? 'border-brandPrimary' : 'border-border bg-bgCard'}`}
+                      style={isActive ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
                     >
-                      <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                      <Text className={`text-sm ${isActive ? 'text-white' : 'text-textSecondary'}`}>
                         {svc}
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </View>
             </View>
 
             {/* Textarea */}
-            <View style={styles.form}>
+            <View className="gap-4">
               <Input
                 label="Описание услуг"
                 value={services}
@@ -177,127 +172,24 @@ export default function ServicesScreen() {
                 onPress={handleSubmit}
                 loading={loading}
                 disabled={loading || (services.trim().length === 0 && selectedChips.length === 0)}
-                style={styles.btn}
+                style={{ width: '100%', marginTop: 8 }}
               >
                 Продолжить
               </Button>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={async () => {
-                  // Skip services — save empty and go to profile
                   await AsyncStorage.setItem('onboarding_services', JSON.stringify([]));
                   router.push('/(onboarding)/profile');
                 }}
-                style={styles.skipBtn}
-                activeOpacity={0.7}
+                className="items-center py-2"
               >
-                <Text style={styles.skipBtnText}>Заполнить позже</Text>
-              </TouchableOpacity>
+                <Text className="text-base text-textMuted">Заполнить позже</Text>
+              </Pressable>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  kav: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-    justifyContent: 'center',
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing['2xl'],
-  },
-  header: {
-    gap: Spacing.xs,
-  },
-  step: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  hintBox: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  hintText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    lineHeight: 18,
-  },
-  form: {
-    gap: Spacing.lg,
-  },
-  chipsContainer: {
-    gap: Spacing.xs,
-  },
-  chipsLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    marginBottom: 2,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  chipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  chipTextActive: {
-    color: Colors.white,
-  },
-  btn: {
-    width: '100%',
-    marginTop: Spacing.sm,
-  },
-  skipBtn: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  skipBtnText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-  },
-});

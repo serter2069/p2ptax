@@ -3,16 +3,14 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../../components/Button';
 import { shortFnsLabel } from '../../lib/format';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { OnboardingProgress } from '../../components/OnboardingProgress';
 import { FNS_DEPARTMENTS } from '../../constants/FNS_DEPARTMENTS';
 import { useFnsSearch, FnsOfficeItem } from '../../hooks/useFnsData';
@@ -33,7 +31,6 @@ export default function FNSScreen() {
 
   const selectedNames = new Set(selected.map((o) => o.name));
 
-  // Use API-backed search instead of hardcoded FNS_OFFICES
   const { results: suggestions } = useFnsSearch(search);
 
   const filteredSuggestions = suggestions.filter((o) => !selectedNames.has(o.name)).slice(0, 8);
@@ -72,7 +69,6 @@ export default function FNSScreen() {
       setError('Выберите хотя бы одну ИФНС');
       return;
     }
-    // Validate: each office must have at least 1 department
     for (const office of selected) {
       const deps = departmentsMap[office.name] || [];
       if (deps.length === 0) {
@@ -90,14 +86,12 @@ export default function FNSScreen() {
         office: o.name,
         departments: departmentsMap[o.name] || [],
       }));
-      // Structured data for join tables: each FNS office with its departments (services)
       const fnsServicesData = selected.map((o) => ({
         fnsId: o.id,
         fnsName: o.name,
         cityName: o.city.name,
         departments: departmentsMap[o.name] || [],
       }));
-      // Persist to AsyncStorage for refresh/deep-link resilience
       await AsyncStorage.setItem('onboarding_cities', JSON.stringify(cities));
       await AsyncStorage.setItem('onboarding_fns', JSON.stringify(fnsNames));
       await AsyncStorage.setItem('onboarding_fns_ids', JSON.stringify(fnsIds));
@@ -117,29 +111,29 @@ export default function FNSScreen() {
     }
   }
 
-  // Progress: step 3 of 4 (username → cities → fns → services)
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.container}>
+        <View className="w-full max-w-lg px-5 gap-5">
           <OnboardingProgress currentStep={3} />
 
-          <View style={styles.header}>
-            <Text style={styles.step}>Шаг 3 из 5</Text>
-            <Text style={styles.title}>Выберите ИФНС</Text>
-            <Text style={styles.subtitle}>
+          <View className="gap-1">
+            <Text className="text-sm font-medium text-textMuted">Шаг 3 из 5</Text>
+            <Text className="text-2xl font-bold text-textPrimary">Выберите ИФНС</Text>
+            <Text className="text-base text-textSecondary leading-[22px]">
               Укажите инспекции ФНС, с которыми вы работаете
             </Text>
           </View>
 
           {/* Search with dropdown */}
-          <View style={styles.searchWrap}>
+          <View className="relative z-10">
             <TextInput
-              style={[styles.searchInput, { outlineStyle: 'none' } as any]}
+              className="border border-border rounded-lg py-3 px-4 text-base text-textPrimary bg-bgCard"
+              style={{ outlineStyle: 'none' } as any}
               value={search}
               onChangeText={setSearch}
               placeholder="Поиск по номеру или городу..."
@@ -147,19 +141,21 @@ export default function FNSScreen() {
               autoCorrect={false}
             />
             {filteredSuggestions.length > 0 && (
-              <View style={styles.dropdown}>
+              <View
+                className="absolute left-0 right-0 bg-bgCard border border-border rounded-lg mt-1 z-20"
+                style={{ top: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8 }}
+              >
                 {filteredSuggestions.map((office) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={office.code}
                     onPress={() => addOffice(office)}
-                    style={styles.dropdownItem}
-                    activeOpacity={0.7}
+                    className="py-2 px-3 border-b border-bgSecondary"
                   >
-                    <Text style={styles.dropdownName} numberOfLines={2}>
+                    <Text className="text-sm font-medium text-textPrimary" numberOfLines={2}>
                       {office.name}
                     </Text>
-                    <Text style={styles.dropdownCity}>{office.city.name}</Text>
-                  </TouchableOpacity>
+                    <Text className="text-xs text-brandPrimary mt-0.5">{office.city.name}</Text>
+                  </Pressable>
                 ))}
               </View>
             )}
@@ -167,48 +163,47 @@ export default function FNSScreen() {
 
           {/* Selected offices with departments */}
           {selected.length > 0 && (
-            <View style={styles.selectedWrap}>
-              <Text style={styles.selectedLabel}>
+            <View className="gap-2">
+              <Text className="text-sm font-medium text-textMuted">
                 Выбрано: {selected.length}
               </Text>
               {selected.map((office) => (
-                <View key={office.code} style={styles.officeBlock}>
-                  <View style={styles.officeRow}>
-                    <TouchableOpacity
+                <View
+                  key={office.code}
+                  className="border border-brandPrimary rounded-lg overflow-hidden mb-1"
+                  style={{ backgroundColor: Colors.statusBg.accent }}
+                >
+                  <View className="flex-row items-center py-1 px-3">
+                    <Pressable
                       onPress={() => setExpandedOffice(expandedOffice === office.name ? null : office.name)}
-                      style={styles.officeExpandBtn}
-                      activeOpacity={0.7}
+                      className="flex-1 flex-row items-center gap-2"
                     >
-                      <Text style={styles.chipText} numberOfLines={1}>
+                      <Text className="text-sm font-medium max-w-[200px]" style={{ color: Colors.textAccent }} numberOfLines={1}>
                         {shortFnsLabel(office.name, office.city.name)}
                       </Text>
-                      <Text style={styles.deptCount}>
+                      <Text className="text-xs font-medium text-brandPrimary">
                         {(departmentsMap[office.name] || []).length} отд.
                       </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => removeOffice(office.name)}
-                      style={styles.removeBtn}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.chipRemove}>×</Text>
-                    </TouchableOpacity>
+                    </Pressable>
+                    <Pressable onPress={() => removeOffice(office.name)} className="p-1">
+                      <Text className="text-base leading-[18px]" style={{ color: Colors.textAccent }}>{'×'}</Text>
+                    </Pressable>
                   </View>
                   {expandedOffice === office.name && (
-                    <View style={styles.deptList}>
+                    <View className="flex-row flex-wrap gap-1 px-3 pb-2">
                       {FNS_DEPARTMENTS.map((dept) => {
                         const isSelected = (departmentsMap[office.name] || []).includes(dept);
                         return (
-                          <TouchableOpacity
+                          <Pressable
                             key={dept}
                             onPress={() => toggleDepartment(office.name, dept)}
-                            style={[styles.deptChip, isSelected && styles.deptChipActive]}
-                            activeOpacity={0.7}
+                            className={`py-1 px-2 rounded-full border ${isSelected ? 'border-brandPrimary' : 'border-border bg-bgCard'}`}
+                            style={isSelected ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
                           >
-                            <Text style={[styles.deptChipText, isSelected && styles.deptChipTextActive]}>
+                            <Text className={`text-xs ${isSelected ? 'text-white font-medium' : 'text-textSecondary'}`}>
                               {dept}
                             </Text>
-                          </TouchableOpacity>
+                          </Pressable>
                         );
                       })}
                     </View>
@@ -218,239 +213,40 @@ export default function FNSScreen() {
             </View>
           )}
 
-          {!!error && <Text style={styles.errorText}>{error}</Text>}
+          {!!error && <Text className="text-sm text-statusError">{error}</Text>}
 
-          <View style={styles.buttons}>
-            <TouchableOpacity
+          <View className="flex-row gap-3 mt-2 mb-6">
+            <Pressable
               onPress={() => router.back()}
-              style={styles.backBtn}
-              activeOpacity={0.7}
+              className="flex-1 py-3 rounded-lg border border-border bg-bgCard items-center justify-center"
             >
-              <Text style={styles.backBtnText}>Назад</Text>
-            </TouchableOpacity>
+              <Text className="text-base font-medium text-textSecondary">Назад</Text>
+            </Pressable>
             <Button
               onPress={handleContinue}
               disabled={selected.length === 0}
               loading={isLoading}
-              style={styles.continueBtn}
+              style={{ flex: 2 }}
             >
               Далее
             </Button>
-
-            <TouchableOpacity
-              onPress={async () => {
-                // Skip FNS — save empty data
-                await AsyncStorage.setItem('onboarding_cities', JSON.stringify([]));
-                await AsyncStorage.setItem('onboarding_fns', JSON.stringify([]));
-                await AsyncStorage.setItem('onboarding_fns_ids', JSON.stringify([]));
-                await AsyncStorage.setItem('onboarding_fns_data', JSON.stringify([]));
-                await AsyncStorage.setItem('onboarding_fns_services', JSON.stringify([]));
-                router.push('/(onboarding)/services');
-              }}
-              style={styles.skipBtn}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.skipBtnText}>Заполнить позже</Text>
-            </TouchableOpacity>
           </View>
+
+          <Pressable
+            onPress={async () => {
+              await AsyncStorage.setItem('onboarding_cities', JSON.stringify([]));
+              await AsyncStorage.setItem('onboarding_fns', JSON.stringify([]));
+              await AsyncStorage.setItem('onboarding_fns_ids', JSON.stringify([]));
+              await AsyncStorage.setItem('onboarding_fns_data', JSON.stringify([]));
+              await AsyncStorage.setItem('onboarding_fns_services', JSON.stringify([]));
+              router.push('/(onboarding)/services');
+            }}
+            className="items-center py-3"
+          >
+            <Text className="text-base text-textMuted">Заполнить позже</Text>
+          </Pressable>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xl,
-  },
-  header: {
-    gap: Spacing.xs,
-  },
-  step: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  searchWrap: {
-    position: 'relative',
-    zIndex: 10,
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.bgCard,
-  },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    marginTop: 4,
-    zIndex: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  dropdownItem: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgSecondary,
-  },
-  dropdownName: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  dropdownCity: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    marginTop: 2,
-  },
-  selectedWrap: {
-    gap: Spacing.sm,
-  },
-  selectedLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  officeBlock: {
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.statusBg.accent,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  officeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-  },
-  officeExpandBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  deptCount: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  removeBtn: {
-    padding: 4,
-  },
-  deptList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  deptChip: {
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  deptChipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  deptChipText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-  },
-  deptChipTextActive: {
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textAccent,
-    fontWeight: Typography.fontWeight.medium,
-    maxWidth: 200,
-  },
-  chipRemove: {
-    fontSize: 16,
-    color: Colors.textAccent,
-    lineHeight: 18,
-  },
-  errorText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing['2xl'],
-  },
-  backBtn: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.bgCard,
-  },
-  backBtnText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  continueBtn: {
-    flex: 2,
-  },
-  skipBtn: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  skipBtnText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-  },
-});

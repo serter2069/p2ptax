@@ -2,16 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
+import { Colors } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
@@ -112,7 +110,7 @@ export default function MyRequestsScreen() {
       case 'CANCELLED':
         return { label: 'Отменена', bg: Colors.statusBg.error, color: Colors.statusError };
       default:
-        return { label: 'Закрыт', bg: Colors.statusBg.warning, color: Colors.textMuted };
+        return { label: 'Закрыт', bg: '#FEF3C7', color: Colors.textMuted };
     }
   }
 
@@ -124,85 +122,85 @@ export default function MyRequestsScreen() {
     const responseCount = item._count.responses;
 
     return (
-      <TouchableOpacity
-        style={isMobile ? styles.cardWrapperMobile : styles.cardWrapperGrid}
+      <Pressable
+        className={isMobile ? 'w-full max-w-[430px] mt-3' : 'flex-1 mt-3'}
         onPress={() => router.push(`/(dashboard)/my-requests/${item.id}`)}
-        activeOpacity={0.75}
       >
-        <Card padding={Spacing.lg}>
+        <Card padding={16}>
           {/* Title */}
-          <Text style={styles.titleText} numberOfLines={2}>
+          <Text className="text-base font-semibold text-textPrimary mb-2 leading-[22px]" numberOfLines={2}>
             {title}
           </Text>
 
           {/* City + date row */}
-          <View style={styles.metaRow}>
-            <View style={styles.cityChip}>
-              <Text style={styles.cityText}>{item.city}</Text>
+          <View className="flex-row justify-between items-center mb-2">
+            <View className="bg-bgSecondary px-2 py-0.5 rounded-full border border-borderLight">
+              <Text className="text-xs text-textSecondary font-medium">{item.city}</Text>
             </View>
-            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+            <Text className="text-xs text-textMuted">{formatDate(item.createdAt)}</Text>
           </View>
 
           {/* Budget + Category */}
           {(item.budget != null || item.category) ? (
-            <View style={styles.tagsRow}>
+            <View className="flex-row items-center gap-2 mb-2">
               {item.category ? (
-                <View style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>{item.category}</Text>
+                <View className="bg-bgSecondary px-2 py-0.5 rounded-full border border-borderLight">
+                  <Text className="text-xs text-brandPrimary font-medium">{item.category}</Text>
                 </View>
               ) : null}
               {item.budget != null ? (
-                <Text style={styles.budgetText}>{item.budget.toLocaleString('ru-RU')} &#8381;</Text>
+                <Text className="text-xs text-textSecondary font-medium">{item.budget.toLocaleString('ru-RU')} &#8381;</Text>
               ) : null}
             </View>
           ) : null}
 
           {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.responsesBtn}
+          <View className="flex-row justify-between items-center pt-2 border-t border-border">
+            <Pressable
+              className="py-0.5"
               onPress={() => router.push(`/(dashboard)/my-requests/${item.id}`)}
-              activeOpacity={0.7}
             >
-              <Text style={styles.responsesBtnText}>
+              <Text className="text-sm text-brandPrimary font-medium">
                 {responseCount > 0
                   ? `Смотреть отклики (${responseCount})`
                   : 'Нет откликов'}
               </Text>
-            </TouchableOpacity>
-            <View style={[styles.statusChip, { backgroundColor: statusCfg.bg }]}>
-              <Text style={[styles.statusText, { color: statusCfg.color }]}>
+            </Pressable>
+            <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: statusCfg.bg }}>
+              <Text className="text-xs font-medium" style={{ color: statusCfg.color }}>
                 {statusCfg.label}
               </Text>
             </View>
           </View>
         </Card>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       {isMobile && <Header title="Мои запросы" showBack={isMobile} />}
 
       {/* Tabs */}
-      <View style={[styles.tabs, !isMobile && styles.tabsWide]}>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'active' && styles.tabActive]}
+      <View className={`flex-row px-4 pt-3 pb-2 gap-2 self-center w-full ${isMobile ? 'max-w-[430px]' : 'max-w-[500px] self-start'}`}>
+        <Pressable
+          className={`flex-1 h-10 rounded-lg items-center justify-center border ${tab === 'active' ? 'border-brandPrimary' : 'border-border bg-bgCard'}`}
+          style={tab === 'active' ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
           onPress={() => setTab('active')}
         >
-          <Text style={[styles.tabText, tab === 'active' && styles.tabTextActive]}>
+          <Text className={`text-sm font-medium ${tab === 'active' ? 'text-white font-semibold' : 'text-textMuted'}`}>
             Активные
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'closed' && styles.tabActive]}
+        </Pressable>
+        <Pressable
+          className={`flex-1 h-10 rounded-lg items-center justify-center border ${tab === 'closed' ? 'border-brandPrimary' : 'border-border bg-bgCard'}`}
+          style={tab === 'closed' ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
           onPress={() => setTab('closed')}
         >
-          <Text style={[styles.tabText, tab === 'closed' && styles.tabTextActive]}>
+          <Text className={`text-sm font-medium ${tab === 'closed' ? 'text-white font-semibold' : 'text-textMuted'}`}>
             Закрытые
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <FlatList
@@ -211,11 +209,12 @@ export default function MyRequestsScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         numColumns={numColumns}
-        contentContainerStyle={[
-          styles.listContent,
-          !isMobile && styles.listContentWide,
-        ]}
-        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingBottom: 32,
+          alignItems: isMobile ? 'center' : 'stretch',
+        }}
+        columnWrapperStyle={numColumns > 1 ? { gap: 12, marginBottom: 12 } : undefined}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -226,7 +225,7 @@ export default function MyRequestsScreen() {
         }
         ListEmptyComponent={
           loading ? (
-            <View style={styles.loadingBox}>
+            <View className="pt-10 items-center">
               <ActivityIndicator size="large" color={Colors.brandPrimary} />
             </View>
           ) : error ? (
@@ -249,11 +248,11 @@ export default function MyRequestsScreen() {
         }
         ListFooterComponent={
           !loading && filtered.length > 0 && isClient ? (
-            <View style={[styles.footerBtn, !isMobile && styles.footerBtnWide]}>
+            <View className={`w-full pt-5 ${isMobile ? 'max-w-[430px]' : 'max-w-[250px]'}`}>
               <Button
                 onPress={() => router.push('/(dashboard)/my-requests/new')}
                 variant="primary"
-                style={styles.createBtn}
+                style={{ width: '100%' }}
               >
                 Создать запрос
               </Button>
@@ -261,165 +260,6 @@ export default function MyRequestsScreen() {
           ) : null
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  tabs: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-    gap: Spacing.sm,
-    alignSelf: 'center',
-    maxWidth: 430,
-    width: '100%',
-  },
-  tabsWide: {
-    maxWidth: 500,
-    alignSelf: 'flex-start',
-  },
-  tab: {
-    flex: 1,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tabActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  tabText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textMuted,
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-    alignItems: 'center',
-  },
-  listContentWide: {
-    alignItems: 'stretch',
-  },
-  columnWrapper: {
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  cardWrapperMobile: {
-    width: '100%',
-    maxWidth: 430,
-    marginTop: Spacing.md,
-  },
-  cardWrapperGrid: {
-    flex: 1,
-    marginTop: Spacing.md,
-  },
-  titleText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-    lineHeight: 22,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  cityChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  cityText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  dateText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  categoryChip: {
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  categoryText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  budgetText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  responsesBtn: {
-    paddingVertical: Spacing.xxs,
-  },
-  responsesBtnText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  statusChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  loadingBox: {
-    paddingTop: Spacing['4xl'],
-    alignItems: 'center',
-  },
-  footerBtn: {
-    width: '100%',
-    maxWidth: 430,
-    paddingTop: Spacing.xl,
-  },
-  footerBtnWide: {
-    maxWidth: 250,
-  },
-  createBtn: {
-    width: '100%',
-  },
-});

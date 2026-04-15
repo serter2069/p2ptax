@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -13,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
@@ -94,25 +92,25 @@ export default function SpecialistProfileSetupScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <Header title="Настройка профиля" />
       <KeyboardAvoidingView
-        style={styles.kav}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.container}>
-            <Text style={styles.subtitle}>
+          <View className="w-full max-w-[430px] px-5 gap-5">
+            <Text className="text-base text-textSecondary text-center">
               Заполните профиль, чтобы клиенты могли вас найти
             </Text>
 
             {/* Nick + Contacts */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Основное</Text>
+            <View className="gap-2">
+              <Text className="text-base font-semibold text-textPrimary mb-0.5">Основное</Text>
               <Input
                 label="Ник (уникальный)"
                 value={nick}
@@ -126,7 +124,7 @@ export default function SpecialistProfileSetupScreen() {
                 onChangeText={setHeadline}
                 placeholder="Решу ваш вопрос с ФНС быстро"
                 autoCapitalize="sentences"
-                style={styles.inputGap}
+                style={{ marginTop: 8 }}
               />
               <Input
                 label="Контакты (необязательно)"
@@ -134,72 +132,82 @@ export default function SpecialistProfileSetupScreen() {
                 onChangeText={setContacts}
                 placeholder="Telegram: @username, тел: +7..."
                 autoCapitalize="sentences"
-                style={styles.inputGap}
+                style={{ marginTop: 8 }}
               />
             </View>
 
             {/* Cities */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Города работы</Text>
-              <View style={styles.addRow}>
+            <View className="gap-2">
+              <Text className="text-base font-semibold text-textPrimary mb-0.5">Города работы</Text>
+              <View className="flex-row gap-2 items-center">
                 <TextInput
                   value={cityInput}
                   onChangeText={setCityInput}
                   placeholder="Добавить город..."
                   placeholderTextColor={Colors.textMuted}
-                  style={[styles.addInput, { outlineStyle: 'none' } as any]}
+                  className="flex-1 h-11 bg-bgCard border border-border rounded-lg px-4 text-base text-textPrimary"
+                  style={{ outlineStyle: 'none' } as any}
                   autoCapitalize="words"
                   returnKeyType="done"
                   onSubmitEditing={addCity}
                 />
-                <TouchableOpacity style={styles.addBtn} onPress={addCity}>
-                  <Text style={styles.addBtnText}>{'+'}</Text>
-                </TouchableOpacity>
+                <Pressable
+                  className="w-11 h-11 rounded-lg items-center justify-center"
+                  style={{ backgroundColor: Colors.brandPrimary }}
+                  onPress={addCity}
+                >
+                  <Text className="text-2xl text-textPrimary leading-7">{'+'}</Text>
+                </Pressable>
               </View>
               {cities.length === 0 && (
-                <Text style={styles.emptyHint}>Нет городов — добавьте хотя бы один</Text>
+                <Text className="text-xs text-textMuted italic">Нет городов — добавьте хотя бы один</Text>
               )}
-              <View style={styles.tagList}>
+              <View className="flex-row flex-wrap gap-2 mt-1">
                 {cities.map((city, idx) => (
-                  <View key={idx} style={styles.tag}>
-                    <Text style={styles.tagText}>{city}</Text>
-                    <TouchableOpacity onPress={() => removeCity(idx)} hitSlop={8}>
-                      <Text style={styles.tagRemove}>{'×'}</Text>
-                    </TouchableOpacity>
+                  <View key={idx} className="flex-row items-center bg-bgSecondary rounded-full px-3 py-1.5 border border-borderLight gap-1">
+                    <Text className="text-sm text-textSecondary">{city}</Text>
+                    <Pressable onPress={() => removeCity(idx)} hitSlop={8}>
+                      <Text className="text-base text-textMuted leading-[18px]">{'×'}</Text>
+                    </Pressable>
                   </View>
                 ))}
               </View>
             </View>
 
             {/* Services */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Услуги и цены</Text>
-              <Text style={styles.sectionHint}>Формат: "Название — 5000 руб"</Text>
-              <View style={styles.addRow}>
+            <View className="gap-2">
+              <Text className="text-base font-semibold text-textPrimary mb-0.5">Услуги и цены</Text>
+              <Text className="text-xs text-textMuted mb-1">Формат: "Название — 5000 руб"</Text>
+              <View className="flex-row gap-2 items-center">
                 <TextInput
                   value={serviceInput}
                   onChangeText={setServiceInput}
                   placeholder="Консультация — 3000 руб"
                   placeholderTextColor={Colors.textMuted}
-                  style={[styles.addInput, styles.addInputWide, { outlineStyle: 'none' } as any]}
+                  className="flex-1 h-11 bg-bgCard border border-border rounded-lg px-4 text-base text-textPrimary"
+                  style={{ outlineStyle: 'none' } as any}
                   autoCapitalize="sentences"
                   returnKeyType="done"
                   onSubmitEditing={addService}
                 />
-                <TouchableOpacity style={styles.addBtn} onPress={addService}>
-                  <Text style={styles.addBtnText}>{'+'}</Text>
-                </TouchableOpacity>
+                <Pressable
+                  className="w-11 h-11 rounded-lg items-center justify-center"
+                  style={{ backgroundColor: Colors.brandPrimary }}
+                  onPress={addService}
+                >
+                  <Text className="text-2xl text-textPrimary leading-7">{'+'}</Text>
+                </Pressable>
               </View>
               {services.length === 0 && (
-                <Text style={styles.emptyHint}>Нет услуг — добавьте хотя бы одну</Text>
+                <Text className="text-xs text-textMuted italic">Нет услуг — добавьте хотя бы одну</Text>
               )}
-              <View style={styles.serviceList}>
+              <View className="gap-2 mt-1">
                 {services.map((svc, idx) => (
-                  <View key={idx} style={styles.serviceRow}>
-                    <Text style={styles.serviceText} numberOfLines={2}>{svc}</Text>
-                    <TouchableOpacity onPress={() => removeService(idx)} hitSlop={8}>
-                      <Text style={styles.tagRemove}>{'×'}</Text>
-                    </TouchableOpacity>
+                  <View key={idx} className="flex-row items-center bg-bgCard rounded-lg px-4 py-3 border border-border gap-2">
+                    <Text className="flex-1 text-sm text-textSecondary" numberOfLines={2}>{svc}</Text>
+                    <Pressable onPress={() => removeService(idx)} hitSlop={8}>
+                      <Text className="text-base text-textMuted leading-[18px]">{'×'}</Text>
+                    </Pressable>
                   </View>
                 ))}
               </View>
@@ -210,144 +218,13 @@ export default function SpecialistProfileSetupScreen() {
               variant="primary"
               loading={saving}
               disabled={saving}
-              style={styles.submitBtn}
+              style={{ width: '100%', marginTop: 12, marginBottom: 32 }}
             >
               Создать профиль
             </Button>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  kav: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xl,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  section: {
-    gap: Spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  sectionHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginBottom: Spacing.xs,
-  },
-  inputGap: {
-    marginTop: Spacing.sm,
-  },
-  addRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    alignItems: 'center',
-  },
-  addInput: {
-    flex: 1,
-    height: 44,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  addInputWide: {
-    flex: 1,
-  },
-  addBtn: {
-    width: 44,
-    height: 44,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtnText: {
-    fontSize: Typography.fontSize['2xl'],
-    color: Colors.textPrimary,
-    lineHeight: 28,
-  },
-  tagList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    gap: Spacing.xs,
-  },
-  tagText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  tagRemove: {
-    fontSize: Typography.fontSize.md,
-    color: Colors.textMuted,
-    lineHeight: 18,
-  },
-  serviceList: {
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  serviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  serviceText: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  emptyHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontStyle: 'italic',
-  },
-  submitBtn: {
-    width: '100%',
-    marginTop: Spacing.md,
-    marginBottom: Spacing['3xl'],
-  },
-});

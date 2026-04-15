@@ -2,19 +2,17 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   TextInput,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 import { Avatar } from '../components/Avatar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Header } from '../components/Header';
@@ -157,78 +155,83 @@ export default function SearchScreen() {
   function renderResultItem({ item }: { item: ResultItem }) {
     if (item._type === 'request') {
       return (
-        <TouchableOpacity
+        <Pressable
           onPress={() => router.push(`/request/${item.id}` as any)}
-          activeOpacity={0.8}
-          style={styles.resultCard}
+          className="bg-bgCard border border-border rounded-lg p-3 mb-2 shadow-sm"
         >
-          <View style={styles.resultTypeTag}>
-            <Ionicons name="document-text-outline" size={14} color={Colors.brandPrimary} />
-            <Text style={styles.resultTypeText}>Заявка</Text>
+          <View className="flex-row items-center gap-1 mb-2">
+            <Feather name="file-text" size={14} color={Colors.brandPrimary} />
+            <Text className="text-xs text-brandPrimary font-semibold uppercase tracking-wide">Заявка</Text>
           </View>
-          <Text style={styles.resultTitle} numberOfLines={2}>{item.title}</Text>
+          <Text className="text-base font-bold text-textPrimary" numberOfLines={2}>{item.title}</Text>
           {item.description && (
-            <Text style={styles.resultDescription} numberOfLines={2}>
+            <Text className="text-sm text-textSecondary mt-0.5" numberOfLines={2}>
               {item.description}
             </Text>
           )}
-          <View style={styles.resultMeta}>
-            <Text style={styles.resultMetaText}>{item.city}</Text>
+          <View className="flex-row flex-wrap gap-2 mt-2">
+            <Text className="text-xs text-textMuted">{item.city}</Text>
             {item.budget && (
-              <Text style={styles.resultMetaText}>
+              <Text className="text-xs text-textMuted">
                 {item.budget.toLocaleString()} &#8381;
               </Text>
             )}
-            <Text style={styles.resultMetaText}>
+            <Text className="text-xs text-textMuted">
               {item.responseCount} {item.responseCount === 1 ? 'отклик' : 'откликов'}
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       );
     }
 
     // Specialist
     const displayName = item.displayName || `@${item.nick}`;
     return (
-      <TouchableOpacity
+      <Pressable
         onPress={() => router.push(`/specialists/${item.nick}`)}
-        activeOpacity={0.8}
-        style={styles.resultCard}
+        className="bg-bgCard border border-border rounded-lg p-3 mb-2 shadow-sm"
       >
-        <View style={styles.resultTypeTag}>
-          <Ionicons name="person-outline" size={14} color={Colors.statusSuccess} />
-          <Text style={[styles.resultTypeText, { color: Colors.statusSuccess }]}>
+        <View className="flex-row items-center gap-1 mb-2">
+          <Feather name="user" size={14} color={Colors.statusSuccess} />
+          <Text className="text-xs font-semibold uppercase tracking-wide" style={{ color: Colors.statusSuccess }}>
             Специалист
           </Text>
         </View>
-        <View style={styles.specialistRow}>
+        <View className="flex-row items-center gap-3">
           <Avatar name={displayName} imageUri={item.avatarUrl || undefined} size="md" />
-          <View style={styles.specialistInfo}>
-            <Text style={styles.resultTitle} numberOfLines={1}>{displayName}</Text>
+          <View className="flex-1 gap-0.5">
+            <Text className="text-base font-bold text-textPrimary" numberOfLines={1}>{displayName}</Text>
             {item.headline && (
-              <Text style={styles.resultDescription} numberOfLines={2}>
+              <Text className="text-sm text-textSecondary" numberOfLines={2}>
                 {item.headline}
               </Text>
             )}
-            <Text style={styles.resultMetaText} numberOfLines={1}>
+            <Text className="text-xs text-textMuted" numberOfLines={1}>
               {item.cities.slice(0, 3).join(', ')}
               {item.cities.length > 3 ? ` +${item.cities.length - 3}` : ''}
             </Text>
           </View>
         </View>
         {item.services.length > 0 && (
-          <View style={styles.servicesRow}>
+          <View className="flex-row flex-wrap gap-1 mt-2">
             {item.services.slice(0, 3).map((svc, idx) => (
-              <Text key={idx} style={styles.serviceChip} numberOfLines={1}>
+              <Text
+                key={idx}
+                className="text-[11px] px-2 py-0.5 rounded-full overflow-hidden"
+                style={{ color: '#4A6B88', backgroundColor: '#F0F4FA' }}
+                numberOfLines={1}
+              >
                 {svc}
               </Text>
             ))}
             {item.services.length > 3 && (
-              <Text style={styles.serviceMore}>+{item.services.length - 3}</Text>
+              <Text className="text-[11px] px-1.5 py-0.5" style={{ color: '#4A6B88' }}>
+                +{item.services.length - 3}
+              </Text>
             )}
           </View>
         )}
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
@@ -242,7 +245,7 @@ export default function SearchScreen() {
   const showRecent = !hasQuery && recentSearches.length > 0;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <Stack.Screen options={{ title: 'Поиск' }} />
       <LandingHeader />
       <Header
@@ -250,7 +253,7 @@ export default function SearchScreen() {
         showBack
         rightAction={
           hasQuery ? (
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 setQuery('');
                 setResults(null);
@@ -258,17 +261,18 @@ export default function SearchScreen() {
               }}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Ionicons name="close-circle" size={22} color={Colors.textMuted} />
-            </TouchableOpacity>
+              <Feather name="x-circle" size={22} color={Colors.textMuted} />
+            </Pressable>
           ) : undefined
         }
       />
 
-      <View style={[styles.searchBar, !isMobile && styles.searchBarWide]}>
-        <Ionicons name="search" size={20} color={Colors.textMuted} style={styles.searchIcon} />
+      <View className={`flex-row items-center mx-4 mt-3 border border-border rounded-lg bg-bgCard px-3 ${!isMobile ? 'max-w-[600px] self-center w-full' : ''}`}>
+        <Feather name="search" size={20} color={Colors.textMuted} style={{ marginRight: 8 }} />
         <TextInput
           ref={inputRef}
-          style={[styles.searchInput, { outlineStyle: 'none' } as any]}
+          className="flex-1 py-3 text-base text-textPrimary"
+          style={{ outlineStyle: 'none' } as any}
           value={query}
           onChangeText={setQuery}
           placeholder="Поиск заявок и специалистов..."
@@ -281,11 +285,11 @@ export default function SearchScreen() {
 
       {/* Tabs */}
       {hasQuery && (
-        <View style={[styles.tabsContainer, !isMobile && styles.tabsContainerWide]}>
+        <View className={`mx-4 mt-3 ${!isMobile ? 'max-w-[600px] self-center w-full' : ''}`}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabsRow}
+            contentContainerStyle={{ flexDirection: 'row', gap: 8 }}
           >
             {tabs.map((tab) => {
               const isActive = activeTab === tab.key;
@@ -296,17 +300,19 @@ export default function SearchScreen() {
                 else count = results.specialists.total;
               }
               return (
-                <TouchableOpacity
+                <Pressable
                   key={tab.key}
                   onPress={() => setActiveTab(tab.key)}
-                  style={[styles.tab, isActive && styles.tabActive]}
-                  activeOpacity={0.7}
+                  className={`py-2 px-4 rounded-full border ${isActive ? 'border-brandPrimary' : 'border-border bg-bgCard'}`}
+                  style={isActive ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
                 >
-                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                  <Text
+                    className={`text-sm ${isActive ? 'text-white font-semibold' : 'text-textSecondary'}`}
+                  >
                     {tab.label}
                     {results ? ` (${count})` : ''}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -315,23 +321,22 @@ export default function SearchScreen() {
 
       {/* Recent searches */}
       {showRecent && (
-        <View style={[styles.recentContainer, !isMobile && styles.recentContainerWide]}>
-          <View style={styles.recentHeader}>
-            <Text style={styles.recentTitle}>Недавние запросы</Text>
-            <TouchableOpacity onPress={clearRecentSearches}>
-              <Text style={styles.recentClear}>Очистить</Text>
-            </TouchableOpacity>
+        <View className={`mx-4 mt-5 ${!isMobile ? 'max-w-[600px] self-center w-full' : ''}`}>
+          <View className="flex-row justify-between items-center mb-3">
+            <Text className="text-sm font-semibold text-textPrimary">Недавние запросы</Text>
+            <Pressable onPress={clearRecentSearches}>
+              <Text className="text-sm text-textAccent">Очистить</Text>
+            </Pressable>
           </View>
           {recentSearches.map((term, idx) => (
-            <TouchableOpacity
+            <Pressable
               key={idx}
               onPress={() => handleRecentPress(term)}
-              style={styles.recentItem}
-              activeOpacity={0.7}
+              className="flex-row items-center gap-2 py-2 border-b border-borderLight"
             >
-              <Ionicons name="time-outline" size={16} color={Colors.textMuted} />
-              <Text style={styles.recentText} numberOfLines={1}>{term}</Text>
-            </TouchableOpacity>
+              <Feather name="clock" size={16} color={Colors.textMuted} />
+              <Text className="text-base text-textPrimary flex-1" numberOfLines={1}>{term}</Text>
+            </Pressable>
           ))}
         </View>
       )}
@@ -344,14 +349,16 @@ export default function SearchScreen() {
             item._type === 'request' ? `req-${item.id}` : `spec-${item.nick}`
           }
           renderItem={renderResultItem}
-          contentContainerStyle={[
-            styles.listContent,
-            !isMobile && styles.listContentWide,
-          ]}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 12,
+            paddingBottom: 32,
+            ...((!isMobile) ? { maxWidth: 600, alignSelf: 'center' as const, width: '100%' } : {}),
+          }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             loading ? (
-              <View style={styles.centerBox}>
+              <View className="flex-1 justify-center items-center pt-10 gap-3">
                 <ActivityIndicator size="large" color={Colors.brandPrimary} />
               </View>
             ) : error ? (
@@ -373,206 +380,11 @@ export default function SearchScreen() {
 
       {/* Empty initial state when no query and no recent */}
       {!hasQuery && !showRecent && (
-        <View style={styles.centerBox}>
-          <Ionicons name="search" size={48} color={Colors.border} />
-          <Text style={styles.emptyHint}>Введите запрос для поиска</Text>
+        <View className="flex-1 justify-center items-center pt-10 gap-3">
+          <Feather name="search" size={48} color={Colors.border} />
+          <Text className="text-base text-textMuted">Введите запрос для поиска</Text>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard,
-    paddingHorizontal: Spacing.md,
-  },
-  searchBarWide: {
-    maxWidth: 600,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  searchIcon: {
-    marginRight: Spacing.sm,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  tabsContainer: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.md,
-  },
-  tabsContainerWide: {
-    maxWidth: 600,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  tab: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  tabActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  tabText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  tabTextActive: {
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  recentContainer: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.xl,
-  },
-  recentContainerWide: {
-    maxWidth: 600,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  recentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  recentTitle: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  recentClear: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textAccent,
-  },
-  recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  recentText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing['3xl'],
-  },
-  listContentWide: {
-    maxWidth: 600,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  resultCard: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    ...Shadows.sm,
-  },
-  resultTypeTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: Spacing.sm,
-  },
-  resultTypeText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  resultTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  resultDescription: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  resultMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  resultMetaText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  specialistRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  specialistInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  servicesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: Spacing.sm,
-  },
-  serviceChip: {
-    fontSize: 11,
-    color: '#4A6B88',
-    backgroundColor: '#F0F4FA',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
-  },
-  serviceMore: {
-    fontSize: 11,
-    color: '#4A6B88',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  centerBox: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: Spacing['4xl'],
-    gap: Spacing.md,
-  },
-  emptyHint: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-  },
-});

@@ -2,18 +2,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../stores/authStore';
 import { api, ApiError } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
@@ -104,144 +102,136 @@ export default function DashboardHub() {
   const isClient = user?.role !== 'SPECIALIST';
 
   const statsSection = (
-    <View style={styles.statsRow}>
-      <TouchableOpacity
-        style={styles.statCard}
+    <View className="flex-row gap-3 flex-wrap">
+      <Pressable
+        className="bg-bgCard rounded-xl border border-border p-5 min-w-[100px] flex-1 items-center gap-1 shadow-sm"
         onPress={() => router.push('/(dashboard)/my-requests')}
-        activeOpacity={0.7}
       >
         {loading ? (
-          <View style={styles.statSkeleton} />
+          <View className="w-8 h-6 rounded bg-bgSecondary" />
         ) : (
-          <Text style={styles.statValue}>{requestCount}</Text>
+          <Text className="text-2xl font-bold text-brandPrimary">{requestCount}</Text>
         )}
-        <Text style={styles.statLabel}>Всего запросов</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.statCard}
+        <Text className="text-xs text-textMuted text-center">Всего запросов</Text>
+      </Pressable>
+      <Pressable
+        className="bg-bgCard rounded-xl border border-border p-5 min-w-[100px] flex-1 items-center gap-1 shadow-sm"
         onPress={() => router.push('/(dashboard)/my-requests')}
-        activeOpacity={0.7}
       >
         {loading ? (
-          <View style={styles.statSkeleton} />
+          <View className="w-8 h-6 rounded bg-bgSecondary" />
         ) : (
-          <Text style={styles.statValue}>{activeCount}</Text>
+          <Text className="text-2xl font-bold text-brandPrimary">{activeCount}</Text>
         )}
-        <Text style={styles.statLabel}>Активных</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.statCard}
+        <Text className="text-xs text-textMuted text-center">Активных</Text>
+      </Pressable>
+      <Pressable
+        className="bg-bgCard rounded-xl border border-border p-5 min-w-[100px] flex-1 items-center gap-1 shadow-sm"
         onPress={() => router.push('/(dashboard)/messages')}
-        activeOpacity={0.7}
       >
         {loading ? (
-          <View style={styles.statSkeleton} />
+          <View className="w-8 h-6 rounded bg-bgSecondary" />
         ) : (
-          <Text style={styles.statValue}>{threadCount}</Text>
+          <Text className="text-2xl font-bold text-brandPrimary">{threadCount}</Text>
         )}
-        <Text style={styles.statLabel}>Диалогов</Text>
-      </TouchableOpacity>
+        <Text className="text-xs text-textMuted text-center">Диалогов</Text>
+      </Pressable>
     </View>
   );
 
   const quickActions = (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Быстрые действия</Text>
-      <View style={styles.actionsRow}>
+    <View className="gap-3">
+      <Text className="text-base font-semibold text-textPrimary">Быстрые действия</Text>
+      <View className="flex-row gap-3 flex-wrap">
         {isClient ? (
           <>
-            <TouchableOpacity
-              style={styles.actionCard}
+            <Pressable
+              className="bg-bgCard rounded-xl border border-border p-4 flex-1 min-w-[100px] items-center gap-2 shadow-sm"
               onPress={() => router.push('/(dashboard)/my-requests/new')}
-              activeOpacity={0.7}
             >
-              <View style={styles.actionIconWrap}>
-                <Ionicons name="document-text-outline" size={22} color={Colors.brandPrimary} />
+              <View className="w-11 h-11 rounded-full bg-bgSecondary items-center justify-center">
+                <Feather name="file-text" size={22} color={Colors.brandPrimary} />
               </View>
-              <Text style={styles.actionLabel}>Создать запрос</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionCard}
+              <Text className="text-sm font-medium text-textPrimary text-center">Создать запрос</Text>
+            </Pressable>
+            <Pressable
+              className="bg-bgCard rounded-xl border border-border p-4 flex-1 min-w-[100px] items-center gap-2 shadow-sm"
               onPress={() => router.push('/specialists' as any)}
-              activeOpacity={0.7}
             >
-              <View style={styles.actionIconWrap}>
-                <Ionicons name="search-outline" size={22} color={Colors.brandPrimary} />
+              <View className="w-11 h-11 rounded-full bg-bgSecondary items-center justify-center">
+                <Feather name="search" size={22} color={Colors.brandPrimary} />
               </View>
-              <Text style={styles.actionLabel}>Найти специалиста</Text>
-            </TouchableOpacity>
+              <Text className="text-sm font-medium text-textPrimary text-center">Найти специалиста</Text>
+            </Pressable>
           </>
         ) : (
           <>
-            <TouchableOpacity
-              style={styles.actionCard}
+            <Pressable
+              className="bg-bgCard rounded-xl border border-border p-4 flex-1 min-w-[100px] items-center gap-2 shadow-sm"
               onPress={() => router.push('/(dashboard)/city-requests')}
-              activeOpacity={0.7}
             >
-              <View style={styles.actionIconWrap}>
-                <Ionicons name="location-outline" size={22} color={Colors.brandPrimary} />
+              <View className="w-11 h-11 rounded-full bg-bgSecondary items-center justify-center">
+                <Feather name="map-pin" size={22} color={Colors.brandPrimary} />
               </View>
-              <Text style={styles.actionLabel}>Запросы города</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionCard}
+              <Text className="text-sm font-medium text-textPrimary text-center">Запросы города</Text>
+            </Pressable>
+            <Pressable
+              className="bg-bgCard rounded-xl border border-border p-4 flex-1 min-w-[100px] items-center gap-2 shadow-sm"
               onPress={() => router.push('/(dashboard)/responses')}
-              activeOpacity={0.7}
             >
-              <View style={styles.actionIconWrap}>
-                <Ionicons name="checkmark-circle-outline" size={22} color={Colors.brandPrimary} />
+              <View className="w-11 h-11 rounded-full bg-bgSecondary items-center justify-center">
+                <Feather name="check-circle" size={22} color={Colors.brandPrimary} />
               </View>
-              <Text style={styles.actionLabel}>Мои отклики</Text>
-            </TouchableOpacity>
+              <Text className="text-sm font-medium text-textPrimary text-center">Мои отклики</Text>
+            </Pressable>
           </>
         )}
-        <TouchableOpacity
-          style={styles.actionCard}
+        <Pressable
+          className="bg-bgCard rounded-xl border border-border p-4 flex-1 min-w-[100px] items-center gap-2 shadow-sm"
           onPress={() => router.push('/(dashboard)/messages')}
-          activeOpacity={0.7}
         >
-          <View style={styles.actionIconWrap}>
-            <Ionicons name="chatbubble-outline" size={22} color={Colors.brandPrimary} />
+          <View className="w-11 h-11 rounded-full bg-bgSecondary items-center justify-center">
+            <Feather name="message-circle" size={22} color={Colors.brandPrimary} />
           </View>
-          <Text style={styles.actionLabel}>Мои сообщения</Text>
-        </TouchableOpacity>
+          <Text className="text-sm font-medium text-textPrimary text-center">Мои сообщения</Text>
+        </Pressable>
       </View>
     </View>
   );
 
   const welcomeSection = isClient && recentRequests.length === 0 && !loading && !loadError ? (
-    <View style={styles.welcomeCard}>
-      <Text style={styles.welcomeTitle}>Добро пожаловать!</Text>
-      <Text style={styles.welcomeSubtitle}>Вот как это работает:</Text>
+    <View className="bg-bgCard rounded-xl border border-border p-6 gap-4 shadow-sm">
+      <Text className="text-xl font-bold text-textPrimary">Добро пожаловать!</Text>
+      <Text className="text-base text-textSecondary -mt-2">Вот как это работает:</Text>
 
-      <View style={styles.welcomeSteps}>
-        <View style={styles.welcomeStep}>
-          <View style={styles.stepBadge}>
-            <Text style={styles.stepBadgeText}>1</Text>
+      <View className="gap-4">
+        <View className="flex-row items-start gap-3">
+          <View className="w-7 h-7 rounded-full bg-brandPrimary items-center justify-center shrink-0 mt-0.5">
+            <Text className="text-sm font-bold text-white">1</Text>
           </View>
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Опишите проблему</Text>
-            <Text style={styles.stepDesc}>Расскажите о своей налоговой ситуации</Text>
+          <View className="flex-1 gap-0.5">
+            <Text className="text-base font-semibold text-textPrimary">Опишите проблему</Text>
+            <Text className="text-sm text-textSecondary leading-5">Расскажите о своей налоговой ситуации</Text>
           </View>
         </View>
 
-        <View style={styles.welcomeStep}>
-          <View style={styles.stepBadge}>
-            <Text style={styles.stepBadgeText}>2</Text>
+        <View className="flex-row items-start gap-3">
+          <View className="w-7 h-7 rounded-full bg-brandPrimary items-center justify-center shrink-0 mt-0.5">
+            <Text className="text-sm font-bold text-white">2</Text>
           </View>
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Получите ответы</Text>
-            <Text style={styles.stepDesc}>Специалисты из вашего города предложат решения</Text>
+          <View className="flex-1 gap-0.5">
+            <Text className="text-base font-semibold text-textPrimary">Получите ответы</Text>
+            <Text className="text-sm text-textSecondary leading-5">Специалисты из вашего города предложат решения</Text>
           </View>
         </View>
 
-        <View style={styles.welcomeStep}>
-          <View style={styles.stepBadge}>
-            <Text style={styles.stepBadgeText}>3</Text>
+        <View className="flex-row items-start gap-3">
+          <View className="w-7 h-7 rounded-full bg-brandPrimary items-center justify-center shrink-0 mt-0.5">
+            <Text className="text-sm font-bold text-white">3</Text>
           </View>
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Выберите подходящего</Text>
-            <Text style={styles.stepDesc}>Сравните и выберите специалиста</Text>
+          <View className="flex-1 gap-0.5">
+            <Text className="text-base font-semibold text-textPrimary">Выберите подходящего</Text>
+            <Text className="text-sm text-textSecondary leading-5">Сравните и выберите специалиста</Text>
           </View>
         </View>
       </View>
@@ -249,7 +239,7 @@ export default function DashboardHub() {
       <Button
         onPress={() => router.push('/(dashboard)/my-requests/new')}
         variant="primary"
-        style={styles.welcomeBtn}
+        style={{ width: '100%', marginTop: 8 }}
       >
         Создать первый запрос
       </Button>
@@ -257,42 +247,47 @@ export default function DashboardHub() {
   ) : null;
 
   const recentSection = isClient ? (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Последние запросы</Text>
+    <View className="gap-3">
+      <Text className="text-base font-semibold text-textPrimary">Последние запросы</Text>
       {recentRequests.length === 0 ? (
-        <View style={styles.emptyRecent}>
-          <Text style={styles.emptyRecentText}>Создайте первый запрос</Text>
+        <View className="bg-bgCard rounded-lg border border-border p-6 items-center gap-3">
+          <Text className="text-base text-textMuted">Создайте первый запрос</Text>
           <Button
             onPress={() => router.push('/(dashboard)/my-requests/new')}
             variant="primary"
-            style={styles.emptyBtn}
+            style={{ minWidth: 180 }}
           >
             Создать запрос
           </Button>
         </View>
       ) : (
         recentRequests.map((req) => (
-          <TouchableOpacity
+          <Pressable
             key={req.id}
-            style={styles.recentCard}
+            className="bg-bgCard rounded-lg border border-border p-4 gap-2"
             onPress={() => router.push(`/(dashboard)/my-requests/${req.id}`)}
-            activeOpacity={0.7}
           >
-            <View style={styles.recentTop}>
-              <Text style={styles.recentTitle} numberOfLines={1}>
+            <View className="flex-row justify-between items-center gap-2">
+              <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={1}>
                 {req.description.slice(0, 60)}
               </Text>
-              <View style={[styles.recentStatus, req.status !== 'OPEN' && styles.recentStatusClosed]}>
-                <Text style={[styles.recentStatusText, req.status !== 'OPEN' && styles.recentStatusTextClosed]}>
+              <View
+                className="px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: req.status === 'OPEN' ? Colors.bgSecondary : '#FEF3C7' }}
+              >
+                <Text
+                  className="text-xs font-medium"
+                  style={{ color: req.status === 'OPEN' ? Colors.brandPrimary : Colors.textMuted }}
+                >
                   {req.status === 'OPEN' ? 'Открыт' : 'Закрыт'}
                 </Text>
               </View>
             </View>
-            <View style={styles.recentBottom}>
-              <Text style={styles.recentCity}>{req.city}</Text>
-              <Text style={styles.recentDate}>{formatDate(req.createdAt)}</Text>
+            <View className="flex-row justify-between items-center">
+              <Text className="text-xs text-textSecondary">{req.city}</Text>
+              <Text className="text-xs text-textMuted">{formatDate(req.createdAt)}</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         ))
       )}
     </View>
@@ -301,25 +296,29 @@ export default function DashboardHub() {
   // --- Desktop/tablet ---
   if (!isMobile) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View className="flex-1 bg-bgPrimary">
         <ScrollView
-          contentContainerStyle={styles.scrollWide}
+          contentContainerStyle={{ flexGrow: 1, paddingVertical: 32, paddingHorizontal: 24 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />
           }
         >
-          <View style={styles.wideContainer}>
-            <Text style={styles.wideGreeting}>
-              {`\u0414\u043E\u0431\u0440\u043E \u043F\u043E\u0436\u0430\u043B\u043E\u0432\u0430\u0442\u044C, ${displayName}`}
+          <View className="gap-6 max-w-[800px]">
+            <Text className="text-2xl font-bold text-textPrimary">
+              {`Добро пожаловать, ${displayName}`}
             </Text>
 
             {loadError ? (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorBoxText}>{loadError}</Text>
-                <TouchableOpacity onPress={() => fetchData()} style={styles.retryBtn}>
-                  <Text style={styles.retryBtnText}>Повторить</Text>
-                </TouchableOpacity>
+              <View className="mt-6 p-5 bg-bgCard rounded-lg border border-border items-center gap-3">
+                <Text className="text-base text-statusError text-center">{loadError}</Text>
+                <Pressable
+                  className="py-2 px-5 rounded-lg"
+                  style={{ backgroundColor: Colors.brandPrimary }}
+                  onPress={() => fetchData()}
+                >
+                  <Text className="text-sm text-white font-semibold">Повторить</Text>
+                </Pressable>
               </View>
             ) : (
               <>
@@ -331,40 +330,44 @@ export default function DashboardHub() {
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // --- Mobile ---
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <Header
         title="Личный кабинет"
         rightAction={
-          <TouchableOpacity onPress={handleLogout} hitSlop={12}>
-            <Text style={styles.logoutText}>Выйти</Text>
-          </TouchableOpacity>
+          <Pressable onPress={handleLogout} hitSlop={12}>
+            <Text className="text-sm font-medium" style={{ color: Colors.statusError }}>Выйти</Text>
+          </Pressable>
         }
       />
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />
         }
       >
-        <View style={styles.container}>
+        <View className="w-full max-w-[430px] px-5 gap-4">
           {/* Welcome */}
-          <Text style={styles.welcome}>
-            {`\u0414\u043E\u0431\u0440\u043E \u043F\u043E\u0436\u0430\u043B\u043E\u0432\u0430\u0442\u044C, ${displayName}`}
+          <Text className="text-lg font-bold text-textPrimary">
+            {`Добро пожаловать, ${displayName}`}
           </Text>
 
           {loadError ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorBoxText}>{loadError}</Text>
-              <TouchableOpacity onPress={() => fetchData()} style={styles.retryBtn}>
-                <Text style={styles.retryBtnText}>Повторить</Text>
-              </TouchableOpacity>
+            <View className="mt-6 p-5 bg-bgCard rounded-lg border border-border items-center gap-3">
+              <Text className="text-base text-statusError text-center">{loadError}</Text>
+              <Pressable
+                className="py-2 px-5 rounded-lg"
+                style={{ backgroundColor: Colors.brandPrimary }}
+                onPress={() => fetchData()}
+              >
+                <Text className="text-sm text-white font-semibold">Повторить</Text>
+              </Pressable>
             </View>
           ) : (
             <>
@@ -373,417 +376,105 @@ export default function DashboardHub() {
               {!loading && recentSection}
 
               {/* Navigation cards — mobile only */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Навигация</Text>
+              <View className="gap-3">
+                <Text className="text-base font-semibold text-textPrimary">Навигация</Text>
 
-                <TouchableOpacity
-                  style={styles.card}
+                <Pressable
+                  className="flex-row items-center bg-bgCard rounded-xl p-5 border border-border shadow-md"
                   onPress={() => router.push('/(dashboard)/my-requests')}
-                  activeOpacity={0.75}
                 >
-                  <View style={styles.cardIcon}>
-                    <Ionicons name="document-text-outline" size={24} color={Colors.brandPrimary} />
+                  <View className="w-12 h-12 rounded-lg bg-bgSecondary items-center justify-center mr-4">
+                    <Feather name="file-text" size={24} color={Colors.brandPrimary} />
                   </View>
-                  <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>Мои запросы</Text>
-                    <Text style={styles.cardSub}>
+                  <View className="flex-1 gap-1">
+                    <Text className="text-base font-semibold text-textPrimary">Мои запросы</Text>
+                    <Text className="text-sm text-textMuted">
                       Всего: {requestCount} | Активных: {activeCount}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-                </TouchableOpacity>
+                  <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+                </Pressable>
 
-                <TouchableOpacity
-                  style={styles.card}
+                <Pressable
+                  className="flex-row items-center bg-bgCard rounded-xl p-5 border border-border shadow-md"
                   onPress={() => router.push('/(dashboard)/messages')}
-                  activeOpacity={0.75}
                 >
-                  <View style={styles.cardIcon}>
-                    <Ionicons name="chatbubble-outline" size={24} color={Colors.brandPrimary} />
+                  <View className="w-12 h-12 rounded-lg bg-bgSecondary items-center justify-center mr-4">
+                    <Feather name="message-circle" size={24} color={Colors.brandPrimary} />
                   </View>
-                  <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>Мои диалоги</Text>
-                    <Text style={styles.cardSub}>
+                  <View className="flex-1 gap-1">
+                    <Text className="text-base font-semibold text-textPrimary">Мои диалоги</Text>
+                    <Text className="text-sm text-textMuted">
                       Диалогов: {threadCount}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-                </TouchableOpacity>
+                  <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+                </Pressable>
 
                 {user?.role === 'SPECIALIST' && (
                   <>
-                    <TouchableOpacity
-                      style={styles.card}
+                    <Pressable
+                      className="flex-row items-center bg-bgCard rounded-xl p-5 border border-border shadow-md"
                       onPress={() => router.push('/(dashboard)/profile')}
-                      activeOpacity={0.75}
                     >
-                      <View style={styles.cardIcon}>
-                        <Ionicons name="person-outline" size={24} color={Colors.brandPrimary} />
+                      <View className="w-12 h-12 rounded-lg bg-bgSecondary items-center justify-center mr-4">
+                        <Feather name="user" size={24} color={Colors.brandPrimary} />
                       </View>
-                      <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>Мой профиль</Text>
-                        <Text style={styles.cardSub}>Ник, города, услуги</Text>
+                      <View className="flex-1 gap-1">
+                        <Text className="text-base font-semibold text-textPrimary">Мой профиль</Text>
+                        <Text className="text-sm text-textMuted">Ник, города, услуги</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-                    </TouchableOpacity>
+                      <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+                    </Pressable>
 
-                    <TouchableOpacity
-                      style={styles.card}
+                    <Pressable
+                      className="flex-row items-center bg-bgCard rounded-xl p-5 border border-border shadow-md"
                       onPress={() => router.push('/(dashboard)/city-requests')}
-                      activeOpacity={0.75}
                     >
-                      <View style={styles.cardIcon}>
-                        <Ionicons name="map-outline" size={24} color={Colors.brandPrimary} />
+                      <View className="w-12 h-12 rounded-lg bg-bgSecondary items-center justify-center mr-4">
+                        <Feather name="map" size={24} color={Colors.brandPrimary} />
                       </View>
-                      <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>Запросы в моих городах</Text>
-                        <Text style={styles.cardSub}>Найти клиентов рядом</Text>
+                      <View className="flex-1 gap-1">
+                        <Text className="text-base font-semibold text-textPrimary">Запросы в моих городах</Text>
+                        <Text className="text-sm text-textMuted">Найти клиентов рядом</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-                    </TouchableOpacity>
+                      <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+                    </Pressable>
 
-                    <TouchableOpacity
-                      style={styles.card}
+                    <Pressable
+                      className="flex-row items-center bg-bgCard rounded-xl p-5 border border-border shadow-md"
                       onPress={() => router.push('/(dashboard)/responses')}
-                      activeOpacity={0.75}
                     >
-                      <View style={styles.cardIcon}>
-                        <Ionicons name="checkmark-circle-outline" size={24} color={Colors.brandPrimary} />
+                      <View className="w-12 h-12 rounded-lg bg-bgSecondary items-center justify-center mr-4">
+                        <Feather name="check-circle" size={24} color={Colors.brandPrimary} />
                       </View>
-                      <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>Мои отклики</Text>
-                        <Text style={styles.cardSub}>Запросы, на которые вы откликнулись</Text>
+                      <View className="flex-1 gap-1">
+                        <Text className="text-base font-semibold text-textPrimary">Мои отклики</Text>
+                        <Text className="text-sm text-textMuted">Запросы, на которые вы откликнулись</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-                    </TouchableOpacity>
+                      <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+                    </Pressable>
                   </>
                 )}
 
-                <TouchableOpacity
-                  style={styles.card}
+                <Pressable
+                  className="flex-row items-center bg-bgCard rounded-xl p-5 border border-border shadow-md"
                   onPress={() => router.push('/(dashboard)/settings')}
-                  activeOpacity={0.75}
                 >
-                  <View style={styles.cardIcon}>
-                    <Ionicons name="settings-outline" size={24} color={Colors.brandPrimary} />
+                  <View className="w-12 h-12 rounded-lg bg-bgSecondary items-center justify-center mr-4">
+                    <Feather name="settings" size={24} color={Colors.brandPrimary} />
                   </View>
-                  <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>Настройки</Text>
-                    <Text style={styles.cardSub}>Уведомления, аккаунт</Text>
+                  <View className="flex-1 gap-1">
+                    <Text className="text-base font-semibold text-textPrimary">Настройки</Text>
+                    <Text className="text-sm text-textMuted">Уведомления, аккаунт</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-                </TouchableOpacity>
+                  <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+                </Pressable>
               </View>
             </>
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  // Mobile
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  welcome: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  // Sections
-  section: {
-    gap: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    flexWrap: 'wrap',
-  },
-  statCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.xl,
-    minWidth: 100,
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.xs,
-    ...Shadows.sm,
-  },
-  statValue: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.brandPrimary,
-  },
-  statSkeleton: {
-    width: 32,
-    height: 24,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.bgSecondary,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-  // Quick actions
-  actionsRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    flexWrap: 'wrap',
-  },
-  actionCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.lg,
-    flex: 1,
-    minWidth: 100,
-    alignItems: 'center',
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  actionIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.statusBg.info,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  // Recent requests
-  recentCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  recentTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  recentTitle: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  recentStatus: {
-    backgroundColor: Colors.statusBg.info,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-  },
-  recentStatusClosed: {
-    backgroundColor: Colors.statusBg.warning,
-  },
-  recentStatusText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  recentStatusTextClosed: {
-    color: Colors.textMuted,
-  },
-  recentBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  recentCity: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-  },
-  recentDate: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  emptyRecent: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing['2xl'],
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  emptyRecentText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-  },
-  emptyBtn: {
-    minWidth: 180,
-  },
-  // Nav cards (mobile)
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.md,
-  },
-  cardIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.lg,
-  },
-  cardContent: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  cardTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  cardSub: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  logoutText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  errorBox: {
-    marginTop: Spacing['2xl'],
-    padding: Spacing.xl,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  errorBoxText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.statusError,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xl,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-  },
-  retryBtnText: {
-    fontSize: Typography.fontSize.sm,
-    color: '#FFFFFF',
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  // Desktop / tablet
-  scrollWide: {
-    flexGrow: 1,
-    paddingVertical: Spacing['4xl'],
-    paddingHorizontal: Spacing['3xl'],
-  },
-  wideContainer: {
-    gap: Spacing['2xl'],
-    maxWidth: 800,
-  },
-  wideGreeting: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  // Welcome card (empty state for clients)
-  welcomeCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing['2xl'],
-    gap: Spacing.lg,
-    ...Shadows.sm,
-  },
-  welcomeTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  welcomeSubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    marginTop: -Spacing.sm,
-  },
-  welcomeSteps: {
-    gap: Spacing.lg,
-  },
-  welcomeStep: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  stepBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    marginTop: 2,
-  },
-  stepBadgeText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.bold,
-    color: '#FFFFFF',
-  },
-  stepContent: {
-    flex: 1,
-    gap: 2,
-  },
-  stepTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  stepDesc: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-  welcomeBtn: {
-    width: '100%',
-    marginTop: Spacing.sm,
-  },
-});

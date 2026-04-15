@@ -2,16 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
+  Pressable,
   Alert,
 } from 'react-native';
 import { api } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { Badge } from '../../components/Badge';
 
@@ -154,73 +152,73 @@ export default function AdminComplaints() {
   const pendingCount = allItems.filter((c) => c.status === 'PENDING').length;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-bgPrimary">
       <Header title="Жалобы" showBack />
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />
         }
       >
-        <View style={styles.container}>
-          <Text style={styles.hint}>
+        <View className="w-full max-w-lg px-5 gap-3">
+          <Text className="text-xs text-textMuted leading-[18px] py-2">
             Всего жалоб: {total}. Ожидают рассмотрения: {pendingCount}.
           </Text>
 
           {/* Status filter tabs */}
-          <View style={styles.filterRow}>
+          <View className="flex-row gap-1">
             {(Object.keys(FILTER_LABELS) as StatusFilter[]).map((f) => (
-              <TouchableOpacity
+              <Pressable
                 key={f}
-                style={[styles.filterTab, filter === f && styles.filterTabActive]}
+                className={`flex-1 py-2 px-1 rounded-lg items-center border ${filter === f ? 'border-brandPrimary' : 'border-border bg-bgCard'}`}
+                style={filter === f ? { backgroundColor: Colors.brandPrimary, borderColor: Colors.brandPrimary } : undefined}
                 onPress={() => setFilter(f)}
-                activeOpacity={0.75}
               >
-                <Text style={[styles.filterTabText, filter === f && styles.filterTabTextActive]}>
+                <Text className={`text-xs font-medium ${filter === f ? 'text-white' : 'text-textSecondary'}`}>
                   {FILTER_LABELS[f]}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
 
           {loading ? (
-            <ActivityIndicator size="large" color={Colors.brandPrimary} style={styles.loader} />
+            <ActivityIndicator size="large" color={Colors.brandPrimary} style={{ marginVertical: 24 }} />
           ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
+            <Text className="text-sm text-statusError text-center py-4">{error}</Text>
           ) : items.length === 0 ? (
-            <Text style={styles.emptyText}>Нет жалоб</Text>
+            <Text className="text-base text-textMuted text-center py-6">Нет жалоб</Text>
           ) : (
-            <View style={styles.list}>
+            <View className="gap-2">
               {items.map((item) => (
-                <View key={item.id} style={styles.card}>
-                  <View style={styles.cardHeader}>
+                <View key={item.id} className="bg-bgCard rounded-xl p-4 border border-border gap-2 shadow-sm">
+                  <View className="flex-row justify-between items-center">
                     <Badge
                       variant={STATUS_BADGE[item.status] ?? 'info'}
                       label={STATUS_LABELS[item.status] ?? item.status}
                     />
-                    <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+                    <Text className="text-xs text-textMuted">{formatDate(item.createdAt)}</Text>
                   </View>
 
-                  <View style={styles.reasonRow}>
-                    <Text style={styles.reasonLabel}>Причина: </Text>
-                    <Text style={styles.reasonValue}>{REASON_LABELS[item.reason] ?? item.reason}</Text>
+                  <View className="flex-row items-center">
+                    <Text className="text-sm text-textMuted font-medium">Причина: </Text>
+                    <Text className="text-sm text-textPrimary font-semibold">{REASON_LABELS[item.reason] ?? item.reason}</Text>
                   </View>
 
                   {item.comment ? (
-                    <Text style={styles.comment} numberOfLines={3}>{item.comment}</Text>
+                    <Text className="text-sm text-textSecondary leading-[18px] italic" numberOfLines={3}>{item.comment}</Text>
                   ) : null}
 
-                  <View style={styles.meta}>
-                    <Text style={styles.metaRow}>
-                      <Text style={styles.metaLabel}>Отправитель: </Text>
-                      <Text style={styles.metaValue}>
+                  <View className="gap-0.5">
+                    <Text className="text-sm text-textSecondary">
+                      <Text className="text-textMuted font-medium">Отправитель: </Text>
+                      <Text className="text-textSecondary">
                         {item.reporter.username ? `@${item.reporter.username}` : item.reporter.email}
                       </Text>
                     </Text>
-                    <Text style={styles.metaRow}>
-                      <Text style={styles.metaLabel}>Цель: </Text>
-                      <Text style={styles.metaValue}>
+                    <Text className="text-sm text-textSecondary">
+                      <Text className="text-textMuted font-medium">Цель: </Text>
+                      <Text className="text-textSecondary">
                         {item.target.specialistProfile?.nick
                           ? `@${item.target.specialistProfile.nick}`
                           : item.target.username
@@ -231,25 +229,25 @@ export default function AdminComplaints() {
                   </View>
 
                   {item.status === 'PENDING' && (
-                    <View style={styles.actionRow}>
+                    <View className="flex-row gap-2 mt-1">
                       {actionLoading[item.id] ? (
-                        <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.cardLoader} />
+                        <ActivityIndicator size="small" color={Colors.brandPrimary} style={{ flex: 1, paddingVertical: 8 }} />
                       ) : (
                         <>
-                          <TouchableOpacity
-                            style={styles.reviewBtn}
+                          <Pressable
+                            className="flex-1 py-2 rounded-lg bg-bgSecondary border items-center"
+                            style={{ borderColor: Colors.statusSuccess }}
                             onPress={() => handleStatusChange(item, 'REVIEWED')}
-                            activeOpacity={0.75}
                           >
-                            <Text style={styles.reviewBtnText}>Рассмотрено</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.dismissBtn}
+                            <Text className="text-sm font-medium" style={{ color: Colors.statusSuccess }}>Рассмотрено</Text>
+                          </Pressable>
+                          <Pressable
+                            className="flex-1 py-2 rounded-lg bg-bgSecondary border items-center"
+                            style={{ borderColor: Colors.statusError }}
                             onPress={() => handleStatusChange(item, 'DISMISSED')}
-                            activeOpacity={0.75}
                           >
-                            <Text style={styles.dismissBtnText}>Отклонить</Text>
-                          </TouchableOpacity>
+                            <Text className="text-sm font-medium" style={{ color: Colors.statusError }}>Отклонить</Text>
+                          </Pressable>
                         </>
                       )}
                     </View>
@@ -260,212 +258,28 @@ export default function AdminComplaints() {
           )}
 
           {!loading && totalPages > 1 && (
-            <View style={styles.pagination}>
-              <TouchableOpacity
-                style={[styles.pageBtn, page <= 1 && styles.pageBtnDisabled]}
+            <View className="flex-row justify-between items-center py-4 gap-3">
+              <Pressable
+                className="py-2 px-4 rounded-lg bg-bgCard border border-border"
+                style={{ opacity: page <= 1 ? 0.4 : 1 }}
                 onPress={() => { if (page > 1) fetchComplaints(page - 1); }}
                 disabled={page <= 1}
-                activeOpacity={0.75}
               >
-                <Text style={styles.pageBtnText}>Назад</Text>
-              </TouchableOpacity>
-              <Text style={styles.pageInfo}>{page} / {totalPages}</Text>
-              <TouchableOpacity
-                style={[styles.pageBtn, page >= totalPages && styles.pageBtnDisabled]}
+                <Text className="text-sm font-medium text-textPrimary">Назад</Text>
+              </Pressable>
+              <Text className="text-sm text-textMuted">{page} / {totalPages}</Text>
+              <Pressable
+                className="py-2 px-4 rounded-lg bg-bgCard border border-border"
+                style={{ opacity: page >= totalPages ? 0.4 : 1 }}
                 onPress={() => { if (page < totalPages) fetchComplaints(page + 1); }}
                 disabled={page >= totalPages}
-                activeOpacity={0.75}
               >
-                <Text style={styles.pageBtnText}>Вперёд</Text>
-              </TouchableOpacity>
+                <Text className="text-sm font-medium text-textPrimary">Вперёд</Text>
+              </Pressable>
             </View>
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.md,
-  },
-  hint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    lineHeight: 18,
-    paddingVertical: Spacing.sm,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: Spacing.xs,
-  },
-  filterTab: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-  },
-  filterTabActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  filterTabText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-  },
-  filterTabTextActive: {
-    color: Colors.white,
-  },
-  loader: {
-    marginVertical: Spacing['2xl'],
-  },
-  errorText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    textAlign: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  emptyText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  list: {
-    gap: Spacing.sm,
-  },
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  date: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  reasonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  reasonLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  reasonValue: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  comment: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    fontStyle: 'italic',
-  },
-  meta: {
-    gap: 2,
-  },
-  metaRow: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  metaLabel: {
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  metaValue: {
-    color: Colors.textSecondary,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  reviewBtn: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.statusSuccess,
-    alignItems: 'center',
-  },
-  reviewBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.statusSuccess,
-  },
-  dismissBtn: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.statusError,
-    alignItems: 'center',
-  },
-  dismissBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.statusError,
-  },
-  cardLoader: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.lg,
-    gap: Spacing.md,
-  },
-  pageBtn: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  pageBtnDisabled: {
-    opacity: 0.4,
-  },
-  pageBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  pageInfo: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-});
