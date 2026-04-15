@@ -1,73 +1,12 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
+import { Colors } from '../../../constants/Colors';
 
 // ---------------------------------------------------------------------------
 // Shared sub-components
 // ---------------------------------------------------------------------------
-
-function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
-  return (
-    <View style={s.statCard}>
-      <View style={[s.statIcon, { backgroundColor: color + '12' }]}>
-        <Feather name={icon as any} size={18} color={color} />
-      </View>
-      <Text style={[s.statValue, { color }]}>{value}</Text>
-      <Text style={s.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function RequestRow({ title, status, date, statusColor, statusBg, responseCount }: {
-  title: string; status: string; date: string; statusColor: string; statusBg: string; responseCount?: number;
-}) {
-  return (
-    <Pressable style={s.row}>
-      <View style={s.rowLeft}>
-        <Text style={s.rowTitle} numberOfLines={1}>{title}</Text>
-        <View style={s.rowMeta}>
-          <Feather name="calendar" size={11} color={Colors.textMuted} />
-          <Text style={s.rowDate}>{date}</Text>
-          {responseCount !== undefined && responseCount > 0 && (
-            <>
-              <Feather name="message-circle" size={11} color={Colors.textMuted} style={{ marginLeft: 8 }} />
-              <Text style={s.rowDate}>{responseCount}</Text>
-            </>
-          )}
-        </View>
-      </View>
-      <View style={[s.statusBadge, { backgroundColor: statusBg }]}>
-        <Text style={[s.statusText, { color: statusColor }]}>{status}</Text>
-      </View>
-      <Feather name="chevron-right" size={16} color={Colors.textMuted} style={{ marginLeft: 8 }} />
-    </Pressable>
-  );
-}
-
-function LimitBar({ used, total }: { used: number; total: number }) {
-  const pct = Math.min((used / total) * 100, 100);
-  const atLimit = used >= total;
-  return (
-    <View style={s.limitWrap}>
-      <View style={s.limitHeader}>
-        <Text style={s.limitLabel}>Лимит заявок</Text>
-        <Text style={[s.limitCount, atLimit && { color: Colors.statusError }]}>{used} из {total}</Text>
-      </View>
-      <View style={s.limitTrack}>
-        <View style={[s.limitFill, { width: `${pct}%`, backgroundColor: atLimit ? Colors.statusError : Colors.brandPrimary }]} />
-      </View>
-      {atLimit && <Text style={s.limitWarn}>Лимит исчерпан. Дождитесь завершения заявок или обновите тариф.</Text>}
-    </View>
-  );
-}
-
-function SkeletonBlock({ width, height, radius }: { width: string | number; height: number; radius?: number }) {
-  return (
-    <View style={[s.skeleton, { width: width as any, height, borderRadius: radius || BorderRadius.md }]} />
-  );
-}
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -77,254 +16,481 @@ function getGreeting(): string {
   return 'Добрый вечер';
 }
 
+function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+  return (
+    <View className="flex-1 items-center gap-1 rounded-xl border border-borderLight bg-white p-3">
+      <View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: color + '15' }}>
+        <Feather name={icon as any} size={18} color={color} />
+      </View>
+      <Text className="text-lg font-bold" style={{ color }}>{value}</Text>
+      <Text className="text-xs text-textMuted">{label}</Text>
+    </View>
+  );
+}
+
+function RequestCard({ title, service, fns, city, date, messageCount, status, statusColor }: {
+  title: string; service: string; fns: string; city: string; date: string;
+  messageCount: number; status: string; statusColor: string;
+}) {
+  return (
+    <Pressable className="gap-2 rounded-xl border border-borderLight bg-white p-4">
+      <View className="flex-row items-start justify-between gap-2">
+        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={2}>{title}</Text>
+        <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: statusColor + '18' }}>
+          <Text className="text-xs font-semibold" style={{ color: statusColor }}>{status}</Text>
+        </View>
+      </View>
+      <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
+        <View className="flex-row items-center gap-1">
+          <Feather name="briefcase" size={12} color={Colors.textMuted} />
+          <Text className="text-xs text-textMuted">{service}</Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <Feather name="home" size={12} color={Colors.textMuted} />
+          <Text className="text-xs text-textMuted">{fns}</Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <Feather name="map-pin" size={12} color={Colors.textMuted} />
+          <Text className="text-xs text-textMuted">{city}</Text>
+        </View>
+      </View>
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center gap-1">
+          <Feather name="calendar" size={12} color={Colors.textMuted} />
+          <Text className="text-xs text-textMuted">{date}</Text>
+        </View>
+        {messageCount > 0 && (
+          <View className="flex-row items-center gap-1">
+            <Feather name="message-circle" size={12} color={Colors.brandPrimary} />
+            <Text className="text-xs font-medium text-brandPrimary">{messageCount} сообщ.</Text>
+          </View>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+function MessagePreview({ initials, name, snippet, time, unread }: {
+  initials: string; name: string; snippet: string; time: string; unread?: boolean;
+}) {
+  return (
+    <Pressable className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3">
+      <View className="h-10 w-10 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+        <Text className="text-sm font-bold text-brandPrimary">{initials}</Text>
+      </View>
+      <View className="flex-1">
+        <View className="flex-row items-center justify-between">
+          <Text className={`text-sm ${unread ? 'font-bold text-textPrimary' : 'font-medium text-textPrimary'}`}>{name}</Text>
+          <Text className="text-xs text-textMuted">{time}</Text>
+        </View>
+        <Text className={`text-xs ${unread ? 'font-medium text-textSecondary' : 'text-textMuted'}`} numberOfLines={1}>{snippet}</Text>
+      </View>
+      {unread && (
+        <View className="h-2.5 w-2.5 rounded-full bg-brandPrimary" />
+      )}
+    </Pressable>
+  );
+}
+
+function QuickActions() {
+  return (
+    <View className="flex-row gap-2">
+      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-brandPrimary">
+        <Feather name="plus" size={16} color={Colors.white} />
+        <Text className="text-sm font-semibold text-white">Новая заявка</Text>
+      </Pressable>
+      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white">
+        <Feather name="list" size={16} color={Colors.brandPrimary} />
+        <Text className="text-sm font-medium text-brandPrimary">Все заявки</Text>
+      </Pressable>
+      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white">
+        <Feather name="message-circle" size={16} color={Colors.brandPrimary} />
+        <Text className="text-sm font-medium text-brandPrimary">Сообщения</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 // ---------------------------------------------------------------------------
-// STATE: DEFAULT (populated)
+// STATE 1: DEFAULT — active requests + recent messages
 // ---------------------------------------------------------------------------
 
 function DefaultDashboard() {
   return (
-    <View style={s.container}>
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       {/* Greeting */}
-      <View style={s.header}>
-        <View style={s.greetingRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.greeting}>{getGreeting()}, Елена!</Text>
-            <Text style={s.subGreeting}>Ваши заявки и отклики</Text>
-          </View>
-          <Pressable style={s.notifBtn}>
-            <Feather name="bell" size={20} color={Colors.textPrimary} />
-            <View style={s.notifDot} />
-          </Pressable>
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1">
+          <Text className="text-xl font-bold text-textPrimary">{getGreeting()}, Елена!</Text>
+          <Text className="text-sm text-textMuted">Ваши заявки и сообщения</Text>
         </View>
+        <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-bgSurface">
+          <Feather name="bell" size={20} color={Colors.textPrimary} />
+        </Pressable>
       </View>
 
-      {/* Limit bar */}
-      <LimitBar used={3} total={5} />
-
-      {/* Stats row */}
-      <View style={s.statsRow}>
+      {/* Stats */}
+      <View className="flex-row gap-2">
         <StatCard icon="file-text" label="Активные" value="3" color={Colors.brandPrimary} />
-        <StatCard icon="message-circle" label="Отклики" value="8" color={Colors.statusSuccess} />
+        <StatCard icon="message-circle" label="Сообщения" value="5" color={Colors.statusSuccess} />
         <StatCard icon="check-circle" label="Завершены" value="12" color={Colors.textMuted} />
       </View>
 
-      {/* Quick action */}
-      <Pressable style={s.ctaBtn}>
-        <Feather name="plus" size={18} color={Colors.white} />
-        <Text style={s.ctaBtnText}>Создать заявку</Text>
-      </Pressable>
+      {/* Quick actions */}
+      <QuickActions />
 
-      {/* Recent requests */}
-      <View style={s.section}>
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Активные заявки</Text>
-          <Pressable><Text style={s.sectionLink}>Все заявки</Text></Pressable>
+      {/* Active requests */}
+      <View className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-textPrimary">Активные заявки</Text>
+          <Pressable><Text className="text-sm font-medium text-brandPrimary">Все заявки</Text></Pressable>
         </View>
-        <View style={s.list}>
-          <RequestRow
-            title="Заполнить декларацию 3-НДФЛ за 2025 год"
-            status="Новая"
-            date="08.04.2026"
-            statusColor={Colors.brandPrimary}
-            statusBg={Colors.statusBg.info}
-            responseCount={0}
-          />
-          <RequestRow
-            title="Регистрация ИП на УСН"
-            status="3 отклика"
-            date="07.04.2026"
-            statusColor={Colors.statusSuccess}
-            statusBg={Colors.statusBg.success}
-            responseCount={3}
-          />
-          <RequestRow
-            title="Оптимизация налогов для ООО"
-            status="В работе"
-            date="05.04.2026"
-            statusColor={Colors.statusWarning}
-            statusBg={Colors.statusBg.warning}
-            responseCount={5}
-          />
-        </View>
+        <RequestCard
+          title="Заполнить декларацию 3-НДФЛ за 2025 год"
+          service="Декларация"
+          fns="ИФНС №46"
+          city="Москва"
+          date="08.04.2026"
+          messageCount={2}
+          status="Новая"
+          statusColor={Colors.brandPrimary}
+        />
+        <RequestCard
+          title="Регистрация ИП на УСН"
+          service="Регистрация"
+          fns="МРИ ФНС №12"
+          city="Новосибирск"
+          date="07.04.2026"
+          messageCount={4}
+          status="В работе"
+          statusColor={Colors.statusWarning}
+        />
+        <RequestCard
+          title="Оптимизация налогов для ООО"
+          service="Консультация"
+          fns="ИФНС №15"
+          city="Москва"
+          date="05.04.2026"
+          messageCount={0}
+          status="Новая"
+          statusColor={Colors.brandPrimary}
+        />
       </View>
 
-      {/* Recent responses */}
-      <View style={s.section}>
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Новые отклики</Text>
-          <Pressable><Text style={s.sectionLink}>Все отклики</Text></Pressable>
+      {/* Recent messages */}
+      <View className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-textPrimary">Новые сообщения</Text>
+          <Pressable><Text className="text-sm font-medium text-brandPrimary">Все сообщения</Text></Pressable>
         </View>
-        <View style={s.list}>
-          <Pressable style={s.responseCard}>
-            <View style={s.responseHeader}>
-              <View style={s.avatarCircle}>
-                <Text style={s.avatarText}>АП</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.responseName}>Алексей Петров</Text>
-                <View style={s.ratingRow}>
-                  <Feather name="star" size={12} color={Colors.statusWarning} />
-                  <Text style={s.ratingText}>4.8 (42 отзыва)</Text>
-                </View>
-              </View>
-              <Text style={s.responsePrice}>4 500 &#8381;</Text>
-            </View>
-            <Text style={s.responseMsg} numberOfLines={2}>Здравствуйте! Готов помочь с декларацией. Опыт работы 8 лет.</Text>
-          </Pressable>
-          <Pressable style={s.responseCard}>
-            <View style={s.responseHeader}>
-              <View style={s.avatarCircle}>
-                <Text style={s.avatarText}>ОС</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.responseName}>Ольга Смирнова</Text>
-                <View style={s.ratingRow}>
-                  <Feather name="star" size={12} color={Colors.statusWarning} />
-                  <Text style={s.ratingText}>4.9 (67 отзывов)</Text>
-                </View>
-              </View>
-              <Text style={s.responsePrice}>3 800 &#8381;</Text>
-            </View>
-            <Text style={s.responseMsg} numberOfLines={2}>Специализируюсь на налоговых вычетах. Помогу заполнить декларацию.</Text>
-          </Pressable>
-        </View>
+        <MessagePreview
+          initials="АП"
+          name="Алексей Петров"
+          snippet="Здравствуйте! Готов помочь с декларацией. Опыт 8 лет."
+          time="14:32"
+          unread
+        />
+        <MessagePreview
+          initials="ОС"
+          name="Ольга Смирнова"
+          snippet="Специализируюсь на налоговых вычетах. Помогу заполнить."
+          time="12:15"
+          unread
+        />
+        <MessagePreview
+          initials="ИК"
+          name="Игорь Козлов"
+          snippet="Добрый день! По вашей заявке на регистрацию ИП..."
+          time="вчера"
+        />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 // ---------------------------------------------------------------------------
-// STATE: LOADING (skeleton)
-// ---------------------------------------------------------------------------
-
-function LoadingDashboard() {
-  return (
-    <View style={s.container}>
-      <View style={s.header}>
-        <SkeletonBlock width="55%" height={24} />
-        <View style={{ height: 6 }} />
-        <SkeletonBlock width="40%" height={14} />
-      </View>
-
-      {/* Limit skeleton */}
-      <View style={s.limitWrap}>
-        <View style={s.limitHeader}>
-          <SkeletonBlock width={80} height={12} />
-          <SkeletonBlock width={40} height={12} />
-        </View>
-        <SkeletonBlock width="100%" height={6} radius={3} />
-      </View>
-
-      {/* Stats skeleton */}
-      <View style={s.statsRow}>
-        {[1, 2, 3].map((i) => (
-          <View key={i} style={[s.statCard, { alignItems: 'center' }]}>
-            <SkeletonBlock width={36} height={36} radius={18} />
-            <SkeletonBlock width={28} height={22} />
-            <SkeletonBlock width={52} height={12} />
-          </View>
-        ))}
-      </View>
-
-      {/* CTA skeleton */}
-      <SkeletonBlock width="100%" height={48} radius={BorderRadius.btn} />
-
-      {/* Requests skeleton */}
-      <View style={s.section}>
-        <SkeletonBlock width="35%" height={18} />
-        <View style={s.list}>
-          {[1, 2, 3].map((i) => (
-            <View key={i} style={s.skeletonRow}>
-              <View style={{ flex: 1, gap: 8 }}>
-                <SkeletonBlock width="80%" height={14} />
-                <SkeletonBlock width="50%" height={11} />
-              </View>
-              <SkeletonBlock width={60} height={22} radius={BorderRadius.full} />
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <View style={{ alignItems: 'center', paddingTop: Spacing.sm }}>
-        <ActivityIndicator size="small" color={Colors.brandPrimary} />
-      </View>
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// STATE: EMPTY
+// STATE 2: EMPTY — no requests yet
 // ---------------------------------------------------------------------------
 
 function EmptyDashboard() {
   return (
-    <View style={s.container}>
-      <View style={s.header}>
-        <Text style={s.greeting}>{getGreeting()}, Елена!</Text>
-        <Text style={s.subGreeting}>Добро пожаловать в Налоговик</Text>
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <View>
+        <Text className="text-xl font-bold text-textPrimary">{getGreeting()}, Елена!</Text>
+        <Text className="text-sm text-textMuted">Добро пожаловать в Налоговик</Text>
       </View>
 
-      <LimitBar used={0} total={5} />
-
-      <View style={s.emptyBlock}>
-        <View style={s.emptyIconWrap}>
-          <Feather name="file-text" size={40} color={Colors.brandPrimary} />
+      <View className="items-center gap-3 py-10">
+        <View className="h-[72px] w-[72px] items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+          <Feather name="file-text" size={36} color={Colors.brandPrimary} />
         </View>
-        <Text style={s.emptyTitle}>Пока нет заявок</Text>
-        <Text style={s.emptyText}>
+        <Text className="text-lg font-semibold text-textPrimary">Пока нет заявок</Text>
+        <Text className="max-w-[280px] text-center text-sm text-textMuted">
           Создайте первую заявку, чтобы найти налогового специалиста для решения вашей задачи
         </Text>
-        <Pressable style={[s.ctaBtn, { marginTop: Spacing.sm }]}>
+        <Pressable className="mt-2 h-12 w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary">
           <Feather name="plus" size={18} color={Colors.white} />
-          <Text style={s.ctaBtnText}>Создать первую заявку</Text>
+          <Text className="text-base font-semibold text-white">Создать первую заявку</Text>
         </Pressable>
       </View>
 
-      {/* Onboarding hints */}
-      <View style={s.section}>
-        <Text style={s.sectionTitle}>Как это работает</Text>
-        <View style={s.list}>
-          {[
-            { num: '1', title: 'Опишите задачу', desc: 'Укажите тип услуги, город и бюджет' },
-            { num: '2', title: 'Получите отклики', desc: 'Специалисты предложат свои услуги' },
-            { num: '3', title: 'Выберите лучшего', desc: 'Сравните рейтинги, цены и отзывы' },
-          ].map((h) => (
-            <View key={h.num} style={s.hintRow}>
-              <View style={s.hintNum}><Text style={s.hintNumText}>{h.num}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.hintTitle}>{h.title}</Text>
-                <Text style={s.hintDesc}>{h.desc}</Text>
-              </View>
+      {/* How it works */}
+      <View className="gap-3">
+        <Text className="text-base font-semibold text-textPrimary">Как это работает</Text>
+        {[
+          { num: '1', title: 'Опишите задачу', desc: 'Укажите тип услуги, город и ФНС' },
+          { num: '2', title: 'Получите сообщения', desc: 'Специалисты напишут вам в чат' },
+          { num: '3', title: 'Выберите лучшего', desc: 'Общайтесь, сравните и договоритесь' },
+        ].map((h) => (
+          <View key={h.num} className="flex-row items-start gap-3 rounded-xl border border-borderLight bg-white p-3">
+            <View className="h-7 w-7 items-center justify-center rounded-full bg-brandPrimary">
+              <Text className="text-sm font-bold text-white">{h.num}</Text>
             </View>
-          ))}
-        </View>
+            <View className="flex-1">
+              <Text className="text-sm font-semibold text-textPrimary">{h.title}</Text>
+              <Text className="text-xs text-textMuted">{h.desc}</Text>
+            </View>
+          </View>
+        ))}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 // ---------------------------------------------------------------------------
-// STATE: ERROR
+// STATE 3: UNREAD — dashboard with unread message badges
 // ---------------------------------------------------------------------------
 
-function ErrorDashboard() {
+function UnreadDashboard() {
   return (
-    <View style={s.container}>
-      <View style={s.header}>
-        <Text style={s.greeting}>{getGreeting()}!</Text>
-      </View>
-      <View style={s.errorBlock}>
-        <View style={s.errorIconWrap}>
-          <Feather name="wifi-off" size={36} color={Colors.statusError} />
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      {/* Greeting with notification badge */}
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1">
+          <Text className="text-xl font-bold text-textPrimary">{getGreeting()}, Елена!</Text>
+          <Text className="text-sm text-textMuted">У вас 3 непрочитанных сообщения</Text>
         </View>
-        <Text style={s.errorTitle}>Не удалось загрузить данные</Text>
-        <Text style={s.errorText}>Проверьте подключение к интернету и попробуйте снова</Text>
-        <Pressable style={s.retryBtn}>
-          <Feather name="refresh-cw" size={16} color={Colors.white} />
-          <Text style={s.retryBtnText}>Попробовать снова</Text>
+        <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-bgSurface">
+          <Feather name="bell" size={20} color={Colors.textPrimary} />
+          <View className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-statusError" />
         </Pressable>
       </View>
-    </View>
+
+      {/* Stats with unread emphasis */}
+      <View className="flex-row gap-2">
+        <StatCard icon="file-text" label="Активные" value="3" color={Colors.brandPrimary} />
+        <StatCard icon="message-circle" label="Непрочитано" value="3" color={Colors.statusError} />
+        <StatCard icon="check-circle" label="Завершены" value="12" color={Colors.textMuted} />
+      </View>
+
+      <QuickActions />
+
+      {/* Unread messages banner */}
+      <Pressable className="flex-row items-center gap-3 rounded-xl bg-bgSurface p-4">
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-brandPrimary">
+          <Feather name="message-circle" size={20} color={Colors.white} />
+        </View>
+        <View className="flex-1">
+          <Text className="text-sm font-semibold text-textPrimary">3 новых сообщения</Text>
+          <Text className="text-xs text-textMuted">Специалисты ответили на ваши заявки</Text>
+        </View>
+        <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+      </Pressable>
+
+      {/* Active requests */}
+      <View className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-textPrimary">Активные заявки</Text>
+          <Pressable><Text className="text-sm font-medium text-brandPrimary">Все заявки</Text></Pressable>
+        </View>
+        <RequestCard
+          title="Заполнить декларацию 3-НДФЛ за 2025 год"
+          service="Декларация"
+          fns="ИФНС №46"
+          city="Москва"
+          date="08.04.2026"
+          messageCount={2}
+          status="Новая"
+          statusColor={Colors.brandPrimary}
+        />
+        <RequestCard
+          title="Регистрация ИП на УСН"
+          service="Регистрация"
+          fns="МРИ ФНС №12"
+          city="Новосибирск"
+          date="07.04.2026"
+          messageCount={1}
+          status="В работе"
+          statusColor={Colors.statusWarning}
+        />
+      </View>
+
+      {/* Recent messages */}
+      <View className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-textPrimary">Новые сообщения</Text>
+          <Pressable><Text className="text-sm font-medium text-brandPrimary">Все сообщения</Text></Pressable>
+        </View>
+        <MessagePreview
+          initials="АП"
+          name="Алексей Петров"
+          snippet="Могу начать работу прямо сегодня, если вам удобно."
+          time="5 мин"
+          unread
+        />
+        <MessagePreview
+          initials="ОС"
+          name="Ольга Смирнова"
+          snippet="Отправила вам список необходимых документов."
+          time="1 час"
+          unread
+        />
+        <MessagePreview
+          initials="ИК"
+          name="Игорь Козлов"
+          snippet="Уточните, пожалуйста, систему налогообложения."
+          time="2 часа"
+          unread
+        />
+      </View>
+    </ScrollView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// STATE 4: STATUS CHANGE — request closed/completed notification
+// ---------------------------------------------------------------------------
+
+function StatusChangeDashboard() {
+  return (
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1">
+          <Text className="text-xl font-bold text-textPrimary">{getGreeting()}, Елена!</Text>
+          <Text className="text-sm text-textMuted">Ваши заявки и сообщения</Text>
+        </View>
+        <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-bgSurface">
+          <Feather name="bell" size={20} color={Colors.textPrimary} />
+        </Pressable>
+      </View>
+
+      {/* Status change notification */}
+      <View className="gap-2 rounded-xl border border-borderLight bg-bgSurface p-4">
+        <View className="flex-row items-center gap-2">
+          <View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: Colors.statusSuccess + '18' }}>
+            <Feather name="check-circle" size={18} color={Colors.statusSuccess} />
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm font-semibold text-textPrimary">Заявка завершена</Text>
+            <Text className="text-xs text-textMuted">Регистрация ИП на УСН</Text>
+          </View>
+          <Pressable>
+            <Feather name="x" size={18} color={Colors.textMuted} />
+          </Pressable>
+        </View>
+        <Pressable className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg border border-borderLight bg-white">
+          <Feather name="star" size={14} color={Colors.statusWarning} />
+          <Text className="text-sm font-medium text-textPrimary">Оставить отзыв</Text>
+        </Pressable>
+      </View>
+
+      {/* Stats */}
+      <View className="flex-row gap-2">
+        <StatCard icon="file-text" label="Активные" value="2" color={Colors.brandPrimary} />
+        <StatCard icon="message-circle" label="Сообщения" value="1" color={Colors.statusSuccess} />
+        <StatCard icon="check-circle" label="Завершены" value="13" color={Colors.textMuted} />
+      </View>
+
+      <QuickActions />
+
+      {/* Active requests */}
+      <View className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-textPrimary">Активные заявки</Text>
+          <Pressable><Text className="text-sm font-medium text-brandPrimary">Все заявки</Text></Pressable>
+        </View>
+        <RequestCard
+          title="Заполнить декларацию 3-НДФЛ за 2025 год"
+          service="Декларация"
+          fns="ИФНС №46"
+          city="Москва"
+          date="08.04.2026"
+          messageCount={2}
+          status="В работе"
+          statusColor={Colors.statusWarning}
+        />
+        <RequestCard
+          title="Оптимизация налогов для ООО"
+          service="Консультация"
+          fns="ИФНС №15"
+          city="Москва"
+          date="05.04.2026"
+          messageCount={0}
+          status="Новая"
+          statusColor={Colors.brandPrimary}
+        />
+      </View>
+
+      {/* Recent messages */}
+      <View className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-textPrimary">Новые сообщения</Text>
+          <Pressable><Text className="text-sm font-medium text-brandPrimary">Все сообщения</Text></Pressable>
+        </View>
+        <MessagePreview
+          initials="АП"
+          name="Алексей Петров"
+          snippet="Декларация почти готова, осталось проверить вычеты."
+          time="10:45"
+        />
+      </View>
+    </ScrollView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// STATE 5: LOADING
+// ---------------------------------------------------------------------------
+
+function LoadingDashboard() {
+  return (
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 24 }}>
+      {/* Greeting skeleton */}
+      <View className="gap-2">
+        <View className="h-6 w-3/5 rounded-md bg-bgSurface" />
+        <View className="h-4 w-2/5 rounded-md bg-bgSurface" />
+      </View>
+
+      {/* Stats skeleton */}
+      <View className="flex-row gap-2">
+        {[1, 2, 3].map((i) => (
+          <View key={i} className="flex-1 items-center gap-2 rounded-xl border border-borderLight p-3">
+            <View className="h-9 w-9 rounded-full bg-bgSurface" />
+            <View className="h-5 w-8 rounded bg-bgSurface" />
+            <View className="h-3 w-12 rounded bg-bgSurface" />
+          </View>
+        ))}
+      </View>
+
+      {/* Actions skeleton */}
+      <View className="h-10 w-full rounded-xl bg-bgSurface" />
+
+      {/* Request cards skeleton */}
+      <View className="gap-3">
+        <View className="h-5 w-2/5 rounded bg-bgSurface" />
+        {[1, 2].map((i) => (
+          <View key={i} className="gap-2 rounded-xl border border-borderLight p-4">
+            <View className="h-4 w-4/5 rounded bg-bgSurface" />
+            <View className="h-3 w-3/5 rounded bg-bgSurface" />
+            <View className="h-3 w-2/5 rounded bg-bgSurface" />
+          </View>
+        ))}
+      </View>
+
+      <View className="items-center pt-2">
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+      </View>
+    </ScrollView>
   );
 }
 
@@ -338,140 +504,18 @@ export function DashboardStates() {
       <StateSection title="DEFAULT">
         <DefaultDashboard />
       </StateSection>
-      <StateSection title="LOADING">
-        <LoadingDashboard />
-      </StateSection>
       <StateSection title="EMPTY">
         <EmptyDashboard />
       </StateSection>
-      <StateSection title="ERROR">
-        <ErrorDashboard />
+      <StateSection title="UNREAD_MESSAGES">
+        <UnreadDashboard />
+      </StateSection>
+      <StateSection title="STATUS_CHANGE">
+        <StatusChangeDashboard />
+      </StateSection>
+      <StateSection title="LOADING">
+        <LoadingDashboard />
       </StateSection>
     </>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const s = StyleSheet.create({
-  container: { padding: Spacing.lg, gap: Spacing.lg },
-  header: { gap: Spacing.xs, paddingTop: Spacing.sm },
-  greetingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  greeting: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  subGreeting: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, marginTop: 2 },
-  notifBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.bgSurface, alignItems: 'center', justifyContent: 'center' },
-  notifDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.statusError },
-
-  // Limit bar
-  limitWrap: { gap: Spacing.xs },
-  limitHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  limitLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  limitCount: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  limitTrack: { height: 6, backgroundColor: Colors.bgSurface, borderRadius: 3, overflow: 'hidden' },
-  limitFill: { height: 6, borderRadius: 3 },
-  limitWarn: { fontSize: Typography.fontSize.xs, color: Colors.statusError },
-
-  // Stats
-  statsRow: { flexDirection: 'row', gap: Spacing.sm },
-  statCard: {
-    flex: 1, backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card,
-    padding: Spacing.md, alignItems: 'center', gap: Spacing.xs,
-    borderWidth: 1, borderColor: Colors.border, ...Shadows.sm,
-  },
-  statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontSize: 22, fontWeight: Typography.fontWeight.bold },
-  statLabel: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-
-  // CTA
-  ctaBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-    height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
-    ...Shadows.sm,
-  },
-  ctaBtnText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
-
-  // Sections
-  section: { gap: Spacing.sm },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  sectionLink: { fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium },
-  list: { gap: Spacing.sm },
-
-  // Request row
-  row: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.bgCard, padding: Spacing.md, borderRadius: BorderRadius.card,
-    borderWidth: 1, borderColor: Colors.border, ...Shadows.sm,
-  },
-  rowLeft: { flex: 1, marginRight: Spacing.sm },
-  rowTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
-  rowMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  rowDate: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  statusBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: BorderRadius.full },
-  statusText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold },
-
-  // Response card
-  responseCard: {
-    backgroundColor: Colors.bgCard, padding: Spacing.md, borderRadius: BorderRadius.card,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm,
-  },
-  responseHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  avatarCircle: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.bgSurface,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
-  },
-  avatarText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
-  responseName: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  ratingText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  responsePrice: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.bold, color: Colors.statusSuccess },
-  responseMsg: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 18 },
-
-  // Empty state
-  emptyBlock: { alignItems: 'center', paddingVertical: Spacing['3xl'], gap: Spacing.md },
-  emptyIconWrap: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.bgSurface,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
-  },
-  emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 280 },
-
-  // Hints (onboarding)
-  hintRow: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md,
-    backgroundColor: Colors.bgCard, padding: Spacing.md, borderRadius: BorderRadius.card,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  hintNum: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.brandPrimary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  hintNumText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.bold, color: Colors.white },
-  hintTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  hintDesc: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, marginTop: 2 },
-
-  // Error state
-  errorBlock: { alignItems: 'center', paddingVertical: Spacing['4xl'], gap: Spacing.md },
-  errorIconWrap: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.statusBg.error,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  errorTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  errorText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 280 },
-  retryBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
-    height: 44, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
-    paddingHorizontal: Spacing['2xl'], marginTop: Spacing.sm,
-  },
-  retryBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
-
-  // Loading skeleton
-  skeleton: { backgroundColor: Colors.bgSurface, opacity: 0.7 },
-  skeletonRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.bgCard, padding: Spacing.md, borderRadius: BorderRadius.card,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-});
