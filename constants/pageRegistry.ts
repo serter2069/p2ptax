@@ -65,8 +65,8 @@ export const pageRegistry: PageEntry[] = [
   // Dashboard (Client)
   { id: 'dashboard', title: 'Главная клиента', group: 'Dashboard', route: '/dashboard', stateCount: 5, nav: 'client', activeTab: 'home' },
   { id: 'my-requests', title: 'Мои заявки', group: 'Dashboard', route: '/my-requests', stateCount: 4, nav: 'client', activeTab: 'requests' },
-  { id: 'new-request', title: 'Новая заявка', group: 'Dashboard', route: '/new-request', stateCount: 2, nav: 'client' },
-  { id: 'request-detail', title: 'Детали заявки', group: 'Dashboard', route: '/request-detail', stateCount: 6, nav: 'client' },
+  { id: 'new-request', title: 'Новая заявка', group: 'Dashboard', route: '/new-request', stateCount: 1, nav: 'client' },
+  { id: 'request-detail', title: 'Детали заявки', group: 'Dashboard', route: '/request-detail', stateCount: 2, nav: 'client' },
   { id: 'messages', title: 'Сообщения', group: 'Dashboard', route: '/messages', stateCount: 4, nav: 'client', activeTab: 'messages' },
   { id: 'chat-thread', title: 'Чат', group: 'Dashboard', route: '/chat-thread', stateCount: 3, nav: 'client' },
   { id: 'client-settings', title: 'Настройки клиента', group: 'Dashboard', route: '/client-settings', stateCount: 1, nav: 'client', activeTab: 'profile' },
