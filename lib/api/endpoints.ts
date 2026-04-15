@@ -143,8 +143,8 @@ export const threads = {
     return client.post(`/threads/${threadId}/messages`, data);
   },
 
-  startThread(otherUserId: string) {
-    return client.post('/threads/start', { otherUserId });
+  startThread(otherUserId: string, requestId?: string) {
+    return client.post('/threads/start', { otherUserId, ...(requestId && { requestId }) });
   },
 };
 
