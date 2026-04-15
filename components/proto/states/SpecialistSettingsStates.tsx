@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors } from '../../../constants/Colors';
+import { Toggle } from '../Toggle';
 
 function IdleState() {
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(false);
   const [publicProfile, setPublicProfile] = useState(true);
-
-  const switchTrack = { false: '#D1D5DB', true: Colors.brandPrimary };
 
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 20 }}>
@@ -42,41 +41,14 @@ function IdleState() {
       {/* Notifications */}
       <View className="gap-3 rounded-xl border border-borderLight p-4">
         <Text className="text-base font-semibold text-textPrimary">Уведомления</Text>
-
-        <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-textSecondary">Email-уведомления</Text>
-          <Switch
-            value={emailNotif}
-            onValueChange={setEmailNotif}
-            trackColor={switchTrack}
-            thumbColor="#fff"
-          />
-        </View>
-
-        <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-textSecondary">Push-уведомления</Text>
-          <Switch
-            value={pushNotif}
-            onValueChange={setPushNotif}
-            trackColor={switchTrack}
-            thumbColor="#fff"
-          />
-        </View>
+        <Toggle label="Email-уведомления" value={emailNotif} onValueChange={setEmailNotif} />
+        <Toggle label="Push-уведомления" value={pushNotif} onValueChange={setPushNotif} />
       </View>
 
       {/* Public profile */}
       <View className="gap-3 rounded-xl border border-borderLight p-4">
         <Text className="text-base font-semibold text-textPrimary">Публичный профиль</Text>
-
-        <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-textSecondary">Профиль виден всем</Text>
-          <Switch
-            value={publicProfile}
-            onValueChange={setPublicProfile}
-            trackColor={switchTrack}
-            thumbColor="#fff"
-          />
-        </View>
+        <Toggle label="Профиль виден всем" value={publicProfile} onValueChange={setPublicProfile} />
       </View>
 
       {/* Logout */}

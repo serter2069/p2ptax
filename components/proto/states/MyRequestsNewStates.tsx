@@ -1,48 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Switch } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors } from '../../../constants/Colors';
+import { Toggle } from '../Toggle';
 import { MOCK_CITIES, MOCK_SERVICES, MOCK_FNS } from '../../../constants/protoMockData';
-
-// ---------------------------------------------------------------------------
-// Dropdown picker component
-// ---------------------------------------------------------------------------
-
-function DropdownPicker({ label, icon, placeholder, value, options, open, onToggle, onSelect, error }: {
-  label: string; icon: string; placeholder: string; value: string;
-  options: string[]; open: boolean; onToggle: () => void; onSelect: (v: string) => void; error?: string;
-}) {
-  return (
-    <View className="gap-1">
-      <Text className="text-sm font-medium text-textSecondary">{label}</Text>
-      <Pressable onPress={onToggle}>
-        <View className={`h-12 flex-row items-center gap-2 rounded-xl border px-4 ${error ? 'border-statusError' : 'border-borderLight'} bg-white`}>
-          <Feather name={icon as any} size={16} color={Colors.textMuted} />
-          <Text className={`flex-1 text-base ${value ? 'text-textPrimary' : 'text-textMuted'}`}>
-            {value || placeholder}
-          </Text>
-          <Feather name={open ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
-        </View>
-      </Pressable>
-      {open && options.length > 0 && (
-        <View className="max-h-48 overflow-hidden rounded-xl border border-borderLight bg-white shadow-sm">
-          {options.map((opt) => (
-            <Pressable key={opt} onPress={() => onSelect(opt)} className="border-b border-bgSecondary px-4 py-3">
-              <Text className={`text-base ${value === opt ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{opt}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      {error && (
-        <View className="flex-row items-center gap-1">
-          <Feather name="alert-circle" size={12} color={Colors.statusError} />
-          <Text className="text-sm text-statusError">{error}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // File attachment item
@@ -64,6 +26,108 @@ function FileItem({ name, size, onRemove }: { name: string; size: string; onRemo
 }
 
 // ---------------------------------------------------------------------------
+// Cascading location + service picker (single unified block)
+// ---------------------------------------------------------------------------
+
+function LocationServicePicker({
+  city, fns, service, onCityChange, onFnsChange, onServiceChange,
+}: {
+  city: string; fns: string; service: string;
+  onCityChange: (v: string) => void; onFnsChange: (v: string) => void; onServiceChange: (v: string) => void;
+}) {
+  const [openLevel, setOpenLevel] = useState<'city' | 'fns' | 'service' | null>(null);
+  const fnsOptions = city ? (MOCK_FNS[city] || []) : [];
+
+  // Summary line for the picker button
+  const summary = city
+    ? [city, fns, service].filter(Boolean).join(' / ')
+    : '';
+
+  return (
+    <View className="gap-1">
+      <Text className="text-sm font-medium text-textSecondary">Город, ФНС и услуга</Text>
+
+      {/* Main picker button */}
+      <Pressable onPress={() => setOpenLevel(openLevel ? null : 'city')}>
+        <View className={`min-h-[48px] flex-row items-center gap-2 rounded-xl border px-4 py-3 ${openLevel ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
+          <Feather name="map-pin" size={16} color={Colors.textMuted} />
+          <Text className={`flex-1 text-base ${summary ? 'text-textPrimary' : 'text-textMuted'}`} numberOfLines={2}>
+            {summary || 'Выберите город, ФНС и услугу'}
+          </Text>
+          <Feather name={openLevel ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
+        </View>
+      </Pressable>
+
+      {/* Cascading dropdown panel */}
+      {openLevel && (
+        <View className="overflow-hidden rounded-xl border border-borderLight bg-white shadow-sm">
+          {/* Step indicator */}
+          <View className="flex-row border-b border-bgSecondary">
+            <Pressable
+              className={`flex-1 items-center py-2.5 ${openLevel === 'city' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => setOpenLevel('city')}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'city' ? 'text-brandPrimary' : city ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {city || 'Город'}
+              </Text>
+            </Pressable>
+            <Pressable
+              className={`flex-1 items-center py-2.5 ${openLevel === 'fns' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => city && setOpenLevel('fns')}
+              disabled={!city}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'fns' ? 'text-brandPrimary' : fns ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {fns ? fns.replace(/^ФНС\s*/, '').substring(0, 20) : 'ФНС'}
+              </Text>
+            </Pressable>
+            <Pressable
+              className={`flex-1 items-center py-2.5 ${openLevel === 'service' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => fns && setOpenLevel('service')}
+              disabled={!fns}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'service' ? 'text-brandPrimary' : service ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {service || 'Услуга'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Options list */}
+          <View className="max-h-48">
+            {openLevel === 'city' && MOCK_CITIES.map((c) => (
+              <Pressable
+                key={c}
+                className="border-b border-bgSecondary px-4 py-3"
+                onPress={() => { onCityChange(c); onFnsChange(''); onServiceChange(''); setOpenLevel('fns'); }}
+              >
+                <Text className={`text-base ${city === c ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c}</Text>
+              </Pressable>
+            ))}
+            {openLevel === 'fns' && fnsOptions.map((f) => (
+              <Pressable
+                key={f}
+                className="border-b border-bgSecondary px-4 py-3"
+                onPress={() => { onFnsChange(f); setOpenLevel('service'); }}
+              >
+                <Text className={`text-base ${fns === f ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f}</Text>
+              </Pressable>
+            ))}
+            {openLevel === 'service' && MOCK_SERVICES.map((s) => (
+              <Pressable
+                key={s}
+                className="border-b border-bgSecondary px-4 py-3"
+                onPress={() => { onServiceChange(s); setOpenLevel(null); }}
+              >
+                <Text className={`text-base ${service === s ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{s}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // STATE: DEFAULT — single page form
 // ---------------------------------------------------------------------------
 
@@ -74,55 +138,19 @@ function DefaultNewRequest() {
   const [fns, setFns] = useState('');
   const [service, setService] = useState('');
   const [publicVisible, setPublicVisible] = useState(false);
-  const [openPicker, setOpenPicker] = useState<'city' | 'fns' | 'service' | null>(null);
   const [files] = useState([
     { name: 'Справка_2НДФЛ.pdf', size: '245 КБ' },
     { name: 'Паспорт_скан.jpg', size: '1.2 МБ' },
   ]);
 
-  const fnsOptions = city ? (MOCK_FNS[city] || []) : [];
-  const serviceOptions = [...MOCK_SERVICES];
-
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <Text className="text-xl font-bold text-textPrimary">Новая заявка</Text>
 
-      {/* City */}
-      <DropdownPicker
-        label="Город"
-        icon="map-pin"
-        placeholder="Выберите город"
-        value={city}
-        options={MOCK_CITIES}
-        open={openPicker === 'city'}
-        onToggle={() => setOpenPicker(openPicker === 'city' ? null : 'city')}
-        onSelect={(v) => { setCity(v); setFns(''); setService(''); setOpenPicker(null); }}
-      />
-
-      {/* FNS — only if city selected */}
-      {city ? (
-        <DropdownPicker
-          label="ФНС"
-          icon="home"
-          placeholder="Выберите ФНС"
-          value={fns}
-          options={fnsOptions}
-          open={openPicker === 'fns'}
-          onToggle={() => setOpenPicker(openPicker === 'fns' ? null : 'fns')}
-          onSelect={(v) => { setFns(v); setOpenPicker(null); }}
-        />
-      ) : null}
-
-      {/* Service */}
-      <DropdownPicker
-        label="Услуга"
-        icon="briefcase"
-        placeholder="Выберите услугу"
-        value={service}
-        options={serviceOptions}
-        open={openPicker === 'service'}
-        onToggle={() => setOpenPicker(openPicker === 'service' ? null : 'service')}
-        onSelect={(v) => { setService(v); setOpenPicker(null); }}
+      {/* Unified City / FNS / Service picker */}
+      <LocationServicePicker
+        city={city} fns={fns} service={service}
+        onCityChange={setCity} onFnsChange={setFns} onServiceChange={setService}
       />
 
       {/* Title */}
@@ -166,17 +194,13 @@ function DefaultNewRequest() {
       </View>
 
       {/* Public toggle */}
-      <View className="flex-row items-center gap-3 py-1">
-        <Switch
+      <View className="py-1">
+        <Toggle
           value={publicVisible}
           onValueChange={setPublicVisible}
-          trackColor={{ false: Colors.border, true: Colors.brandPrimary }}
-          thumbColor={Colors.white}
+          label="Показать неавторизованным"
+          sublabel="Заявку увидят без входа в аккаунт"
         />
-        <View className="flex-1">
-          <Text className="text-sm font-medium text-textSecondary">Показать неавторизованным</Text>
-          <Text className="text-xs text-textMuted">Заявку увидят без входа в аккаунт</Text>
-        </View>
       </View>
 
       {/* Submit */}

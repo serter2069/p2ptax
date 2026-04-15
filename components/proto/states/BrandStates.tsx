@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../../constants/Colors';
+import { Toggle as ToggleComponent } from '../Toggle';
 
 // =====================================================================
 // HELPERS
@@ -505,6 +506,26 @@ function ShadowsSection({ isDesktop }: { isDesktop: boolean }) {
   );
 }
 
+// -- Toggle --
+function ToggleSection() {
+  const [a, setA] = React.useState(true);
+  const [b, setB] = React.useState(false);
+  const [c, setC] = React.useState(true);
+
+  return (
+    <View className="gap-4">
+      <Text className="text-xl font-bold text-textPrimary">Тумблеры</Text>
+      <Text className="-mt-2 text-sm text-textMuted">Кастомный Toggle — единый компонент для всех страниц</Text>
+      <View className="gap-4 rounded-xl border border-borderLight p-4">
+        <ToggleComponent label="Email-уведомления" value={a} onValueChange={setA} />
+        <ToggleComponent label="Push-уведомления" sublabel="Уведомления на телефон" value={b} onValueChange={setB} />
+        <ToggleComponent label="Публичный профиль" value={c} onValueChange={setC} />
+        <ToggleComponent label="Неактивный" value={false} onValueChange={() => {}} disabled />
+      </View>
+    </View>
+  );
+}
+
 // =====================================================================
 // NAV COMPONENT SECTIONS
 // =====================================================================
@@ -736,6 +757,7 @@ export function BrandStates() {
       <SpacingSection />
       <RadiusSection isDesktop={isDesktop} />
       <ShadowsSection isDesktop={isDesktop} />
+      <ToggleSection />
 
       <View className="my-5 h-px" style={{ backgroundColor: Colors.border }} />
 

@@ -146,20 +146,44 @@ function ProfileScreen({ initialMessage = '', initialFnsOpen = false }: { initia
           <Text className="text-base leading-6 text-textSecondary">{spec.about}</Text>
         </View>
 
-        {/* FNS button */}
-        <Pressable
-          onPress={() => setFnsModalVisible(true)}
-          className="flex-row items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm"
-        >
+        {/* FNS preview (first 2 open) + "Подробнее" for rest */}
+        <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
           <View className="flex-row items-center gap-2">
             <Feather name="briefcase" size={16} color="#0284C7" />
-            <Text className="text-base font-semibold text-brandPrimary">ФНС и услуги</Text>
+            <Text className="text-lg font-semibold text-textPrimary">ФНС и услуги</Text>
           </View>
-          <View className="flex-row items-center gap-1">
-            <Text className="text-sm text-textMuted">{spec.fnsServices.length} ФНС</Text>
-            <Feather name="chevron-right" size={18} color="#94A3B8" />
-          </View>
-        </Pressable>
+
+          {/* Show first 2 FNS inline */}
+          {spec.fnsServices.slice(0, 2).map((group, idx) => (
+            <View key={group.fns} className={`gap-2 ${idx > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
+              <View className="flex-row items-center gap-2">
+                <Feather name="home" size={14} color="#64748B" />
+                <Text className="text-base font-medium text-textPrimary">{group.fns}</Text>
+              </View>
+              <View className="flex-row flex-wrap gap-2 pl-6">
+                {group.services.map((svc) => (
+                  <View key={svc} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
+                    <Feather name="check" size={12} color="#0284C7" />
+                    <Text className="text-sm text-brandPrimary">{svc}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
+
+          {/* "Подробнее" button if more than 2 */}
+          {spec.fnsServices.length > 2 && (
+            <Pressable
+              onPress={() => setFnsModalVisible(true)}
+              className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary py-2.5"
+            >
+              <Text className="text-sm font-semibold text-brandPrimary">
+                Все ФНС и услуги ({spec.fnsServices.length})
+              </Text>
+              <Feather name="chevron-right" size={16} color="#0284C7" />
+            </Pressable>
+          )}
+        </View>
 
         <FnsModal visible={fnsModalVisible} onClose={() => setFnsModalVisible(false)} />
 

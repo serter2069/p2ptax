@@ -3,17 +3,11 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors } from '../../../constants/Colors';
+import { MOCK_CITIES, MOCK_FNS } from '../../../constants/protoMockData';
 
 // ---------------------------------------------------------------------------
 // Mock Data
 // ---------------------------------------------------------------------------
-const MOCK_CITIES = ['Москва', 'Санкт-Петербург', 'Казань'];
-
-const MOCK_FNS: Record<string, string[]> = {
-  'Москва': ['ФНС №15 по г. Москве', 'ФНС №46 по г. Москве', 'ФНС №7 по г. Москве'],
-  'Санкт-Петербург': ['ФНС №1 по г. Санкт-Петербургу', 'ФНС №25 по г. Санкт-Петербургу'],
-  'Казань': ['ФНС №3 по г. Казани', 'ФНС №14 по г. Казани'],
-};
 
 const MOCK_REQUESTS = [
   { id: 1, title: 'Выездная проверка ООО «Ромашка»', description: 'Назначена выездная налоговая проверка. Нужен специалист для сопровождения.', city: 'Москва', fns: 'ФНС №15 по г. Москве', service: 'Выездная проверка', date: '12.04.2026', author: 'Елена В.', memberSince: 2024, messageCount: 3 },
@@ -35,85 +29,112 @@ function pluralSpecialists(n: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Dropdown Picker (single select — for City)
+// Cascading City → FNS picker (single unified field, multi-select FNS)
 // ---------------------------------------------------------------------------
-function DropdownPicker({ label, value, placeholder, options, open, onToggle, onSelect }: {
-  label: string;
-  value: string;
-  placeholder: string;
-  options: string[];
-  open: boolean;
-  onToggle: () => void;
-  onSelect: (v: string) => void;
+function CityFnsPicker({
+  city, selectedFns, onCityChange, onFnsToggle, onRemoveFns,
+}: {
+  city: string; selectedFns: string[];
+  onCityChange: (v: string) => void; onFnsToggle: (v: string) => void; onRemoveFns: (v: string) => void;
 }) {
+  const [openLevel, setOpenLevel] = useState<'city' | 'fns' | null>(null);
+  const fnsOptions = city ? (MOCK_FNS[city] || []) : [];
+
+  const summary = city
+    ? selectedFns.length > 0
+      ? `${city} / ${selectedFns.length} ФНС`
+      : city
+    : '';
+
   return (
-    <View className="gap-1">
-      <Text className="text-xs font-semibold uppercase tracking-wider text-textSecondary">{label}</Text>
-      <Pressable onPress={onToggle}>
-        <View className="h-11 flex-row items-center justify-between rounded-lg border border-borderLight bg-white px-3">
-          <Text className={value ? 'text-sm text-textPrimary' : 'text-sm text-textMuted'}>
-            {value || placeholder}
+    <View className="gap-2">
+      {/* Main picker button */}
+      <Pressable onPress={() => setOpenLevel(openLevel ? null : 'city')}>
+        <View className={`h-11 flex-row items-center gap-2 rounded-lg border px-3 ${openLevel ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
+          <Feather name="map-pin" size={16} color={Colors.textMuted} />
+          <Text className={`flex-1 text-sm ${summary ? 'text-textPrimary' : 'text-textMuted'}`}>
+            {summary || 'Город и ФНС'}
           </Text>
-          <Feather name="chevron-down" size={14} color={Colors.textMuted} />
+          <Feather name={openLevel ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
         </View>
       </Pressable>
-      {open && (
-        <View className="overflow-hidden rounded-lg border border-borderLight bg-white" style={{ maxHeight: 200 }}>
-          <Pressable onPress={() => onSelect('')} className="border-b border-bgSecondary px-3 py-2.5">
-            <Text className="text-sm text-textMuted">{placeholder}</Text>
-          </Pressable>
-          {options.map((opt) => (
-            <Pressable key={opt} onPress={() => onSelect(opt)} className="border-b border-bgSecondary px-3 py-2.5">
-              <Text className={value === opt ? 'text-sm font-semibold text-brandPrimary' : 'text-sm text-textPrimary'}>{opt}</Text>
+
+      {/* Cascading panel */}
+      {openLevel && (
+        <View className="overflow-hidden rounded-lg border border-borderLight bg-white shadow-sm">
+          {/* Tabs: City / FNS */}
+          <View className="flex-row border-b border-bgSecondary">
+            <Pressable
+              className={`flex-1 items-center py-2.5 ${openLevel === 'city' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => setOpenLevel('city')}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'city' ? 'text-brandPrimary' : city ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {city || 'Город'}
+              </Text>
             </Pressable>
-          ))}
+            <Pressable
+              className={`flex-1 items-center py-2.5 ${openLevel === 'fns' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => city && setOpenLevel('fns')}
+              disabled={!city}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'fns' ? 'text-brandPrimary' : selectedFns.length > 0 ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {selectedFns.length > 0 ? `ФНС (${selectedFns.length})` : 'ФНС'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Options */}
+          <View style={{ maxHeight: 200 }}>
+            {openLevel === 'city' && (
+              <>
+                <Pressable
+                  className="border-b border-bgSecondary px-3 py-2.5"
+                  onPress={() => { onCityChange(''); setOpenLevel(null); }}
+                >
+                  <Text className="text-sm text-textMuted">Все города</Text>
+                </Pressable>
+                {MOCK_CITIES.map((c) => (
+                  <Pressable
+                    key={c}
+                    className="border-b border-bgSecondary px-3 py-2.5"
+                    onPress={() => { onCityChange(c); setOpenLevel('fns'); }}
+                  >
+                    <Text className={`text-sm ${city === c ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c}</Text>
+                  </Pressable>
+                ))}
+              </>
+            )}
+            {openLevel === 'fns' && fnsOptions.map((f) => {
+              const isSelected = selectedFns.includes(f);
+              return (
+                <Pressable
+                  key={f}
+                  className="flex-row items-center gap-2 border-b border-bgSecondary px-3 py-2.5"
+                  onPress={() => onFnsToggle(f)}
+                >
+                  <View className={isSelected
+                    ? 'h-5 w-5 items-center justify-center rounded border border-brandPrimary bg-brandPrimary'
+                    : 'h-5 w-5 rounded border border-borderLight bg-white'
+                  }>
+                    {isSelected && <Feather name="check" size={12} color="#fff" />}
+                  </View>
+                  <Text className={`text-sm ${isSelected ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       )}
-    </View>
-  );
-}
 
-// ---------------------------------------------------------------------------
-// Multi-Select Dropdown (for FNS)
-// ---------------------------------------------------------------------------
-function MultiSelectDropdown({ label, selected, placeholder, options, open, onToggle, onToggleItem }: {
-  label: string;
-  selected: string[];
-  placeholder: string;
-  options: string[];
-  open: boolean;
-  onToggle: () => void;
-  onToggleItem: (v: string) => void;
-}) {
-  const displayText = selected.length > 0 ? `${selected.length} выбрано` : '';
-
-  return (
-    <View className="gap-1">
-      <Text className="text-xs font-semibold uppercase tracking-wider text-textSecondary">{label}</Text>
-      <Pressable onPress={onToggle}>
-        <View className="h-11 flex-row items-center justify-between rounded-lg border border-borderLight bg-white px-3">
-          <Text className={displayText ? 'text-sm text-textPrimary' : 'text-sm text-textMuted'}>
-            {displayText || placeholder}
-          </Text>
-          <Feather name="chevron-down" size={14} color={Colors.textMuted} />
-        </View>
-      </Pressable>
-      {open && (
-        <View className="overflow-hidden rounded-lg border border-borderLight bg-white" style={{ maxHeight: 240 }}>
-          {options.map((opt) => {
-            const isSelected = selected.includes(opt);
-            return (
-              <Pressable key={opt} onPress={() => onToggleItem(opt)} className="flex-row items-center gap-2 border-b border-bgSecondary px-3 py-2.5">
-                <View className={isSelected
-                  ? 'h-5 w-5 items-center justify-center rounded border border-brandPrimary bg-brandPrimary'
-                  : 'h-5 w-5 rounded border border-borderLight bg-white'
-                }>
-                  {isSelected && <Feather name="check" size={12} color="#fff" />}
-                </View>
-                <Text className={isSelected ? 'text-sm font-semibold text-brandPrimary' : 'text-sm text-textPrimary'}>{opt}</Text>
-              </Pressable>
-            );
-          })}
+      {/* Selected FNS chips */}
+      {selectedFns.length > 0 && (
+        <View className="flex-row flex-wrap gap-2">
+          {selectedFns.map((fns) => (
+            <Pressable key={fns} onPress={() => onRemoveFns(fns)} className="flex-row items-center gap-1 rounded-full bg-brandPrimary/10 px-2.5 py-1">
+              <Text className="text-xs font-medium text-brandPrimary">{fns}</Text>
+              <Feather name="x" size={12} color={Colors.brandPrimary} />
+            </Pressable>
+          ))}
         </View>
       )}
     </View>
@@ -177,15 +198,10 @@ function RequestFeedCard({ title, description, city, fns, service, date, author,
 function FeedState() {
   const [filterCity, setFilterCity] = useState('');
   const [selectedFns, setSelectedFns] = useState<string[]>([]);
-  const [openPicker, setOpenPicker] = useState<'city' | 'fns' | null>(null);
 
-  // FNS options depend on selected city
-  const fnsOptions = filterCity ? (MOCK_FNS[filterCity] || []) : Object.values(MOCK_FNS).flat();
-
-  const handleCitySelect = (v: string) => {
+  const handleCityChange = (v: string) => {
     setFilterCity(v);
     setSelectedFns([]);
-    setOpenPicker(null);
   };
 
   const handleFnsToggle = (v: string) => {
@@ -214,54 +230,29 @@ function FeedState() {
         <Text className="mt-0.5 text-sm text-textMuted">{requests.length} активных заявок</Text>
       </View>
 
-      {/* Filters */}
+      {/* Unified City/FNS filter */}
       <View className="gap-3 rounded-xl border border-borderLight bg-bgSecondary p-4">
         <View className="flex-row items-center gap-2">
           <Feather name="sliders" size={14} color={Colors.brandPrimary} />
           <Text className="text-sm font-semibold text-textPrimary">Фильтры</Text>
+          {hasFilters && (
+            <Pressable
+              onPress={() => { setFilterCity(''); setSelectedFns([]); }}
+              className="ml-auto flex-row items-center gap-1"
+            >
+              <Feather name="x" size={14} color={Colors.textMuted} />
+              <Text className="text-xs text-textMuted">Сбросить</Text>
+            </Pressable>
+          )}
         </View>
 
-        <DropdownPicker
-          label="Город"
-          value={filterCity}
-          placeholder="Все города"
-          options={MOCK_CITIES}
-          open={openPicker === 'city'}
-          onToggle={() => setOpenPicker(openPicker === 'city' ? null : 'city')}
-          onSelect={handleCitySelect}
+        <CityFnsPicker
+          city={filterCity}
+          selectedFns={selectedFns}
+          onCityChange={handleCityChange}
+          onFnsToggle={handleFnsToggle}
+          onRemoveFns={handleRemoveFns}
         />
-
-        <MultiSelectDropdown
-          label="ФНС"
-          selected={selectedFns}
-          placeholder="Все ФНС"
-          options={fnsOptions}
-          open={openPicker === 'fns'}
-          onToggle={() => setOpenPicker(openPicker === 'fns' ? null : 'fns')}
-          onToggleItem={handleFnsToggle}
-        />
-
-        {/* Selected FNS chips */}
-        {selectedFns.length > 0 && (
-          <View className="flex-row flex-wrap gap-2">
-            {selectedFns.map((fns) => (
-              <Pressable key={fns} onPress={() => handleRemoveFns(fns)} className="flex-row items-center gap-1 rounded-full bg-brandPrimary/10 px-2.5 py-1">
-                <Text className="text-xs font-medium text-brandPrimary">{fns}</Text>
-                <Feather name="x" size={12} color={Colors.brandPrimary} />
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {hasFilters && (
-          <Pressable
-            onPress={() => { setFilterCity(''); setSelectedFns([]); setOpenPicker(null); }}
-            className="flex-row items-center justify-center gap-1.5 py-1"
-          >
-            <Feather name="x" size={14} color={Colors.textMuted} />
-            <Text className="text-sm text-textMuted">Сбросить фильтры</Text>
-          </Pressable>
-        )}
       </View>
 
       {/* Request cards */}
