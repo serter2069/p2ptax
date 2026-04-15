@@ -25,13 +25,13 @@ const CLIENT_TABS: TabConfig[] = [
 
 const SPECIALIST_TABS: TabConfig[] = [
   { name: 'feed', title: 'Лента', icon: 'list' },
-  { name: 'requests', title: 'Заявки', icon: 'file-text' },
+  { name: 'my-responses', title: 'Отклики', icon: 'send' },
   { name: 'messages', title: 'Сообщения', icon: 'message-circle' },
   { name: 'dashboard', title: 'Профиль', icon: 'user' },
   { name: 'settings', title: 'Настройки', icon: 'settings' },
 ];
 
-const ALL_TAB_NAMES = ['dashboard', 'requests', 'messages', 'settings', 'feed'];
+const ALL_TAB_NAMES = ['dashboard', 'requests', 'messages', 'settings', 'feed', 'my-responses'];
 
 // Sidebar nav groups for desktop view
 const CLIENT_SIDEBAR_NAV: NavGroup[] = [
@@ -54,7 +54,7 @@ const SPECIALIST_SIDEBAR_NAV: NavGroup[] = [
   {
     items: [
       { label: 'Лента', icon: 'list-outline', route: '/(tabs)/feed', segment: 'feed' },
-      { label: 'Заявки', icon: 'document-text-outline', route: '/(tabs)/requests', segment: 'requests' },
+      { label: 'Мои отклики', icon: 'send-outline', route: '/(tabs)/my-responses', segment: 'my-responses' },
     ],
   },
   {
