@@ -186,7 +186,7 @@ export default function NotificationsScreen() {
         (item.type === 'NEW_RESPONSE' || item.type === 'REQUEST_UPDATE') &&
         data.requestId
       ) {
-        router.push(`/request/${data.requestId}`);
+        router.push(`/(dashboard)/my-requests/${data.requestId}`);
       } else if (item.type === 'REVIEW') {
         router.push('/(tabs)/dashboard');
       }

@@ -156,7 +156,7 @@ export default function SearchScreen() {
     if (item._type === 'request') {
       return (
         <Pressable
-          onPress={() => router.push(`/request/${item.id}` as any)}
+          onPress={() => router.push(`/(dashboard)/my-requests/${item.id}` as any)}
           className="bg-bgCard border border-border rounded-lg p-3 mb-2 shadow-sm"
         >
           <View className="flex-row items-center gap-1 mb-2">

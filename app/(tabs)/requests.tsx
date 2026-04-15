@@ -272,11 +272,11 @@ export default function RequestsTab() {
     tab === 'active' ? activeRequests : tab === 'completed' ? completedRequests : allRequests;
 
   const goToCreate = () => {
-    router.push('/request/new' as never);
+    router.push('/(dashboard)/my-requests/new' as never);
   };
 
   const goToDetail = (id: string) => {
-    router.push(`/request/${id}` as never);
+    router.push(`/(dashboard)/my-requests/${id}` as never);
   };
 
   const tabs: { key: TabKey; label: string; count: number }[] = [

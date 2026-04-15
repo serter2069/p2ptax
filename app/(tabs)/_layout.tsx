@@ -18,18 +18,18 @@ interface TabConfig {
 
 // Prototype: Client tabs — home, file-text, message-circle, user
 const CLIENT_TABS: TabConfig[] = [
-  { name: 'dashboard', title: 'Glavnaya', icon: 'home' },
-  { name: 'requests', title: 'Zayavki', icon: 'file-text' },
-  { name: 'messages', title: 'Soobscheniya', icon: 'message-circle' },
-  { name: 'profile', title: 'Profil', icon: 'user' },
+  { name: 'dashboard', title: 'Главная', icon: 'home' },
+  { name: 'requests', title: 'Заявки', icon: 'file-text' },
+  { name: 'messages', title: 'Сообщения', icon: 'message-circle' },
+  { name: 'profile', title: 'Профиль', icon: 'user' },
 ];
 
 // Prototype: Specialist tabs — briefcase, send, message-circle, user
 const SPECIALIST_TABS: TabConfig[] = [
-  { name: 'feed', title: 'Kabinet', icon: 'briefcase' },
-  { name: 'my-responses', title: 'Otkliki', icon: 'send' },
-  { name: 'messages', title: 'Soobscheniya', icon: 'message-circle' },
-  { name: 'dashboard', title: 'Profil', icon: 'user' },
+  { name: 'feed', title: 'Кабинет', icon: 'briefcase' },
+  { name: 'my-responses', title: 'Отклики', icon: 'send' },
+  { name: 'messages', title: 'Сообщения', icon: 'message-circle' },
+  { name: 'dashboard', title: 'Профиль', icon: 'user' },
 ];
 
 const ALL_TAB_NAMES = ['dashboard', 'requests', 'messages', 'settings', 'feed', 'my-responses', 'profile'];
@@ -39,16 +39,16 @@ function buildClientSidebarNav(unreadNotifs: number): NavGroup[] {
   return [
     {
       items: [
-        { label: 'Glavnaya', icon: 'home', route: '/(tabs)/dashboard', segment: 'dashboard' },
-        { label: 'Zayavki', icon: 'file-text', route: '/(tabs)/requests', segment: 'requests' },
+        { label: 'Главная', icon: 'home', route: '/(tabs)/dashboard', segment: 'dashboard' },
+        { label: 'Заявки', icon: 'file-text', route: '/(tabs)/requests', segment: 'requests' },
       ],
     },
     {
-      label: 'Lichnoe',
+      label: 'Личное',
       items: [
-        { label: 'Soobscheniya', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
-        { label: 'Uvedomleniya', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
-        { label: 'Profil', icon: 'user', route: '/(tabs)/profile', segment: 'profile' },
+        { label: 'Сообщения', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
+        { label: 'Уведомления', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
+        { label: 'Профиль', icon: 'user', route: '/(tabs)/profile', segment: 'profile' },
       ],
     },
   ];
@@ -58,16 +58,16 @@ function buildSpecialistSidebarNav(unreadNotifs: number): NavGroup[] {
   return [
     {
       items: [
-        { label: 'Kabinet', icon: 'briefcase', route: '/(tabs)/feed', segment: 'feed' },
-        { label: 'Otkliki', icon: 'send', route: '/(tabs)/my-responses', segment: 'my-responses' },
+        { label: 'Кабинет', icon: 'briefcase', route: '/(tabs)/feed', segment: 'feed' },
+        { label: 'Отклики', icon: 'send', route: '/(tabs)/my-responses', segment: 'my-responses' },
       ],
     },
     {
-      label: 'Lichnoe',
+      label: 'Личное',
       items: [
-        { label: 'Soobscheniya', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
-        { label: 'Uvedomleniya', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
-        { label: 'Profil', icon: 'user', route: '/(tabs)/dashboard', segment: 'dashboard' },
+        { label: 'Сообщения', icon: 'message-circle', route: '/(tabs)/messages', segment: 'messages' },
+        { label: 'Уведомления', icon: 'bell', route: '/notifications', segment: 'notifications', badgeCount: unreadNotifs },
+        { label: 'Профиль', icon: 'user', route: '/(tabs)/dashboard', segment: 'dashboard' },
       ],
     },
   ];
