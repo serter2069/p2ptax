@@ -1,61 +1,49 @@
 import React from 'react';
-import { View, Text, Pressable, Platform } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+const BRAND_ACCENT = '#D4A843';
+
 interface FooterProps {
+  /** @deprecated kept for backward compatibility */
   isWide?: boolean;
 }
 
-export function Footer({ isWide = false }: FooterProps) {
+export function Footer(_props?: FooterProps) {
   const router = useRouter();
 
   return (
-    <View className="w-full bg-textPrimary py-6 px-4 items-center border-t border-white/[0.08]">
-      <View className={`w-full max-w-[1100px] flex-col items-center gap-4 ${isWide ? 'flex-row justify-between' : ''}`}>
+    <View className="bg-textPrimary px-6 py-6 gap-4">
+      {/* Top row: logo + links */}
+      <View className="flex-row justify-between items-start">
         <View className="flex-row items-center gap-2">
-          <View className="w-7 h-7 rounded-full bg-brandPrimary items-center justify-center">
-            <Text className="text-[13px] font-bold text-white">H</Text>
-          </View>
-          <Text className="text-lg font-bold text-white">Налоговик</Text>
+          <Feather name="briefcase" size={18} color={BRAND_ACCENT} />
+          <Text className="text-base font-bold text-white">Налоговик</Text>
         </View>
-        <View className={`flex-row items-center gap-3 flex-wrap justify-center ${isWide ? 'gap-4' : ''}`}>
+        <View className="gap-2 items-end">
+          <Pressable onPress={() => router.push('/')}>
+            <Text className="text-sm text-white/60">О сервисе</Text>
+          </Pressable>
           <Pressable onPress={() => router.push('/specialists')}>
-            <Text className="text-[15px] text-white/[0.65] font-medium">Специалисты</Text>
+            <Text className="text-sm text-white/60">Специалисты</Text>
           </Pressable>
-          <Text className="text-[15px] text-white/[0.35]">·</Text>
-          <Pressable onPress={() => router.push('/requests')}>
-            <Text className="text-[15px] text-white/[0.65] font-medium">Запросы</Text>
+          <Pressable onPress={() => router.push('/pricing')}>
+            <Text className="text-sm text-white/60">Тарифы</Text>
           </Pressable>
-          <Text className="text-[15px] text-white/[0.35]">·</Text>
-          <Pressable
-            onPress={() => {
-              if (Platform.OS === 'web') {
-                router.push('/');
-                setTimeout(() => {
-                  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-                }, 300);
-              }
-            }}
-          >
-            <Text className="text-[15px] text-white/[0.65] font-medium">О платформе</Text>
-          </Pressable>
-          <Text className="text-[15px] text-white/[0.35]">·</Text>
           <Pressable onPress={() => router.push('/support' as any)}>
-            <Text className="text-[15px] text-white/[0.65] font-medium">Контакты</Text>
-          </Pressable>
-          <Text className="text-[15px] text-white/[0.35]">·</Text>
-          <Pressable onPress={() => router.push('/privacy' as any)}>
-            <Text className="text-[15px] text-white/[0.65] font-medium">Политика конфиденциальности</Text>
-          </Pressable>
-          <Text className="text-[15px] text-white/[0.35]">·</Text>
-          <Pressable onPress={() => router.push('/terms' as any)}>
-            <Text className="text-[15px] text-white/[0.65] font-medium">Пользовательское соглашение</Text>
+            <Text className="text-sm text-white/60">Контакты</Text>
           </Pressable>
         </View>
-        <Text className="text-[13px] text-white/[0.35]">
-          {`\u00A9 ${new Date().getFullYear()} Налоговик`}
-        </Text>
       </View>
+
+      {/* Divider */}
+      <View className="h-px bg-white/10" />
+
+      {/* Copyright */}
+      <Text className="text-xs text-white/40 text-center">
+        {`${new Date().getFullYear()} Налоговик. Все права защищены.`}
+      </Text>
     </View>
   );
 }
