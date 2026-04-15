@@ -444,7 +444,7 @@ export default function SettingsTab() {
             <SectionCard>
               <Pressable
                 style={[s.row, s.rowLast]}
-                onPress={() => router.push('/(dashboard)/profile')}
+                onPress={() => router.push('/profile/edit')}
               >
                 <Feather name="edit-2" size={18} color={Colors.brandPrimary} />
                 <Text style={[s.rowLabel, { color: Colors.brandPrimary }]}>
