@@ -13,6 +13,7 @@ interface TabConfig {
 }
 
 const CLIENT_TABS: TabConfig[] = [
+  { name: 'dashboard', title: 'Главная', icon: 'home' },
   { name: 'requests', title: 'Заявки', icon: 'file-text' },
   { name: 'messages', title: 'Сообщения', icon: 'message-circle' },
   { name: 'settings', title: 'Настройки', icon: 'settings' },
