@@ -27,7 +27,7 @@ jobs:
 
       - name: Install API dependencies
         working-directory: ./api
-        run: npm install --prefer-offline
+        run: npm ci
 
       - name: Generate Prisma client
         working-directory: ./api
