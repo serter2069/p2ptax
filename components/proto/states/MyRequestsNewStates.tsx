@@ -5,6 +5,13 @@ import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
 import { MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
 
+const MOCK_FNS: Record<string, string[]> = {
+  'Москва': ['ИФНС №1 по г. Москве', 'ИФНС №46 по г. Москве', 'МРИ ФНС №12 по г. Москве'],
+  'Санкт-Петербург': ['ИФНС №15 по г. Санкт-Петербургу', 'МРИ ФНС №7 по г. Санкт-Петербургу'],
+  'Казань': ['ИФНС по г. Казани', 'МРИ ФНС №6 по Республике Татарстан'],
+  'Новосибирск': ['ИФНС по г. Новосибирску', 'МРИ ФНС №16 по Новосибирской области'],
+};
+
 // ---------------------------------------------------------------------------
 // Shared
 // ---------------------------------------------------------------------------
@@ -42,12 +49,13 @@ function DefaultNewRequest() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
+  const [fns, setFns] = useState('');
   const [service, setService] = useState('');
-  const [budget, setBudget] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
+  const [showFnsPicker, setShowFnsPicker] = useState(false);
   const [showServicePicker, setShowServicePicker] = useState(false);
 
   const validateStep1 = () => {
@@ -91,8 +99,8 @@ function DefaultNewRequest() {
     setTitle('');
     setDescription('');
     setCity('');
+    setFns('');
     setService('');
-    setBudget('');
     setErrors({});
   };
 
@@ -118,12 +126,52 @@ function DefaultNewRequest() {
       <Text style={s.pageTitle}>Новая заявка</Text>
       <StepIndicator current={step} total={3} />
 
-      {/* Step 1: Service type + city + FNS */}
+      {/* Step 1: City → FNS → Service */}
       {step === 1 && (
         <View style={s.form}>
           <View style={s.field}>
+            <Text style={s.label}>Город *</Text>
+            <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowFnsPicker(false); setShowServicePicker(false); }}>
+              <View style={s.select}>
+                <Feather name="map-pin" size={16} color={Colors.textMuted} />
+                <Text style={city ? s.selectTextFilled : s.selectText}>{city || 'Выберите город'}</Text>
+                <Feather name="chevron-down" size={16} color={Colors.textMuted} />
+              </View>
+            </Pressable>
+            {showCityPicker && (
+              <View style={s.pickerList}>
+                {MOCK_CITIES.map((c) => (
+                  <Pressable key={c} onPress={() => { setCity(c); setFns(''); setShowCityPicker(false); }} style={s.pickerItem}>
+                    <Text style={[s.pickerText, city === c && s.pickerTextActive]}>{c}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+          {city ? (
+            <View style={s.field}>
+              <Text style={s.label}>ФНС</Text>
+              <Pressable onPress={() => { setShowFnsPicker(!showFnsPicker); setShowCityPicker(false); setShowServicePicker(false); }}>
+                <View style={s.select}>
+                  <Feather name="briefcase" size={16} color={Colors.textMuted} />
+                  <Text style={fns ? s.selectTextFilled : s.selectText}>{fns || 'Выберите ФНС'}</Text>
+                  <Feather name="chevron-down" size={16} color={Colors.textMuted} />
+                </View>
+              </Pressable>
+              {showFnsPicker && (
+                <View style={s.pickerList}>
+                  {(MOCK_FNS[city] || []).map((f) => (
+                    <Pressable key={f} onPress={() => { setFns(f); setShowFnsPicker(false); }} style={s.pickerItem}>
+                      <Text style={[s.pickerText, fns === f && s.pickerTextActive]}>{f}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+          ) : null}
+          <View style={s.field}>
             <Text style={s.label}>Услуга *</Text>
-            <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); }}>
+            <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); setShowFnsPicker(false); }}>
               <View style={[s.select, errors.service ? s.inputError : null]}>
                 <Feather name="briefcase" size={16} color={Colors.textMuted} />
                 <Text style={service ? s.selectTextFilled : s.selectText}>{service || 'Выберите услугу'}</Text>
@@ -132,7 +180,7 @@ function DefaultNewRequest() {
             </Pressable>
             {showServicePicker && (
               <View style={s.pickerList}>
-                {MOCK_SERVICES.map((svc) => (
+                {[...MOCK_SERVICES, { id: 'idk', name: 'Не знаю' }].map((svc) => (
                   <Pressable key={svc.id} onPress={() => { setService(svc.name); setShowServicePicker(false); if (errors.service) { const e = { ...errors }; delete e.service; setErrors(e); } }} style={s.pickerItem}>
                     <Text style={[s.pickerText, service === svc.name && s.pickerTextActive]}>{svc.name}</Text>
                   </Pressable>
@@ -143,25 +191,6 @@ function DefaultNewRequest() {
               <View style={s.errorRow}>
                 <Feather name="alert-circle" size={12} color={Colors.statusError} />
                 <Text style={s.error}>{errors.service}</Text>
-              </View>
-            )}
-          </View>
-          <View style={s.field}>
-            <Text style={s.label}>Город</Text>
-            <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowServicePicker(false); }}>
-              <View style={s.select}>
-                <Feather name="map-pin" size={16} color={Colors.textMuted} />
-                <Text style={city ? s.selectTextFilled : s.selectText}>{city || 'Выберите город'}</Text>
-                <Feather name="chevron-down" size={16} color={Colors.textMuted} />
-              </View>
-            </Pressable>
-            {showCityPicker && (
-              <View style={s.pickerList}>
-                {MOCK_CITIES.map((c) => (
-                  <Pressable key={c} onPress={() => { setCity(c); setShowCityPicker(false); }} style={s.pickerItem}>
-                    <Text style={[s.pickerText, city === c && s.pickerTextActive]}>{c}</Text>
-                  </Pressable>
-                ))}
               </View>
             )}
           </View>
@@ -208,20 +237,6 @@ function DefaultNewRequest() {
               </View>
             )}
           </View>
-          <View style={s.field}>
-            <Text style={s.label}>Бюджет</Text>
-            <View style={s.budgetWrap}>
-              <Feather name="dollar-sign" size={16} color={Colors.textMuted} />
-              <TextInput
-                value={budget}
-                onChangeText={setBudget}
-                placeholder="Например: 5 000 - 10 000"
-                placeholderTextColor={Colors.textMuted}
-                style={s.budgetInput}
-              />
-              <Text style={s.currencyLabel}>&#8381;</Text>
-            </View>
-          </View>
           <View style={s.stepActions}>
             <Pressable onPress={() => setStep(1)} style={s.btnBack}>
               <Feather name="arrow-left" size={16} color={Colors.textPrimary} />
@@ -249,6 +264,10 @@ function DefaultNewRequest() {
               <Text style={s.previewValue}>{city || 'Не указан'}</Text>
             </View>
             <View style={s.previewRow}>
+              <Text style={s.previewKey}>ФНС</Text>
+              <Text style={s.previewValue}>{fns || 'Не указана'}</Text>
+            </View>
+            <View style={s.previewRow}>
               <Text style={s.previewKey}>Заголовок</Text>
               <Text style={s.previewValue}>{title}</Text>
             </View>
@@ -256,12 +275,6 @@ function DefaultNewRequest() {
               <Text style={s.previewKey}>Описание</Text>
               <Text style={s.previewValue}>{description}</Text>
             </View>
-            {budget ? (
-              <View style={s.previewRow}>
-                <Text style={s.previewKey}>Бюджет</Text>
-                <Text style={s.previewValue}>{budget} &#8381;</Text>
-              </View>
-            ) : null}
           </View>
           <View style={s.stepActions}>
             <Pressable onPress={() => setStep(2)} style={s.btnBack}>
