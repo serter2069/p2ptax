@@ -10,16 +10,15 @@ import {
   Platform,
   TextInput,
   KeyboardAvoidingView,
-  StyleSheet,
+  Switch,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
 import { api, ApiError } from '../../lib/api';
 import { isAdmin } from '../../lib/adminEmails';
-import { Toggle } from '../../components/ui/Toggle';
 import { users } from '../../lib/api/endpoints';
-import { Colors, Typography, Spacing, Shadows, BorderRadius } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,89 +57,87 @@ const APP_VERSION = '1.0.0';
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
-function SectionCard({ children, danger }: { children: React.ReactNode; danger?: boolean }) {
-  return (
-    <View style={[s.card, danger && s.cardDanger]}>
-      {children}
-    </View>
-  );
-}
-
 function SettingRow({
   label,
   value,
   icon,
   danger,
   onPress,
-  last,
 }: {
   label: string;
   value?: string;
-  icon: string;
+  icon?: string;
   danger?: boolean;
   onPress?: () => void;
-  last?: boolean;
 }) {
   return (
-    <Pressable onPress={onPress} style={[s.row, last && s.rowLast]}>
-      <Feather
-        name={icon as any}
-        size={18}
-        color={danger ? Colors.statusError : Colors.textMuted}
-      />
-      <Text style={[s.rowLabel, danger && { color: Colors.statusError }]}>
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center gap-3 px-4 py-3 border-b border-sky-50"
+    >
+      {icon && (
+        <Feather
+          name={icon as any}
+          size={18}
+          color={danger ? Colors.statusError : Colors.textMuted}
+        />
+      )}
+      <Text
+        className="flex-1 text-[13px]"
+        style={{ color: danger ? Colors.statusError : Colors.textPrimary }}
+      >
         {label}
       </Text>
-      {value && <Text style={s.rowValue}>{value}</Text>}
-      {onPress && (
-        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+      {value && (
+        <Text className="text-[13px] mr-2" style={{ color: Colors.textMuted }}>
+          {value}
+        </Text>
       )}
+      <Feather name="chevron-right" size={16} color={Colors.textMuted} />
     </Pressable>
   );
 }
 
 function ToggleRow({
   label,
-  sublabel,
   icon,
-  value,
+  enabled,
   onToggle,
   disabled,
-  last,
 }: {
   label: string;
-  sublabel?: string;
   icon: string;
-  value: boolean;
+  enabled: boolean;
   onToggle: (v: boolean) => void;
   disabled?: boolean;
-  last?: boolean;
 }) {
   return (
-    <View style={[s.row, last && s.rowLast]}>
+    <View
+      className="flex-row items-center gap-3 px-4 py-3 border-b border-sky-50"
+      style={{ opacity: disabled ? 0.5 : 1 }}
+    >
       <Feather name={icon as any} size={18} color={Colors.textMuted} />
-      <View style={{ flex: 1 }}>
-        <Toggle
-          value={value}
-          onValueChange={onToggle}
-          label={label}
-          sublabel={sublabel}
-          disabled={disabled}
-        />
-      </View>
+      <Text className="flex-1 text-[13px]" style={{ color: Colors.textPrimary }}>
+        {label}
+      </Text>
+      <Switch
+        value={enabled}
+        onValueChange={(v) => { if (!disabled) onToggle(v); }}
+        trackColor={{ false: '#D1D5DB', true: '#0284C7' }}
+        thumbColor="#fff"
+        disabled={disabled}
+      />
     </View>
   );
 }
 
-function ConfirmModal({
-  title,
+function ConfirmCard({
   message,
   confirmLabel,
   onCancel,
   onConfirm,
   loading,
 }: {
-  title: string;
   message: string;
   confirmLabel: string;
   onCancel: () => void;
@@ -148,26 +145,36 @@ function ConfirmModal({
   loading?: boolean;
 }) {
   return (
-    <View style={s.confirmCard}>
-      <Text style={s.confirmTitle}>{title}</Text>
-      <Text style={s.confirmText}>{message}</Text>
-      <View style={s.confirmActions}>
+    <View
+      className="bg-white rounded-[14px] p-4 gap-3 shadow-sm"
+      style={{ borderWidth: 1, borderColor: Colors.statusBg.error }}
+    >
+      <Text className="text-[13px] text-center" style={{ color: Colors.textSecondary }}>
+        {message}
+      </Text>
+      <View className="flex-row gap-2">
         <Pressable
           onPress={onCancel}
-          style={s.confirmBtnCancel}
           disabled={loading}
+          className="flex-1 h-10 rounded-[12px] items-center justify-center"
+          style={{ borderWidth: 1, borderColor: Colors.border }}
         >
-          <Text style={s.confirmBtnCancelText}>Отмена</Text>
+          <Text className="text-[13px]" style={{ color: Colors.textMuted }}>
+            Отмена
+          </Text>
         </Pressable>
         <Pressable
           onPress={onConfirm}
-          style={s.confirmBtnDanger}
           disabled={loading}
+          className="flex-1 h-10 rounded-[12px] items-center justify-center"
+          style={{ backgroundColor: Colors.statusError }}
         >
           {loading ? (
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
-            <Text style={s.confirmBtnDangerText}>{confirmLabel}</Text>
+            <Text className="text-[13px] font-semibold" style={{ color: Colors.white }}>
+              {confirmLabel}
+            </Text>
           )}
         </Pressable>
       </View>
@@ -184,7 +191,10 @@ export default function SettingsTab() {
   const isSpecialist = user?.role === 'SPECIALIST';
 
   // Notification toggles
-  const [notifSettings, setNotifSettings] = useState<{ new_responses: boolean; new_messages: boolean }>({
+  const [notifSettings, setNotifSettings] = useState<{
+    new_responses: boolean;
+    new_messages: boolean;
+  }>({
     new_responses: true,
     new_messages: true,
   });
@@ -218,22 +228,22 @@ export default function SettingsTab() {
     try {
       const promises: Promise<unknown>[] = [];
 
-      // Load notification settings
       promises.push(
         users
           .getNotificationSettings()
           .then((res: { data: { new_responses: boolean; new_messages: boolean } }) => {
             if (res.data) {
               setNotifSettings({
-                new_responses: typeof res.data.new_responses === 'boolean' ? res.data.new_responses : true,
-                new_messages: typeof res.data.new_messages === 'boolean' ? res.data.new_messages : true,
+                new_responses:
+                  typeof res.data.new_responses === 'boolean' ? res.data.new_responses : true,
+                new_messages:
+                  typeof res.data.new_messages === 'boolean' ? res.data.new_messages : true,
               });
             }
           })
           .catch(() => {}),
       );
 
-      // Specialist: load profile
       if (isSpecialist) {
         promises.push(
           api
@@ -246,7 +256,6 @@ export default function SettingsTab() {
         );
       }
 
-      // Client: load reviews
       if (!isSpecialist) {
         promises.push(
           api
@@ -272,15 +281,18 @@ export default function SettingsTab() {
   }, [fetchData]);
 
   // ---- Notification toggles ----
-  const handleNotifToggle = useCallback(async (key: 'new_responses' | 'new_messages', v: boolean) => {
-    const prev = notifSettings[key];
-    setNotifSettings((s) => ({ ...s, [key]: v }));
-    try {
-      await users.updateNotificationSettings({ [key]: v });
-    } catch {
-      setNotifSettings((s) => ({ ...s, [key]: prev }));
-    }
-  }, [notifSettings]);
+  const handleNotifToggle = useCallback(
+    async (key: 'new_responses' | 'new_messages', v: boolean) => {
+      const prev = notifSettings[key];
+      setNotifSettings((s) => ({ ...s, [key]: v }));
+      try {
+        await users.updateNotificationSettings({ [key]: v });
+      } catch {
+        setNotifSettings((s) => ({ ...s, [key]: prev }));
+      }
+    },
+    [notifSettings],
+  );
 
   // ---- Availability toggle (specialist) ----
   const handleToggleAvailability = useCallback(async (val: boolean) => {
@@ -399,12 +411,12 @@ export default function SettingsTab() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: Colors.bgPrimary }}
+      className="flex-1 bg-white"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.container}
+        className="flex-1 bg-white"
+        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
@@ -414,70 +426,85 @@ export default function SettingsTab() {
           />
         }
       >
-        <Text style={s.pageTitle}>Настройки</Text>
+        {/* Page title */}
+        <Text
+          className="text-[20px] font-bold"
+          style={{ color: Colors.textPrimary }}
+        >
+          Настройки
+        </Text>
 
-        {/* ============ Profile ============ */}
-        <View style={s.section}>
-          <SectionCard>
-            <View style={s.profileRow}>
-              <View style={s.avatar}>
-                <Text style={s.avatarText}>{initials}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.profileName}>{displayName}</Text>
-                <Text style={s.profileEmail}>{displayEmail}</Text>
-              </View>
+        {/* ============ Profile card ============ */}
+        <View
+          className="bg-white rounded-[14px] overflow-hidden shadow-sm"
+          style={{ borderWidth: 1, borderColor: Colors.border }}
+        >
+          <View className="flex-row items-center gap-3 p-4">
+            <View
+              className="w-12 h-12 rounded-full items-center justify-center"
+              style={{ backgroundColor: Colors.brandPrimary }}
+            >
+              <Text className="text-[18px] font-bold text-white">{initials}</Text>
             </View>
-          </SectionCard>
+            <View className="flex-1">
+              <Text
+                className="text-[15px] font-semibold"
+                style={{ color: Colors.textPrimary }}
+              >
+                {displayName}
+              </Text>
+              <Text className="text-[13px] mt-0.5" style={{ color: Colors.textMuted }}>
+                {displayEmail}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* ============ Specialist: Work area ============ */}
         {isSpecialist && profile && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Рабочая зона</Text>
-            <SectionCard>
+          <View className="gap-2">
+            <Text
+              className="text-[11px] font-semibold uppercase"
+              style={{ color: Colors.textMuted, letterSpacing: 0.5 }}
+            >
+              Рабочая зона
+            </Text>
+            <View
+              className="bg-white rounded-[14px] overflow-hidden shadow-sm"
+              style={{ borderWidth: 1, borderColor: Colors.border }}
+            >
               <Pressable
-                style={[s.row, s.rowLast]}
+                className="flex-row items-center gap-3 px-4 py-3"
                 onPress={() => router.push('/profile/edit')}
               >
                 <Feather name="edit-2" size={18} color={Colors.brandPrimary} />
-                <Text style={[s.rowLabel, { color: Colors.brandPrimary }]}>
+                <Text className="flex-1 text-[13px]" style={{ color: Colors.brandPrimary }}>
                   Редактировать профиль
                 </Text>
-                <Feather
-                  name="chevron-right"
-                  size={16}
-                  color={Colors.brandPrimary}
-                />
+                <Feather name="chevron-right" size={16} color={Colors.brandPrimary} />
               </Pressable>
-            </SectionCard>
-            <View style={s.workAreaSummary}>
+            </View>
+            <View className="gap-1 px-1">
               {profile.cities.length > 0 && (
-                <View style={s.chipRow}>
+                <View className="flex-row items-center gap-2">
                   <Feather name="map-pin" size={14} color={Colors.textMuted} />
-                  <Text style={s.chipText}>{profile.cities.join(', ')}</Text>
+                  <Text className="text-[13px] flex-1" style={{ color: Colors.textSecondary }}>
+                    {profile.cities.join(', ')}
+                  </Text>
                 </View>
               )}
               {profile.fnsOffices.length > 0 && (
-                <View style={s.chipRow}>
-                  <Feather
-                    name="briefcase"
-                    size={14}
-                    color={Colors.textMuted}
-                  />
-                  <Text style={s.chipText}>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="briefcase" size={14} color={Colors.textMuted} />
+                  <Text className="text-[13px]" style={{ color: Colors.textSecondary }}>
                     {profile.fnsOffices.length} ИФНС
                   </Text>
                 </View>
               )}
               {profile.services.length > 0 && (
-                <View style={s.chipRow}>
-                  <Feather
-                    name="check-circle"
-                    size={14}
-                    color={Colors.textMuted}
-                  />
-                  <Text style={s.chipText}>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="check-circle" size={14} color={Colors.textMuted} />
+                  <Text className="text-[13px] flex-1" style={{ color: Colors.textSecondary }}>
                     {profile.services.join(', ')}
                   </Text>
                 </View>
@@ -485,7 +512,9 @@ export default function SettingsTab() {
               {profile.cities.length === 0 &&
                 profile.fnsOffices.length === 0 &&
                 profile.services.length === 0 && (
-                  <Text style={s.emptyHint}>Профиль не заполнен</Text>
+                  <Text className="text-[13px] italic" style={{ color: Colors.textMuted }}>
+                    Профиль не заполнен
+                  </Text>
                 )}
             </View>
           </View>
@@ -493,74 +522,95 @@ export default function SettingsTab() {
 
         {/* ============ Specialist: Public profile toggle ============ */}
         {isSpecialist && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Публичный профиль</Text>
-            <SectionCard>
+          <View className="gap-2">
+            <Text
+              className="text-[11px] font-semibold uppercase"
+              style={{ color: Colors.textMuted, letterSpacing: 0.5 }}
+            >
+              Публичный профиль
+            </Text>
+            <View
+              className="bg-white rounded-[14px] overflow-hidden shadow-sm"
+              style={{ borderWidth: 1, borderColor: Colors.border }}
+            >
               <ToggleRow
                 label="Принимаю заявки"
-                sublabel={
-                  isAvailable
-                    ? 'Ваш профиль виден клиентам'
-                    : 'Профиль скрыт от поиска'
-                }
                 icon="eye"
-                value={isAvailable}
+                enabled={isAvailable}
                 onToggle={handleToggleAvailability}
                 disabled={savingAvailability}
-                last
               />
-            </SectionCard>
+            </View>
           </View>
         )}
 
         {/* ============ Notifications ============ */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Уведомления</Text>
-          <SectionCard>
+        <View className="gap-2">
+          <Text
+            className="text-[11px] font-semibold uppercase"
+            style={{ color: Colors.textMuted, letterSpacing: 0.5 }}
+          >
+            Уведомления
+          </Text>
+          <View
+            className="bg-white rounded-[14px] overflow-hidden shadow-sm"
+            style={{ borderWidth: 1, borderColor: Colors.border }}
+          >
             <ToggleRow
-              label="Новые отклики"
-              sublabel="Уведомления о новых откликах на ваши запросы"
+              label="Email-уведомления"
               icon="mail"
-              value={notifSettings.new_responses}
+              enabled={notifSettings.new_responses}
               onToggle={(v) => handleNotifToggle('new_responses', v)}
             />
             <ToggleRow
-              label="Новые сообщения"
-              sublabel="Уведомления о новых сообщениях в чатах"
-              icon="message-square"
-              value={notifSettings.new_messages}
-              onToggle={(v) => handleNotifToggle('new_messages', v)}
-            />
-            <ToggleRow
-              label="Автозакрытие"
-              sublabel="Уведомления об автоматическом закрытии запросов"
-              icon="clock"
-              value={true}
+              label="Push-уведомления"
+              icon="bell"
+              enabled={false}
               onToggle={() => {}}
               disabled
-              last
             />
-          </SectionCard>
+            <ToggleRow
+              label="Новые отклики"
+              icon="message-circle"
+              enabled={notifSettings.new_messages}
+              onToggle={(v) => handleNotifToggle('new_messages', v)}
+            />
+          </View>
         </View>
 
-        {/* ============ Account / Email change ============ */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Аккаунт</Text>
-          <SectionCard>
+        {/* ============ Account ============ */}
+        <View className="gap-2">
+          <Text
+            className="text-[11px] font-semibold uppercase"
+            style={{ color: Colors.textMuted, letterSpacing: 0.5 }}
+          >
+            Аккаунт
+          </Text>
+          <View
+            className="bg-white rounded-[14px] overflow-hidden shadow-sm"
+            style={{ borderWidth: 1, borderColor: Colors.border }}
+          >
             {emailChangeStep === 'idle' && (
               <SettingRow
                 label="Изменить email"
                 icon="mail"
                 onPress={handleStartEmailChange}
-                last
               />
             )}
 
             {emailChangeStep === 'email_input' && (
-              <View style={s.emailChangeBlock}>
-                <Text style={s.emailChangeLabel}>Новый email</Text>
+              <View className="p-4 gap-2">
+                <Text className="text-[13px]" style={{ color: Colors.textSecondary }}>
+                  Новый email
+                </Text>
                 <TextInput
-                  style={s.emailChangeInput}
+                  className="rounded-[6px] px-4 py-2 text-[15px]"
+                  style={{
+                    backgroundColor: Colors.bgSecondary,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                    color: Colors.textPrimary,
+                  }}
                   value={newEmail}
                   onChangeText={(t) => {
                     setNewEmail(t);
@@ -574,28 +624,38 @@ export default function SettingsTab() {
                   editable={!emailChangeLoading}
                 />
                 {emailChangeError ? (
-                  <Text style={s.emailChangeError}>{emailChangeError}</Text>
+                  <Text className="text-[11px]" style={{ color: Colors.statusError }}>
+                    {emailChangeError}
+                  </Text>
                 ) : null}
-                <View style={s.emailChangeActions}>
+                <View className="flex-row gap-2">
                   <Pressable
-                    style={s.emailChangeCancelBtn}
+                    className="flex-1 rounded-[6px] py-2 items-center justify-center min-h-[40px]"
+                    style={{
+                      backgroundColor: Colors.bgSecondary,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                    }}
                     onPress={handleCancelEmailChange}
                     disabled={emailChangeLoading}
                   >
-                    <Text style={s.emailChangeCancelText}>Отмена</Text>
+                    <Text className="text-[13px] font-medium" style={{ color: Colors.textSecondary }}>
+                      Отмена
+                    </Text>
                   </Pressable>
                   <Pressable
-                    style={[
-                      s.emailChangePrimaryBtn,
-                      emailChangeLoading && { opacity: 0.6 },
-                    ]}
+                    className="flex-1 rounded-[6px] py-2 items-center justify-center min-h-[40px]"
+                    style={{
+                      backgroundColor: Colors.brandPrimary,
+                      opacity: emailChangeLoading ? 0.6 : 1,
+                    }}
                     onPress={handleRequestEmailChange}
                     disabled={emailChangeLoading}
                   >
                     {emailChangeLoading ? (
                       <ActivityIndicator size="small" color={Colors.white} />
                     ) : (
-                      <Text style={s.emailChangePrimaryText}>
+                      <Text className="text-[13px] font-medium text-white">
                         Получить код
                       </Text>
                     )}
@@ -605,12 +665,19 @@ export default function SettingsTab() {
             )}
 
             {emailChangeStep === 'otp_input' && (
-              <View style={s.emailChangeBlock}>
-                <Text style={s.emailChangeLabel}>
+              <View className="p-4 gap-2">
+                <Text className="text-[13px]" style={{ color: Colors.textSecondary }}>
                   Код отправлен на {newEmail.trim().toLowerCase()}
                 </Text>
                 <TextInput
-                  style={[s.emailChangeInput, s.emailChangeOtpInput]}
+                  className="rounded-[6px] px-4 py-2 text-[18px] text-center"
+                  style={{
+                    backgroundColor: Colors.bgSecondary,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                    color: Colors.textPrimary,
+                    letterSpacing: 4,
+                  }}
                   value={emailOtpCode}
                   onChangeText={(t) => {
                     setEmailOtpCode(t.replace(/\D/g, '').slice(0, 6));
@@ -623,28 +690,38 @@ export default function SettingsTab() {
                   editable={!emailChangeLoading}
                 />
                 {emailChangeError ? (
-                  <Text style={s.emailChangeError}>{emailChangeError}</Text>
+                  <Text className="text-[11px]" style={{ color: Colors.statusError }}>
+                    {emailChangeError}
+                  </Text>
                 ) : null}
-                <View style={s.emailChangeActions}>
+                <View className="flex-row gap-2">
                   <Pressable
-                    style={s.emailChangeCancelBtn}
+                    className="flex-1 rounded-[6px] py-2 items-center justify-center min-h-[40px]"
+                    style={{
+                      backgroundColor: Colors.bgSecondary,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                    }}
                     onPress={handleCancelEmailChange}
                     disabled={emailChangeLoading}
                   >
-                    <Text style={s.emailChangeCancelText}>Отмена</Text>
+                    <Text className="text-[13px] font-medium" style={{ color: Colors.textSecondary }}>
+                      Отмена
+                    </Text>
                   </Pressable>
                   <Pressable
-                    style={[
-                      s.emailChangePrimaryBtn,
-                      emailChangeLoading && { opacity: 0.6 },
-                    ]}
+                    className="flex-1 rounded-[6px] py-2 items-center justify-center min-h-[40px]"
+                    style={{
+                      backgroundColor: Colors.brandPrimary,
+                      opacity: emailChangeLoading ? 0.6 : 1,
+                    }}
                     onPress={handleConfirmEmailChange}
                     disabled={emailChangeLoading}
                   >
                     {emailChangeLoading ? (
                       <ActivityIndicator size="small" color={Colors.white} />
                     ) : (
-                      <Text style={s.emailChangePrimaryText}>
+                      <Text className="text-[13px] font-medium text-white">
                         Подтвердить
                       </Text>
                     )}
@@ -654,12 +731,16 @@ export default function SettingsTab() {
             )}
 
             {emailChangeStep === 'success' && (
-              <View style={s.emailChangeBlock}>
-                <Text style={s.emailChangeSuccess}>
+              <View className="p-4 gap-2">
+                <Text
+                  className="text-[15px] font-medium text-center py-2"
+                  style={{ color: Colors.statusSuccess }}
+                >
                   Email успешно изменён
                 </Text>
                 <Pressable
-                  style={s.emailChangePrimaryBtn}
+                  className="flex-1 rounded-[6px] py-2 items-center justify-center min-h-[40px]"
+                  style={{ backgroundColor: Colors.brandPrimary }}
                   onPress={() => {
                     setEmailChangeStep('idle');
                     setNewEmail('');
@@ -667,18 +748,29 @@ export default function SettingsTab() {
                     setEmailChangeError('');
                   }}
                 >
-                  <Text style={s.emailChangePrimaryText}>Готово</Text>
+                  <Text className="text-[13px] font-medium text-white">Готово</Text>
                 </Pressable>
               </View>
             )}
-          </SectionCard>
+
+            <SettingRow label="Язык" value="Русский" icon="globe" />
+            <SettingRow label="Тема" value="Светлая" icon="sun" />
+          </View>
         </View>
 
         {/* ============ Client reviews ============ */}
         {!isSpecialist && myReviews.length > 0 && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Мои отзывы</Text>
-            <SectionCard>
+          <View className="gap-2">
+            <Text
+              className="text-[11px] font-semibold uppercase"
+              style={{ color: Colors.textMuted, letterSpacing: 0.5 }}
+            >
+              Мои отзывы
+            </Text>
+            <View
+              className="bg-white rounded-[14px] overflow-hidden shadow-sm"
+              style={{ borderWidth: 1, borderColor: Colors.border }}
+            >
               {myReviews.map((review, idx) => {
                 const specName =
                   review.specialist.specialistProfile?.displayName ??
@@ -689,63 +781,110 @@ export default function SettingsTab() {
                 ).join('');
                 return (
                   <View key={review.id}>
-                    {idx > 0 && <View style={s.reviewDivider} />}
-                    <View style={s.reviewRow}>
-                      <View style={s.reviewHeader}>
-                        <Text style={s.reviewSpecialist} numberOfLines={1}>
+                    {idx > 0 && (
+                      <View className="h-px mx-4" style={{ backgroundColor: Colors.border }} />
+                    )}
+                    <View className="px-4 py-3 gap-1">
+                      <View className="flex-row justify-between items-center">
+                        <Text
+                          className="text-[15px] font-medium flex-1"
+                          style={{ color: Colors.textPrimary }}
+                          numberOfLines={1}
+                        >
                           {specName}
                         </Text>
-                        <Text style={s.reviewRating}>
+                        <Text
+                          className="text-[13px] font-medium ml-2"
+                          style={{ color: Colors.brandPrimary }}
+                        >
                           {stars} {review.rating}/5
                         </Text>
                       </View>
                       {review.comment ? (
-                        <Text style={s.reviewComment} numberOfLines={3}>
+                        <Text
+                          className="text-[13px] mt-0.5"
+                          style={{ color: Colors.textSecondary }}
+                          numberOfLines={3}
+                        >
                           {review.comment}
                         </Text>
                       ) : null}
-                      <Text style={s.reviewDate}>
-                        {new Date(review.createdAt).toLocaleDateString(
-                          'ru-RU',
-                          { day: 'numeric', month: 'short', year: 'numeric' },
-                        )}
+                      <Text
+                        className="text-[11px] mt-0.5"
+                        style={{ color: Colors.textMuted }}
+                      >
+                        {new Date(review.createdAt).toLocaleDateString('ru-RU', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
                       </Text>
                     </View>
                   </View>
                 );
               })}
-            </SectionCard>
+            </View>
           </View>
         )}
 
+        {/* ============ Information ============ */}
+        <View className="gap-2">
+          <Text
+            className="text-[11px] font-semibold uppercase"
+            style={{ color: Colors.textMuted, letterSpacing: 0.5 }}
+          >
+            Информация
+          </Text>
+          <View
+            className="bg-white rounded-[14px] overflow-hidden shadow-sm"
+            style={{ borderWidth: 1, borderColor: Colors.border }}
+          >
+            <SettingRow label="Политика конфиденциальности" icon="shield" />
+            <SettingRow label="Условия использования" icon="file-text" />
+            <SettingRow label="Версия" value={APP_VERSION} icon="info" />
+          </View>
+        </View>
+
         {/* ============ Admin ============ */}
         {isAdmin(user?.email) && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Администрирование</Text>
-            <SectionCard>
+          <View className="gap-2">
+            <Text
+              className="text-[11px] font-semibold uppercase"
+              style={{ color: Colors.textMuted, letterSpacing: 0.5 }}
+            >
+              Администрирование
+            </Text>
+            <View
+              className="bg-white rounded-[14px] overflow-hidden shadow-sm"
+              style={{ borderWidth: 1, borderColor: Colors.border }}
+            >
               <SettingRow
                 label="Панель администратора"
                 icon="shield"
                 onPress={() => router.push('/(admin)')}
-                last
               />
-            </SectionCard>
+            </View>
           </View>
         )}
 
         {/* ============ Danger zone ============ */}
-        <View style={s.dangerSection}>
+        <View className="gap-2">
           <Pressable
             onPress={() => setShowLogoutConfirm(true)}
-            style={s.dangerBtn}
+            className="flex-row items-center justify-center gap-2 h-12 rounded-[12px]"
+            style={{ backgroundColor: Colors.statusBg.error }}
           >
             <Feather name="log-out" size={18} color={Colors.statusError} />
-            <Text style={s.dangerBtnText}>Выйти из аккаунта</Text>
+            <Text
+              className="text-[13px] font-semibold"
+              style={{ color: Colors.statusError }}
+            >
+              Выйти из аккаунта
+            </Text>
           </Pressable>
 
           {showLogoutConfirm && (
-            <ConfirmModal
-              title="Выход"
+            <ConfirmCard
               message="Вы уверены, что хотите выйти?"
               confirmLabel="Выйти"
               onCancel={() => setShowLogoutConfirm(false)}
@@ -756,15 +895,24 @@ export default function SettingsTab() {
 
           <Pressable
             onPress={() => setShowDeleteConfirm(true)}
-            style={[s.dangerBtn, s.dangerBtnOutline]}
+            className="flex-row items-center justify-center gap-2 h-12 rounded-[12px]"
+            style={{
+              backgroundColor: 'transparent',
+              borderWidth: 1,
+              borderColor: Colors.statusBg.error,
+            }}
           >
             <Feather name="trash-2" size={18} color={Colors.statusError} />
-            <Text style={s.dangerBtnText}>Удалить аккаунт</Text>
+            <Text
+              className="text-[13px] font-semibold"
+              style={{ color: Colors.statusError }}
+            >
+              Удалить аккаунт
+            </Text>
           </Pressable>
 
           {showDeleteConfirm && (
-            <ConfirmModal
-              title="Удаление аккаунта"
+            <ConfirmCard
               message="Это действие необратимо. Все ваши данные будут удалены."
               confirmLabel="Удалить"
               onCancel={() => setShowDeleteConfirm(false)}
@@ -775,318 +923,13 @@ export default function SettingsTab() {
         </View>
 
         {/* ============ Version ============ */}
-        <Text style={s.version}>Версия {APP_VERSION}</Text>
+        <Text
+          className="text-[11px] text-center mt-2"
+          style={{ color: Colors.textMuted }}
+        >
+          Версия {APP_VERSION}
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-const s = StyleSheet.create({
-  scroll: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  container: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing['4xl'],
-    gap: Spacing.lg,
-  },
-  pageTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-
-  // Sections
-  section: { gap: Spacing.sm },
-  sectionTitle: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
-  // Card
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-    ...Shadows.sm,
-  },
-  cardDanger: {
-    borderColor: Colors.statusError + '40',
-  },
-
-  // Row
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgSecondary,
-  },
-  rowLast: {
-    borderBottomWidth: 0,
-  },
-  rowLabel: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-  },
-  rowValue: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    marginRight: Spacing.sm,
-  },
-
-  // Profile
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    padding: Spacing.lg,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  profileName: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  profileEmail: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-
-  // Work area summary (specialist)
-  workAreaSummary: {
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.xs,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    flex: 1,
-  },
-  emptyHint: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontStyle: 'italic',
-  },
-
-  // Danger
-  dangerSection: { gap: Spacing.sm },
-  dangerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    height: 48,
-    backgroundColor: Colors.statusBg.error,
-    borderRadius: BorderRadius.btn,
-  },
-  dangerBtnOutline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: Colors.statusBg.error,
-  },
-  dangerBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.statusError,
-  },
-
-  // Confirm
-  confirmCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.statusBg.error,
-    gap: Spacing.md,
-    ...Shadows.sm,
-  },
-  confirmTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  confirmText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  confirmActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  confirmBtnCancel: {
-    flex: 1,
-    height: 40,
-    borderRadius: BorderRadius.btn,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  confirmBtnCancelText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  confirmBtnDanger: {
-    flex: 1,
-    height: 40,
-    borderRadius: BorderRadius.btn,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.statusError,
-  },
-  confirmBtnDangerText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-
-  // Email change
-  emailChangeBlock: {
-    padding: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  emailChangeLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  emailChangeInput: {
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  emailChangeOtpInput: {
-    letterSpacing: 4,
-    textAlign: 'center',
-    fontSize: Typography.fontSize.lg,
-  },
-  emailChangeError: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-  },
-  emailChangeSuccess: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.statusSuccess,
-    fontWeight: Typography.fontWeight.medium,
-    textAlign: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  emailChangeActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  emailChangeCancelBtn: {
-    flex: 1,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  emailChangeCancelText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  emailChangePrimaryBtn: {
-    flex: 1,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-    backgroundColor: Colors.brandPrimary,
-  },
-  emailChangePrimaryText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.medium,
-  },
-
-  // Reviews
-  reviewDivider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.lg,
-  },
-  reviewRow: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    gap: 4,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  reviewSpecialist: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  reviewRating: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-    marginLeft: Spacing.sm,
-  },
-  reviewComment: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  reviewDate: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-
-  // Version
-  version: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: Spacing.sm,
-  },
-});
