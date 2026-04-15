@@ -10,34 +10,32 @@ import { Colors } from '../../../constants/Colors';
 const MOCK_CITIES = ['Москва', 'Санкт-Петербург', 'Казань'];
 
 const MOCK_FNS: Record<string, string[]> = {
-  'Москва': ['ФНС №15', 'ФНС №46', 'ФНС №7'],
-  'Санкт-Петербург': ['ФНС №1', 'ФНС №25'],
-  'Казань': ['ФНС №3', 'ФНС №14'],
+  'Москва': ['ФНС №15 по г. Москве', 'ФНС №46 по г. Москве', 'ФНС №7 по г. Москве'],
+  'Санкт-Петербург': ['ФНС №1 по г. Санкт-Петербургу', 'ФНС №25 по г. Санкт-Петербургу'],
+  'Казань': ['ФНС №3 по г. Казани', 'ФНС №14 по г. Казани'],
 };
 
-const MOCK_SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка', 'Не знаю'];
-
 const MOCK_REQUESTS = [
-  { id: 1, title: 'Выездная проверка ООО', description: 'Назначена выездная проверка за 2022–2024 годы, нужен специалист для сопровождения', city: 'Москва', fns: 'ФНС №15', service: 'Выездная проверка', date: '2024-03-10', responseCount: 3 },
-  { id: 2, title: 'Отдел оперативного контроля — требование', description: 'Получили требование от отдела оперативного контроля, нужна помощь с ответом', city: 'Москва', fns: 'ФНС №46', service: 'Отдел оперативного контроля', date: '2024-03-09', responseCount: 5 },
-  { id: 3, title: 'Камеральная проверка декларации', description: 'Получили требование при камеральной проверке, нужна помощь с документами', city: 'Санкт-Петербург', fns: 'ФНС №1', service: 'Камеральная проверка', date: '2024-03-08', responseCount: 1 },
-  { id: 4, title: 'Выездная проверка ИП — срочно', description: 'Пришло уведомление о выездной проверке ИП, нужна срочная помощь', city: 'Казань', fns: 'ФНС №3', service: 'Выездная проверка', date: '2024-03-07', responseCount: 0 },
+  { id: 1, title: 'Выездная проверка ООО «Ромашка»', description: 'Назначена выездная налоговая проверка. Нужен специалист для сопровождения.', city: 'Москва', fns: 'ФНС №15 по г. Москве', service: 'Выездная проверка', date: '12.04.2026', author: 'Елена В.', memberSince: 2024, messageCount: 3 },
+  { id: 2, title: 'Камеральная проверка декларации', description: 'Получил требование о предоставлении документов при камеральной проверке.', city: 'Москва', fns: 'ФНС №46 по г. Москве', service: 'Камеральная проверка', date: '11.04.2026', author: 'Дмитрий К.', memberSince: 2023, messageCount: 5 },
+  { id: 3, title: 'Оперативный контроль — помощь', description: 'Пришло уведомление от отдела оперативного контроля.', city: 'Санкт-Петербург', fns: 'ФНС №1 по г. Санкт-Петербургу', service: 'Отдел оперативного контроля', date: '10.04.2026', author: 'Татьяна Ф.', memberSince: 2022, messageCount: 1 },
+  { id: 4, title: 'Не знаю какая услуга — нужна помощь', description: 'Получил письмо от налоговой, не понимаю что делать.', city: 'Казань', fns: 'ФНС №3 по г. Казани', service: 'Не знаю', date: '09.04.2026', author: 'Иван М.', memberSince: 2025, messageCount: 0 },
 ];
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function pluralResponses(n: number): string {
-  if (n === 0) return '0 откликов';
+function pluralSpecialists(n: number): string {
+  if (n === 0) return '0 специалистов написали';
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${n} отклик`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} отклика`;
-  return `${n} откликов`;
+  if (mod10 === 1 && mod100 !== 11) return `${n} специалист написал`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} специалиста написали`;
+  return `${n} специалистов написали`;
 }
 
 // ---------------------------------------------------------------------------
-// Dropdown Picker
+// Dropdown Picker (single select — for City)
 // ---------------------------------------------------------------------------
 function DropdownPicker({ label, value, placeholder, options, open, onToggle, onSelect }: {
   label: string;
@@ -76,10 +74,57 @@ function DropdownPicker({ label, value, placeholder, options, open, onToggle, on
 }
 
 // ---------------------------------------------------------------------------
+// Multi-Select Dropdown (for FNS)
+// ---------------------------------------------------------------------------
+function MultiSelectDropdown({ label, selected, placeholder, options, open, onToggle, onToggleItem }: {
+  label: string;
+  selected: string[];
+  placeholder: string;
+  options: string[];
+  open: boolean;
+  onToggle: () => void;
+  onToggleItem: (v: string) => void;
+}) {
+  const displayText = selected.length > 0 ? `${selected.length} выбрано` : '';
+
+  return (
+    <View className="gap-1">
+      <Text className="text-xs font-semibold uppercase tracking-wider text-textSecondary">{label}</Text>
+      <Pressable onPress={onToggle}>
+        <View className="h-11 flex-row items-center justify-between rounded-lg border border-borderLight bg-white px-3">
+          <Text className={displayText ? 'text-sm text-textPrimary' : 'text-sm text-textMuted'}>
+            {displayText || placeholder}
+          </Text>
+          <Feather name="chevron-down" size={14} color={Colors.textMuted} />
+        </View>
+      </Pressable>
+      {open && (
+        <View className="overflow-hidden rounded-lg border border-borderLight bg-white" style={{ maxHeight: 240 }}>
+          {options.map((opt) => {
+            const isSelected = selected.includes(opt);
+            return (
+              <Pressable key={opt} onPress={() => onToggleItem(opt)} className="flex-row items-center gap-2 border-b border-bgSecondary px-3 py-2.5">
+                <View className={isSelected
+                  ? 'h-5 w-5 items-center justify-center rounded border border-brandPrimary bg-brandPrimary'
+                  : 'h-5 w-5 rounded border border-borderLight bg-white'
+                }>
+                  {isSelected && <Feather name="check" size={12} color="#fff" />}
+                </View>
+                <Text className={isSelected ? 'text-sm font-semibold text-brandPrimary' : 'text-sm text-textPrimary'}>{opt}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Request Card
 // ---------------------------------------------------------------------------
-function RequestFeedCard({ title, description, city, fns, service, date, responseCount }: {
-  title: string; description: string; city: string; fns: string; service: string; date: string; responseCount: number;
+function RequestFeedCard({ title, description, city, fns, service, date, author, memberSince, messageCount }: {
+  title: string; description: string; city: string; fns: string; service: string; date: string; author: string; memberSince: number; messageCount: number;
 }) {
   return (
     <Pressable className="gap-2 rounded-xl border border-borderLight bg-white p-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}>
@@ -102,58 +147,64 @@ function RequestFeedCard({ title, description, city, fns, service, date, respons
           <Text className="text-xs font-medium text-brandPrimary">{service}</Text>
         </View>
       </View>
+      {/* Author + date row */}
       <View className="mt-1 flex-row items-center justify-between border-t border-borderLight pt-2">
-        <View className="flex-row items-center gap-1.5">
-          <Feather name="message-circle" size={12} color={responseCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
-          <Text className={responseCount > 0 ? 'text-xs font-semibold text-brandPrimary' : 'text-xs text-textMuted'}>
-            {pluralResponses(responseCount)}
-          </Text>
+        <View className="flex-row items-center gap-2">
+          <View className="h-7 w-7 items-center justify-center rounded-full bg-bgSecondary">
+            <Feather name="user" size={14} color={Colors.textMuted} />
+          </View>
+          <View>
+            <Text className="text-sm font-medium text-textPrimary">{author}</Text>
+            <Text className="text-xs text-textMuted">на сайте с {memberSince} г.</Text>
+          </View>
         </View>
         <Text className="text-xs text-textMuted">{date}</Text>
+      </View>
+      {/* Response count */}
+      <View className="flex-row items-center gap-1.5">
+        <Feather name="message-circle" size={12} color={messageCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
+        <Text className={messageCount > 0 ? 'text-xs font-semibold text-brandPrimary' : 'text-xs text-textMuted'}>
+          {pluralSpecialists(messageCount)}
+        </Text>
       </View>
     </Pressable>
   );
 }
 
 // ---------------------------------------------------------------------------
-// State 1: Feed with all requests, filters open (no filter selected)
+// Feed State
 // ---------------------------------------------------------------------------
 function FeedState() {
   const [filterCity, setFilterCity] = useState('');
-  const [filterFns, setFilterFns] = useState('');
-  const [filterService, setFilterService] = useState('');
-  const [openPicker, setOpenPicker] = useState<'city' | 'fns' | 'service' | null>(null);
+  const [selectedFns, setSelectedFns] = useState<string[]>([]);
+  const [openPicker, setOpenPicker] = useState<'city' | 'fns' | null>(null);
 
   // FNS options depend on selected city
   const fnsOptions = filterCity ? (MOCK_FNS[filterCity] || []) : Object.values(MOCK_FNS).flat();
 
-  // Reset dependent filters when city changes
   const handleCitySelect = (v: string) => {
     setFilterCity(v);
-    setFilterFns('');
-    setFilterService('');
+    setSelectedFns([]);
     setOpenPicker(null);
   };
 
-  const handleFnsSelect = (v: string) => {
-    setFilterFns(v);
-    setFilterService('');
-    setOpenPicker(null);
+  const handleFnsToggle = (v: string) => {
+    setSelectedFns((prev) =>
+      prev.includes(v) ? prev.filter((f) => f !== v) : [...prev, v]
+    );
   };
 
-  const handleServiceSelect = (v: string) => {
-    setFilterService(v);
-    setOpenPicker(null);
+  const handleRemoveFns = (v: string) => {
+    setSelectedFns((prev) => prev.filter((f) => f !== v));
   };
 
   const requests = MOCK_REQUESTS.filter((r) => {
     if (filterCity && r.city !== filterCity) return false;
-    if (filterFns && r.fns !== filterFns) return false;
-    if (filterService && r.service !== filterService) return false;
+    if (selectedFns.length > 0 && !selectedFns.includes(r.fns)) return false;
     return true;
   });
 
-  const hasFilters = !!(filterCity || filterFns || filterService);
+  const hasFilters = !!(filterCity || selectedFns.length > 0);
 
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
@@ -163,7 +214,7 @@ function FeedState() {
         <Text className="mt-0.5 text-sm text-textMuted">{requests.length} активных заявок</Text>
       </View>
 
-      {/* Filters — always open */}
+      {/* Filters */}
       <View className="gap-3 rounded-xl border border-borderLight bg-bgSecondary p-4">
         <View className="flex-row items-center gap-2">
           <Feather name="sliders" size={14} color={Colors.brandPrimary} />
@@ -180,29 +231,31 @@ function FeedState() {
           onSelect={handleCitySelect}
         />
 
-        <DropdownPicker
+        <MultiSelectDropdown
           label="ФНС"
-          value={filterFns}
+          selected={selectedFns}
           placeholder="Все ФНС"
           options={fnsOptions}
           open={openPicker === 'fns'}
           onToggle={() => setOpenPicker(openPicker === 'fns' ? null : 'fns')}
-          onSelect={handleFnsSelect}
+          onToggleItem={handleFnsToggle}
         />
 
-        <DropdownPicker
-          label="Услуга"
-          value={filterService}
-          placeholder="Все услуги"
-          options={MOCK_SERVICES}
-          open={openPicker === 'service'}
-          onToggle={() => setOpenPicker(openPicker === 'service' ? null : 'service')}
-          onSelect={handleServiceSelect}
-        />
+        {/* Selected FNS chips */}
+        {selectedFns.length > 0 && (
+          <View className="flex-row flex-wrap gap-2">
+            {selectedFns.map((fns) => (
+              <Pressable key={fns} onPress={() => handleRemoveFns(fns)} className="flex-row items-center gap-1 rounded-full bg-brandPrimary/10 px-2.5 py-1">
+                <Text className="text-xs font-medium text-brandPrimary">{fns}</Text>
+                <Feather name="x" size={12} color={Colors.brandPrimary} />
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {hasFilters && (
           <Pressable
-            onPress={() => { setFilterCity(''); setFilterFns(''); setFilterService(''); setOpenPicker(null); }}
+            onPress={() => { setFilterCity(''); setSelectedFns([]); setOpenPicker(null); }}
             className="flex-row items-center justify-center gap-1.5 py-1"
           >
             <Feather name="x" size={14} color={Colors.textMuted} />
@@ -231,7 +284,9 @@ function FeedState() {
               fns={r.fns}
               service={r.service}
               date={r.date}
-              responseCount={r.responseCount}
+              author={r.author}
+              memberSince={r.memberSince}
+              messageCount={r.messageCount}
             />
           ))}
         </View>

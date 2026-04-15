@@ -11,11 +11,13 @@ const MOCK_REQUEST = {
   city: 'Москва',
   fns: 'ФНС №15 по г. Москве',
   service: 'Выездная проверка',
-  date: '10 марта 2024',
+  date: '10.03.2024',
   author: 'Мария К.',
   responseCount: 3,
   isPublic: true,
 };
+
+const SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка'];
 
 // ---------------------------------------------------------------------------
 // Shared request card
@@ -63,9 +65,17 @@ function RequestCard() {
           <Text className="text-xs uppercase tracking-wide text-textMuted">Клиент</Text>
           <Text className="text-base font-semibold text-textPrimary">{MOCK_REQUEST.author}</Text>
         </View>
-        <View className="gap-0.5">
-          <Text className="text-xs uppercase tracking-wide text-textMuted">Откликов</Text>
-          <Text className="text-base font-semibold text-textPrimary">{MOCK_REQUEST.responseCount}</Text>
+      </View>
+
+      {/* Services */}
+      <View className="gap-1.5">
+        <Text className="text-xs uppercase tracking-wide text-textMuted">Услуги</Text>
+        <View className="flex-row flex-wrap gap-1.5">
+          {SERVICES.map((s) => (
+            <View key={s} className="rounded-full bg-bgSecondary px-2.5 py-1">
+              <Text className="text-xs font-medium text-brandPrimary">{s}</Text>
+            </View>
+          ))}
         </View>
       </View>
     </View>
@@ -73,7 +83,21 @@ function RequestCard() {
 }
 
 // ---------------------------------------------------------------------------
-// State 1: Authorized user — textarea + file attachment + send
+// Response count badge
+// ---------------------------------------------------------------------------
+function ResponseCountBadge() {
+  return (
+    <View className="flex-row items-center gap-2 rounded-lg bg-bgSecondary px-3 py-2">
+      <Feather name="users" size={14} color={Colors.brandPrimary} />
+      <Text className="text-sm text-textSecondary">
+        <Text className="font-semibold text-brandPrimary">{MOCK_REQUEST.responseCount} специалистов</Text> уже написали
+      </Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// State 1: Authorized user — textarea + paperclip + send
 // ---------------------------------------------------------------------------
 function AuthorizedState() {
   const [message, setMessage] = useState('');
@@ -81,14 +105,7 @@ function AuthorizedState() {
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <RequestCard />
-
-      {/* Response count badge */}
-      <View className="flex-row items-center gap-2 rounded-lg bg-bgSecondary px-3 py-2">
-        <Feather name="users" size={14} color={Colors.brandPrimary} />
-        <Text className="text-sm text-textSecondary">
-          <Text className="font-semibold text-brandPrimary">{MOCK_REQUEST.responseCount} специалиста</Text> уже написали
-        </Text>
-      </View>
+      <ResponseCountBadge />
 
       {/* Message input */}
       <View className="gap-2">
@@ -127,62 +144,49 @@ function AuthorizedState() {
 }
 
 // ---------------------------------------------------------------------------
-// State 2: Unauthorized user — login prompt instead of textarea
+// State 2: Unauthorized user — textarea visible, send shows auth redirect note
 // ---------------------------------------------------------------------------
 function UnauthorizedState() {
+  const [message, setMessage] = useState('');
+  const [showAuthNote, setShowAuthNote] = useState(false);
+
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <RequestCard />
+      <ResponseCountBadge />
 
-      {/* Response count badge */}
-      <View className="flex-row items-center gap-2 rounded-lg bg-bgSecondary px-3 py-2">
-        <Feather name="users" size={14} color={Colors.brandPrimary} />
-        <Text className="text-sm text-textSecondary">
-          <Text className="font-semibold text-brandPrimary">{MOCK_REQUEST.responseCount} специалиста</Text> уже написали
-        </Text>
+      {/* Message input — always visible and editable */}
+      <View className="gap-2">
+        <Text className="text-sm font-medium text-textSecondary">Написать клиенту</Text>
+        <TextInput
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          placeholder="Напишите первое сообщение клиенту..."
+          placeholderTextColor={Colors.textMuted}
+          className="min-h-[100px] rounded-lg border border-borderLight bg-white p-3 text-base text-textPrimary"
+          style={{ textAlignVertical: 'top', outlineStyle: 'none' as any }}
+        />
       </View>
 
-      {/* Login CTA */}
-      <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary bg-bgSecondary">
-        <Feather name="log-in" size={16} color={Colors.brandPrimary} />
-        <Text className="text-base font-semibold text-brandPrimary">Войдите, чтобы написать</Text>
+      {/* Send button */}
+      <Pressable
+        onPress={() => setShowAuthNote(true)}
+        className="h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary"
+      >
+        <Feather name="send" size={16} color={Colors.white} />
+        <Text className="text-base font-semibold text-white">Отправить</Text>
       </Pressable>
 
-      {/* Hint */}
-      <View className="flex-row items-center justify-center gap-1.5">
-        <Feather name="info" size={14} color={Colors.textMuted} />
-        <Text className="text-center text-sm text-textMuted">
-          Для отклика необходимо войти или зарегистрироваться
-        </Text>
-      </View>
-    </ScrollView>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// State 3: Message sent — success with redirect note
-// ---------------------------------------------------------------------------
-function MessageSentState() {
-  return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <RequestCard />
-
-      {/* Success block */}
-      <View className="items-center gap-3 rounded-xl border border-[#DCFCE7] bg-[#F0FDF4] p-5">
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7]">
-          <Feather name="check" size={24} color="#15803D" />
+      {/* Auth redirect note — shown after pressing send */}
+      {showAuthNote && (
+        <View className="flex-row items-start gap-2 rounded-lg border border-borderLight bg-bgSecondary px-3 py-2.5">
+          <Feather name="info" size={16} color={Colors.brandPrimary} style={{ marginTop: 1 }} />
+          <Text className="flex-1 text-sm leading-5 text-textSecondary">
+            После нажатия вы будете перенаправлены на авторизацию, а сообщение будет отправлено после входа
+          </Text>
         </View>
-        <Text className="text-lg font-semibold text-textPrimary">Сообщение отправлено</Text>
-        <Text className="text-center text-sm leading-5 text-textSecondary">
-          Ваше сообщение доставлено клиенту. Вы будете перенаправлены в чат для продолжения общения.
-        </Text>
-      </View>
-
-      {/* Redirect note */}
-      <View className="flex-row items-center justify-center gap-1.5 rounded-lg bg-bgSecondary px-3 py-2">
-        <Feather name="arrow-right" size={14} color={Colors.brandPrimary} />
-        <Text className="text-sm text-brandPrimary">Переход в чат через 3 сек...</Text>
-      </View>
+      )}
     </ScrollView>
   );
 }
@@ -199,10 +203,6 @@ export function PublicRequestDetailStates() {
 
       <StateSection title="UNAUTHORIZED" pageId="public-request-detail">
         <UnauthorizedState />
-      </StateSection>
-
-      <StateSection title="MESSAGE_SENT" pageId="public-request-detail">
-        <MessageSentState />
       </StateSection>
     </View>
   );

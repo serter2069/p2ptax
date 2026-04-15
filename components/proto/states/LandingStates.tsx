@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Typography, Spacing } from '../../../constants/Colors';
+import { Colors, Typography, Spacing, Shadows } from '../../../constants/Colors';
 import { StateSection } from '../StateSection';
 
 // =====================================================================
@@ -14,136 +14,69 @@ function useLayout() {
 }
 
 // =====================================================================
-// DECORATIVE ELEMENTS
-// =====================================================================
-
-function FloatingCircle({ color, size, top, left, right }: {
-  color: string; size: number; top?: number; left?: number; right?: number;
-}) {
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: color,
-        opacity: 0.15,
-        top,
-        left,
-        right,
-      }}
-    />
-  );
-}
-
-// =====================================================================
-// HERO — light, welcoming, two CTAs
+// HERO — professional, direct USP
 // =====================================================================
 
 function HeroSection() {
   const { isDesktop } = useLayout();
 
   return (
-    <View className="relative overflow-hidden bg-white px-5 pb-12 pt-10" style={{ paddingTop: 40, paddingBottom: 48 }}>
-      {/* Decorative background shapes */}
-      <FloatingCircle color="#0284C7" size={200} top={-60} right={-40} />
-      <FloatingCircle color="#22C55E" size={120} top={80} left={-30} />
-      <FloatingCircle color="#F59E0B" size={80} top={20} right={60} />
-
-      <View className="z-10 w-full items-center self-center" style={{ maxWidth: 720 }}>
-        {/* Badge */}
-        <View
-          className="mb-4 flex-row items-center gap-2 rounded-full px-4 py-1.5"
-          style={{ backgroundColor: '#E0F2FE' }}
-        >
-          <Text style={{ fontSize: 18 }}>&#x1F50D;</Text>
-          <Text
-            className="font-semibold"
-            style={{ fontSize: Typography.fontSize.sm, color: Colors.brandPrimary }}
-          >
-            Налоговые специалисты рядом
-          </Text>
-        </View>
-
+    <View className="bg-white px-5" style={{ paddingTop: 48, paddingBottom: 48 }}>
+      <View className="w-full self-center" style={{ maxWidth: 720 }}>
         {/* Headline */}
         <Text
-          className="text-center font-bold text-textPrimary"
+          className="font-bold text-textPrimary"
           style={{
             fontSize: isDesktop ? Typography.fontSize.jumbo : Typography.fontSize['3xl'],
             lineHeight: isDesktop ? 56 : 38,
             marginBottom: Spacing.md,
           }}
         >
-          Найдите специалиста{'\n'}в вашей налоговой
+          Не общие юристы,{'\n'}а специалисты по вашей ФНС
         </Text>
 
         {/* Subtitle */}
         <Text
-          className="text-center text-textSecondary"
+          className="text-textSecondary"
           style={{
             fontSize: Typography.fontSize.base,
             lineHeight: 24,
-            maxWidth: 480,
-            marginBottom: Spacing['2xl'],
+            maxWidth: 520,
+            marginBottom: Spacing['3xl'],
           }}
         >
-          Консультанты, которые знают вашу инспекцию изнутри. Бесплатно подберем лучшего.
+          Консультанты, которые знают конкретную инспекцию изнутри: её процессы, сотрудников и практику. Подберём специалиста под вашу ФНС.
         </Text>
 
         {/* Two CTA buttons */}
         <View
-          className={`w-full items-center gap-3 ${isDesktop ? 'flex-row justify-center' : ''}`}
+          className={`gap-3 ${isDesktop ? 'flex-row' : ''}`}
           style={{ maxWidth: 420 }}
         >
           <Pressable
-            className="w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary"
-            style={{ height: 52, flex: isDesktop ? 1 : undefined, maxWidth: isDesktop ? 200 : undefined }}
+            className="flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary"
+            style={{ height: 52, paddingHorizontal: 24 }}
           >
-            <Feather name="search" size={18} color={Colors.white} />
+            <Feather name="send" size={18} color={Colors.white} />
             <Text className="font-semibold text-white" style={{ fontSize: Typography.fontSize.base }}>
-              Найти специалиста
+              Оставить заявку
             </Text>
           </Pressable>
 
           <Pressable
-            className="w-full flex-row items-center justify-center gap-2 rounded-xl border"
+            className="flex-row items-center justify-center gap-2 rounded-xl border"
             style={{
               height: 52,
-              borderColor: Colors.brandPrimary,
+              paddingHorizontal: 24,
+              borderColor: Colors.border,
               backgroundColor: Colors.white,
-              flex: isDesktop ? 1 : undefined,
-              maxWidth: isDesktop ? 200 : undefined,
             }}
           >
-            <Feather name="briefcase" size={18} color={Colors.brandPrimary} />
+            <Feather name="search" size={18} color={Colors.brandPrimary} />
             <Text className="font-semibold" style={{ fontSize: Typography.fontSize.base, color: Colors.brandPrimary }}>
-              Я специалист
+              Найти специалиста
             </Text>
           </Pressable>
-        </View>
-
-        {/* Quick stats */}
-        <View className="mt-6 flex-row items-center gap-4">
-          <View className="flex-row items-center gap-1">
-            <Text style={{ fontSize: 14 }}>&#x2B50;</Text>
-            <Text className="font-semibold text-textPrimary" style={{ fontSize: Typography.fontSize.sm }}>
-              230+
-            </Text>
-            <Text className="text-textMuted" style={{ fontSize: Typography.fontSize.sm }}>
-              специалистов
-            </Text>
-          </View>
-          <View style={{ width: 1, height: 16, backgroundColor: Colors.border }} />
-          <View className="flex-row items-center gap-1">
-            <Text style={{ fontSize: 14 }}>&#x1F4CD;</Text>
-            <Text className="font-semibold text-textPrimary" style={{ fontSize: Typography.fontSize.sm }}>
-              47
-            </Text>
-            <Text className="text-textMuted" style={{ fontSize: Typography.fontSize.sm }}>
-              городов
-            </Text>
-          </View>
         </View>
       </View>
     </View>
@@ -151,73 +84,61 @@ function HeroSection() {
 }
 
 // =====================================================================
-// HOW IT WORKS — 3 steps with colorful icon circles
+// HOW IT WORKS — 3 steps with Feather icons
 // =====================================================================
 
 function HowItWorksSection() {
   const { isDesktop } = useLayout();
 
-  const steps: { emoji: string; bg: string; title: string; desc: string }[] = [
-    { emoji: '\uD83D\uDCCD', bg: '#DBEAFE', title: 'Укажите ФНС', desc: 'Выберите город и налоговую инспекцию' },
-    { emoji: '\uD83D\uDCDD', bg: '#D1FAE5', title: 'Опишите задачу', desc: 'Тип проверки или консультации' },
-    { emoji: '\uD83D\uDCAC', bg: '#FEF3C7', title: 'Получите отклик', desc: 'Специалист свяжется в течение дня' },
+  const steps: { icon: 'map-pin' | 'file-text' | 'message-circle'; title: string; desc: string }[] = [
+    { icon: 'map-pin', title: 'Укажите ФНС', desc: 'Выберите город и налоговую инспекцию' },
+    { icon: 'file-text', title: 'Опишите задачу', desc: 'Тип проверки или вопрос по налогам' },
+    { icon: 'message-circle', title: 'Получите отклик', desc: 'Специалист свяжется в течение дня' },
   ];
 
   return (
-    <View className="bg-white px-5 py-10" style={{ backgroundColor: Colors.bgSecondary }}>
-      <View className="w-full items-center self-center" style={{ maxWidth: 720 }}>
+    <View className="px-5 py-10" style={{ backgroundColor: Colors.bgSecondary }}>
+      <View className="w-full self-center" style={{ maxWidth: 720 }}>
         <Text
-          className="mb-1 text-center font-bold uppercase"
+          className="mb-1 font-bold uppercase"
           style={{ fontSize: Typography.fontSize.xs, color: Colors.brandPrimary, letterSpacing: 1.2 }}
         >
           Как это работает
         </Text>
         <Text
-          className="mb-6 text-center font-bold text-textPrimary"
+          className="mb-6 font-bold text-textPrimary"
           style={{ fontSize: Typography.fontSize['2xl'] }}
         >
-          Три простых шага
+          Три шага к решению
         </Text>
 
         <View className={`w-full gap-4 ${isDesktop ? 'flex-row' : ''}`}>
           {steps.map((step, i) => (
             <View
               key={step.title}
-              className="flex-1 items-center gap-3 rounded-2xl bg-white p-6"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 8,
-                elevation: 3,
-              }}
+              className="flex-1 gap-3 rounded-2xl bg-white p-6"
+              style={Shadows.sm}
             >
-              {/* Step number */}
-              <View
-                className="items-center justify-center rounded-full bg-brandPrimary"
-                style={{ width: 28, height: 28 }}
-              >
-                <Text className="font-bold text-white" style={{ fontSize: Typography.fontSize.sm }}>
-                  {i + 1}
-                </Text>
-              </View>
-
-              {/* Icon circle */}
-              <View
-                className="items-center justify-center rounded-full"
-                style={{ width: 56, height: 56, backgroundColor: step.bg }}
-              >
-                <Text style={{ fontSize: 26 }}>{step.emoji}</Text>
+              <View className="flex-row items-center gap-3">
+                <View
+                  className="items-center justify-center rounded-full bg-brandPrimary"
+                  style={{ width: 28, height: 28 }}
+                >
+                  <Text className="font-bold text-white" style={{ fontSize: Typography.fontSize.sm }}>
+                    {i + 1}
+                  </Text>
+                </View>
+                <Feather name={step.icon} size={20} color={Colors.brandPrimary} />
               </View>
 
               <Text
-                className="text-center font-semibold text-textPrimary"
+                className="font-semibold text-textPrimary"
                 style={{ fontSize: Typography.fontSize.md }}
               >
                 {step.title}
               </Text>
               <Text
-                className="text-center text-textSecondary"
+                className="text-textSecondary"
                 style={{ fontSize: Typography.fontSize.sm, lineHeight: 20 }}
               >
                 {step.desc}
@@ -231,48 +152,72 @@ function HowItWorksSection() {
 }
 
 // =====================================================================
-// POPULAR SERVICES — colored chips
+// SERVICES — the 3 correct services
 // =====================================================================
 
-function PopularServicesSection() {
-  const services = [
-    { label: 'Камеральная проверка', emoji: '\uD83D\uDD0D', bg: '#E0F2FE' },
-    { label: 'Выездная проверка', emoji: '\uD83D\uDEE1\uFE0F', bg: '#D1FAE5' },
-    { label: 'Отдел оперативного контроля', emoji: '\uD83D\uDC41\uFE0F', bg: '#FEF3C7' },
-    { label: 'Не знаю', emoji: '\u2753', bg: '#EDE9FE' },
+function ServicesSection() {
+  const { isDesktop } = useLayout();
+
+  const services: { icon: 'clipboard' | 'truck' | 'eye'; title: string; desc: string }[] = [
+    {
+      icon: 'clipboard',
+      title: 'Камеральная проверка',
+      desc: 'Сопровождение при камеральной проверке деклараций. Подготовка пояснений и документов для инспекции.',
+    },
+    {
+      icon: 'truck',
+      title: 'Выездная проверка',
+      desc: 'Защита интересов при выездной налоговой проверке. Контроль действий инспекторов, подготовка возражений.',
+    },
+    {
+      icon: 'eye',
+      title: 'Отдел оперативного контроля',
+      desc: 'Представительство при взаимодействии с отделом оперативного контроля ФНС. Минимизация рисков.',
+    },
   ];
 
   return (
     <View className="bg-white px-5 py-10">
-      <View className="w-full items-center self-center" style={{ maxWidth: 720 }}>
+      <View className="w-full self-center" style={{ maxWidth: 720 }}>
         <Text
-          className="mb-1 text-center font-bold uppercase"
+          className="mb-1 font-bold uppercase"
           style={{ fontSize: Typography.fontSize.xs, color: Colors.brandPrimary, letterSpacing: 1.2 }}
         >
           Услуги
         </Text>
         <Text
-          className="mb-6 text-center font-bold text-textPrimary"
+          className="mb-6 font-bold text-textPrimary"
           style={{ fontSize: Typography.fontSize['2xl'] }}
         >
-          Популярные услуги
+          Наши направления
         </Text>
 
-        <View className="flex-row flex-wrap justify-center gap-3">
+        <View className={`w-full gap-4 ${isDesktop ? 'flex-row' : ''}`}>
           {services.map((svc) => (
-            <Pressable
-              key={svc.label}
-              className="flex-row items-center gap-2 rounded-full px-4 py-2.5"
-              style={{ backgroundColor: svc.bg }}
+            <View
+              key={svc.title}
+              className="flex-1 gap-3 rounded-2xl p-5"
+              style={{ backgroundColor: Colors.bgSecondary, borderWidth: 1, borderColor: Colors.borderLight }}
             >
-              <Text style={{ fontSize: 16 }}>{svc.emoji}</Text>
-              <Text
-                className="font-medium text-textPrimary"
-                style={{ fontSize: Typography.fontSize.sm }}
+              <View
+                className="items-center justify-center rounded-lg"
+                style={{ width: 40, height: 40, backgroundColor: Colors.brandPrimary + '12' }}
               >
-                {svc.label}
+                <Feather name={svc.icon} size={20} color={Colors.brandPrimary} />
+              </View>
+              <Text
+                className="font-semibold text-textPrimary"
+                style={{ fontSize: Typography.fontSize.md }}
+              >
+                {svc.title}
               </Text>
-            </Pressable>
+              <Text
+                className="text-textSecondary"
+                style={{ fontSize: Typography.fontSize.sm, lineHeight: 20 }}
+              >
+                {svc.desc}
+              </Text>
+            </View>
           ))}
         </View>
       </View>
@@ -281,33 +226,105 @@ function PopularServicesSection() {
 }
 
 // =====================================================================
-// STATS — compact row with accent icons
+// SPECIALISTS — mini cards as social proof
+// =====================================================================
+
+function SpecialistsSection() {
+  const { isDesktop } = useLayout();
+
+  const specialists = [
+    { name: 'Алексей К.', city: 'Москва', fns: 'ИФНС №28', rating: 4.9, reviews: 34 },
+    { name: 'Елена М.', city: 'Санкт-Петербург', fns: 'ИФНС №15', rating: 4.8, reviews: 21 },
+    { name: 'Дмитрий В.', city: 'Новосибирск', fns: 'ИФНС №3', rating: 4.7, reviews: 18 },
+  ];
+
+  return (
+    <View className="px-5 py-10" style={{ backgroundColor: Colors.bgSecondary }}>
+      <View className="w-full self-center" style={{ maxWidth: 720 }}>
+        <Text
+          className="mb-1 font-bold uppercase"
+          style={{ fontSize: Typography.fontSize.xs, color: Colors.brandPrimary, letterSpacing: 1.2 }}
+        >
+          Специалисты
+        </Text>
+        <Text
+          className="mb-6 font-bold text-textPrimary"
+          style={{ fontSize: Typography.fontSize['2xl'] }}
+        >
+          Работают на платформе
+        </Text>
+
+        <View className={`w-full gap-4 ${isDesktop ? 'flex-row' : ''}`}>
+          {specialists.map((spec) => (
+            <View
+              key={spec.name}
+              className="flex-1 gap-2 rounded-2xl bg-white p-5"
+              style={Shadows.sm}
+            >
+              <View className="flex-row items-center gap-3">
+                <View
+                  className="items-center justify-center rounded-full"
+                  style={{ width: 40, height: 40, backgroundColor: Colors.bgSecondary }}
+                >
+                  <Feather name="user" size={18} color={Colors.brandPrimary} />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-semibold text-textPrimary" style={{ fontSize: Typography.fontSize.base }}>
+                    {spec.name}
+                  </Text>
+                  <Text className="text-textMuted" style={{ fontSize: Typography.fontSize.xs }}>
+                    {spec.city}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row items-center gap-2">
+                <Feather name="map-pin" size={13} color={Colors.textMuted} />
+                <Text className="text-textSecondary" style={{ fontSize: Typography.fontSize.sm }}>
+                  {spec.fns}
+                </Text>
+              </View>
+
+              <View className="flex-row items-center gap-2">
+                <Feather name="star" size={13} color="#D97706" />
+                <Text className="font-medium text-textPrimary" style={{ fontSize: Typography.fontSize.sm }}>
+                  {spec.rating}
+                </Text>
+                <Text className="text-textMuted" style={{ fontSize: Typography.fontSize.xs }}>
+                  ({spec.reviews} отзывов)
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// =====================================================================
+// STATS — compact row
 // =====================================================================
 
 function StatsSection() {
   const { isDesktop } = useLayout();
 
   const stats = [
-    { value: '230+', label: 'специалистов', icon: 'users' as const, color: '#0284C7' },
-    { value: '47', label: 'городов', icon: 'map-pin' as const, color: '#22C55E' },
-    { value: '1 200+', label: 'заявок', icon: 'file-text' as const, color: '#F59E0B' },
-    { value: '4.8', label: 'рейтинг', icon: 'star' as const, color: '#A855F7' },
+    { value: '230+', label: 'специалистов', icon: 'users' as const },
+    { value: '47', label: 'городов', icon: 'map-pin' as const },
+    { value: '1 200+', label: 'обращений', icon: 'file-text' as const },
+    { value: '4.8', label: 'средний рейтинг', icon: 'star' as const },
   ];
 
   return (
-    <View className="px-5 py-10" style={{ backgroundColor: Colors.bgSecondary }}>
+    <View className="bg-white px-5 py-10">
       <View
         className={`w-full self-center ${isDesktop ? 'flex-row justify-around' : 'flex-row flex-wrap justify-center gap-6'}`}
         style={{ maxWidth: 720 }}
       >
         {stats.map((stat) => (
           <View key={stat.label} className="items-center gap-1" style={{ minWidth: 80 }}>
-            <View
-              className="items-center justify-center rounded-full"
-              style={{ width: 44, height: 44, backgroundColor: stat.color + '15' }}
-            >
-              <Feather name={stat.icon} size={20} color={stat.color} />
-            </View>
+            <Feather name={stat.icon} size={20} color={Colors.textMuted} />
             <Text
               className="font-bold text-textPrimary"
               style={{ fontSize: Typography.fontSize['2xl'] }}
@@ -325,51 +342,29 @@ function StatsSection() {
 }
 
 // =====================================================================
-// CTA BOTTOM — cheerful call-to-action
+// SPECIALIST LINK — small secondary link
 // =====================================================================
 
-function CtaBottomSection() {
+function SpecialistLinkSection() {
   return (
-    <View className="items-center bg-white px-5 py-12">
-      <View
-        className="relative w-full items-center overflow-hidden rounded-2xl px-6 py-10"
-        style={{ maxWidth: 720, backgroundColor: '#0284C7' }}
-      >
-        {/* Decorative circles */}
-        <FloatingCircle color="#FFFFFF" size={160} top={-40} right={-30} />
-        <FloatingCircle color="#FFFFFF" size={100} top={60} left={-20} />
-
-        <Text style={{ fontSize: 36, marginBottom: 8 }}>&#x1F680;</Text>
-        <Text
-          className="z-10 text-center font-bold text-white"
-          style={{ fontSize: Typography.fontSize['2xl'], marginBottom: Spacing.sm }}
-        >
-          Готовы начать?
+    <View className="items-center bg-white px-5 pb-10">
+      <View className="flex-row items-center gap-2">
+        <Feather name="briefcase" size={14} color={Colors.textMuted} />
+        <Text className="text-textMuted" style={{ fontSize: Typography.fontSize.sm }}>
+          Вы налоговый специалист?
         </Text>
-        <Text
-          className="z-10 mb-6 text-center"
-          style={{ fontSize: Typography.fontSize.base, color: 'rgba(255,255,255,0.8)', maxWidth: 400 }}
-        >
-          Зарегистрируйтесь бесплатно и найдите специалиста уже сегодня
-        </Text>
-
-        <View className="z-10 flex-row gap-3">
-          <Pressable
-            className="flex-row items-center justify-center gap-2 rounded-xl bg-white px-6"
-            style={{ height: 48 }}
-          >
-            <Text className="font-semibold" style={{ fontSize: Typography.fontSize.base, color: Colors.brandPrimary }}>
-              Начать поиск
-            </Text>
-          </Pressable>
-        </View>
+        <Pressable>
+          <Text className="font-medium" style={{ fontSize: Typography.fontSize.sm, color: Colors.brandPrimary }}>
+            Я специалист
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
 // =====================================================================
-// FOOTER — minimal, light
+// FOOTER — minimal
 // =====================================================================
 
 function FooterSection() {
@@ -387,7 +382,7 @@ function FooterSection() {
             <Feather name="shield" size={13} color={Colors.white} />
           </View>
           <Text className="font-bold text-textPrimary" style={{ fontSize: Typography.fontSize.sm }}>
-            Налоговик
+            P2PTax
           </Text>
         </View>
         <Text className="text-textMuted" style={{ fontSize: Typography.fontSize.xs }}>
@@ -407,9 +402,10 @@ function LandingPage() {
     <View style={{ backgroundColor: Colors.white }}>
       <HeroSection />
       <HowItWorksSection />
-      <PopularServicesSection />
+      <ServicesSection />
+      <SpecialistsSection />
       <StatsSection />
-      <CtaBottomSection />
+      <SpecialistLinkSection />
       <FooterSection />
     </View>
   );
