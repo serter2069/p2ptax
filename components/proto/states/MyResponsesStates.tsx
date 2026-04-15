@@ -15,10 +15,10 @@ const STATUS_CFG: Record<Status, { label: string; bg: string; fg: string; icon: 
 };
 
 const RESPONSES = [
-  { id: '1', title: 'Декларация 3-НДФЛ за 2025', city: 'Москва', service: 'Камеральная', price: '4 500 ₽', deadline: '2 дня', status: 'accepted' as Status, date: '10.04.2026' },
-  { id: '2', title: 'Регистрация ИП', city: 'Новосибирск', service: 'Выездная', price: '8 000 ₽', deadline: '5 дней', status: 'sent' as Status, date: '11.04.2026' },
-  { id: '3', title: 'Оптимизация налогов ООО', city: 'Москва', service: 'Оперативный контроль', price: '15 000 ₽', deadline: '7 дней', status: 'viewed' as Status, date: '09.04.2026' },
-  { id: '4', title: 'Налоговый вычет за квартиру', city: 'Москва', service: 'Камеральная', price: '3 000 ₽', deadline: '3 дня', status: 'deactivated' as Status, date: '05.04.2026' },
+  { id: '1', title: 'Декларация 3-НДФЛ за 2025', city: 'Москва', service: 'Камеральная', status: 'accepted' as Status, date: '10.04.2026' },
+  { id: '2', title: 'Регистрация ИП', city: 'Новосибирск', service: 'Выездная', status: 'sent' as Status, date: '11.04.2026' },
+  { id: '3', title: 'Оптимизация налогов ООО', city: 'Москва', service: 'Оперативный контроль', status: 'viewed' as Status, date: '09.04.2026' },
+  { id: '4', title: 'Налоговый вычет за квартиру', city: 'Москва', service: 'Камеральная', status: 'deactivated' as Status, date: '05.04.2026' },
 ];
 
 function StatusBadge({ status }: { status: Status }) {
@@ -41,18 +41,10 @@ function ResponseCard({ r }: { r: typeof RESPONSES[0] }) {
         <Feather name="briefcase" size={12} color={Colors.textMuted} />
         <Text className="text-xs text-textMuted">{r.service}</Text>
       </View>
-      <View className="flex-row items-center gap-3">
-        <View className="flex-row items-center gap-1">
-          <Feather name="dollar-sign" size={12} color={Colors.textMuted} />
-          <Text className="text-sm font-semibold text-textPrimary">{r.price}</Text>
-        </View>
-        <View className="flex-row items-center gap-1">
-          <Feather name="calendar" size={12} color={Colors.textMuted} />
-          <Text className="text-sm text-textMuted">{r.deadline}</Text>
-        </View>
-        <View className="ml-auto"><StatusBadge status={r.status} /></View>
+      <View className="flex-row items-center justify-between">
+        <StatusBadge status={r.status} />
       </View>
-      <Text className="text-xs text-textMuted">Отклик: {r.date}</Text>
+      <Text className="text-xs text-textMuted">Написано: {r.date}</Text>
       {r.status === 'accepted' && (
         <Pressable className="mt-1 h-9 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
           <Feather name="message-circle" size={14} color={Colors.white} />
@@ -77,7 +69,7 @@ function PopulatedState() {
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <View className="flex-row items-center gap-2">
         <Feather name="mail" size={20} color={Colors.brandPrimary} />
-        <Text className="text-xl font-bold text-textPrimary">Мои отклики</Text>
+        <Text className="text-xl font-bold text-textPrimary">Мои сообщения</Text>
       </View>
       <View className="flex-row gap-2">
         {filters.map((f) => (
@@ -100,13 +92,13 @@ function EmptyState() {
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <View className="flex-row items-center gap-2">
         <Feather name="mail" size={20} color={Colors.brandPrimary} />
-        <Text className="text-xl font-bold text-textPrimary">Мои отклики</Text>
+        <Text className="text-xl font-bold text-textPrimary">Мои сообщения</Text>
       </View>
       <View className="items-center gap-3 py-10">
         <View className="h-16 w-16 items-center justify-center rounded-full border border-borderLight bg-bgSecondary">
           <Feather name="send" size={32} color={Colors.brandPrimary} />
         </View>
-        <Text className="text-lg font-semibold text-textPrimary">Вы ещё не откликались</Text>
+        <Text className="text-lg font-semibold text-textPrimary">Вы ещё не писали клиентам</Text>
         <Text className="max-w-[280px] text-center text-sm text-textMuted">
           Найдите подходящие заявки и предложите свои услуги клиентам
         </Text>
@@ -139,7 +131,7 @@ function ErrorState() {
           <Feather name="alert-circle" size={32} color={Colors.statusError} />
         </View>
         <Text className="text-lg font-semibold text-textPrimary">Ошибка загрузки</Text>
-        <Text className="max-w-[280px] text-center text-sm text-textMuted">Не удалось загрузить отклики. Попробуйте снова.</Text>
+        <Text className="max-w-[280px] text-center text-sm text-textMuted">Не удалось загрузить сообщения. Попробуйте снова.</Text>
         <Pressable className="mt-2 h-10 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary px-6">
           <Feather name="refresh-cw" size={16} color={Colors.white} />
           <Text className="text-sm font-semibold text-white">Повторить</Text>

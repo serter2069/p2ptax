@@ -35,14 +35,44 @@ function ChatHeader({ name, online }: { name: string; online: boolean }) {
   );
 }
 
-function MessageBubble({ text, fromMe, time }: { text: string; fromMe: boolean; time: string }) {
+function FileAttachment({ name, size, type, fromMe }: { name: string; size: string; type: 'pdf' | 'image'; fromMe: boolean }) {
+  return (
+    <Pressable style={[s.attachmentRow, fromMe ? s.attachmentRowMine : s.attachmentRowTheirs]}>
+      {type === 'pdf' ? (
+        <View style={[s.attachmentIcon, { backgroundColor: fromMe ? 'rgba(255,255,255,0.15)' : Colors.statusBg.error }]}>
+          <Feather name="file-text" size={18} color={fromMe ? Colors.white : Colors.statusError} />
+        </View>
+      ) : (
+        <View style={[s.imageThumb, { backgroundColor: fromMe ? 'rgba(255,255,255,0.15)' : Colors.bgSurface }]}>
+          <Feather name="image" size={18} color={fromMe ? Colors.white : Colors.brandPrimary} />
+        </View>
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={[s.attachmentName, fromMe && s.attachmentNameMine]} numberOfLines={1}>{name}</Text>
+        <Text style={[s.attachmentSize, fromMe && s.attachmentSizeMine]}>{size}</Text>
+      </View>
+      <Feather name="download" size={14} color={fromMe ? 'rgba(255,255,255,0.6)' : Colors.textMuted} />
+    </Pressable>
+  );
+}
+
+function MessageBubble({ msg }: { msg: MockMessage }) {
+  const { text, fromMe, time, read, attachment } = msg;
   return (
     <View style={[s.bubbleWrap, fromMe ? s.bubbleRight : s.bubbleLeft]}>
       <View style={[s.bubble, fromMe ? s.bubbleMine : s.bubbleTheirs]}>
-        <Text style={[s.bubbleText, fromMe && s.bubbleTextMine]}>{text}</Text>
+        {text ? <Text style={[s.bubbleText, fromMe && s.bubbleTextMine]}>{text}</Text> : null}
+        {attachment && (
+          <FileAttachment name={attachment.name} size={attachment.size} type={attachment.type} fromMe={fromMe} />
+        )}
         <View style={s.bubbleFooter}>
           <Text style={[s.bubbleTime, fromMe && s.bubbleTimeMine]}>{time}</Text>
-          {fromMe && <Feather name="check" size={10} color="rgba(255,255,255,0.6)" />}
+          {fromMe && (
+            <View style={s.readIndicator}>
+              <Feather name="check" size={10} color={read ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'} />
+              <Feather name="check" size={10} color={read ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'} style={{ marginLeft: -6 }} />
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -71,22 +101,43 @@ function TypingIndicator() {
   );
 }
 
+function AttachmentPopup({ onClose }: { onClose: () => void }) {
+  const options = [
+    { icon: 'file-text' as const, label: 'Документ' },
+    { icon: 'image' as const, label: 'Фото' },
+    { icon: 'camera' as const, label: 'Камера' },
+  ];
+  return (
+    <View style={s.popupOverlay}>
+      <Pressable style={s.popupBackdrop} onPress={onClose} />
+      <View style={s.popupCard}>
+        <Text style={s.popupTitle}>Прикрепить файл</Text>
+        <View style={s.popupOptions}>
+          {options.map((opt) => (
+            <Pressable key={opt.label} style={s.popupOption}>
+              <View style={s.popupOptionIcon}>
+                <Feather name={opt.icon} size={20} color={Colors.brandPrimary} />
+              </View>
+              <Text style={s.popupOptionLabel}>{opt.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // STATE: DEFAULT (interactive chat)
 // ---------------------------------------------------------------------------
 
 function DefaultChat() {
-  const [messages, setMessages] = useState<MockMessage[]>(MOCK_MESSAGES);
+  const [messages] = useState<MockMessage[]>(MOCK_MESSAGES);
   const [inputText, setInputText] = useState('');
+  const [showAttach, setShowAttach] = useState(false);
 
   const handleSend = () => {
     if (!inputText.trim()) return;
-    const now = new Date();
-    const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: String(prev.length + 1), text: inputText.trim(), fromMe: true, time },
-    ]);
     setInputText('');
   };
 
@@ -96,27 +147,30 @@ function DefaultChat() {
       <SystemMessage text="Заявка: Декларация 3-НДФЛ за 2025 год" />
       <View style={s.messages}>
         {messages.map((m) => (
-          <MessageBubble key={m.id} text={m.text} fromMe={m.fromMe} time={m.time} />
+          <MessageBubble key={m.id} msg={m} />
         ))}
         <TypingIndicator />
       </View>
-      <View style={s.inputBar}>
-        <View style={s.inputRow}>
-          <Pressable style={s.attachBtn}>
-            <Feather name="paperclip" size={18} color={Colors.textMuted} />
-          </Pressable>
-          <TextInput
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Введите сообщение..."
-            placeholderTextColor={Colors.textMuted}
-            style={s.chatInput}
-            onSubmitEditing={handleSend}
-            returnKeyType="send"
-          />
-          <Pressable onPress={handleSend} style={[s.sendBtn, !inputText.trim() && s.sendBtnDisabled]}>
-            <Feather name="send" size={18} color={Colors.white} />
-          </Pressable>
+      <View style={s.inputBarWrap}>
+        {showAttach && <AttachmentPopup onClose={() => setShowAttach(false)} />}
+        <View style={s.inputBar}>
+          <View style={s.inputRow}>
+            <Pressable style={s.attachBtn} onPress={() => setShowAttach(!showAttach)}>
+              <Feather name="paperclip" size={18} color={showAttach ? Colors.brandPrimary : Colors.textMuted} />
+            </Pressable>
+            <TextInput
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="Введите сообщение..."
+              placeholderTextColor={Colors.textMuted}
+              style={s.chatInput}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+            />
+            <Pressable onPress={handleSend} style={[s.sendBtn, !inputText.trim() && s.sendBtnDisabled]}>
+              <Feather name="arrow-up" size={18} color={Colors.white} />
+            </Pressable>
+          </View>
         </View>
       </View>
     </View>
@@ -139,7 +193,6 @@ function LoadingChat() {
         </View>
       </View>
       <View style={s.messages}>
-        {/* Skeleton bubbles */}
         <View style={[s.bubbleWrap, s.bubbleRight]}>
           <SkeletonBlock width="65%" height={44} radius={BorderRadius.lg} />
         </View>
@@ -190,7 +243,7 @@ function EmptyChat() {
             style={s.chatInput}
           />
           <Pressable style={[s.sendBtn, s.sendBtnDisabled]}>
-            <Feather name="send" size={18} color={Colors.white} />
+            <Feather name="arrow-up" size={18} color={Colors.white} />
           </Pressable>
         </View>
       </View>
@@ -291,6 +344,44 @@ const s = StyleSheet.create({
   bubbleFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 },
   bubbleTime: { fontSize: 10, color: Colors.textMuted },
   bubbleTimeMine: { color: 'rgba(255,255,255,0.7)' },
+  readIndicator: { flexDirection: 'row', alignItems: 'center' },
+
+  // File attachments
+  attachmentRow: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    padding: Spacing.sm, borderRadius: BorderRadius.md, marginTop: Spacing.xs,
+  },
+  attachmentRowMine: { backgroundColor: 'rgba(255,255,255,0.12)' },
+  attachmentRowTheirs: { backgroundColor: Colors.bgSurface },
+  attachmentIcon: {
+    width: 36, height: 36, borderRadius: BorderRadius.md,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  imageThumb: {
+    width: 36, height: 36, borderRadius: BorderRadius.md,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  attachmentName: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary },
+  attachmentNameMine: { color: Colors.white },
+  attachmentSize: { fontSize: 10, color: Colors.textMuted, marginTop: 1 },
+  attachmentSizeMine: { color: 'rgba(255,255,255,0.6)' },
+
+  // Attachment popup
+  popupOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
+  popupBackdrop: { position: 'absolute', top: -500, left: 0, right: 0, bottom: 0 },
+  popupCard: {
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.xl, marginHorizontal: Spacing.md,
+    marginBottom: Spacing.sm, padding: Spacing.lg, ...Shadows.lg,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  popupTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary, marginBottom: Spacing.md },
+  popupOptions: { flexDirection: 'row', gap: Spacing.xl },
+  popupOption: { alignItems: 'center', gap: Spacing.xs },
+  popupOptionIcon: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.bgSurface,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
+  },
+  popupOptionLabel: { fontSize: Typography.fontSize.xs, color: Colors.textSecondary },
 
   // Typing indicator
   typingBubble: { paddingVertical: Spacing.sm },
@@ -298,13 +389,14 @@ const s = StyleSheet.create({
   typingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.textMuted },
 
   // Input bar
+  inputBarWrap: { position: 'relative' },
   inputBar: { padding: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.bgCard },
   inputRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
   attachBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   chatInput: {
     flex: 1, height: 40, backgroundColor: Colors.bgPrimary, borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.sm, color: Colors.textPrimary,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: Colors.border, outlineStyle: 'none' as any,
   },
   sendBtn: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.brandPrimary,
