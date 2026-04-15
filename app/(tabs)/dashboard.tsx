@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../../stores/authStore';
 import { dashboard, requests, threads } from '../../lib/api/endpoints';
 import { Colors } from '../../constants/Colors';
-import { NotificationBell } from '../../components/NotificationBell';
+import { useUnreadNotifications } from '../../lib/hooks/useUnreadNotifications';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,6 +48,12 @@ interface ThreadItem {
     readAt: string | null;
   } | null;
   createdAt: string;
+}
+
+interface StatusChangeItem {
+  requestId: string;
+  requestTitle: string;
+  newStatus: 'COMPLETED' | 'CANCELLED';
 }
 
 // ---------------------------------------------------------------------------
@@ -370,6 +376,8 @@ export default function DashboardTab() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentRequests, setRecentRequests] = useState<RequestItem[]>([]);
   const [recentThreads, setRecentThreads] = useState<ThreadItem[]>([]);
+  const [dismissedStatusChanges, setDismissedStatusChanges] = useState<string[]>([]);
+  const { unreadCount: notifUnreadCount } = useUnreadNotifications();
 
   const fetchData = useCallback(async () => {
     try {
@@ -444,8 +452,20 @@ export default function DashboardTab() {
     );
   }
 
-  // Populated state (default / unread)
+  // Populated state (default / unread / status change)
   const hasUnread = unreadCount > 0;
+
+  // Status change notifications (from recently completed/cancelled requests)
+  const completedRequests = recentRequests.filter(
+    (r) => r.status === 'CLOSED' || r.status === 'CANCELLED',
+  );
+  const statusChanges: StatusChangeItem[] = completedRequests
+    .filter((r) => !dismissedStatusChanges.includes(r.id))
+    .map((r) => ({
+      requestId: r.id,
+      requestTitle: r.title,
+      newStatus: r.status === 'CANCELLED' ? 'CANCELLED' : 'COMPLETED',
+    }));
 
   return (
     <ScrollView
@@ -455,7 +475,7 @@ export default function DashboardTab() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brandPrimary} />
       }
     >
-      {/* Greeting */}
+      {/* Greeting — proto: just title, bell icon in circle */}
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
           <Text className="text-xl font-bold text-textPrimary">
@@ -467,10 +487,54 @@ export default function DashboardTab() {
               : 'Ваши заявки и сообщения'}
           </Text>
         </View>
-        <NotificationBell />
+        <Pressable
+          className="h-10 w-10 items-center justify-center rounded-full bg-bgSurface"
+          onPress={() => router.push('/notifications')}
+        >
+          <Feather name="bell" size={20} color={Colors.textPrimary} />
+          {notifUnreadCount > 0 && (
+            <View className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-statusError" />
+          )}
+        </Pressable>
       </View>
 
-      {/* Stats */}
+      {/* Status change notification banner (proto: STATUS_CHANGE state) */}
+      {statusChanges.map((sc) => (
+        <View key={sc.requestId} className="gap-2 rounded-xl border border-borderLight bg-bgSurface p-4">
+          <View className="flex-row items-center gap-2">
+            <View
+              className="h-8 w-8 items-center justify-center rounded-full"
+              style={{ backgroundColor: (sc.newStatus === 'COMPLETED' ? Colors.statusSuccess : Colors.statusError) + '18' }}
+            >
+              <Feather
+                name={sc.newStatus === 'COMPLETED' ? 'check-circle' : 'x-circle'}
+                size={18}
+                color={sc.newStatus === 'COMPLETED' ? Colors.statusSuccess : Colors.statusError}
+              />
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm font-semibold text-textPrimary">
+                {sc.newStatus === 'COMPLETED' ? 'Заявка завершена' : 'Заявка отменена'}
+              </Text>
+              <Text className="text-xs text-textMuted" numberOfLines={1}>{sc.requestTitle}</Text>
+            </View>
+            <Pressable onPress={() => setDismissedStatusChanges((prev) => [...prev, sc.requestId])}>
+              <Feather name="x" size={18} color={Colors.textMuted} />
+            </Pressable>
+          </View>
+          {sc.newStatus === 'COMPLETED' && (
+            <Pressable
+              className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg border border-borderLight bg-white"
+              onPress={() => router.push(`/request/${sc.requestId}`)}
+            >
+              <Feather name="star" size={14} color={Colors.statusWarning} />
+              <Text className="text-sm font-medium text-textPrimary">Оставить отзыв</Text>
+            </Pressable>
+          )}
+        </View>
+      ))}
+
+      {/* Stats — separate visual for unread (proto: UNREAD_MESSAGES state) */}
       <View className="flex-row gap-2">
         <StatCard
           icon="file-text"
@@ -495,7 +559,7 @@ export default function DashboardTab() {
       {/* Quick actions */}
       <QuickActions />
 
-      {/* Unread messages banner */}
+      {/* Unread messages banner (proto: UNREAD_MESSAGES state) */}
       {hasUnread && (
         <Pressable
           className="flex-row items-center gap-3 rounded-xl bg-bgSurface p-4"
