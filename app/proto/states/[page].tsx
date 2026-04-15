@@ -23,7 +23,6 @@ import { DashboardStates } from '../../../components/proto/states/DashboardState
 import { MyRequestsStates } from '../../../components/proto/states/MyRequestsStates';
 import { MyRequestsNewStates } from '../../../components/proto/states/MyRequestsNewStates';
 import { MyRequestDetailStates } from '../../../components/proto/states/MyRequestDetailStates';
-import { ResponsesStates } from '../../../components/proto/states/ResponsesStates';
 import { MessagesStates } from '../../../components/proto/states/MessagesStates';
 import { MessageThreadStates } from '../../../components/proto/states/MessageThreadStates';
 import { SettingsStates } from '../../../components/proto/states/SettingsStates';
@@ -48,7 +47,6 @@ const STATE_MAP: Record<string, React.ComponentType> = {
   'my-requests': MyRequestsStates,
   'new-request': MyRequestsNewStates,
   'request-detail': MyRequestDetailStates,
-  'responses': ResponsesStates,
   'messages': MessagesStates,
   'chat-thread': MessageThreadStates,
   'client-settings': SettingsStates,
