@@ -65,6 +65,7 @@ model User {
   complaintsReceived  Complaint[]       @relation("ComplaintTarget")
   paymentRecords      PaymentRecord[]
   notifications       Notification[]
+  pushTokens          PushToken[]
 
   @@map("users")
 }
@@ -465,5 +466,17 @@ model Notification {
   @@index([userId, isRead])
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String   // "ios" | "android" | "web"
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("push_tokens")
 }
 
