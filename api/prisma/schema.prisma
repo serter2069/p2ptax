@@ -14,7 +14,9 @@ enum Role {
 }
 
 enum RequestStatus {
+  NEW
   OPEN
+  IN_PROGRESS
   CLOSING_SOON
   CLOSED
   CANCELLED

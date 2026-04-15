@@ -196,6 +196,18 @@ export class RequestsController {
     return this.requestsService.deleteRequest(req.user.id, id);
   }
 
+  // PATCH /requests/:id/status — client changes request status (validate transitions)
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CLIENT)
+  updateStatus(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
+    return this.requestsService.updateStatus(req.user.id, id, status as any);
+  }
+
   // POST /requests/:id/extend — client extends a request (resets lastActivityAt, max 3)
   @Post(':id/extend')
   @UseGuards(JwtAuthGuard, RolesGuard)
