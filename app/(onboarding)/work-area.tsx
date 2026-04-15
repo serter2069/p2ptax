@@ -1,27 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TextInput,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
-import { Button } from '../../components/Button';
-import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
-import { OnboardingProgress } from '../../components/OnboardingProgress';
 import { FNS_DEPARTMENTS } from '../../constants/FNS_DEPARTMENTS';
 import { useCities, useFnsOffices, CityItem, FnsOfficeItem } from '../../hooks/useFnsData';
 import { shortFnsLabel } from '../../lib/format';
 import { api } from '../../lib/api';
 
 // ---------------------------------------------------------------------------
-// Types for the work area bindings: city → fns → departments (services)
+// Types for the work area bindings: city -> fns -> departments (services)
 // ---------------------------------------------------------------------------
 interface WorkAreaBinding {
   fnsId: string;
@@ -37,64 +32,58 @@ interface WorkAreaBinding {
 function CityFnsSection({
   city,
   bindings,
+  expanded,
+  onToggleExpand,
   onToggleFns,
   onToggleDept,
   onRemoveCity,
 }: {
   city: CityItem;
   bindings: WorkAreaBinding[];
+  expanded: boolean;
+  onToggleExpand: () => void;
   onToggleFns: (fns: FnsOfficeItem) => void;
   onToggleDept: (fnsId: string, dept: string) => void;
   onRemoveCity: (cityId: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(true);
   const { offices, loading } = useFnsOffices(city.id);
   const selectedFnsIds = new Set(bindings.map((b) => b.fnsId));
-  const deptCount = bindings.reduce((acc, b) => acc + b.departments.length, 0);
+  const cnt = bindings.length;
 
   return (
-    <View style={styles.cityBlock}>
-      <TouchableOpacity
-        style={styles.cityHeader}
-        onPress={() => setExpanded(!expanded)}
-        activeOpacity={0.7}
+    <View className="mb-2 overflow-hidden rounded-lg border border-gray-200">
+      <Pressable
+        className="flex-row items-center justify-between px-4 py-3"
+        onPress={onToggleExpand}
       >
-        <View style={styles.cityHeaderLeft}>
-          <Feather name="map-pin" size={14} color={Colors.brandPrimary} />
-          <Text style={styles.cityName}>{city.name}</Text>
-          {bindings.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{bindings.length}</Text>
+        <View className="flex-row items-center gap-2">
+          <Feather name="map-pin" size={14} color="#0284C7" />
+          <Text className="text-base font-semibold text-textPrimary">{city.name}</Text>
+          {cnt > 0 && (
+            <View className="h-5 w-5 items-center justify-center rounded-full bg-brandPrimary">
+              <Text className="text-xs font-bold text-white">{cnt}</Text>
             </View>
           )}
-          {deptCount > 0 && (
-            <Text style={styles.deptCountLabel}>{deptCount} усл.</Text>
-          )}
         </View>
-        <View style={styles.cityHeaderRight}>
-          <TouchableOpacity
-            onPress={() => onRemoveCity(city.id)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Feather name="trash-2" size={14} color={Colors.textMuted} />
-          </TouchableOpacity>
-          <Feather
-            name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={16}
-            color={Colors.textMuted}
-          />
+        <View className="flex-row items-center gap-3">
+          <Pressable onPress={() => onRemoveCity(city.id)}>
+            <Feather name="trash-2" size={14} color="#94A3B8" />
+          </Pressable>
+          <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color="#94A3B8" />
         </View>
-      </TouchableOpacity>
+      </Pressable>
 
       {expanded && (
-        <View style={styles.fnsListWrap}>
+        <>
           {loading ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator size="small" color={Colors.brandPrimary} />
-              <Text style={styles.loadingText}>Загрузка ИФНС...</Text>
+            <View className="flex-row items-center gap-2 border-t border-gray-100 px-4 py-3">
+              <ActivityIndicator size="small" color="#0284C7" />
+              <Text className="text-sm text-textMuted">Загрузка ИФНС...</Text>
             </View>
           ) : offices.length === 0 ? (
-            <Text style={styles.emptyText}>Нет инспекций для этого города</Text>
+            <Text className="border-t border-gray-100 px-4 py-3 text-sm text-textMuted">
+              Нет инспекций для этого города
+            </Text>
           ) : (
             offices.map((fns) => {
               const isSelected = selectedFnsIds.has(fns.id);
@@ -102,63 +91,49 @@ function CityFnsSection({
               const selectedDepts = binding?.departments ?? [];
 
               return (
-                <View key={fns.id} style={styles.fnsItem}>
-                  <TouchableOpacity
-                    style={styles.fnsRow}
+                <View key={fns.id} className="border-t border-gray-100">
+                  <Pressable
+                    className="flex-row items-center gap-3 px-4 py-3"
                     onPress={() => onToggleFns(fns)}
-                    activeOpacity={0.7}
                   >
                     <View
-                      style={[
-                        styles.checkbox,
-                        isSelected && styles.checkboxActive,
-                      ]}
+                      className={`h-5 w-5 items-center justify-center rounded border ${
+                        isSelected ? 'border-brandPrimary bg-brandPrimary' : 'border-gray-300'
+                      }`}
                     >
-                      {isSelected && (
-                        <Feather name="check" size={13} color={Colors.white} />
-                      )}
+                      {isSelected && <Feather name="check" size={13} color="#fff" />}
                     </View>
                     <Text
-                      style={[
-                        styles.fnsName,
-                        isSelected && styles.fnsNameActive,
-                      ]}
+                      className={`text-sm ${
+                        isSelected ? 'font-medium text-brandPrimary' : 'text-textPrimary'
+                      }`}
                       numberOfLines={2}
                     >
                       {shortFnsLabel(fns.name, city.name)}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
 
                   {isSelected && (
-                    <View style={styles.deptChips}>
+                    <View className="flex-row flex-wrap gap-2 px-4 pb-3 pl-12">
                       {FNS_DEPARTMENTS.map((dept) => {
                         const isOn = selectedDepts.includes(dept);
                         return (
-                          <TouchableOpacity
+                          <Pressable
                             key={dept}
-                            style={[
-                              styles.deptChip,
-                              isOn && styles.deptChipActive,
-                            ]}
+                            className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
+                              isOn ? 'border-brandPrimary bg-bgSecondary' : 'border-gray-200'
+                            }`}
                             onPress={() => onToggleDept(fns.id, dept)}
-                            activeOpacity={0.7}
                           >
-                            {isOn && (
-                              <Feather
-                                name="check"
-                                size={12}
-                                color={Colors.brandPrimary}
-                              />
-                            )}
+                            {isOn && <Feather name="check" size={12} color="#0284C7" />}
                             <Text
-                              style={[
-                                styles.deptChipText,
-                                isOn && styles.deptChipTextActive,
-                              ]}
+                              className={`text-xs ${
+                                isOn ? 'font-medium text-brandPrimary' : 'text-textSecondary'
+                              }`}
                             >
                               {dept}
                             </Text>
-                          </TouchableOpacity>
+                          </Pressable>
                         );
                       })}
                     </View>
@@ -167,7 +142,7 @@ function CityFnsSection({
               );
             })
           )}
-        </View>
+        </>
       )}
     </View>
   );
@@ -182,6 +157,7 @@ export default function WorkAreaScreen() {
 
   const [search, setSearch] = useState('');
   const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+  const [expandedCity, setExpandedCity] = useState<string | null>(null);
   const [bindings, setBindings] = useState<WorkAreaBinding[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -208,6 +184,7 @@ export default function WorkAreaScreen() {
     (city: CityItem) => {
       setSelectedCityIds((prev) => [...prev, city.id]);
       setSearch('');
+      setExpandedCity(city.id);
       setError('');
     },
     [],
@@ -217,6 +194,7 @@ export default function WorkAreaScreen() {
     (cityId: string) => {
       setSelectedCityIds((prev) => prev.filter((id) => id !== cityId));
       setBindings((prev) => prev.filter((b) => b.cityId !== cityId));
+      setExpandedCity((prev) => (prev === cityId ? null : prev));
     },
     [],
   );
@@ -272,7 +250,6 @@ export default function WorkAreaScreen() {
       return;
     }
 
-    // Validate: each selected FNS must have at least 1 department
     for (const b of bindings) {
       if (b.departments.length === 0) {
         setError(`Выберите хотя бы один отдел для ${b.fnsName}`);
@@ -283,7 +260,6 @@ export default function WorkAreaScreen() {
     setError('');
     setSaving(true);
     try {
-      // Persist work area data via API
       const workAreas = bindings.map((b) => ({
         fnsId: b.fnsId,
         departments: b.departments,
@@ -291,7 +267,6 @@ export default function WorkAreaScreen() {
 
       await api.post('/specialists/work-areas', { workAreas });
 
-      // Also save to AsyncStorage for profile step fallback
       const cities = [...new Set(bindings.map((b) => b.cityName))];
       const fnsNames = bindings.map((b) => b.fnsName);
       const fnsIds = bindings.map((b) => b.fnsId);
@@ -318,7 +293,6 @@ export default function WorkAreaScreen() {
   }
 
   async function handleSkip() {
-    // Clients and those who want to fill later
     await Promise.all([
       AsyncStorage.setItem('onboarding_cities', JSON.stringify([])),
       AsyncStorage.setItem('onboarding_fns', JSON.stringify([])),
@@ -329,433 +303,134 @@ export default function WorkAreaScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.container}>
-          <OnboardingProgress currentStep={2} totalSteps={3} />
+    <ScrollView
+      className="flex-1 bg-white"
+      contentContainerStyle={{ flexGrow: 1 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View className="flex-1 bg-white px-4 py-6">
+        {/* Progress bar */}
+        <View className="mb-1 h-1 rounded-full bg-bgSecondary">
+          <View className="h-1 rounded-full bg-brandPrimary" style={{ width: '66%' }} />
+        </View>
+        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">
+          Шаг 2 из 3
+        </Text>
 
-          {/* Progress bar */}
-          <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: '66%' }]} />
-          </View>
+        {/* Header */}
+        <Text className="text-xl font-bold text-textPrimary">Рабочая зона</Text>
+        <Text className="mb-4 text-base text-textMuted">
+          Выберите города, инспекции и услуги
+        </Text>
 
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.step}>Шаг 2 из 3</Text>
-            <Text style={styles.title}>Укажите район работы</Text>
-            <Text style={styles.subtitle}>
-              Выберите города, ФНС и услуги, где вы работаете
-            </Text>
-          </View>
-
-          {/* City search */}
-          <View style={styles.searchWrap}>
-            <View style={styles.searchRow}>
-              <Feather name="search" size={18} color={Colors.textMuted} />
-              <TextInput
-                style={styles.searchInput}
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Найти город..."
-                placeholderTextColor={Colors.textMuted}
-                autoCorrect={false}
-              />
-              {search.length > 0 && (
-                <TouchableOpacity onPress={() => setSearch('')}>
-                  <Feather name="x" size={16} color={Colors.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Search results dropdown */}
-            {filtered.length > 0 && (
-              <View style={styles.dropdown}>
-                {filtered.slice(0, 8).map((city) => (
-                  <TouchableOpacity
-                    key={city.id}
-                    style={styles.dropdownItem}
-                    onPress={() => addCity(city)}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="map-pin" size={14} color={Colors.textMuted} />
-                    <Text style={styles.dropdownText}>{city.name}</Text>
-                    {city.region && (
-                      <Text style={styles.dropdownRegion}>{city.region}</Text>
-                    )}
-                    <Feather name="plus" size={14} color={Colors.brandPrimary} />
-                  </TouchableOpacity>
-                ))}
-              </View>
+        {/* City search */}
+        <View className="relative z-10 mb-2">
+          <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
+            <Feather name="search" size={18} color="#94A3B8" />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Найти город..."
+              placeholderTextColor="#94A3B8"
+              className="flex-1 text-base text-textPrimary"
+              style={{ outlineStyle: 'none' as any }}
+              autoCorrect={false}
+            />
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch('')}>
+                <Feather name="x" size={16} color="#94A3B8" />
+              </Pressable>
             )}
           </View>
 
-          {/* Empty state */}
-          {selectedCities.length === 0 && !search && (
-            <View style={styles.emptyState}>
-              <Feather name="map-pin" size={20} color={Colors.textMuted} />
-              <Text style={styles.emptyStateText}>
-                {citiesLoading
-                  ? 'Загрузка городов...'
-                  : 'Начните вводить название города'}
-              </Text>
+          {/* Search results dropdown */}
+          {filtered.length > 0 && (
+            <View className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg">
+              {filtered.slice(0, 8).map((city) => (
+                <Pressable
+                  key={city.id}
+                  className="flex-row items-center gap-2 border-b border-gray-100 px-4 py-3"
+                  onPress={() => addCity(city)}
+                >
+                  <Feather name="map-pin" size={14} color="#94A3B8" />
+                  <Text className="flex-1 text-base text-textPrimary">{city.name}</Text>
+                  {city.region && (
+                    <Text className="text-xs text-textMuted">{city.region}</Text>
+                  )}
+                  <Feather name="plus" size={14} color="#0284C7" />
+                </Pressable>
+              ))}
             </View>
           )}
-
-          {/* Selected cities with FNS and departments */}
-          {selectedCities.map((city) => (
-            <CityFnsSection
-              key={city.id}
-              city={city}
-              bindings={bindings.filter((b) => b.cityId === city.id)}
-              onToggleFns={toggleFns}
-              onToggleDept={toggleDept}
-              onRemoveCity={removeCity}
-            />
-          ))}
-
-          {/* Error */}
-          {!!error && (
-            <View style={styles.errorBox}>
-              <Feather name="alert-circle" size={14} color={Colors.statusError} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          {/* Buttons */}
-          <View style={styles.buttons}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.backBtn}
-              activeOpacity={0.7}
-            >
-              <Feather name="arrow-left" size={16} color={Colors.textSecondary} />
-              <Text style={styles.backBtnText}>Назад</Text>
-            </TouchableOpacity>
-            <Button
-              onPress={handleContinue}
-              disabled={totalFns === 0 || saving}
-              loading={saving}
-              style={styles.continueBtn}
-            >
-              Продолжить
-            </Button>
-          </View>
-
-          <TouchableOpacity
-            onPress={handleSkip}
-            style={styles.skipBtn}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.skipBtnText}>Пропустить</Text>
-          </TouchableOpacity>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        {/* Empty state */}
+        {selectedCities.length === 0 && !search && (
+          <View className="items-center py-6 opacity-60">
+            <Feather name="map-pin" size={20} color="#94A3B8" />
+            <Text className="mt-1 text-base text-textMuted">
+              {citiesLoading ? 'Загрузка городов...' : 'Начните вводить название города'}
+            </Text>
+          </View>
+        )}
+
+        {/* Selected cities with FNS and departments */}
+        {selectedCities.map((city) => (
+          <CityFnsSection
+            key={city.id}
+            city={city}
+            bindings={bindings.filter((b) => b.cityId === city.id)}
+            expanded={expandedCity === city.id}
+            onToggleExpand={() =>
+              setExpandedCity((prev) => (prev === city.id ? null : city.id))
+            }
+            onToggleFns={toggleFns}
+            onToggleDept={toggleDept}
+            onRemoveCity={removeCity}
+          />
+        ))}
+
+        {/* Error */}
+        {!!error && (
+          <View className="flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
+            <Feather name="alert-circle" size={14} color="#DC2626" />
+            <Text className="text-sm font-medium text-red-600">{error}</Text>
+          </View>
+        )}
+
+        {/* Buttons */}
+        <View className="mt-4 flex-row gap-3">
+          <Pressable
+            className="h-12 flex-row items-center justify-center gap-1 rounded-lg border border-gray-200 px-4"
+            onPress={() => router.back()}
+          >
+            <Feather name="arrow-left" size={16} color="#475569" />
+            <Text className="text-base font-medium text-textSecondary">Назад</Text>
+          </Pressable>
+          <Pressable
+            className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary ${
+              totalFns === 0 || saving ? 'opacity-40' : ''
+            }`}
+            onPress={handleContinue}
+            disabled={totalFns === 0 || saving}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Text className="text-base font-semibold text-white">Далее</Text>
+                <Feather name="arrow-right" size={16} color="#fff" />
+              </>
+            )}
+          </Pressable>
+        </View>
+
+        {/* Skip */}
+        <Pressable className="mt-2 items-center py-2" onPress={handleSkip}>
+          <Text className="text-base text-textMuted">Пропустить</Text>
+        </Pressable>
+      </View>
+    </ScrollView>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xl,
-  },
-  progressBarBg: {
-    height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: 4,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: 2,
-  },
-  header: {
-    gap: Spacing.xs,
-  },
-  step: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  // Search
-  searchWrap: {
-    position: 'relative',
-    zIndex: 10,
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    height: 48,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.bgCard,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    marginTop: 4,
-    zIndex: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgSecondary,
-  },
-  dropdownText: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  dropdownRegion: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  // Empty state
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: Spacing['3xl'],
-    opacity: 0.6,
-    gap: Spacing.sm,
-  },
-  emptyStateText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-  },
-  // City block
-  cityBlock: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-  },
-  cityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.bgCard,
-  },
-  cityHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    flex: 1,
-  },
-  cityHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  cityName: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  badge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  deptCountLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  // FNS list
-  fnsListWrap: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgSecondary,
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-  },
-  loadingText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  emptyText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-  },
-  fnsItem: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgSecondary,
-  },
-  fnsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxActive: {
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.brandPrimary,
-  },
-  fnsName: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-  },
-  fnsNameActive: {
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.brandPrimary,
-  },
-  // Department chips
-  deptChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-    paddingLeft: 52, // align with text after checkbox
-  },
-  deptChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  deptChipActive: {
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.statusBg.accent,
-  },
-  deptChipText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-  },
-  deptChipTextActive: {
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.brandPrimary,
-  },
-  // Error
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.statusBg.error,
-  },
-  errorText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.statusError,
-  },
-  // Buttons
-  buttons: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  backBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    height: 48,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  backBtnText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  continueBtn: {
-    flex: 2,
-  },
-  skipBtn: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  skipBtnText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-  },
-});
