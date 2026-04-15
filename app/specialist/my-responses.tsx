@@ -2,25 +2,24 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
+  ScrollView,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { api, ApiError } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
-import { Card } from '../../components/Card';
-import { EmptyState } from '../../components/EmptyState';
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 type ResponseStatus = 'sent' | 'viewed' | 'accepted' | 'deactivated';
-type FilterTab = 'all' | 'active' | 'deactivated';
+type FilterKey = 'all' | 'active' | 'deactivated';
 
 interface ResponseItem {
   id: string;
@@ -42,43 +41,277 @@ interface ResponseItem {
   };
 }
 
-const FILTER_TABS: { key: FilterTab; label: string }[] = [
-  { key: 'all', label: 'Все' },
-  { key: 'active', label: 'Активные' },
-  { key: 'deactivated', label: 'Отклоненные' },
-];
-
-const STATUS_CONFIG: Record<ResponseStatus, { label: string; bg: string; color: string }> = {
-  sent: { label: 'Отправлен', bg: Colors.statusBg.neutral, color: Colors.statusNeutral },
-  viewed: { label: 'Просмотрен', bg: Colors.statusBg.info, color: Colors.statusInfo },
-  accepted: { label: 'Принят', bg: Colors.statusBg.success, color: Colors.statusSuccess },
-  deactivated: { label: 'Деактивирован', bg: Colors.statusBg.error, color: Colors.statusError },
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+const STATUS_CONFIG: Record<ResponseStatus, { label: string; bgClass: string; textClass: string; icon: string }> = {
+  sent: { label: 'Отправлен', bgClass: 'bg-blue-50', textClass: 'text-statusInfo', icon: 'send' },
+  viewed: { label: 'Просмотрен', bgClass: 'bg-amber-50', textClass: 'text-statusWarning', icon: 'eye' },
+  accepted: { label: 'Принят', bgClass: 'bg-green-50', textClass: 'text-statusSuccess', icon: 'check-circle' },
+  deactivated: { label: 'Деактивирован', bgClass: 'bg-red-50', textClass: 'text-statusError', icon: 'x-circle' },
 };
 
-function filterResponses(responses: ResponseItem[], tab: FilterTab): ResponseItem[] {
-  switch (tab) {
-    case 'active':
-      return responses.filter((r) => r.status === 'sent' || r.status === 'viewed');
-    case 'deactivated':
-      return responses.filter((r) => r.status === 'deactivated');
-    default:
-      return responses;
-  }
+const STATUS_ICON_COLORS: Record<ResponseStatus, string> = {
+  sent: Colors.statusInfo,
+  viewed: Colors.statusWarning,
+  accepted: Colors.statusSuccess,
+  deactivated: Colors.statusError,
+};
+
+const FILTER_TABS: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: 'Все' },
+  { key: 'active', label: 'Активные' },
+  { key: 'deactivated', label: 'Деактивированные' },
+];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function filterResponses(items: ResponseItem[], tab: FilterKey): ResponseItem[] {
+  if (tab === 'active') return items.filter((r) => r.status !== 'deactivated');
+  if (tab === 'deactivated') return items.filter((r) => r.status === 'deactivated');
+  return items;
 }
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function formatPrice(price: number): string {
   return price.toLocaleString('ru-RU') + ' EUR';
 }
 
+function pluralResponses(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} отклик`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} отклика`;
+  return `${n} откликов`;
+}
+
+// ---------------------------------------------------------------------------
+// Status Badge
+// ---------------------------------------------------------------------------
+function StatusBadge({ status }: { status: ResponseStatus }) {
+  const cfg = STATUS_CONFIG[status];
+  return (
+    <View className={`ml-auto flex-row items-center gap-1 rounded-full px-2 py-0.5 ${cfg.bgClass}`}>
+      <Feather name={cfg.icon as any} size={12} color={STATUS_ICON_COLORS[status]} />
+      <Text className={`text-xs font-medium ${cfg.textClass}`}>{cfg.label}</Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Filter Chips
+// ---------------------------------------------------------------------------
+function FilterChips({ active, onChange }: { active: FilterKey; onChange: (f: FilterKey) => void }) {
+  return (
+    <View className="flex-row gap-2">
+      {FILTER_TABS.map((f) => (
+        <Pressable
+          key={f.key}
+          onPress={() => onChange(f.key)}
+          className={`h-9 items-center justify-center rounded-full border px-4 ${
+            active === f.key
+              ? 'border-brandPrimary bg-brandPrimary'
+              : 'border-border bg-white'
+          }`}
+        >
+          <Text
+            className={`text-sm ${
+              active === f.key ? 'font-semibold text-white' : 'font-medium text-textMuted'
+            }`}
+          >
+            {f.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Response Card
+// ---------------------------------------------------------------------------
+function ResponseCard({
+  item,
+  onDeactivate,
+  deactivatingId,
+  onNavigate,
+}: {
+  item: ResponseItem;
+  onDeactivate: (id: string) => void;
+  deactivatingId: string | null;
+  onNavigate: (id: string) => void;
+}) {
+  const canDeactivate = item.status === 'sent' || item.status === 'viewed';
+  const isAccepted = item.status === 'accepted';
+
+  return (
+    <View className="gap-2 rounded-xl border border-borderLight bg-white p-4 shadow-sm">
+      {/* Title */}
+      <Pressable onPress={() => onNavigate(item.request.id)}>
+        <Text className="text-base font-semibold text-textPrimary" numberOfLines={2}>
+          {item.request.title || item.request.description}
+        </Text>
+      </Pressable>
+
+      {/* Meta: city + service */}
+      <View className="flex-row items-center gap-1">
+        <Feather name="map-pin" size={12} color={Colors.textMuted} />
+        <Text className="text-xs text-textMuted">{item.request.city}</Text>
+        {item.request.status && (
+          <>
+            <Feather name="briefcase" size={12} color={Colors.textMuted} style={{ marginLeft: 8 }} />
+            <Text className="text-xs text-textMuted">{item.request.status}</Text>
+          </>
+        )}
+      </View>
+
+      {/* Info row: price, deadline, status */}
+      <View className="mt-0.5 flex-row items-center gap-3">
+        <View className="flex-row items-center gap-1">
+          <Feather name="dollar-sign" size={12} color={Colors.textMuted} />
+          <Text className="text-base font-semibold text-textPrimary">{formatPrice(item.price)}</Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <Feather name="calendar" size={12} color={Colors.textMuted} />
+          <Text className="text-base font-semibold text-textPrimary">{formatDate(item.deadline)}</Text>
+        </View>
+        <StatusBadge status={item.status} />
+      </View>
+
+      {/* Response date */}
+      <View className="flex-row items-center gap-1">
+        <Feather name="clock" size={12} color={Colors.textMuted} />
+        <Text className="text-xs text-textMuted">Отклик: {formatDate(item.createdAt)}</Text>
+      </View>
+
+      {/* Actions */}
+      <View className="mt-0.5 flex-row gap-2">
+        {canDeactivate && (
+          <Pressable
+            className="h-9 flex-row items-center gap-1.5 rounded-lg border border-statusError bg-red-50 px-3"
+            onPress={() => onDeactivate(item.id)}
+            disabled={deactivatingId === item.id}
+          >
+            {deactivatingId === item.id ? (
+              <ActivityIndicator size="small" color={Colors.statusError} />
+            ) : (
+              <>
+                <Feather name="x-circle" size={16} color={Colors.statusError} />
+                <Text className="text-sm font-medium text-statusError">Деактивировать</Text>
+              </>
+            )}
+          </Pressable>
+        )}
+        {isAccepted && (
+          <Pressable
+            className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4 shadow-sm"
+            onPress={() => onNavigate(item.request.id)}
+          >
+            <Feather name="message-circle" size={16} color={Colors.white} />
+            <Text className="text-sm font-semibold text-white">Перейти в чат</Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Loading Skeleton
+// ---------------------------------------------------------------------------
+function LoadingSkeleton() {
+  return (
+    <View className="gap-4 p-4">
+      {/* Header skeleton */}
+      <View className="flex-row items-center gap-2">
+        <View className="h-5 w-5 rounded bg-bgSurface" />
+        <View className="flex-1 gap-1">
+          <View className="h-5 w-1/2 rounded bg-bgSurface" />
+          <View className="h-3.5 w-1/3 rounded bg-bgSurface" />
+        </View>
+      </View>
+      {/* Filter skeleton */}
+      <View className="flex-row gap-2">
+        <View className="h-9 w-14 rounded-full bg-bgSurface" />
+        <View className="h-9 w-20 rounded-full bg-bgSurface" />
+        <View className="h-9 w-28 rounded-full bg-bgSurface" />
+      </View>
+      {/* Card skeletons */}
+      {[1, 2, 3].map((i) => (
+        <View key={i} className="h-40 w-full rounded-xl bg-bgSurface" />
+      ))}
+      <View className="items-center pt-2">
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Empty State
+// ---------------------------------------------------------------------------
+function EmptyResponsesState({ onBrowse }: { onBrowse: () => void }) {
+  return (
+    <View className="items-center gap-3 py-12">
+      <View className="h-[72px] w-[72px] items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+        <Feather name="send" size={40} color={Colors.brandPrimary} />
+      </View>
+      <Text className="text-lg font-semibold text-textPrimary">
+        Вы ещё не откликались на заявки
+      </Text>
+      <Text className="max-w-[280px] text-center text-sm text-textMuted">
+        Найдите подходящие заявки и предложите свои услуги клиентам
+      </Text>
+      <Pressable
+        className="mt-1 h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary px-8 shadow-sm"
+        onPress={onBrowse}
+      >
+        <Feather name="search" size={16} color={Colors.white} />
+        <Text className="text-base font-semibold text-white">Посмотреть заявки</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Empty Filter State
+// ---------------------------------------------------------------------------
+function EmptyFilterState() {
+  return (
+    <View className="items-center gap-2 py-12">
+      <Feather name="filter" size={36} color={Colors.textMuted} />
+      <Text className="text-base text-textMuted">Нет откликов в этой категории</Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Error State
+// ---------------------------------------------------------------------------
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <View className="items-center gap-3 py-12">
+      <Feather name="wifi-off" size={48} color={Colors.textMuted} />
+      <Text className="text-lg font-semibold text-textPrimary">Ошибка загрузки</Text>
+      <Text className="max-w-[280px] text-center text-sm text-textMuted">{message}</Text>
+      <Pressable
+        className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary px-6"
+        onPress={onRetry}
+      >
+        <Text className="text-sm font-semibold text-white">Повторить</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Screen
+// ---------------------------------------------------------------------------
 export default function SpecialistMyResponsesScreen() {
   const router = useRouter();
   const { isMobile } = useBreakpoints();
@@ -86,7 +319,7 @@ export default function SpecialistMyResponsesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [activeTab, setActiveTab] = useState<FilterKey>('all');
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 
   const fetchResponses = useCallback(async (isRefresh = false) => {
@@ -128,157 +361,34 @@ export default function SpecialistMyResponsesScreen() {
     }
   }
 
+  function handleNavigate(requestId: string) {
+    router.push(`/requests/${requestId}`);
+  }
+
   const filtered = filterResponses(responses, activeTab);
 
-  function renderSkeletonCard() {
+  // Loading
+  if (loading) {
     return (
-      <View style={styles.cardWrapper}>
-        <Card padding={Spacing.lg}>
-          <View style={[styles.skeleton, { width: '60%', height: 16 }]} />
-          <View style={[styles.skeleton, { width: '40%', height: 14, marginTop: Spacing.sm }]} />
-          <View style={[styles.skeleton, { width: '100%', height: 14, marginTop: Spacing.md }]} />
-          <View style={[styles.skeleton, { width: '80%', height: 14, marginTop: Spacing.sm }]} />
-        </Card>
+      <View className="flex-1 bg-white">
+        <Header title="Мои отклики" showBack />
+        <LoadingSkeleton />
       </View>
     );
   }
 
-  function renderItem({ item }: { item: ResponseItem }) {
-    const statusCfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.sent;
-    const canDeactivate = item.status === 'sent' || item.status === 'viewed';
-
-    return (
-      <TouchableOpacity
-        style={styles.cardWrapper}
-        activeOpacity={0.7}
-        onPress={() => router.push(`/requests/${item.request.id}`)}
-      >
-        <Card padding={Spacing.lg}>
-          {/* Title + Status */}
-          <View style={styles.topRow}>
-            <Text style={styles.requestTitle} numberOfLines={2}>
-              {item.request.title || item.request.description}
-            </Text>
-            <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
-              <Text style={[styles.statusText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
-            </View>
-          </View>
-
-          {/* City */}
-          {item.request.city ? (
-            <View style={styles.cityRow}>
-              <Ionicons name="location-outline" size={14} color={Colors.textMuted} />
-              <Text style={styles.cityText}>{item.request.city}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.divider} />
-
-          {/* Price + Deadline */}
-          <View style={styles.detailsRow}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Цена</Text>
-              <Text style={styles.detailValue}>{formatPrice(item.price)}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Срок</Text>
-              <Text style={styles.detailValue}>{formatDate(item.deadline)}</Text>
-            </View>
-          </View>
-
-          {/* Comment */}
-          {item.comment ? (
-            <Text style={styles.comment} numberOfLines={2}>
-              {item.comment}
-            </Text>
-          ) : null}
-
-          {/* Date */}
-          <Text style={styles.dateText}>Отправлен: {formatDate(item.createdAt)}</Text>
-
-          {/* Deactivate button */}
-          {canDeactivate && (
-            <TouchableOpacity
-              style={styles.deactivateBtn}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleDeactivate(item.id);
-              }}
-              disabled={deactivatingId === item.id}
-              activeOpacity={0.7}
-            >
-              {deactivatingId === item.id ? (
-                <ActivityIndicator size="small" color={Colors.statusError} />
-              ) : (
-                <Text style={styles.deactivateBtnText}>Деактивировать</Text>
-              )}
-            </TouchableOpacity>
-          )}
-        </Card>
-      </TouchableOpacity>
-    );
-  }
-
-  const tabBar = (
-    <View style={styles.tabBar}>
-      {FILTER_TABS.map((tab) => {
-        const isActive = activeTab === tab.key;
-        return (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, isActive && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-
-  const listHeader = <View>{tabBar}</View>;
-
-  const emptyContent = loading ? (
-    <View style={styles.skeletonList}>
-      {renderSkeletonCard()}
-      {renderSkeletonCard()}
-      {renderSkeletonCard()}
-    </View>
-  ) : error ? (
-    <EmptyState
-      icon="alert-circle-outline"
-      title="Ошибка загрузки"
-      subtitle={error}
-      ctaLabel="Повторить"
-      onCtaPress={() => fetchResponses()}
-    />
-  ) : (
-    <EmptyState
-      icon="document-text-outline"
-      title="Нет откликов"
-      subtitle={
-        activeTab === 'all'
-          ? "You haven't responded to any requests yet"
-          : 'Нет откликов в этой категории'
-      }
-      ctaLabel={activeTab === 'all' ? 'Смотреть запросы' : undefined}
-      onCtaPress={activeTab === 'all' ? () => router.push('/(dashboard)/city-requests') : undefined}
-    />
-  );
-
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-white">
       <Header title="Мои отклики" showBack />
-      <FlatList
-        data={loading ? [] : filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        ListHeaderComponent={listHeader}
-        contentContainerStyle={[
-          styles.listContent,
-          !isMobile && styles.listContentWide,
-        ]}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          padding: 16,
+          gap: 16,
+          maxWidth: isMobile ? undefined : 800,
+          alignSelf: isMobile ? undefined : 'center',
+          width: '100%',
+        }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -287,149 +397,55 @@ export default function SpecialistMyResponsesScreen() {
             tintColor={Colors.brandPrimary}
           />
         }
-        ListEmptyComponent={emptyContent}
-      />
-    </SafeAreaView>
+      >
+        {/* Error */}
+        {error ? (
+          <ErrorState message={error} onRetry={() => fetchResponses()} />
+        ) : responses.length === 0 ? (
+          /* Empty — no responses at all */
+          <>
+            <View className="flex-row items-center gap-2">
+              <Feather name="mail" size={20} color={Colors.brandPrimary} />
+              <Text className="text-xl font-bold text-textPrimary">Мои отклики</Text>
+            </View>
+            <EmptyResponsesState onBrowse={() => router.push('/(dashboard)/city-requests')} />
+          </>
+        ) : (
+          /* Populated */
+          <>
+            {/* Header row */}
+            <View className="flex-row items-center gap-2">
+              <Feather name="mail" size={20} color={Colors.brandPrimary} />
+              <View className="flex-1">
+                <Text className="text-xl font-bold text-textPrimary">Мои отклики</Text>
+                <Text className="text-base text-textMuted">{pluralResponses(responses.length)}</Text>
+              </View>
+            </View>
+
+            {/* Filters */}
+            <FilterChips active={activeTab} onChange={setActiveTab} />
+
+            {/* List or empty filter */}
+            {filtered.length === 0 ? (
+              <EmptyFilterState />
+            ) : (
+              <View className="gap-3">
+                {filtered.map((item) => (
+                  <ResponseCard
+                    key={item.id}
+                    item={item}
+                    onDeactivate={handleDeactivate}
+                    deactivatingId={deactivatingId}
+                    onNavigate={handleNavigate}
+                  />
+                ))}
+              </View>
+            )}
+          </>
+        )}
+
+        <View className="h-8" />
+      </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-    paddingTop: Spacing.sm,
-  },
-  listContentWide: {
-    maxWidth: 800,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  // Tabs
-  tabBar: {
-    flexDirection: 'row',
-    marginBottom: Spacing.md,
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  tab: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  tabActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  tabText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  tabTextActive: {
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  // Card
-  cardWrapper: {
-    marginBottom: Spacing.md,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-  },
-  requestTitle: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-  },
-  statusBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  cityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
-  cityText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: Spacing.md,
-  },
-  detailsRow: {
-    flexDirection: 'row',
-    gap: Spacing['2xl'],
-    marginBottom: Spacing.md,
-  },
-  detailItem: {
-    gap: 2,
-  },
-  detailLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  detailValue: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  comment: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-    fontStyle: 'italic',
-    marginBottom: Spacing.sm,
-  },
-  dateText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  deactivateBtn: {
-    marginTop: Spacing.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.statusError,
-    alignSelf: 'flex-start',
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  deactivateBtnText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  // Skeleton
-  skeletonList: {
-    gap: Spacing.md,
-  },
-  skeleton: {
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.sm,
-  },
-});
