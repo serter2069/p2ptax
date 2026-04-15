@@ -4,6 +4,26 @@ import { Feather } from '@expo/vector-icons';
 import { Colors, Shadows } from '../constants/Colors';
 import { MOCK_CITIES, MOCK_FNS, MOCK_SERVICES } from '../constants/protoMockData';
 
+function LandingHeader() {
+  return (
+    <View className="h-14 flex-row items-center justify-between border-b bg-white px-5" style={{ borderBottomColor: Colors.borderLight }}>
+      <View className="flex-row items-center gap-2">
+        <View className="h-7 w-7 items-center justify-center rounded-md bg-brandPrimary">
+          <Feather name="shield" size={16} color={Colors.white} />
+        </View>
+        <Text className="text-lg font-bold text-textPrimary">Налоговик</Text>
+      </View>
+      <View className="flex-row items-center gap-4">
+        <Pressable><Text className="text-sm text-textSecondary">Специалисты</Text></Pressable>
+        <Pressable><Text className="text-sm text-textSecondary">Тарифы</Text></Pressable>
+        <Pressable className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4">
+          <Text className="text-sm font-semibold text-white">Войти</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function useLayout() {
   const { width } = useWindowDimensions();
   return { isDesktop: width >= 768 };
@@ -84,6 +104,7 @@ export default function LandingPage() {
 
   return (
     <ScrollView className="flex-1 bg-white">
+      <LandingHeader />
       {/* Hero */}
       <View className="bg-white px-5" style={{ paddingTop: 40, paddingBottom: 40 }}>
         <View className="w-full self-center" style={{ maxWidth: 800 }}>
@@ -171,7 +192,7 @@ export default function LandingPage() {
             <View className="h-6 w-6 items-center justify-center rounded-lg bg-brandPrimary">
               <Feather name="shield" size={13} color={Colors.white} />
             </View>
-            <Text className="text-sm font-bold text-textPrimary">P2PTax</Text>
+            <Text className="text-sm font-bold text-textPrimary">Налоговик</Text>
           </View>
           <Text className="text-xs text-textMuted">2026. Все права защищены.</Text>
         </View>

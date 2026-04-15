@@ -9,7 +9,7 @@ function LogoBlock() {
       <View className="h-7 w-7 items-center justify-center rounded-md bg-brandPrimary">
         <Feather name="shield" size={16} color={Colors.white} />
       </View>
-      <Text className="text-lg font-bold text-textPrimary">Nalogovik</Text>
+      <Text className="text-lg font-bold text-textPrimary">Налоговик</Text>
     </View>
   );
 }
