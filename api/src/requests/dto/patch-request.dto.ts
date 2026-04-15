@@ -28,4 +28,9 @@ export class PatchRequestDto {
   @IsString()
   @MaxLength(100, { message: 'category must be at most 100 characters' })
   category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  serviceType?: string | null;
 }
