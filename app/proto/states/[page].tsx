@@ -28,8 +28,6 @@ import { MessagesStates } from '../../../components/proto/states/MessagesStates'
 import { MessageThreadStates } from '../../../components/proto/states/MessageThreadStates';
 import { SettingsStates } from '../../../components/proto/states/SettingsStates';
 import { SpecialistDashboardStates } from '../../../components/proto/states/SpecialistDashboardStates';
-import { SpecialistMyResponsesStates } from '../../../components/proto/states/SpecialistMyResponsesStates';
-import { SpecialistRespondStates } from '../../../components/proto/states/SpecialistRespondStates';
 import { SpecialistSettingsStates } from '../../../components/proto/states/SpecialistSettingsStates';
 import { NotFoundStates } from '../../../components/proto/states/NotFoundStates';
 
@@ -55,8 +53,6 @@ const STATE_MAP: Record<string, React.ComponentType> = {
   'chat-thread': MessageThreadStates,
   'client-settings': SettingsStates,
   'specialist-dashboard': SpecialistDashboardStates,
-  'my-responses': SpecialistMyResponsesStates,
-  'specialist-respond': SpecialistRespondStates,
   'specialist-settings': SpecialistSettingsStates,
   'not-found': NotFoundStates,
 };

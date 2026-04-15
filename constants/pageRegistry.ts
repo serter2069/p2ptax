@@ -73,8 +73,6 @@ export const pageRegistry: PageEntry[] = [
   { id: 'client-settings', title: 'Настройки клиента', group: 'Dashboard', route: '/client-settings', stateCount: 1, nav: 'client', activeTab: 'profile' },
   // Specialist
   { id: 'specialist-dashboard', title: 'Главная специалиста', group: 'Specialist', route: '/specialist-dashboard', stateCount: 4, nav: 'specialist' },
-  { id: 'my-responses', title: 'Мои отклики', group: 'Specialist', route: '/my-responses', stateCount: 4, nav: 'specialist' },
-  { id: 'specialist-respond', title: 'Откликнуться', group: 'Specialist', route: '/specialist-respond', stateCount: 2, nav: 'specialist' },
   { id: 'specialist-settings', title: 'Настройки специалиста', group: 'Specialist', route: '/specialist-settings', stateCount: 1, nav: 'specialist' },
   // Other
   { id: 'not-found', title: '404', group: 'Public', route: '/not-found', stateCount: 1, nav: 'none' },
@@ -94,8 +92,7 @@ export const PAGE_TRANSITIONS: Record<string, { to: string; action: string }[]> 
   'responses': [{ to: 'chat-thread', action: 'Написать специалисту' }],
   'messages': [{ to: 'chat-thread', action: 'Открыть чат' }],
   'specialists-catalog': [{ to: 'specialist-public-profile', action: 'Открыть профиль' }],
-  'specialist-dashboard': [{ to: 'specialist-respond', action: 'Откликнуться' }, { to: 'my-responses', action: 'Мои отклики' }],
-  'my-responses': [{ to: 'chat-thread', action: 'Написать клиенту' }],
+  'specialist-dashboard': [],
 };
 
 export const ROLE_PAGES: Record<string, string[]> = {
@@ -103,7 +100,7 @@ export const ROLE_PAGES: Record<string, string[]> = {
   auth: ['auth-email', 'auth-otp'],
   onboarding: ['onboarding-username', 'onboarding-profile', 'work-area'],
   client: ['dashboard', 'my-requests', 'new-request', 'request-detail', 'responses', 'messages', 'chat-thread', 'client-settings'],
-  specialist: ['specialist-dashboard', 'my-responses', 'specialist-respond', 'specialist-settings'],
+  specialist: ['specialist-dashboard', 'specialist-settings'],
 };
 
 // ---------------------------------------------------------------------------

@@ -1,123 +1,148 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors } from '../../../constants/Colors';
 
-const SERVICES = ['Выездная проверка', 'Камеральная проверка', 'Оперативный контроль'];
-const FNS_LIST = ['ИФНС №46', 'ИФНС №15', 'МРИ ФНС №12', 'ИФНС №7', 'ИФНС №28'];
+const MOCK_CITIES = ['Москва', 'Санкт-Петербург', 'Казань', 'Новосибирск'];
+
+const MOCK_FNS: Record<string, string[]> = {
+  'Москва': ['ИФНС №1 по г. Москве', 'ИФНС №46 по г. Москве', 'МРИ ФНС №12 по г. Москве'],
+  'Санкт-Петербург': ['ИФНС №15 по СПб', 'МРИ ФНС №7 по СПб'],
+  'Казань': ['ИФНС по г. Казани', 'МРИ ФНС №6 по РТ'],
+  'Новосибирск': ['ИФНС по г. Новосибирску', 'МРИ ФНС №16 по НСО'],
+};
+
+const SERVICES = ['3-НДФЛ', 'Регистрация ИП', 'Налоговая проверка'];
 
 function IdleState() {
-  const [name, setName] = useState('Алексей Петров');
-  const [phone, setPhone] = useState('+7 (916) 123-45-67');
-  const [telegram, setTelegram] = useState('@alexpetrov');
-  const [whatsapp, setWhatsapp] = useState('+7 916 123 45 67');
-  const [address, setAddress] = useState('Москва, ул. Тверская, 12, офис 305');
-  const [hours, setHours] = useState('Пн-Пт 9:00-18:00');
-  const [available, setAvailable] = useState(true);
-  const [selectedServices, setSelectedServices] = useState([0, 1]);
-  const [selectedFns, setSelectedFns] = useState([0, 1, 2]);
-  const [notifResponses, setNotifResponses] = useState(true);
+  const [city, setCity] = useState('');
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [selectedFns, setSelectedFns] = useState<string[]>([]);
+  const [fnsServices, setFnsServices] = useState<Record<string, string[]>>({});
+  const [notifRequests, setNotifRequests] = useState(true);
   const [notifMessages, setNotifMessages] = useState(true);
+  const [notifSystem, setNotifSystem] = useState(false);
 
-  const toggleService = (i: number) => {
-    setSelectedServices((s) => s.includes(i) ? s.filter((x) => x !== i) : [...s, i]);
+  const toggleFns = (fns: string) => {
+    if (selectedFns.includes(fns)) {
+      setSelectedFns((s) => s.filter((f) => f !== fns));
+      setFnsServices((prev) => { const next = { ...prev }; delete next[fns]; return next; });
+    } else {
+      setSelectedFns((s) => [...s, fns]);
+    }
   };
-  const toggleFns = (i: number) => {
-    setSelectedFns((s) => s.includes(i) ? s.filter((x) => x !== i) : [...s, i]);
+
+  const toggleFnsService = (fns: string, service: string) => {
+    setFnsServices((prev) => {
+      const current = prev[fns] || [];
+      const next = current.includes(service) ? current.filter((s) => s !== service) : [...current, service];
+      return { ...prev, [fns]: next };
+    });
   };
 
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 20 }}>
-      <Text className="text-xl font-bold text-textPrimary">Настройки профиля</Text>
+      <Text className="text-xl font-bold text-textPrimary">Настройки специалиста</Text>
 
-      {/* Avatar */}
-      <View className="items-center gap-2">
-        <View className="h-20 w-20 items-center justify-center rounded-full bg-bgSecondary">
-          <Feather name="user" size={32} color={Colors.textMuted} />
-        </View>
-        <Pressable><Text className="text-sm font-medium text-brandPrimary">Изменить фото</Text></Pressable>
-      </View>
-
-      {/* Fields */}
-      <View className="gap-3">
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">Имя</Text>
-          <TextInput value={name} onChangeText={setName} className="h-11 rounded-lg border border-borderLight px-3 text-base text-textPrimary" style={{ outlineStyle: 'none' as any }} />
-        </View>
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">Телефон</Text>
-          <TextInput value={phone} onChangeText={setPhone} className="h-11 rounded-lg border border-borderLight px-3 text-base text-textPrimary" style={{ outlineStyle: 'none' as any }} />
-        </View>
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">Telegram</Text>
-          <TextInput value={telegram} onChangeText={setTelegram} className="h-11 rounded-lg border border-borderLight px-3 text-base text-textPrimary" style={{ outlineStyle: 'none' as any }} />
-        </View>
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">WhatsApp</Text>
-          <TextInput value={whatsapp} onChangeText={setWhatsapp} className="h-11 rounded-lg border border-borderLight px-3 text-base text-textPrimary" style={{ outlineStyle: 'none' as any }} />
-        </View>
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">Адрес офиса</Text>
-          <TextInput value={address} onChangeText={setAddress} className="h-11 rounded-lg border border-borderLight px-3 text-base text-textPrimary" style={{ outlineStyle: 'none' as any }} />
-        </View>
-        <View className="gap-1">
-          <Text className="text-sm font-medium text-textSecondary">Часы работы</Text>
-          <TextInput value={hours} onChangeText={setHours} className="h-11 rounded-lg border border-borderLight px-3 text-base text-textPrimary" style={{ outlineStyle: 'none' as any }} />
+      {/* Profile section */}
+      <View className="gap-3 rounded-xl border border-borderLight p-4">
+        <Text className="text-base font-semibold text-textPrimary">Профиль</Text>
+        <View className="flex-row items-center gap-3">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
+            <Feather name="user" size={28} color={Colors.textMuted} />
+          </View>
+          <View className="flex-1 gap-1">
+            <Text className="text-base font-semibold text-textPrimary">Алексей Петров</Text>
+            <Text className="text-sm text-textMuted">+7 (916) 123-45-67</Text>
+            <Text className="text-sm text-textMuted">alex@mail.ru</Text>
+          </View>
         </View>
       </View>
 
-      {/* Services */}
-      <View className="gap-2">
-        <Text className="text-base font-semibold text-textPrimary">Услуги</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {SERVICES.map((s, i) => (
-            <Pressable key={s} onPress={() => toggleService(i)}
-              className={`h-9 items-center justify-center rounded-full border px-4 ${selectedServices.includes(i) ? 'border-brandPrimary bg-brandPrimary' : 'border-borderLight bg-white'}`}>
-              <Text className={`text-sm ${selectedServices.includes(i) ? 'font-semibold text-white' : 'text-textMuted'}`}>{s}</Text>
-            </Pressable>
-          ))}
+      {/* Work Area section */}
+      <View className="gap-3 rounded-xl border border-borderLight p-4">
+        <Text className="text-base font-semibold text-textPrimary">Зона обслуживания</Text>
+
+        {/* City selector */}
+        <View className="gap-1">
+          <Text className="text-sm font-medium text-textSecondary">Город</Text>
+          <Pressable onPress={() => setShowCityPicker(!showCityPicker)}>
+            <View className="h-11 flex-row items-center justify-between rounded-lg border border-borderLight px-3">
+              <Text className={city ? 'text-base text-textPrimary' : 'text-base text-textMuted'}>{city || 'Выберите город'}</Text>
+              <Feather name="chevron-down" size={16} color={Colors.textMuted} />
+            </View>
+          </Pressable>
+          {showCityPicker && (
+            <View className="overflow-hidden rounded-lg border border-borderLight bg-white" style={{ maxHeight: 200 }}>
+              {MOCK_CITIES.map((c) => (
+                <Pressable key={c} onPress={() => { setCity(c); setSelectedFns([]); setFnsServices({}); setShowCityPicker(false); }}
+                  className="border-b border-bgSecondary px-3 py-2.5">
+                  <Text className={`text-base ${city === c ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
+
+        {/* FNS list for selected city */}
+        {city && (MOCK_FNS[city] || []).length > 0 && (
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-textSecondary">Отделения ФНС</Text>
+            {(MOCK_FNS[city] || []).map((fns) => {
+              const checked = selectedFns.includes(fns);
+              return (
+                <View key={fns} className="gap-2">
+                  <Pressable onPress={() => toggleFns(fns)} className="flex-row items-center gap-2">
+                    <View className={`h-5 w-5 items-center justify-center rounded border ${checked ? 'border-brandPrimary bg-brandPrimary' : 'border-borderLight bg-white'}`}>
+                      {checked && <Feather name="check" size={14} color="#fff" />}
+                    </View>
+                    <Text className="flex-1 text-sm text-textPrimary">{fns}</Text>
+                  </Pressable>
+                  {/* Services for this FNS */}
+                  {checked && (
+                    <View className="ml-7 gap-1.5">
+                      {SERVICES.map((svc) => {
+                        const svcChecked = (fnsServices[fns] || []).includes(svc);
+                        return (
+                          <Pressable key={svc} onPress={() => toggleFnsService(fns, svc)} className="flex-row items-center gap-2">
+                            <View className={`h-4 w-4 items-center justify-center rounded-sm border ${svcChecked ? 'border-brandPrimary bg-brandPrimary' : 'border-borderLight bg-white'}`}>
+                              {svcChecked && <Feather name="check" size={10} color="#fff" />}
+                            </View>
+                            <Text className="text-sm text-textSecondary">{svc}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
       </View>
 
-      {/* FNS coverage */}
-      <View className="gap-2">
-        <Text className="text-base font-semibold text-textPrimary">Зона обслуживания (ФНС)</Text>
-        <Text className="text-xs text-textMuted">Москва</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {FNS_LIST.map((f, i) => (
-            <Pressable key={f} onPress={() => toggleFns(i)}
-              className={`h-8 items-center justify-center rounded-full border px-3 ${selectedFns.includes(i) ? 'border-brandPrimary bg-brandPrimary' : 'border-borderLight bg-white'}`}>
-              <Text className={`text-xs ${selectedFns.includes(i) ? 'font-semibold text-white' : 'text-textMuted'}`}>{f}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {/* Availability */}
-      <View className="flex-row items-center justify-between rounded-xl border border-borderLight p-4">
-        <View className="flex-1">
-          <Text className="text-base font-semibold text-textPrimary">Принимаю заявки</Text>
-          <Text className="text-xs text-textMuted">{available ? 'Вы видны в каталоге' : 'Вы скрыты из каталога'}</Text>
-        </View>
-        <Switch value={available} onValueChange={setAvailable} trackColor={{ true: Colors.brandPrimary, false: '#ddd' }} />
-      </View>
-
-      {/* Notifications */}
-      <View className="gap-3">
+      {/* Notifications section */}
+      <View className="gap-3 rounded-xl border border-borderLight p-4">
         <Text className="text-base font-semibold text-textPrimary">Уведомления</Text>
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-textSecondary">Новые отклики</Text>
-          <Switch value={notifResponses} onValueChange={setNotifResponses} trackColor={{ true: Colors.brandPrimary, false: '#ddd' }} />
+          <Text className="text-sm text-textSecondary">Новые заявки</Text>
+          <Switch value={notifRequests} onValueChange={setNotifRequests} trackColor={{ false: '#D1D5DB', true: '#0284C7' }} thumbColor="#fff" />
         </View>
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-textSecondary">Новые сообщения</Text>
-          <Switch value={notifMessages} onValueChange={setNotifMessages} trackColor={{ true: Colors.brandPrimary, false: '#ddd' }} />
+          <Text className="text-sm text-textSecondary">Сообщения</Text>
+          <Switch value={notifMessages} onValueChange={setNotifMessages} trackColor={{ false: '#D1D5DB', true: '#0284C7' }} thumbColor="#fff" />
+        </View>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-sm text-textSecondary">Системные</Text>
+          <Switch value={notifSystem} onValueChange={setNotifSystem} trackColor={{ false: '#D1D5DB', true: '#0284C7' }} thumbColor="#fff" />
         </View>
       </View>
 
-      <Pressable className="h-12 items-center justify-center rounded-lg bg-brandPrimary">
-        <Text className="text-base font-semibold text-white">Сохранить</Text>
+      {/* Logout */}
+      <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-lg" style={{ backgroundColor: Colors.statusBg.error }}>
+        <Feather name="log-out" size={18} color={Colors.statusError} />
+        <Text className="text-base font-semibold" style={{ color: Colors.statusError }}>Выйти из аккаунта</Text>
       </Pressable>
     </ScrollView>
   );
@@ -126,14 +151,11 @@ function IdleState() {
 function SavingState() {
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <Text className="text-xl font-bold text-textPrimary">Настройки профиля</Text>
+      <Text className="text-xl font-bold text-textPrimary">Настройки специалиста</Text>
       <View className="items-center gap-3 py-16">
         <ActivityIndicator size="large" color={Colors.brandPrimary} />
         <Text className="text-base font-semibold text-textPrimary">Сохранение...</Text>
       </View>
-      <Pressable className="h-12 items-center justify-center rounded-lg bg-bgSecondary">
-        <Text className="text-base font-semibold text-textMuted">Сохранить</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -141,15 +163,9 @@ function SavingState() {
 function ErrorState() {
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <Text className="text-xl font-bold text-textPrimary">Настройки профиля</Text>
+      <Text className="text-xl font-bold text-textPrimary">Настройки специалиста</Text>
       <View className="rounded-lg border p-3" style={{ borderColor: Colors.statusError, backgroundColor: Colors.statusBg.error }}>
         <Text className="text-sm" style={{ color: Colors.statusError }}>Ошибка сохранения. Проверьте данные и попробуйте снова.</Text>
-      </View>
-      <View className="gap-1">
-        <Text className="text-sm font-medium text-textSecondary">Имя</Text>
-        <View className="h-11 justify-center rounded-lg border border-borderLight px-3">
-          <Text className="text-base text-textPrimary">Алексей Петров</Text>
-        </View>
       </View>
       <Pressable className="h-12 items-center justify-center rounded-lg bg-brandPrimary">
         <Text className="text-base font-semibold text-white">Повторить</Text>

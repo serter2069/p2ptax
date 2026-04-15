@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, Switch } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StateSection } from '../StateSection';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
@@ -23,13 +23,11 @@ function SettingRow({ label, value, danger, icon, onPress }: { label: string; va
 
 function ToggleRow({ label, icon, enabled, onToggle }: { label: string; icon: string; enabled: boolean; onToggle: () => void }) {
   return (
-    <Pressable onPress={onToggle} style={s.row}>
+    <View style={s.row}>
       <Feather name={icon as any} size={18} color={Colors.textMuted} />
       <Text style={s.rowLabel}>{label}</Text>
-      <View style={[s.toggle, enabled && s.toggleOn]}>
-        <View style={[s.toggleDot, enabled && s.toggleDotOn]} />
-      </View>
-    </Pressable>
+      <Switch value={enabled} onValueChange={() => onToggle()} trackColor={{ false: '#D1D5DB', true: '#0284C7' }} thumbColor="#fff" />
+    </View>
   );
 }
 
@@ -206,16 +204,6 @@ const s = StyleSheet.create({
   rowLabel: { flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
   rowLabelDanger: { color: Colors.statusError },
   rowValue: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, marginRight: Spacing.sm },
-  toggle: {
-    width: 44, height: 24, borderRadius: 12, backgroundColor: Colors.border,
-    justifyContent: 'center', paddingHorizontal: 2,
-  },
-  toggleOn: { backgroundColor: Colors.brandPrimary },
-  toggleDot: {
-    width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.white,
-  },
-  toggleDotOn: { alignSelf: 'flex-end' },
-
   // Danger section
   dangerSection: { gap: Spacing.sm },
   dangerBtn: {

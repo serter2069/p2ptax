@@ -57,6 +57,7 @@ function DefaultNewRequest() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showFnsPicker, setShowFnsPicker] = useState(false);
   const [showServicePicker, setShowServicePicker] = useState(false);
+  const [publicVisible, setPublicVisible] = useState(false);
 
   const validateStep1 = () => {
     const errs: Record<string, string> = {};
@@ -101,6 +102,7 @@ function DefaultNewRequest() {
     setCity('');
     setFns('');
     setService('');
+    setPublicVisible(false);
     setErrors({});
   };
 
@@ -194,6 +196,16 @@ function DefaultNewRequest() {
               </View>
             )}
           </View>
+          {/* Public visibility toggle */}
+          <Pressable onPress={() => setPublicVisible(!publicVisible)} style={s.toggleRow}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={s.label}>Показать неавторизованным пользователям</Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.textMuted }}>Заявку увидят без входа в аккаунт</Text>
+            </View>
+            <View style={[s.iosSwitch, publicVisible && s.iosSwitchOn]}>
+              <View style={[s.iosSwitchThumb, publicVisible && s.iosSwitchThumbOn]} />
+            </View>
+          </Pressable>
           <Pressable onPress={handleNext} style={s.btn}>
             <Text style={s.btnText}>Далее</Text>
             <Feather name="arrow-right" size={16} color={Colors.white} />
@@ -274,6 +286,10 @@ function DefaultNewRequest() {
             <View style={s.previewRow}>
               <Text style={s.previewKey}>Описание</Text>
               <Text style={s.previewValue}>{description}</Text>
+            </View>
+            <View style={s.previewRow}>
+              <Text style={s.previewKey}>Публичная</Text>
+              <Text style={s.previewValue}>{publicVisible ? 'Да' : 'Нет'}</Text>
             </View>
           </View>
           <View style={s.stepActions}>
@@ -413,13 +429,20 @@ const s = StyleSheet.create({
   },
   selectText: { flex: 1, fontSize: Typography.fontSize.base, color: Colors.textMuted },
   selectTextFilled: { flex: 1, fontSize: Typography.fontSize.base, color: Colors.textPrimary },
-  budgetWrap: {
-    height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, flexDirection: 'row',
-    alignItems: 'center', gap: Spacing.sm,
+  toggleRow: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
-  budgetInput: { flex: 1, fontSize: Typography.fontSize.base, color: Colors.textPrimary, paddingVertical: 0 },
-  currencyLabel: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
+  iosSwitch: {
+    width: 50, height: 28, borderRadius: 14, backgroundColor: Colors.border,
+    justifyContent: 'center', paddingHorizontal: 2,
+  },
+  iosSwitchOn: { backgroundColor: Colors.brandPrimary },
+  iosSwitchThumb: {
+    width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2,
+  },
+  iosSwitchThumbOn: { alignSelf: 'flex-end' },
   pickerList: {
     borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card,
     backgroundColor: Colors.bgCard, overflow: 'hidden', maxHeight: 200, ...Shadows.sm,
