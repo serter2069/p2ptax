@@ -4,14 +4,14 @@ import {
   Text,
   Pressable,
   FlatList,
+  SafeAreaView,
   ActivityIndicator,
   RefreshControl,
-  StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { requests as requestsApi } from '../../lib/api/endpoints';
 import { NotificationBell } from '../../components/NotificationBell';
 
@@ -56,45 +56,112 @@ function RequestCard({ item, onPress }: { item: RequestItem; onPress: () => void
   });
 
   return (
-    <Pressable style={s.card} onPress={onPress}>
-      <View style={s.cardHeader}>
-        <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-        <View style={[s.badge, { backgroundColor: st.bg }]}>
-          <Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text>
+    <Pressable
+      onPress={onPress}
+      className="gap-2 rounded-[14px] border border-[#BAE6FD] bg-white p-4"
+      style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}
+    >
+      {/* Header: title + badge */}
+      <View className="flex-row items-start justify-between gap-2">
+        <Text className="flex-1 text-[15px] font-semibold text-textPrimary" numberOfLines={2}>
+          {item.title}
+        </Text>
+        <View className="rounded-full px-2 py-[2px]" style={{ backgroundColor: st.bg }}>
+          <Text className="text-[11px] font-semibold" style={{ color: st.color }}>{st.label}</Text>
         </View>
       </View>
-      <View style={s.meta}>
+
+      {/* Meta: service, fns, city */}
+      <View className="flex-row flex-wrap items-center gap-1">
         <Feather name="briefcase" size={12} color={Colors.textMuted} />
-        <Text style={s.metaItem}>{item.serviceType}</Text>
+        <Text className="text-[13px] text-textMuted">{item.serviceType}</Text>
         {item.fnsName ? (
           <>
-            <Text style={s.metaDot}>{'·'}</Text>
+            <Text className="text-[11px] text-[#BAE6FD]">{'·'}</Text>
             <Feather name="home" size={12} color={Colors.textMuted} />
-            <Text style={s.metaItem} numberOfLines={1}>{item.fnsName}</Text>
+            <Text className="text-[13px] text-textMuted" numberOfLines={1}>{item.fnsName}</Text>
           </>
         ) : null}
         {item.city ? (
           <>
-            <Text style={s.metaDot}>{'·'}</Text>
+            <Text className="text-[11px] text-[#BAE6FD]">{'·'}</Text>
             <Feather name="map-pin" size={12} color={Colors.textMuted} />
-            <Text style={s.metaItem}>{item.city}</Text>
+            <Text className="text-[13px] text-textMuted">{item.city}</Text>
           </>
         ) : null}
       </View>
-      <View style={s.cardFooter}>
-        <View style={s.dateRow}>
+
+      {/* Footer: date, messages, chevron */}
+      <View className="flex-row items-center gap-2">
+        <View className="flex-1 flex-row items-center gap-1">
           <Feather name="calendar" size={12} color={Colors.textMuted} />
-          <Text style={s.date}>{dateStr}</Text>
+          <Text className="text-[13px] text-textMuted">{dateStr}</Text>
         </View>
         {item.messageCount > 0 && (
-          <View style={s.responsesBadge}>
+          <View className="flex-row items-center gap-1">
             <Feather name="message-circle" size={12} color={Colors.brandPrimary} />
-            <Text style={s.responses}>{item.messageCount} сообщ.</Text>
+            <Text className="text-[13px] font-medium text-brandPrimary">{item.messageCount} сообщ.</Text>
           </View>
         )}
         <Feather name="chevron-right" size={16} color={Colors.textMuted} />
       </View>
     </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton (Loading State)
+// ---------------------------------------------------------------------------
+
+function SkeletonBlock({ width, height, radius }: { width: string | number; height: number; radius?: number }) {
+  return (
+    <View
+      className="bg-bgSurface opacity-70"
+      style={{ width: width as any, height, borderRadius: radius || 6 }}
+    />
+  );
+}
+
+function LoadingState() {
+  return (
+    <View className="gap-3 p-4">
+      {/* Top bar skeleton */}
+      <View className="flex-row items-center justify-between">
+        <SkeletonBlock width="40%" height={22} />
+        <SkeletonBlock width={80} height={36} radius={12} />
+      </View>
+      {/* Tab skeleton */}
+      <View className="flex-row gap-1">
+        <View className="h-10 flex-1 items-center justify-center rounded-[12px] bg-bgSurface">
+          <SkeletonBlock width="70%" height={14} />
+        </View>
+        <View className="h-10 flex-1 items-center justify-center rounded-[12px] bg-bgSurface">
+          <SkeletonBlock width="70%" height={14} />
+        </View>
+        <View className="h-10 flex-1 items-center justify-center rounded-[12px] bg-bgSurface">
+          <SkeletonBlock width="50%" height={14} />
+        </View>
+      </View>
+      {/* Card skeletons */}
+      {[1, 2, 3].map((i) => (
+        <View key={i} className="rounded-[14px] border border-[#BAE6FD] bg-white p-4">
+          <View className="flex-row justify-between">
+            <SkeletonBlock width="65%" height={16} />
+            <SkeletonBlock width={60} height={22} radius={9999} />
+          </View>
+          <View className="mt-2 flex-row gap-2">
+            <SkeletonBlock width={100} height={12} />
+            <SkeletonBlock width={80} height={12} />
+          </View>
+          <View className="mt-2 flex-row gap-2">
+            <SkeletonBlock width={80} height={12} />
+          </View>
+        </View>
+      ))}
+      <View className="items-center pt-2">
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+      </View>
+    </View>
   );
 }
 
@@ -120,16 +187,19 @@ function EmptyState({ tab, onCreatePress }: { tab: TabKey; onCreatePress: () => 
   const t = texts[tab];
 
   return (
-    <View style={s.emptyWrap}>
-      <View style={s.emptyIconWrap}>
+    <View className="flex-1 items-center justify-center gap-3 p-4">
+      <View className="h-[72px] w-[72px] items-center justify-center rounded-full border border-[#BAE6FD] bg-bgSurface">
         <Feather name="file-text" size={40} color={Colors.brandPrimary} />
       </View>
-      <Text style={s.emptyTitle}>{t.title}</Text>
-      <Text style={s.emptyText}>{t.subtitle}</Text>
+      <Text className="text-lg font-semibold text-textPrimary">{t.title}</Text>
+      <Text className="max-w-[280px] text-center text-[15px] text-textMuted">{t.subtitle}</Text>
       {tab !== 'completed' && (
-        <Pressable style={s.emptyCta} onPress={onCreatePress}>
-          <Feather name="plus" size={16} color={Colors.white} />
-          <Text style={s.emptyCtaText}>Создать заявку</Text>
+        <Pressable
+          className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-[12px] bg-brandPrimary px-6"
+          onPress={onCreatePress}
+        >
+          <Feather name="plus" size={16} color="#FFFFFF" />
+          <Text className="text-[13px] font-semibold text-white">Создать заявку</Text>
         </Pressable>
       )}
     </View>
@@ -142,15 +212,18 @@ function EmptyState({ tab, onCreatePress }: { tab: TabKey; onCreatePress: () => 
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <View style={s.emptyWrap}>
-      <View style={s.errorIconWrap}>
+    <View className="flex-1 items-center justify-center gap-3 p-4">
+      <View className="h-[72px] w-[72px] items-center justify-center rounded-full" style={{ backgroundColor: Colors.statusBg.error }}>
         <Feather name="alert-triangle" size={36} color={Colors.statusError} />
       </View>
-      <Text style={s.emptyTitle}>Ошибка загрузки</Text>
-      <Text style={s.emptyText}>Не удалось загрузить список заявок</Text>
-      <Pressable style={s.retryBtn} onPress={onRetry}>
-        <Feather name="refresh-cw" size={16} color={Colors.white} />
-        <Text style={s.retryBtnText}>Попробовать снова</Text>
+      <Text className="text-lg font-semibold text-textPrimary">Ошибка загрузки</Text>
+      <Text className="max-w-[280px] text-center text-[15px] text-textMuted">Не удалось загрузить список заявок</Text>
+      <Pressable
+        className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-[12px] bg-brandPrimary px-6"
+        onPress={onRetry}
+      >
+        <Feather name="refresh-cw" size={16} color="#FFFFFF" />
+        <Text className="text-[13px] font-semibold text-white">Попробовать снова</Text>
       </Pressable>
     </View>
   );
@@ -214,28 +287,39 @@ export default function RequestsTab() {
   ];
 
   return (
-    <View style={s.container}>
+    <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
-      <View style={s.topBar}>
-        <Text style={s.pageTitle}>Мои заявки</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View className="flex-row items-center justify-between px-4 pb-3 pt-8">
+        <Text className="text-xl font-bold text-textPrimary">Мои заявки</Text>
+        <View className="flex-row items-center gap-3">
           <NotificationBell />
-          <Pressable style={s.addBtn} onPress={goToCreate}>
-            <Feather name="plus" size={16} color={Colors.white} />
-            <Text style={s.addBtnText}>Новая</Text>
+          <Pressable
+            className="flex-row items-center gap-1 rounded-[12px] bg-brandPrimary px-3 py-2"
+            onPress={goToCreate}
+          >
+            <Feather name="plus" size={16} color="#FFFFFF" />
+            <Text className="text-[13px] font-semibold text-white">Новая</Text>
           </Pressable>
         </View>
       </View>
 
       {/* Tabs */}
-      <View style={s.tabs}>
+      <View className="flex-row gap-1 px-4 pb-3">
         {tabs.map((t) => (
           <Pressable
             key={t.key}
             onPress={() => setTab(t.key)}
-            style={[s.tab, tab === t.key && s.tabActive]}
+            className={`h-10 flex-1 items-center justify-center rounded-[12px] border ${
+              tab === t.key
+                ? 'border-brandPrimary bg-brandPrimary'
+                : 'border-[#BAE6FD] bg-white'
+            }`}
           >
-            <Text style={[s.tabText, tab === t.key && s.tabTextActive]}>
+            <Text
+              className={`text-[11px] ${
+                tab === t.key ? 'font-semibold text-white' : 'font-medium text-textMuted'
+              }`}
+            >
               {t.label}{!loading ? ` (${t.count})` : ''}
             </Text>
           </Pressable>
@@ -244,9 +328,7 @@ export default function RequestsTab() {
 
       {/* Content */}
       {loading && !refreshing ? (
-        <View style={s.loadingWrap}>
-          <ActivityIndicator size="large" color={Colors.brandPrimary} />
-        </View>
+        <LoadingState />
       ) : error ? (
         <ErrorState onRetry={() => fetchRequests()} />
       ) : visibleRequests.length === 0 ? (
@@ -258,8 +340,7 @@ export default function RequestsTab() {
           renderItem={({ item }) => (
             <RequestCard item={item} onPress={() => goToDetail(item.id)} />
           )}
-          contentContainerStyle={s.list}
-          ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 80, gap: 12 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -272,191 +353,14 @@ export default function RequestsTab() {
 
       {/* FAB */}
       {!loading && !error && visibleRequests.length > 0 && (
-        <Pressable style={s.fab} onPress={goToCreate}>
-          <Feather name="plus" size={24} color={Colors.white} />
+        <Pressable
+          className="absolute bottom-4 right-4 h-14 w-14 items-center justify-center rounded-full bg-brandPrimary"
+          style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 8 }}
+          onPress={goToCreate}
+        >
+          <Feather name="plus" size={24} color="#FFFFFF" />
         </Pressable>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bgPrimary },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing['3xl'],
-    paddingBottom: Spacing.md,
-  },
-  pageTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  addBtn: {
-    backgroundColor: Colors.brandPrimary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.btn,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  addBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-  tabs: {
-    flexDirection: 'row',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  tab: {
-    flex: 1,
-    height: 40,
-    borderRadius: BorderRadius.btn,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  tabActive: { borderColor: Colors.brandPrimary, backgroundColor: Colors.brandPrimary },
-  tabText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  tabTextActive: { color: Colors.white, fontWeight: Typography.fontWeight.semibold },
-
-  // List
-  list: { paddingHorizontal: Spacing.lg, paddingBottom: 80 },
-
-  // Card
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-  },
-  cardTitle: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  badge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full },
-  badgeText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexWrap: 'wrap' },
-  metaItem: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-  metaDot: { fontSize: Typography.fontSize.xs, color: Colors.border },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
-  date: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-  responsesBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  responses: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-
-  // Loading
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  // Empty
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.lg },
-  emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.bgSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  emptyTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  emptyText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-  emptyCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    height: 44,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.btn,
-    paddingHorizontal: Spacing['2xl'],
-    marginTop: Spacing.sm,
-  },
-  emptyCtaText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-
-  // Error
-  errorIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.statusBg.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    height: 44,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.btn,
-    paddingHorizontal: Spacing['2xl'],
-    marginTop: Spacing.sm,
-  },
-  retryBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-
-  // FAB
-  fab: {
-    position: 'absolute',
-    right: Spacing.lg,
-    bottom: Spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.brandPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.lg,
-  },
-});
