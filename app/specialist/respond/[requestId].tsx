@@ -1,94 +1,93 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-import { Header } from '../../../components/Header';
 
-export default function SpecialistRespondPage() {
-  const [price, setPrice] = useState('4 500');
+function IdleState() {
   const [message, setMessage] = useState('Здравствуйте! Готов помочь с декларацией. Опыт — 8 лет, 200+ успешных деклараций.');
-  const [deadline, setDeadline] = useState('2 рабочих дня');
-  const [popup, setPopup] = useState<'success' | 'error' | null>(null);
-
-  const handleSubmit = () => {
-    setPopup(Math.random() > 0.3 ? 'success' : 'error');
-  };
 
   return (
-    <View className="flex-1">
-      <Header variant="back" backTitle="Откликнуться" />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16, position: 'relative' }}>
-        {popup && (
-          <View className="absolute bottom-0 left-0 right-0 top-0 z-10 items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-            <View className="w-full items-center gap-3 rounded-xl bg-bgCard p-6" style={{ maxWidth: 340 }}>
-              <Feather
-                name={popup === 'success' ? 'check' : 'x'}
-                size={44}
-                color={popup === 'success' ? Colors.statusSuccess : Colors.statusError}
-              />
-              <Text className="text-lg font-bold text-textPrimary">
-                {popup === 'success' ? 'Отклик отправлен!' : 'Ошибка отправки'}
-              </Text>
-              <Text className="text-center text-sm text-textMuted">
-                {popup === 'success'
-                  ? 'Клиент получит уведомление о вашем отклике и сможет связаться с вами'
-                  : 'Не удалось отправить отклик. Попробуйте ещё раз.'}
-              </Text>
-              <Pressable
-                onPress={() => setPopup(null)}
-                className="h-11 w-full items-center justify-center rounded-lg"
-                style={{ backgroundColor: popup === 'success' ? Colors.brandPrimary : Colors.statusError }}
-              >
-                <Text className="text-sm font-semibold text-white">
-                  {popup === 'success' ? 'К моим откликам' : 'Попробовать снова'}
-                </Text>
-              </Pressable>
-            </View>
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <View className="gap-2 rounded-xl border border-borderLight bg-white p-4">
+        <View className="self-start rounded-full bg-bgSecondary px-2 py-0.5">
+          <Text className="text-xs font-medium text-textMuted">Заявка #1</Text>
+        </View>
+        <Text className="text-lg font-semibold text-textPrimary">Заполнить декларацию 3-НДФЛ за 2025 год</Text>
+        <Text className="text-sm text-textSecondary" numberOfLines={2}>
+          Нужно заполнить и подать декларацию 3-НДФЛ для получения налогового вычета за покупку квартиры.
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
+          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+            <Feather name="map-pin" size={12} color={Colors.textMuted} />
+            <Text className="text-xs text-textMuted">Москва &middot; ИФНС №46</Text>
           </View>
-        )}
-        <View className="gap-2 rounded-lg bg-bgSecondary p-4">
-          <Text className="text-base font-semibold text-textPrimary">Заполнить декларацию 3-НДФЛ за 2025 год</Text>
-          <View className="flex-row items-center gap-1">
-            <Text className="text-xs text-textMuted">Москва</Text>
-            <Text className="text-xs text-border">{'·'}</Text>
+          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+            <Feather name="dollar-sign" size={12} color={Colors.textMuted} />
             <Text className="text-xs text-textMuted">3 000 — 5 000 ₽</Text>
           </View>
         </View>
-        <View className="gap-4">
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textSecondary">Ваша цена *</Text>
-            <TextInput
-              value={price}
-              onChangeText={setPrice}
-              placeholder="Укажите стоимость в рублях"
-              placeholderTextColor={Colors.textMuted}
-              keyboardType="number-pad"
-              className="h-12 rounded-lg border border-border bg-bgCard px-4 text-base text-textPrimary"
-            />
-          </View>
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textSecondary">Сообщение клиенту *</Text>
-            <TextInput
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              className="rounded-lg border border-border bg-bgCard p-4 text-base text-textPrimary"
-              style={{ minHeight: 80, textAlignVertical: 'top' }}
-            />
-          </View>
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textSecondary">Срок выполнения</Text>
-            <TextInput
-              value={deadline}
-              onChangeText={setDeadline}
-              className="h-12 rounded-lg border border-border bg-bgCard px-4 text-base text-textPrimary"
-            />
-          </View>
-        </View>
-        <Pressable onPress={handleSubmit} className="h-12 items-center justify-center rounded-lg bg-brandPrimary">
-          <Text className="text-base font-semibold text-white">Отправить отклик</Text>
-        </Pressable>
-      </ScrollView>
-    </View>
+      </View>
+
+      <View className="gap-1">
+        <Text className="text-sm font-medium text-textSecondary">Сообщение клиенту</Text>
+        <TextInput
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          placeholder="Напишите первое сообщение клиенту..."
+          placeholderTextColor={Colors.textMuted}
+          className="min-h-[100px] rounded-lg border border-borderLight bg-white p-3 text-base text-textPrimary"
+          style={{ textAlignVertical: 'top', outlineStyle: 'none' as any }}
+        />
+        <Text className="self-end text-xs text-textMuted">{message.length}/500</Text>
+      </View>
+
+      <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
+        <Feather name="send" size={16} color={Colors.white} />
+        <Text className="text-base font-semibold text-white">Написать по заявке</Text>
+      </Pressable>
+      <Pressable className="items-center py-2">
+        <Text className="text-sm text-textMuted">Отмена</Text>
+      </Pressable>
+    </ScrollView>
   );
+}
+
+function LoadingState() {
+  return (
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <View className="h-32 w-full rounded-xl bg-bgSecondary" />
+      <View className="h-12 w-full rounded-lg bg-bgSecondary" />
+      <View className="h-24 w-full rounded-lg bg-bgSecondary" />
+      <View className="h-12 w-full rounded-lg bg-bgSecondary" />
+      <View className="items-center pt-4">
+        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+        <Text className="mt-2 text-xs text-textMuted">Загрузка заявки...</Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+function ErrorState() {
+  return (
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <View className="items-center gap-3 py-16">
+        <View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: Colors.statusBg.error }}>
+          <Feather name="alert-circle" size={32} color={Colors.statusError} />
+        </View>
+        <Text className="text-lg font-semibold text-textPrimary">Не удалось отправить сообщение</Text>
+        <Text className="max-w-[280px] text-center text-sm text-textMuted">
+          Проверьте подключение и попробуйте снова.
+        </Text>
+        <Pressable className="mt-2 h-10 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary px-6">
+          <Feather name="refresh-cw" size={16} color={Colors.white} />
+          <Text className="text-sm font-semibold text-white">Попробовать снова</Text>
+        </Pressable>
+      </View>
+    </ScrollView>
+  );
+}
+
+export default function RespondScreen() {
+  return <IdleState />;
 }

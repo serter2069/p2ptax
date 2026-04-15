@@ -1,151 +1,123 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ActivityIndicator, Pressable, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-import { Header } from '../../../components/Header';
-import { MOCK_CITIES, MOCK_SERVICES } from '../../../constants/protoMockData';
+import { Toggle } from '../../../components/proto/Toggle';
+import { MOCK_CITIES, MOCK_SERVICES, MOCK_FNS } from '../../../constants/protoMockData';
 
-export default function NewRequestPage() {
+function FileItem({ name, size, onRemove }: { name: string; size: string; onRemove: () => void }) {
+  return (
+    <View className="flex-row items-center gap-3 rounded-lg border border-borderLight bg-bgSurface px-3 py-2">
+      <Feather name="file" size={16} color={Colors.brandPrimary} />
+      <View className="flex-1">
+        <Text className="text-sm text-textPrimary" numberOfLines={1}>{name}</Text>
+        <Text className="text-xs text-textMuted">{size}</Text>
+      </View>
+      <Pressable onPress={onRemove}>
+        <Feather name="x" size={16} color={Colors.textMuted} />
+      </Pressable>
+    </View>
+  );
+}
+
+function LocationServicePicker({
+  city, fns, service, onCityChange, onFnsChange, onServiceChange,
+}: {
+  city: string; fns: string; service: string;
+  onCityChange: (v: string) => void; onFnsChange: (v: string) => void; onServiceChange: (v: string) => void;
+}) {
+  const [openLevel, setOpenLevel] = useState<'city' | 'fns' | 'service' | null>(null);
+  const fnsOptions = city ? (MOCK_FNS[city] || []) : [];
+  const summary = city ? [city, fns, service].filter(Boolean).join(' / ') : '';
+
+  return (
+    <View className="gap-1">
+      <Text className="text-sm font-medium text-textSecondary">Город, ФНС и услуга</Text>
+      <Pressable onPress={() => setOpenLevel(openLevel ? null : 'city')}>
+        <View className={`min-h-[48px] flex-row items-center gap-2 rounded-xl border px-4 py-3 ${openLevel ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
+          <Feather name="map-pin" size={16} color={Colors.textMuted} />
+          <Text className={`flex-1 text-base ${summary ? 'text-textPrimary' : 'text-textMuted'}`} numberOfLines={2}>
+            {summary || 'Выберите город, ФНС и услугу'}
+          </Text>
+          <Feather name={openLevel ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
+        </View>
+      </Pressable>
+      {openLevel && (
+        <View className="overflow-hidden rounded-xl border border-borderLight bg-white shadow-sm">
+          <View className="flex-row border-b border-bgSecondary">
+            <Pressable className={`flex-1 items-center py-2.5 ${openLevel === 'city' ? 'border-b-2 border-brandPrimary' : ''}`} onPress={() => setOpenLevel('city')}>
+              <Text className={`text-xs font-semibold ${openLevel === 'city' ? 'text-brandPrimary' : city ? 'text-textPrimary' : 'text-textMuted'}`}>{city || 'Город'}</Text>
+            </Pressable>
+            <Pressable className={`flex-1 items-center py-2.5 ${openLevel === 'fns' ? 'border-b-2 border-brandPrimary' : ''}`} onPress={() => city && setOpenLevel('fns')} disabled={!city}>
+              <Text className={`text-xs font-semibold ${openLevel === 'fns' ? 'text-brandPrimary' : fns ? 'text-textPrimary' : 'text-textMuted'}`}>{fns ? fns.replace(/^ФНС\s*/, '').substring(0, 20) : 'ФНС'}</Text>
+            </Pressable>
+            <Pressable className={`flex-1 items-center py-2.5 ${openLevel === 'service' ? 'border-b-2 border-brandPrimary' : ''}`} onPress={() => fns && setOpenLevel('service')} disabled={!fns}>
+              <Text className={`text-xs font-semibold ${openLevel === 'service' ? 'text-brandPrimary' : service ? 'text-textPrimary' : 'text-textMuted'}`}>{service || 'Услуга'}</Text>
+            </Pressable>
+          </View>
+          <View className="max-h-48">
+            {openLevel === 'city' && MOCK_CITIES.map((c) => (
+              <Pressable key={c} className="border-b border-bgSecondary px-4 py-3" onPress={() => { onCityChange(c); onFnsChange(''); onServiceChange(''); setOpenLevel('fns'); }}>
+                <Text className={`text-base ${city === c ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c}</Text>
+              </Pressable>
+            ))}
+            {openLevel === 'fns' && fnsOptions.map((f) => (
+              <Pressable key={f} className="border-b border-bgSecondary px-4 py-3" onPress={() => { onFnsChange(f); setOpenLevel('service'); }}>
+                <Text className={`text-base ${fns === f ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f}</Text>
+              </Pressable>
+            ))}
+            {openLevel === 'service' && MOCK_SERVICES.map((s) => (
+              <Pressable key={s} className="border-b border-bgSecondary px-4 py-3" onPress={() => { onServiceChange(s); setOpenLevel(null); }}>
+                <Text className={`text-base ${service === s ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{s}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+export default function NewRequestScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
+  const [fns, setFns] = useState('');
   const [service, setService] = useState('');
-  const [budget, setBudget] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [showCityPicker, setShowCityPicker] = useState(false);
-  const [showServicePicker, setShowServicePicker] = useState(false);
-
-  const validate = () => {
-    const errs: Record<string, string> = {};
-    if (title.length < 5) errs.title = 'Заголовок должен содержать минимум 5 символов';
-    if (!description) errs.description = 'Обязательное поле';
-    if (!city) errs.city = 'Выберите город';
-    return errs;
-  };
-
-  const handleSubmit = () => {
-    const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    setErrors({});
-    setLoading(true);
-    setTimeout(() => { setLoading(false); setSuccess(true); }, 1500);
-  };
+  const [publicVisible, setPublicVisible] = useState(false);
+  const [files] = useState([
+    { name: 'Справка_2НДФЛ.pdf', size: '245 КБ' },
+    { name: 'Паспорт_скан.jpg', size: '1.2 МБ' },
+  ]);
 
   return (
-    <View className="flex-1">
-      <Header variant="back" backTitle="Новая заявка" />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        {success && (
-          <View className="absolute bottom-0 left-0 right-0 top-0 z-10 items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-            <View className="w-full items-center gap-3 rounded-xl bg-bgCard p-6" style={{ maxWidth: 340 }}>
-              <Feather name="check-circle" size={48} color={Colors.statusSuccess} />
-              <Text className="text-lg font-bold text-textPrimary">Заявка создана!</Text>
-              <Text className="text-center text-sm text-textMuted">Специалисты получат уведомление и смогут откликнуться</Text>
-              <Pressable
-                onPress={() => { setSuccess(false); setTitle(''); setDescription(''); setCity(''); setService(''); setBudget(''); }}
-                className="mt-2 h-11 items-center justify-center rounded-lg bg-brandPrimary px-6"
-              >
-                <Text className="text-sm font-semibold text-white">К моим заявкам</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-        <Text className="text-lg font-bold text-textPrimary">Новая заявка</Text>
-        <View className="gap-4">
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textSecondary">Заголовок *</Text>
-            <TextInput
-              value={title}
-              onChangeText={(t) => { setTitle(t); if (errors.title) { const e = { ...errors }; delete e.title; setErrors(e); } }}
-              placeholder="Кратко опишите задачу"
-              placeholderTextColor={Colors.textMuted}
-              className={`h-12 rounded-lg border bg-bgCard px-4 text-base text-textPrimary ${errors.title ? 'border-statusError' : 'border-border'}`}
-            />
-            {errors.title && <Text className="text-xs text-statusError">{errors.title}</Text>}
-          </View>
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textSecondary">Описание *</Text>
-            <TextInput
-              value={description}
-              onChangeText={(t) => { setDescription(t); if (errors.description) { const e = { ...errors }; delete e.description; setErrors(e); } }}
-              placeholder="Подробно опишите, что нужно сделать..."
-              placeholderTextColor={Colors.textMuted}
-              multiline
-              className={`rounded-lg border bg-bgCard p-4 text-base text-textPrimary ${errors.description ? 'border-statusError' : 'border-border'}`}
-              style={{ minHeight: 96, textAlignVertical: 'top' }}
-            />
-            {errors.description && <Text className="text-xs text-statusError">{errors.description}</Text>}
-          </View>
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textSecondary">Город *</Text>
-            <Pressable onPress={() => { setShowCityPicker(!showCityPicker); setShowServicePicker(false); }}>
-              <View className={`h-12 flex-row items-center justify-between rounded-lg border bg-bgCard px-4 ${errors.city ? 'border-statusError' : 'border-border'}`}>
-                <Text className={city ? 'text-base text-textPrimary' : 'text-base text-textMuted'}>{city || 'Выберите город'}</Text>
-                <Text className="text-sm text-textMuted">{'>'}</Text>
-              </View>
-            </Pressable>
-            {showCityPicker && (
-              <View className="overflow-hidden rounded-lg border border-border bg-bgCard" style={{ maxHeight: 200 }}>
-                {MOCK_CITIES.map((c) => (
-                  <Pressable
-                    key={c}
-                    onPress={() => { setCity(c); setShowCityPicker(false); if (errors.city) { const e = { ...errors }; delete e.city; setErrors(e); } }}
-                    className="border-b border-bgSecondary px-4 py-2"
-                  >
-                    <Text className={`text-sm ${city === c ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-            {errors.city && <Text className="text-xs text-statusError">{errors.city}</Text>}
-          </View>
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textSecondary">Услуга *</Text>
-            <Pressable onPress={() => { setShowServicePicker(!showServicePicker); setShowCityPicker(false); }}>
-              <View className="h-12 flex-row items-center justify-between rounded-lg border border-border bg-bgCard px-4">
-                <Text className={service ? 'text-base text-textPrimary' : 'text-base text-textMuted'}>{service || 'Выберите услугу'}</Text>
-                <Text className="text-sm text-textMuted">{'>'}</Text>
-              </View>
-            </Pressable>
-            {showServicePicker && (
-              <View className="overflow-hidden rounded-lg border border-border bg-bgCard" style={{ maxHeight: 200 }}>
-                {MOCK_SERVICES.map((svc) => (
-                  <Pressable
-                    key={svc}
-                    onPress={() => { setService(svc); setShowServicePicker(false); }}
-                    className="border-b border-bgSecondary px-4 py-2"
-                  >
-                    <Text className={`text-sm ${service === svc ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{svc}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-          <View className="gap-1">
-            <Text className="text-sm font-medium text-textSecondary">Бюджет</Text>
-            <TextInput
-              value={budget}
-              onChangeText={setBudget}
-              placeholder="Например: 5 000 — 10 000 ₽"
-              placeholderTextColor={Colors.textMuted}
-              className="h-12 rounded-lg border border-border bg-bgCard px-4 text-base text-textPrimary"
-            />
-          </View>
-        </View>
-        <Pressable
-          onPress={handleSubmit}
-          disabled={loading}
-          className={`h-12 items-center justify-center rounded-lg bg-brandPrimary ${loading ? 'opacity-70' : ''}`}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color={Colors.white} />
-          ) : (
-            <Text className="text-base font-semibold text-white">Создать заявку</Text>
-          )}
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <Text className="text-xl font-bold text-textPrimary">Новая заявка</Text>
+      <LocationServicePicker city={city} fns={fns} service={service} onCityChange={setCity} onFnsChange={setFns} onServiceChange={setService} />
+      <View className="gap-1">
+        <Text className="text-sm font-medium text-textSecondary">Заголовок</Text>
+        <TextInput value={title} onChangeText={setTitle} placeholder="Кратко опишите задачу" placeholderTextColor={Colors.textMuted} className="h-12 rounded-xl border border-borderLight bg-white px-4 text-base text-textPrimary" style={{ outlineStyle: 'none' } as any} />
+      </View>
+      <View className="gap-1">
+        <Text className="text-sm font-medium text-textSecondary">Описание</Text>
+        <TextInput value={description} onChangeText={setDescription} placeholder="Подробно опишите, что нужно сделать..." placeholderTextColor={Colors.textMuted} multiline className="min-h-[96px] rounded-xl border border-borderLight bg-white p-4 text-base text-textPrimary" style={{ textAlignVertical: 'top', outlineStyle: 'none' } as any} />
+      </View>
+      <View className="gap-2">
+        <Text className="text-sm font-medium text-textSecondary">Файлы</Text>
+        {files.map((f, i) => (<FileItem key={i} name={f.name} size={f.size} onRemove={() => {}} />))}
+        <Pressable className="h-10 flex-row items-center justify-center gap-2 rounded-lg border border-dashed border-borderLight bg-bgSurface">
+          <Feather name="paperclip" size={16} color={Colors.brandPrimary} />
+          <Text className="text-sm font-medium text-brandPrimary">Прикрепить файл</Text>
         </Pressable>
-      </ScrollView>
-    </View>
+        <Text className="text-xs text-textMuted">PDF, JPG, PNG до 10 МБ. Макс. 5 файлов.</Text>
+      </View>
+      <View className="py-1">
+        <Toggle value={publicVisible} onValueChange={setPublicVisible} label="Показать неавторизованным" sublabel="Заявку увидят без входа в аккаунт" />
+      </View>
+      <Pressable className="mt-2 h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary">
+        <Feather name="send" size={16} color={Colors.white} />
+        <Text className="text-base font-semibold text-white">Отправить заявку</Text>
+      </Pressable>
+    </ScrollView>
   );
 }

@@ -1,90 +1,86 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { Header } from '../../components/Header';
+import { View, Text, Pressable } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { MOCK_REQUESTS } from '../../constants/protoMockData';
 
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  NEW: { label: 'Новая', color: Colors.brandPrimary },
-  ACTIVE: { label: 'Активная', color: Colors.statusSuccess },
-  IN_PROGRESS: { label: 'В работе', color: Colors.statusWarning },
-  COMPLETED: { label: 'Завершена', color: Colors.textMuted },
-  CANCELLED: { label: 'Отменена', color: Colors.statusError },
+const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  NEW: { label: 'Новая', color: Colors.brandPrimary, bg: Colors.statusBg.info },
+  ACTIVE: { label: 'Активная', color: Colors.statusSuccess, bg: Colors.statusBg.success },
+  IN_PROGRESS: { label: 'В работе', color: Colors.statusWarning, bg: Colors.statusBg.warning },
+  COMPLETED: { label: 'Завершена', color: Colors.textMuted, bg: Colors.statusBg.neutral },
+  CANCELLED: { label: 'Отменена', color: Colors.statusError, bg: Colors.statusBg.error },
 };
 
-function RequestCard({ title, service, city, status, date, responses }: {
-  title: string; service: string; city: string; status: string; date: string; responses: number;
+function RequestCard({ title, service, fns, city, status, date, messageCount }: {
+  title: string; service: string; fns: string; city: string; status: string; date: string; messageCount: number;
 }) {
   const st = STATUS_MAP[status] || STATUS_MAP.NEW;
   return (
-    <View className="gap-2 rounded-lg border border-border bg-bgCard p-4">
-      <View className="flex-row items-start justify-between gap-2">
-        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={2}>{title}</Text>
-        <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: st.color + '20' }}>
-          <Text className="text-xs font-semibold" style={{ color: st.color }}>{st.label}</Text>
+    <Pressable style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm }}>
+        <Text style={{ flex: 1, fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary }} numberOfLines={2}>{title}</Text>
+        <View style={{ paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full, backgroundColor: st.bg }}>
+          <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: st.color }}>{st.label}</Text>
         </View>
       </View>
-      <View className="flex-row items-center gap-1">
-        <Text className="text-xs text-textMuted">{service}</Text>
-        <Text className="text-xs text-border">{'·'}</Text>
-        <Text className="text-xs text-textMuted">{city}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+        <Feather name="briefcase" size={12} color={Colors.textMuted} />
+        <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>{service}</Text>
+        <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.border }}>{'·'}</Text>
+        <Feather name="home" size={12} color={Colors.textMuted} />
+        <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>{fns}</Text>
+        <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.border }}>{'·'}</Text>
+        <Feather name="map-pin" size={12} color={Colors.textMuted} />
+        <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>{city}</Text>
       </View>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-textMuted">{date}</Text>
-        {responses > 0 && <Text className="text-xs font-medium text-statusSuccess">{responses} откликов</Text>}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
+          <Feather name="calendar" size={12} color={Colors.textMuted} />
+          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>{date}</Text>
+        </View>
+        {messageCount > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Feather name="message-circle" size={12} color={Colors.brandPrimary} />
+            <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium }}>{messageCount} сообщ.</Text>
+          </View>
+        )}
+        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
-export default function MyRequestsPage() {
-  const [tab, setTab] = useState<'active' | 'completed'>('active');
+export default function RequestsScreen() {
+  const [tab, setTab] = useState<'active' | 'completed' | 'all'>('active');
   const activeRequests = MOCK_REQUESTS.filter((r) => ['NEW', 'ACTIVE', 'IN_PROGRESS'].includes(r.status));
   const completedRequests = MOCK_REQUESTS.filter((r) => ['COMPLETED', 'CANCELLED'].includes(r.status));
-  const visibleRequests = tab === 'active' ? activeRequests : completedRequests;
+  const allRequests = MOCK_REQUESTS;
+  const visibleRequests = tab === 'active' ? activeRequests : tab === 'completed' ? completedRequests : allRequests;
 
   return (
-    <View className="flex-1">
-      <Header variant="auth" />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <View className="flex-row items-center justify-between">
-          <Text className="text-lg font-bold text-textPrimary">Мои заявки</Text>
-          <Pressable className="rounded-lg bg-brandPrimary px-3 py-2">
-            <Text className="text-sm font-semibold text-white">+ Новая</Text>
+    <View style={{ padding: Spacing.lg, gap: Spacing.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>Мои заявки</Text>
+        <Pressable style={{ backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.btn, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+          <Feather name="plus" size={16} color={Colors.white} />
+          <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Новая</Text>
+        </Pressable>
+      </View>
+      <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+        {([
+          { key: 'active' as const, label: `Активные (${activeRequests.length})` },
+          { key: 'completed' as const, label: `Завершённые (${completedRequests.length})` },
+          { key: 'all' as const, label: `Все (${allRequests.length})` },
+        ]).map((t) => (
+          <Pressable key={t.key} onPress={() => setTab(t.key)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: tab === t.key ? Colors.brandPrimary : Colors.border, backgroundColor: tab === t.key ? Colors.brandPrimary : Colors.bgCard }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: tab === t.key ? Colors.white : Colors.textMuted, fontWeight: tab === t.key ? Typography.fontWeight.semibold : Typography.fontWeight.medium }}>{t.label}</Text>
           </Pressable>
-        </View>
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={() => setTab('active')}
-            className={`h-10 flex-1 items-center justify-center rounded-lg border ${tab === 'active' ? 'border-brandPrimary bg-brandPrimary' : 'border-border bg-bgCard'}`}
-          >
-            <Text className={`text-sm font-medium ${tab === 'active' ? 'font-semibold text-white' : 'text-textMuted'}`}>
-              Активные ({activeRequests.length})
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setTab('completed')}
-            className={`h-10 flex-1 items-center justify-center rounded-lg border ${tab === 'completed' ? 'border-brandPrimary bg-brandPrimary' : 'border-border bg-bgCard'}`}
-          >
-            <Text className={`text-sm font-medium ${tab === 'completed' ? 'font-semibold text-white' : 'text-textMuted'}`}>
-              Завершённые ({completedRequests.length})
-            </Text>
-          </Pressable>
-        </View>
-        {visibleRequests.length === 0 ? (
-          <View className="items-center gap-2 p-8">
-            <Text className="text-lg font-semibold text-textPrimary">Нет заявок</Text>
-            <Text className="text-center text-sm text-textMuted">В этой категории пока нет заявок</Text>
-          </View>
-        ) : (
-          visibleRequests.map((r) => (
-            <RequestCard
-              key={r.id} title={r.title} service={r.service}
-              city={r.city} status={r.status} date={r.createdAt} responses={r.responseCount}
-            />
-          ))
-        )}
-      </ScrollView>
+        ))}
+      </View>
+      {visibleRequests.map((r) => (
+        <RequestCard key={r.id} title={r.title} service={r.service} fns={r.fns} city={r.city} status={r.status} date={r.createdAt} messageCount={r.messageCount} />
+      ))}
     </View>
   );
 }

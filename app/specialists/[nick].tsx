@@ -1,15 +1,44 @@
-import React from 'react';
-import { View, Text, Image, Pressable, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { Header } from '../../components/Header';
-import { MOCK_REVIEWS } from '../../constants/protoMockData';
 
-function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
+const MOCK_SPECIALIST = {
+  name: 'Алексей Петров',
+  city: 'Москва',
+  memberSince: 2022,
+  avatar: null,
+  rating: 4.8,
+  reviewCount: 12,
+  about: `Специализируюсь на сопровождении налоговых проверок для юридических лиц и индивидуальных предпринимателей. Более 10 лет опыта работы в сфере налогового консультирования.
+
+Основные направления работы:
+— Подготовка к выездным налоговым проверкам: анализ рисков, систематизация документации, разработка стратегии защиты интересов налогоплательщика.
+— Сопровождение камеральных проверок: подготовка пояснений, ответы на требования ФНС, представление интересов в налоговых органах.
+— Работа с отделом оперативного контроля: консультирование по вопросам оперативных мероприятий, подготовка ответов на запросы.
+
+Имею успешный опыт работы со сложными случаями: крупные доначисления, встречные проверки, проверки по цепочкам контрагентов. Регулярно повышаю квалификацию, слежу за изменениями в налоговом законодательстве.
+
+Работаю в нескольких ФНС города Москвы, что позволяет оперативно решать вопросы клиентов в разных районах. Консультирую как лично, так и дистанционно.
+
+Гарантирую конфиденциальность и индивидуальный подход к каждому клиенту. Первая консультация — бесплатно.`,
+  fnsServices: [
+    { fns: 'ФНС №15 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка'] },
+    { fns: 'ФНС №46 по г. Москве', services: ['Камеральная проверка', 'Отдел оперативного контроля'] },
+    { fns: 'ФНС №7 по г. Москве', services: ['Выездная проверка'] },
+    { fns: 'ФНС №1 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'] },
+    { fns: 'ФНС №33 по г. Москве', services: ['Камеральная проверка'] },
+  ],
+  reviews: [
+    { author: 'Мария К.', date: '15.03.2024', rating: 5, text: 'Отличный специалист, помог с камеральной проверкой' },
+    { author: 'Иван С.', date: '20.02.2024', rating: 4, text: 'Быстро и профессионально сопроводил выездную проверку' },
+  ],
+};
+
+function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
-    <View className="flex-row" style={{ gap: 1 }}>
+    <View className="flex-row gap-0.5">
       {[1, 2, 3, 4, 5].map(i => (
-        <Feather key={i} name="star" size={size} color={i <= rating ? Colors.statusWarning : Colors.border} />
+        <Feather key={i} name="star" size={size} color={i <= rating ? '#F59E0B' : '#E2E8F0'} />
       ))}
     </View>
   );
@@ -17,95 +46,190 @@ function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
 
 function ReviewItem({ author, rating, text, date }: { author: string; rating: number; text: string; date: string }) {
   return (
-    <View className="gap-1 border-b border-bgSecondary py-2">
+    <View className="gap-1 border-b border-bgSecondary py-3">
       <View className="flex-row justify-between">
-        <Text className="text-sm font-semibold text-textPrimary">{author}</Text>
-        <Text className="text-xs text-textMuted">{date}</Text>
+        <View className="flex-row items-center gap-1">
+          <Feather name="user" size={14} color="#94A3B8" />
+          <Text className="text-base font-semibold text-textPrimary">{author}</Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <Feather name="calendar" size={12} color="#94A3B8" />
+          <Text className="text-sm text-textMuted">{date}</Text>
+        </View>
       </View>
       <Stars rating={rating} />
-      <Text className="text-sm text-textSecondary" style={{ lineHeight: 20 }}>{text}</Text>
+      <Text className="text-base leading-6 text-textSecondary">{text}</Text>
     </View>
   );
 }
 
-export default function SpecialistProfilePublicPage() {
-  return (
-    <View className="flex-1">
-      <Header variant="back" backTitle="Специалист" />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <View className="gap-3 rounded-lg border border-border bg-bgCard p-4">
-          <View className="flex-row gap-4">
-            <Image source={{ uri: 'https://picsum.photos/seed/aleksei-petrov/80/80' }} style={{ width: 80, height: 80, borderRadius: 40 }} />
-            <View className="flex-1" style={{ gap: 2 }}>
-              <Text className="text-lg font-bold text-textPrimary">Алексей Петров</Text>
-              <Text className="text-sm text-textMuted">Санкт-Петербург</Text>
-              <View className="mt-0.5 flex-row items-center gap-1">
-                <Stars rating={5} size={14} />
-                <Text className="text-xs text-textMuted">4.8 (42 отзыва)</Text>
-              </View>
-            </View>
-          </View>
-          <View className="flex-row items-center gap-2 rounded bg-statusBgSuccess p-2">
-            <Feather name="check" size={16} color={Colors.statusSuccess} />
-            <Text className="text-xs font-medium text-statusSuccess">Верифицирован через ФНС</Text>
-          </View>
-          <Text className="text-sm text-textSecondary" style={{ lineHeight: 20 }}>
-            Налоговый консультант с опытом работы в ФНС. Специализация — НДФЛ и имущественные вычеты.
-            Более 200 успешно поданных деклараций.
-          </Text>
-        </View>
+function FnsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const spec = MOCK_SPECIALIST;
 
-        <View className="gap-3">
-          <Text className="text-base font-semibold text-textPrimary">Услуги</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {['Декларация 3-НДФЛ', 'Налоговый вычет', 'Консультация по налогам'].map((svc) => (
-              <View key={svc} className="rounded-full bg-bgSecondary px-3 py-1">
-                <Text className="text-sm text-brandPrimary">{svc}</Text>
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View className="flex-1 items-center justify-center bg-black/50 px-4">
+        <View className="w-full max-w-lg rounded-2xl bg-white">
+          {/* Header */}
+          <View className="flex-row items-center justify-between border-b border-gray-200 px-5 py-4">
+            <View className="flex-row items-center gap-2">
+              <Feather name="briefcase" size={18} color="#0284C7" />
+              <Text className="text-lg font-bold text-textPrimary">ФНС и услуги</Text>
+            </View>
+            <Pressable onPress={onClose} className="rounded-full p-1">
+              <Feather name="x" size={22} color="#64748B" />
+            </Pressable>
+          </View>
+
+          {/* Scrollable FNS list */}
+          <ScrollView className="max-h-96 px-5 py-3">
+            {spec.fnsServices.map((group, idx) => (
+              <View
+                key={group.fns}
+                className={`gap-2 py-3 ${idx < spec.fnsServices.length - 1 ? 'border-b border-gray-100' : ''}`}
+              >
+                <View className="flex-row items-center gap-2">
+                  <Feather name="home" size={14} color="#64748B" />
+                  <Text className="text-base font-semibold text-textPrimary">{group.fns}</Text>
+                </View>
+                <View className="flex-row flex-wrap gap-2 pl-6">
+                  {group.services.map((svc) => (
+                    <View key={svc} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
+                      <Feather name="check" size={12} color="#0284C7" />
+                      <Text className="text-sm text-brandPrimary">{svc}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function ProfileScreen({ initialMessage = '', initialFnsOpen = false }: { initialMessage?: string; initialFnsOpen?: boolean }) {
+  const [message, setMessage] = useState(initialMessage);
+  const [fnsModalVisible, setFnsModalVisible] = useState(initialFnsOpen);
+  const spec = MOCK_SPECIALIST;
+
+  return (
+    <ScrollView className="flex-1 bg-white">
+      <View className="gap-4 p-4">
+        {/* Profile card */}
+        <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <View className="flex-row gap-4">
+            {/* Avatar placeholder */}
+            <View className="h-20 w-20 items-center justify-center rounded-full bg-bgSecondary">
+              <Feather name="user" size={32} color="#94A3B8" />
+            </View>
+            <View className="flex-1 gap-1">
+              <Text className="text-xl font-bold text-textPrimary">{spec.name}</Text>
+              <View className="flex-row items-center gap-1">
+                <Feather name="map-pin" size={14} color="#94A3B8" />
+                <Text className="text-base text-textMuted">{spec.city}</Text>
+              </View>
+              <View className="flex-row items-center gap-1">
+                <Stars rating={Math.round(spec.rating)} size={16} />
+                <Text className="text-sm text-textMuted">{spec.rating} ({spec.reviewCount} отзывов)</Text>
+              </View>
+              <View className="mt-1 flex-row items-center gap-1">
+                <Feather name="clock" size={13} color="#94A3B8" />
+                <Text className="text-sm text-textMuted">На сайте с {spec.memberSince} г.</Text>
+              </View>
+            </View>
           </View>
+
+          {/* About — long text */}
+          <Text className="text-base leading-6 text-textSecondary">{spec.about}</Text>
         </View>
 
-        <View className="gap-3">
-          <View className="flex-row gap-2">
-            <View className="flex-1 items-center rounded-lg border border-border bg-bgCard p-3">
-              <Text className="text-lg font-bold text-textPrimary">8 лет</Text>
-              <Text className="text-xs text-textMuted" style={{ marginTop: 2 }}>Опыт</Text>
-            </View>
-            <View className="flex-1 items-center rounded-lg border border-border bg-bgCard p-3">
-              <Text className="text-lg font-bold text-textPrimary">215</Text>
-              <Text className="text-xs text-textMuted" style={{ marginTop: 2 }}>Заказов</Text>
-            </View>
-            <View className="flex-1 items-center rounded-lg border border-border bg-bgCard p-3">
-              <Text className="text-lg font-bold text-textPrimary">98%</Text>
-              <Text className="text-xs text-textMuted" style={{ marginTop: 2 }}>Успешных</Text>
-            </View>
+        {/* FNS preview (first 2 open) + "Подробнее" for rest */}
+        <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <View className="flex-row items-center gap-2">
+            <Feather name="briefcase" size={16} color="#0284C7" />
+            <Text className="text-lg font-semibold text-textPrimary">ФНС и услуги</Text>
           </View>
+
+          {/* Show first 2 FNS inline */}
+          {spec.fnsServices.slice(0, 2).map((group, idx) => (
+            <View key={group.fns} className={`gap-2 ${idx > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
+              <View className="flex-row items-center gap-2">
+                <Feather name="home" size={14} color="#64748B" />
+                <Text className="text-base font-medium text-textPrimary">{group.fns}</Text>
+              </View>
+              <View className="flex-row flex-wrap gap-2 pl-6">
+                {group.services.map((svc) => (
+                  <View key={svc} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
+                    <Feather name="check" size={12} color="#0284C7" />
+                    <Text className="text-sm text-brandPrimary">{svc}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
+
+          {/* "Подробнее" button if more than 2 */}
+          {spec.fnsServices.length > 2 && (
+            <Pressable
+              onPress={() => setFnsModalVisible(true)}
+              className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary py-2.5"
+            >
+              <Text className="text-sm font-semibold text-brandPrimary">
+                Все ФНС и услуги ({spec.fnsServices.length})
+              </Text>
+              <Feather name="chevron-right" size={16} color="#0284C7" />
+            </Pressable>
+          )}
         </View>
 
+        <FnsModal visible={fnsModalVisible} onClose={() => setFnsModalVisible(false)} />
+
+        {/* Reviews */}
         <View className="gap-3">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-base font-semibold text-textPrimary">Отзывы</Text>
-            <Text className="text-sm font-medium text-brandPrimary">Все 42 {'>'}</Text>
+          <View className="flex-row items-center gap-2">
+            <Feather name="message-square" size={16} color="#0284C7" />
+            <Text className="text-lg font-semibold text-textPrimary">Отзывы</Text>
+            <Pressable className="ml-auto flex-row items-center">
+              <Text className="text-base font-medium text-brandPrimary">Все {spec.reviewCount}</Text>
+              <Feather name="chevron-right" size={16} color="#0284C7" />
+            </Pressable>
           </View>
-          {MOCK_REVIEWS.slice(0, 2).map((r) => (
-            <ReviewItem key={r.id} author={r.author} rating={r.rating} text={r.text} date={r.date} />
+          {spec.reviews.map((r) => (
+            <ReviewItem key={r.date} author={r.author} rating={r.rating} text={r.text} date={r.date} />
           ))}
         </View>
 
-        <View className="gap-3">
-          <Text className="text-base font-semibold text-textPrimary">Документы и сертификаты</Text>
-          <View className="flex-row gap-2">
-            <Image source={{ uri: 'https://picsum.photos/seed/diploma/100/80' }} style={{ width: 100, height: 80, borderRadius: 6 }} />
-            <Image source={{ uri: 'https://picsum.photos/seed/certificate/100/80' }} style={{ width: 100, height: 80, borderRadius: 6 }} />
-            <Image source={{ uri: 'https://picsum.photos/seed/license/100/80' }} style={{ width: 100, height: 80, borderRadius: 6 }} />
+        {/* Message textarea */}
+        <View className="gap-2">
+          <View className="flex-row items-center gap-2">
+            <Feather name="edit-3" size={16} color="#0284C7" />
+            <Text className="text-lg font-semibold text-textPrimary">Написать специалисту</Text>
           </View>
+          <TextInput
+            className="min-h-[100px] rounded-lg bg-white p-3 text-base text-textPrimary"
+            style={{ borderWidth: 1, borderColor: '#E5E7EB', outlineStyle: 'none' } as any}
+            placeholder="Опишите вашу задачу или задайте вопрос..."
+            placeholderTextColor="#94A3B8"
+            multiline
+            textAlignVertical="top"
+            value={message}
+            onChangeText={setMessage}
+          />
+          <Pressable
+            className={`mt-1 h-12 flex-row items-center justify-center gap-2 rounded-lg shadow-sm ${message.trim() ? 'bg-brandPrimary' : 'bg-gray-300'}`}
+            disabled={!message.trim()}
+          >
+            <Feather name="send" size={18} color="#FFFFFF" />
+            <Text className="text-base font-semibold text-white">Отправить</Text>
+          </Pressable>
         </View>
-
-        <Pressable className="h-12 items-center justify-center rounded-lg bg-brandPrimary">
-          <Text className="text-base font-semibold text-white">Связаться</Text>
-        </Pressable>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
+}
+
+export default function SpecialistProfileScreen() {
+  return <ProfileScreen />;
 }

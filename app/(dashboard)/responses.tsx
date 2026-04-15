@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { Header } from '../../components/Header';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { MOCK_RESPONSES } from '../../constants/protoMockData';
 
-function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
+function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
-    <View className="flex-row" style={{ gap: 1 }}>
+    <View style={{ flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4, 5].map(i => (
         <Feather key={i} name="star" size={size} color={i <= Math.round(rating) ? Colors.statusWarning : Colors.border} />
       ))}
@@ -15,96 +14,166 @@ function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
   );
 }
 
+function SkeletonBlock({ width, height, radius }: { width: string | number; height: number; radius?: number }) {
+  return (
+    <View style={[s.skeleton, { width: width as any, height, borderRadius: radius || BorderRadius.md }]} />
+  );
+}
+
 function ResponseItem({ name, price, message, rating, reviews, onAccept, onDecline }: {
   name: string; price: string; message: string; rating: number; reviews: number;
   onAccept: () => void; onDecline: () => void;
 }) {
+  const initials = name.split(' ').map(n => n[0]).join('');
   return (
-    <View className="gap-2 rounded-lg border border-border bg-bgCard p-4">
-      <View className="flex-row items-center gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-bgSecondary">
-          <Text className="text-base font-bold text-brandPrimary">{name[0]}</Text>
-        </View>
-        <View className="flex-1">
-          <Text className="text-sm font-semibold text-textPrimary">{name}</Text>
-          <View className="flex-row items-center gap-1">
+    <View style={s.card}>
+      <View style={s.cardTop}>
+        <View style={s.avatar}><Text style={s.avatarText}>{initials}</Text></View>
+        <View style={s.info}>
+          <Text style={s.name}>{name}</Text>
+          <View style={s.ratingRow}>
             <Stars rating={rating} />
-            <Text className="text-xs text-textMuted">{rating} ({reviews})</Text>
+            <Text style={s.ratingLabel}>{rating} ({reviews} отзывов)</Text>
           </View>
         </View>
-        <Text className="text-base font-bold text-brandPrimary">{price}</Text>
+        <Text style={s.price}>{price}</Text>
       </View>
-      <Text className="text-sm text-textSecondary" numberOfLines={2}>{message}</Text>
-      <View className="mt-1 flex-row gap-2">
-        <Pressable onPress={onAccept} className="h-9 flex-1 items-center justify-center rounded-lg bg-brandPrimary">
-          <Text className="text-sm font-semibold text-white">Принять</Text>
+      <Text style={s.message} numberOfLines={2}>{message}</Text>
+      <View style={s.actions}>
+        <Pressable onPress={onAccept} style={s.btnAccept}>
+          <Feather name="check" size={16} color={Colors.white} />
+          <Text style={s.btnAcceptText}>Принять</Text>
         </Pressable>
-        <Pressable onPress={onDecline} className="h-9 flex-1 items-center justify-center rounded-lg border border-border">
-          <Text className="text-sm text-textMuted">Отклонить</Text>
+        <Pressable onPress={onDecline} style={s.btnDecline}>
+          <Feather name="x" size={16} color={Colors.textMuted} />
+          <Text style={s.btnDeclineText}>Отклонить</Text>
         </Pressable>
       </View>
     </View>
   );
 }
 
-function Popup({ type, name, onConfirm, onCancel }: { type: 'accept' | 'decline'; name: string; onConfirm: () => void; onCancel: () => void }) {
-  const isAccept = type === 'accept';
+// ---------------------------------------------------------------------------
+// STATE: DEFAULT (with responses + price comparison)
+// ---------------------------------------------------------------------------
+
+function DefaultResponses() {
+  const sorted = [...MOCK_RESPONSES].sort((a, b) => {
+    const priceA = parseInt(a.price.replace(/\D/g, ''));
+    const priceB = parseInt(b.price.replace(/\D/g, ''));
+    return priceA - priceB;
+  });
+  const cheapest = sorted[0];
+
   return (
-    <View className="absolute bottom-0 left-0 right-0 top-0 z-10 items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <View className="w-full items-center gap-3 rounded-xl bg-bgCard p-6" style={{ maxWidth: 340 }}>
-        <Feather name={isAccept ? 'check' : 'x'} size={40} color={isAccept ? Colors.brandPrimary : Colors.statusError} />
-        <Text className="text-lg font-bold text-textPrimary">{isAccept ? 'Принять отклик?' : 'Отклонить отклик?'}</Text>
-        <Text className="text-center text-sm text-textMuted">
-          {isAccept
-            ? `Специалист ${name} будет назначен исполнителем вашей заявки`
-            : `Отклик от ${name} будет отклонён`}
-        </Text>
-        <View className="w-full gap-2">
-          <Pressable
-            onPress={onConfirm}
-            className="h-11 items-center justify-center rounded-lg"
-            style={{ backgroundColor: isAccept ? Colors.brandPrimary : Colors.statusError }}
-          >
-            <Text className="text-sm font-semibold text-white">{isAccept ? 'Подтвердить' : 'Отклонить'}</Text>
-          </Pressable>
-          <Pressable onPress={onCancel} className="h-11 items-center justify-center rounded-lg border border-border">
-            <Text className="text-sm text-textMuted">Отмена</Text>
-          </Pressable>
+    <View style={s.container}>
+      <View style={s.topBar}>
+        <Text style={s.pageTitle}>Отклики</Text>
+        <View style={s.countBadge}>
+          <Text style={s.countText}>{MOCK_RESPONSES.length}</Text>
         </View>
       </View>
+
+      {/* Price comparison bar */}
+      <View style={s.priceBar}>
+        <Feather name="trending-down" size={14} color={Colors.statusSuccess} />
+        <Text style={s.priceBarText}>
+          Лучшая цена: <Text style={s.priceBarValue}>{cheapest.price}</Text> от {cheapest.specialistName}
+        </Text>
+      </View>
+
+      {MOCK_RESPONSES.map((r) => (
+        <ResponseItem
+          key={r.id}
+          name={r.specialistName}
+          price={r.price}
+          message={r.message}
+          rating={r.rating}
+          reviews={r.reviewCount}
+          onAccept={() => {}}
+          onDecline={() => {}}
+        />
+      ))}
     </View>
   );
 }
 
-export default function ResponsesPage() {
-  const [popupState, setPopupState] = useState<{ type: 'accept' | 'decline'; name: string } | null>(null);
-
-  return (
-    <View className="flex-1">
-      <Header variant="back" backTitle="Отклики" />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, position: 'relative' }}>
-        <Text className="text-lg font-bold text-textPrimary">Отклики ({MOCK_RESPONSES.length})</Text>
-        {MOCK_RESPONSES.map((r) => (
-          <ResponseItem
-            key={r.id}
-            name={r.specialistName}
-            price={r.price}
-            message={r.message}
-            rating={r.rating}
-            reviews={r.reviewCount}
-            onAccept={() => setPopupState({ type: 'accept', name: r.specialistName })}
-            onDecline={() => setPopupState({ type: 'decline', name: r.specialistName })}
-          />
-        ))}
-        {popupState && (
-          <Popup
-            type={popupState.type}
-            name={popupState.name}
-            onConfirm={() => setPopupState(null)}
-            onCancel={() => setPopupState(null)}
-          />
-        )}
-      </ScrollView>
-    </View>
-  );
+export default function ResponsesScreen() {
+  return <DefaultResponses />;
 }
+
+const s = StyleSheet.create({
+  container: { padding: Spacing.lg, gap: Spacing.md },
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  countBadge: {
+    backgroundColor: Colors.brandPrimary, minWidth: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
+  },
+  countText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.white },
+
+  // Price comparison
+  priceBar: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: Colors.statusBg.success, padding: Spacing.md, borderRadius: BorderRadius.card,
+  },
+  priceBarText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
+  priceBarValue: { fontWeight: Typography.fontWeight.bold, color: Colors.statusSuccess },
+
+  // Card
+  card: {
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm,
+  },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  avatar: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bgSecondary,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
+  },
+  avatarText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
+  info: { flex: 1 },
+  name: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 2 },
+  ratingLabel: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
+  price: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary },
+  message: { fontSize: Typography.fontSize.base, color: Colors.textSecondary, lineHeight: 22 },
+  actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
+  btnAccept: {
+    flex: 1, height: 40, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
+    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.xs, ...Shadows.sm,
+  },
+  btnAcceptText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+  btnDecline: {
+    flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', gap: Spacing.xs,
+  },
+  btnDeclineText: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
+
+  // Empty
+  emptyBlock: { alignItems: 'center', paddingVertical: Spacing['3xl'], gap: Spacing.md },
+  emptyIconWrap: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.bgSurface,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
+  },
+  emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  emptyText: { fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 300 },
+
+  // Error
+  errorIconWrap: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.statusBg.error,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+    height: 44, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn,
+    paddingHorizontal: Spacing['2xl'], marginTop: Spacing.sm,
+  },
+  retryBtnText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white },
+
+  // Skeleton
+  skeleton: { backgroundColor: Colors.bgSurface, opacity: 0.7, borderRadius: BorderRadius.md },
+  skeletonCard: {
+    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
+    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md,
+  },
+});

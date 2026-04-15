@@ -1,176 +1,109 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
 
-const SERVICES = [
-  'Выездная проверка',
-  'Отдел оперативного контроля',
-  'Камеральная проверка',
-];
-
-const CITIES_FNS: Record<string, string[]> = {
-  'Москва': ['ИФНС №5 по г. Москве', 'ИФНС №12 по г. Москве', 'ИФНС №46 по г. Москве'],
-  'Санкт-Петербург': ['ИФНС №3 по СПб', 'ИФНС №15 по СПб', 'ИФНС №28 по СПб'],
-  'Казань': ['ИФНС №1 по Казани', 'ИФНС №6 по Казани'],
-  'Новосибирск': ['ИФНС №2 по Новосибирску', 'ИФНС №13 по Новосибирску'],
+const SVCS = ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'];
+const CF: Record<string, string[]> = {
+  'Москва': ['ИФНС №5', 'ИФНС №12', 'ИФНС №46'],
+  'СПб': ['ИФНС №3', 'ИФНС №15', 'ИФНС №28'],
+  'Казань': ['ИФНС №1', 'ИФНС №6'],
 };
+type Bind = Record<string, string[]>;
 
-const ALL_CITIES = Object.keys(CITIES_FNS);
-
-type FnsBindings = Record<string, string[]>;
-
-export default function OnboardingWorkAreaPage() {
+function WorkAreaScreen({ preset, validationError }: { preset?: { cities: string[]; bindings: Bind }; validationError?: string }) {
   const [search, setSearch] = useState('');
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [expandedCity, setExpandedCity] = useState<string | null>(null);
-  const [bindings, setBindings] = useState<FnsBindings>({});
-
-  const filteredCities = search.length > 0
-    ? ALL_CITIES.filter((c) => c.toLowerCase().includes(search.toLowerCase()) && !selectedCities.includes(c))
-    : [];
-
-  const addCity = (city: string) => {
-    setSelectedCities((prev) => [...prev, city]);
-    setSearch('');
-    setExpandedCity(city);
+  const [cities, setCities] = useState<string[]>(preset?.cities || []);
+  const [expanded, setExpanded] = useState<string | null>(preset?.cities?.[0] || null);
+  const [bind, setBind] = useState<Bind>(preset?.bindings || {});
+  const [error] = useState(validationError || '');
+  const allCities = Object.keys(CF);
+  const filtered = search ? allCities.filter((c) => c.toLowerCase().includes(search.toLowerCase()) && !cities.includes(c)) : [];
+  const addCity = (c: string) => { setCities((p) => [...p, c]); setSearch(''); setExpanded(c); };
+  const removeCity = (c: string) => {
+    setCities((p) => p.filter((x) => x !== c));
+    setBind((p) => { const n = { ...p }; Object.keys(n).forEach((k) => { if (k.startsWith(c + ':')) delete n[k]; }); return n; });
   };
-
-  const removeCity = (city: string) => {
-    setSelectedCities((prev) => prev.filter((c) => c !== city));
-    setExpandedCity((prev) => prev === city ? null : prev);
-    setBindings((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((k) => { if (k.startsWith(city + ':')) delete next[k]; });
-      return next;
-    });
+  const k = (c: string, f: string) => `${c}:${f}`;
+  const toggleFns = (c: string, f: string) => {
+    const key = k(c, f);
+    setBind((p) => { if (p[key]) { const n = { ...p }; delete n[key]; return n; } return { ...p, [key]: [] }; });
   };
-
-  const fnsKey = (city: string, fns: string) => `${city}:${fns}`;
-
-  const toggleFns = (city: string, fns: string) => {
-    const key = fnsKey(city, fns);
-    setBindings((prev) => {
-      if (prev[key]) {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      }
-      return { ...prev, [key]: [] };
-    });
+  const toggleSvc = (key: string, s: string) => {
+    setBind((p) => { const cur = p[key] || []; return { ...p, [key]: cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s] }; });
   };
-
-  const toggleService = (key: string, service: string) => {
-    setBindings((prev) => {
-      const current = prev[key] || [];
-      const updated = current.includes(service)
-        ? current.filter((s) => s !== service)
-        : [...current, service];
-      return { ...prev, [key]: updated };
-    });
-  };
-
-  const totalBindings = Object.keys(bindings).length;
-
+  const total = Object.keys(bind).length;
   return (
-    <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-      <View className="h-1 rounded-sm bg-bgSecondary">
-        <View className="h-1 rounded-sm bg-brandPrimary" style={{ width: '66%' }} />
+    <View className="flex-1 bg-white px-4 py-6">
+      <View className="mb-1 h-1 rounded-full bg-bgSecondary"><View className="h-1 rounded-full bg-brandPrimary" style={{ width: '66%' }} /></View>
+      <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 2 из 3</Text>
+      <Text className="text-xl font-bold text-textPrimary">Рабочая зона</Text>
+      <Text className="mb-4 text-base text-textMuted">Выберите города, инспекции и услуги</Text>
+      <View className="mb-2 h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
+        <Feather name="search" size={18} color="#94A3B8" />
+        <TextInput value={search} onChangeText={setSearch} placeholder="Найти город..." placeholderTextColor="#94A3B8" className="flex-1 text-base text-textPrimary" style={{ outlineStyle: 'none' as any }} />
+        {search.length > 0 && <Pressable onPress={() => setSearch('')}><Feather name="x" size={16} color="#94A3B8" /></Pressable>}
       </View>
-      <Text className="text-xs uppercase tracking-wide text-textMuted">Шаг 2 из 3</Text>
-      <Text className="text-xl font-bold text-textPrimary">Где и что вы делаете?</Text>
-      <Text className="text-sm text-textMuted">Выберите города, инспекции и услуги которые оказываете</Text>
-
-      <TextInput
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Найти город..."
-        placeholderTextColor={Colors.textMuted}
-        className="h-12 rounded-lg border border-border bg-bgCard px-4 text-base text-textPrimary"
-      />
-
-      {filteredCities.length > 0 && (
-        <View className="overflow-hidden rounded-lg border border-border bg-bgCard">
-          {filteredCities.map((city) => (
-            <Pressable key={city} className="flex-row items-center gap-2 border-b border-bgSecondary px-4 py-3" onPress={() => addCity(city)}>
-              <Feather name="map-pin" size={14} color={Colors.textMuted} />
-              <Text className="flex-1 text-base text-textPrimary">{city}</Text>
-              <Feather name="plus" size={16} color={Colors.brandPrimary} />
-            </Pressable>
-          ))}
+      {filtered.map((c) => (
+        <Pressable key={c} className="flex-row items-center gap-2 border-b border-gray-100 px-4 py-3" onPress={() => addCity(c)}>
+          <Feather name="map-pin" size={14} color="#94A3B8" /><Text className="flex-1 text-base text-textPrimary">{c}</Text><Feather name="plus" size={14} color="#0284C7" />
+        </Pressable>
+      ))}
+      {cities.length === 0 && !search && (
+        <View className="items-center py-6 opacity-60">
+          <Feather name="map-pin" size={20} color="#94A3B8" /><Text className="mt-1 text-base text-textMuted">Начните вводить название города</Text>
         </View>
       )}
-
-      {selectedCities.map((city) => {
-        const isExpanded = expandedCity === city;
-        const fnsOffices = CITIES_FNS[city] || [];
-        const cityBindingCount = Object.keys(bindings).filter((k) => k.startsWith(city + ':')).length;
-
+      {cities.map((city) => {
+        const exp = expanded === city; const offices = CF[city] || [];
+        const cnt = Object.keys(bind).filter((x) => x.startsWith(city + ':')).length;
         return (
-          <View key={city} className="overflow-hidden rounded-xl border border-border bg-bgCard">
-            <Pressable className="flex-row items-center gap-2 px-4 py-3" onPress={() => setExpandedCity(isExpanded ? null : city)}>
-              <Feather name="map-pin" size={16} color={Colors.brandPrimary} />
-              <Text className="text-base font-semibold text-textPrimary">{city}</Text>
-              {cityBindingCount > 0 && (
-                <View className="h-5 w-5 items-center justify-center rounded-full bg-brandPrimary">
-                  <Text className="font-bold text-white" style={{ fontSize: 10 }}>{cityBindingCount}</Text>
-                </View>
-              )}
-              <View className="flex-1" />
-              <Pressable onPress={() => removeCity(city)} hitSlop={8}>
-                <Feather name="x" size={16} color={Colors.textMuted} />
-              </Pressable>
-              <Feather name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
-            </Pressable>
-
-            {isExpanded && (
-              <View className="border-t border-border">
-                {fnsOffices.map((fns) => {
-                  const key = fnsKey(city, fns);
-                  const isSelected = key in bindings;
-                  const services = bindings[key] || [];
-
-                  return (
-                    <View key={fns}>
-                      <Pressable onPress={() => toggleFns(city, fns)} className="flex-row items-center gap-3 border-b border-bgSecondary px-4 py-3">
-                        <View
-                          className={`h-5.5 w-5.5 items-center justify-center rounded ${isSelected ? 'bg-brandPrimary' : 'border-border'}`}
-                          style={{ width: 22, height: 22, borderWidth: isSelected ? 0 : 1.5, borderColor: isSelected ? Colors.brandPrimary : Colors.border, borderRadius: 4, backgroundColor: isSelected ? Colors.brandPrimary : 'transparent' }}
-                        >
-                          {isSelected && <Feather name="check" size={13} color={Colors.white} />}
-                        </View>
-                        <Text className={`text-sm ${isSelected ? 'font-medium text-brandPrimary' : 'text-textPrimary'}`}>{fns}</Text>
-                      </Pressable>
-
-                      {isSelected && (
-                        <View style={{ paddingLeft: 56, paddingRight: 16, paddingBottom: 12, gap: 4 }}>
-                          {SERVICES.map((svc) => {
-                            const active = services.includes(svc);
-                            return (
-                              <Pressable key={svc} onPress={() => toggleService(key, svc)} className="flex-row items-center gap-2">
-                                <View
-                                  style={{ width: 18, height: 18, borderWidth: active ? 0 : 1.5, borderColor: active ? Colors.brandPrimary : Colors.border, borderRadius: 4, backgroundColor: active ? Colors.brandPrimary : 'transparent', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                  {active && <Feather name="check" size={11} color={Colors.white} />}
-                                </View>
-                                <Text className={`text-sm ${active ? 'font-medium text-textPrimary' : 'text-textSecondary'}`}>{svc}</Text>
-                              </Pressable>
-                            );
-                          })}
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
+          <View key={city} className="mb-2 rounded-lg border border-gray-200 overflow-hidden">
+            <Pressable className="flex-row items-center justify-between px-4 py-3" onPress={() => setExpanded(exp ? null : city)}>
+              <View className="flex-row items-center gap-2">
+                <Feather name="map-pin" size={14} color="#0284C7" /><Text className="text-base font-semibold text-textPrimary">{city}</Text>
+                {cnt > 0 && <View className="h-5 w-5 items-center justify-center rounded-full bg-brandPrimary"><Text className="text-xs font-bold text-white">{cnt}</Text></View>}
               </View>
-            )}
-          </View>
-        );
+              <View className="flex-row items-center gap-3">
+                <Pressable onPress={() => removeCity(city)}><Feather name="trash-2" size={14} color="#94A3B8" /></Pressable>
+                <Feather name={exp ? 'chevron-up' : 'chevron-down'} size={16} color="#94A3B8" />
+              </View>
+            </Pressable>
+            {exp && offices.map((fns) => {
+              const key = k(city, fns); const sel = key in bind; const sv = bind[key] || [];
+              return (
+                <View key={fns} className="border-t border-gray-100">
+                  <Pressable className="flex-row items-center gap-3 px-4 py-3" onPress={() => toggleFns(city, fns)}>
+                    <View className={`h-5 w-5 items-center justify-center rounded border ${sel ? 'border-brandPrimary bg-brandPrimary' : 'border-gray-300'}`}>
+                      {sel && <Feather name="check" size={13} color="#fff" />}
+                    </View>
+                    <Text className={`text-sm ${sel ? 'font-medium text-brandPrimary' : 'text-textPrimary'}`}>{fns}</Text>
+                  </Pressable>
+                  {sel && (
+                    <View className="flex-row flex-wrap gap-2 px-4 pb-3 pl-12">
+                      {SVCS.map((svc) => { const on = sv.includes(svc); return (
+                        <Pressable key={svc} className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${on ? 'border-brandPrimary bg-bgSecondary' : 'border-gray-200'}`} onPress={() => toggleSvc(key, svc)}>
+                          {on && <Feather name="check" size={12} color="#0284C7" />}
+                          <Text className={`text-xs ${on ? 'font-medium text-brandPrimary' : 'text-textSecondary'}`}>{svc}</Text>
+                        </Pressable>); })}
+                    </View>
+                  )}
+                </View>);
+            })}
+          </View>);
       })}
-
-      <Pressable className={`h-12 items-center justify-center rounded-lg bg-brandPrimary ${totalBindings === 0 ? 'opacity-45' : ''}`}>
-        <Text className="text-base font-semibold text-white">Продолжить{totalBindings > 0 ? ` (${totalBindings})` : ''}</Text>
-      </Pressable>
-    </ScrollView>
+      {error ? (<View className="flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2"><Feather name="alert-circle" size={14} color="#DC2626" /><Text className="text-sm font-medium text-red-600">{error}</Text></View>) : null}
+      <View className="mt-4 flex-row gap-3">
+        <Pressable className="h-12 flex-row items-center justify-center gap-1 rounded-lg border border-gray-200 px-4">
+          <Feather name="arrow-left" size={16} color="#475569" /><Text className="text-base font-medium text-textSecondary">Назад</Text>
+        </Pressable>
+        <Pressable className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary ${total === 0 ? 'opacity-40' : ''}`}>
+          <Text className="text-base font-semibold text-white">Далее</Text><Feather name="arrow-right" size={16} color="#fff" />
+        </Pressable>
+      </View>
+    </View>
   );
+}
+
+export default function WorkAreaScreenPage() {
+  return <WorkAreaScreen />;
 }

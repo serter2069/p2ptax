@@ -1,94 +1,107 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Image, ScrollView } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { Header } from '../../components/Header';
+import { View, Text, TextInput, Pressable } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
-    <View className="flex-row justify-between">
-      <Text className="text-sm text-textMuted">{label}</Text>
-      <Text className="text-sm font-medium text-textPrimary">{value}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+      <Feather name={icon as any} size={16} color={Colors.textMuted} />
+      <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>{label}</Text>
+      <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary }}>{value}</Text>
     </View>
   );
 }
 
-export default function ProfilePage() {
+function StatBlock({ icon, value, label }: { icon: string; value: string; label: string }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.md, alignItems: 'center', gap: Spacing.xs, borderWidth: 1, borderColor: Colors.border, ...Shadows.sm }}>
+      <Feather name={icon as any} size={18} color={Colors.brandPrimary} />
+      <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>{value}</Text>
+      <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.textMuted }}>{label}</Text>
+    </View>
+  );
+}
+
+export default function ProfileScreen() {
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState('Елена Васильева');
   const [city, setCity] = useState('Москва');
   const [savedName, setSavedName] = useState('Елена Васильева');
   const [savedCity, setSavedCity] = useState('Москва');
 
-  const handleSave = () => {
-    setSavedName(name);
-    setSavedCity(city);
-    setEditMode(false);
-  };
-
-  const handleCancel = () => {
-    setName(savedName);
-    setCity(savedCity);
-    setEditMode(false);
-  };
+  const handleSave = () => { setSavedName(name); setSavedCity(city); setEditMode(false); };
+  const handleCancel = () => { setName(savedName); setCity(savedCity); setEditMode(false); };
 
   if (editMode) {
     return (
-      <View className="flex-1">
-        <Header variant="auth" />
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-          <View className="flex-row items-center gap-4">
-            <Image source={{ uri: 'https://picsum.photos/seed/ElenaV/64/64' }} style={{ width: 64, height: 64, borderRadius: 32 }} />
-            <Pressable><Text className="text-sm font-medium text-brandPrimary">Изменить фото</Text></Pressable>
+      <View style={{ padding: Spacing.lg, gap: Spacing.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.lg }}>
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bgSurface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
+            <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary }}>ЕВ</Text>
           </View>
-          <View className="gap-4">
-            <View className="gap-1">
-              <Text className="text-sm font-medium text-textSecondary">Имя</Text>
-              <TextInput value={name} onChangeText={setName} className="h-12 rounded-lg border border-border bg-bgCard px-4 text-base text-textPrimary" />
-            </View>
-            <View className="gap-1">
-              <Text className="text-sm font-medium text-textSecondary">Email</Text>
-              <TextInput value="elena@mail.ru" editable={false} className="h-12 rounded-lg border border-border bg-bgCard px-4 text-base text-textPrimary opacity-50" />
-              <Text className="text-xs text-textMuted">Email нельзя изменить</Text>
-            </View>
-            <View className="gap-1">
-              <Text className="text-sm font-medium text-textSecondary">Город</Text>
-              <TextInput value={city} onChangeText={setCity} className="h-12 rounded-lg border border-border bg-bgCard px-4 text-base text-textPrimary" />
-            </View>
+          <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Feather name="camera" size={14} color={Colors.brandPrimary} />
+            <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium }}>Изменить фото</Text>
+          </Pressable>
+        </View>
+        <View style={{ gap: Spacing.lg }}>
+          <View style={{ gap: Spacing.xs }}>
+            <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary }}>Имя</Text>
+            <TextInput value={name} onChangeText={setName} style={{ height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary, outlineStyle: 'none' } as any} />
           </View>
-          <View className="gap-2">
-            <Pressable onPress={handleSave} className="h-12 items-center justify-center rounded-lg bg-brandPrimary">
-              <Text className="text-base font-semibold text-white">Сохранить</Text>
-            </Pressable>
-            <Pressable onPress={handleCancel} className="h-12 items-center justify-center rounded-lg border border-border">
-              <Text className="text-base text-textMuted">Отмена</Text>
-            </Pressable>
+          <View style={{ gap: Spacing.xs }}>
+            <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary }}>Email</Text>
+            <TextInput value="elena@mail.ru" editable={false} style={{ height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary, opacity: 0.5, outlineStyle: 'none' } as any} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Feather name="lock" size={12} color={Colors.textMuted} /><Text style={{ fontSize: Typography.fontSize.xs, color: Colors.textMuted }}>Email нельзя изменить</Text></View>
           </View>
-        </ScrollView>
+          <View style={{ gap: Spacing.xs }}>
+            <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary }}>Город</Text>
+            <TextInput value={city} onChangeText={setCity} style={{ height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary, outlineStyle: 'none' } as any} />
+          </View>
+        </View>
+        <View style={{ gap: Spacing.sm }}>
+          <Pressable onPress={handleSave} style={{ height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.sm, ...Shadows.sm }}>
+            <Feather name="check" size={16} color={Colors.white} /><Text style={{ fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Сохранить</Text>
+          </Pressable>
+          <Pressable onPress={handleCancel} style={{ height: 48, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
+            <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textMuted }}>Отмена</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className="flex-1">
-      <Header variant="auth" />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <View className="flex-row items-center gap-4">
-          <Image source={{ uri: 'https://picsum.photos/seed/ElenaV/64/64' }} style={{ width: 64, height: 64, borderRadius: 32 }} />
-          <View>
-            <Text className="text-lg font-bold text-textPrimary">{savedName}</Text>
-            <Text className="text-sm text-textMuted">Клиент</Text>
-          </View>
+    <View style={{ padding: Spacing.lg, gap: Spacing.lg }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.lg }}>
+        <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bgSurface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
+          <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary }}>ЕВ</Text>
         </View>
-        <View className="gap-3 rounded-lg border border-border bg-bgCard p-4">
-          <InfoRow label="Email" value="elena@mail.ru" />
-          <InfoRow label="Город" value={savedCity} />
-          <InfoRow label="Дата регистрации" value="15.02.2026" />
-          <InfoRow label="Заявки" value="5 (3 активных)" />
+        <View>
+          <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>{savedName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}><Feather name="user" size={14} color={Colors.textMuted} /><Text style={{ fontSize: Typography.fontSize.base, color: Colors.textMuted }}>Клиент</Text></View>
         </View>
-        <Pressable onPress={() => setEditMode(true)} className="h-12 items-center justify-center rounded-lg bg-brandPrimary">
-          <Text className="text-base font-semibold text-white">Редактировать</Text>
-        </Pressable>
-      </ScrollView>
+      </View>
+      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+        <StatBlock icon="file-text" value="5" label="Заявок" />
+        <StatBlock icon="check-circle" value="3" label="Завершено" />
+        <StatBlock icon="star" value="4.9" label="Рейтинг" />
+      </View>
+      <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm }}>
+        <InfoRow label="Email" value="elena@mail.ru" icon="mail" />
+        <InfoRow label="Город" value={savedCity} icon="map-pin" />
+        <InfoRow label="Регистрация" value="15.02.2026" icon="calendar" />
+        <InfoRow label="Заявки" value="5 (3 активных)" icon="file-text" />
+      </View>
+      <Pressable onPress={() => setEditMode(true)} style={{ height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.sm, ...Shadows.sm }}>
+        <Feather name="edit-2" size={16} color={Colors.white} /><Text style={{ fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Редактировать</Text>
+      </Pressable>
+      <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.bgCard, padding: Spacing.lg, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border }}>
+        <Feather name="settings" size={16} color={Colors.textMuted} />
+        <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textPrimary }}>Настройки</Text>
+        <Feather name="chevron-right" size={16} color={Colors.textMuted} style={{ marginLeft: 'auto' }} />
+      </Pressable>
     </View>
   );
 }
