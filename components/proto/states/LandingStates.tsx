@@ -238,10 +238,8 @@ function PopularServicesSection() {
   const services = [
     { label: 'Камеральная проверка', emoji: '\uD83D\uDD0D', bg: '#E0F2FE' },
     { label: 'Выездная проверка', emoji: '\uD83D\uDEE1\uFE0F', bg: '#D1FAE5' },
-    { label: 'Оперативный контроль', emoji: '\uD83D\uDC41\uFE0F', bg: '#FEF3C7' },
-    { label: 'Консультация по НДС', emoji: '\uD83D\uDCCA', bg: '#EDE9FE' },
-    { label: 'Сопровождение споров', emoji: '\u2696\uFE0F', bg: '#FCE7F3' },
-    { label: 'Регистрация ИП/ООО', emoji: '\uD83D\uDCC4', bg: '#E0F2FE' },
+    { label: 'Отдел оперативного контроля', emoji: '\uD83D\uDC41\uFE0F', bg: '#FEF3C7' },
+    { label: 'Не знаю', emoji: '\u2753', bg: '#EDE9FE' },
   ];
 
   return (

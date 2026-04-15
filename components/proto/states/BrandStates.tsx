@@ -387,10 +387,10 @@ function BadgesSection({ isDesktop }: { isDesktop: boolean }) {
       <Text className="mt-3 text-xs font-semibold uppercase tracking-wider text-textMuted">Теги услуг</Text>
       <View className={`flex-row flex-wrap items-center gap-2 ${isDesktop ? 'gap-3' : ''}`}>
         <Pressable className="flex-row items-center gap-1 rounded-full border bg-bgCard px-2 py-1" style={{ borderColor: Colors.border }} onPress={() => {}}>
-          <Text className="text-xs font-medium text-textSecondary">3-НДФЛ</Text>
+          <Text className="text-xs font-medium text-textSecondary">Выездная проверка</Text>
         </Pressable>
         <Pressable className="flex-row items-center gap-1 rounded-full border bg-bgCard px-2 py-1" style={{ borderColor: Colors.border }} onPress={() => {}}>
-          <Text className="text-xs font-medium text-textSecondary">Регистрация ИП</Text>
+          <Text className="text-xs font-medium text-textSecondary">Отдел оперативного контроля</Text>
         </Pressable>
         <Pressable
           className="flex-row items-center gap-1 rounded-full border border-brandPrimary px-2 py-1"
@@ -398,10 +398,10 @@ function BadgesSection({ isDesktop }: { isDesktop: boolean }) {
           onPress={() => {}}
         >
           <Feather name="check" size={11} color={Colors.brandPrimary} />
-          <Text className="text-xs font-medium text-brandPrimary">Налоговая проверка</Text>
+          <Text className="text-xs font-medium text-brandPrimary">Камеральная проверка</Text>
         </Pressable>
         <Pressable className="flex-row items-center gap-1 rounded-full border bg-bgCard px-2 py-1" style={{ borderColor: Colors.border }} onPress={() => {}}>
-          <Text className="text-xs font-medium text-textSecondary">Консультация</Text>
+          <Text className="text-xs font-medium text-textSecondary">Не знаю</Text>
         </Pressable>
       </View>
     </View>

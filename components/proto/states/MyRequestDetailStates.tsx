@@ -12,14 +12,14 @@ function RequestInfo({ status, statusColor }: { status: string; statusColor: str
   return (
     <View className="gap-4 rounded-xl border border-borderLight bg-white p-4">
       <View className="flex-row items-start justify-between gap-2">
-        <Text className="flex-1 text-lg font-bold text-textPrimary">Заполнить декларацию 3-НДФЛ за 2025 год</Text>
+        <Text className="flex-1 text-lg font-bold text-textPrimary">Камеральная проверка декларации по НДС</Text>
         <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: statusColor + '18' }}>
           <Text className="text-xs font-semibold" style={{ color: statusColor }}>{status}</Text>
         </View>
       </View>
 
       <Text className="text-base leading-6 text-textSecondary">
-        Нужно заполнить и подать декларацию 3-НДФЛ для получения налогового вычета за покупку квартиры. Документы готовы.
+        Получили требование о предоставлении документов при камеральной проверке декларации по НДС. Нужна помощь.
       </Text>
 
       {/* Meta */}
@@ -34,7 +34,7 @@ function RequestInfo({ status, statusColor }: { status: string; statusColor: str
         </View>
         <View className="flex-row items-center gap-2">
           <Feather name="briefcase" size={14} color={Colors.textMuted} />
-          <Text className="text-sm text-textMuted">3-НДФЛ</Text>
+          <Text className="text-sm text-textMuted">Камеральная проверка</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Feather name="calendar" size={14} color={Colors.textMuted} />
@@ -79,7 +79,7 @@ function DefaultDetail() {
               <Text className="text-sm font-semibold text-textPrimary">Алексей Петров</Text>
               <Text className="text-xs text-textMuted">14:32</Text>
             </View>
-            <Text className="text-xs text-textMuted" numberOfLines={1}>Готов помочь с декларацией. Опыт работы 8 лет.</Text>
+            <Text className="text-xs text-textMuted" numberOfLines={1}>Готов помочь с камеральной проверкой. Опыт работы 8 лет.</Text>
           </View>
           <View className="h-2.5 w-2.5 rounded-full bg-brandPrimary" />
         </Pressable>
@@ -93,7 +93,7 @@ function DefaultDetail() {
               <Text className="text-sm font-medium text-textPrimary">Ольга Смирнова</Text>
               <Text className="text-xs text-textMuted">вчера</Text>
             </View>
-            <Text className="text-xs text-textMuted" numberOfLines={1}>Специализируюсь на налоговых вычетах. Помогу заполнить.</Text>
+            <Text className="text-xs text-textMuted" numberOfLines={1}>Специализируюсь на сопровождении проверок. Помогу подготовиться.</Text>
           </View>
         </Pressable>
       </View>

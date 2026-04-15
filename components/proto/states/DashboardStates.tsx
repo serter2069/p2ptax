@@ -146,8 +146,8 @@ function DefaultDashboard() {
           <Pressable><Text className="text-sm font-medium text-brandPrimary">Все заявки</Text></Pressable>
         </View>
         <RequestCard
-          title="Заполнить декларацию 3-НДФЛ за 2025 год"
-          service="3-НДФЛ"
+          title="Камеральная проверка декларации по НДС"
+          service="Камеральная проверка"
           fns="ФНС №46 по г. Москве"
           city="Москва"
           date="08.04.2026"
@@ -156,8 +156,8 @@ function DefaultDashboard() {
           statusColor={Colors.brandPrimary}
         />
         <RequestCard
-          title="Регистрация ИП на УСН"
-          service="Регистрация ИП"
+          title="Отдел оперативного контроля — требование"
+          service="Отдел оперативного контроля"
           fns="ФНС №12 по г. Новосибирску"
           city="Новосибирск"
           date="07.04.2026"
@@ -166,8 +166,8 @@ function DefaultDashboard() {
           statusColor={Colors.statusWarning}
         />
         <RequestCard
-          title="Налоговый вычет за квартиру"
-          service="Налоговый вычет"
+          title="Выездная проверка ООО «Ромашка»"
+          service="Выездная проверка"
           fns="ФНС №15 по г. Москве"
           city="Москва"
           date="05.04.2026"
@@ -186,21 +186,21 @@ function DefaultDashboard() {
         <MessagePreview
           initials="АП"
           name="Алексей Петров"
-          snippet="Здравствуйте! Готов помочь с декларацией. Опыт 8 лет."
+          snippet="Здравствуйте! Готов помочь с камеральной проверкой. Опыт 8 лет."
           time="14:32"
           unread
         />
         <MessagePreview
           initials="ОС"
           name="Ольга Смирнова"
-          snippet="Специализируюсь на налоговых вычетах. Помогу заполнить."
+          snippet="Специализируюсь на сопровождении проверок. Помогу подготовиться."
           time="12:15"
           unread
         />
         <MessagePreview
           initials="ИК"
           name="Игорь Козлов"
-          snippet="Добрый день! По вашей заявке на регистрацию ИП..."
+          snippet="Добрый день! По вашей заявке на оперативный контроль..."
           time="вчера"
         />
       </View>
@@ -304,8 +304,8 @@ function UnreadDashboard() {
           <Pressable><Text className="text-sm font-medium text-brandPrimary">Все заявки</Text></Pressable>
         </View>
         <RequestCard
-          title="Заполнить декларацию 3-НДФЛ за 2025 год"
-          service="3-НДФЛ"
+          title="Камеральная проверка декларации по НДС"
+          service="Камеральная проверка"
           fns="ФНС №46 по г. Москве"
           city="Москва"
           date="08.04.2026"
@@ -314,8 +314,8 @@ function UnreadDashboard() {
           statusColor={Colors.brandPrimary}
         />
         <RequestCard
-          title="Регистрация ИП на УСН"
-          service="Регистрация ИП"
+          title="Отдел оперативного контроля — требование"
+          service="Отдел оперативного контроля"
           fns="ФНС №12 по г. Новосибирску"
           city="Новосибирск"
           date="07.04.2026"
@@ -348,7 +348,7 @@ function UnreadDashboard() {
         <MessagePreview
           initials="ИК"
           name="Игорь Козлов"
-          snippet="Уточните, пожалуйста, систему налогообложения."
+          snippet="Уточните, пожалуйста, период проверки."
           time="2 часа"
           unread
         />
@@ -382,7 +382,7 @@ function StatusChangeDashboard() {
           </View>
           <View className="flex-1">
             <Text className="text-sm font-semibold text-textPrimary">Заявка завершена</Text>
-            <Text className="text-xs text-textMuted">Регистрация ИП на УСН</Text>
+            <Text className="text-xs text-textMuted">Отдел оперативного контроля — требование</Text>
           </View>
           <Pressable>
             <Feather name="x" size={18} color={Colors.textMuted} />
@@ -410,8 +410,8 @@ function StatusChangeDashboard() {
           <Pressable><Text className="text-sm font-medium text-brandPrimary">Все заявки</Text></Pressable>
         </View>
         <RequestCard
-          title="Заполнить декларацию 3-НДФЛ за 2025 год"
-          service="3-НДФЛ"
+          title="Камеральная проверка декларации по НДС"
+          service="Камеральная проверка"
           fns="ФНС №46 по г. Москве"
           city="Москва"
           date="08.04.2026"
@@ -420,8 +420,8 @@ function StatusChangeDashboard() {
           statusColor={Colors.statusWarning}
         />
         <RequestCard
-          title="Налоговый вычет за квартиру"
-          service="Налоговый вычет"
+          title="Выездная проверка ООО «Ромашка»"
+          service="Выездная проверка"
           fns="ФНС №15 по г. Москве"
           city="Москва"
           date="05.04.2026"
@@ -440,7 +440,7 @@ function StatusChangeDashboard() {
         <MessagePreview
           initials="АП"
           name="Алексей Петров"
-          snippet="Декларация почти готова, осталось проверить вычеты."
+          snippet="Подготовка к проверке почти завершена, осталось проверить документы."
           time="10:45"
         />
       </View>

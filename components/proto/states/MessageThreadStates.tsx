@@ -144,7 +144,7 @@ function DefaultChat() {
   return (
     <View style={s.container}>
       <ChatHeader name="Алексей Петров" online={true} />
-      <SystemMessage text="Заявка: Декларация 3-НДФЛ за 2025 год" />
+      <SystemMessage text="Заявка: Камеральная проверка декларации по НДС" />
       <View style={s.messages}>
         {messages.map((m) => (
           <MessageBubble key={m.id} msg={m} />
@@ -224,7 +224,7 @@ function EmptyChat() {
   return (
     <View style={s.container}>
       <ChatHeader name="Алексей Петров" online={false} />
-      <SystemMessage text="Заявка: Декларация 3-НДФЛ за 2025 год" />
+      <SystemMessage text="Заявка: Камеральная проверка декларации по НДС" />
       <View style={s.emptyBlock}>
         <View style={s.emptyIconWrap}>
           <Feather name="message-circle" size={32} color={Colors.brandPrimary} />

@@ -13,7 +13,7 @@ const MOCK_FNS: Record<string, string[]> = {
   'Новосибирск': ['ИФНС по г. Новосибирску', 'МРИ ФНС №16 по НСО'],
 };
 
-const SERVICES = ['3-НДФЛ', 'Регистрация ИП', 'Налоговая проверка'];
+const SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка', 'Не знаю'];
 
 function IdleState() {
   const [city, setCity] = useState('');
