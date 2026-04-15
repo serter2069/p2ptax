@@ -4,6 +4,7 @@ import { ActivityIndicator, AppState, Platform, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import Head from 'expo-router/head';
 import { AuthProvider, useAuth } from '../stores/authStore';
+import { AuthProvider as NewAuthProvider } from '../lib/auth';
 import { isAdmin } from '../lib/adminEmails';
 import { Colors } from '../constants/Colors';
 import { tryRefreshTokens } from '../lib/api';
@@ -139,9 +140,11 @@ export default function RootLayout() {
         <meta property="og:description" content="Сервис поиска налоговых специалистов" />
         <meta property="og:type" content="website" />
       </Head>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
+      <NewAuthProvider>
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
+      </NewAuthProvider>
     </>
   );
 }
