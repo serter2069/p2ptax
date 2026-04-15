@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import { client, onUnauthorized } from '../api/client';
 import {
@@ -9,6 +9,12 @@ import {
   getRefreshToken,
 } from '../api/storage';
 import { secureStorage } from '../../stores/storage';
+import {
+  registerForPushNotifications,
+  savePushTokenToBackend,
+  removePushTokenFromBackend,
+  setupNotificationResponseListener,
+} from '../pushNotifications';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,6 +50,7 @@ type AuthAction =
 // ---------------------------------------------------------------------------
 const USER_KEY = '@p2ptax_user';
 const IS_LOGGED_IN_KEY = 'isLoggedIn';
+const PUSH_TOKEN_KEY = '@p2ptax_push_token';
 
 // ---------------------------------------------------------------------------
 // Reducer
@@ -102,6 +109,21 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 // ---------------------------------------------------------------------------
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const pushTokenRef = useRef<string | null>(null);
+
+  // Register push notifications and save token to backend
+  const registerPush = useCallback(async () => {
+    try {
+      const token = await registerForPushNotifications();
+      if (token) {
+        pushTokenRef.current = token;
+        await secureStorage.setItem(PUSH_TOKEN_KEY, token);
+        await savePushTokenToBackend(token);
+      }
+    } catch {
+      // Non-critical — don't break auth flow
+    }
+  }, []);
 
   // Restore persisted session on mount
   useEffect(() => {
@@ -136,6 +158,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { data: freshUser } = await client.get<User>('/users/me');
             await secureStorage.setItem(USER_KEY, JSON.stringify(freshUser));
             dispatch({ type: 'RESTORE', payload: freshUser });
+            // Re-register push token on session restore
+            registerPush();
           } catch {
             // Token might be expired but refresh interceptor may handle it;
             // if we still have cached data, use it — the 401 interceptor
@@ -160,6 +184,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     restore();
     return () => { cancelled = true; };
+  }, []);
+
+  // Set up notification tap handler
+  useEffect(() => {
+    const subscription = setupNotificationResponseListener();
+    return () => subscription.remove();
   }, []);
 
   // Listen for 401 to auto-logout
@@ -187,9 +217,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try { localStorage.setItem(IS_LOGGED_IN_KEY, 'true'); } catch {}
     }
     dispatch({ type: 'LOGIN', payload: user });
-  }, []);
+    // Register push notifications after login
+    registerPush();
+  }, [registerPush]);
 
   const logout = useCallback(async () => {
+    // Remove push token from backend before logout
+    try {
+      const savedToken = pushTokenRef.current || await secureStorage.getItem(PUSH_TOKEN_KEY);
+      if (savedToken) {
+        await removePushTokenFromBackend(savedToken);
+        pushTokenRef.current = null;
+        await secureStorage.removeItem(PUSH_TOKEN_KEY);
+      }
+    } catch {
+      // Non-critical
+    }
+
     // Invalidate refresh token on backend
     const rt = await getRefreshToken();
     if (rt) {
