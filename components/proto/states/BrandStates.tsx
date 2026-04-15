@@ -258,46 +258,38 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
       <View style={[bs.inputGrid, isDesktop && bs.inputGridDesktop]}>
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Empty</Text>
-          <View style={bs.inputWrap}>
-            <TextInput
-              style={bs.textInput}
-              placeholder="Placeholder text..."
-              placeholderTextColor={Colors.textMuted}
-            />
-          </View>
+          <TextInput
+            style={[bs.inputWrap, bs.textInput]}
+            placeholder="Placeholder text..."
+            placeholderTextColor={Colors.textMuted}
+          />
         </View>
 
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Focused</Text>
-          <View style={[bs.inputWrap, bs.inputFocused]}>
-            <TextInput
-              style={bs.textInput}
-              defaultValue="Typing here"
-              placeholderTextColor={Colors.textMuted}
-            />
-          </View>
+          <TextInput
+            style={[bs.inputWrap, bs.inputFocused, bs.textInput]}
+            defaultValue="Typing here"
+            placeholderTextColor={Colors.textMuted}
+          />
         </View>
 
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Filled</Text>
-          <View style={bs.inputWrap}>
-            <TextInput
-              style={bs.textInput}
-              defaultValue="ivan@mail.ru"
-              placeholderTextColor={Colors.textMuted}
-            />
-          </View>
+          <TextInput
+            style={[bs.inputWrap, bs.textInput]}
+            defaultValue="ivan@mail.ru"
+            placeholderTextColor={Colors.textMuted}
+          />
         </View>
 
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Error</Text>
-          <View style={[bs.inputWrap, bs.inputError]}>
-            <TextInput
-              style={bs.textInput}
-              defaultValue="bad-value"
-              placeholderTextColor={Colors.textMuted}
-            />
-          </View>
+          <TextInput
+            style={[bs.inputWrap, bs.inputError, bs.textInput]}
+            defaultValue="bad-value"
+            placeholderTextColor={Colors.textMuted}
+          />
           <View style={bs.errorRow}>
             <Feather name="alert-circle" size={12} color={Colors.statusError} />
             <Text style={bs.inputErrorText}>Invalid format</Text>
@@ -306,14 +298,12 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
 
         <View style={bs.inputGroup}>
           <Text style={bs.inputStateLabel}>Disabled</Text>
-          <View style={[bs.inputWrap, bs.inputDisabledWrap]}>
-            <TextInput
-              style={[bs.textInput, { color: Colors.textMuted }]}
-              defaultValue="Disabled field"
-              editable={false}
-              placeholderTextColor={Colors.textMuted}
-            />
-          </View>
+          <TextInput
+            style={[bs.inputWrap, bs.inputDisabledWrap, bs.textInput, { color: Colors.textMuted }]}
+            defaultValue="Disabled field"
+            editable={false}
+            placeholderTextColor={Colors.textMuted}
+          />
         </View>
 
         <View style={bs.inputGroup}>
@@ -1124,8 +1114,7 @@ const bs = StyleSheet.create({
   textInput: {
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
-    flex: 1,
-    height: '100%' as any,
+    outlineStyle: 'none' as any,
     padding: 0,
   },
   inputPlaceholder: {
