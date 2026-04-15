@@ -2,23 +2,17 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  TextInput,
+  Pressable,
   FlatList,
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
   ScrollView,
-  StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../lib/api';
-import { useAuth } from '../../stores/authStore';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-import { Card } from '../../components/Card';
-import { EmptyState } from '../../components/EmptyState';
-import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { Colors } from '../../constants/Colors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,7 +29,7 @@ interface RequestItem {
   ifnsName?: string | null;
   status: string;
   createdAt: string;
-  client: { id: string };
+  client: { id: string; name?: string; createdAt?: string };
   _count: { responses: number };
 }
 
@@ -47,62 +41,266 @@ interface FeedResponse {
   hasMore: boolean;
 }
 
-interface SpecialistProfile {
+interface CityItem {
   id: string;
-  cities: string[];
-  fnsOffices: string[];
-  services: string[];
-  specialistFns?: { fnsId: string; fns: { id: string; name: string; code: string } }[];
+  name: string;
 }
 
-// ---------------------------------------------------------------------------
-// Service type filter options
-// ---------------------------------------------------------------------------
-const SERVICE_FILTERS = [
-  { label: 'Все', value: '' },
-  { label: 'Выездная проверка', value: 'Выездная проверка' },
-  { label: 'Камеральная проверка', value: 'Камеральная проверка' },
-  { label: 'Оперативный контроль', value: 'Отдел оперативного контроля' },
-];
+interface FnsItem {
+  id: string;
+  name: string;
+  code: string;
+  cityId: string;
+  city?: { id: string; name: string };
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffHours < 1) return 'только что';
-  if (diffHours < 24) return `${diffHours} ч. назад`;
-  if (diffDays < 7) return `${diffDays} дн. назад`;
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function isNew(iso: string): boolean {
-  return new Date().getTime() - new Date(iso).getTime() < 24 * 60 * 60 * 1000;
+function pluralSpecialists(n: number): string {
+  if (n === 0) return '0 специалистов написали';
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} специалист написал`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} специалиста написали`;
+  return `${n} специалистов написали`;
 }
 
-const SERVICE_COLORS: Record<string, { bg: string; text: string }> = {
-  'Выездная проверка': { bg: '#fde8e8', text: '#B91C1C' },
-  'Камеральная проверка': { bg: '#fef3cd', text: '#92400e' },
-  'Отдел оперативного контроля': { bg: '#fde8e8', text: '#B91C1C' },
-};
+function getMemberYear(dateStr?: string): number {
+  if (!dateStr) return new Date().getFullYear();
+  return new Date(dateStr).getFullYear();
+}
 
-const DEFAULT_SERVICE_COLOR = { bg: Colors.bgSecondary, text: Colors.brandPrimary };
+function getAuthorInitials(name?: string): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0]} ${parts[1][0]}.`;
+  }
+  return parts[0];
+}
 
 // ---------------------------------------------------------------------------
-// Component
+// CityFnsPicker — cascading City -> FNS picker (real API)
+// ---------------------------------------------------------------------------
+function CityFnsPicker({
+  city,
+  cityId,
+  selectedFnsIds,
+  selectedFnsNames,
+  cities,
+  fnsList,
+  onCityChange,
+  onFnsToggle,
+  onRemoveFns,
+}: {
+  city: string;
+  cityId: string;
+  selectedFnsIds: string[];
+  selectedFnsNames: Record<string, string>;
+  cities: CityItem[];
+  fnsList: FnsItem[];
+  onCityChange: (id: string, name: string) => void;
+  onFnsToggle: (id: string, name: string) => void;
+  onRemoveFns: (id: string) => void;
+}) {
+  const [openLevel, setOpenLevel] = useState<'city' | 'fns' | null>(null);
+
+  const summary = city
+    ? selectedFnsIds.length > 0
+      ? `${city} / ${selectedFnsIds.length} ФНС`
+      : city
+    : '';
+
+  return (
+    <View className="gap-2">
+      {/* Main picker button */}
+      <Pressable onPress={() => setOpenLevel(openLevel ? null : 'city')}>
+        <View className={`h-11 flex-row items-center gap-2 rounded-lg border px-3 ${openLevel ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
+          <Feather name="map-pin" size={16} color={Colors.textMuted} />
+          <Text className={`flex-1 text-sm ${summary ? 'text-textPrimary' : 'text-textMuted'}`}>
+            {summary || 'Город и ФНС'}
+          </Text>
+          <Feather name={openLevel ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
+        </View>
+      </Pressable>
+
+      {/* Cascading panel */}
+      {openLevel && (
+        <View className="overflow-hidden rounded-lg border border-borderLight bg-white shadow-sm">
+          {/* Tabs: City / FNS */}
+          <View className="flex-row border-b border-bgSecondary">
+            <Pressable
+              className={`flex-1 items-center py-2.5 ${openLevel === 'city' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => setOpenLevel('city')}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'city' ? 'text-brandPrimary' : city ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {city || 'Город'}
+              </Text>
+            </Pressable>
+            <Pressable
+              className={`flex-1 items-center py-2.5 ${openLevel === 'fns' ? 'border-b-2 border-brandPrimary' : ''}`}
+              onPress={() => city && setOpenLevel('fns')}
+              disabled={!city}
+            >
+              <Text className={`text-xs font-semibold ${openLevel === 'fns' ? 'text-brandPrimary' : selectedFnsIds.length > 0 ? 'text-textPrimary' : 'text-textMuted'}`}>
+                {selectedFnsIds.length > 0 ? `ФНС (${selectedFnsIds.length})` : 'ФНС'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Options */}
+          <ScrollView style={{ maxHeight: 200 }}>
+            {openLevel === 'city' && (
+              <>
+                <Pressable
+                  className="border-b border-bgSecondary px-3 py-2.5"
+                  onPress={() => { onCityChange('', ''); setOpenLevel(null); }}
+                >
+                  <Text className="text-sm text-textMuted">Все города</Text>
+                </Pressable>
+                {cities.map((c) => (
+                  <Pressable
+                    key={c.id}
+                    className="border-b border-bgSecondary px-3 py-2.5"
+                    onPress={() => { onCityChange(c.id, c.name); setOpenLevel('fns'); }}
+                  >
+                    <Text className={`text-sm ${cityId === c.id ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c.name}</Text>
+                  </Pressable>
+                ))}
+              </>
+            )}
+            {openLevel === 'fns' && fnsList.map((f) => {
+              const isSelected = selectedFnsIds.includes(f.id);
+              return (
+                <Pressable
+                  key={f.id}
+                  className="flex-row items-center gap-2 border-b border-bgSecondary px-3 py-2.5"
+                  onPress={() => onFnsToggle(f.id, f.name)}
+                >
+                  <View className={isSelected
+                    ? 'h-5 w-5 items-center justify-center rounded border border-brandPrimary bg-brandPrimary'
+                    : 'h-5 w-5 rounded border border-borderLight bg-white'
+                  }>
+                    {isSelected && <Feather name="check" size={12} color="#fff" />}
+                  </View>
+                  <Text className={`text-sm ${isSelected ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f.name}</Text>
+                </Pressable>
+              );
+            })}
+            {openLevel === 'fns' && fnsList.length === 0 && (
+              <View className="px-3 py-4">
+                <Text className="text-sm text-textMuted">Нет ФНС для выбранного города</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Selected FNS chips */}
+      {selectedFnsIds.length > 0 && (
+        <View className="flex-row flex-wrap gap-2">
+          {selectedFnsIds.map((fnsId) => (
+            <Pressable key={fnsId} onPress={() => onRemoveFns(fnsId)} className="flex-row items-center gap-1 rounded-full bg-brandPrimary/10 px-2.5 py-1">
+              <Text className="text-xs font-medium text-brandPrimary">{selectedFnsNames[fnsId] || fnsId}</Text>
+              <Feather name="x" size={12} color={Colors.brandPrimary} />
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RequestFeedCard — matches prototype layout
+// ---------------------------------------------------------------------------
+function RequestFeedCard({
+  title,
+  description,
+  city,
+  fns,
+  service,
+  date,
+  author,
+  memberSince,
+  messageCount,
+  onPress,
+}: {
+  title: string;
+  description: string;
+  city: string;
+  fns: string;
+  service: string;
+  date: string;
+  author: string;
+  memberSince: number;
+  messageCount: number;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="gap-2 rounded-xl border border-borderLight bg-white p-4"
+      style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}
+    >
+      <View className="flex-row items-center justify-between">
+        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={1}>{title}</Text>
+        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+      </View>
+      <Text className="text-sm leading-5 text-textSecondary" numberOfLines={2}>{description}</Text>
+      <View className="flex-row flex-wrap gap-2">
+        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
+          <Feather name="map-pin" size={11} color={Colors.brandPrimary} />
+          <Text className="text-xs font-medium text-brandPrimary">{city}</Text>
+        </View>
+        {fns ? (
+          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
+            <Feather name="home" size={11} color={Colors.brandPrimary} />
+            <Text className="text-xs font-medium text-brandPrimary">{fns}</Text>
+          </View>
+        ) : null}
+        {service ? (
+          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
+            <Feather name="briefcase" size={11} color={Colors.brandPrimary} />
+            <Text className="text-xs font-medium text-brandPrimary">{service}</Text>
+          </View>
+        ) : null}
+      </View>
+      {/* Author + date row */}
+      <View className="mt-1 flex-row items-center justify-between border-t border-borderLight pt-2">
+        <View className="flex-row items-center gap-2">
+          <View className="h-7 w-7 items-center justify-center rounded-full bg-bgSecondary">
+            <Feather name="user" size={14} color={Colors.textMuted} />
+          </View>
+          <View>
+            <Text className="text-sm font-medium text-textPrimary">{author}</Text>
+            <Text className="text-xs text-textMuted">на сайте с {memberSince} г.</Text>
+          </View>
+        </View>
+        <Text className="text-xs text-textMuted">{date}</Text>
+      </View>
+      {/* Response count */}
+      <View className="flex-row items-center gap-1.5">
+        <Feather name="message-circle" size={12} color={messageCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
+        <Text className={messageCount > 0 ? 'text-xs font-semibold text-brandPrimary' : 'text-xs text-textMuted'}>
+          {pluralSpecialists(messageCount)}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Feed Component
 // ---------------------------------------------------------------------------
 export default function SpecialistFeedTab() {
   const router = useRouter();
-  const { user } = useAuth();
-  const { isMobile } = useBreakpoints();
-
-  // Specialist profile data
-  const [profile, setProfile] = useState<SpecialistProfile | null>(null);
 
   // Feed data
   const [items, setItems] = useState<RequestItem[]>([]);
@@ -116,39 +314,43 @@ export default function SpecialistFeedTab() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  // Filters
-  const [search, setSearch] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedService, setSelectedService] = useState('');
+  // Filter state
+  const [filterCityId, setFilterCityId] = useState('');
+  const [filterCityName, setFilterCityName] = useState('');
+  const [selectedFnsIds, setSelectedFnsIds] = useState<string[]>([]);
+  const [selectedFnsNames, setSelectedFnsNames] = useState<Record<string, string>>({});
 
-  // Stats
-  const [newToday, setNewToday] = useState(0);
-  const [myResponsesCount, setMyResponsesCount] = useState(0);
+  // City/FNS data from API
+  const [cities, setCities] = useState<CityItem[]>([]);
+  const [fnsList, setFnsList] = useState<FnsItem[]>([]);
 
-  // Load specialist profile
+  // Load cities on mount
   useEffect(() => {
     (async () => {
       try {
-        const data = await api.get<SpecialistProfile>('/specialists/me');
-        setProfile(data);
-      } catch {
-        // not critical — feed still works
-      }
-    })();
-  }, []);
-
-  // Load my responses count
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.get<any[]>('/requests/my-responses');
-        const active = data.filter((r: any) => r.status === 'sent' || r.status === 'accepted');
-        setMyResponsesCount(active.length);
+        const data = await api.get<CityItem[]>('/ifns/cities');
+        setCities(data);
       } catch {
         // not critical
       }
     })();
   }, []);
+
+  // Load FNS when city changes
+  useEffect(() => {
+    if (!filterCityId) {
+      setFnsList([]);
+      return;
+    }
+    (async () => {
+      try {
+        const data = await api.get<FnsItem[]>(`/ifns?city_id=${filterCityId}`);
+        setFnsList(data);
+      } catch {
+        setFnsList([]);
+      }
+    })();
+  }, [filterCityId]);
 
   // Fetch feed
   const fetchFeed = useCallback(
@@ -161,18 +363,16 @@ export default function SpecialistFeedTab() {
 
       try {
         const params = new URLSearchParams();
-        if (selectedCity) params.set('city', selectedCity);
-        if (selectedService) params.set('category', selectedService);
+        if (filterCityName) params.set('city', filterCityName);
+        if (selectedFnsIds.length > 0) {
+          params.set('ifns_ids', selectedFnsIds.join(','));
+        }
         params.set('page', String(pageNum));
 
         const data = await api.get<FeedResponse>(`/requests?${params.toString()}`);
 
         if (replace || isRefresh) {
           setItems(data.items);
-          // Count new today from first page
-          const todayStart = new Date();
-          todayStart.setHours(0, 0, 0, 0);
-          setNewToday(data.items.filter((i) => new Date(i.createdAt) >= todayStart).length);
         } else {
           setItems((prev) => [...prev, ...data.items]);
         }
@@ -191,18 +391,13 @@ export default function SpecialistFeedTab() {
         setRefreshing(false);
       }
     },
-    [selectedCity, selectedService],
+    [filterCityName, selectedFnsIds],
   );
 
-  // Debounce search / city filter
-  useEffect(() => {
-    const timer = setTimeout(() => fetchFeed({ replace: true }), selectedCity ? 400 : 0);
-    return () => clearTimeout(timer);
-  }, [fetchFeed, selectedCity]);
-
+  // Refetch on filter change
   useEffect(() => {
     fetchFeed({ replace: true });
-  }, [selectedService]);
+  }, [fetchFeed]);
 
   function handleRefresh() {
     setRefreshing(true);
@@ -214,122 +409,72 @@ export default function SpecialistFeedTab() {
     fetchFeed({ pageNum: page + 1, replace: false });
   }
 
-  // Client-side search filter
-  const filtered = search
-    ? items.filter(
-        (i) =>
-          (i.title ?? '').toLowerCase().includes(search.toLowerCase()) ||
-          i.description.toLowerCase().includes(search.toLowerCase()) ||
-          i.city.toLowerCase().includes(search.toLowerCase()) ||
-          (i.ifnsName ?? '').toLowerCase().includes(search.toLowerCase()) ||
-          (i.category ?? '').toLowerCase().includes(search.toLowerCase()),
-      )
-    : items;
-
-  function getServiceColor(cat: string) {
-    return SERVICE_COLORS[cat] || DEFAULT_SERVICE_COLOR;
+  // Filter handlers
+  function handleCityChange(id: string, name: string) {
+    setFilterCityId(id);
+    setFilterCityName(name);
+    setSelectedFnsIds([]);
+    setSelectedFnsNames({});
   }
+
+  function handleFnsToggle(id: string, name: string) {
+    setSelectedFnsIds((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
+    );
+    setSelectedFnsNames((prev) => {
+      const next = { ...prev };
+      if (prev[id]) {
+        delete next[id];
+      } else {
+        next[id] = name;
+      }
+      return next;
+    });
+  }
+
+  function handleRemoveFns(id: string) {
+    setSelectedFnsIds((prev) => prev.filter((f) => f !== id));
+    setSelectedFnsNames((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }
+
+  const hasFilters = !!(filterCityId || selectedFnsIds.length > 0);
 
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   function renderCard({ item }: { item: RequestItem }) {
-    const itemIsNew = isNew(item.createdAt);
-    const serviceLabel = item.serviceType || item.category;
-    const serviceColor = serviceLabel ? getServiceColor(serviceLabel) : null;
+    const serviceLabel = item.serviceType || item.category || '';
 
     return (
-      <TouchableOpacity
-        onPress={() => router.push(`/requests/${item.id}` as any)}
-        activeOpacity={0.8}
-        style={styles.cardWrapper}
-      >
-        <Card padding={Spacing.lg} variant="elevated">
-          {/* Top row: badges + date */}
-          <View style={styles.topRow}>
-            <View style={styles.badgesRow}>
-              {itemIsNew && (
-                <View style={styles.newBadge}>
-                  <View style={styles.newDot} />
-                  <Text style={styles.newBadgeText}>новая</Text>
-                </View>
-              )}
-              {item._count.responses >= 3 && (
-                <View style={styles.hotBadge}>
-                  <Text style={styles.hotBadgeText}>горячая</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-          </View>
-
-          {/* Title */}
-          {item.title ? (
-            <Text style={styles.cardTitle} numberOfLines={2}>
-              {item.title}
-            </Text>
-          ) : null}
-
-          {/* Description */}
-          <Text style={styles.description} numberOfLines={2}>
-            {item.description}
-          </Text>
-
-          {/* Tags: city, FNS, service */}
-          <View style={styles.tagsRow}>
-            <View style={styles.cityChip}>
-              <Feather name="map-pin" size={10} color={Colors.textSecondary} />
-              <Text style={styles.cityText}>{item.city}</Text>
-            </View>
-            {item.ifnsName ? (
-              <View style={styles.fnsBadge}>
-                <Feather name="home" size={10} color={Colors.statusInfo} />
-                <Text style={styles.fnsBadgeText} numberOfLines={1}>
-                  {item.ifnsName}
-                </Text>
-              </View>
-            ) : null}
-            {serviceLabel && serviceColor ? (
-              <View style={[styles.serviceBadge, { backgroundColor: serviceColor.bg }]}>
-                <Text style={[styles.serviceBadgeText, { color: serviceColor.text }]}>
-                  {serviceLabel}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
-          {/* Footer: responses + budget */}
-          <View style={styles.cardFooter}>
-            <View style={styles.responsesChip}>
-              <Feather name="message-circle" size={12} color={Colors.textMuted} />
-              <Text style={styles.responsesText}>
-                {item._count.responses}{' '}
-                {item._count.responses === 1
-                  ? 'отклик'
-                  : item._count.responses < 5
-                    ? 'отклика'
-                    : 'откликов'}
-              </Text>
-            </View>
-            {item.budget != null && (
-              <Text style={styles.budgetText}>
-                {item.budget.toLocaleString('ru-RU')} {'\u20BD'}
-              </Text>
-            )}
-          </View>
-        </Card>
-      </TouchableOpacity>
+      <View className="mb-3">
+        <RequestFeedCard
+          title={item.title || item.description.slice(0, 60)}
+          description={item.description}
+          city={item.city}
+          fns={item.ifnsName || ''}
+          service={serviceLabel}
+          date={formatDate(item.createdAt)}
+          author={getAuthorInitials(item.client?.name)}
+          memberSince={getMemberYear(item.client?.createdAt)}
+          messageCount={item._count.responses}
+          onPress={() => router.push(`/requests/${item.id}` as any)}
+        />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView className="flex-1 bg-white">
       <FlatList
-        data={filtered}
+        data={items}
         keyExtractor={(item) => item.id}
         renderItem={renderCard}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.listContent, !isMobile && styles.listContentWide]}
+        contentContainerStyle={{ padding: 16, gap: 0 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -340,153 +485,74 @@ export default function SpecialistFeedTab() {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.3}
         ListHeaderComponent={
-          <View style={[styles.headerBox, !isMobile && styles.headerBoxWide]}>
-            {/* Title */}
-            <View style={styles.titleRow}>
-              <Text style={styles.pageTitle}>Заявки клиентов</Text>
-            </View>
-
-            {/* Stats row */}
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{total}</Text>
-                <Text style={styles.statLabel}>В регионе</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{newToday}</Text>
-                <Text style={styles.statLabel}>Новых сегодня</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{myResponsesCount}</Text>
-                <Text style={styles.statLabel}>Мои отклики</Text>
-              </View>
-            </View>
-
-            {/* Search */}
-            <View style={styles.searchBar}>
-              <Feather name="search" size={18} color={Colors.textMuted} />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Поиск по заявкам..."
-                placeholderTextColor={Colors.textMuted}
-                style={styles.searchInput}
-              />
-              {search ? (
-                <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-                  <Feather name="x" size={18} color={Colors.textMuted} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
-
-            {/* City filter (from specialist profile) */}
-            {profile && profile.cities.length > 0 && (
-              <View>
-                <Text style={styles.filterLabel}>Город</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.chipsRow}
-                >
-                  <TouchableOpacity
-                    onPress={() => setSelectedCity('')}
-                    style={[styles.chip, !selectedCity && styles.chipActive]}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.chipText, !selectedCity && styles.chipTextActive]}>
-                      Все
-                    </Text>
-                  </TouchableOpacity>
-                  {profile.cities.map((city) => {
-                    const active = selectedCity === city;
-                    return (
-                      <TouchableOpacity
-                        key={city}
-                        onPress={() => setSelectedCity(city)}
-                        style={[styles.chip, active && styles.chipActive]}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                          {city}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Service type filter */}
+          <View className="gap-4 pb-4">
+            {/* Header */}
             <View>
-              <Text style={styles.filterLabel}>Тип услуги</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                {SERVICE_FILTERS.map((s) => {
-                  const active = s.value === selectedService;
-                  return (
-                    <TouchableOpacity
-                      key={s.value || '__all__'}
-                      onPress={() => setSelectedService(s.value)}
-                      style={[styles.chip, active && styles.chipActive]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                        {s.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+              <Text className="text-xl font-bold text-textPrimary">Заявки</Text>
+              <Text className="mt-0.5 text-sm text-textMuted">{total} активных заявок</Text>
+            </View>
+
+            {/* Unified City/FNS filter */}
+            <View className="gap-3 rounded-xl border border-borderLight bg-bgSecondary p-4">
+              <View className="flex-row items-center gap-2">
+                <Feather name="sliders" size={14} color={Colors.brandPrimary} />
+                <Text className="text-sm font-semibold text-textPrimary">Фильтры</Text>
+                {hasFilters && (
+                  <Pressable
+                    onPress={() => { handleCityChange('', ''); }}
+                    className="ml-auto flex-row items-center gap-1"
+                  >
+                    <Feather name="x" size={14} color={Colors.textMuted} />
+                    <Text className="text-xs text-textMuted">Сбросить</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              <CityFnsPicker
+                city={filterCityName}
+                cityId={filterCityId}
+                selectedFnsIds={selectedFnsIds}
+                selectedFnsNames={selectedFnsNames}
+                cities={cities}
+                fnsList={fnsList}
+                onCityChange={handleCityChange}
+                onFnsToggle={handleFnsToggle}
+                onRemoveFns={handleRemoveFns}
+              />
             </View>
           </View>
         }
         ListEmptyComponent={
           loading ? (
-            <View style={styles.loadingBox}>
+            <View className="items-center pt-10">
               <ActivityIndicator size="large" color={Colors.brandPrimary} />
             </View>
           ) : error ? (
-            <EmptyState
-              icon="alert-circle-outline"
-              title="Ошибка загрузки"
-              subtitle={error}
-              ctaLabel="Повторить"
-              onCtaPress={() => fetchFeed()}
-            />
-          ) : (
-            <View style={styles.emptyBox}>
-              <View style={styles.emptyIconCircle}>
-                <Feather name="inbox" size={32} color={Colors.brandPrimary} />
+            <View className="items-center gap-3 py-10">
+              <View className="h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
+                <Feather name="alert-circle" size={32} color={Colors.textMuted} />
               </View>
-              <Text style={styles.emptyTitle}>Новых заявок пока нет</Text>
-              <Text style={styles.emptySubtitle}>
-                {selectedCity || selectedService
-                  ? 'Попробуйте сбросить фильтры или расширить зону обслуживания'
-                  : 'Настройте город и ФНС в настройках, чтобы видеть больше заявок'}
+              <Text className="text-lg font-semibold text-textPrimary">Ошибка загрузки</Text>
+              <Text className="max-w-[260px] text-center text-sm text-textMuted">{error}</Text>
+              <Pressable onPress={() => fetchFeed()} className="mt-2 rounded-lg border border-brandPrimary px-4 py-2">
+                <Text className="text-sm font-semibold text-brandPrimary">Повторить</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View className="items-center gap-3 py-10">
+              <View className="h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
+                <Feather name="inbox" size={32} color={Colors.textMuted} />
+              </View>
+              <Text className="text-lg font-semibold text-textPrimary">Нет заявок</Text>
+              <Text className="max-w-[260px] text-center text-sm text-textMuted">
+                Попробуйте изменить параметры фильтров
               </Text>
-              {(selectedCity || selectedService) && (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedCity('');
-                    setSelectedService('');
-                    setSearch('');
-                  }}
-                  style={styles.resetBtn}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="refresh-cw" size={14} color={Colors.brandPrimary} />
-                  <Text style={styles.resetBtnText}>Сбросить фильтры</Text>
-                </TouchableOpacity>
-              )}
             </View>
           )
         }
         ListFooterComponent={
           loadingMore ? (
-            <View style={styles.footerLoading}>
+            <View className="items-center py-4">
               <ActivityIndicator size="small" color={Colors.brandPrimary} />
             </View>
           ) : null
@@ -495,313 +561,3 @@ export default function SpecialistFeedTab() {
     </SafeAreaView>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-  },
-  listContentWide: {
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 700,
-  },
-
-  // Header
-  headerBox: {
-    gap: Spacing.md,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
-  },
-  headerBoxWide: {
-    maxWidth: 700,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  pageTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  statValue: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.brandPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-
-  // Search
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.xl,
-    paddingHorizontal: Spacing.lg,
-    minHeight: 48,
-    ...Shadows.sm,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    paddingVertical: Spacing.sm,
-  },
-
-  // Filters
-  filterLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-    marginBottom: Spacing.xs,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-  },
-  chip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-    minHeight: 40,
-    justifyContent: 'center',
-  },
-  chipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  chipText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  chipTextActive: {
-    color: Colors.white,
-  },
-
-  // Card
-  cardWrapper: {
-    width: '100%',
-    marginBottom: Spacing.md,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  badgesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  newBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  newDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#22c55e',
-  },
-  newBadgeText: {
-    fontSize: Typography.fontSize.xs,
-    color: '#22c55e',
-    fontWeight: Typography.fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  hotBadge: {
-    backgroundColor: '#fef3cd',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
-  },
-  hotBadgeText: {
-    fontSize: Typography.fontSize.xs,
-    color: '#92400e',
-    fontWeight: Typography.fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  dateText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  cardTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-    marginBottom: Spacing.xs,
-  },
-  description: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: Spacing.md,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-    marginBottom: Spacing.sm,
-  },
-  cityChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.bgSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  cityText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  fnsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.statusBg.info,
-    maxWidth: 200,
-  },
-  fnsBadgeText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusInfo,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  serviceBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-  },
-  serviceBadgeText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  responsesChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  responsesText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  budgetText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.bold,
-  },
-
-  // Loading
-  loadingBox: {
-    paddingTop: Spacing['4xl'],
-    alignItems: 'center',
-  },
-  footerLoading: {
-    paddingVertical: Spacing.lg,
-    alignItems: 'center',
-  },
-
-  // Empty
-  emptyBox: {
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing['4xl'],
-  },
-  emptyIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  emptySubtitle: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    maxWidth: 280,
-    lineHeight: 20,
-  },
-  resetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.brandPrimary,
-  },
-  resetBtnText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.brandPrimary,
-  },
-});
