@@ -2,39 +2,34 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
-  TouchableOpacity,
-  Modal,
   TextInput,
-  KeyboardAvoidingView,
+  Pressable,
   Platform,
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import Head from 'expo-router/head';
+import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-import { Ionicons } from '@expo/vector-icons';
-import { Button } from '../../components/Button';
-import { Header } from '../../components/Header';
+import { Colors } from '../../constants/Colors';
 import { LandingHeader } from '../../components/LandingHeader';
 import { EmptyState } from '../../components/EmptyState';
 import { ReportModal } from '../../components/ReportModal';
-import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 interface RequestDetail {
   id: string;
+  title?: string;
   description: string;
   city: string;
+  ifnsName?: string;
   budget?: number | null;
   category?: string | null;
   status: string;
   createdAt: string;
-  client?: { id: string };
+  client?: { id: string; name?: string };
   _count: { responses: number };
   responses?: any[];
 }
@@ -45,18 +40,124 @@ function formatDate(iso: string) {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
+const SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка'];
+
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://p2ptax.smartlaunchhub.com';
 
+// ---------------------------------------------------------------------------
+// Request card (matches prototype)
+// ---------------------------------------------------------------------------
+function RequestCard({ request }: { request: RequestDetail }) {
+  const isOpen = request.status === 'OPEN';
+
+  return (
+    <View className="gap-3 rounded-xl border border-borderLight bg-white p-5">
+      {/* Status + date */}
+      <View className="flex-row items-center justify-between">
+        <View
+          className={`flex-row items-center gap-1.5 rounded-full px-2 py-0.5 ${isOpen ? 'bg-[#DCFCE7]' : 'bg-bgSecondary'}`}
+        >
+          <View className={`h-1.5 w-1.5 rounded-full ${isOpen ? 'bg-[#15803D]' : 'bg-textMuted'}`} />
+          <Text
+            className={`text-xs font-semibold ${isOpen ? 'text-[#15803D]' : 'text-textMuted'}`}
+          >
+            {isOpen ? 'Активна' : request.status === 'CLOSED' ? 'Закрыта' : request.status}
+          </Text>
+        </View>
+        <Text className="text-xs text-textMuted">{formatDate(request.createdAt)}</Text>
+      </View>
+
+      {/* Title */}
+      {request.title && (
+        <Text className="text-xl font-bold leading-7 text-textPrimary">{request.title}</Text>
+      )}
+
+      {/* Description */}
+      <Text className="text-base leading-6 text-textSecondary">{request.description}</Text>
+
+      {/* Tags */}
+      <View className="flex-row flex-wrap gap-2">
+        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+          <Feather name="map-pin" size={12} color={Colors.brandPrimary} />
+          <Text className="text-xs font-medium text-brandPrimary">{request.city}</Text>
+        </View>
+        {request.category && (
+          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
+            <Feather name="briefcase" size={12} color={Colors.brandPrimary} />
+            <Text className="text-xs font-medium text-brandPrimary">{request.category}</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Divider */}
+      <View className="h-px bg-borderLight" />
+
+      {/* Meta */}
+      <View className="flex-row flex-wrap gap-5">
+        {request.ifnsName && (
+          <View className="gap-0.5">
+            <Text className="text-xs uppercase tracking-wide text-textMuted">ФНС</Text>
+            <Text className="text-base font-semibold text-textPrimary">{request.ifnsName}</Text>
+          </View>
+        )}
+        {request.client?.name && (
+          <View className="gap-0.5">
+            <Text className="text-xs uppercase tracking-wide text-textMuted">Клиент</Text>
+            <Text className="text-base font-semibold text-textPrimary">{request.client.name}</Text>
+          </View>
+        )}
+        {request.budget != null && (
+          <View className="gap-0.5">
+            <Text className="text-xs uppercase tracking-wide text-textMuted">Бюджет</Text>
+            <Text className="text-base font-semibold text-textPrimary">
+              {request.budget.toLocaleString('ru-RU')} руб.
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Services */}
+      {request.category && (
+        <View className="gap-1.5">
+          <Text className="text-xs uppercase tracking-wide text-textMuted">Услуги</Text>
+          <View className="flex-row flex-wrap gap-1.5">
+            {SERVICES.map((s) => (
+              <View key={s} className="rounded-full bg-bgSecondary px-2.5 py-1">
+                <Text className="text-xs font-medium text-brandPrimary">{s}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Response count badge
+// ---------------------------------------------------------------------------
+function ResponseCountBadge({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <View className="flex-row items-center gap-2 rounded-lg bg-bgSecondary px-3 py-2">
+      <Feather name="users" size={14} color={Colors.brandPrimary} />
+      <Text className="text-sm text-textSecondary">
+        <Text className="font-semibold text-brandPrimary">{count} специалистов</Text> уже написали
+      </Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main screen
+// ---------------------------------------------------------------------------
 export default function PublicRequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const { isMobile } = useBreakpoints();
 
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,10 +167,10 @@ export default function PublicRequestDetailScreen() {
   const [eligibilityLoading, setEligibilityLoading] = useState(false);
   const [alreadyResponded, setAlreadyResponded] = useState(false);
 
-  // Respond modal state
-  const [modalVisible, setModalVisible] = useState(false);
-  const [respondMessage, setRespondMessage] = useState('');
+  // Message state (inline, no modal)
+  const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showAuthNote, setShowAuthNote] = useState(false);
 
   // Report modal state
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -114,19 +215,9 @@ export default function PublicRequestDetailScreen() {
       .finally(() => setEligibilityLoading(false));
   }, [id, user, request]);
 
-  function openRespondModal() {
-    setRespondMessage('');
-    setModalVisible(true);
-  }
-
-  function closeRespondModal() {
-    setModalVisible(false);
-    setRespondMessage('');
-  }
-
-  async function submitResponse() {
+  async function handleSendMessage() {
     if (!id) return;
-    const trimmed = respondMessage.trim();
+    const trimmed = message.trim();
     if (!trimmed) {
       if (Platform.OS === 'web') {
         alert('Введите сообщение для отклика');
@@ -138,7 +229,7 @@ export default function PublicRequestDetailScreen() {
     setSubmitting(true);
     try {
       await api.post(`/requests/${id}/respond`, { message: trimmed });
-      closeRespondModal();
+      setMessage('');
       if (Platform.OS === 'web') {
         alert('Отклик отправлен! Клиент получит уведомление.');
       } else {
@@ -161,20 +252,30 @@ export default function PublicRequestDetailScreen() {
     }
   }
 
+  function handleUnauthSend() {
+    setShowAuthNote(true);
+    // After a brief delay, redirect to auth
+    setTimeout(() => {
+      router.push('/(auth)/email?role=SPECIALIST' as any);
+    }, 2000);
+  }
+
+  // Loading state
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View className="flex-1 bg-white">
         <LandingHeader />
-        <View style={styles.centerBox}>
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
+  // Error state
   if (error || !request) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View className="flex-1 bg-white">
         <LandingHeader />
         <EmptyState
           icon="alert-circle-outline"
@@ -182,11 +283,12 @@ export default function PublicRequestDetailScreen() {
           ctaLabel="К ленте запросов"
           onCtaPress={() => router.push('/requests')}
         />
-      </SafeAreaView>
+      </View>
     );
   }
 
   const isOpen = request.status === 'OPEN';
+  const isSpecialist = user && user.role === 'SPECIALIST';
 
   const pageTitle = request.category
     ? `${request.category} — запрос в ${request.city} | Налоговик`
@@ -195,9 +297,8 @@ export default function PublicRequestDetailScreen() {
   const pageUrl = `${APP_URL}/requests/${id}`;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View className="flex-1 bg-white">
       <Stack.Screen options={{ title: pageTitle }} />
-      {/* TODO: add og:image when CDN/static image is available */}
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
@@ -207,115 +308,133 @@ export default function PublicRequestDetailScreen() {
         <meta property="og:type" content="article" />
       </Head>
       <LandingHeader />
-      <Header title="Детали запроса" />
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.container, !isMobile && styles.containerWide]}>
-          {/* Status badge */}
-          <View style={styles.statusRow}>
-            <View style={styles.statusRowLeft}>
-              <View style={[styles.statusChip, !isOpen && styles.statusChipClosed]}>
-                <Text style={[styles.statusText, !isOpen && styles.statusTextClosed]}>
-                  {isOpen ? 'Открыт' : request.status === 'CLOSED' ? 'Закрыт' : request.status}
+      <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+        {/* Report button for authenticated users */}
+        {user && request.client && user.userId !== request.client.id && (
+          <View className="flex-row justify-end">
+            <Pressable
+              onPress={() => setReportModalVisible(true)}
+              className="p-2"
+            >
+              <Feather name="flag" size={16} color={Colors.textMuted} />
+            </Pressable>
+          </View>
+        )}
+
+        {/* Request card */}
+        <RequestCard request={request} />
+
+        {/* Response count */}
+        <ResponseCountBadge count={request._count.responses} />
+
+        {/* Authorized specialist: inline message form */}
+        {user && isSpecialist && isOpen && (
+          eligibilityLoading ? (
+            <View className="items-center py-4">
+              <ActivityIndicator size="small" color={Colors.brandPrimary} />
+            </View>
+          ) : alreadyResponded ? (
+            <View className="flex-row items-start gap-2 rounded-lg border border-borderLight bg-bgSecondary px-3 py-2.5">
+              <Feather name="info" size={16} color={Colors.brandPrimary} style={{ marginTop: 1 }} />
+              <Text className="flex-1 text-sm leading-5 text-textSecondary">
+                Вы уже откликались на этот запрос
+              </Text>
+            </View>
+          ) : (
+            <>
+              {/* Message input */}
+              <View className="gap-2">
+                <Text className="text-sm font-medium text-textSecondary">Написать клиенту</Text>
+                <TextInput
+                  value={message}
+                  onChangeText={setMessage}
+                  multiline
+                  placeholder="Напишите первое сообщение клиенту..."
+                  placeholderTextColor={Colors.textMuted}
+                  maxLength={500}
+                  className="min-h-[100px] rounded-lg border border-borderLight bg-white p-3 text-base text-textPrimary"
+                  style={{ textAlignVertical: 'top', outlineStyle: 'none' } as any}
+                />
+              </View>
+
+              {/* Send row: attachment + send button */}
+              <View className="flex-row items-center gap-3">
+                <Pressable className="h-12 w-12 items-center justify-center rounded-lg border border-borderLight bg-white">
+                  <Feather name="paperclip" size={20} color={Colors.textMuted} />
+                </Pressable>
+                <Pressable
+                  className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary ${submitting || !message.trim() ? 'opacity-50' : ''}`}
+                  onPress={handleSendMessage}
+                  disabled={submitting || !message.trim()}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <>
+                      <Feather name="send" size={16} color={Colors.white} />
+                      <Text className="text-base font-semibold text-white">Отправить</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+
+              {/* Hint */}
+              <View className="flex-row items-center justify-center gap-1.5">
+                <Feather name="info" size={14} color={Colors.textMuted} />
+                <Text className="text-center text-sm text-textMuted">
+                  После отправки вы будете перенаправлены в чат
                 </Text>
               </View>
-              <Text style={styles.dateText}>{formatDate(request.createdAt)}</Text>
+            </>
+          )
+        )}
+
+        {/* Unauthorized: message form with auth redirect */}
+        {!user && isOpen && (
+          <>
+            {/* Message input */}
+            <View className="gap-2">
+              <Text className="text-sm font-medium text-textSecondary">Написать клиенту</Text>
+              <TextInput
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                placeholder="Напишите первое сообщение клиенту..."
+                placeholderTextColor={Colors.textMuted}
+                className="min-h-[100px] rounded-lg border border-borderLight bg-white p-3 text-base text-textPrimary"
+                style={{ textAlignVertical: 'top', outlineStyle: 'none' } as any}
+              />
             </View>
-            {user && request.client && user.userId !== request.client.id && (
-              <TouchableOpacity
-                onPress={() => setReportModalVisible(true)}
-                activeOpacity={0.7}
-                style={styles.reportBtn}
-              >
-                <Ionicons name="flag-outline" size={16} color={Colors.textMuted} />
-              </TouchableOpacity>
+
+            {/* Send button */}
+            <Pressable
+              onPress={handleUnauthSend}
+              className="h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary"
+            >
+              <Feather name="send" size={16} color={Colors.white} />
+              <Text className="text-base font-semibold text-white">Отправить</Text>
+            </Pressable>
+
+            {/* Auth redirect note */}
+            {showAuthNote && (
+              <View className="flex-row items-start gap-2 rounded-lg border border-borderLight bg-bgSecondary px-3 py-2.5">
+                <Feather name="info" size={16} color={Colors.brandPrimary} style={{ marginTop: 1 }} />
+                <Text className="flex-1 text-sm leading-5 text-textSecondary">
+                  После нажатия вы будете перенаправлены на авторизацию, а сообщение будет отправлено после входа
+                </Text>
+              </View>
             )}
-          </View>
+          </>
+        )}
 
-          {/* Description */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Описание</Text>
-            <Text style={styles.descriptionText}>{request.description}</Text>
-          </View>
-
-          {/* Meta info */}
-          <View style={styles.card}>
-            <View style={styles.metaGrid}>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>Город</Text>
-                <Text style={styles.metaValue}>{request.city}</Text>
-              </View>
-
-              {request.category && (
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Категория</Text>
-                  <Text style={styles.metaValue}>{request.category}</Text>
-                </View>
-              )}
-
-              {request.budget != null && (
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Бюджет</Text>
-                  <Text style={styles.metaValue}>
-                    {request.budget.toLocaleString('ru-RU')} руб.
-                  </Text>
-                </View>
-              )}
-
-              <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>Откликов</Text>
-                <Text style={styles.metaValue}>{request._count.responses}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* CTA for authenticated specialists */}
-          {user && user.role === 'SPECIALIST' && isOpen && (
-            eligibilityLoading ? (
-              <ActivityIndicator size="small" color={Colors.brandPrimary} style={{ marginVertical: Spacing.md }} />
-            ) : alreadyResponded ? (
-              <View style={styles.ctaBox}>
-                <Text style={styles.ctaText}>Вы уже откликались на этот запрос</Text>
-              </View>
-            ) : (
-              <Button
-                onPress={openRespondModal}
-                variant="primary"
-                style={styles.respondBtn}
-              >
-                Откликнуться
-              </Button>
-            )
-          )}
-
-          {/* CTA for unauthenticated */}
-          {!user && isOpen && (
-            <View style={styles.ctaBox}>
-              <Text style={styles.ctaText}>
-                Вы специалист? Войдите чтобы откликнуться на этот запрос
-              </Text>
-              <Button
-                onPress={() => router.push('/(auth)/email?role=SPECIALIST' as any)}
-                variant="primary"
-                style={styles.respondBtn}
-              >
-                Войти и откликнуться
-              </Button>
-            </View>
-          )}
-
-          {/* Back button */}
-          <TouchableOpacity
-            onPress={() => router.push('/requests')}
-            activeOpacity={0.7}
-            style={styles.backBtn}
-          >
-            <Text style={styles.backBtnText}>Все запросы</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Back link */}
+        <Pressable
+          onPress={() => router.push('/requests')}
+          className="items-center py-2"
+        >
+          <Text className="text-sm font-medium text-brandPrimary">Все запросы</Text>
+        </Pressable>
       </ScrollView>
 
       {/* Report modal */}
@@ -326,225 +445,6 @@ export default function PublicRequestDetailScreen() {
           targetUserId={request.client.id}
         />
       )}
-
-      {/* Respond modal */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={closeRespondModal}
-      >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Ваш отклик</Text>
-            <Text style={styles.modalHint}>Кратко опишите, как вы можете помочь</Text>
-            <TextInput
-              value={respondMessage}
-              onChangeText={setRespondMessage}
-              placeholder="Здравствуйте! Я специалист по..."
-              placeholderTextColor={Colors.textMuted}
-              multiline
-              numberOfLines={4}
-              maxLength={500}
-              style={styles.messageInput}
-              autoFocus
-            />
-            <Text style={styles.charCounter}>{respondMessage.length}/500</Text>
-            <View style={styles.modalBtns}>
-              <Button onPress={closeRespondModal} variant="ghost" style={styles.modalBtn}>
-                Отмена
-              </Button>
-              <Button
-                onPress={submitResponse}
-                variant="primary"
-                loading={submitting}
-                disabled={submitting || !respondMessage.trim()}
-                style={styles.modalBtn}
-              >
-                Отправить
-              </Button>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingBottom: 48,
-  },
-  centerBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    gap: Spacing.md,
-  },
-  containerWide: {
-    maxWidth: 700,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statusRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  reportBtn: {
-    padding: 8,
-  },
-  statusChip: {
-    backgroundColor: Colors.statusBg.success,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-  },
-  statusChipClosed: {
-    backgroundColor: Colors.bgSecondary,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusSuccess,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-  statusTextClosed: {
-    color: Colors.textMuted,
-  },
-  dateText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    ...Shadows.sm,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-  },
-  descriptionText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-  },
-  metaGrid: {
-    gap: Spacing.md,
-  },
-  metaItem: {
-    gap: 2,
-  },
-  metaLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  metaValue: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  respondBtn: {
-    width: '100%',
-  },
-  ctaBox: {
-    backgroundColor: '#EBF3FB',
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  ctaText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  backBtn: {
-    alignSelf: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  backBtnText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: Colors.bgCard,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    padding: Spacing['2xl'],
-    gap: Spacing.md,
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 430,
-  },
-  modalTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  modalHint: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    marginTop: -Spacing.xs,
-  },
-  messageInput: {
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  charCounter: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'right',
-    marginTop: -Spacing.xs,
-  },
-  modalBtns: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  modalBtn: {
-    flex: 1,
-  },
-});

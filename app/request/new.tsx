@@ -139,7 +139,7 @@ function CascadingPicker({
           </View>
 
           {/* Options list */}
-          <ScrollView className="max-h-48">
+          <View className="max-h-48">
             {openLevel === 'city' && (
               loadingCities ? (
                 <View className="items-center py-4">
@@ -207,7 +207,7 @@ function CascadingPicker({
                   </Text>
                 </Pressable>
               ))}
-          </ScrollView>
+          </View>
         </View>
       )}
     </View>
@@ -288,7 +288,7 @@ export default function NewRequestScreen() {
           className="h-12 rounded-xl border border-borderLight bg-white px-4 text-base text-textPrimary"
           style={{ outlineStyle: 'none' } as any}
         />
-        <Text className="text-xs text-textMuted text-right">{title.length}/100</Text>
+        <Text className="text-right text-xs text-textMuted">{title.length}/100</Text>
       </View>
 
       {/* Description */}
@@ -311,8 +311,8 @@ export default function NewRequestScreen() {
         <Toggle
           value={isPublic}
           onValueChange={setIsPublic}
-          label="Публичная заявка"
-          sublabel="Видна в общей ленте без авторизации"
+          label="Показать неавторизованным"
+          sublabel="Заявку увидят без входа в аккаунт"
         />
       </View>
 
