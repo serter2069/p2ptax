@@ -16,7 +16,7 @@ import { api, ApiError } from '../../lib/api';
 import { useAuth } from '../../stores/authStore';
 import { Colors } from '../../constants/Colors';
 import { LandingHeader } from '../../components/LandingHeader';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { ReportModal } from '../../components/ReportModal';
 
 interface RequestDetail {

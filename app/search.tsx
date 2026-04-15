@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/Colors';
 import { Avatar } from '../components/Avatar';
-import { EmptyState } from '../components/EmptyState';
+import { EmptyState } from '../components/ui/EmptyState';
 import { Header } from '../components/Header';
 import { LandingHeader } from '../components/LandingHeader';
 import { useBreakpoints } from '../hooks/useBreakpoints';

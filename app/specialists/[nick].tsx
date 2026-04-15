@@ -22,7 +22,7 @@ import { useAuth } from '../../stores/authStore';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { LandingHeader } from '../../components/LandingHeader';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 interface SpecialistProfile {
   id: string;

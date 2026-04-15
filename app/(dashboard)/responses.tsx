@@ -17,7 +17,7 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { api, ApiError } from '../../lib/api';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { Header } from '../../components/Header';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 // --- Types matching API shape from GET /requests/mine ---
 
