@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
-import { Colors, Typography } from '../constants/Colors';
+import { View, Text, Image } from 'react-native';
 
 export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -36,7 +35,8 @@ export function Avatar({ name, imageUri, size = 'md' }: AvatarProps) {
     return (
       <Image
         source={{ uri: imageUri }}
-        style={[styles.base, containerStyle]}
+        className="overflow-hidden items-center justify-center"
+        style={containerStyle}
       />
     );
   }
@@ -44,25 +44,13 @@ export function Avatar({ name, imageUri, size = 'md' }: AvatarProps) {
   const initials = name ? getInitials(name) : '?';
 
   return (
-    <View style={[styles.base, styles.fallback, containerStyle]}>
-      <Text style={[styles.initials, { fontSize: dims.font }]}>
+    <View
+      className="overflow-hidden items-center justify-center bg-brandPrimary"
+      style={containerStyle}
+    >
+      <Text className="text-white font-bold" style={{ fontSize: dims.font }}>
         {initials}
       </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fallback: {
-    backgroundColor: Colors.brandPrimary,
-  },
-  initials: {
-    color: '#FFFFFF',
-    fontWeight: Typography.fontWeight.bold,
-  },
-});

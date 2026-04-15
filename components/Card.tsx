@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Spacing, BorderRadius, Shadows } from '../constants/Colors';
+import { View, ViewStyle } from 'react-native';
+import { Shadows, Spacing } from '../constants/Colors';
 
 export type CardVariant = 'default' | 'elevated' | 'outlined';
 
@@ -11,32 +11,25 @@ interface CardProps {
   variant?: CardVariant;
 }
 
+const variantClasses: Record<CardVariant, string> = {
+  default: 'border border-border',
+  elevated: '',
+  outlined: 'border border-border',
+};
+
+const variantShadows: Record<CardVariant, ViewStyle> = {
+  default: Shadows.md,
+  elevated: Shadows.lg,
+  outlined: {},
+};
+
 export function Card({ children, style, padding = Spacing['2xl'], variant = 'default' }: CardProps) {
   return (
-    <View style={[styles.card, variantStyles[variant], { padding }, style]}>
+    <View
+      className={`bg-bgCard rounded-[10px] ${variantClasses[variant]}`}
+      style={[variantShadows[variant], { padding }, style]}
+    >
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-  },
-});
-
-const variantStyles = StyleSheet.create({
-  default: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.md,
-  },
-  elevated: {
-    ...Shadows.lg,
-  },
-  outlined: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-});

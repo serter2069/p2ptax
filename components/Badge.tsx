@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Spacing, BorderRadius, Typography } from '../constants/Colors';
+import { View, Text, ViewStyle } from 'react-native';
+import { Colors } from '../constants/Colors';
 
 export type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'accent' | 'familiar';
 export type BadgeSize = 'xs' | 'sm' | 'md';
@@ -34,24 +34,20 @@ export function Badge({ variant = 'accent', label, size, style }: BadgeProps) {
   const sizeStyle = size ? SIZE_STYLES[size] : undefined;
 
   return (
-    <View style={[styles.badge, { backgroundColor: colors.bg }, sizeStyle && { paddingHorizontal: sizeStyle.paddingH, paddingVertical: sizeStyle.paddingV }, style]}>
-      <Text style={[styles.label, { color: colors.text }, sizeStyle && { fontSize: sizeStyle.fontSize }]}>
+    <View
+      className="self-start px-2 py-[3px] rounded-full"
+      style={[
+        { backgroundColor: colors.bg },
+        sizeStyle && { paddingHorizontal: sizeStyle.paddingH, paddingVertical: sizeStyle.paddingV },
+        style,
+      ]}
+    >
+      <Text
+        className="text-[11px] font-semibold tracking-wide"
+        style={[{ color: colors.text }, sizeStyle && { fontSize: sizeStyle.fontSize }]}
+      >
         {displayLabel}
       </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xxs,
-    borderRadius: BorderRadius.full,
-  },
-  label: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    letterSpacing: 0.3,
-  },
-});

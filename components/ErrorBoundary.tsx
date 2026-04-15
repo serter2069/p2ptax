@@ -1,6 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Colors, BorderRadius, Typography, Spacing } from '../constants/Colors';
+import { Pressable, Text, View } from 'react-native';
+import { Colors } from '../constants/Colors';
 
 interface Props {
   children: ReactNode;
@@ -32,16 +32,21 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
 
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>Что-то пошло не так</Text>
-          <Text style={styles.message}>
+        <View className="flex-1 bg-bgPrimary items-center justify-center p-8">
+          <Text className="text-xl font-bold text-textPrimary mb-3">Что-то пошло не так</Text>
+          <Text className="text-[15px] text-textSecondary text-center mb-4 max-w-[360px]">
             Произошла непредвиденная ошибка. Попробуйте обновить страницу.
           </Text>
           {__DEV__ && this.state.error && (
-            <Text style={styles.debug}>{this.state.error.message}</Text>
+            <Text className="text-[11px] text-statusError text-center mb-4 max-w-[480px] font-mono">
+              {this.state.error.message}
+            </Text>
           )}
-          <Pressable style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>Попробовать снова</Text>
+          <Pressable
+            className="bg-brandPrimary px-6 py-3 rounded-[12px]"
+            onPress={this.handleRetry}
+          >
+            <Text className="text-[15px] font-semibold text-white">Попробовать снова</Text>
           </Pressable>
         </View>
       );
@@ -50,45 +55,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing['3xl'],
-  },
-  title: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
-  },
-  message: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
-    maxWidth: 360,
-  },
-  debug: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.statusError,
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
-    maxWidth: 480,
-    fontFamily: 'monospace',
-  },
-  button: {
-    backgroundColor: Colors.brandPrimary,
-    paddingHorizontal: Spacing['2xl'],
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.btn,
-  },
-  buttonText: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.white,
-  },
-});
