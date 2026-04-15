@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN "city" TEXT;
+ALTER TABLE "users" ADD COLUMN "city" TEXT;
