@@ -6,7 +6,7 @@ const PAGE_SIZE = 20;
 
 export type SearchType = 'all' | 'requests' | 'specialists';
 
-interface SearchResult {
+export interface SearchResult {
   requests: { items: any[]; total: number };
   specialists: { items: any[]; total: number };
   total: number;

@@ -53,20 +53,21 @@ export class CleanupService {
       include: {
         specialist: {
           select: {
+            id: true,
             email: true,
-            emailNotifications: true,
+            notifyNewResponses: true,
           },
         },
       },
     });
 
     const ids = promotions
-      .filter((p) => p.specialist.emailNotifications)
+      .filter((p) => p.specialist.notifyNewResponses)
       .map((p) => p.id);
 
     for (const p of promotions) {
-      if (p.specialist.emailNotifications) {
-        await this.emailService.notifyPromotionExpiringSoon(p.specialist.email, p.city);
+      if (p.specialist.notifyNewResponses) {
+        await this.emailService.notifyPromotionExpiringSoon(p.specialist.email, p.city, p.specialist.id);
       }
     }
 

@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface PageEntry {
+export interface PageEntry {
   id: string;
   title: string;
   group: string;
