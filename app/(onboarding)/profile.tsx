@@ -160,7 +160,7 @@ export default function ProfileScreen() {
               <View className="h-1 rounded-full bg-green-600" style={{ width: '100%' }} />
             </View>
             <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">
-              Шаг 3 из 3
+              Шаг 5 из 5
             </Text>
 
             {/* Header */}

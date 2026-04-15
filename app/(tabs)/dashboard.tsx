@@ -139,7 +139,7 @@ function QuickActions() {
     <View className="flex-row gap-2">
       <Pressable
         className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-brandPrimary"
-        onPress={() => router.push('/create-request')}
+        onPress={() => router.push('/(dashboard)/my-requests/new')}
       >
         <Feather name="plus" size={16} color={Colors.white} />
         <Text className="text-sm font-semibold text-white">Новая заявка</Text>
@@ -332,7 +332,7 @@ function EmptyDashboard({ userName }: { userName: string }) {
         </Text>
         <Pressable
           className="mt-2 h-12 w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary"
-          onPress={() => router.push('/create-request')}
+          onPress={() => router.push('/(dashboard)/my-requests/new')}
         >
           <Feather name="plus" size={18} color={Colors.white} />
           <Text className="text-base font-semibold text-white">Создать первую заявку</Text>
@@ -525,7 +525,7 @@ export default function DashboardTab() {
           {sc.newStatus === 'COMPLETED' && (
             <Pressable
               className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg border border-borderLight bg-white"
-              onPress={() => router.push(`/request/${sc.requestId}`)}
+              onPress={() => router.push(`/(dashboard)/my-requests/${sc.requestId}`)}
             >
               <Feather name="star" size={14} color={Colors.statusWarning} />
               <Text className="text-sm font-medium text-textPrimary">Оставить отзыв</Text>
@@ -595,7 +595,7 @@ export default function DashboardTab() {
             <RequestCard
               key={req.id}
               item={req}
-              onPress={() => router.push(`/request/${req.id}`)}
+              onPress={() => router.push(`/(dashboard)/my-requests/${req.id}`)}
             />
           ))
         ) : (

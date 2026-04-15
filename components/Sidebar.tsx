@@ -140,7 +140,7 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
           fontSize: Typography.fontSize.lg,
           fontWeight: Typography.fontWeight.bold,
           color: Colors.textPrimary,
-        }}>Nalogovik</Text>
+        }}>Налоговик</Text>
       </Pressable>
 
       {/* Nav groups */}
@@ -199,7 +199,7 @@ export function Sidebar({ items, userEmail, onLogout, width }: SidebarProps) {
               fontSize: Typography.fontSize.sm,
               color: Colors.statusError,
               fontWeight: Typography.fontWeight.medium,
-            }}>Vyiti</Text>
+            }}>Выйти</Text>
           </Pressable>
         ) : null}
       </View>

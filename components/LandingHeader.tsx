@@ -20,10 +20,10 @@ interface NavLinkConfig {
 }
 
 const NAV_LINKS: NavLinkConfig[] = [
-  { label: 'Glavnaya', route: '/', segment: '(index)' },
-  { label: 'Specialisty', route: '/specialists', segment: 'specialists' },
-  { label: 'Zayavki', route: '/requests', segment: 'requests' },
-  { label: 'Tarify', route: '/pricing', segment: 'pricing' },
+  { label: 'Главная', route: '/', segment: '(index)' },
+  { label: 'Специалисты', route: '/specialists', segment: 'specialists' },
+  { label: 'Заявки', route: '/requests', segment: 'requests' },
+  { label: 'Тарифы', route: '/pricing', segment: 'pricing' },
 ];
 
 function LogoBlock({ onPress }: { onPress?: () => void }) {
@@ -43,7 +43,7 @@ function LogoBlock({ onPress }: { onPress?: () => void }) {
         fontSize: Typography.fontSize.lg,
         fontWeight: Typography.fontWeight.bold,
         color: Colors.textPrimary,
-      }}>Nalogovik</Text>
+      }}>Налоговик</Text>
     </Pressable>
   );
 }
@@ -158,7 +158,7 @@ export function LandingHeader() {
                 color: Colors.white,
                 fontSize: Typography.fontSize.sm,
                 fontWeight: Typography.fontWeight.semibold,
-              }}>Kabinet</Text>
+              }}>Кабинет</Text>
             </Pressable>
           </View>
         ) : (
@@ -177,7 +177,7 @@ export function LandingHeader() {
                 color: Colors.brandPrimary,
                 fontSize: Typography.fontSize.sm,
                 fontWeight: Typography.fontWeight.semibold,
-              }}>Voyti</Text>
+              }}>Войти</Text>
             </Pressable>
             <Pressable
               onPress={() => router.push('/(auth)/email?role=SPECIALIST')}
@@ -192,7 +192,7 @@ export function LandingHeader() {
                 color: Colors.white,
                 fontSize: Typography.fontSize.sm,
                 fontWeight: Typography.fontWeight.semibold,
-              }}>Razmestit zayavku</Text>
+              }}>Разместить заявку</Text>
             </Pressable>
           </View>
         )}
@@ -301,7 +301,7 @@ export function LandingHeader() {
                 color: Colors.white,
                 fontSize: Typography.fontSize.sm,
                 fontWeight: Typography.fontWeight.semibold,
-              }}>Kabinet</Text>
+              }}>Кабинет</Text>
             </Pressable>
           ) : (
             <View style={{ gap: Spacing.sm }}>
@@ -319,7 +319,7 @@ export function LandingHeader() {
                   color: Colors.brandPrimary,
                   fontSize: Typography.fontSize.sm,
                   fontWeight: Typography.fontWeight.semibold,
-                }}>Voyti</Text>
+                }}>Войти</Text>
               </Pressable>
               <Pressable
                 onPress={() => { setMenuOpen(false); router.push('/(auth)/email?role=SPECIALIST'); }}
@@ -334,7 +334,7 @@ export function LandingHeader() {
                   color: Colors.white,
                   fontSize: Typography.fontSize.sm,
                   fontWeight: Typography.fontWeight.semibold,
-                }}>Razmestit zayavku</Text>
+                }}>Разместить заявку</Text>
               </Pressable>
             </View>
           )}

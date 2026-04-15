@@ -33,7 +33,7 @@ function AuthHeader() {
           fontSize: Typography.fontSize.lg,
           fontWeight: Typography.fontWeight.bold,
           color: Colors.textPrimary,
-        }}>Nalogovik</Text>
+        }}>Налоговик</Text>
       </View>
     </View>
   );

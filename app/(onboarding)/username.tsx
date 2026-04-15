@@ -151,7 +151,7 @@ export default function UsernameScreen() {
             <View className="mb-1 h-1 rounded-full bg-bgSecondary">
               <View className="h-1 rounded-full bg-brandPrimary" style={{ width: '33%' }} />
             </View>
-            <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 1 из 3</Text>
+            <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 1 из 5</Text>
 
             {/* Header */}
             <Text className="text-xl font-bold text-textPrimary">Как вас зовут?</Text>

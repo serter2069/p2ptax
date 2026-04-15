@@ -297,9 +297,6 @@ export default function SettingsTab() {
             <Text className="ml-2 flex-1 text-base text-textSecondary">
               {displayPhone || '\u2014'}
             </Text>
-            <Pressable hitSlop={8} onPress={() => router.push('/profile/edit')}>
-              <Feather name="edit-2" size={16} color={Colors.brandPrimary} />
-            </Pressable>
           </View>
         </View>
       </View>
