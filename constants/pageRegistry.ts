@@ -46,8 +46,12 @@ export const PAGE_GROUPS: PageGroup[] = [
 ];
 
 export const pageRegistry: PageEntry[] = [
+  // Overview
+  { id: 'overview', title: 'Обзор проекта', group: 'Overview', route: '/overview', stateCount: 1, nav: 'none' },
   // Brand
   { id: 'brand', title: 'Бренд и стили', group: 'Brand', route: '/brand', stateCount: 1, nav: 'none' },
+  { id: 'nav-components', title: 'Навигация', group: 'Brand', route: '/nav-components', stateCount: 1, nav: 'none' },
+  { id: 'components', title: 'UI Компоненты', group: 'Brand', route: '/components', stateCount: 1, nav: 'none' },
   // Auth
   { id: 'auth-email', title: 'Вход — Email', group: 'Auth', route: '/auth-email', stateCount: 1, nav: 'auth' },
   { id: 'auth-otp', title: 'Вход — Код', group: 'Auth', route: '/auth-otp', stateCount: 1, nav: 'auth' },
@@ -62,6 +66,7 @@ export const pageRegistry: PageEntry[] = [
   { id: 'public-requests-feed', title: 'Лента заявок', group: 'Public', route: '/public-requests-feed', stateCount: 1, nav: 'public' },
   { id: 'public-request-detail', title: 'Заявка (публичная)', group: 'Public', route: '/public-request-detail', stateCount: 3, nav: 'public' },
   { id: 'terms', title: 'Условия', group: 'Public', route: '/terms', stateCount: 2, nav: 'public' },
+  { id: 'pricing', title: 'Тарифы', group: 'Public', route: '/pricing', stateCount: 1, nav: 'public' },
   // Dashboard (Client)
   { id: 'dashboard', title: 'Главная клиента', group: 'Dashboard', route: '/dashboard', stateCount: 5, nav: 'client', activeTab: 'home' },
   { id: 'my-requests', title: 'Мои заявки', group: 'Dashboard', route: '/my-requests', stateCount: 4, nav: 'client', activeTab: 'requests' },
@@ -73,6 +78,13 @@ export const pageRegistry: PageEntry[] = [
   // Specialist
   { id: 'specialist-dashboard', title: 'Главная специалиста', group: 'Specialist', route: '/specialist-dashboard', stateCount: 4, nav: 'specialist' },
   { id: 'specialist-settings', title: 'Настройки специалиста', group: 'Specialist', route: '/specialist-settings', stateCount: 1, nav: 'specialist' },
+  // Admin
+  { id: 'admin-dashboard', title: 'Админ — Главная', group: 'Admin', route: '/admin-dashboard', stateCount: 1, nav: 'admin' },
+  { id: 'admin-users', title: 'Админ — Пользователи', group: 'Admin', route: '/admin-users', stateCount: 1, nav: 'admin' },
+  { id: 'admin-requests', title: 'Админ — Заявки', group: 'Admin', route: '/admin-requests', stateCount: 1, nav: 'admin' },
+  { id: 'admin-moderation', title: 'Админ — Модерация', group: 'Admin', route: '/admin-moderation', stateCount: 1, nav: 'admin' },
+  { id: 'admin-reviews', title: 'Админ — Отзывы', group: 'Admin', route: '/admin-reviews', stateCount: 1, nav: 'admin' },
+  { id: 'admin-promotions', title: 'Админ — Промо', group: 'Admin', route: '/admin-promotions', stateCount: 1, nav: 'admin' },
   // Other
   { id: 'not-found', title: '404', group: 'Public', route: '/not-found', stateCount: 1, nav: 'none' },
 ];

@@ -7,7 +7,10 @@ import { getPageById } from '../../../constants/pageRegistry';
 import { Colors, Typography, Spacing } from '../../../constants/Colors';
 
 // State components
+import { OverviewStates } from '../../../components/proto/states/OverviewStates';
 import { BrandStates } from '../../../components/proto/states/BrandStates';
+import { NavComponentsStates } from '../../../components/proto/states/NavComponentsStates';
+import { ComponentsStates } from '../../../components/proto/states/ComponentsStates';
 import { AuthEmailStates } from '../../../components/proto/states/AuthEmailStates';
 import { AuthOtpStates } from '../../../components/proto/states/AuthOtpStates';
 import { OnboardingUsernameStates } from '../../../components/proto/states/OnboardingUsernameStates';
@@ -19,6 +22,7 @@ import { SpecialistProfilePublicStates } from '../../../components/proto/states/
 import { PublicRequestsStates } from '../../../components/proto/states/PublicRequestsStates';
 import { PublicRequestDetailStates } from '../../../components/proto/states/PublicRequestDetailStates';
 import { TermsStates } from '../../../components/proto/states/TermsStates';
+import { PricingStates } from '../../../components/proto/states/PricingStates';
 import { DashboardStates } from '../../../components/proto/states/DashboardStates';
 import { MyRequestsStates } from '../../../components/proto/states/MyRequestsStates';
 import { MyRequestsNewStates } from '../../../components/proto/states/MyRequestsNewStates';
@@ -28,10 +32,19 @@ import { MessageThreadStates } from '../../../components/proto/states/MessageThr
 import { SettingsStates } from '../../../components/proto/states/SettingsStates';
 import { SpecialistDashboardStates } from '../../../components/proto/states/SpecialistDashboardStates';
 import { SpecialistSettingsStates } from '../../../components/proto/states/SpecialistSettingsStates';
+import { AdminDashboardStates } from '../../../components/proto/states/AdminDashboardStates';
+import { AdminUsersStates } from '../../../components/proto/states/AdminUsersStates';
+import { AdminRequestsStates } from '../../../components/proto/states/AdminRequestsStates';
+import { AdminModerationStates } from '../../../components/proto/states/AdminModerationStates';
+import { AdminReviewsStates } from '../../../components/proto/states/AdminReviewsStates';
+import { AdminPromotionsStates } from '../../../components/proto/states/AdminPromotionsStates';
 import { NotFoundStates } from '../../../components/proto/states/NotFoundStates';
 
 const STATE_MAP: Record<string, React.ComponentType> = {
+  'overview': OverviewStates,
   'brand': BrandStates,
+  'nav-components': NavComponentsStates,
+  'components': ComponentsStates,
   'auth-email': AuthEmailStates,
   'auth-otp': AuthOtpStates,
   'onboarding-username': OnboardingUsernameStates,
@@ -43,6 +56,7 @@ const STATE_MAP: Record<string, React.ComponentType> = {
   'public-requests-feed': PublicRequestsStates,
   'public-request-detail': PublicRequestDetailStates,
   'terms': TermsStates,
+  'pricing': PricingStates,
   'dashboard': DashboardStates,
   'my-requests': MyRequestsStates,
   'new-request': MyRequestsNewStates,
@@ -52,6 +66,12 @@ const STATE_MAP: Record<string, React.ComponentType> = {
   'client-settings': SettingsStates,
   'specialist-dashboard': SpecialistDashboardStates,
   'specialist-settings': SpecialistSettingsStates,
+  'admin-dashboard': AdminDashboardStates,
+  'admin-users': AdminUsersStates,
+  'admin-requests': AdminRequestsStates,
+  'admin-moderation': AdminModerationStates,
+  'admin-reviews': AdminReviewsStates,
+  'admin-promotions': AdminPromotionsStates,
   'not-found': NotFoundStates,
 };
 
