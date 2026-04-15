@@ -2,10 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Alert,
   TextInput,
@@ -16,12 +15,13 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { api, ApiError } from '../../lib/api';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { useFnsSearch, useFnsOffices, FnsOfficeItem } from '../../hooks/useFnsData';
+import { useFnsSearch } from '../../hooks/useFnsData';
 import { shortFnsLabel } from '../../lib/format';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 
@@ -42,6 +42,23 @@ interface SpecialistProfile {
   workingHours: string | null;
   isAvailable: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Skeleton helper
+// ---------------------------------------------------------------------------
+
+function SkeletonBlock({ width, height, rounded }: { width: string | number; height: number; rounded?: string }) {
+  return (
+    <View
+      className={`bg-bgSurface opacity-70 ${rounded || 'rounded-md'}`}
+      style={{ width: width as any, height }}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main screen
+// ---------------------------------------------------------------------------
 
 export default function MySpecialistProfileScreen() {
   const router = useRouter();
@@ -94,7 +111,6 @@ export default function MySpecialistProfileScreen() {
       setIsAvailable(data.isAvailable ?? true);
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
-        // No profile yet — will need to create one
         setError('profile_not_found');
       } else {
         setError(err instanceof ApiError ? err.message : 'Не удалось загрузить профиль');
@@ -109,7 +125,6 @@ export default function MySpecialistProfileScreen() {
     fetchProfile();
   }, [fetchProfile]);
 
-  // Must be before any conditional return to satisfy Rules of Hooks
   useEffect(() => {
     if (error === 'profile_not_found') {
       router.replace('/(dashboard)/specialist-profile');
@@ -159,7 +174,6 @@ export default function MySpecialistProfileScreen() {
 
     const asset = result.assets[0];
 
-    // Validate minimum image size
     if (asset.width && asset.height && (asset.width < 100 || asset.height < 100)) {
       Alert.alert('Ошибка', 'Изображение слишком маленькое (мин. 100x100)');
       return;
@@ -257,26 +271,76 @@ export default function MySpecialistProfileScreen() {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // LOADING state
+  // ---------------------------------------------------------------------------
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView className="flex-1 bg-bgPrimary">
         {isMobile && <Header title="Мой профиль" showBack />}
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.brandPrimary} />
+        <View className="p-5 gap-5">
+          {/* Avatar skeleton */}
+          <View className="flex-row items-center gap-5">
+            <SkeletonBlock width={64} height={64} rounded="rounded-full" />
+            <View className="gap-1.5">
+              <SkeletonBlock width={140} height={20} />
+              <SkeletonBlock width={60} height={14} />
+            </View>
+          </View>
+          {/* Stats skeleton */}
+          <View className="flex-row gap-2">
+            {[1, 2, 3].map(i => (
+              <View key={i} className="flex-1 items-center bg-white rounded-[14px] border border-border p-3 gap-1 shadow-sm">
+                <SkeletonBlock width={18} height={18} rounded="rounded-full" />
+                <SkeletonBlock width={28} height={20} />
+                <SkeletonBlock width={48} height={12} />
+              </View>
+            ))}
+          </View>
+          {/* Info card skeleton */}
+          <View className="bg-white rounded-[14px] border border-border p-5 gap-3 shadow-sm">
+            {[1, 2, 3, 4].map(i => (
+              <View key={i} className="flex-row items-center gap-2">
+                <SkeletonBlock width={16} height={16} rounded="rounded-full" />
+                <SkeletonBlock width={60} height={14} />
+                <View className="flex-1" />
+                <SkeletonBlock width={100} height={14} />
+              </View>
+            ))}
+          </View>
+          <SkeletonBlock width="100%" height={48} rounded="rounded-xl" />
+          <View className="items-center pt-2">
+            <ActivityIndicator size="small" color={Colors.brandPrimary} />
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // ERROR state
+  // ---------------------------------------------------------------------------
   if (error && error !== 'profile_not_found') {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView className="flex-1 bg-bgPrimary">
         {isMobile && <Header title="Мой профиль" showBack />}
-        <View style={styles.center}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Button onPress={() => fetchProfile()} variant="ghost" style={styles.retryBtn}>
-            Повторить
-          </Button>
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="items-center py-16 gap-3">
+            <View className="w-[72px] h-[72px] rounded-full bg-red-100 items-center justify-center">
+              <Feather name="user-x" size={36} color={Colors.statusError} />
+            </View>
+            <Text className="text-lg font-semibold text-textPrimary">Не удалось загрузить профиль</Text>
+            <Text className="text-sm text-textMuted text-center max-w-[280px]">
+              Проверьте подключение и попробуйте снова
+            </Text>
+            <Pressable
+              className="flex-row items-center justify-center gap-2 h-11 bg-brandPrimary rounded-xl px-8 mt-2"
+              onPress={() => fetchProfile()}
+            >
+              <Feather name="refresh-cw" size={16} color={Colors.white} />
+              <Text className="text-sm font-semibold text-white">Попробовать снова</Text>
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -286,11 +350,14 @@ export default function MySpecialistProfileScreen() {
     return null;
   }
 
+  // ---------------------------------------------------------------------------
+  // DEFAULT state (edit form)
+  // ---------------------------------------------------------------------------
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView className="flex-1 bg-bgPrimary">
       {isMobile && <Header title="Мой профиль" showBack />}
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={
@@ -301,46 +368,55 @@ export default function MySpecialistProfileScreen() {
           />
         }
       >
-        <View style={styles.container}>
+        <View className="w-full max-w-[430px] px-5 gap-5">
           {/* Avatar */}
-          <View style={[styles.section, styles.avatarSection]}>
-            <TouchableOpacity onPress={pickAvatar} disabled={uploadingAvatar || deletingAvatar} style={styles.avatarWrap}>
+          <View className="items-center gap-2">
+            <Pressable
+              className="items-center gap-2"
+              onPress={pickAvatar}
+              disabled={uploadingAvatar || deletingAvatar}
+            >
               {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                <Image source={{ uri: avatarUrl }} className="w-16 h-16 rounded-full border border-border" />
               ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Text style={styles.avatarPlaceholderText}>
+                <View className="w-16 h-16 rounded-full bg-bgSurface items-center justify-center border border-border">
+                  <Text className="text-xl font-bold text-brandPrimary">
                     {profile?.nick ? profile.nick[0].toUpperCase() : '?'}
                   </Text>
                 </View>
               )}
               {uploadingAvatar ? (
-                <ActivityIndicator size="small" color={Colors.brandPrimary} style={styles.avatarOverlay} />
+                <ActivityIndicator size="small" color={Colors.brandPrimary} />
               ) : (
-                <Text style={styles.changeAvatarText}>Изменить фото</Text>
+                <View className="flex-row items-center gap-1">
+                  <Feather name="camera" size={14} color={Colors.brandPrimary} />
+                  <Text className="text-sm text-brandPrimary font-medium">Изменить фото</Text>
+                </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
             {avatarUrl && (
-              <TouchableOpacity
+              <Pressable
                 onPress={handleDeleteAvatar}
                 disabled={deletingAvatar || uploadingAvatar}
-                style={styles.deleteAvatarBtn}
+                className="py-1 px-3"
               >
                 {deletingAvatar ? (
                   <ActivityIndicator size="small" color={Colors.statusError} />
                 ) : (
-                  <Text style={styles.deleteAvatarText}>Удалить фото</Text>
+                  <Text className="text-sm text-statusError font-medium">Удалить фото</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
 
-          {/* Nick */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Основное</Text>
-            <View style={styles.readonlyField}>
-              <Text style={styles.readonlyLabel}>Ник</Text>
-              <Text style={styles.readonlyValue}>{profile?.nick ?? ''}</Text>
+          {/* Nick / basics */}
+          <View className="gap-2">
+            <Text className="text-base font-semibold text-textPrimary mb-0.5">Основное</Text>
+            <View className="gap-1">
+              <Text className="text-sm text-textMuted font-medium">Ник</Text>
+              <Text className="text-base text-textSecondary py-2.5 px-5 bg-bgSecondary rounded-lg border border-borderLight">
+                {profile?.nick ?? ''}
+              </Text>
             </View>
             <Input
               label="Отображаемое имя (необязательно)"
@@ -348,7 +424,7 @@ export default function MySpecialistProfileScreen() {
               onChangeText={setDisplayName}
               placeholder="Иван Петров"
               autoCapitalize="words"
-              style={styles.inputGap}
+              style={{ marginTop: 8 }}
             />
             <Input
               label="Контакты (необязательно)"
@@ -356,21 +432,21 @@ export default function MySpecialistProfileScreen() {
               onChangeText={setContacts}
               placeholder="Telegram: @username, тел: +7..."
               autoCapitalize="sentences"
-              style={styles.inputGap}
+              style={{ marginTop: 8 }}
             />
           </View>
 
           {/* Contact & Availability */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Контакты и доступность</Text>
+          <View className="gap-2">
+            <Text className="text-base font-semibold text-textPrimary mb-0.5">Контакты и доступность</Text>
 
             {/* isAvailable toggle */}
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleTextBlock}>
-                <Text style={styles.toggleLabel}>
+            <View className="flex-row items-center gap-3 mb-2">
+              <View className="flex-1 gap-0.5">
+                <Text className="text-base text-textPrimary font-medium">
                   {isAvailable ? 'Принимаю заявки' : 'Не принимаю'}
                 </Text>
-                <Text style={styles.toggleHint}>
+                <Text className="text-xs text-textMuted">
                   Отключите, если временно не хотите получать новые заявки
                 </Text>
               </View>
@@ -389,7 +465,7 @@ export default function MySpecialistProfileScreen() {
               onChangeText={setPhone}
               placeholder="+7 (___) ___-__-__"
               keyboardType="phone-pad"
-              style={styles.inputGap}
+              style={{ marginTop: 8 }}
             />
             <Input
               label="Telegram"
@@ -397,7 +473,7 @@ export default function MySpecialistProfileScreen() {
               onChangeText={setTelegram}
               placeholder="@username"
               autoCapitalize="none"
-              style={styles.inputGap}
+              style={{ marginTop: 8 }}
             />
             <Input
               label="WhatsApp"
@@ -405,7 +481,7 @@ export default function MySpecialistProfileScreen() {
               onChangeText={setWhatsapp}
               placeholder="+7 (___) ___-__-__"
               keyboardType="phone-pad"
-              style={styles.inputGap}
+              style={{ marginTop: 8 }}
             />
             <Input
               label="Адрес офиса"
@@ -413,7 +489,7 @@ export default function MySpecialistProfileScreen() {
               onChangeText={setOfficeAddress}
               placeholder="г. Москва, ул. Примерная, д. 1, оф. 101"
               autoCapitalize="sentences"
-              style={styles.inputGap}
+              style={{ marginTop: 8 }}
             />
             <Input
               label="Часы работы"
@@ -421,88 +497,88 @@ export default function MySpecialistProfileScreen() {
               onChangeText={setWorkingHours}
               placeholder="Пн-Пт 9:00-18:00"
               autoCapitalize="sentences"
-              style={styles.inputGap}
+              style={{ marginTop: 8 }}
             />
           </View>
 
           {/* Cities */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Города работы</Text>
-            <View style={styles.addRow}>
+          <View className="gap-2">
+            <Text className="text-base font-semibold text-textPrimary mb-0.5">Города работы</Text>
+            <View className="flex-row gap-2 items-center">
               <TextInput
                 value={cityInput}
                 onChangeText={setCityInput}
                 placeholder="Добавить город..."
                 placeholderTextColor={Colors.textMuted}
-                style={styles.addInput}
+                className="flex-1 h-11 bg-white border border-border rounded-lg px-5 text-base text-textPrimary"
                 autoCapitalize="words"
                 returnKeyType="done"
                 onSubmitEditing={addCity}
               />
-              <TouchableOpacity style={styles.addBtn} onPress={addCity}>
-                <Text style={styles.addBtnText}>{'+'}</Text>
-              </TouchableOpacity>
+              <Pressable className="w-11 h-11 bg-brandPrimary rounded-lg items-center justify-center" onPress={addCity}>
+                <Text className="text-2xl text-textPrimary leading-7">+</Text>
+              </Pressable>
             </View>
             {cities.length === 0 && (
-              <Text style={styles.emptyHint}>Нет городов — добавьте хотя бы один</Text>
+              <Text className="text-xs text-textMuted italic">Нет городов — добавьте хотя бы один</Text>
             )}
-            <View style={styles.tagList}>
+            <View className="flex-row flex-wrap gap-2 mt-1">
               {cities.map((city) => (
-                <View key={city} style={styles.tag}>
-                  <Text style={styles.tagText}>{city}</Text>
-                  <TouchableOpacity onPress={() => removeCity(city)} hitSlop={8}>
-                    <Text style={styles.tagRemove}>{'×'}</Text>
-                  </TouchableOpacity>
+                <View key={city} className="flex-row items-center bg-bgSecondary rounded-full px-3 py-1.5 border border-borderLight gap-1">
+                  <Text className="text-sm text-textSecondary">{city}</Text>
+                  <Pressable onPress={() => removeCity(city)} hitSlop={8}>
+                    <Text className="text-base text-textMuted leading-[18px]">{'×'}</Text>
+                  </Pressable>
                 </View>
               ))}
             </View>
           </View>
 
           {/* Services */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Услуги и цены</Text>
-            <Text style={styles.sectionHint}>Формат: "Название — 5000 руб"</Text>
-            <View style={styles.addRow}>
+          <View className="gap-2">
+            <Text className="text-base font-semibold text-textPrimary mb-0.5">Услуги и цены</Text>
+            <Text className="text-xs text-textMuted mb-1">Формат: "Название — 5000 руб"</Text>
+            <View className="flex-row gap-2 items-center">
               <TextInput
                 value={serviceInput}
                 onChangeText={setServiceInput}
                 placeholder="Консультация — 3000 руб"
                 placeholderTextColor={Colors.textMuted}
-                style={[styles.addInput, styles.addInputWide]}
+                className="flex-1 h-11 bg-white border border-border rounded-lg px-5 text-base text-textPrimary"
                 autoCapitalize="sentences"
                 returnKeyType="done"
                 onSubmitEditing={addService}
               />
-              <TouchableOpacity style={styles.addBtn} onPress={addService}>
-                <Text style={styles.addBtnText}>{'+'}</Text>
-              </TouchableOpacity>
+              <Pressable className="w-11 h-11 bg-brandPrimary rounded-lg items-center justify-center" onPress={addService}>
+                <Text className="text-2xl text-textPrimary leading-7">+</Text>
+              </Pressable>
             </View>
             {services.length === 0 && (
-              <Text style={styles.emptyHint}>Нет услуг — добавьте хотя бы одну</Text>
+              <Text className="text-xs text-textMuted italic">Нет услуг — добавьте хотя бы одну</Text>
             )}
-            <View style={styles.serviceList}>
+            <View className="gap-2 mt-1">
               {services.map((svc, idx) => (
-                <View key={`${svc}-${idx}`} style={styles.serviceRow}>
-                  <Text style={styles.serviceText} numberOfLines={2}>{svc}</Text>
-                  <TouchableOpacity onPress={() => removeService(idx)} hitSlop={8}>
-                    <Text style={styles.tagRemove}>{'×'}</Text>
-                  </TouchableOpacity>
+                <View key={`${svc}-${idx}`} className="flex-row items-center bg-white rounded-lg px-5 py-3 border border-border gap-2">
+                  <Text className="flex-1 text-sm text-textSecondary" numberOfLines={2}>{svc}</Text>
+                  <Pressable onPress={() => removeService(idx)} hitSlop={8}>
+                    <Text className="text-base text-textMuted leading-[18px]">{'×'}</Text>
+                  </Pressable>
                 </View>
               ))}
             </View>
           </View>
 
           {/* FNS Offices */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Налоговые инспекции (ИФНС)</Text>
-            <Text style={styles.sectionHint}>Введите номер или город для поиска</Text>
-            <View style={styles.addRow}>
+          <View className="gap-2">
+            <Text className="text-base font-semibold text-textPrimary mb-0.5">Налоговые инспекции (ИФНС)</Text>
+            <Text className="text-xs text-textMuted mb-1">Введите номер или город для поиска</Text>
+            <View className="flex-row gap-2 items-center">
               <TextInput
                 value={fnsSearch}
                 onChangeText={setFnsSearch}
                 placeholder="Поиск ИФНС..."
                 placeholderTextColor={Colors.textMuted}
-                style={[styles.addInput, styles.addInputWide]}
+                className="flex-1 h-11 bg-white border border-border rounded-lg px-5 text-base text-textPrimary"
                 autoCapitalize="none"
                 returnKeyType="done"
               />
@@ -512,36 +588,35 @@ export default function MySpecialistProfileScreen() {
               const matches = fnsSearchResults.filter((o) => !selectedSet.has(o.name)).slice(0, 6);
               if (matches.length === 0) return null;
               return (
-                <View style={styles.fnsSuggestions}>
+                <View className="border border-border rounded-lg bg-white overflow-hidden">
                   {matches.map((office) => (
-                    <TouchableOpacity
+                    <Pressable
                       key={office.code}
-                      style={styles.fnsSuggestionItem}
+                      className="py-2 px-3 border-b border-bgSecondary"
                       onPress={() => {
                         setFnsOffices((prev) => [...prev, office.name]);
                         setFnsSearch('');
                       }}
-                      activeOpacity={0.7}
                     >
-                      <Text style={styles.fnsSuggestionName} numberOfLines={2}>{office.name}</Text>
-                      <Text style={styles.fnsSuggestionCity}>{office.city.name}</Text>
-                    </TouchableOpacity>
+                      <Text className="text-sm text-textPrimary font-medium" numberOfLines={2}>{office.name}</Text>
+                      <Text className="text-xs text-brandPrimary mt-px">{office.city.name}</Text>
+                    </Pressable>
                   ))}
                 </View>
               );
             })()}
             {fnsOffices.length === 0 && (
-              <Text style={styles.emptyHint}>Нет ИФНС — добавьте хотя бы одну</Text>
+              <Text className="text-xs text-textMuted italic">Нет ИФНС — добавьте хотя бы одну</Text>
             )}
-            <View style={styles.tagList}>
+            <View className="flex-row flex-wrap gap-2 mt-1">
               {fnsOffices.map((name) => {
                 const label = shortFnsLabel(name, '');
                 return (
-                  <View key={name} style={[styles.tag, styles.fnsTag]}>
-                    <Text style={[styles.tagText, styles.fnsTagText]} numberOfLines={1}>{label}</Text>
-                    <TouchableOpacity onPress={() => setFnsOffices((prev) => prev.filter((n) => n !== name))} hitSlop={8}>
-                      <Text style={styles.tagRemove}>{'×'}</Text>
-                    </TouchableOpacity>
+                  <View key={name} className="flex-row items-center bg-bgSecondary rounded-full px-3 py-1.5 border border-brandPrimary gap-1">
+                    <Text className="text-sm text-textAccent max-w-[200px]" numberOfLines={1}>{label}</Text>
+                    <Pressable onPress={() => setFnsOffices((prev) => prev.filter((n) => n !== name))} hitSlop={8}>
+                      <Text className="text-base text-textMuted leading-[18px]">{'×'}</Text>
+                    </Pressable>
                   </View>
                 );
               })}
@@ -553,7 +628,7 @@ export default function MySpecialistProfileScreen() {
             variant="primary"
             loading={saving}
             disabled={saving}
-            style={styles.saveBtn}
+            style={{ width: '100%', marginTop: 12 }}
           >
             Сохранить профиль
           </Button>
@@ -562,7 +637,7 @@ export default function MySpecialistProfileScreen() {
           <Button
             onPress={() => router.push('/(dashboard)/promotion')}
             variant="outline"
-            style={styles.promotionBtn}
+            style={{ width: '100%', marginBottom: 32 }}
           >
             Продвинуть профиль
           </Button>
@@ -571,254 +646,3 @@ export default function MySpecialistProfileScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  container: {
-    width: '100%',
-    maxWidth: 430,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xl,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing['2xl'],
-    gap: Spacing.md,
-  },
-  section: {
-    gap: Spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  sectionHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    marginBottom: Spacing.xs,
-  },
-  inputGap: {
-    marginTop: Spacing.sm,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  toggleTextBlock: {
-    flex: 1,
-    gap: 2,
-  },
-  toggleLabel: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  toggleHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-  },
-  addRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    alignItems: 'center',
-  },
-  addInput: {
-    flex: 1,
-    height: 44,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-  },
-  addInputWide: {
-    flex: 1,
-  },
-  addBtn: {
-    width: 44,
-    height: 44,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtnText: {
-    fontSize: Typography.fontSize['2xl'],
-    color: Colors.textPrimary,
-    lineHeight: 28,
-  },
-  tagList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    gap: Spacing.xs,
-  },
-  tagText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  tagRemove: {
-    fontSize: Typography.fontSize.md,
-    color: Colors.textMuted,
-    lineHeight: 18,
-  },
-  serviceList: {
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  serviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  serviceText: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  emptyHint: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontStyle: 'italic',
-  },
-  fnsSuggestions: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgCard,
-    overflow: 'hidden',
-  },
-  fnsSuggestionItem: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgSecondary,
-  },
-  fnsSuggestionName: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  fnsSuggestionCity: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.brandPrimary,
-    marginTop: 1,
-  },
-  fnsTag: {
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.bgSecondary,
-  },
-  fnsTagText: {
-    color: Colors.textAccent,
-    maxWidth: 200,
-  },
-  errorText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.statusError,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: Spacing.sm,
-  },
-  saveBtn: {
-    width: '100%',
-    marginTop: Spacing.md,
-  },
-  promotionBtn: {
-    width: '100%',
-    marginBottom: Spacing['3xl'],
-  },
-  avatarSection: {
-    alignItems: 'center',
-  },
-  avatarWrap: {
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  avatarPlaceholder: {
-    backgroundColor: Colors.bgSecondary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarPlaceholderText: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textMuted,
-  },
-  avatarOverlay: {
-    marginTop: 4,
-  },
-  changeAvatarText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  deleteAvatarBtn: {
-    marginTop: Spacing.xs,
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.md,
-  },
-  deleteAvatarText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.statusError,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  readonlyField: {
-    gap: 4,
-  },
-  readonlyLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  readonlyValue: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-});

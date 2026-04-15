@@ -2,15 +2,15 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   SafeAreaView,
-  ActivityIndicator,
+  Pressable,
   Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { Typography, Colors, Spacing } from '../constants/Colors';
+import { Feather } from '@expo/vector-icons';
+import { Colors } from '../constants/Colors';
 import { LandingHeader } from '../components/LandingHeader';
 import { Footer } from '../components/Footer';
 import { api } from '../lib/api';
@@ -36,7 +36,7 @@ export default function TermsScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView className="flex-1 bg-bgPrimary">
       <Head>
         <title>Пользовательское соглашение — Налоговик</title>
         <meta name="description" content="Пользовательское соглашение платформы Налоговик. Условия использования сервиса." />
@@ -46,26 +46,49 @@ export default function TermsScreen() {
       </Head>
       <Stack.Screen options={{ headerShown: false }} />
       <LandingHeader />
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.container}>
+
+      {/* Header bar */}
+      <View className="flex-row items-center justify-between px-5 py-3 border-b border-borderLight">
+        <Pressable
+          className="w-8 h-8 rounded-full bg-bgSecondary items-center justify-center"
+          onPress={() => router.back()}
+        >
+          <Feather name="x" size={20} color={Colors.textPrimary} />
+        </Pressable>
+        <Text className="text-lg font-semibold text-textPrimary">Условия использования</Text>
+        <View className="w-8" />
+      </View>
+
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View className="w-full max-w-[700px] self-center p-6 gap-3">
           {loading ? (
-            <ActivityIndicator size="large" color={Colors.brandPrimary} />
+            /* Skeleton loading state */
+            <>
+              <View className="bg-bgSecondary rounded h-[18px] w-[60%]" />
+              <View className="bg-bgSecondary rounded h-3 w-full" />
+              <View className="bg-bgSecondary rounded h-3 w-full" />
+              <View className="bg-bgSecondary rounded h-3 w-[80%]" />
+              <View className="h-6" />
+              <View className="bg-bgSecondary rounded h-[18px] w-[50%]" />
+              <View className="bg-bgSecondary rounded h-3 w-full" />
+              <View className="bg-bgSecondary rounded h-3 w-[90%]" />
+              <View className="bg-bgSecondary rounded h-3 w-[70%]" />
+            </>
           ) : error ? (
-            <Text style={styles.error}>{error}</Text>
+            <Text className="text-base text-statusError text-center mt-10">{error}</Text>
           ) : terms ? (
             <>
-              <Text style={styles.title}>{terms.title}</Text>
-              <Text style={styles.updatedAt}>
-                Обновлено: {terms.updatedAt}
-              </Text>
               {Platform.OS === 'web' ? (
                 <div
                   dangerouslySetInnerHTML={{ __html: terms.content }}
                   style={{ color: Colors.textSecondary, lineHeight: '1.7' }}
                 />
               ) : (
-                <Text style={styles.htmlFallback}>{terms.content}</Text>
+                <Text className="text-base text-textSecondary leading-[22px]">{terms.content}</Text>
               )}
+              <Text className="text-sm text-textMuted mt-5 text-center">
+                Последнее обновление: {terms.updatedAt}
+              </Text>
             </>
           ) : null}
         </View>
@@ -74,43 +97,3 @@ export default function TermsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-  },
-  scroll: {
-    flexGrow: 1,
-  },
-  container: {
-    maxWidth: 700,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing['4xl'],
-    width: '100%',
-    alignSelf: 'center',
-    gap: 16,
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  updatedAt: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    marginBottom: 12,
-  },
-  error: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.statusError,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-  htmlFallback: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 26,
-  },
-});
