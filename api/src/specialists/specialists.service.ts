@@ -35,22 +35,36 @@ export class SpecialistsService {
     await this.prisma.specialistService.deleteMany({ where: { specialistId: specialistProfileId } });
     await this.prisma.specialistFns.deleteMany({ where: { specialistId: specialistProfileId } });
 
-    for (const entry of fnsServices) {
-      await this.prisma.specialistFns.create({
-        data: { specialistId: specialistProfileId, fnsId: entry.fnsId },
-      }).catch(() => { /* ignore duplicate */ });
+    // Batch create FNS links
+    const uniqueFnsIds = [...new Set(fnsServices.map((e) => e.fnsId))];
+    if (uniqueFnsIds.length > 0) {
+      await this.prisma.specialistFns.createMany({
+        data: uniqueFnsIds.map((fnsId) => ({ specialistId: specialistProfileId, fnsId })),
+        skipDuplicates: true,
+      });
+    }
 
+    // Collect all unique service names and resolve them in one query
+    const allServiceNames = [...new Set(fnsServices.flatMap((e) => e.serviceNames))];
+    const serviceRecords = allServiceNames.length > 0
+      ? await this.prisma.service.findMany({ where: { name: { in: allServiceNames } } })
+      : [];
+    const serviceMap = new Map(serviceRecords.map((s) => [s.name, s.id]));
+
+    // Batch create service links
+    const serviceLinks: Array<{ specialistId: string; fnsId: string; serviceId: string }> = [];
+    for (const entry of fnsServices) {
       for (const svcName of entry.serviceNames) {
-        const svc = await this.prisma.service.findUnique({ where: { name: svcName } });
-        if (!svc) continue;
-        await this.prisma.specialistService.create({
-          data: {
-            specialistId: specialistProfileId,
-            fnsId: entry.fnsId,
-            serviceId: svc.id,
-          },
-        }).catch(() => { /* ignore duplicate */ });
+        const serviceId = serviceMap.get(svcName);
+        if (!serviceId) continue;
+        serviceLinks.push({ specialistId: specialistProfileId, fnsId: entry.fnsId, serviceId });
       }
+    }
+    if (serviceLinks.length > 0) {
+      await this.prisma.specialistService.createMany({
+        data: serviceLinks,
+        skipDuplicates: true,
+      });
     }
   }
 

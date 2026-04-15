@@ -18,7 +18,6 @@ import { api, ApiError } from '../../../lib/api';
 import { Colors } from '../../../constants/Colors';
 import { Header } from '../../../components/Header';
 import { IfnsSearch } from '../../../components/IfnsSearch';
-import { Toggle } from '../../../components/ui/Toggle';
 import { useBreakpoints } from '../../../hooks/useBreakpoints';
 
 const MAX_FILES = 5;
@@ -71,7 +70,6 @@ export default function CreateRequestScreen() {
   const [city, setCity] = useState('');
   const [selectedIfns, setSelectedIfns] = useState<any>(null);
   const [budget, setBudget] = useState('');
-  const [publicVisible, setPublicVisible] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [fileError, setFileError] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
@@ -210,7 +208,7 @@ export default function CreateRequestScreen() {
         title: title.trim(),
         description: description.trim(),
         city: effectiveCity,
-        isPublic: publicVisible,
+        isPublic: false,
       };
       if (selectedIfns) {
         body.ifnsId = selectedIfns.id;
@@ -396,16 +394,6 @@ export default function CreateRequestScreen() {
               </View>
               <Text className="text-xs text-textMuted">PDF, JPG, PNG до 10 МБ. Макс. {MAX_FILES} файлов.</Text>
               {fileError && <Text className="text-xs text-statusError">{fileError}</Text>}
-            </View>
-
-            {/* Public toggle */}
-            <View className="mb-4 py-1">
-              <Toggle
-                value={publicVisible}
-                onValueChange={setPublicVisible}
-                label="Показать неавторизованным"
-                sublabel="Заявку увидят без входа в аккаунт"
-              />
             </View>
 
             {/* Submit (inline, not sticky) */}

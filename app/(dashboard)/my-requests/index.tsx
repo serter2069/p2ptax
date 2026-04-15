@@ -27,7 +27,7 @@ interface SpecialistProfile {
 
 interface ResponseItem {
   id: string;
-  message: string;
+  comment: string;
   specialist: { id: string; email: string; specialistProfile?: SpecialistProfile | null };
   createdAt: string;
 }
@@ -92,16 +92,25 @@ export default function MyRequestsScreen() {
     fetchRequests(true);
   }
 
+  const ACTIVE_STATUSES = ['OPEN', 'NEW', 'IN_PROGRESS', 'CLOSING_SOON'];
   const filtered = items.filter((r) =>
     tab === 'active'
-      ? r.status === 'OPEN'
-      : r.status !== 'OPEN',
+      ? ACTIVE_STATUSES.includes(r.status)
+      : !ACTIVE_STATUSES.includes(r.status),
   );
 
   function getStatusConfig(status: string) {
     switch (status) {
       case 'OPEN':
         return { label: 'Открыт', bg: Colors.statusBg.info, color: Colors.brandPrimary };
+      case 'NEW':
+        return { label: 'Новая', bg: Colors.statusBg.info, color: Colors.brandPrimary };
+      case 'IN_PROGRESS':
+        return { label: 'В работе', bg: Colors.statusBg.warning, color: Colors.statusWarning };
+      case 'CLOSING_SOON':
+        return { label: 'Скоро закроется', bg: Colors.statusBg.warning, color: Colors.statusWarning };
+      case 'CANCELLED':
+        return { label: 'Отменена', bg: Colors.statusBg.error, color: Colors.statusError };
       default:
         return { label: 'Закрыт', bg: Colors.statusBg.warning, color: Colors.textMuted };
     }

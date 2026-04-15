@@ -26,7 +26,7 @@ interface SpecialistProfile {
 
 interface ResponseItem {
   id: string;
-  message: string;
+  comment: string;
   specialist: {
     id: string;
     email: string;
@@ -55,15 +55,27 @@ function formatShortDate(iso: string) {
 }
 
 function getStatusLabel(status: string) {
-  if (status === 'OPEN') return 'Активная';
-  if (status === 'CLOSED') return 'Закрыта';
-  return status;
+  switch (status) {
+    case 'OPEN': return 'Активная';
+    case 'NEW': return 'Новая';
+    case 'IN_PROGRESS': return 'В работе';
+    case 'CLOSING_SOON': return 'Скоро закроется';
+    case 'CLOSED': return 'Закрыта';
+    case 'CANCELLED': return 'Отменена';
+    default: return status;
+  }
 }
 
 function getStatusColor(status: string) {
-  if (status === 'OPEN') return Colors.statusSuccess;
-  if (status === 'CLOSED') return Colors.textMuted;
-  return Colors.statusWarning;
+  switch (status) {
+    case 'OPEN': return Colors.statusSuccess;
+    case 'NEW': return Colors.brandPrimary;
+    case 'IN_PROGRESS': return Colors.statusWarning;
+    case 'CLOSING_SOON': return Colors.statusWarning;
+    case 'CLOSED': return Colors.textMuted;
+    case 'CANCELLED': return Colors.statusError;
+    default: return Colors.statusWarning;
+  }
 }
 
 function getInitials(name: string) {
@@ -342,7 +354,7 @@ export default function MyRequestDetailScreen() {
                           <Text className="text-xs text-textMuted">{formatTime(resp.createdAt)}</Text>
                         </View>
                         <Text className="text-xs text-textMuted" numberOfLines={1}>
-                          {resp.message}
+                          {resp.comment}
                         </Text>
                       </View>
                     </Pressable>
