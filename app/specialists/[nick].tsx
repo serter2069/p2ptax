@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
-import { BackHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 
 const MOCK_SPECIALIST = {
   name: 'Алексей Петров',
@@ -92,7 +92,7 @@ export default function SpecialistProfilePage() {
 
   return (
     <View className="flex-1 bg-white">
-      <BackHeader title="Профиль специалиста" />
+      <Header variant="back" backTitle="Профиль специалиста" />
       <ScrollView className="flex-1">
         <View className="gap-4 p-4">
           <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">

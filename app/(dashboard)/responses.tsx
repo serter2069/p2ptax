@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { MOCK_RESPONSES } from '../../constants/protoMockData';
-import { BackHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 
 function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
@@ -59,7 +59,7 @@ export default function ResponsesPage() {
 
   return (
     <View className="flex-1 bg-white">
-      <BackHeader title="Отклики" />
+      <Header variant="back" backTitle="Отклики" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 12 }}>
         <View className="flex-row items-center gap-2">
           <Text className="text-xl font-bold text-textPrimary">Отклики</Text>

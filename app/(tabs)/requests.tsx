@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { MOCK_REQUESTS } from '../../constants/protoMockData';
-import { AppHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 import { BottomNav } from '../../components/BottomNav';
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -23,7 +23,7 @@ export default function RequestsPage() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader hasNotif />
+      <Header variant="auth" hasNotif />
       <View className="flex-1 p-4 gap-3">
         <View className="flex-row items-center justify-between">
           <Text className="text-xl font-bold text-textPrimary">Мои заявки</Text>

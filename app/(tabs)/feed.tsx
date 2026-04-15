@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { MOCK_CITIES, MOCK_FNS } from '../../constants/protoMockData';
-import { AppHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 import { BottomNav } from '../../components/BottomNav';
 
 const MOCK_REQUESTS = [
@@ -25,7 +25,7 @@ export default function FeedPage() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader hasNotif initials="АП" />
+      <Header variant="auth" hasNotif initials="АП" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View>
           <Text className="text-xl font-bold text-textPrimary">Заявки</Text>

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
-import { AppHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 
 const MOCK_SPECIALISTS = [
   { id: '1', name: 'Алексей Петров', city: 'Москва', rating: 4.8, reviewCount: 12, memberSince: 2022,
@@ -173,7 +173,7 @@ export default function SpecialistsCatalogPage() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader />
+      <Header variant="auth" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, gap: 12 }}>
         <View className="gap-0.5">
           <Text className="text-xl font-bold text-slate-900">Каталог специалистов</Text>

@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { MOCK_THREADS } from '../../constants/protoMockData';
-import { AppHeader } from '../../components/AppHeader';
+import { Header } from '../../components/Header';
 import { BottomNav } from '../../components/BottomNav';
 
 export default function MessagesPage() {
@@ -16,7 +16,7 @@ export default function MessagesPage() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader hasNotif />
+      <Header variant="auth" hasNotif />
       <View className="flex-1 p-4 gap-2">
         <View className="flex-row items-center gap-2 mb-2">
           <Text className="text-xl font-bold text-textPrimary">Сообщения</Text>
