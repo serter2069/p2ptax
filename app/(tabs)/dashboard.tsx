@@ -108,25 +108,17 @@ function getInitials(name: string): string {
 // Sub-components
 // ---------------------------------------------------------------------------
 function StatCard({
-  icon,
   label,
   value,
   color,
 }: {
-  icon: string;
   label: string;
   value: number;
   color: string;
 }) {
   return (
-    <View className="flex-1 items-center gap-1 rounded-xl border border-borderLight bg-white p-3">
-      <View
-        className="h-9 w-9 items-center justify-center rounded-full"
-        style={{ backgroundColor: color + '15' }}
-      >
-        <Feather name={icon as any} size={18} color={color} />
-      </View>
-      <Text className="text-lg font-bold" style={{ color }}>
+    <View className="flex-1 items-center gap-0.5 rounded-xl border border-borderLight bg-white p-3">
+      <Text className="text-2xl font-bold" style={{ color }}>
         {value}
       </Text>
       <Text className="text-xs text-textMuted">{label}</Text>
@@ -162,7 +154,7 @@ function QuickActions() {
   );
 }
 
-function RequestCard({
+function RequestRow({
   item,
   onPress,
 }: {
@@ -170,51 +162,26 @@ function RequestCard({
   onPress: () => void;
 }) {
   const cfg = STATUS_MAP[item.status] ?? STATUS_MAP.OPEN;
-  const messageCount = item._count?.messages ?? item._count?.responses ?? 0;
+  const responseCount = item._count?.responses ?? 0;
+  const statusText = responseCount > 0 && item.status === 'OPEN'
+    ? `${responseCount} отклика`
+    : cfg.label;
 
   return (
-    <Pressable className="gap-2 rounded-xl border border-borderLight bg-white p-4" onPress={onPress}>
-      <View className="flex-row items-start justify-between gap-2">
-        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={2}>
+    <Pressable
+      className="flex-row items-center justify-between rounded-xl border border-borderLight bg-white p-3"
+      onPress={onPress}
+    >
+      <View className="mr-2 flex-1">
+        <Text className="text-sm font-medium text-textPrimary" numberOfLines={1}>
           {item.title}
         </Text>
-        <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: cfg.color + '18' }}>
-          <Text className="text-xs font-semibold" style={{ color: cfg.color }}>
-            {cfg.label}
-          </Text>
-        </View>
+        <Text className="mt-0.5 text-xs text-textMuted">{formatDate(item.createdAt)}</Text>
       </View>
-      <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
-        {item.service && (
-          <View className="flex-row items-center gap-1">
-            <Feather name="briefcase" size={12} color={Colors.textMuted} />
-            <Text className="text-xs text-textMuted">{item.service}</Text>
-          </View>
-        )}
-        {item.fnsName && (
-          <View className="flex-row items-center gap-1">
-            <Feather name="home" size={12} color={Colors.textMuted} />
-            <Text className="text-xs text-textMuted">{item.fnsName}</Text>
-          </View>
-        )}
-        <View className="flex-row items-center gap-1">
-          <Feather name="map-pin" size={12} color={Colors.textMuted} />
-          <Text className="text-xs text-textMuted">{item.city}</Text>
-        </View>
-      </View>
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-1">
-          <Feather name="calendar" size={12} color={Colors.textMuted} />
-          <Text className="text-xs text-textMuted">{formatDate(item.createdAt)}</Text>
-        </View>
-        {messageCount > 0 && (
-          <View className="flex-row items-center gap-1">
-            <Feather name="message-circle" size={12} color={Colors.brandPrimary} />
-            <Text className="text-xs font-medium text-brandPrimary">
-              {messageCount} сообщ.
-            </Text>
-          </View>
-        )}
+      <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: cfg.color + '20' }}>
+        <Text className="text-xs font-semibold" style={{ color: cfg.color }}>
+          {statusText}
+        </Text>
       </View>
     </Pressable>
   );
@@ -279,9 +246,8 @@ function LoadingDashboard() {
       {/* Stats skeleton */}
       <View className="flex-row gap-2">
         {[1, 2, 3].map((i) => (
-          <View key={i} className="flex-1 items-center gap-2 rounded-xl border border-borderLight p-3">
-            <View className="h-9 w-9 rounded-full bg-bgSurface" />
-            <View className="h-5 w-8 rounded bg-bgSurface" />
+          <View key={i} className="flex-1 items-center gap-1 rounded-xl border border-borderLight p-3">
+            <View className="h-7 w-10 rounded bg-bgSurface" />
             <View className="h-3 w-12 rounded bg-bgSurface" />
           </View>
         ))}
@@ -537,19 +503,16 @@ export default function DashboardTab() {
       {/* Stats — separate visual for unread (proto: UNREAD_MESSAGES state) */}
       <View className="flex-row gap-2">
         <StatCard
-          icon="file-text"
           label="Активные"
           value={stats?.activeRequests ?? 0}
           color={Colors.brandPrimary}
         />
         <StatCard
-          icon="message-circle"
-          label={hasUnread ? 'Непрочитано' : 'Сообщения'}
-          value={hasUnread ? unreadCount : (stats?.totalResponses ?? 0)}
-          color={hasUnread ? Colors.statusError : Colors.statusSuccess}
+          label="Отклики"
+          value={stats?.totalResponses ?? 0}
+          color={Colors.statusSuccess}
         />
         <StatCard
-          icon="check-circle"
           label="Завершены"
           value={stats?.completedRequests ?? 0}
           color={Colors.textMuted}
@@ -592,7 +555,7 @@ export default function DashboardTab() {
         </View>
         {recentRequests.length > 0 ? (
           recentRequests.map((req) => (
-            <RequestCard
+            <RequestRow
               key={req.id}
               item={req}
               onPress={() => router.push(`/(dashboard)/my-requests/${req.id}`)}
