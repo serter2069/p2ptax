@@ -1,0 +1,22 @@
+{
+  "pages": [
+    {
+      "id": "brand",
+      "title": "Бренд и стили",
+      "group": "Brand",
+      "x": 0,
+      "y": 1144,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "id": "nav-components",
+      "title": "Navigation Components",
+      "group": "Brand",
+      "x": 510,
+      "y": 1144,
+      "w": 390,
+      "h": 844
+    }
+  ]
+}
