@@ -239,6 +239,64 @@ export const complaints = {
 };
 
 // ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+export const admin = {
+  getStats() {
+    return client.get('/admin/stats');
+  },
+
+  getUsers(params?: { role?: string; page?: number; limit?: number }) {
+    return client.get('/admin/users', { params });
+  },
+
+  blockUser(id: string, isBlocked: boolean) {
+    return client.patch(`/admin/users/${id}`, { isBlocked });
+  },
+
+  getSpecialists(params?: { page?: number; limit?: number }) {
+    return client.get('/admin/specialists', { params });
+  },
+
+  updateSpecialistBadges(id: string, badges: string[]) {
+    return client.patch(`/admin/specialists/${id}/badges`, { badges });
+  },
+
+  getRequests(params?: { page?: number; limit?: number }) {
+    return client.get('/admin/requests', { params });
+  },
+
+  getPromotions(params?: { page?: number; limit?: number }) {
+    return client.get('/admin/promotions', { params });
+  },
+
+  getReviews(params?: { page?: number; limit?: number }) {
+    return client.get('/admin/reviews', { params });
+  },
+
+  deleteReview(id: string) {
+    return client.delete(`/admin/reviews/${id}`);
+  },
+
+  getSettings() {
+    return client.get('/admin/settings');
+  },
+
+  updateSettings(settings: Record<string, string>) {
+    return client.patch('/admin/settings', { settings });
+  },
+
+  // Complaints admin
+  getComplaints(page = 1) {
+    return client.get('/complaints/admin', { params: { page } });
+  },
+
+  updateComplaintStatus(id: string, status: string) {
+    return client.patch(`/complaints/admin/${id}`, { status });
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Notifications
 // ---------------------------------------------------------------------------
 export const notifications = {

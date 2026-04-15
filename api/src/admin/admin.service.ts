@@ -14,11 +14,15 @@ export class AdminService {
       totalSpecialists,
       activePromotions,
       monthPromotions,
+      totalRequests,
+      pendingComplaints,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { role: 'SPECIALIST' } }),
       this.prisma.promotion.count({ where: { expiresAt: { gt: now } } }),
       this.prisma.promotion.count({ where: { createdAt: { gte: firstOfMonth } } }),
+      this.prisma.request.count(),
+      this.prisma.complaint.count({ where: { status: 'PENDING' } }),
     ]);
 
     return {
@@ -27,6 +31,8 @@ export class AdminService {
       activePromotions,
       // Mock revenue: count of promotions this month (no real payments yet)
       revenueThisMonth: monthPromotions,
+      totalRequests,
+      pendingComplaints,
     };
   }
 

@@ -19,6 +19,8 @@ interface Stats {
   totalSpecialists: number;
   activePromotions: number;
   revenueThisMonth: number;
+  totalRequests?: number;
+  pendingComplaints?: number;
 }
 
 interface StatCardProps {
@@ -79,6 +81,7 @@ export default function AdminDashboard() {
     { label: 'Запросы', route: '/(admin)/requests' as const, icon: 'R' },
     { label: 'Отзывы', route: '/(admin)/reviews' as const, icon: 'О' },
     { label: 'Категории услуг', route: '/(admin)/categories' as const, icon: 'К' },
+    { label: 'Жалобы', route: '/(admin)/complaints' as const, icon: 'Ж' },
   ];
 
   return (
@@ -104,6 +107,12 @@ export default function AdminDashboard() {
               <StatCard label="Исполнителей" value={stats.totalSpecialists} onPress={() => router.push('/(admin)/moderation')} />
               <StatCard label="Активных продвижений" value={stats.activePromotions} onPress={() => router.push('/(admin)/promotions')} />
               <StatCard label="Продвижений за месяц" value={stats.revenueThisMonth} sub="(оплат этого месяца)" />
+              {stats.totalRequests !== undefined && (
+                <StatCard label="Запросов" value={stats.totalRequests} onPress={() => router.push('/(admin)/requests')} />
+              )}
+              {stats.pendingComplaints !== undefined && (
+                <StatCard label="Жалоб (новые)" value={stats.pendingComplaints} onPress={() => router.push('/(admin)/complaints')} />
+              )}
             </View>
           ) : null}
 
