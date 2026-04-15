@@ -37,10 +37,10 @@ function HeroSection({ isDesktop }: { isDesktop: boolean }) {
         </Text>
       </View>
       <Text style={[bs.heroTagline, isDesktop && bs.heroTaglineDesktop]}>
-        Design System
+        Система дизайна
       </Text>
       <Text style={bs.heroSub}>
-        Visual language for P2PTax tax specialist marketplace
+        Визуальный язык маркетплейса налоговых специалистов
       </Text>
       <View style={bs.heroDivider} />
       <View style={bs.heroBrandStrip}>
@@ -56,7 +56,7 @@ function HeroSection({ isDesktop }: { isDesktop: boolean }) {
 // -- Color Palette --
 const COLOR_GROUPS = [
   {
-    group: 'Brand',
+    group: 'Бренд',
     items: [
       { label: 'Primary', value: Colors.brandPrimary, token: 'brandPrimary' },
       { label: 'Hover', value: Colors.brandPrimaryHover, token: 'brandPrimaryHover' },
@@ -64,7 +64,7 @@ const COLOR_GROUPS = [
     ],
   },
   {
-    group: 'Backgrounds',
+    group: 'Фоны',
     items: [
       { label: 'Primary', value: Colors.bgPrimary, token: 'bgPrimary' },
       { label: 'Secondary', value: Colors.bgSecondary, token: 'bgSecondary' },
@@ -73,7 +73,7 @@ const COLOR_GROUPS = [
     ],
   },
   {
-    group: 'Text',
+    group: 'Текст',
     items: [
       { label: 'Primary', value: Colors.textPrimary, token: 'textPrimary' },
       { label: 'Secondary', value: Colors.textSecondary, token: 'textSecondary' },
@@ -82,7 +82,7 @@ const COLOR_GROUPS = [
     ],
   },
   {
-    group: 'Status',
+    group: 'Статусы',
     items: [
       { label: 'Success', value: Colors.statusSuccess, token: 'statusSuccess' },
       { label: 'Warning', value: Colors.statusWarning, token: 'statusWarning' },
@@ -92,7 +92,7 @@ const COLOR_GROUPS = [
     ],
   },
   {
-    group: 'Borders',
+    group: 'Границы',
     items: [
       { label: 'Border', value: Colors.border, token: 'border' },
       { label: 'Light', value: Colors.borderLight, token: 'borderLight' },
@@ -103,8 +103,8 @@ const COLOR_GROUPS = [
 function ColorPaletteSection({ isDesktop }: { isDesktop: boolean }) {
   return (
     <View style={bs.section}>
-      <Text style={bs.sectionTitle}>Color Palette</Text>
-      <Text style={bs.sectionDesc}>Design tokens from Colors.ts</Text>
+      <Text style={bs.sectionTitle}>Палитра цветов</Text>
+      <Text style={bs.sectionDesc}>Дизайн-токены из Colors.ts</Text>
       {COLOR_GROUPS.map((group) => (
         <View key={group.group} style={bs.colorGroup}>
           <Text style={bs.colorGroupLabel}>{group.group}</Text>
@@ -133,23 +133,23 @@ function ColorPaletteSection({ isDesktop }: { isDesktop: boolean }) {
 // -- Typography Scale --
 const TYPO_SAMPLES = [
   { label: 'Jumbo', size: Typography.fontSize.jumbo, weight: Typography.fontWeight.bold, sample: '48', color: Colors.textPrimary },
-  { label: 'Display', size: Typography.fontSize.display, weight: Typography.fontWeight.bold, sample: 'Display Heading', color: Colors.textPrimary },
-  { label: '3XL', size: Typography.fontSize['3xl'], weight: Typography.fontWeight.bold, sample: 'Section Title', color: Colors.textPrimary },
-  { label: '2XL', size: Typography.fontSize['2xl'], weight: Typography.fontWeight.bold, sample: 'Page Heading', color: Colors.textPrimary },
-  { label: 'Title', size: Typography.fontSize.title, weight: Typography.fontWeight.bold, sample: 'Card Title', color: Colors.textPrimary },
-  { label: 'XL', size: Typography.fontSize.xl, weight: Typography.fontWeight.semibold, sample: 'Subsection', color: Colors.textPrimary },
-  { label: 'LG', size: Typography.fontSize.lg, weight: Typography.fontWeight.semibold, sample: 'Label or Subtitle', color: Colors.textPrimary },
-  { label: 'MD', size: Typography.fontSize.md, weight: Typography.fontWeight.medium, sample: 'Medium body text', color: Colors.textPrimary },
-  { label: 'Base', size: Typography.fontSize.base, weight: Typography.fontWeight.regular, sample: 'Regular body text for paragraphs and descriptions.', color: Colors.textSecondary },
-  { label: 'SM', size: Typography.fontSize.sm, weight: Typography.fontWeight.regular, sample: 'Small supporting text, captions, meta info.', color: Colors.textSecondary },
-  { label: 'XS', size: Typography.fontSize.xs, weight: Typography.fontWeight.medium, sample: 'OVERLINE / LABEL', color: Colors.textMuted },
+  { label: 'Display', size: Typography.fontSize.display, weight: Typography.fontWeight.bold, sample: 'Заголовок Display', color: Colors.textPrimary },
+  { label: '3XL', size: Typography.fontSize['3xl'], weight: Typography.fontWeight.bold, sample: 'Заголовок секции', color: Colors.textPrimary },
+  { label: '2XL', size: Typography.fontSize['2xl'], weight: Typography.fontWeight.bold, sample: 'Заголовок страницы', color: Colors.textPrimary },
+  { label: 'Title', size: Typography.fontSize.title, weight: Typography.fontWeight.bold, sample: 'Заголовок карточки', color: Colors.textPrimary },
+  { label: 'XL', size: Typography.fontSize.xl, weight: Typography.fontWeight.semibold, sample: 'Подзаголовок', color: Colors.textPrimary },
+  { label: 'LG', size: Typography.fontSize.lg, weight: Typography.fontWeight.semibold, sample: 'Метка или подзаголовок', color: Colors.textPrimary },
+  { label: 'MD', size: Typography.fontSize.md, weight: Typography.fontWeight.medium, sample: 'Средний основной текст', color: Colors.textPrimary },
+  { label: 'Base', size: Typography.fontSize.base, weight: Typography.fontWeight.regular, sample: 'Обычный основной текст для абзацев и описаний.', color: Colors.textSecondary },
+  { label: 'SM', size: Typography.fontSize.sm, weight: Typography.fontWeight.regular, sample: 'Мелкий вспомогательный текст, подписи, мета.', color: Colors.textSecondary },
+  { label: 'XS', size: Typography.fontSize.xs, weight: Typography.fontWeight.medium, sample: 'НАДПИСЬ / МЕТКА', color: Colors.textMuted },
 ];
 
 function TypographySection() {
   return (
     <View style={bs.section}>
-      <Text style={bs.sectionTitle}>Typography Scale</Text>
-      <Text style={bs.sectionDesc}>Nunito family -- sizes, weights, hierarchy</Text>
+      <Text style={bs.sectionTitle}>Типографика</Text>
+      <Text style={bs.sectionDesc}>Семейство Nunito — размеры, начертания, иерархия</Text>
       <View style={bs.typoList}>
         {TYPO_SAMPLES.map((t) => (
           <View key={t.label} style={bs.typoRow}>
@@ -178,70 +178,70 @@ function TypographySection() {
 function ButtonsSection({ isDesktop }: { isDesktop: boolean }) {
   return (
     <View style={bs.section}>
-      <Text style={bs.sectionTitle}>Buttons</Text>
-      <Text style={bs.sectionDesc}>Variants, sizes, and states</Text>
+      <Text style={bs.sectionTitle}>Кнопки</Text>
+      <Text style={bs.sectionDesc}>Варианты, размеры и состояния</Text>
 
-      <Text style={bs.subLabel}>Primary</Text>
+      <Text style={bs.subLabel}>Основная</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
         <Pressable style={bs.btnPrimary} onPress={() => {}}>
-          <Text style={bs.btnPrimaryText}>Default</Text>
+          <Text style={bs.btnPrimaryText}>Обычная</Text>
         </Pressable>
         <Pressable style={[bs.btnPrimary, { backgroundColor: Colors.brandPrimaryHover }]} onPress={() => {}}>
-          <Text style={bs.btnPrimaryText}>Hover</Text>
+          <Text style={bs.btnPrimaryText}>Наведение</Text>
         </Pressable>
         <Pressable style={[bs.btnPrimary, { backgroundColor: Colors.brandSecondary }]} onPress={() => {}}>
-          <Text style={bs.btnPrimaryText}>Pressed</Text>
+          <Text style={bs.btnPrimaryText}>Нажатие</Text>
         </Pressable>
         <Pressable style={[bs.btnPrimary, bs.btnDisabled]} disabled onPress={() => {}}>
-          <Text style={bs.btnPrimaryText}>Disabled</Text>
+          <Text style={bs.btnPrimaryText}>Неактивная</Text>
         </Pressable>
       </View>
 
-      <Text style={bs.subLabel}>Secondary / Outline / Ghost</Text>
+      <Text style={bs.subLabel}>Вторичная / Контурная / Призрак</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
         <Pressable style={bs.btnSecondary} onPress={() => {}}>
-          <Text style={bs.btnSecondaryText}>Secondary</Text>
+          <Text style={bs.btnSecondaryText}>Вторичная</Text>
         </Pressable>
         <Pressable style={bs.btnOutline} onPress={() => {}}>
-          <Text style={bs.btnOutlineText}>Outline</Text>
+          <Text style={bs.btnOutlineText}>Контурная</Text>
         </Pressable>
         <Pressable style={bs.btnGhost} onPress={() => {}}>
-          <Text style={bs.btnGhostText}>Ghost</Text>
+          <Text style={bs.btnGhostText}>Призрак</Text>
         </Pressable>
       </View>
 
-      <Text style={bs.subLabel}>Semantic</Text>
+      <Text style={bs.subLabel}>Семантические</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
         <Pressable style={bs.btnDestructive} onPress={() => {}}>
           <Feather name="trash-2" size={14} color={Colors.white} />
-          <Text style={bs.btnPrimaryText}>Delete</Text>
+          <Text style={bs.btnPrimaryText}>Удалить</Text>
         </Pressable>
         <Pressable style={bs.btnSuccess} onPress={() => {}}>
           <Feather name="check" size={14} color={Colors.white} />
-          <Text style={bs.btnPrimaryText}>Confirm</Text>
+          <Text style={bs.btnPrimaryText}>Подтвердить</Text>
         </Pressable>
         <Pressable style={bs.btnWarning} onPress={() => {}}>
           <Feather name="alert-triangle" size={14} color={Colors.white} />
-          <Text style={bs.btnPrimaryText}>Warning</Text>
+          <Text style={bs.btnPrimaryText}>Предупреждение</Text>
         </Pressable>
       </View>
 
-      <Text style={bs.subLabel}>With Icons + Sizes</Text>
+      <Text style={bs.subLabel}>С иконками + размеры</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
         <Pressable style={bs.btnLarge} onPress={() => {}}>
           <Feather name="plus" size={18} color={Colors.white} />
-          <Text style={bs.btnLargeText}>Large Button</Text>
+          <Text style={bs.btnLargeText}>Большая кнопка</Text>
         </Pressable>
         <Pressable style={bs.btnIconPrimary} onPress={() => {}}>
           <Feather name="send" size={14} color={Colors.white} />
-          <Text style={bs.btnPrimaryText}>Send</Text>
+          <Text style={bs.btnPrimaryText}>Отправить</Text>
         </Pressable>
         <Pressable style={bs.btnIconOutline} onPress={() => {}}>
           <Feather name="filter" size={14} color={Colors.brandPrimary} />
-          <Text style={bs.btnOutlineText}>Filter</Text>
+          <Text style={bs.btnOutlineText}>Фильтр</Text>
         </Pressable>
         <Pressable style={bs.btnSmall} onPress={() => {}}>
-          <Text style={bs.btnSmallText}>Small</Text>
+          <Text style={bs.btnSmallText}>Маленькая</Text>
         </Pressable>
       </View>
     </View>
@@ -252,30 +252,30 @@ function ButtonsSection({ isDesktop }: { isDesktop: boolean }) {
 function InputsSection({ isDesktop }: { isDesktop: boolean }) {
   return (
     <View style={bs.section}>
-      <Text style={bs.sectionTitle}>Inputs</Text>
-      <Text style={bs.sectionDesc}>Text fields in all states</Text>
+      <Text style={bs.sectionTitle}>Поля ввода</Text>
+      <Text style={bs.sectionDesc}>Текстовые поля во всех состояниях</Text>
 
       <View style={[bs.inputGrid, isDesktop && bs.inputGridDesktop]}>
         <View style={bs.inputGroup}>
-          <Text style={bs.inputStateLabel}>Empty</Text>
+          <Text style={bs.inputStateLabel}>Пустое</Text>
           <TextInput
             style={[bs.inputWrap, bs.textInput]}
-            placeholder="Placeholder text..."
+            placeholder="Введите текст..."
             placeholderTextColor={Colors.textMuted}
           />
         </View>
 
         <View style={bs.inputGroup}>
-          <Text style={bs.inputStateLabel}>Focused</Text>
+          <Text style={bs.inputStateLabel}>В фокусе</Text>
           <TextInput
             style={[bs.inputWrap, bs.inputFocused, bs.textInput]}
-            defaultValue="Typing here"
+            defaultValue="Ввод текста"
             placeholderTextColor={Colors.textMuted}
           />
         </View>
 
         <View style={bs.inputGroup}>
-          <Text style={bs.inputStateLabel}>Filled</Text>
+          <Text style={bs.inputStateLabel}>Заполненное</Text>
           <TextInput
             style={[bs.inputWrap, bs.textInput]}
             defaultValue="ivan@mail.ru"
@@ -284,35 +284,35 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
         </View>
 
         <View style={bs.inputGroup}>
-          <Text style={bs.inputStateLabel}>Error</Text>
+          <Text style={bs.inputStateLabel}>Ошибка</Text>
           <TextInput
             style={[bs.inputWrap, bs.inputError, bs.textInput]}
-            defaultValue="bad-value"
+            defaultValue="некорректное значение"
             placeholderTextColor={Colors.textMuted}
           />
           <View style={bs.errorRow}>
             <Feather name="alert-circle" size={12} color={Colors.statusError} />
-            <Text style={bs.inputErrorText}>Invalid format</Text>
+            <Text style={bs.inputErrorText}>Неверный формат</Text>
           </View>
         </View>
 
         <View style={bs.inputGroup}>
-          <Text style={bs.inputStateLabel}>Disabled</Text>
+          <Text style={bs.inputStateLabel}>Неактивное</Text>
           <TextInput
             style={[bs.inputWrap, bs.inputDisabledWrap, bs.textInput, { color: Colors.textMuted }]}
-            defaultValue="Disabled field"
+            defaultValue="Неактивное поле"
             editable={false}
             placeholderTextColor={Colors.textMuted}
           />
         </View>
 
         <View style={bs.inputGroup}>
-          <Text style={bs.inputStateLabel}>With Icon</Text>
+          <Text style={bs.inputStateLabel}>С иконкой</Text>
           <View style={[bs.inputWrap, bs.inputWithIconWrap]}>
             <Feather name="search" size={16} color={Colors.textMuted} />
             <TextInput
               style={[bs.textInput, { flex: 1 }]}
-              placeholder="Search..."
+              placeholder="Поиск..."
               placeholderTextColor={Colors.textMuted}
             />
           </View>
@@ -326,49 +326,49 @@ function InputsSection({ isDesktop }: { isDesktop: boolean }) {
 function BadgesSection({ isDesktop }: { isDesktop: boolean }) {
   return (
     <View style={bs.section}>
-      <Text style={bs.sectionTitle}>Badges & Tags</Text>
-      <Text style={bs.sectionDesc}>Status indicators and category labels</Text>
+      <Text style={bs.sectionTitle}>Бейджи и теги</Text>
+      <Text style={bs.sectionDesc}>Индикаторы статуса и категории</Text>
 
-      <Text style={bs.subLabel}>Status Badges</Text>
+      <Text style={bs.subLabel}>Статусные бейджи</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
         <View style={[bs.badge, { backgroundColor: Colors.statusBg.success }]}>
           <Feather name="check-circle" size={12} color={Colors.statusSuccess} />
-          <Text style={[bs.badgeText, { color: Colors.statusSuccess }]}>Verified</Text>
+          <Text style={[bs.badgeText, { color: Colors.statusSuccess }]}>Подтверждён</Text>
         </View>
         <View style={[bs.badge, { backgroundColor: Colors.statusBg.info }]}>
           <View style={bs.onlineDot} />
-          <Text style={[bs.badgeText, { color: Colors.brandPrimary }]}>Online</Text>
+          <Text style={[bs.badgeText, { color: Colors.brandPrimary }]}>Онлайн</Text>
         </View>
         <View style={[bs.badge, { backgroundColor: Colors.statusBg.warning }]}>
           <Feather name="clock" size={12} color={Colors.statusWarning} />
-          <Text style={[bs.badgeText, { color: Colors.statusWarning }]}>Pending</Text>
+          <Text style={[bs.badgeText, { color: Colors.statusWarning }]}>Ожидание</Text>
         </View>
         <View style={[bs.badge, { backgroundColor: Colors.statusBg.error }]}>
-          <Text style={[bs.badgeText, { color: Colors.statusError }]}>Rejected</Text>
+          <Text style={[bs.badgeText, { color: Colors.statusError }]}>Отклонён</Text>
         </View>
         <View style={[bs.badge, { backgroundColor: Colors.statusBg.neutral }]}>
-          <Text style={[bs.badgeText, { color: Colors.statusNeutral }]}>Draft</Text>
+          <Text style={[bs.badgeText, { color: Colors.statusNeutral }]}>Черновик</Text>
         </View>
         <View style={[bs.badge, { backgroundColor: Colors.statusBg.accent }]}>
           <Feather name="zap" size={12} color={Colors.brandPrimary} />
-          <Text style={[bs.badgeText, { color: Colors.brandPrimary }]}>New</Text>
+          <Text style={[bs.badgeText, { color: Colors.brandPrimary }]}>Новый</Text>
         </View>
       </View>
 
-      <Text style={bs.subLabel}>Service Tags</Text>
+      <Text style={bs.subLabel}>Теги услуг</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop]}>
         <Pressable style={bs.tag} onPress={() => {}}>
-          <Text style={bs.tagText}>3-NDFL</Text>
+          <Text style={bs.tagText}>3-НДФЛ</Text>
         </Pressable>
         <Pressable style={bs.tag} onPress={() => {}}>
-          <Text style={bs.tagText}>IP registration</Text>
+          <Text style={bs.tagText}>Регистрация ИП</Text>
         </Pressable>
         <Pressable style={[bs.tag, bs.tagActive]} onPress={() => {}}>
           <Feather name="check" size={11} color={Colors.brandPrimary} />
-          <Text style={[bs.tagText, { color: Colors.brandPrimary }]}>Tax audit</Text>
+          <Text style={[bs.tagText, { color: Colors.brandPrimary }]}>Налоговая проверка</Text>
         </Pressable>
         <Pressable style={bs.tag} onPress={() => {}}>
-          <Text style={bs.tagText}>Consulting</Text>
+          <Text style={bs.tagText}>Консультация</Text>
         </Pressable>
       </View>
     </View>
@@ -391,8 +391,8 @@ const SPACING_ITEMS: { label: string; value: number }[] = [
 function SpacingSection() {
   return (
     <View style={bs.section}>
-      <Text style={bs.sectionTitle}>Spacing Tokens</Text>
-      <Text style={bs.sectionDesc}>Consistent spacing scale</Text>
+      <Text style={bs.sectionTitle}>Токены отступов</Text>
+      <Text style={bs.sectionDesc}>Единая шкала отступов</Text>
       <View style={bs.spacingList}>
         {SPACING_ITEMS.map((sp) => (
           <View key={sp.label} style={bs.spacingRow}>
@@ -424,8 +424,8 @@ function RadiusSection({ isDesktop }: { isDesktop: boolean }) {
 
   return (
     <View style={bs.section}>
-      <Text style={bs.sectionTitle}>Border Radius</Text>
-      <Text style={bs.sectionDesc}>Rounding tokens from BorderRadius</Text>
+      <Text style={bs.sectionTitle}>Скругления</Text>
+      <Text style={bs.sectionDesc}>Токены скруглений</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop, { gap: Spacing.lg }]}>
         {radii.map((r) => (
           <View key={r.label} style={bs.radiusItem}>
@@ -443,8 +443,8 @@ function RadiusSection({ isDesktop }: { isDesktop: boolean }) {
 function ShadowsSection({ isDesktop }: { isDesktop: boolean }) {
   return (
     <View style={bs.section}>
-      <Text style={bs.sectionTitle}>Shadows</Text>
-      <Text style={bs.sectionDesc}>Elevation levels</Text>
+      <Text style={bs.sectionTitle}>Тени</Text>
+      <Text style={bs.sectionDesc}>Уровни подъёма</Text>
       <View style={[bs.row, isDesktop && bs.rowDesktop, { gap: Spacing.xl }]}>
         <View style={bs.shadowItem}>
           <View style={[bs.shadowBox, Shadows.sm]} />
@@ -496,258 +496,143 @@ function AvatarCircle({ initials }: { initials: string }) {
   );
 }
 
-// -- Public Header Desktop --
-function DesktopPublicHeader() {
+// -- Public Header (responsive: desktop + mobile in one component) --
+const PUBLIC_NAV_LINKS = ['Главная', 'Специалисты', 'Заявки', 'Тарифы'];
+
+function PublicHeader() {
+  const { isDesktop } = useLayout();
+  const [menuOpen, setMenuOpen] = React.useState(false);
+
   return (
     <View style={ns.section}>
-      <Text style={ns.sectionTitle}>Public Header (Desktop)</Text>
-      <Text style={ns.sectionDesc}>Guest navigation with brand + CTA</Text>
-      <View style={ns.headerBar}>
-        <LogoBlock />
-        <View style={ns.navLinks}>
-          <Pressable onPress={() => {}}><Text style={[ns.navLink, ns.navLinkActive]}>Glavnaya</Text></Pressable>
-          <Pressable onPress={() => {}}><Text style={ns.navLink}>Specialisty</Text></Pressable>
-          <Pressable onPress={() => {}}><Text style={ns.navLink}>Zayavki</Text></Pressable>
-          <Pressable onPress={() => {}}><Text style={ns.navLink}>Tarify</Text></Pressable>
+      <Text style={ns.sectionTitle}>Шапка (гость)</Text>
+      <Text style={ns.sectionDesc}>Навигация для неавторизованного пользователя</Text>
+
+      {isDesktop ? (
+        <View style={ns.headerBar}>
+          <LogoBlock />
+          <View style={ns.navLinks}>
+            {PUBLIC_NAV_LINKS.map((link, i) => (
+              <Pressable key={link} onPress={() => {}}>
+                <Text style={[ns.navLink, i === 0 && ns.navLinkActive]}>{link}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={ns.headerRight}>
+            <Pressable style={ns.navBtnOutline}>
+              <Text style={ns.navBtnOutlineText}>Войти</Text>
+            </Pressable>
+            <Pressable style={ns.navBtnPrimary}>
+              <Text style={ns.navBtnPrimaryText}>Разместить заявку</Text>
+            </Pressable>
+          </View>
         </View>
-        <View style={ns.headerRight}>
-          <Pressable style={ns.navBtnOutline}>
-            <Text style={ns.navBtnOutlineText}>Voyti</Text>
-          </Pressable>
-          <Pressable style={ns.navBtnPrimary}>
-            <Text style={ns.navBtnPrimaryText}>Razmestit zayavku</Text>
-          </Pressable>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-// -- Public Header Mobile --
-function MobilePublicHeader() {
-  return (
-    <View style={ns.section}>
-      <Text style={ns.sectionTitle}>Public Header (Mobile)</Text>
-      <Text style={ns.sectionDesc}>Collapsed with burger, expanded drawer</Text>
-
-      <Text style={ns.variantLabel}>COLLAPSED</Text>
-      <View style={ns.mobileHeaderBar}>
-        <LogoBlock />
-        <Pressable>
-          <Feather name="menu" size={22} color={Colors.textPrimary} />
-        </Pressable>
-      </View>
-
-      <View style={ns.spacer} />
-
-      <Text style={ns.variantLabel}>EXPANDED DRAWER</Text>
-      <View style={ns.drawerOverlay}>
-        <View style={ns.drawerPanel}>
-          <View style={ns.drawerTop}>
+      ) : (
+        <>
+          <View style={ns.mobileHeaderBar}>
             <LogoBlock />
-            <Pressable onPress={() => {}}>
-              <Feather name="x" size={22} color={Colors.textPrimary} />
+            <Pressable onPress={() => setMenuOpen(!menuOpen)}>
+              <Feather name={menuOpen ? 'x' : 'menu'} size={22} color={Colors.textPrimary} />
             </Pressable>
           </View>
-          <View style={ns.drawerLinks}>
-            <Pressable onPress={() => {}}><Text style={[ns.drawerLink, ns.drawerLinkActive]}>Glavnaya</Text></Pressable>
-            <Pressable onPress={() => {}}><Text style={ns.drawerLink}>Specialisty</Text></Pressable>
-            <Pressable onPress={() => {}}><Text style={ns.drawerLink}>Zayavki</Text></Pressable>
-            <Pressable onPress={() => {}}><Text style={ns.drawerLink}>Tarify</Text></Pressable>
-          </View>
-          <View style={ns.drawerDivider} />
-          <View style={ns.drawerButtons}>
-            <Pressable style={ns.navBtnOutlineFull}>
-              <Text style={ns.navBtnOutlineText}>Voyti</Text>
-            </Pressable>
-            <Pressable style={ns.navBtnPrimaryFull}>
-              <Text style={ns.navBtnPrimaryText}>Razmestit zayavku</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
+          {menuOpen && (
+            <View style={ns.drawerPanel}>
+              <View style={ns.drawerLinks}>
+                {PUBLIC_NAV_LINKS.map((link, i) => (
+                  <Pressable key={link} onPress={() => {}}>
+                    <Text style={[ns.drawerLink, i === 0 && ns.drawerLinkActive]}>{link}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={ns.drawerDivider} />
+              <View style={ns.drawerButtons}>
+                <Pressable style={ns.navBtnOutlineFull}>
+                  <Text style={ns.navBtnOutlineText}>Войти</Text>
+                </Pressable>
+                <Pressable style={ns.navBtnPrimaryFull}>
+                  <Text style={ns.navBtnPrimaryText}>Разместить заявку</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </>
+      )}
     </View>
   );
 }
 
-// -- Auth Header --
-function AuthHeaderSection() {
-  return (
-    <View style={ns.section}>
-      <Text style={ns.sectionTitle}>Auth Header</Text>
-      <Text style={ns.sectionDesc}>Minimal header for login/OTP screens</Text>
-      <View style={ns.authHeaderBar}>
-        <LogoBlock />
-      </View>
-    </View>
-  );
-}
-
-// -- Client Navigation --
-const CLIENT_TABS: Array<{ id: string; icon: any; label: string; badge?: boolean }> = [
-  { id: 'home', icon: 'home', label: 'Glavnaya' },
-  { id: 'requests', icon: 'file-text', label: 'Zayavki' },
-  { id: 'messages', icon: 'message-circle', label: 'Soobscheniya', badge: true },
-  { id: 'profile', icon: 'user', label: 'Profil' },
+// -- Auth Header (responsive: desktop + mobile in one component) --
+const AUTH_TABS: Array<{ id: string; icon: any; label: string; badge?: boolean }> = [
+  { id: 'home', icon: 'home', label: 'Главная' },
+  { id: 'requests', icon: 'file-text', label: 'Заявки' },
+  { id: 'messages', icon: 'message-circle', label: 'Сообщения', badge: true },
+  { id: 'profile', icon: 'user', label: 'Профиль' },
 ];
 
-function BottomTabBar({ tabs, activeId, label }: {
+function BottomTabBar({ tabs, activeId }: {
   tabs: Array<{ id: string; icon: string; label: string; badge?: boolean }>;
   activeId: string;
-  label: string;
 }) {
+  const { width } = useWindowDimensions();
+  if (width >= 640) return null;
+
   return (
-    <View>
-      <Text style={ns.tabStateLabel}>{label}</Text>
-      <View style={ns.tabBar}>
-        {tabs.map((tab) => {
-          const active = tab.id === activeId;
-          return (
-            <Pressable key={tab.id} style={ns.tabItem} onPress={() => {}}>
-              <View>
-                <Feather
-                  name={tab.icon as any}
-                  size={20}
-                  color={active ? Colors.brandPrimary : Colors.textMuted}
-                />
-                {tab.badge && <View style={ns.tabBadge} />}
-              </View>
-              <Text style={[ns.tabLabel, active && ns.tabLabelActive]}>{tab.label}</Text>
-              {active && <View style={ns.tabIndicator} />}
-            </Pressable>
-          );
-        })}
-      </View>
+    <View style={ns.tabBar}>
+      {tabs.map((tab) => {
+        const active = tab.id === activeId;
+        return (
+          <Pressable key={tab.id} style={ns.tabItem} onPress={() => {}}>
+            <View>
+              <Feather
+                name={tab.icon as any}
+                size={20}
+                color={active ? Colors.brandPrimary : Colors.textMuted}
+              />
+              {tab.badge && <View style={ns.tabBadge} />}
+            </View>
+            <Text style={[ns.tabLabel, active && ns.tabLabelActive]}>{tab.label}</Text>
+            {active && <View style={ns.tabIndicator} />}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
-function ClientNavSection() {
+function AuthHeader() {
+  const { isDesktop } = useLayout();
+
   return (
     <View style={ns.section}>
-      <Text style={ns.sectionTitle}>Client Navigation</Text>
-      <Text style={ns.sectionDesc}>Top bar + bottom tab variants</Text>
+      <Text style={ns.sectionTitle}>Шапка (авторизован)</Text>
+      <Text style={ns.sectionDesc}>Навигация для авторизованного пользователя</Text>
 
-      <Text style={ns.variantLabel}>TOP BAR</Text>
-      <View style={ns.headerBar}>
-        <LogoBlock />
-        <View style={ns.headerRight}>
-          <NotifBell hasNotif />
-          <AvatarCircle initials="EV" />
+      {isDesktop ? (
+        <View style={ns.headerBar}>
+          <LogoBlock />
+          <View style={ns.navLinks}>
+            <Pressable onPress={() => {}}><Text style={[ns.navLink, ns.navLinkActive]}>Главная</Text></Pressable>
+            <Pressable onPress={() => {}}><Text style={ns.navLink}>Заявки</Text></Pressable>
+            <Pressable onPress={() => {}}><Text style={ns.navLink}>Сообщения</Text></Pressable>
+            <Pressable onPress={() => {}}><Text style={ns.navLink}>Профиль</Text></Pressable>
+          </View>
+          <View style={ns.headerRight}>
+            <NotifBell hasNotif />
+            <AvatarCircle initials="ИВ" />
+          </View>
         </View>
-      </View>
-
-      <View style={ns.spacer} />
-
-      <BottomTabBar tabs={CLIENT_TABS} activeId="home" label="Home active" />
-      <View style={ns.spacer} />
-      <BottomTabBar tabs={CLIENT_TABS} activeId="requests" label="Requests active" />
-      <View style={ns.spacer} />
-      <BottomTabBar tabs={CLIENT_TABS} activeId="messages" label="Messages active" />
-    </View>
-  );
-}
-
-// -- Specialist Navigation --
-const SPECIALIST_TABS: Array<{ id: string; icon: any; label: string; badge?: boolean }> = [
-  { id: 'dashboard', icon: 'briefcase', label: 'Kabinet' },
-  { id: 'responses', icon: 'send', label: 'Otkliki' },
-  { id: 'messages', icon: 'message-circle', label: 'Soobscheniya', badge: true },
-  { id: 'profile', icon: 'user', label: 'Profil' },
-];
-
-function SpecialistNavSection() {
-  return (
-    <View style={ns.section}>
-      <Text style={ns.sectionTitle}>Specialist Navigation</Text>
-      <Text style={ns.sectionDesc}>Specialist-specific tabs</Text>
-
-      <Text style={ns.variantLabel}>TOP BAR</Text>
-      <View style={ns.headerBar}>
-        <LogoBlock />
-        <View style={ns.headerRight}>
-          <NotifBell hasNotif />
-          <AvatarCircle initials="AP" />
-        </View>
-      </View>
-
-      <View style={ns.spacer} />
-
-      <BottomTabBar tabs={SPECIALIST_TABS} activeId="dashboard" label="Dashboard active" />
-      <View style={ns.spacer} />
-      <BottomTabBar tabs={SPECIALIST_TABS} activeId="responses" label="Responses active" />
-    </View>
-  );
-}
-
-// -- Admin Navigation --
-const ADMIN_ITEMS = [
-  { id: 'dashboard', icon: 'bar-chart-2' as const, label: 'Statistika' },
-  { id: 'users', icon: 'users' as const, label: 'Polzovateli' },
-  { id: 'requests', icon: 'file-text' as const, label: 'Zayavki' },
-  { id: 'moderation', icon: 'shield' as const, label: 'Moderaciya' },
-  { id: 'reviews', icon: 'star' as const, label: 'Otzyvy' },
-  { id: 'promotions', icon: 'gift' as const, label: 'Promo' },
-];
-
-function AdminNavSection() {
-  return (
-    <View style={ns.section}>
-      <Text style={ns.sectionTitle}>Admin Navigation</Text>
-      <Text style={ns.sectionDesc}>Horizontal tab bar for admin panel</Text>
-
-      <Text style={ns.variantLabel}>DASHBOARD ACTIVE</Text>
-      <View style={ns.adminBar}>
-        <Text style={ns.adminLogo}>Nalogovik Admin</Text>
-        <View style={ns.adminTabs}>
-          {ADMIN_ITEMS.map((item) => {
-            const active = item.id === 'dashboard';
-            return (
-              <Pressable key={item.id} style={[ns.adminTab, active && ns.adminTabActive]} onPress={() => {}}>
-                <Feather name={item.icon} size={14} color={active ? Colors.brandPrimary : Colors.textMuted} />
-                <Text style={[ns.adminTabText, active && ns.adminTabTextActive]}>{item.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={ns.spacer} />
-
-      <Text style={ns.variantLabel}>MODERATION ACTIVE</Text>
-      <View style={ns.adminBar}>
-        <Text style={ns.adminLogo}>Nalogovik Admin</Text>
-        <View style={ns.adminTabs}>
-          {ADMIN_ITEMS.map((item) => {
-            const active = item.id === 'moderation';
-            return (
-              <Pressable key={item.id} style={[ns.adminTab, active && ns.adminTabActive]} onPress={() => {}}>
-                <Feather name={item.icon} size={14} color={active ? Colors.brandPrimary : Colors.textMuted} />
-                <Text style={[ns.adminTabText, active && ns.adminTabTextActive]}>{item.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-    </View>
-  );
-}
-
-// -- Back Navigation --
-function BackNavSection() {
-  return (
-    <View style={ns.section}>
-      <Text style={ns.sectionTitle}>Inner Page Header</Text>
-      <Text style={ns.sectionDesc}>Back navigation for detail pages</Text>
-      <View style={ns.backHeaderBar}>
-        <Pressable style={ns.backLeft} onPress={() => {}}>
-          <Feather name="arrow-left" size={20} color={Colors.brandPrimary} />
-          <Text style={ns.backTitle}>Zayavki</Text>
-        </Pressable>
-        <Pressable>
-          <Feather name="more-vertical" size={20} color={Colors.textMuted} />
-        </Pressable>
-      </View>
+      ) : (
+        <>
+          <View style={ns.mobileHeaderBar}>
+            <LogoBlock />
+            <View style={ns.headerRight}>
+              <NotifBell hasNotif />
+              <AvatarCircle initials="ИВ" />
+            </View>
+          </View>
+          <BottomTabBar tabs={AUTH_TABS} activeId="home" />
+        </>
+      )}
     </View>
   );
 }
@@ -777,17 +662,10 @@ export function BrandStates() {
       <RadiusSection isDesktop={isDesktop} />
       <ShadowsSection isDesktop={isDesktop} />
 
-      {/* Divider between brand and nav sections */}
       <View style={{ height: 1, backgroundColor: Colors.border, marginVertical: Spacing.xl }} />
 
-      {/* Navigation Component sections */}
-      <DesktopPublicHeader />
-      <MobilePublicHeader />
-      <AuthHeaderSection />
-      <ClientNavSection />
-      <SpecialistNavSection />
-      <AdminNavSection />
-      <BackNavSection />
+      <PublicHeader />
+      <AuthHeader />
     </ScrollView>
   );
 }
@@ -1414,36 +1292,12 @@ const ns = StyleSheet.create({
     ...Shadows.sm,
   },
 
-  // Auth header
-  authHeaderBar: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 56,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-
   // Drawer
-  drawerOverlay: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    minHeight: 360,
-    justifyContent: 'flex-end',
-    flexDirection: 'row',
-  },
   drawerPanel: {
     width: 280,
     backgroundColor: Colors.bgCard,
     padding: Spacing.xl,
     gap: Spacing.lg,
-  },
-  drawerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   drawerLinks: { gap: Spacing.lg },
   drawerLink: {
@@ -1503,82 +1357,5 @@ const ns = StyleSheet.create({
     height: 2,
     borderRadius: 1,
     backgroundColor: Colors.brandPrimary,
-  },
-  tabStateLabel: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textMuted,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-    marginBottom: Spacing.xs,
-  },
-
-  // Admin bar
-  adminBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 56,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    gap: Spacing.xl,
-    ...Shadows.sm,
-  },
-  adminLogo: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  adminTabs: {
-    flexDirection: 'row',
-    gap: 2,
-    flex: 1,
-    flexWrap: 'wrap',
-  },
-  adminTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.md,
-  },
-  adminTabActive: {
-    backgroundColor: Colors.bgSecondary,
-  },
-  adminTabText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  adminTabTextActive: {
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-
-  // Back header
-  backHeaderBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 56,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    ...Shadows.sm,
-  },
-  backLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  backTitle: {
-    fontSize: Typography.fontSize.md,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textPrimary,
   },
 });
