@@ -12,6 +12,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 import { requests } from '../../../lib/api/endpoints';
 import { useAuth } from '../../../lib/auth';
+import { Header } from '../../../components/Header';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -211,21 +212,27 @@ export default function RequestDetailScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator color={Colors.brandPrimary} />
+      <View className="flex-1 bg-white">
+        <Header variant="back" onBack={() => router.back()} />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={Colors.brandPrimary} />
+        </View>
       </View>
     );
   }
 
   if (error || !request) {
     return (
-      <View className="flex-1 items-center justify-center bg-white p-6">
-        <Text className="text-center text-base text-statusError">
-          {error ?? 'Заявка не найдена'}
-        </Text>
-        <Pressable onPress={fetchRequest} className="mt-4">
-          <Text className="text-sm text-brandPrimary">Повторить</Text>
-        </Pressable>
+      <View className="flex-1 bg-white">
+        <Header variant="back" onBack={() => router.back()} />
+        <View className="flex-1 items-center justify-center p-6">
+          <Text className="text-center text-base text-statusError">
+            {error ?? 'Заявка не найдена'}
+          </Text>
+          <Pressable onPress={fetchRequest} className="mt-4">
+            <Text className="text-sm text-brandPrimary">Повторить</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -238,7 +245,9 @@ export default function RequestDetailScreen() {
   const isClosed = status === 'CLOSED' || status === 'CANCELLED';
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <View className="flex-1 bg-white">
+    <Header variant="back" backTitle={request.title} onBack={() => router.back()} />
+    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
       {/* Request card */}
       <View className="gap-4 rounded-xl border border-borderLight bg-white p-4">
         <View className="flex-row items-start justify-between gap-2">
@@ -342,5 +351,6 @@ export default function RequestDetailScreen() {
         </View>
       )}
     </ScrollView>
+    </View>
   );
 }

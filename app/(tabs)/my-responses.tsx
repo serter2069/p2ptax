@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { specialistPortal } from '../../lib/api/endpoints';
+import { Header } from '../../components/Header';
 
 // ---------------------------------------------------------------------------
 // Types — response shape from GET /specialist/responses (post-W-1)
@@ -147,13 +148,15 @@ export default function SpecialistMyDialogsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState onRetry={load} />;
+  if (loading) return <View className="flex-1"><Header variant="auth" /><LoadingState /></View>;
+  if (error) return <View className="flex-1"><Header variant="auth" /><ErrorState onRetry={load} /></View>;
 
   const list = threads ?? [];
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <View className="flex-1 bg-white">
+    <Header variant="auth" />
+    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <View className="flex-row items-center gap-2">
         <Feather name="mail" size={20} color={Colors.brandPrimary} />
         <Text className="text-xl font-bold text-textPrimary">Мои диалоги</Text>
@@ -166,5 +169,6 @@ export default function SpecialistMyDialogsScreen() {
         ))
       )}
     </ScrollView>
+    </View>
   );
 }

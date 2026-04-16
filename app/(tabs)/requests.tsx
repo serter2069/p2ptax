@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { requests as requestsApi } from '../../lib/api/endpoints';
+import { Header } from '../../components/Header';
 
 interface ApiRequest {
   id: string;
@@ -90,22 +91,30 @@ export default function RequestsScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={Colors.brandPrimary} />
+      <View style={{ flex: 1 }}>
+        <Header variant="auth" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={Colors.brandPrimary} />
+        </View>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl, gap: Spacing.md }}>
-        <Feather name="alert-circle" size={28} color={Colors.statusError} />
-        <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+      <View style={{ flex: 1 }}>
+        <Header variant="auth" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl, gap: Spacing.md }}>
+          <Feather name="alert-circle" size={28} color={Colors.statusError} />
+          <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+        </View>
       </View>
     );
   }
 
   return (
+    <View style={{ flex: 1 }}>
+    <Header variant="auth" />
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, gap: Spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>Мои заявки</Text>
@@ -144,5 +153,6 @@ export default function RequestsScreen() {
         />
       ))}
     </ScrollView>
+    </View>
   );
 }
