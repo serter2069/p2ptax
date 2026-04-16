@@ -17,12 +17,9 @@ import { Header } from '../../../components/Header';
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type RequestStatus =
-  | 'NEW'
-  | 'OPEN'
-  | 'IN_PROGRESS'
+  | 'ACTIVE'
   | 'CLOSING_SOON'
-  | 'CLOSED'
-  | 'CANCELLED';
+  | 'CLOSED';
 
 interface SpecialistProfile {
   nick: string;
@@ -67,24 +64,18 @@ const MAX_EXTENSIONS = 3;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const CLOSEABLE_STATUSES: RequestStatus[] = ['NEW', 'OPEN', 'IN_PROGRESS', 'CLOSING_SOON'];
+const CLOSEABLE_STATUSES: RequestStatus[] = ['ACTIVE', 'CLOSING_SOON'];
 
 const STATUS_LABELS: Record<RequestStatus, string> = {
-  NEW: 'Новая',
-  OPEN: 'Активная',
-  IN_PROGRESS: 'В работе',
-  CLOSING_SOON: 'Скоро закроется',
+  ACTIVE: 'Активная',
+  CLOSING_SOON: 'Истекает скоро',
   CLOSED: 'Закрыта',
-  CANCELLED: 'Отменена',
 };
 
 const STATUS_COLORS: Record<RequestStatus, string> = {
-  NEW: Colors.brandPrimary,
-  OPEN: Colors.statusSuccess,
-  IN_PROGRESS: '#F59E0B',
+  ACTIVE: Colors.statusSuccess,
   CLOSING_SOON: '#F97316',
   CLOSED: Colors.textMuted,
-  CANCELLED: Colors.statusError,
 };
 
 function formatDate(iso: string) {
@@ -261,7 +252,7 @@ export default function RequestDetailScreen() {
   const statusColor = STATUS_COLORS[status] ?? Colors.textMuted;
   const isOwner = user?.id === request.clientId;
   const canClose = isOwner && CLOSEABLE_STATUSES.includes(status);
-  const isClosed = status === 'CLOSED' || status === 'CANCELLED';
+  const isClosed = status === 'CLOSED';
   const extensionsCount = request.extensionsCount ?? 0;
   const canExtend =
     isOwner && status === 'CLOSING_SOON' && extensionsCount < MAX_EXTENSIONS;

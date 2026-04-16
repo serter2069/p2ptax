@@ -30,7 +30,6 @@ function makeUser(overrides: Record<string, unknown> = {}) {
     lastName: null as string | null,
     phone: null as string | null,
     avatarUrl: null as string | null,
-    notifyNewResponses: true,
     notifyNewMessages: true,
     ...overrides,
   };

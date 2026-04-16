@@ -19,17 +19,15 @@ interface ApiRequest {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  NEW: { label: 'Новая', color: Colors.brandPrimary, bg: Colors.statusBg.info },
   ACTIVE: { label: 'Активная', color: Colors.statusSuccess, bg: Colors.statusBg.success },
-  IN_PROGRESS: { label: 'В работе', color: Colors.statusWarning, bg: Colors.statusBg.warning },
-  COMPLETED: { label: 'Завершена', color: Colors.textMuted, bg: Colors.statusBg.neutral },
-  CANCELLED: { label: 'Отменена', color: Colors.statusError, bg: Colors.statusBg.error },
+  CLOSING_SOON: { label: 'Истекает скоро', color: Colors.statusWarning, bg: Colors.statusBg.warning },
+  CLOSED: { label: 'Закрыта', color: Colors.textMuted, bg: Colors.statusBg.neutral },
 };
 
 function RequestCard({ id, title, service, fns, city, status, date, messageCount }: {
   id: string; title: string; service: string; fns: string; city: string; status: string; date: string; messageCount: number;
 }) {
-  const st = STATUS_MAP[status] || STATUS_MAP.NEW;
+  const st = STATUS_MAP[status] || STATUS_MAP.ACTIVE;
   return (
     <Pressable style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm }} onPress={() => router.push(`/(dashboard)/my-requests/${id}` as any)}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm }}>
@@ -85,8 +83,8 @@ export default function RequestsScreen() {
     return () => { mounted = false; };
   }, []);
 
-  const activeRequests = allData.filter((r) => ['NEW', 'ACTIVE', 'IN_PROGRESS'].includes(r.status));
-  const completedRequests = allData.filter((r) => ['COMPLETED', 'CANCELLED'].includes(r.status));
+  const activeRequests = allData.filter((r) => ['ACTIVE', 'CLOSING_SOON'].includes(r.status));
+  const completedRequests = allData.filter((r) => r.status === 'CLOSED');
   const visibleRequests = tab === 'active' ? activeRequests : tab === 'completed' ? completedRequests : allData;
 
   if (loading) {

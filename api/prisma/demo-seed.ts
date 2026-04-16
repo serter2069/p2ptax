@@ -196,7 +196,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Москва',
     serviceType: 'Камеральная проверка',
     budget: 5000,
-    status: RequestStatus.OPEN,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-vychet-lechenie',
@@ -205,7 +205,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Санкт-Петербург',
     serviceType: 'Камеральная проверка',
     budget: 3500,
-    status: RequestStatus.IN_PROGRESS,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-vyezdnaya-ooo',
@@ -214,7 +214,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Москва',
     serviceType: 'Выездная проверка',
     budget: 120000,
-    status: RequestStatus.IN_PROGRESS,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-blokirovka-scheta',
@@ -223,7 +223,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Казань',
     serviceType: 'Отдел оперативного контроля',
     budget: 8000,
-    status: RequestStatus.OPEN,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-kameralka-nds',
@@ -250,7 +250,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Москва',
     serviceType: 'Отдел оперативного контроля',
     budget: 12000,
-    status: RequestStatus.OPEN,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-samozan-perehod',
@@ -268,7 +268,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Казань',
     serviceType: 'Выездная проверка',
     budget: 25000,
-    status: RequestStatus.IN_PROGRESS,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-ens-razbor',
@@ -277,7 +277,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Москва',
     serviceType: 'Камеральная проверка',
     budget: 5000,
-    status: RequestStatus.OPEN,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-markirovka',
@@ -286,7 +286,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Санкт-Петербург',
     serviceType: 'Отдел оперативного контроля',
     budget: 15000,
-    status: RequestStatus.OPEN,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-vychet-obuchenie',
@@ -304,7 +304,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Екатеринбург',
     serviceType: 'Выездная проверка',
     budget: 80000,
-    status: RequestStatus.IN_PROGRESS,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-dopros-svid',
@@ -313,7 +313,7 @@ const REQUESTS: DemoRequestTpl[] = [
     city: 'Москва',
     serviceType: 'Выездная проверка',
     budget: 15000,
-    status: RequestStatus.OPEN,
+    status: RequestStatus.ACTIVE,
   },
   {
     slug: 'req-uproschenka',

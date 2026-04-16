@@ -81,11 +81,11 @@ export const users = {
   },
 
   getNotificationSettings() {
-    return client.get<{ new_responses: boolean; new_messages: boolean }>('/users/me/notification-settings');
+    return client.get<{ new_messages: boolean }>('/users/me/notification-settings');
   },
 
-  updateNotificationSettings(data: { new_responses?: boolean; new_messages?: boolean }) {
-    return client.patch<{ new_responses: boolean; new_messages: boolean }>('/users/me/notification-settings', data);
+  updateNotificationSettings(data: { new_messages?: boolean }) {
+    return client.patch<{ new_messages: boolean }>('/users/me/notification-settings', data);
   },
 
   /** Step 1: send OTP to the new email address */
@@ -186,7 +186,7 @@ export const threads = {
   /**
    * POST /threads — direct-chat flow (W-1). Specialist opens thread on a request.
    * Returns 201 when created, 200 when existing thread returned.
-   * Errors: 409 CLOSED/CANCELLED request, 429 20 threads/24h limit.
+   * Errors: 409 CLOSED request, 429 20 threads/24h limit.
    */
   createForRequest(data: { requestId: string; firstMessage: string }) {
     return client.post<CreateThreadResponse>('/threads', data);

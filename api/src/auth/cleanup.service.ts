@@ -55,22 +55,16 @@ export class CleanupService {
           select: {
             id: true,
             email: true,
-            notifyNewResponses: true,
           },
         },
       },
     });
 
-    const ids = promotions
-      .filter((p) => p.specialist.notifyNewResponses)
-      .map((p) => p.id);
-
     for (const p of promotions) {
-      if (p.specialist.notifyNewResponses) {
-        await this.emailService.notifyPromotionExpiringSoon(p.specialist.email, p.city, p.specialist.id);
-      }
+      await this.emailService.notifyPromotionExpiringSoon(p.specialist.email, p.city, p.specialist.id);
     }
 
+    const ids = promotions.map((p) => p.id);
     if (ids.length > 0) {
       await this.prisma.promotion.updateMany({
         where: { id: { in: ids }, reminderSent: false },

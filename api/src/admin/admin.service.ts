@@ -410,15 +410,13 @@ export class AdminService {
       throw new NotFoundException(`User ${id} not found`);
     }
 
-    // Active states: anything not already CLOSED / CANCELLED. Works with current
-    // enum (NEW|OPEN|IN_PROGRESS|CLOSING_SOON|CLOSED|CANCELLED) and also if
-    // Task A later replaces open states with ACTIVE.
+    // Active states: anything not already CLOSED (enum is ACTIVE|CLOSING_SOON|CLOSED).
     const result = await this.prisma.request.updateMany({
       where: {
         clientId: id,
-        status: { notIn: ['CLOSED', 'CANCELLED'] as any },
+        status: { notIn: ['CLOSED'] },
       },
-      data: { status: 'CLOSED' as any },
+      data: { status: 'CLOSED' },
     });
 
     return { closed: result.count };

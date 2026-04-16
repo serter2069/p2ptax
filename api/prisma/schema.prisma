@@ -14,12 +14,9 @@ enum Role {
 }
 
 enum RequestStatus {
-  NEW
-  OPEN
-  IN_PROGRESS
+  ACTIVE
   CLOSING_SOON
   CLOSED
-  CANCELLED
 }
 
 enum PromotionTier {
@@ -39,7 +36,6 @@ model User {
   avatarUrl          String?
   role               Role      @default(CLIENT)
   isBlocked          Boolean   @default(false)
-  notifyNewResponses Boolean   @default(true)
   notifyNewMessages  Boolean   @default(true)
   createdAt          DateTime  @default(now())
   lastLoginAt        DateTime?
@@ -58,7 +54,6 @@ model User {
   complaintsReceived    Complaint[]        @relation("ComplaintTarget")
   paymentRecords        PaymentRecord[]
   notifications         Notification[]
-  pushTokens            PushToken[]
 
   @@map("users")
 }
@@ -169,7 +164,7 @@ model Request {
   budget          Int?
   category        String?
   documents       Json          @default("[]")
-  status          RequestStatus @default(OPEN)
+  status          RequestStatus @default(ACTIVE)
   lastActivityAt  DateTime      @default(now())
   extensionsCount Int           @default(0)
   createdAt       DateTime      @default(now())
@@ -423,7 +418,6 @@ model Setting {
 
 enum NotificationType {
   NEW_MESSAGE
-  NEW_RESPONSE
   REQUEST_UPDATE
   REVIEW
   SYSTEM
@@ -445,14 +439,3 @@ model Notification {
   @@map("notifications")
 }
 
-model PushToken {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique
-  platform  String // "ios" | "android" | "web"
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@map("push_tokens")
-}
