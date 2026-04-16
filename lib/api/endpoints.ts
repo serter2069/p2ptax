@@ -19,8 +19,8 @@ export const auth = {
     return client.post<{ message: string }>('/auth/request-otp', { email });
   },
 
-  async verifyOtp(email: string, code: string) {
-    const res = await client.post<AuthTokens>('/auth/verify-otp', { email, code });
+  async verifyOtp(email: string, code: string, role?: string) {
+    const res = await client.post<AuthTokens & { isNewUser: boolean; user: { userId: string; email: string; role: string; username: string | null } }>('/auth/verify-otp', { email, code, ...(role ? { role } : {}) });
     await setAccessToken(res.data.accessToken);
     await setRefreshToken(res.data.refreshToken);
     return res;

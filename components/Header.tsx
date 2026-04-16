@@ -46,7 +46,7 @@ function BurgerDrawer({ open, onToggle }: { open: boolean; onToggle: () => void 
           </Pressable>
         ))}
         <View className="my-2 h-px bg-borderLight" />
-        <Pressable className="flex-row items-center gap-3 py-2.5" onPress={() => { onToggle(); router.push('/(auth)/email' as any); }}>
+        <Pressable className="flex-row items-center gap-3 py-2.5" onPress={() => { onToggle(); router.push('/(auth)/role' as any); }}>
           <Feather name="log-in" size={18} color={Colors.brandPrimary} />
           <Text className="text-base font-semibold text-brandPrimary">Войти</Text>
         </Pressable>
@@ -98,7 +98,7 @@ export function Header({
         >
           <LogoBlock />
           <View className="flex-row items-center gap-4">
-            <Pressable className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4" onPress={() => router.push('/(auth)/email' as any)}>
+            <Pressable className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4" onPress={() => router.push('/(auth)/role' as any)}>
               <Text className="text-sm font-semibold text-white">Войти</Text>
             </Pressable>
             <Pressable onPress={() => setBurgerOpen(!burgerOpen)}>

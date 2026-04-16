@@ -65,9 +65,9 @@ export default function WorkAreaScreenPage() {
       <Header variant="back" backTitle="Регион" onBack={() => router.back()} />
       <View className="flex-1 bg-white px-4 py-6">
         <View className="mb-1 h-1 rounded-full bg-bgSecondary">
-          <View className="h-1 rounded-full bg-brandPrimary" style={{ width: '66%' }} />
+          <View className="h-1 rounded-full bg-brandPrimary" style={{ width: '100%' }} />
         </View>
-        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 2 из 3</Text>
+        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 3 из 3</Text>
         <Text className="text-xl font-bold text-textPrimary">Рабочая зона</Text>
         <Text className="mb-4 text-base text-textMuted">Выберите города, инспекции и услуги</Text>
         <View className="mb-2 h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">

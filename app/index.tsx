@@ -211,7 +211,7 @@ function HeroSection() {
               />
             </View>
 
-            <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary" onPress={() => router.push('/(auth)/email' as any)}>
+            <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary" onPress={() => router.push('/(auth)/role' as any)}>
               <Feather name="send" size={16} color={Colors.white} />
               <Text className="text-base font-semibold text-white">Отправить заявку</Text>
             </Pressable>
@@ -513,7 +513,7 @@ function BottomCTA() {
       <View className="mt-6 flex-row items-center gap-2">
         <Feather name="briefcase" size={14} color={Colors.textMuted} />
         <Text className="text-sm text-textMuted">Вы налоговый специалист?</Text>
-        <Pressable onPress={() => router.push('/(auth)/email' as any)}>
+        <Pressable onPress={() => router.push('/(auth)/role' as any)}>
           <Text className="text-sm font-medium text-brandPrimary">Присоединиться</Text>
         </Pressable>
       </View>

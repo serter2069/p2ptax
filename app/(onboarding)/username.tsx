@@ -58,12 +58,8 @@ export default function UsernameScreen() {
     setError('');
     try {
       await users.setUsername({ username: value });
-
-      if (role === 'SPECIALIST') {
-        router.push('/(onboarding)/work-area' as any);
-      } else {
-        router.replace('/(tabs)/dashboard' as any);
-      }
+      // Both roles go to profile next (CLIENT: step 2/2, SPECIALIST: step 2/3)
+      router.push('/(onboarding)/profile' as any);
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || 'Ошибка сохранения';
       setError(typeof msg === 'string' ? msg : 'Ошибка сохранения');
@@ -77,9 +73,11 @@ export default function UsernameScreen() {
       <Header variant="back" backTitle="Имя" onBack={() => router.back()} />
       <View className="flex-1 bg-white px-4 py-6">
         <View className="mb-1 h-1 rounded-full bg-bgSecondary">
-          <View className="h-1 rounded-full bg-brandPrimary" style={{ width: '33%' }} />
+          <View className="h-1 rounded-full bg-brandPrimary" style={{ width: role === 'SPECIALIST' ? '33%' : '50%' }} />
         </View>
-        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 1 из 3</Text>
+        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">
+          {role === 'SPECIALIST' ? 'Шаг 1 из 3' : 'Шаг 1 из 2'}
+        </Text>
         <Text className="text-xl font-bold text-textPrimary">Как вас зовут?</Text>
         <Text className="mb-4 text-base leading-6 text-textMuted">Это имя будет видно клиентам в вашем профиле</Text>
         <Text className="mb-1 text-sm font-medium text-textSecondary">Имя пользователя</Text>

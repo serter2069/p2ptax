@@ -61,9 +61,9 @@ export default function OnboardingProfilePage() {
 
       await refreshUser();
 
-      // Navigate to dashboard based on role
+      // SPECIALIST continues to work-area (step 3/3), CLIENT is done (step 2/2)
       if (role === 'SPECIALIST') {
-        router.replace('/(tabs)/specialist-dashboard' as any);
+        router.push('/(onboarding)/work-area' as any);
       } else {
         router.replace('/(tabs)/dashboard' as any);
       }
@@ -81,9 +81,11 @@ export default function OnboardingProfilePage() {
       <View className="flex-1 bg-white px-4 py-6">
         {/* Progress */}
         <View className="mb-1 h-1 rounded-full bg-bgSecondary">
-          <View className="h-1 rounded-full bg-green-600" style={{ width: '100%' }} />
+          <View className="h-1 rounded-full bg-green-600" style={{ width: role === 'SPECIALIST' ? '66%' : '100%' }} />
         </View>
-        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 3 из 3</Text>
+        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">
+          {role === 'SPECIALIST' ? 'Шаг 2 из 3' : 'Шаг 2 из 2'}
+        </Text>
 
         <Text className="text-xl font-bold text-textPrimary">Расскажите о себе</Text>
         <Text className="mb-4 text-base text-textMuted">Эта информация поможет клиентам выбрать вас</Text>
