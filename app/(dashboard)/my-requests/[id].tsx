@@ -10,9 +10,10 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
-import { requests } from '../../../lib/api/endpoints';
+import { requests, specialists as specialistsApi, threads as threadsApi } from '../../../lib/api/endpoints';
 import { useAuth } from '../../../lib/auth';
 import { Header } from '../../../components/Header';
+import { adaptThread } from '../../../lib/types/thread';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -87,7 +88,11 @@ function formatDate(iso: string) {
 }
 
 function getSpecialist(thread: Thread, clientId: string): ThreadUser {
-  return thread.participant1Id === clientId ? thread.participant2 : thread.participant1;
+  // Derive via adapter so callers just read semantic aliases.
+  // Backend row may carry both participant1/2 and a specialistId column.
+  const adapted = adaptThread(thread as any, clientId);
+  const specId = adapted.specialistId;
+  return specId === thread.participant1Id ? thread.participant1 : thread.participant2;
 }
 
 function getInitials(name: string | null | undefined, email: string) {
@@ -98,6 +103,143 @@ function getInitials(name: string | null | undefined, email: string) {
       : name.slice(0, 2).toUpperCase();
   }
   return email.slice(0, 2).toUpperCase();
+}
+
+// ─── Recommended Specialists ─────────────────────────────────────────────────
+
+interface SpecCardData {
+  nick?: string | null;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  cities?: string[];
+  activity?: { avgRating?: number | null; reviewCount?: number; responseCount?: number };
+}
+
+function RecommendedSpecialists({ request }: { request: RequestDetail }) {
+  const [items, setItems] = useState<SpecCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [writingTo, setWritingTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    // Try: ifnsName + city + category first; fall back to city only
+    const primaryParams: Record<string, string> = { limit: '5' };
+    if (request.city) primaryParams.city = request.city;
+    if (request.ifnsName) primaryParams.fns = request.ifnsName;
+    if (request.serviceType) primaryParams.category = request.serviceType;
+
+    const run = async () => {
+      try {
+        let res = await specialistsApi.getSpecialists(primaryParams);
+        let data: any = (res as any).data ?? res;
+        let list: any[] = Array.isArray(data) ? data : (data.items ?? []);
+        // Fallback to city-only if empty and we had extra filters
+        if (list.length === 0 && (primaryParams.fns || primaryParams.category)) {
+          const fb: Record<string, string> = { limit: '5' };
+          if (request.city) fb.city = request.city;
+          res = await specialistsApi.getSpecialists(fb);
+          data = (res as any).data ?? res;
+          list = Array.isArray(data) ? data : (data.items ?? []);
+        }
+        if (mounted) setItems(list.slice(0, 5));
+      } catch (e: any) {
+        if (mounted) setError('Не удалось загрузить специалистов');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    run();
+    return () => { mounted = false; };
+  }, [request.id, request.city, request.ifnsName, request.serviceType]);
+
+  const handleWrite = useCallback(async (nick: string) => {
+    if (writingTo) return;
+    try {
+      setWritingTo(nick);
+      // Catalog response strips userId; fetch full profile by nick to get it
+      const profileRes = await specialistsApi.getSpecialist(nick);
+      const userId = (profileRes.data as any)?.userId;
+      if (!userId) {
+        Alert.alert('Ошибка', 'Не удалось определить специалиста');
+        return;
+      }
+      const res = await threadsApi.startDirect({ otherUserId: userId, requestId: request.id });
+      const threadId = (res.data as any)?.threadId ?? (res.data as any)?.thread_id;
+      if (threadId) router.push(`/chat/${threadId}` as any);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message ?? 'Не удалось начать чат';
+      Alert.alert('Ошибка', msg);
+    } finally {
+      setWritingTo(null);
+    }
+  }, [writingTo, request.id]);
+
+  return (
+    <View className="gap-3">
+      <Text className="text-base font-semibold text-textPrimary">Рекомендуемые специалисты</Text>
+      {loading ? (
+        <View className="items-center py-6">
+          <ActivityIndicator color={Colors.brandPrimary} />
+        </View>
+      ) : error ? (
+        <Text className="text-sm text-statusError">{error}</Text>
+      ) : items.length === 0 ? (
+        <View className="rounded-xl border border-borderLight bg-bgCard p-4">
+          <Text className="text-sm text-textMuted">Пока никого не нашли по этим параметрам</Text>
+        </View>
+      ) : (
+        items.map((s) => {
+          const name = s.displayName ?? s.nick ?? 'Специалист';
+          const initials = name.slice(0, 2).toUpperCase();
+          const rating = s.activity?.avgRating;
+          const city = (s.cities ?? [])[0];
+          return (
+            <View
+              key={s.nick ?? name}
+              className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
+                <Text className="text-sm font-bold text-brandPrimary">{initials}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-semibold text-textPrimary" numberOfLines={1}>{name}</Text>
+                <View className="mt-0.5 flex-row items-center gap-2">
+                  {rating != null && (
+                    <View className="flex-row items-center gap-1">
+                      <Feather name="star" size={11} color="#F59E0B" />
+                      <Text className="text-xs text-textMuted">{Number(rating).toFixed(1)}</Text>
+                    </View>
+                  )}
+                  {city && (
+                    <View className="flex-row items-center gap-1">
+                      <Feather name="map-pin" size={11} color={Colors.textMuted} />
+                      <Text className="text-xs text-textMuted" numberOfLines={1}>{city}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              <Pressable
+                onPress={() => s.nick && handleWrite(s.nick)}
+                disabled={!s.nick || writingTo === s.nick}
+                className="h-9 flex-row items-center justify-center gap-1 rounded-lg bg-brandPrimary px-3"
+              >
+                {writingTo === s.nick ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <>
+                    <Feather name="send" size={12} color={Colors.white} />
+                    <Text className="text-xs font-semibold text-white">Написать</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          );
+        })
+      )}
+    </View>
+  );
 }
 
 // ─── Review CTA list ─────────────────────────────────────────────────────────
@@ -335,6 +477,9 @@ export default function RequestDetailScreen() {
           </Pressable>
         )}
       </View>
+
+      {/* Recommended specialists — owner only, active / closing_soon */}
+      {isOwner && !isClosed && <RecommendedSpecialists request={request} />}
 
       {/* Review CTAs — shown immediately after closing if threads exist */}
       {isClosed && isOwner && request.threads.length > 0 && (

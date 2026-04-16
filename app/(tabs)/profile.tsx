@@ -223,14 +223,24 @@ export default function ProfileScreen() {
           <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>{displayName}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
             <Feather name="user" size={14} color={Colors.textMuted} />
-            <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textMuted }}>Клиент</Text>
+            <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textMuted }}>
+              {user?.role === 'SPECIALIST' ? 'Специалист' : 'Клиент'}
+            </Text>
           </View>
         </View>
       </View>
       <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-        <StatBlock icon="file-text" value={String(stats?.total ?? '—')} label="Заявок" />
+        <StatBlock icon="file-text" value={String(stats?.total ?? stats?.requestsCreated ?? '—')} label="Заявок" />
         <StatBlock icon="check-circle" value={String(stats?.closed ?? stats?.completed ?? '—')} label="Завершено" />
-        <StatBlock icon="star" value={stats?.rating != null ? String(stats.rating) : '—'} label="Рейтинг" />
+        {user?.role === 'SPECIALIST' ? (
+          <StatBlock icon="star" value={stats?.rating != null ? String(stats.rating) : '—'} label="Рейтинг" />
+        ) : (
+          <StatBlock
+            icon="message-circle"
+            value={String(stats?.specialistsContacted ?? stats?.threadsCount ?? stats?.responses ?? '—')}
+            label="Откликов"
+          />
+        )}
       </View>
       <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm }}>
         <InfoRow label="Email" value={email} icon="mail" />

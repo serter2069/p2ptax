@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-nati
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
-import { requests as requestsApi, ifns } from '../../lib/api/endpoints';
+import { requests as requestsApi, ifns, categories as categoriesApi } from '../../lib/api/endpoints';
 import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
 import { Header } from '../../components/Header';
 
@@ -36,113 +36,48 @@ function pluralSpecialists(n: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Cascading City → FNS picker (single unified field, multi-select FNS)
+// Simple single-select dropdown
 // ---------------------------------------------------------------------------
-function CityFnsPicker({
-  city, selectedFns, onCityChange, onFnsToggle, onRemoveFns, cities, fnsByCity,
+function SelectDropdown({
+  icon, placeholder, value, options, onChange,
 }: {
-  city: string; selectedFns: string[];
-  onCityChange: (v: string) => void; onFnsToggle: (v: string) => void; onRemoveFns: (v: string) => void;
-  cities: string[]; fnsByCity: Record<string, string[]>;
+  icon: 'map-pin' | 'briefcase';
+  placeholder: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
 }) {
-  const [openLevel, setOpenLevel] = useState<'city' | 'fns' | null>(null);
-  const fnsOptions = city ? (fnsByCity[city] || []) : [];
-
-  const summary = city
-    ? selectedFns.length > 0
-      ? `${city} / ${selectedFns.length} ФНС`
-      : city
-    : '';
-
+  const [open, setOpen] = useState(false);
   return (
     <View className="gap-2">
-      {/* Main picker button */}
-      <Pressable onPress={() => setOpenLevel(openLevel ? null : 'city')}>
-        <View className={`h-11 flex-row items-center gap-2 rounded-lg border px-3 ${openLevel ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
-          <Feather name="map-pin" size={16} color={Colors.textMuted} />
-          <Text className={`flex-1 text-sm ${summary ? 'text-textPrimary' : 'text-textMuted'}`}>
-            {summary || 'Город и ФНС'}
+      <Pressable onPress={() => setOpen(!open)}>
+        <View className={`h-11 flex-row items-center gap-2 rounded-lg border px-3 ${open ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
+          <Feather name={icon} size={16} color={Colors.textMuted} />
+          <Text className={`flex-1 text-sm ${value ? 'text-textPrimary' : 'text-textMuted'}`} numberOfLines={1}>
+            {value || placeholder}
           </Text>
-          <Feather name={openLevel ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
+          <Feather name={open ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
         </View>
       </Pressable>
-
-      {/* Cascading panel */}
-      {openLevel && (
-        <View className="overflow-hidden rounded-lg border border-borderLight bg-white shadow-sm">
-          {/* Tabs: City / FNS */}
-          <View className="flex-row border-b border-bgSecondary">
+      {open && (
+        <View className="overflow-hidden rounded-lg border border-borderLight bg-white shadow-sm" style={{ maxHeight: 240 }}>
+          <ScrollView>
             <Pressable
-              className={`flex-1 items-center py-2.5 ${openLevel === 'city' ? 'border-b-2 border-brandPrimary' : ''}`}
-              onPress={() => setOpenLevel('city')}
+              className="border-b border-bgSecondary px-3 py-2.5"
+              onPress={() => { onChange(''); setOpen(false); }}
             >
-              <Text className={`text-xs font-semibold ${openLevel === 'city' ? 'text-brandPrimary' : city ? 'text-textPrimary' : 'text-textMuted'}`}>
-                {city || 'Город'}
-              </Text>
+              <Text className="text-sm text-textMuted">Все</Text>
             </Pressable>
-            <Pressable
-              className={`flex-1 items-center py-2.5 ${openLevel === 'fns' ? 'border-b-2 border-brandPrimary' : ''}`}
-              onPress={() => city && setOpenLevel('fns')}
-              disabled={!city}
-            >
-              <Text className={`text-xs font-semibold ${openLevel === 'fns' ? 'text-brandPrimary' : selectedFns.length > 0 ? 'text-textPrimary' : 'text-textMuted'}`}>
-                {selectedFns.length > 0 ? `ФНС (${selectedFns.length})` : 'ФНС'}
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Options */}
-          <View style={{ maxHeight: 200 }}>
-            {openLevel === 'city' && (
-              <>
-                <Pressable
-                  className="border-b border-bgSecondary px-3 py-2.5"
-                  onPress={() => { onCityChange(''); setOpenLevel(null); }}
-                >
-                  <Text className="text-sm text-textMuted">Все города</Text>
-                </Pressable>
-                {cities.map((c) => (
-                  <Pressable
-                    key={c}
-                    className="border-b border-bgSecondary px-3 py-2.5"
-                    onPress={() => { onCityChange(c); setOpenLevel('fns'); }}
-                  >
-                    <Text className={`text-sm ${city === c ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c}</Text>
-                  </Pressable>
-                ))}
-              </>
-            )}
-            {openLevel === 'fns' && fnsOptions.map((f) => {
-              const isSelected = selectedFns.includes(f);
-              return (
-                <Pressable
-                  key={f}
-                  className="flex-row items-center gap-2 border-b border-bgSecondary px-3 py-2.5"
-                  onPress={() => onFnsToggle(f)}
-                >
-                  <View className={isSelected
-                    ? 'h-5 w-5 items-center justify-center rounded border border-brandPrimary bg-brandPrimary'
-                    : 'h-5 w-5 rounded border border-borderLight bg-white'
-                  }>
-                    {isSelected && <Feather name="check" size={12} color="#fff" />}
-                  </View>
-                  <Text className={`text-sm ${isSelected ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Selected FNS chips */}
-      {selectedFns.length > 0 && (
-        <View className="flex-row flex-wrap gap-2">
-          {selectedFns.map((fns) => (
-            <Pressable key={fns} onPress={() => onRemoveFns(fns)} className="flex-row items-center gap-1 rounded-full bg-brandPrimary/10 px-2.5 py-1">
-              <Text className="text-xs font-medium text-brandPrimary">{fns}</Text>
-              <Feather name="x" size={12} color={Colors.brandPrimary} />
-            </Pressable>
-          ))}
+            {options.map((o) => (
+              <Pressable
+                key={o}
+                className="border-b border-bgSecondary px-3 py-2.5"
+                onPress={() => { onChange(o); setOpen(false); }}
+              >
+                <Text className={`text-sm ${value === o ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{o}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
       )}
     </View>
@@ -215,13 +150,13 @@ function RequestFeedCard({ title, description, city, fns, service, date, author,
 function FeedState() {
   const router = useRouter();
   const [filterCity, setFilterCity] = useState('');
-  const [selectedFns, setSelectedFns] = useState<string[]>([]);
+  const [filterCategory, setFilterCategory] = useState('');
   const [writeTarget, setWriteTarget] = useState<WriteConfirmModalRequest | null>(null);
   const [feedData, setFeedData] = useState<FeedRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cities, setCities] = useState<string[]>([]);
-  const [fnsByCity, setFnsByCity] = useState<Record<string, string[]>>({});
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
 
   // Load cities for filter
   useEffect(() => {
@@ -234,17 +169,16 @@ function FeedState() {
       .catch(() => { /* non-critical */ });
   }, []);
 
-  // Load FNS when city changes
+  // Load service categories
   useEffect(() => {
-    if (!filterCity || fnsByCity[filterCity]) return;
-    ifns.getIfns({ city: filterCity })
+    categoriesApi.list()
       .then((res) => {
         const data = (res as any).data ?? res;
-        const list: string[] = Array.isArray(data) ? data.map((f: any) => f.name ?? f) : [];
-        setFnsByCity((prev) => ({ ...prev, [filterCity]: list }));
+        const list: string[] = Array.isArray(data) ? data.map((c: any) => c.name ?? c) : [];
+        setCategoryOptions(list);
       })
       .catch(() => { /* non-critical */ });
-  }, [filterCity]);
+  }, []);
 
   // Load feed
   useEffect(() => {
@@ -252,7 +186,7 @@ function FeedState() {
     setLoading(true);
     const params: Record<string, unknown> = {};
     if (filterCity) params.city = filterCity;
-    if (selectedFns.length > 0) params.ifns = selectedFns[0];
+    if (filterCategory) params.category = filterCategory;
     requestsApi.getPublicFeed(params)
       .then((res) => {
         if (mounted) {
@@ -264,24 +198,9 @@ function FeedState() {
       .catch((e) => { if (mounted) setError(e.message ?? 'Ошибка'); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
-  }, [filterCity, selectedFns]);
+  }, [filterCity, filterCategory]);
 
-  const handleCityChange = (v: string) => {
-    setFilterCity(v);
-    setSelectedFns([]);
-  };
-
-  const handleFnsToggle = (v: string) => {
-    setSelectedFns((prev) =>
-      prev.includes(v) ? prev.filter((f) => f !== v) : [...prev, v]
-    );
-  };
-
-  const handleRemoveFns = (v: string) => {
-    setSelectedFns((prev) => prev.filter((f) => f !== v));
-  };
-
-  const hasFilters = !!(filterCity || selectedFns.length > 0);
+  const hasFilters = !!(filterCity || filterCategory);
 
   return (
     <View className="flex-1 bg-white">
@@ -293,14 +212,14 @@ function FeedState() {
         {!loading && <Text className="mt-0.5 text-sm text-textMuted">{feedData.length} активных заявок</Text>}
       </View>
 
-      {/* Unified City/FNS filter */}
+      {/* City + Service Category filters */}
       <View className="gap-3 rounded-xl border border-borderLight bg-bgSecondary p-4">
         <View className="flex-row items-center gap-2">
           <Feather name="sliders" size={14} color={Colors.brandPrimary} />
           <Text className="text-sm font-semibold text-textPrimary">Фильтры</Text>
           {hasFilters && (
             <Pressable
-              onPress={() => { setFilterCity(''); setSelectedFns([]); }}
+              onPress={() => { setFilterCity(''); setFilterCategory(''); }}
               className="ml-auto flex-row items-center gap-1"
             >
               <Feather name="x" size={14} color={Colors.textMuted} />
@@ -309,14 +228,19 @@ function FeedState() {
           )}
         </View>
 
-        <CityFnsPicker
-          city={filterCity}
-          selectedFns={selectedFns}
-          onCityChange={handleCityChange}
-          onFnsToggle={handleFnsToggle}
-          onRemoveFns={handleRemoveFns}
-          cities={cities}
-          fnsByCity={fnsByCity}
+        <SelectDropdown
+          icon="map-pin"
+          placeholder="Город"
+          value={filterCity}
+          options={cities}
+          onChange={setFilterCity}
+        />
+        <SelectDropdown
+          icon="briefcase"
+          placeholder="Услуга"
+          value={filterCategory}
+          options={categoryOptions}
+          onChange={setFilterCategory}
         />
       </View>
 
