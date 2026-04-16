@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { Alert, View, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { Colors } from '../../../constants/Colors';
+import { Colors, Spacing, BorderRadius } from '../../../constants/Colors';
 import { Toggle } from '../../../components/proto/Toggle';
 import { ifns, requests, upload } from '../../../lib/api/endpoints';
 import { Header } from '../../../components/Header';
+import {
+  Button,
+  Container,
+  Heading,
+  Input,
+  Screen,
+  Text,
+} from '../../../components/ui';
 
 // Fixed service list per product spec
 const SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка', 'Не знаю'];
@@ -24,11 +32,23 @@ interface IfnsItem {
 
 function FileItem({ name, size, onRemove }: { name: string; size: string; onRemove: () => void }) {
   return (
-    <View className="flex-row items-center gap-3 rounded-lg border border-borderLight bg-bgSurface px-3 py-2">
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        borderRadius: BorderRadius.lg,
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+        backgroundColor: Colors.bgSurface,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+      }}
+    >
       <Feather name="file" size={16} color={Colors.brandPrimary} />
-      <View className="flex-1">
-        <Text className="text-sm text-textPrimary" numberOfLines={1}>{name}</Text>
-        <Text className="text-xs text-textMuted">{size}</Text>
+      <View style={{ flex: 1 }}>
+        <Text variant="caption" style={{ color: Colors.textPrimary }} numberOfLines={1}>{name}</Text>
+        <Text variant="caption">{size}</Text>
       </View>
       <Pressable onPress={onRemove}>
         <Feather name="x" size={16} color={Colors.textMuted} />
@@ -56,44 +76,119 @@ function LocationServicePicker({
   const summary = city ? [city.name, selectedFns?.name, service].filter(Boolean).join(' / ') : '';
 
   return (
-    <View className="gap-1">
-      <Text className="text-sm font-medium text-textSecondary">Город, ФНС и услуга</Text>
+    <View style={{ gap: Spacing.xs }}>
+      <Text variant="label" style={{ color: Colors.textSecondary }}>Город, ФНС и услуга</Text>
       <Pressable onPress={() => setOpenLevel(openLevel ? null : 'city')}>
-        <View className={`min-h-[48px] flex-row items-center gap-2 rounded-xl border px-4 py-3 ${openLevel ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
+        <View
+          style={{
+            minHeight: 48,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: Spacing.sm,
+            borderRadius: BorderRadius.btn,
+            borderWidth: 1,
+            borderColor: openLevel ? Colors.brandPrimary : Colors.borderLight,
+            backgroundColor: Colors.white,
+            paddingHorizontal: Spacing.lg,
+            paddingVertical: Spacing.md,
+          }}
+        >
           <Feather name="map-pin" size={16} color={Colors.textMuted} />
-          <Text className={`flex-1 text-base ${summary ? 'text-textPrimary' : 'text-textMuted'}`} numberOfLines={2}>
+          <Text
+            variant="body"
+            style={{ flex: 1, color: summary ? Colors.textPrimary : Colors.textMuted }}
+            numberOfLines={2}
+          >
             {summary || 'Выберите город, ФНС и услугу'}
           </Text>
           <Feather name={openLevel ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
         </View>
       </Pressable>
       {openLevel && (
-        <View className="overflow-hidden rounded-xl border border-borderLight bg-white shadow-sm">
-          <View className="flex-row border-b border-bgSecondary">
-            <Pressable className={`flex-1 items-center py-2.5 ${openLevel === 'city' ? 'border-b-2 border-brandPrimary' : ''}`} onPress={() => setOpenLevel('city')}>
-              <Text className={`text-xs font-semibold ${openLevel === 'city' ? 'text-brandPrimary' : city ? 'text-textPrimary' : 'text-textMuted'}`}>{city?.name || 'Город'}</Text>
-            </Pressable>
-            <Pressable className={`flex-1 items-center py-2.5 ${openLevel === 'fns' ? 'border-b-2 border-brandPrimary' : ''}`} onPress={() => city && setOpenLevel('fns')} disabled={!city}>
-              <Text className={`text-xs font-semibold ${openLevel === 'fns' ? 'text-brandPrimary' : selectedFns ? 'text-textPrimary' : 'text-textMuted'}`}>{selectedFns ? selectedFns.name.replace(/^ФНС\s*/, '').substring(0, 20) : 'ФНС'}</Text>
-            </Pressable>
-            <Pressable className={`flex-1 items-center py-2.5 ${openLevel === 'service' ? 'border-b-2 border-brandPrimary' : ''}`} onPress={() => selectedFns && setOpenLevel('service')} disabled={!selectedFns}>
-              <Text className={`text-xs font-semibold ${openLevel === 'service' ? 'text-brandPrimary' : service ? 'text-textPrimary' : 'text-textMuted'}`}>{service || 'Услуга'}</Text>
-            </Pressable>
+        <View
+          style={{
+            overflow: 'hidden',
+            borderRadius: BorderRadius.btn,
+            borderWidth: 1,
+            borderColor: Colors.borderLight,
+            backgroundColor: Colors.white,
+          }}
+        >
+          <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary }}>
+            {[
+              { key: 'city' as const, label: city?.name || 'Город', has: !!city },
+              { key: 'fns' as const, label: selectedFns ? selectedFns.name.replace(/^ФНС\s*/, '').substring(0, 20) : 'ФНС', has: !!selectedFns, disabled: !city },
+              { key: 'service' as const, label: service || 'Услуга', has: !!service, disabled: !selectedFns },
+            ].map((tab) => {
+              const active = openLevel === tab.key;
+              return (
+                <Pressable
+                  key={tab.key}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    paddingVertical: Spacing.sm + 2,
+                    borderBottomWidth: active ? 2 : 0,
+                    borderBottomColor: active ? Colors.brandPrimary : 'transparent',
+                  }}
+                  onPress={() => !tab.disabled && setOpenLevel(tab.key)}
+                  disabled={tab.disabled}
+                >
+                  <Text
+                    variant="caption"
+                    weight="semibold"
+                    style={{ color: active ? Colors.brandPrimary : tab.has ? Colors.textPrimary : Colors.textMuted }}
+                  >
+                    {tab.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-          <View className="max-h-48">
+          <View style={{ maxHeight: 192 }}>
             {openLevel === 'city' && cities.map((c) => (
-              <Pressable key={c.id} className="border-b border-bgSecondary px-4 py-3" onPress={() => { onCityChange(c); onServiceChange(''); setOpenLevel('fns'); }}>
-                <Text className={`text-base ${city?.id === c.id ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{c.name}</Text>
+              <Pressable
+                key={c.id}
+                style={{ borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
+                onPress={() => { onCityChange(c); onServiceChange(''); setOpenLevel('fns'); }}
+              >
+                <Text
+                  variant="body"
+                  weight={city?.id === c.id ? 'semibold' : undefined}
+                  style={{ color: city?.id === c.id ? Colors.brandPrimary : Colors.textPrimary }}
+                >
+                  {c.name}
+                </Text>
               </Pressable>
             ))}
             {openLevel === 'fns' && fnsOptions.map((f) => (
-              <Pressable key={f.id} className="border-b border-bgSecondary px-4 py-3" onPress={() => { onFnsChange(f); setOpenLevel('service'); }}>
-                <Text className={`text-base ${selectedFns?.id === f.id ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f.name}</Text>
+              <Pressable
+                key={f.id}
+                style={{ borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
+                onPress={() => { onFnsChange(f); setOpenLevel('service'); }}
+              >
+                <Text
+                  variant="body"
+                  weight={selectedFns?.id === f.id ? 'semibold' : undefined}
+                  style={{ color: selectedFns?.id === f.id ? Colors.brandPrimary : Colors.textPrimary }}
+                >
+                  {f.name}
+                </Text>
               </Pressable>
             ))}
             {openLevel === 'service' && SERVICES.map((s) => (
-              <Pressable key={s} className="border-b border-bgSecondary px-4 py-3" onPress={() => { onServiceChange(s); setOpenLevel(null); }}>
-                <Text className={`text-base ${service === s ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{s}</Text>
+              <Pressable
+                key={s}
+                style={{ borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
+                onPress={() => { onServiceChange(s); setOpenLevel(null); }}
+              >
+                <Text
+                  variant="body"
+                  weight={service === s ? 'semibold' : undefined}
+                  style={{ color: service === s ? Colors.brandPrimary : Colors.textPrimary }}
+                >
+                  {s}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -214,7 +309,7 @@ export default function NewRequestScreen() {
         try {
           await upload.requestDocuments(id, formData);
         } catch {
-          // Non-blocking — request was created, just log
+          // Non-blocking
         }
       }
 
@@ -235,77 +330,95 @@ export default function NewRequestScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-    <Header variant="back" backTitle="Новая заявка" onBack={() => router.back()} />
-    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <Text className="text-xl font-bold text-textPrimary">Новая заявка</Text>
-      <LocationServicePicker
-        city={city}
-        fns={selectedFns}
-        service={service}
-        onCityChange={handleCityChange}
-        onFnsChange={setSelectedFns}
-        onServiceChange={setService}
-        cities={cities}
-        fnsByCity={fnsByCity}
-      />
-      <View className="gap-1">
-        <Text className="text-sm font-medium text-textSecondary">Заголовок</Text>
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Кратко опишите задачу"
-          placeholderTextColor={Colors.textMuted}
-          className={`h-12 rounded-xl border px-4 text-base text-textPrimary bg-white ${titleError ? 'border-red-400' : 'border-borderLight'}`}
-          style={{ outlineStyle: 'none' } as any}
-        />
-        {titleError && <Text className="text-xs text-red-500">{titleError}</Text>}
-      </View>
-      <View className="gap-1">
-        <Text className="text-sm font-medium text-textSecondary">Описание</Text>
-        <TextInput
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Подробно опишите, что нужно сделать..."
-          placeholderTextColor={Colors.textMuted}
-          multiline
-          className={`min-h-[96px] rounded-xl border p-4 text-base text-textPrimary bg-white ${descError ? 'border-red-400' : 'border-borderLight'}`}
-          style={{ textAlignVertical: 'top', outlineStyle: 'none' } as any}
-        />
-        {descError && <Text className="text-xs text-red-500">{descError}</Text>}
-      </View>
-      <View className="gap-2">
-        <Text className="text-sm font-medium text-textSecondary">Файлы</Text>
-        {files.map((f, i) => (<FileItem key={i} name={f.name} size={f.size} onRemove={() => handleRemoveFile(i)} />))}
-        {files.length < 5 && (
-          <Pressable
-            onPress={handlePickFiles}
-            className="h-10 flex-row items-center justify-center gap-2 rounded-lg border border-dashed border-borderLight bg-bgSurface"
-          >
-            <Feather name="paperclip" size={16} color={Colors.brandPrimary} />
-            <Text className="text-sm font-medium text-brandPrimary">Прикрепить файл</Text>
-          </Pressable>
-        )}
-        <Text className="text-xs text-textMuted">PDF, JPG, PNG до 10 МБ. Макс. 5 файлов.</Text>
-      </View>
-      <View className="py-1">
-        <Toggle value={publicVisible} onValueChange={setPublicVisible} label="Показать неавторизованным" sublabel="Заявку увидят без входа в аккаунт" />
-      </View>
-      <Pressable
-        onPress={handleSubmit}
-        disabled={!isValid || submitting}
-        className={`mt-2 h-12 flex-row items-center justify-center gap-2 rounded-xl ${isValid && !submitting ? 'bg-brandPrimary' : 'bg-brandPrimary/50'}`}
-      >
-        {submitting ? (
-          <ActivityIndicator color={Colors.white} size="small" />
-        ) : (
-          <>
-            <Feather name="send" size={16} color={Colors.white} />
-            <Text className="text-base font-semibold text-white">Отправить заявку</Text>
-          </>
-        )}
-      </Pressable>
-    </ScrollView>
-    </View>
+    <Screen bg={Colors.white}>
+      <Header variant="back" backTitle="Новая заявка" onBack={() => router.back()} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+        <Container>
+          <View style={{ gap: Spacing.lg }}>
+            <Heading level={3}>Новая заявка</Heading>
+
+            <LocationServicePicker
+              city={city}
+              fns={selectedFns}
+              service={service}
+              onCityChange={handleCityChange}
+              onFnsChange={setSelectedFns}
+              onServiceChange={setService}
+              cities={cities}
+              fnsByCity={fnsByCity}
+            />
+
+            <Input
+              label="Заголовок"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Кратко опишите задачу"
+              error={titleError ?? undefined}
+            />
+
+            <Input
+              label="Описание"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Подробно опишите, что нужно сделать..."
+              multiline
+              numberOfLines={4}
+              error={descError ?? undefined}
+            />
+
+            <View style={{ gap: Spacing.sm }}>
+              <Text variant="label" style={{ color: Colors.textSecondary }}>Файлы</Text>
+              {files.map((f, i) => (
+                <FileItem key={i} name={f.name} size={f.size} onRemove={() => handleRemoveFile(i)} />
+              ))}
+              {files.length < 5 && (
+                <Pressable
+                  onPress={handlePickFiles}
+                  style={{
+                    height: 40,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: Spacing.sm,
+                    borderRadius: BorderRadius.lg,
+                    borderWidth: 1,
+                    borderStyle: 'dashed',
+                    borderColor: Colors.borderLight,
+                    backgroundColor: Colors.bgSurface,
+                  }}
+                >
+                  <Feather name="paperclip" size={16} color={Colors.brandPrimary} />
+                  <Text variant="caption" weight="medium" style={{ color: Colors.brandPrimary }}>
+                    Прикрепить файл
+                  </Text>
+                </Pressable>
+              )}
+              <Text variant="caption">PDF, JPG, PNG до 10 МБ. Макс. 5 файлов.</Text>
+            </View>
+
+            <View>
+              <Toggle
+                value={publicVisible}
+                onValueChange={setPublicVisible}
+                label="Показать неавторизованным"
+                sublabel="Заявку увидят без входа в аккаунт"
+              />
+            </View>
+
+            <Button
+              variant="primary"
+              size="lg"
+              loading={submitting}
+              disabled={!isValid || submitting}
+              icon={<Feather name="send" size={16} color={Colors.white} />}
+              onPress={handleSubmit}
+              fullWidth
+            >
+              Отправить заявку
+            </Button>
+          </View>
+        </Container>
+      </ScrollView>
+    </Screen>
   );
 }
