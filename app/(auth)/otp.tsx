@@ -1,16 +1,31 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Header } from '../../components/Header';
+import { auth, users } from '../../lib/api/endpoints';
 
 export default function OtpScreen() {
   const router = useRouter();
+  const { email } = useLocalSearchParams<{ email: string }>();
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [resendTimer] = useState(57);
+  const [resendTimer, setResendTimer] = useState(60);
+  const [resendLoading, setResendLoading] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+
+  // Countdown timer for resend
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const id = setInterval(() => {
+      setResendTimer((t) => {
+        if (t <= 1) { clearInterval(id); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [resendTimer]);
 
   const handleDigitChange = (index: number, value: string) => {
     if (value.length > 1) value = value.slice(-1);
@@ -22,10 +37,50 @@ export default function OtpScreen() {
     if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
-  const handleSubmit = () => {
-    if (digits.join('').length < 6) { setError('Введите все 6 цифр'); return; }
+  const handleSubmit = async () => {
+    const code = digits.join('');
+    if (code.length < 6) { setError('Введите все 6 цифр'); return; }
+    if (!email) { setError('Email не передан. Вернитесь и попробуйте снова.'); return; }
     setLoading(true);
-    setTimeout(() => setLoading(false), 1500);
+    setError('');
+    try {
+      await auth.verifyOtp(email, code);
+      // Check if user has a profile (firstName set means onboarding done)
+      try {
+        const meRes = await users.getMe();
+        const me = (meRes as any).data ?? meRes;
+        if (me?.firstName) {
+          router.replace('/(tabs)/dashboard');
+        } else {
+          router.replace('/(onboarding)/profile');
+        }
+      } catch {
+        // If getMe fails, go to onboarding to be safe
+        router.replace('/(onboarding)/profile');
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Неверный код. Попробуйте ещё раз.';
+      setError(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email || resendTimer > 0) return;
+    setResendLoading(true);
+    setError('');
+    try {
+      await auth.requestOtp(email);
+      setResendTimer(60);
+      setDigits(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Не удалось отправить код.';
+      setError(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   return (
@@ -33,7 +88,7 @@ export default function OtpScreen() {
       <Header variant="back" backTitle="Подтверждение" onBack={() => router.back()} />
       <View className="flex-1 items-center bg-white px-4 py-8">
       <View className="w-full max-w-sm">
-        <Pressable className="flex-row items-center gap-1 py-1">
+        <Pressable className="flex-row items-center gap-1 py-1" onPress={() => router.back()}>
           <Feather name="arrow-left" size={20} color="#475569" />
           <Text className="text-sm text-textSecondary">Изменить email</Text>
         </Pressable>
@@ -45,7 +100,7 @@ export default function OtpScreen() {
         <Text className="text-xl font-bold text-textPrimary">Введите код</Text>
         <View className="flex-row items-center">
           <Text className="text-base text-textMuted">Код отправлен на </Text>
-          <Text className="text-base font-medium text-textPrimary">elena@mail.ru</Text>
+          <Text className="text-base font-medium text-textPrimary">{email ?? '...'}</Text>
         </View>
       </View>
       <View className="mt-5 flex-row justify-center gap-2">
@@ -81,10 +136,12 @@ export default function OtpScreen() {
             <Text className="text-sm text-textMuted">Отправить повторно через {resendTimer} сек</Text>
           </>
         ) : (
-          <>
+          <Pressable onPress={handleResend} disabled={resendLoading} className="flex-row items-center gap-1">
             <Feather name="refresh-cw" size={14} color="#0284C7" />
-            <Text className="text-sm font-medium text-brandPrimary">Отправить код повторно</Text>
-          </>
+            <Text className="text-sm font-medium text-brandPrimary">
+              {resendLoading ? 'Отправка...' : 'Отправить код повторно'}
+            </Text>
+          </Pressable>
         )}
       </View>
       </View>
