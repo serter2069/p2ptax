@@ -48,6 +48,16 @@ export const Colors = {
   borderLight: p.borderLight,
 } as const;
 
+/**
+ * Deterministic palette for avatar placeholders (hash nick → index).
+ * Only raw-hex array allowed outside the primary Colors tokens.
+ */
+export const avatarPalette = [
+  '#0284C7', '#059669', '#7C3AED', '#DC2626',
+  '#D97706', '#0891B2', '#4F46E5', '#BE185D',
+  '#0D9488', '#9333EA', '#B91C1C', '#1D4ED8',
+] as const;
+
 export const Spacing = {
   xxs: 3,
   xs: 4,
