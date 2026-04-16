@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 
 function InfoRow({ label, value, icon }: { label: string; value: string; icon: string }) {
@@ -97,7 +98,7 @@ export default function ProfileScreen() {
       <Pressable onPress={() => setEditMode(true)} style={{ height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.sm, ...Shadows.sm }}>
         <Feather name="edit-2" size={16} color={Colors.white} /><Text style={{ fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Редактировать</Text>
       </Pressable>
-      <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.bgCard, padding: Spacing.lg, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border }}>
+      <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.bgCard, padding: Spacing.lg, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border }} onPress={() => router.push('/(tabs)/settings' as any)}>
         <Feather name="settings" size={16} color={Colors.textMuted} />
         <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textPrimary }}>Настройки</Text>
         <Feather name="chevron-right" size={16} color={Colors.textMuted} style={{ marginLeft: 'auto' }} />

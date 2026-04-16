@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, Pressable, useWindowDimensions, ActivityIndicator, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Header } from '../../components/Header';
 import { specialists as specialistsApi } from '../../lib/api/endpoints';
 import { Colors } from '../../constants/Colors';
@@ -163,7 +164,7 @@ function SpecialistCard({ specialist, matchedFns }: {
       ))}
 
       {/* Button */}
-      <Pressable className="h-10 rounded-xl items-center justify-center border border-sky-600 flex-row gap-1">
+      <Pressable className="h-10 rounded-xl items-center justify-center border border-sky-600 flex-row gap-1" onPress={() => router.push(`/specialists/${specialist.username ?? specialist.id}` as any)}>
         <Text className="text-sm font-medium text-sky-600">Подробнее</Text>
         <Feather name="chevron-right" size={16} color="#0284C7" />
       </Pressable>

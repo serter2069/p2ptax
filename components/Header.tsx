@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors } from '../constants/Colors';
 
-const BURGER_LINKS = [
-  { icon: 'home' as const, label: 'Главная' },
-  { icon: 'users' as const, label: 'Специалисты' },
-  { icon: 'credit-card' as const, label: 'Тарифы' },
+const BURGER_LINKS: { icon: 'home' | 'users' | 'credit-card'; label: string; route: string }[] = [
+  { icon: 'home', label: 'Главная', route: '/' },
+  { icon: 'users', label: 'Специалисты', route: '/specialists' },
+  { icon: 'credit-card', label: 'Тарифы', route: '/' }, // TODO: /pricing when page exists
 ];
 
 function LogoBlock() {
@@ -39,13 +40,13 @@ function BurgerDrawer({ open, onToggle }: { open: boolean; onToggle: () => void 
         }}
       >
         {BURGER_LINKS.map((link) => (
-          <Pressable key={link.label} className="flex-row items-center gap-3 py-2.5">
+          <Pressable key={link.label} className="flex-row items-center gap-3 py-2.5" onPress={() => { onToggle(); router.push(link.route as any); }}>
             <Feather name={link.icon} size={18} color={Colors.textSecondary} />
             <Text className="text-base text-textSecondary">{link.label}</Text>
           </Pressable>
         ))}
         <View className="my-2 h-px bg-borderLight" />
-        <Pressable className="flex-row items-center gap-3 py-2.5">
+        <Pressable className="flex-row items-center gap-3 py-2.5" onPress={() => { onToggle(); router.push('/(auth)/email' as any); }}>
           <Feather name="log-in" size={18} color={Colors.brandPrimary} />
           <Text className="text-base font-semibold text-brandPrimary">Войти</Text>
         </Pressable>
@@ -97,7 +98,7 @@ export function Header({
         >
           <LogoBlock />
           <View className="flex-row items-center gap-4">
-            <Pressable className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4">
+            <Pressable className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4" onPress={() => router.push('/(auth)/email' as any)}>
               <Text className="text-sm font-semibold text-white">Войти</Text>
             </Pressable>
             <Pressable onPress={() => setBurgerOpen(!burgerOpen)}>
