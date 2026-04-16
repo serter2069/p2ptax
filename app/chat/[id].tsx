@@ -215,30 +215,45 @@ export default function ChatScreen() {
   const handleAttach = useCallback(async () => {
     if (!threadId || uploadingAttachment) return;
     try {
+      // SA biz-files: PDF + JPG + PNG only. SA screen-chat: up to 3 files per send.
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-               'application/msword',
-               'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        type: ['application/pdf', 'image/jpeg', 'image/png'],
         copyToCacheDirectory: true,
+        multiple: true,
       });
 
       if (result.canceled || !result.assets || result.assets.length === 0) return;
 
-      const asset = result.assets[0];
+      if (result.assets.length > 3) {
+        Alert.alert('Слишком много файлов', 'Можно прикрепить до 3 файлов за раз.');
+        return;
+      }
+
+      const assets = result.assets.slice(0, 3);
       setUploadingAttachment(true);
 
       const formData = new FormData();
-      formData.append('file', {
-        uri: asset.uri,
-        name: asset.name,
-        type: asset.mimeType ?? 'application/octet-stream',
-      } as any);
+      for (const asset of assets) {
+        formData.append('files', {
+          uri: asset.uri,
+          name: asset.name,
+          type: asset.mimeType ?? 'application/octet-stream',
+        } as any);
+      }
 
-      const uploadRes = await upload.chatAttachment(threadId, formData);
-      const { url, signedUrl, type, name } = (uploadRes as any).data ?? uploadRes;
+      const uploadRes = await upload.chatAttachments(threadId, formData);
+      const uploaded = ((uploadRes as any).data ?? uploadRes) as Array<{
+        url: string;
+        signedUrl: string;
+        type: string;
+        name: string;
+      }>;
 
-      const attachmentType = type === 'IMAGE' ? 'image' : 'pdf';
-      await sendMessage('', { url, type: attachmentType, name });
+      // No schema change for Message model: send one message per attachment.
+      for (const file of uploaded) {
+        const attachmentType = file.type === 'IMAGE' ? 'image' : 'pdf';
+        await sendMessage('', { url: file.url, type: attachmentType, name: file.name });
+      }
     } catch (err: any) {
       Alert.alert('Ошибка', err?.response?.data?.message ?? 'Не удалось загрузить файл');
     } finally {

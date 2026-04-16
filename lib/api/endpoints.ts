@@ -430,10 +430,23 @@ export const upload = {
     });
   },
 
-  /** Upload file attachment in a chat thread. Returns { url, signedUrl, type, name }. */
+  /** Upload single file attachment in a chat thread (legacy). Returns { url, signedUrl, type, name }. */
   chatAttachment(threadId: string, formData: FormData) {
     return client.post<{ url: string; signedUrl: string; type: string; name: string }>(
       `/threads/${threadId}/upload`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
+
+  /**
+   * Upload up to 3 file attachments in a single chat thread request.
+   * FormData must include field name 'files' per file.
+   * Returns array of { url, signedUrl, type, name } (one per uploaded file).
+   */
+  chatAttachments(threadId: string, formData: FormData) {
+    return client.post<Array<{ url: string; signedUrl: string; type: string; name: string }>>(
+      `/threads/${threadId}/uploads`,
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } },
     );
