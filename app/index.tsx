@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors, Shadows } from '../constants/Colors';
 import { MOCK_CITIES, MOCK_FNS, MOCK_SERVICES } from '../constants/protoMockData';
+import { Header } from '../components/Header';
 
 // =====================================================================
 // HELPERS
@@ -449,15 +451,28 @@ function FooterSection() {
 // =====================================================================
 
 export default function LandingPage() {
+  const router = useRouter();
+
   return (
-    <ScrollView style={{ backgroundColor: Colors.white }}>
-      <HeroSection />
-      <SpecialistsCarousel />
-      <ServicesSection />
-      <HowItWorksSection />
-      <StatsSection />
-      <BottomCTA />
-      <FooterSection />
-    </ScrollView>
+    <View style={{ flex: 1, backgroundColor: Colors.white }}>
+      <Header
+        variant="guest"
+        onLogin={() => router.push('/(auth)/email')}
+        onBurgerLink={(label) => {
+          if (label === 'Главная') router.push('/');
+          if (label === 'Специалисты') router.push('/specialists' as any);
+          if (label === 'Тарифы') router.push('/pricing' as any);
+        }}
+      />
+      <ScrollView style={{ backgroundColor: Colors.white }}>
+        <HeroSection />
+        <SpecialistsCarousel />
+        <ServicesSection />
+        <HowItWorksSection />
+        <StatsSection />
+        <BottomCTA />
+        <FooterSection />
+      </ScrollView>
+    </View>
   );
 }
