@@ -7,25 +7,27 @@ import { specialists as specialistsApi } from '../../lib/api/endpoints';
 import { Colors } from '../../constants/Colors';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types — matches GET /api/specialists response shape
 // ---------------------------------------------------------------------------
-interface FnsService {
-  fns: string;
-  services: string[];
+interface SpecialistActivity {
+  responseCount?: number;
+  avgRating?: number | null;
+  reviewCount?: number | null;
 }
 
 interface Specialist {
-  id: string;
-  username?: string | null;
-  name?: string | null;
-  user?: { firstName?: string | null; lastName?: string | null } | null;
-  city?: string | null;
-  rating?: number | null;
-  reviewCount?: number | null;
+  nick: string;
+  displayName?: string | null;
+  headline?: string | null;
+  experience?: number | null;
+  hourlyRate?: number | null;
+  cities?: string[] | null;
+  services?: string[] | null;
+  fnsOffices?: string[] | null;
   memberSince?: number | null;
   createdAt?: string | null;
-  fnsServices?: FnsService[] | null;
-  workAreas?: Array<{ fnsId?: string; departments?: string[] }> | null;
+  activity?: SpecialistActivity | null;
+  avatarUrl?: string | null;
   [key: string]: unknown;
 }
 
@@ -104,14 +106,17 @@ function SpecialistCard({ specialist, matchedFns }: {
   specialist: Specialist;
   matchedFns?: string;
 }) {
-  const fnsServices: FnsService[] = specialist.fnsServices ?? [];
-  const fnsToShow = matchedFns
-    ? fnsServices.filter(f => f.fns === matchedFns)
-    : fnsServices;
-  const displayName = specialist.name
-    ?? ([specialist.user?.firstName, specialist.user?.lastName].filter(Boolean).join(' ') || '—');
+  const displayName = specialist.displayName || specialist.nick || '—';
+  const city = specialist.cities?.[0] ?? null;
+  const services = specialist.services ?? [];
+  const fnsOffices = specialist.fnsOffices ?? [];
+  const rating = specialist.activity?.avgRating ?? null;
+  const reviewCount = specialist.activity?.reviewCount ?? null;
   const memberYear = specialist.memberSince
     ?? (specialist.createdAt ? new Date(specialist.createdAt).getFullYear() : null);
+  const fnsToShow = matchedFns
+    ? fnsOffices.filter(f => f === matchedFns)
+    : fnsOffices;
 
   return (
     <View className="flex-1 bg-white rounded-xl p-4 border border-sky-100 gap-3" style={{ minWidth: 280, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}>
@@ -122,16 +127,19 @@ function SpecialistCard({ specialist, matchedFns }: {
         </View>
         <View className="flex-1 gap-0.5">
           <Text className="text-base font-semibold text-slate-900">{displayName}</Text>
+          {specialist.headline && (
+            <Text className="text-sm text-slate-500" numberOfLines={2}>{specialist.headline}</Text>
+          )}
           <View className="flex-row items-center gap-1">
             <Feather name="map-pin" size={12} color="#94A3B8" />
-            <Text className="text-sm text-slate-400">{specialist.city ?? '—'}</Text>
+            <Text className="text-sm text-slate-400">{city ?? '—'}</Text>
           </View>
-          {specialist.rating != null && (
+          {rating != null && (
             <View className="flex-row items-center gap-1 mt-0.5">
-              <Stars rating={specialist.rating} />
-              <Text className="text-sm font-bold text-slate-900">{specialist.rating}</Text>
-              {specialist.reviewCount != null && (
-                <Text className="text-xs text-slate-400">({specialist.reviewCount})</Text>
+              <Stars rating={rating} />
+              <Text className="text-sm font-bold text-slate-900">{rating}</Text>
+              {reviewCount != null && (
+                <Text className="text-xs text-slate-400">({reviewCount})</Text>
               )}
             </View>
           )}
@@ -146,25 +154,31 @@ function SpecialistCard({ specialist, matchedFns }: {
         </View>
       )}
 
-      {/* FNS blocks */}
-      {fnsToShow.map((entry) => (
-        <View key={entry.fns} className="gap-2">
-          <View className="flex-row items-center gap-1.5 bg-sky-50 rounded-lg px-2.5 py-1.5">
-            <Feather name="home" size={13} color="#0284C7" />
-            <Text className="text-xs font-semibold text-sky-600 flex-1" numberOfLines={1}>{entry.fns}</Text>
-          </View>
-          <View className="flex-row flex-wrap gap-1.5">
-            {entry.services.map((svc) => (
-              <View key={svc} className="bg-sky-50 px-2 py-1 rounded-full">
-                <Text className="text-xs font-medium text-sky-600">{svc}</Text>
-              </View>
-            ))}
-          </View>
+      {/* FNS offices */}
+      {fnsToShow.length > 0 && (
+        <View className="gap-1.5">
+          {fnsToShow.slice(0, 3).map((fns) => (
+            <View key={fns} className="flex-row items-center gap-1.5 bg-sky-50 rounded-lg px-2.5 py-1.5">
+              <Feather name="home" size={13} color="#0284C7" />
+              <Text className="text-xs font-semibold text-sky-600 flex-1" numberOfLines={1}>{fns}</Text>
+            </View>
+          ))}
         </View>
-      ))}
+      )}
+
+      {/* Services */}
+      {services.length > 0 && (
+        <View className="flex-row flex-wrap gap-1.5">
+          {services.map((svc) => (
+            <View key={svc} className="bg-sky-50 px-2 py-1 rounded-full">
+              <Text className="text-xs font-medium text-sky-600">{svc}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Button */}
-      <Pressable className="h-10 rounded-xl items-center justify-center border border-sky-600 flex-row gap-1" onPress={() => router.push(`/specialists/${specialist.username ?? specialist.id}` as any)}>
+      <Pressable className="h-10 rounded-xl items-center justify-center border border-sky-600 flex-row gap-1" onPress={() => router.push(`/specialists/${specialist.nick}` as any)}>
         <Text className="text-sm font-medium text-sky-600">Подробнее</Text>
         <Feather name="chevron-right" size={16} color="#0284C7" />
       </Pressable>
@@ -200,14 +214,17 @@ function CatalogState() {
   }, []);
 
   // Derive cities from real data
-  const cities = useMemo(() => [...new Set(allSpecialists.map(s => s.city).filter(Boolean) as string[])], [allSpecialists]);
+  const cities = useMemo(() => {
+    const all = allSpecialists.flatMap(s => s.cities ?? []).filter(Boolean) as string[];
+    return [...new Set(all)];
+  }, [allSpecialists]);
 
   // Derive FNS options filtered by selected city
   const fnsOptions = useMemo(() => {
     if (!selectedCity) return [];
     const allFns = allSpecialists
-      .filter(s => s.city === selectedCity)
-      .flatMap(s => (s.fnsServices ?? []).map(f => f.fns));
+      .filter(s => (s.cities ?? []).includes(selectedCity))
+      .flatMap(s => s.fnsOffices ?? []);
     return [...new Set(allFns)];
   }, [selectedCity, allSpecialists]);
 
@@ -219,8 +236,8 @@ function CatalogState() {
   // Filter specialists
   const filtered = useMemo(() => {
     return allSpecialists.filter((sp) => {
-      if (selectedCity && sp.city !== selectedCity) return false;
-      if (selectedFns && !(sp.fnsServices ?? []).some(f => f.fns === selectedFns)) return false;
+      if (selectedCity && !(sp.cities ?? []).includes(selectedCity)) return false;
+      if (selectedFns && !(sp.fnsOffices ?? []).includes(selectedFns)) return false;
       return true;
     });
   }, [selectedCity, selectedFns, allSpecialists]);
@@ -307,7 +324,7 @@ function CatalogState() {
         <View className={`gap-3 ${isDesktop ? 'flex-row flex-wrap' : ''}`}>
           {filtered.map((sp) => (
             <SpecialistCard
-              key={sp.id}
+              key={sp.nick}
               specialist={sp}
               matchedFns={selectedFns || undefined}
             />

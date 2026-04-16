@@ -22,7 +22,7 @@ function LogoBlock() {
   );
 }
 
-function BurgerDrawer({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+function BurgerDrawer({ open, onToggle, isAuthenticated }: { open: boolean; onToggle: () => void; isAuthenticated: boolean }) {
   if (!open) return null;
   return (
     <>
@@ -46,11 +46,15 @@ function BurgerDrawer({ open, onToggle }: { open: boolean; onToggle: () => void 
             <Text className="text-base text-textSecondary">{link.label}</Text>
           </Pressable>
         ))}
-        <View className="my-2 h-px bg-borderLight" />
-        <Pressable className="flex-row items-center gap-3 py-2.5" onPress={() => { onToggle(); router.push('/(auth)/role' as any); }}>
-          <Feather name="log-in" size={18} color={Colors.brandPrimary} />
-          <Text className="text-base font-semibold text-brandPrimary">Войти</Text>
-        </Pressable>
+        {!isAuthenticated && (
+          <>
+            <View className="my-2 h-px bg-borderLight" />
+            <Pressable className="flex-row items-center gap-3 py-2.5" onPress={() => { onToggle(); router.push('/(auth)/role' as any); }}>
+              <Feather name="log-in" size={18} color={Colors.brandPrimary} />
+              <Text className="text-base font-semibold text-brandPrimary">Войти</Text>
+            </Pressable>
+          </>
+        )}
       </View>
     </>
   );
@@ -73,7 +77,7 @@ export function Header({
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (variant !== 'auth' || !isAuthenticated || hasNotif !== undefined) return;
+    if (variant === 'back' || !isAuthenticated || hasNotif !== undefined) return;
     let cancelled = false;
     const load = () => {
       notifications.unreadCount()
@@ -108,6 +112,12 @@ export function Header({
     );
   }
 
+  // variant === 'auth' OR (variant === 'guest' AND user is logged in — avoid
+  // stale "Войти" CTA on shared/public pages like /specialists).
+  const initials = user
+    ? ((user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')).toUpperCase() || 'U'
+    : 'U';
+
   if (variant === 'guest') {
     return (
       <View className="relative" style={{ zIndex: 10 }}>
@@ -117,9 +127,27 @@ export function Header({
         >
           <LogoBlock />
           <View className="flex-row items-center gap-4">
-            <Pressable className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4" onPress={() => router.push('/(auth)/role' as any)}>
-              <Text className="text-sm font-semibold text-white">Войти</Text>
-            </Pressable>
+            {isAuthenticated ? (
+              <>
+                <Pressable onPress={() => router.push('/notifications' as any)}>
+                  <Feather name="bell" size={20} color={Colors.textSecondary} />
+                  {showNotifDot && (
+                    <View className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-statusError" />
+                  )}
+                </Pressable>
+                <Pressable
+                  className="h-8 w-8 items-center justify-center rounded-full border bg-bgSecondary"
+                  style={{ borderColor: Colors.border }}
+                  onPress={() => router.push('/(tabs)/profile' as any)}
+                >
+                  <Text className="text-xs font-bold text-brandPrimary">{initials}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4" onPress={() => router.push('/(auth)/role' as any)}>
+                <Text className="text-sm font-semibold text-white">Войти</Text>
+              </Pressable>
+            )}
             <Pressable onPress={() => setBurgerOpen(!burgerOpen)}>
               <Feather
                 name={burgerOpen ? 'x' : 'menu'}
@@ -129,15 +157,10 @@ export function Header({
             </Pressable>
           </View>
         </View>
-        <BurgerDrawer open={burgerOpen} onToggle={() => setBurgerOpen(false)} />
+        <BurgerDrawer open={burgerOpen} onToggle={() => setBurgerOpen(false)} isAuthenticated={isAuthenticated} />
       </View>
     );
   }
-
-  // variant === 'auth'
-  const initials = user
-    ? ((user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')).toUpperCase() || 'U'
-    : 'U';
 
   return (
     <View
