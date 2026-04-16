@@ -1,31 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../../constants/Colors';
+import { Colors, Spacing } from '../../../constants/Colors';
+import { Card, Container, EmptyState, Heading, Rating, Screen, Text } from '../../../components/ui';
 import { Header } from '../../../components/Header';
 import * as api from '../../../lib/api/endpoints';
-
-function StarDisplay({ rating }: { rating: number }) {
-  return (
-    <View style={s.starRow}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Feather
-          key={n}
-          name="star"
-          size={14}
-          color={n <= rating ? '#F59E0B' : Colors.border}
-        />
-      ))}
-    </View>
-  );
-}
 
 function ReviewCard({ item }: { item: any }) {
   const date = new Date(item.createdAt).toLocaleDateString('ru-RU', {
@@ -35,16 +15,18 @@ function ReviewCard({ item }: { item: any }) {
   });
 
   return (
-    <View style={s.card}>
-      <View style={s.cardHeader}>
-        <StarDisplay rating={item.rating} />
-        <Text style={s.dateText}>{date}</Text>
+    <Card variant="outlined" padding="md">
+      <View style={{ gap: Spacing.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Rating value={item.rating} size="md" showNumeric={false} />
+          <Text variant="caption">{date}</Text>
+        </View>
+        {item.comment ? (
+          <Text style={{ lineHeight: 22, color: Colors.textSecondary }}>{item.comment}</Text>
+        ) : null}
+        <Text variant="caption" weight="semibold">{item.client?.username || 'Клиент'}</Text>
       </View>
-      {item.comment ? (
-        <Text style={s.comment}>{item.comment}</Text>
-      ) : null}
-      <Text style={s.clientName}>{item.client?.username || 'Клиент'}</Text>
-    </View>
+    </Card>
   );
 }
 
@@ -80,113 +62,54 @@ export default function SpecialistReviewsScreen() {
   }, [specialistId]);
 
   const avgRating = reviews.length
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen bg={Colors.white}>
       <Header variant="back" backTitle="Отзывы" onBack={() => router.back()} />
       {loading ? (
-        <View style={s.center}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={Colors.brandPrimary} />
         </View>
       ) : (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.scroll}>
-          {avgRating && (
-            <View style={s.summary}>
-              <Text style={s.avgValue}>{avgRating}</Text>
-              <Feather name="star" size={20} color="#F59E0B" />
-              <Text style={s.totalText}>({total} отзывов)</Text>
-            </View>
-          )}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+          <Container>
+            <View style={{ gap: Spacing.md }}>
+              {avgRating != null ? (
+                <Card variant="outlined" padding="md" style={{ backgroundColor: Colors.bgSecondary }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                    <Heading level={3}>{avgRating.toFixed(1)}</Heading>
+                    <Feather name="star" size={20} color={Colors.amber} />
+                    <Text variant="caption">({total} отзывов)</Text>
+                  </View>
+                </Card>
+              ) : null}
 
-          {reviews.length === 0 ? (
-            <View style={s.empty}>
-              <Feather name="star" size={32} color={Colors.border} />
-              <Text style={s.emptyText}>Отзывов пока нет</Text>
-            </View>
-          ) : (
-            reviews.map((r) => <ReviewCard key={r.id} item={r} />)
-          )}
-
-          {reviews.length < total && (
-            <View style={{ marginTop: Spacing.md, alignItems: 'center' }}>
-              {loadingMore ? (
-                <ActivityIndicator color={Colors.brandPrimary} />
+              {reviews.length === 0 ? (
+                <EmptyState
+                  icon={<Feather name="star" size={32} color={Colors.border} />}
+                  title="Отзывов пока нет"
+                />
               ) : (
-                <Text
-                  style={s.loadMore}
-                  onPress={() => load(page + 1, true)}
-                >
-                  Загрузить ещё
-                </Text>
+                reviews.map((r) => <ReviewCard key={r.id} item={r} />)
               )}
+
+              {reviews.length < total ? (
+                <View style={{ marginTop: Spacing.md, alignItems: 'center' }}>
+                  {loadingMore ? (
+                    <ActivityIndicator color={Colors.brandPrimary} />
+                  ) : (
+                    <Pressable onPress={() => load(page + 1, true)} style={{ paddingVertical: Spacing.sm }}>
+                      <Text weight="semibold" style={{ color: Colors.brandPrimary }}>Загрузить ещё</Text>
+                    </Pressable>
+                  )}
+                </View>
+              ) : null}
             </View>
-          )}
+          </Container>
         </ScrollView>
       )}
-    </View>
+    </Screen>
   );
 }
-
-const s = StyleSheet.create({
-  scroll: { padding: Spacing.lg, gap: Spacing.md },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  summary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.card,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  avgValue: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  totalText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-
-  card: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: BorderRadius.card,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  starRow: { flexDirection: 'row', gap: 2 },
-  dateText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted },
-  comment: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  clientName: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-
-  empty: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing['3xl'] },
-  emptyText: { fontSize: Typography.fontSize.base, color: Colors.textMuted },
-
-  loadMore: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-    paddingVertical: Spacing.sm,
-  },
-});

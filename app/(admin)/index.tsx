@@ -1,31 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/Colors';
 import { admin } from '../../lib/api/endpoints';
 import { Header } from '../../components/Header';
-
-function SkeletonBlock({ width, height, radius }: { width: string | number; height: number; radius?: number }) {
-  return (
-    <View style={[s.skeleton, { width: width as any, height, borderRadius: radius || BorderRadius.md }]} />
-  );
-}
+import { Button, Card, Container, Heading, Screen, Text } from '../../components/ui';
 
 function StatCard({ label, value, color, trend, icon }: { label: string; value: string | number; color: string; trend?: string; icon: string }) {
   return (
-    <View style={s.statCard}>
-      <View style={[s.statIcon, { backgroundColor: color + '15' }]}>
+    <Card variant="outlined" padding="md" style={{ width: '48%', gap: Spacing.xs }}>
+      <View style={{
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: color + '15',
+      }}>
         <Feather name={icon as any} size={18} color={color} />
       </View>
-      <Text style={s.statLabel}>{label}</Text>
-      <Text style={[s.statValue, { color }]}>{value}</Text>
-      {trend && (
-        <View style={s.trendRow}>
+      <Text variant="caption">{label}</Text>
+      <Text style={{ fontSize: 22, fontWeight: Typography.fontWeight.bold, color, fontFamily: Typography.fontFamily.bold }}>
+        {value}
+      </Text>
+      {trend ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Feather name="trending-up" size={12} color={Colors.statusSuccess} />
-          <Text style={s.statTrend}>{trend}</Text>
+          <Text variant="caption" style={{ color: Colors.statusSuccess }}>{trend}</Text>
         </View>
-      )}
-    </View>
+      ) : null}
+    </Card>
   );
 }
 
@@ -50,39 +54,39 @@ function WeeklyChart({ title, data }: { title: string; data: WeeklyBucket[] }) {
   const allZero = totals.every((t) => t === 0);
 
   return (
-    <View style={s.chartCard}>
-      <Text style={s.chartTitle}>{title}</Text>
+    <Card variant="outlined" padding="lg" style={{ gap: Spacing.md }}>
+      <Heading level={4}>{title}</Heading>
       {allZero ? (
         <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>
-            Нет активности за последние 7 дней
-          </Text>
+          <Text variant="caption">Нет активности за последние 7 дней</Text>
         </View>
       ) : (
-        <View style={s.chartArea}>
-          <View style={s.chartBars}>
+        <View style={{ gap: Spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm, height: 100 }}>
             {totals.map((t, i) => {
               const h = Math.max(4, Math.round((t / max) * 100));
               const isLast = i === totals.length - 1;
               return (
                 <View
                   key={i}
-                  style={[
-                    s.chartBar,
-                    { height: h, backgroundColor: isLast ? Colors.brandPrimary : Colors.bgSecondary },
-                  ]}
+                  style={{
+                    flex: 1,
+                    borderRadius: BorderRadius.sm,
+                    height: h,
+                    backgroundColor: isLast ? Colors.brandPrimary : Colors.bgSecondary,
+                  }}
                 />
               );
             })}
           </View>
-          <View style={s.chartLabels}>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
             {labels.map((d, i) => (
-              <Text key={i} style={s.chartLabel}>{d}</Text>
+              <Text key={i} variant="caption" align="center" style={{ flex: 1 }}>{d}</Text>
             ))}
           </View>
         </View>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -141,56 +145,85 @@ function DefaultDashboard({
   activities: ActivityRow[];
 }) {
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={s.container}>
-      <View style={s.pageHeader}>
-        <Text style={s.pageTitle}>Панель администратора</Text>
-        <Text style={s.pageSubtitle}>Обзор платформы</Text>
-      </View>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+      <Container>
+        <View style={{ gap: Spacing.lg }}>
+          <View style={{ gap: Spacing.xs }}>
+            <Heading level={2}>Панель администратора</Heading>
+            <Text variant="caption">Обзор платформы</Text>
+          </View>
 
-      <View style={s.statsGrid}>
-        <StatCard label="Всего пользователей" value={st.totalUsers ?? '—'} color={Colors.textPrimary} icon="users" />
-        <StatCard label="Специалистов" value={st.totalSpecialists ?? '—'} color={Colors.brandPrimary} icon="briefcase" />
-        <StatCard label="Всего заявок" value={st.totalRequests ?? '—'} color={Colors.textPrimary} icon="file-text" />
-        <StatCard label="Открытые жалобы" value={st.openComplaints ?? '—'} color={Colors.statusWarning} icon="alert-triangle" />
-      </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+            <StatCard label="Всего пользователей" value={st.totalUsers ?? '—'} color={Colors.textPrimary} icon="users" />
+            <StatCard label="Специалистов" value={st.totalSpecialists ?? '—'} color={Colors.brandPrimary} icon="briefcase" />
+            <StatCard label="Всего заявок" value={st.totalRequests ?? '—'} color={Colors.textPrimary} icon="file-text" />
+            <StatCard label="Открытые жалобы" value={st.openComplaints ?? '—'} color={Colors.statusWarning} icon="alert-triangle" />
+          </View>
 
-      <WeeklyChart title="Активность за неделю" data={weekly} />
+          <WeeklyChart title="Активность за неделю" data={weekly} />
 
-      <View style={s.recentSection}>
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Последние действия</Text>
-          <View style={s.sectionBadge}>
-            <Text style={s.sectionBadgeText}>{activities.length}</Text>
+          <View style={{ gap: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <Heading level={3}>Последние действия</Heading>
+              <View style={{
+                backgroundColor: Colors.brandPrimary,
+                minWidth: 22,
+                height: 22,
+                borderRadius: 11,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 5,
+              }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.white, fontWeight: Typography.fontWeight.bold, fontFamily: Typography.fontFamily.bold }}>
+                  {activities.length}
+                </Text>
+              </View>
+            </View>
+            {activities.length === 0 ? (
+              <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
+                <Text variant="caption">Пока нет активности</Text>
+              </View>
+            ) : (
+              activities.map((item, i) => {
+                const detailText = item.targetName
+                  ? `${item.actorName} — ${item.targetName}`
+                  : item.actorName;
+                return (
+                  <View
+                    key={i}
+                    style={{
+                      flexDirection: 'row',
+                      gap: Spacing.md,
+                      alignItems: 'center',
+                      paddingVertical: Spacing.sm,
+                      borderBottomWidth: 1,
+                      borderBottomColor: Colors.bgSecondary,
+                    }}
+                  >
+                    <View style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: Colors.brandPrimary + '15',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Feather name={activityIconFor(item.type) as any} size={16} color={Colors.brandPrimary} />
+                    </View>
+                    <View style={{ flex: 1, gap: 1 }}>
+                      <Text weight="semibold" numberOfLines={1}>
+                        {item.action}: <Text>{detailText}</Text>
+                      </Text>
+                      <Text variant="caption">{formatRelativeTime(item.createdAt)}</Text>
+                    </View>
+                    <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+                  </View>
+                );
+              })
+            )}
           </View>
         </View>
-        {activities.length === 0 ? (
-          <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
-            <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>
-              Пока нет активности
-            </Text>
-          </View>
-        ) : (
-          activities.map((item, i) => {
-            const detailText = item.targetName
-              ? `${item.actorName} — ${item.targetName}`
-              : item.actorName;
-            return (
-              <View key={i} style={s.activityRow}>
-                <View style={s.activityIconWrap}>
-                  <Feather name={activityIconFor(item.type) as any} size={16} color={Colors.brandPrimary} />
-                </View>
-                <View style={s.activityContent}>
-                  <Text style={s.activityAction} numberOfLines={1}>
-                    {item.action}: <Text style={s.activityDetail}>{detailText}</Text>
-                  </Text>
-                  <Text style={s.activityTime}>{formatRelativeTime(item.createdAt)}</Text>
-                </View>
-                <Feather name="chevron-right" size={16} color={Colors.textMuted} />
-              </View>
-            );
-          })
-        )}
-      </View>
+      </Container>
     </ScrollView>
   );
 }
@@ -222,83 +255,22 @@ export default function AdminDashboardPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen bg={Colors.white}>
       <Header variant="auth" />
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md }}>
           <ActivityIndicator color={Colors.brandPrimary} />
-          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Загрузка...</Text>
+          <Text variant="caption">Загрузка...</Text>
         </View>
       ) : error ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl, gap: Spacing.md }}>
           <Feather name="alert-circle" size={32} color={Colors.statusError} />
-          <Text style={{ fontSize: Typography.fontSize.base, color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
-          <Pressable
-            onPress={load}
-            style={{ paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn }}
-          >
-            <Text style={{ color: Colors.white, fontWeight: Typography.fontWeight.semibold }}>Повторить</Text>
-          </Pressable>
+          <Text align="center" style={{ color: Colors.statusError }}>{error}</Text>
+          <Button onPress={load}>Повторить</Button>
         </View>
       ) : (
         <DefaultDashboard st={stats ?? {}} weekly={weekly} activities={activities} />
       )}
-    </View>
+    </Screen>
   );
 }
-
-const s = StyleSheet.create({
-  container: { padding: Spacing.lg, gap: Spacing.lg },
-
-  pageHeader: { gap: Spacing.xs },
-  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
-  pageSubtitle: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  statCard: {
-    width: '48%', backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card,
-    padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, gap: Spacing.xs, ...Shadows.sm,
-  },
-  statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  statLabel: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-  statValue: { fontSize: 22, fontWeight: Typography.fontWeight.bold },
-  trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statTrend: { fontSize: Typography.fontSize.xs, color: Colors.statusSuccess },
-
-  chartCard: {
-    backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm,
-  },
-  chartTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  chartArea: { gap: Spacing.sm },
-  chartBars: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm, height: 100 },
-  chartBar: { flex: 1, borderRadius: BorderRadius.sm },
-  chartLabels: { flexDirection: 'row', gap: Spacing.sm },
-  chartLabel: { flex: 1, fontSize: Typography.fontSize.xs, color: Colors.textMuted, textAlign: 'center' },
-
-  recentSection: { gap: Spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  sectionTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  sectionBadge: {
-    backgroundColor: Colors.brandPrimary, minWidth: 22, height: 22, borderRadius: 11,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
-  },
-  sectionBadgeText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.white },
-
-  activityRow: {
-    flexDirection: 'row', gap: Spacing.md, alignItems: 'center',
-    paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary,
-  },
-  activityIconWrap: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.brandPrimary + '15',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  activityContent: { flex: 1, gap: 1 },
-  activityAction: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
-  activityDetail: { fontWeight: Typography.fontWeight.regular, color: Colors.textSecondary },
-  activityTime: { fontSize: Typography.fontSize.sm, color: Colors.textMuted },
-
-  // Loading
-  skeleton: { backgroundColor: Colors.bgSurface, opacity: 0.7 },
-  loadingText: { fontSize: Typography.fontSize.xs, color: Colors.textMuted, marginTop: Spacing.sm },
-});

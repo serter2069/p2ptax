@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { BorderRadius, Colors, Spacing } from '../../constants/Colors';
 import { Header } from '../../components/Header';
 import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
 import { requests as requestsApi } from '../../lib/api/endpoints';
+import { Badge, Button, Card, Container, Heading, Screen, Text } from '../../components/ui';
 
 interface RequestDetail {
   id: string;
@@ -31,55 +32,72 @@ function RequestCard({ req }: { req: RequestDetail }) {
     : '—';
 
   return (
-    <View className="gap-3 rounded-xl border border-borderLight bg-white p-5">
-      {/* Status + date */}
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-1.5 rounded-full bg-[#DCFCE7] px-2 py-0.5">
-          <View className="h-1.5 w-1.5 rounded-full bg-[#15803D]" />
-          <Text className="text-xs font-semibold text-[#15803D]">{req.status ?? 'Активна'}</Text>
+    <Card variant="outlined" padding="lg">
+      <View style={{ gap: Spacing.md }}>
+        {/* Status + date */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Badge variant="success">{req.status ?? 'Активна'}</Badge>
+          <Text variant="caption">{date}</Text>
         </View>
-        <Text className="text-xs text-textMuted">{date}</Text>
-      </View>
 
-      {/* Title */}
-      <Text className="text-xl font-bold leading-7 text-textPrimary">{req.title}</Text>
+        {/* Title */}
+        <Heading level={3}>{req.title}</Heading>
 
-      {/* Description */}
-      <Text className="text-base leading-6 text-textSecondary">{req.description ?? ''}</Text>
+        {/* Description */}
+        {req.description ? (
+          <Text style={{ lineHeight: 24 }}>{req.description}</Text>
+        ) : null}
 
-      {/* Tags */}
-      <View className="flex-row flex-wrap gap-2">
-        {req.city && (
-          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
-            <Feather name="map-pin" size={12} color={Colors.brandPrimary} />
-            <Text className="text-xs font-medium text-brandPrimary">{req.city}</Text>
+        {/* Tags */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+          {req.city ? (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              borderRadius: BorderRadius.full,
+              backgroundColor: Colors.bgSecondary,
+              paddingHorizontal: Spacing.sm,
+              paddingVertical: Spacing.xs,
+            }}>
+              <Feather name="map-pin" size={12} color={Colors.brandPrimary} />
+              <Text variant="caption" weight="medium" style={{ color: Colors.brandPrimary }}>{req.city}</Text>
+            </View>
+          ) : null}
+          {req.serviceCategory ? (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              borderRadius: BorderRadius.full,
+              backgroundColor: Colors.bgSecondary,
+              paddingHorizontal: Spacing.sm,
+              paddingVertical: Spacing.xs,
+            }}>
+              <Feather name="briefcase" size={12} color={Colors.brandPrimary} />
+              <Text variant="caption" weight="medium" style={{ color: Colors.brandPrimary }}>{req.serviceCategory}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Divider */}
+        <View style={{ height: 1, backgroundColor: Colors.borderLight }} />
+
+        {/* Meta */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl }}>
+          {req.ifnsCode ? (
+            <View style={{ gap: 2 }}>
+              <Text variant="caption" style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>ФНС</Text>
+              <Text weight="semibold">{req.ifnsCode}</Text>
+            </View>
+          ) : null}
+          <View style={{ gap: 2 }}>
+            <Text variant="caption" style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Клиент</Text>
+            <Text weight="semibold">{clientName}</Text>
           </View>
-        )}
-        {req.serviceCategory && (
-          <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-1">
-            <Feather name="briefcase" size={12} color={Colors.brandPrimary} />
-            <Text className="text-xs font-medium text-brandPrimary">{req.serviceCategory}</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Divider */}
-      <View className="h-px bg-borderLight" />
-
-      {/* Meta */}
-      <View className="flex-row flex-wrap gap-5">
-        {req.ifnsCode && (
-          <View className="gap-0.5">
-            <Text className="text-xs uppercase tracking-wide text-textMuted">ФНС</Text>
-            <Text className="text-base font-semibold text-textPrimary">{req.ifnsCode}</Text>
-          </View>
-        )}
-        <View className="gap-0.5">
-          <Text className="text-xs uppercase tracking-wide text-textMuted">Клиент</Text>
-          <Text className="text-base font-semibold text-textPrimary">{clientName}</Text>
         </View>
       </View>
-    </View>
+    </Card>
   );
 }
 
@@ -88,10 +106,19 @@ function RequestCard({ req }: { req: RequestDetail }) {
 // ---------------------------------------------------------------------------
 function ThreadCountBadge({ count }: { count: number }) {
   return (
-    <View className="flex-row items-center gap-2 rounded-lg bg-bgSecondary px-3 py-2">
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      borderRadius: BorderRadius.lg,
+      backgroundColor: Colors.bgSecondary,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+    }}>
       <Feather name="users" size={14} color={Colors.brandPrimary} />
-      <Text className="text-sm text-textSecondary">
-        <Text className="font-semibold text-brandPrimary">{count} специалистов</Text> уже написали
+      <Text variant="caption" style={{ color: Colors.textSecondary }}>
+        <Text variant="caption" weight="semibold" style={{ color: Colors.brandPrimary }}>{count} специалистов</Text>
+        {' уже написали'}
       </Text>
     </View>
   );
@@ -102,17 +129,17 @@ function ThreadCountBadge({ count }: { count: number }) {
 // ---------------------------------------------------------------------------
 function WriteActionPanel({ onWrite }: { onWrite: () => void }) {
   return (
-    <View className="gap-2">
-      <Pressable
+    <View style={{ gap: Spacing.sm }}>
+      <Button
+        fullWidth
         onPress={onWrite}
-        className="h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary"
+        icon={<Feather name="send" size={16} color={Colors.white} />}
       >
-        <Feather name="send" size={16} color={Colors.white} />
-        <Text className="text-base font-semibold text-white">Написать</Text>
-      </Pressable>
-      <View className="flex-row items-center justify-center gap-1.5">
+        Написать
+      </Button>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Feather name="info" size={14} color={Colors.textMuted} />
-        <Text className="text-center text-sm text-textMuted">
+        <Text variant="caption" align="center">
           После первого сообщения откроется чат
         </Text>
       </View>
@@ -151,23 +178,27 @@ export default function PublicRequestDetailPage() {
   } : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen bg={Colors.white}>
       <Header variant="back" backTitle="Заявка" onBack={() => router.back()} />
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={Colors.brandPrimary} />
         </View>
       ) : error ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing['2xl'], gap: Spacing.md }}>
           <Feather name="alert-circle" size={28} color={Colors.statusError} />
-          <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+          <Text align="center" style={{ color: Colors.statusError }}>{error}</Text>
         </View>
       ) : reqData ? (
         <>
-          <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
-            <RequestCard req={reqData} />
-            <ThreadCountBadge count={reqData._count?.threads ?? 0} />
-            <WriteActionPanel onWrite={() => setWriteOpen(true)} />
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+            <Container>
+              <View style={{ gap: Spacing.lg }}>
+                <RequestCard req={reqData} />
+                <ThreadCountBadge count={reqData._count?.threads ?? 0} />
+                <WriteActionPanel onWrite={() => setWriteOpen(true)} />
+              </View>
+            </Container>
           </ScrollView>
           <WriteConfirmModal
             visible={writeOpen && !!requestId}
@@ -180,6 +211,6 @@ export default function PublicRequestDetailPage() {
           />
         </>
       ) : null}
-    </View>
+    </Screen>
   );
 }
