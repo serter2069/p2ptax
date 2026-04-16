@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { requests as requestsApi } from '../../lib/api/endpoints';
 
@@ -24,12 +25,12 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   CANCELLED: { label: 'Отменена', color: Colors.statusError, bg: Colors.statusBg.error },
 };
 
-function RequestCard({ title, service, fns, city, status, date, messageCount }: {
-  title: string; service: string; fns: string; city: string; status: string; date: string; messageCount: number;
+function RequestCard({ id, title, service, fns, city, status, date, messageCount }: {
+  id: string; title: string; service: string; fns: string; city: string; status: string; date: string; messageCount: number;
 }) {
   const st = STATUS_MAP[status] || STATUS_MAP.NEW;
   return (
-    <Pressable style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm }}>
+    <Pressable style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm }} onPress={() => router.push(`/(dashboard)/my-requests/${id}` as any)}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm }}>
         <Text style={{ flex: 1, fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary }} numberOfLines={2}>{title}</Text>
         <View style={{ paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full, backgroundColor: st.bg }}>
@@ -108,7 +109,7 @@ export default function RequestsScreen() {
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, gap: Spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>Мои заявки</Text>
-        <Pressable style={{ backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.btn, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+        <Pressable style={{ backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.btn, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }} onPress={() => router.push('/(dashboard)/my-requests/new' as any)}>
           <Feather name="plus" size={16} color={Colors.white} />
           <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Новая</Text>
         </Pressable>
@@ -132,6 +133,7 @@ export default function RequestsScreen() {
       ) : visibleRequests.map((r) => (
         <RequestCard
           key={r.id}
+          id={r.id}
           title={r.title}
           service={r.serviceCategory ?? '—'}
           fns={r.ifnsCode ?? '—'}

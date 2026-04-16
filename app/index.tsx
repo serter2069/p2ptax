@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import { Colors, Shadows } from '../constants/Colors';
 import { ifns } from '../lib/api/endpoints';
 import { Header } from '../components/Header';
@@ -211,7 +211,7 @@ function HeroSection() {
               />
             </View>
 
-            <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary">
+            <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary" onPress={() => router.push('/(auth)/email' as any)}>
               <Feather name="send" size={16} color={Colors.white} />
               <Text className="text-base font-semibold text-white">Отправить заявку</Text>
             </Pressable>
@@ -246,6 +246,7 @@ const SPECIALISTS = [
 ];
 
 function SpecialistsCarousel() {
+  const router = useRouter();
   return (
     <View className="py-10" style={{ backgroundColor: Colors.bgSecondary }}>
       <View className="mb-6 w-full self-center px-5" style={{ maxWidth: 800 }}>
@@ -308,7 +309,7 @@ function SpecialistsCarousel() {
               <Text className="text-xs text-textMuted">c {spec.since} г.</Text>
             </View>
 
-            <Pressable className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg border border-brandPrimary">
+            <Pressable className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg border border-brandPrimary" onPress={() => router.push(`/specialists/${spec.initials.toLowerCase()}` as any)}>
               <Text className="text-xs font-semibold text-brandPrimary">Подробнее</Text>
             </Pressable>
           </View>
@@ -429,6 +430,7 @@ function StatsSection() {
 // =====================================================================
 
 function BottomCTA() {
+  const router = useRouter();
   return (
     <View className="items-center px-5 py-10" style={{ backgroundColor: Colors.bgSecondary }}>
       <View className="w-full items-center gap-4 rounded-2xl bg-white p-8" style={{ maxWidth: 600, ...Shadows.md }}>
@@ -437,7 +439,7 @@ function BottomCTA() {
         <Text className="max-w-sm text-center text-sm text-textSecondary">
           Воспользуйтесь каталогом, чтобы найти специалиста с опытом работы в вашей налоговой инспекции
         </Text>
-        <Pressable className="h-12 w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary" style={{ maxWidth: 300 }}>
+        <Pressable className="h-12 w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary" style={{ maxWidth: 300 }} onPress={() => router.push('/specialists' as any)}>
           <Feather name="search" size={16} color={Colors.white} />
           <Text className="text-base font-semibold text-white">Открыть каталог</Text>
         </Pressable>
@@ -446,7 +448,7 @@ function BottomCTA() {
       <View className="mt-6 flex-row items-center gap-2">
         <Feather name="briefcase" size={14} color={Colors.textMuted} />
         <Text className="text-sm text-textMuted">Вы налоговый специалист?</Text>
-        <Pressable>
+        <Pressable onPress={() => router.push('/(auth)/email' as any)}>
           <Text className="text-sm font-medium text-brandPrimary">Присоединиться</Text>
         </Pressable>
       </View>

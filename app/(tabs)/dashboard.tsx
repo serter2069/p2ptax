@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { Colors } from "../../constants/Colors";
 
 function getGreeting(): string {
@@ -23,12 +24,12 @@ function StatCard({ icon, label, value, color }: { icon: string; label: string; 
   );
 }
 
-function RequestCard({ title, service, fns, city, date, messageCount, status, statusColor }: {
-  title: string; service: string; fns: string; city: string; date: string;
+function RequestCard({ id, title, service, fns, city, date, messageCount, status, statusColor }: {
+  id?: string; title: string; service: string; fns: string; city: string; date: string;
   messageCount: number; status: string; statusColor: string;
 }) {
   return (
-    <Pressable className="gap-2 rounded-xl border border-borderLight bg-white p-4">
+    <Pressable className="gap-2 rounded-xl border border-borderLight bg-white p-4" onPress={() => id && router.push(`/(dashboard)/my-requests/${id}` as any)}>
       <View className="flex-row items-start justify-between gap-2">
         <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={2}>{title}</Text>
         <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: statusColor + "18" }}>
@@ -65,11 +66,11 @@ function RequestCard({ title, service, fns, city, date, messageCount, status, st
   );
 }
 
-function MessagePreview({ initials, name, snippet, time, unread }: {
-  initials: string; name: string; snippet: string; time: string; unread?: boolean;
+function MessagePreview({ id, initials, name, snippet, time, unread }: {
+  id?: string; initials: string; name: string; snippet: string; time: string; unread?: boolean;
 }) {
   return (
-    <Pressable className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3">
+    <Pressable className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3" onPress={() => id ? router.push(`/chat/${id}` as any) : router.push('/(tabs)/messages' as any)}>
       <View className="h-10 w-10 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
         <Text className="text-sm font-bold text-brandPrimary">{initials}</Text>
       </View>
@@ -90,15 +91,15 @@ function MessagePreview({ initials, name, snippet, time, unread }: {
 function QuickActions() {
   return (
     <View className="flex-row gap-2">
-      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-brandPrimary">
+      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-brandPrimary" onPress={() => router.push('/(dashboard)/my-requests/new' as any)}>
         <Feather name="plus" size={16} color={Colors.white} />
         <Text className="text-sm font-semibold text-white">Новая заявка</Text>
       </Pressable>
-      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white">
+      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white" onPress={() => router.push('/(tabs)/requests' as any)}>
         <Feather name="list" size={16} color={Colors.brandPrimary} />
         <Text className="text-sm font-medium text-brandPrimary">Мои заявки</Text>
       </Pressable>
-      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white">
+      <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-borderLight bg-white" onPress={() => router.push('/(tabs)/messages' as any)}>
         <Feather name="message-circle" size={16} color={Colors.brandPrimary} />
         <Text className="text-sm font-medium text-brandPrimary">Сообщения</Text>
       </Pressable>
@@ -114,7 +115,7 @@ export default function DashboardScreen() {
           <Text className="text-xl font-bold text-textPrimary">{getGreeting()}, Елена!</Text>
           <Text className="text-sm text-textMuted">Ваши заявки и сообщения</Text>
         </View>
-        <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-bgSurface">
+        <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-bgSurface" onPress={() => router.push('/(tabs)/messages' as any)}>
           <Feather name="bell" size={20} color={Colors.textPrimary} />
         </Pressable>
       </View>
@@ -130,7 +131,7 @@ export default function DashboardScreen() {
       <View className="gap-3">
         <View className="flex-row items-center justify-between">
           <Text className="text-base font-semibold text-textPrimary">Активные заявки</Text>
-          <Pressable><Text className="text-sm font-medium text-brandPrimary">Все заявки</Text></Pressable>
+          <Pressable onPress={() => router.push('/(tabs)/requests' as any)}><Text className="text-sm font-medium text-brandPrimary">Все заявки</Text></Pressable>
         </View>
         <RequestCard title="Камеральная проверка декларации по НДС" service="Камеральная проверка" fns="ФНС №46 по г. Москве" city="Москва" date="08.04.2026" messageCount={2} status="Новая" statusColor={Colors.brandPrimary} />
         <RequestCard title="Отдел оперативного контроля — требование" service="Отдел оперативного контроля" fns="ФНС №12 по г. Новосибирску" city="Новосибирск" date="07.04.2026" messageCount={4} status="В работе" statusColor={Colors.statusWarning} />
@@ -140,7 +141,7 @@ export default function DashboardScreen() {
       <View className="gap-3">
         <View className="flex-row items-center justify-between">
           <Text className="text-base font-semibold text-textPrimary">Новые сообщения</Text>
-          <Pressable><Text className="text-sm font-medium text-brandPrimary">Все сообщения</Text></Pressable>
+          <Pressable onPress={() => router.push('/(tabs)/messages' as any)}><Text className="text-sm font-medium text-brandPrimary">Все сообщения</Text></Pressable>
         </View>
         <MessagePreview initials="АП" name="Алексей Петров" snippet="Здравствуйте! Готов помочь с камеральной проверкой. Опыт 8 лет." time="14:32" unread />
         <MessagePreview initials="ОС" name="Ольга Смирнова" snippet="Специализируюсь на сопровождении проверок. Помогу подготовиться." time="12:15" unread />

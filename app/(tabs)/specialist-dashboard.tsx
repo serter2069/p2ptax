@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { specialistPortal } from '../../lib/api/endpoints';
 import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
@@ -60,7 +60,7 @@ function RequestCard({ r, onWrite }: { r: FeedItem; onWrite: (r: FeedItem) => vo
           <Feather name="send" size={14} color={Colors.white} />
           <Text className="text-sm font-semibold text-white">Написать</Text>
         </Pressable>
-        <Pressable className="h-10 flex-row items-center justify-center gap-1.5 rounded-lg border border-borderLight px-4">
+        <Pressable className="h-10 flex-row items-center justify-center gap-1.5 rounded-lg border border-borderLight px-4" onPress={() => router.push(`/requests/${r.id}` as any)}>
           <Feather name="eye" size={14} color={Colors.textPrimary} />
           <Text className="text-sm font-medium text-textPrimary">Подробнее</Text>
         </Pressable>
@@ -137,7 +137,7 @@ export default function SpecialistDashboardScreen() {
           <Text className="max-w-[280px] text-center text-sm text-textMuted">
             Настройте город и ФНС в настройках, чтобы видеть больше заявок
           </Text>
-          <Pressable className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary px-6">
+          <Pressable className="mt-2 h-11 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary px-6" onPress={() => router.push('/(tabs)/specialist-settings' as any)}>
             <Feather name="settings" size={16} color={Colors.brandPrimary} />
             <Text className="text-sm font-semibold text-brandPrimary">Настройки</Text>
           </Pressable>

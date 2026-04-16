@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 
 function RequestInfo({ status, statusColor }: { status: string; statusColor: string }) {
