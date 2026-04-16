@@ -27,7 +27,10 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "P2PTax — налоговые специалисты",
+      "shortName": "P2PTax",
+      "description": "Специалисты, которые знают вашу ФНС изнутри"
     },
     "plugins": [
       "expo-router",

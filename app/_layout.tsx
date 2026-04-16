@@ -10,8 +10,8 @@ export default function RootLayout() {
   return (
     <>
       <Head>
-        <title>Налоговик — найти налогового специалиста</title>
-        <meta name="description" content="Сервис поиска налоговых специалистов. Заявки, чат, отзывы." />
+        <title>P2PTax — налоговые специалисты</title>
+        <meta name="description" content="Специалисты, которые знают вашу ФНС изнутри. Заявки, чат, отзывы." />
       </Head>
       <ErrorBoundary>
         <AuthProvider>
