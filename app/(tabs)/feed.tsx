@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { MOCK_CITIES, MOCK_FNS } from '../../constants/protoMockData';
+import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
 
 // ---------------------------------------------------------------------------
 // Mock Data
@@ -143,11 +145,12 @@ function CityFnsPicker({
 // ---------------------------------------------------------------------------
 // Request Card
 // ---------------------------------------------------------------------------
-function RequestFeedCard({ title, description, city, fns, service, date, author, memberSince, messageCount }: {
+function RequestFeedCard({ title, description, city, fns, service, date, author, memberSince, messageCount, onWrite }: {
   title: string; description: string; city: string; fns: string; service: string; date: string; author: string; memberSince: number; messageCount: number;
+  onWrite: () => void;
 }) {
   return (
-    <Pressable className="gap-2 rounded-xl border border-borderLight bg-white p-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}>
+    <View className="gap-2 rounded-xl border border-borderLight bg-white p-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}>
       <View className="flex-row items-center justify-between">
         <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={1}>{title}</Text>
         <Feather name="chevron-right" size={16} color={Colors.textMuted} />
@@ -180,14 +183,23 @@ function RequestFeedCard({ title, description, city, fns, service, date, author,
         </View>
         <Text className="text-xs text-textMuted">{date}</Text>
       </View>
-      {/* Response count */}
-      <View className="flex-row items-center gap-1.5">
-        <Feather name="message-circle" size={12} color={messageCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
-        <Text className={messageCount > 0 ? 'text-xs font-semibold text-brandPrimary' : 'text-xs text-textMuted'}>
-          {pluralSpecialists(messageCount)}
-        </Text>
+      {/* Message count + Write CTA */}
+      <View className="mt-1 flex-row items-center justify-between gap-2">
+        <View className="flex-row items-center gap-1.5">
+          <Feather name="message-circle" size={12} color={messageCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
+          <Text className={messageCount > 0 ? 'text-xs font-semibold text-brandPrimary' : 'text-xs text-textMuted'}>
+            {pluralSpecialists(messageCount)}
+          </Text>
+        </View>
+        <Pressable
+          onPress={onWrite}
+          className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg bg-brandPrimary px-4"
+        >
+          <Feather name="send" size={13} color={Colors.white} />
+          <Text className="text-xs font-semibold text-white">Написать</Text>
+        </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -195,8 +207,10 @@ function RequestFeedCard({ title, description, city, fns, service, date, author,
 // Feed State
 // ---------------------------------------------------------------------------
 function FeedState() {
+  const router = useRouter();
   const [filterCity, setFilterCity] = useState('');
   const [selectedFns, setSelectedFns] = useState<string[]>([]);
+  const [writeTarget, setWriteTarget] = useState<WriteConfirmModalRequest | null>(null);
 
   const handleCityChange = (v: string) => {
     setFilterCity(v);
@@ -277,10 +291,27 @@ function FeedState() {
               author={r.author}
               memberSince={r.memberSince}
               messageCount={r.messageCount}
+              onWrite={() => setWriteTarget({
+                id: String(r.id),
+                title: r.title,
+                description: r.description,
+                city: r.city,
+                service: r.service,
+              })}
             />
           ))}
         </View>
       )}
+
+      <WriteConfirmModal
+        visible={writeTarget !== null}
+        request={writeTarget}
+        onClose={() => setWriteTarget(null)}
+        onSuccess={(threadId) => {
+          setWriteTarget(null);
+          router.push(`/chat/${threadId}` as any);
+        }}
+      />
     </ScrollView>
   );
 }

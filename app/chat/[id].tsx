@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { MOCK_MESSAGES, MockMessage } from '../../constants/protoMockData';
 import { Header } from '../../components/Header';
+import { threads as threadsApi } from '../../lib/api/endpoints';
 
 function ChatHeader({ name, online }: { name: string; online: boolean }) {
   const initials = name.split(' ').map(n => n[0]).join('');
@@ -80,9 +81,18 @@ function TypingIndicator() {
 
 export default function ChatScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const threadId = rawId ?? '';
   const [messages] = useState<MockMessage[]>(MOCK_MESSAGES);
   const [inputText, setInputText] = useState('');
   const handleSend = () => { if (!inputText.trim()) return; setInputText(''); };
+
+  // Mark thread read on mount (best-effort — W-3 wires up real messages loading)
+  useEffect(() => {
+    if (!threadId) return;
+    threadsApi.markRead(threadId).catch(() => { /* ignore */ });
+  }, [threadId]);
 
   return (
     <View style={{ flex: 1 }}>

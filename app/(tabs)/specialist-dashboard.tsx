@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
+import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
 
 const REQUESTS = [
   {
@@ -46,7 +48,7 @@ const REQUESTS = [
   },
 ];
 
-function RequestCard({ r }: { r: typeof REQUESTS[0] }) {
+function RequestCard({ r, onWrite }: { r: typeof REQUESTS[0]; onWrite: (r: typeof REQUESTS[0]) => void }) {
   return (
     <View className="gap-2 rounded-xl border border-borderLight bg-white p-4">
       <View className="flex-row items-start justify-between gap-2">
@@ -76,9 +78,12 @@ function RequestCard({ r }: { r: typeof REQUESTS[0] }) {
       </View>
 
       <View className="mt-1 flex-row gap-2">
-        <Pressable className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
+        <Pressable
+          onPress={() => onWrite(r)}
+          className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary"
+        >
           <Feather name="send" size={14} color={Colors.white} />
-          <Text className="text-sm font-semibold text-white">Написать по заявке</Text>
+          <Text className="text-sm font-semibold text-white">Написать</Text>
         </Pressable>
         <Pressable className="h-10 flex-row items-center justify-center gap-1.5 rounded-lg border border-borderLight px-4">
           <Feather name="eye" size={14} color={Colors.textPrimary} />
@@ -94,13 +99,26 @@ function RequestCard({ r }: { r: typeof REQUESTS[0] }) {
 // ---------------------------------------------------------------------------
 
 function PopulatedState() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
+  const [writeTarget, setWriteTarget] = useState<WriteConfirmModalRequest | null>(null);
+
   const filtered = search
     ? REQUESTS.filter((r) =>
         r.title.toLowerCase().includes(search.toLowerCase()) ||
         r.service.toLowerCase().includes(search.toLowerCase()) ||
         r.city.toLowerCase().includes(search.toLowerCase()))
     : REQUESTS;
+
+  const handleWrite = (r: typeof REQUESTS[0]) => {
+    setWriteTarget({
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      city: r.city,
+      service: r.service,
+    });
+  };
 
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
@@ -130,7 +148,7 @@ function PopulatedState() {
       {/* Results */}
       {filtered.length > 0 ? (
         <View className="gap-3">
-          {filtered.map((r) => <RequestCard key={r.id} r={r} />)}
+          {filtered.map((r) => <RequestCard key={r.id} r={r} onWrite={handleWrite} />)}
         </View>
       ) : (
         <View className="items-center gap-2 py-8">
@@ -138,6 +156,16 @@ function PopulatedState() {
           <Text className="text-sm text-textMuted">Ничего не найдено</Text>
         </View>
       )}
+
+      <WriteConfirmModal
+        visible={writeTarget !== null}
+        request={writeTarget}
+        onClose={() => setWriteTarget(null)}
+        onSuccess={(threadId) => {
+          setWriteTarget(null);
+          router.push(`/chat/${threadId}` as any);
+        }}
+      />
     </ScrollView>
   );
 }
