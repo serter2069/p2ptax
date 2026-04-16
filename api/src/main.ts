@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ValidationExceptionFilter } from './common/validation-exception.filter';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
@@ -43,6 +44,16 @@ async function bootstrap() {
 
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['https://p2ptax.smartlaunchhub.com'];
   app.enableCors({ origin: allowedOrigins, credentials: true });
+
+  // Swagger UI at /api/docs (respects global prefix 'api')
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('P2PTax API')
+    .setDescription('Налоговик — P2P консультации')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document);
 
   const port = process.env.PORT ?? 3812;
   await app.listen(port);
