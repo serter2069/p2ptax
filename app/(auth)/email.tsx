@@ -3,6 +3,7 @@ import { View, Text, Pressable, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/Header';
+import { auth } from '../../lib/api/endpoints';
 
 export default function AuthEmailScreen() {
   const router = useRouter();
@@ -10,14 +11,22 @@ export default function AuthEmailScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!email || !email.includes('@')) {
       setError('Введите корректный email адрес');
       return;
     }
     setError('');
     setLoading(true);
-    setTimeout(() => setLoading(false), 1500);
+    try {
+      await auth.requestOtp(email.trim().toLowerCase());
+      router.push({ pathname: '/(auth)/otp', params: { email: email.trim().toLowerCase() } });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Не удалось отправить код. Попробуйте ещё раз.';
+      setError(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
