@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "seed": "doppler run -- npx ts-node prisma/seed.ts"
+    "seed": "doppler run -- npx ts-node prisma/seed.ts",
+    "demo:seed": "npx ts-node prisma/demo-seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1025.0",

@@ -108,6 +108,12 @@ jobs:
           export DOPPLER_TOKEN=$(cat /etc/doppler/p2ptax-stg.token)
           doppler run -- npx prisma migrate deploy
 
+      - name: Seed demo data (idempotent)
+        run: |
+          cd $DEPLOY_DIR/api
+          export DOPPLER_TOKEN=$(cat /etc/doppler/p2ptax-stg.token)
+          doppler run -- npm run demo:seed
+
       - name: Write version.json
         run: |
           cd $DEPLOY_DIR
