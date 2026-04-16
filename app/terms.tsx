@@ -3,7 +3,6 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius } from '../constants/Colors';
 import { Header } from '../components/Header';
-import { useAuth } from '../lib/auth/AuthContext';
 
 // ---------------------------------------------------------------------------
 // LOADED state — terms content rendered
@@ -77,12 +76,9 @@ function LoadedState() {
 }
 
 export default function TermsPage() {
-  const { isAuthenticated, user } = useAuth();
-  const variant = isAuthenticated ? 'auth' : 'guest';
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'EV';
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <Header variant={variant} initials={initials} />
+      <Header variant="guest" />
       <LoadedState />
     </View>
   );

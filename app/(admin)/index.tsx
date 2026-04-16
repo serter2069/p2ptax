@@ -4,7 +4,6 @@ import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { MOCK_ADMIN_STATS } from '../../constants/protoMockData';
 import { Header } from '../../components/Header';
-import { useAuth } from '../../lib/auth/AuthContext';
 
 function SkeletonBlock({ width, height, radius }: { width: string | number; height: number; radius?: number }) {
   return (
@@ -119,11 +118,9 @@ function DefaultDashboard() {
 }
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'EV';
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <Header variant="auth" initials={initials} />
+      <Header variant="auth" />
       <DefaultDashboard />
     </View>
   );
