@@ -1,23 +1,29 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-import { Header } from '../../components/Header';
 import { useChat, type ChatMessage } from '../../lib/hooks/useChat';
 import { getAccessToken } from '../../lib/api/storage';
-import { users, threads } from '../../lib/api/endpoints';
+import { users, threads, upload } from '../../lib/api/endpoints';
 
 // ---------------------------------------------------------------------------
 // ChatHeader
 // ---------------------------------------------------------------------------
-function ChatHeader({ name, online }: { name: string; online: boolean }) {
-  const initials = name.split(' ').map(n => n[0]).join('');
+function ChatHeader({ name, online, onBack }: { name: string; online: boolean; onBack?: () => void }) {
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || '?';
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.bgCard, ...Shadows.sm }}>
-      <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+      <Pressable onPress={onBack} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
         <Feather name="arrow-left" size={20} color={Colors.brandPrimary} />
-      </View>
+      </Pressable>
       <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.bgSurface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
         <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary }}>{initials}</Text>
         {online && <View style={{ position: 'absolute', bottom: -1, right: -1, width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.statusSuccess, borderWidth: 2, borderColor: Colors.bgCard }} />}
@@ -112,6 +118,25 @@ function EmptyState() {
 // ---------------------------------------------------------------------------
 // Main screen
 // ---------------------------------------------------------------------------
+interface ThreadParticipant {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+  specialistProfile?: { nick?: string | null; displayName?: string | null } | null;
+}
+
+function getInterlocutorName(participant: ThreadParticipant): string {
+  const sp = participant.specialistProfile;
+  if (sp?.displayName) return sp.displayName;
+  if (participant.firstName || participant.lastName) {
+    return [participant.firstName, participant.lastName].filter(Boolean).join(' ');
+  }
+  if (participant.username) return participant.username;
+  return participant.email;
+}
+
 export default function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -121,16 +146,32 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [token, setToken] = useState<string | null>(null);
   const [myId, setMyId] = useState<string | undefined>(undefined);
+  const [interlocutorName, setInterlocutorName] = useState('Чат');
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const markedReadRef = useRef(false);
 
-  // Load token + current user id
+  // Load token + current user id + thread participant name
   useEffect(() => {
     getAccessToken().then((t) => setToken(t));
     users.getMe().then((res) => {
       const me = (res as any).data ?? res;
-      setMyId(me?.id);
+      const meId = me?.id;
+      setMyId(meId);
+
+      // Now load thread to find interlocutor
+      if (threadId && meId) {
+        threads.getThreads().then((tRes) => {
+          const list: any[] = (tRes as any).data ?? tRes;
+          if (!Array.isArray(list)) return;
+          const thread = list.find((t: any) => t.id === threadId);
+          if (!thread) return;
+          const other: ThreadParticipant =
+            thread.participant1Id === meId ? thread.participant2 : thread.participant1;
+          if (other) setInterlocutorName(getInterlocutorName(other));
+        }).catch(() => {});
+      }
     }).catch(() => {});
-  }, []);
+  }, [threadId]);
 
   const {
     messages,
@@ -171,6 +212,40 @@ export default function ChatScreen() {
     try { await sendMessage(text); } catch { /* ignore */ }
   }, [inputText, sendMessage]);
 
+  const handleAttach = useCallback(async () => {
+    if (!threadId || uploadingAttachment) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+               'application/msword',
+               'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+      const asset = result.assets[0];
+      setUploadingAttachment(true);
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        name: asset.name,
+        type: asset.mimeType ?? 'application/octet-stream',
+      } as any);
+
+      const uploadRes = await upload.chatAttachment(threadId, formData);
+      const { url, signedUrl, type, name } = (uploadRes as any).data ?? uploadRes;
+
+      const attachmentType = type === 'IMAGE' ? 'image' : 'pdf';
+      await sendMessage('', { url, type: attachmentType, name });
+    } catch (err: any) {
+      Alert.alert('Ошибка', err?.response?.data?.message ?? 'Не удалось загрузить файл');
+    } finally {
+      setUploadingAttachment(false);
+    }
+  }, [threadId, uploadingAttachment, sendMessage]);
+
   // FlatList inverted: newest at bottom, data reversed so index 0 = newest
   const reversedMessages = [...messages].reverse();
 
@@ -186,8 +261,7 @@ export default function ChatScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgPrimary }}>
-      <Header variant="back" backTitle="Чат" onBack={() => router.back()} />
-      <ChatHeader name="Чат" online={false} />
+      <ChatHeader name={interlocutorName} online={false} onBack={() => router.back()} />
 
       {loading ? (
         <View style={{ flex: 1, padding: Spacing.md }}>
@@ -225,8 +299,15 @@ export default function ChatScreen() {
 
       <View style={{ padding: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.bgCard }}>
         <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
-          <Pressable style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-            <Feather name="paperclip" size={18} color={Colors.textMuted} />
+          <Pressable
+            onPress={handleAttach}
+            disabled={uploadingAttachment}
+            style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', opacity: uploadingAttachment ? 0.5 : 1 }}
+          >
+            {uploadingAttachment
+              ? <ActivityIndicator size="small" color={Colors.brandPrimary} />
+              : <Feather name="paperclip" size={18} color={Colors.textMuted} />
+            }
           </Pressable>
           <TextInput
             value={inputText}
