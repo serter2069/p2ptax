@@ -118,6 +118,14 @@ export const requests = {
     return client.post('/requests', data);
   },
 
+  /**
+   * POST /requests/quick — anonymous landing-page quick request.
+   * Public endpoint, does not require auth. Stores into the QuickRequest table.
+   */
+  createQuick(data: { description: string; serviceType: string; city?: string; ifnsId?: string; ifnsName?: string }) {
+    return client.post<{ id: string; status: string }>('/requests/quick', data);
+  },
+
   getRequest(id: string) {
     return client.get(`/requests/${id}`);
   },
@@ -190,6 +198,15 @@ export const threads = {
    */
   createForRequest(data: { requestId: string; firstMessage: string }) {
     return client.post<CreateThreadResponse>('/threads', data);
+  },
+
+  /**
+   * POST /threads — direct thread with another user (client → specialist).
+   * Body { otherUserId, requestId? }. Idempotent (upsert on sorted participant pair).
+   * Returns { threadId } (200 existing or 201 new).
+   */
+  startDirect(data: { otherUserId: string; requestId?: string }) {
+    return client.post<{ threadId: string }>('/threads', data);
   },
 
   /** PATCH /threads/:id/read — mark caller's side as read (204). */

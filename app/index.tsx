@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, Modal, ActivityIndicator, useWindowDimensions } from 'react-native';
+import axios from 'axios';
 import { Feather } from '@expo/vector-icons';
-import { router, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Colors, Shadows } from '../constants/Colors';
-import { ifns, specialists, stats } from '../lib/api/endpoints';
+import { auth, ifns, requests as requestsApi, specialists, stats } from '../lib/api/endpoints';
 import { Header } from '../components/Header';
+import { useAuth } from '../lib/auth/AuthContext';
 
 // Fixed service list per product spec
 const SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка', 'Не знаю'];
@@ -118,10 +120,14 @@ function LandingLocationPicker({
 }
 
 // =====================================================================
-// HERO — USP headline + inline request form
+// HERO — USP headline + inline request form with inline OTP flow
 // =====================================================================
 
+type HeroStep = 'idle' | 'email' | 'otp' | 'done';
+
 function HeroSection() {
+  const router = useRouter();
+  const { isAuthenticated, login: authLogin } = useAuth();
   const { isDesktop } = useLayout();
   const [city, setCity] = useState('');
   const [fns, setFns] = useState('');
@@ -129,6 +135,14 @@ function HeroSection() {
   const [description, setDescription] = useState('');
   const [cities, setCities] = useState<string[]>([]);
   const [fnsByCity, setFnsByCity] = useState<Record<string, string[]>>({});
+
+  // Inline multi-step state
+  const [step, setStep] = useState<HeroStep>('idle');
+  const [email, setEmail] = useState('');
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const otpInputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
     ifns.getCities()
@@ -149,6 +163,335 @@ function HeroSection() {
       })
       .catch(() => {});
   }, [city]);
+
+  // --- validation ---
+  const trimmedDescription = description.trim();
+  const descriptionValid = trimmedDescription.length >= 10;
+  const serviceTypeValue = service || 'Не знаю';
+  const canContinue = descriptionValid && !submitting;
+
+  const extractErrorMessage = (err: unknown, fallback: string): string => {
+    if (axios.isAxiosError(err)) {
+      const raw = (err.response?.data as any)?.message;
+      if (Array.isArray(raw)) return raw.join(', ');
+      if (typeof raw === 'string' && raw) return raw;
+    }
+    return fallback;
+  };
+
+  const submitQuickRequest = async () => {
+    const payload: { description: string; serviceType: string; city?: string; ifnsName?: string } = {
+      description: trimmedDescription.slice(0, 500),
+      serviceType: serviceTypeValue.slice(0, 100),
+    };
+    if (city) payload.city = city.slice(0, 100);
+    if (fns) payload.ifnsName = fns.slice(0, 200);
+    await requestsApi.createQuick(payload);
+  };
+
+  const handleMainPress = async () => {
+    if (!descriptionValid) {
+      setErrorText('Опишите вашу ситуацию (минимум 10 символов)');
+      return;
+    }
+    setErrorText(null);
+    // Already logged in — submit directly and show thank-you
+    if (isAuthenticated) {
+      setSubmitting(true);
+      try {
+        await submitQuickRequest();
+        setStep('done');
+      } catch (err) {
+        setErrorText(extractErrorMessage(err, 'Не удалось отправить заявку. Попробуйте ещё раз.'));
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+    // Otherwise open inline email step
+    setStep('email');
+  };
+
+  const handleEmailContinue = async () => {
+    const clean = email.trim().toLowerCase();
+    if (!clean || !clean.includes('@') || clean.length < 5) {
+      setErrorText('Введите корректный email адрес');
+      return;
+    }
+    setSubmitting(true);
+    setErrorText(null);
+    try {
+      await auth.requestOtp(clean);
+      setEmail(clean);
+      setOtpDigits(['', '', '', '', '', '']);
+      setStep('otp');
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 50);
+    } catch (err) {
+      setErrorText(extractErrorMessage(err, 'Не удалось отправить код. Попробуйте ещё раз.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOtpDigitChange = (index: number, value: string) => {
+    let v = value;
+    if (v.length > 1) v = v.slice(-1);
+    if (v && !/^\d$/.test(v)) return;
+    const next = [...otpDigits];
+    next[index] = v;
+    setOtpDigits(next);
+    if (errorText) setErrorText(null);
+    if (v && index < 5) otpInputRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpSubmit = async () => {
+    const code = otpDigits.join('');
+    if (code.length < 6) {
+      setErrorText('Введите все 6 цифр');
+      return;
+    }
+    setSubmitting(true);
+    setErrorText(null);
+    try {
+      // 1. Verify OTP → tokens stored by endpoints.auth.verifyOtp
+      const verifyRes = await auth.verifyOtp(email, code, 'client');
+      const verifyData = (verifyRes as any).data ?? verifyRes;
+      // 2. Sync AuthContext in-memory state so Header / guards update without reload
+      try {
+        const u = verifyData?.user ?? {};
+        await authLogin(
+          verifyData.accessToken,
+          verifyData.refreshToken,
+          {
+            id: u.userId ?? u.id ?? '',
+            email: u.email ?? email,
+            role: (u.role ?? 'CLIENT') as 'CLIENT' | 'SPECIALIST' | 'ADMIN',
+            username: u.username ?? undefined,
+            isNewUser: verifyData.isNewUser,
+          },
+        );
+      } catch {
+        // Non-critical — tokens already persisted by verifyOtp
+      }
+      // 3. Post quick request with the fresh JWT attached by axios interceptor
+      await submitQuickRequest();
+      setStep('done');
+    } catch (err) {
+      setErrorText(extractErrorMessage(err, 'Неверный код. Попробуйте ещё раз.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleBackToIdle = () => {
+    setStep('idle');
+    setErrorText(null);
+    setEmail('');
+    setOtpDigits(['', '', '', '', '', '']);
+  };
+
+  const goToDashboard = () => {
+    // Reload to pick up the freshly stored auth tokens in AuthContext.
+    router.replace('/(tabs)/dashboard' as any);
+  };
+
+  // --- render card content based on step ---
+  const renderIdleStep = () => (
+    <>
+      <Text className="mb-1 text-lg font-bold text-textPrimary">Разместить запрос</Text>
+      <Text className="mb-4 text-sm text-textSecondary">
+        Опишите вашу ситуацию — специалисты по вашей ФНС свяжутся с вами в чате
+      </Text>
+
+      <View className="mb-3">
+        <LandingLocationPicker
+          city={city} fns={fns} service={service}
+          onCityChange={setCity} onFnsChange={setFns} onServiceChange={setService}
+          cities={cities} fnsByCity={fnsByCity}
+        />
+      </View>
+
+      <View className="mb-4 gap-1">
+        <TextInput
+          value={description}
+          onChangeText={(t) => { setDescription(t); if (errorText) setErrorText(null); }}
+          placeholder="Кратко опишите вашу ситуацию..."
+          placeholderTextColor={Colors.textMuted}
+          multiline
+          className="min-h-[72px] rounded-xl border border-borderLight bg-white p-3 text-sm text-textPrimary"
+          style={{ textAlignVertical: 'top', outlineStyle: 'none' } as any}
+        />
+      </View>
+
+      {errorText ? (
+        <View className="mb-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
+          <Feather name="alert-circle" size={14} color="#DC2626" />
+          <Text className="text-sm text-red-600">{errorText}</Text>
+        </View>
+      ) : null}
+
+      <Pressable
+        className={`h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary ${canContinue ? '' : 'opacity-60'}`}
+        onPress={handleMainPress}
+        disabled={!canContinue}
+        accessibilityLabel="Отправить заявку"
+      >
+        {submitting ? (
+          <ActivityIndicator size="small" color={Colors.white} />
+        ) : (
+          <Feather name="send" size={16} color={Colors.white} />
+        )}
+        <Text className="text-base font-semibold text-white">
+          {isAuthenticated ? 'Отправить заявку' : 'Продолжить'}
+        </Text>
+      </Pressable>
+
+      <Text className="mt-2 text-center text-xs text-textMuted">
+        Бесплатно. Специалисты напишут вам сами.
+      </Text>
+    </>
+  );
+
+  const renderEmailStep = () => (
+    <>
+      <View className="mb-3 flex-row items-center gap-2">
+        <Pressable onPress={handleBackToIdle} hitSlop={8}>
+          <Feather name="arrow-left" size={18} color={Colors.textMuted} />
+        </Pressable>
+        <Text className="text-lg font-bold text-textPrimary">Ваш email</Text>
+      </View>
+      <Text className="mb-4 text-sm text-textSecondary">
+        Отправим код для подтверждения. Никаких паролей.
+      </Text>
+
+      <View className={`mb-3 h-12 flex-row items-center gap-2 rounded-xl border px-3 ${errorText ? 'border-red-500 bg-red-50' : 'border-borderLight bg-white'}`}>
+        <Feather name="mail" size={16} color={errorText ? '#DC2626' : Colors.textMuted} />
+        <TextInput
+          value={email}
+          onChangeText={(t) => { setEmail(t); if (errorText) setErrorText(null); }}
+          placeholder="your@email.com"
+          placeholderTextColor={Colors.textMuted}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          className="flex-1 text-base text-textPrimary"
+          style={{ outlineStyle: 'none' } as any}
+          editable={!submitting}
+        />
+      </View>
+
+      {errorText ? (
+        <View className="mb-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
+          <Feather name="alert-circle" size={14} color="#DC2626" />
+          <Text className="text-sm text-red-600">{errorText}</Text>
+        </View>
+      ) : null}
+
+      <Pressable
+        className={`h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary ${submitting ? 'opacity-60' : ''}`}
+        onPress={handleEmailContinue}
+        disabled={submitting}
+      >
+        {submitting ? (
+          <ActivityIndicator size="small" color={Colors.white} />
+        ) : (
+          <Feather name="arrow-right" size={16} color={Colors.white} />
+        )}
+        <Text className="text-base font-semibold text-white">Получить код</Text>
+      </Pressable>
+    </>
+  );
+
+  const renderOtpStep = () => (
+    <>
+      <View className="mb-3 flex-row items-center gap-2">
+        <Pressable onPress={() => { setStep('email'); setErrorText(null); }} hitSlop={8}>
+          <Feather name="arrow-left" size={18} color={Colors.textMuted} />
+        </Pressable>
+        <Text className="text-lg font-bold text-textPrimary">Введите код</Text>
+      </View>
+      <Text className="mb-4 text-sm text-textSecondary">
+        Код отправлен на <Text className="font-medium text-textPrimary">{email}</Text>
+      </Text>
+
+      <View className="mb-3 flex-row justify-between">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <View
+            key={i}
+            className={`h-12 w-[14%] items-center justify-center rounded-lg border-2 ${errorText ? 'border-red-500 bg-red-50' : otpDigits[i] ? 'border-brandPrimary bg-bgSecondary' : 'border-borderLight bg-white'}`}
+          >
+            <TextInput
+              ref={(ref) => { otpInputRefs.current[i] = ref; }}
+              value={otpDigits[i]}
+              onChangeText={(v) => handleOtpDigitChange(i, v)}
+              keyboardType="number-pad"
+              maxLength={1}
+              selectTextOnFocus
+              editable={!submitting}
+              className="h-full w-full text-center text-xl font-bold text-textPrimary"
+              style={{ outlineStyle: 'none' } as any}
+            />
+          </View>
+        ))}
+      </View>
+
+      {errorText ? (
+        <View className="mb-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
+          <Feather name="alert-circle" size={14} color="#DC2626" />
+          <Text className="text-sm text-red-600">{errorText}</Text>
+        </View>
+      ) : null}
+
+      <Pressable
+        className={`h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary ${submitting ? 'opacity-60' : ''}`}
+        onPress={handleOtpSubmit}
+        disabled={submitting}
+      >
+        {submitting ? (
+          <ActivityIndicator size="small" color={Colors.white} />
+        ) : (
+          <Feather name="check" size={16} color={Colors.white} />
+        )}
+        <Text className="text-base font-semibold text-white">Подтвердить и отправить</Text>
+      </Pressable>
+    </>
+  );
+
+  const renderDoneStep = () => (
+    <View className="items-center gap-3 py-2">
+      <View className="h-14 w-14 items-center justify-center rounded-full" style={{ backgroundColor: Colors.statusSuccess + '1A' }}>
+        <Feather name="check-circle" size={28} color={Colors.statusSuccess} />
+      </View>
+      <Text className="text-lg font-bold text-textPrimary">Заявка отправлена</Text>
+      <Text className="text-center text-sm text-textSecondary">
+        Специалисты по вашей ФНС получат уведомление и напишут вам в чате.
+      </Text>
+      {isAuthenticated ? (
+        <Pressable
+          className="mt-2 h-12 w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary"
+          onPress={goToDashboard}
+        >
+          <Feather name="arrow-right" size={16} color={Colors.white} />
+          <Text className="text-base font-semibold text-white">Перейти в личный кабинет</Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          className="mt-2 h-12 w-full flex-row items-center justify-center gap-2 rounded-xl border border-brandPrimary"
+          onPress={() => {
+            setDescription('');
+            setCity('');
+            setFns('');
+            setService('');
+            setEmail('');
+            setOtpDigits(['', '', '', '', '', '']);
+            setStep('idle');
+          }}
+        >
+          <Text className="text-base font-semibold text-brandPrimary">Отправить ещё одну</Text>
+        </Pressable>
+      )}
+    </View>
+  );
 
   return (
     <View className="bg-white px-5" style={{ paddingTop: 40, paddingBottom: 40 }}>
@@ -184,41 +527,10 @@ function HeroSection() {
 
           {/* Right: inline request form */}
           <View className="rounded-2xl border border-borderLight bg-bgSecondary p-5" style={{ width: isDesktop ? 340 : '100%', ...Shadows.md }}>
-            <Text className="mb-1 text-lg font-bold text-textPrimary">Разместить запрос</Text>
-            <Text className="mb-4 text-sm text-textSecondary">
-              Опишите вашу ситуацию — специалисты по вашей ФНС свяжутся с вами в чате
-            </Text>
-
-            {/* Unified City / FNS / Service */}
-            <View className="mb-3">
-              <LandingLocationPicker
-                city={city} fns={fns} service={service}
-                onCityChange={setCity} onFnsChange={setFns} onServiceChange={setService}
-                cities={cities} fnsByCity={fnsByCity}
-              />
-            </View>
-
-            {/* Description */}
-            <View className="mb-4 gap-1">
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Кратко опишите вашу ситуацию..."
-                placeholderTextColor={Colors.textMuted}
-                multiline
-                className="min-h-[72px] rounded-xl border border-borderLight bg-white p-3 text-sm text-textPrimary"
-                style={{ textAlignVertical: 'top', outlineStyle: 'none' } as any}
-              />
-            </View>
-
-            <Pressable className="h-12 flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary" onPress={() => router.push('/(auth)/role' as any)}>
-              <Feather name="send" size={16} color={Colors.white} />
-              <Text className="text-base font-semibold text-white">Отправить заявку</Text>
-            </Pressable>
-
-            <Text className="mt-2 text-center text-xs text-textMuted">
-              Бесплатно. Специалисты напишут вам сами.
-            </Text>
+            {step === 'idle' && renderIdleStep()}
+            {step === 'email' && renderEmailStep()}
+            {step === 'otp' && renderOtpStep()}
+            {step === 'done' && renderDoneStep()}
           </View>
         </View>
       </View>

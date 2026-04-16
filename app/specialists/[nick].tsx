@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import axios from 'axios';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Header } from '../../components/Header';
-import { specialists as specialistsApi } from '../../lib/api/endpoints';
+import { specialists as specialistsApi, threads as threadsApi } from '../../lib/api/endpoints';
 import { Colors } from '../../constants/Colors';
+import { useAuth } from '../../lib/auth/AuthContext';
 
 interface FnsService {
   fns: string;
@@ -13,6 +15,7 @@ interface FnsService {
 
 interface SpecialistData {
   id: string;
+  userId?: string | null;
   username?: string | null;
   name?: string | null;
   user?: { firstName?: string | null; lastName?: string | null } | null;
@@ -94,14 +97,138 @@ function FnsModal({ visible, onClose, fnsServices }: { visible: boolean; onClose
   );
 }
 
+function WriteSpecialistConfirm({
+  visible,
+  displayName,
+  onClose,
+  onConfirm,
+  submitting,
+  errorText,
+}: {
+  visible: boolean;
+  displayName: string;
+  onClose: () => void;
+  onConfirm: () => void;
+  submitting: boolean;
+  errorText: string | null;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(12,26,46,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ width: '100%', maxWidth: 420, backgroundColor: Colors.white, borderRadius: 16, padding: 20, gap: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' }}>
+              <Feather name="send" size={16} color={Colors.brandPrimary} />
+            </View>
+            <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: Colors.textPrimary }}>Написать специалисту</Text>
+            <Pressable onPress={onClose} hitSlop={8} style={{ padding: 4 }} accessibilityLabel="Закрыть">
+              <Feather name="x" size={20} color={Colors.textMuted} />
+            </Pressable>
+          </View>
+          <Text style={{ fontSize: 15, color: Colors.textSecondary, lineHeight: 21 }}>
+            Открыть чат с <Text style={{ fontWeight: '600', color: Colors.textPrimary }}>{displayName}</Text>?
+            Ваше первое сообщение будет отправлено, и специалист получит уведомление.
+          </Text>
+          {errorText ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 8, backgroundColor: Colors.statusBg?.error ?? '#FEE2E2' }}>
+              <Feather name="alert-circle" size={14} color={Colors.statusError} />
+              <Text style={{ flex: 1, fontSize: 13, color: Colors.statusError }}>{errorText}</Text>
+            </View>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable
+              onPress={onClose}
+              disabled={submitting}
+              style={{ flex: 1, height: 44, borderRadius: 10, borderWidth: 1, borderColor: Colors.borderLight, alignItems: 'center', justifyContent: 'center', opacity: submitting ? 0.5 : 1 }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '500', color: Colors.textSecondary }}>Отмена</Text>
+            </Pressable>
+            <Pressable
+              onPress={onConfirm}
+              disabled={submitting}
+              style={{ flex: 1, height: 44, borderRadius: 10, backgroundColor: Colors.brandPrimary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: submitting ? 0.7 : 1 }}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <Feather name="send" size={15} color={Colors.white} />
+              )}
+              <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.white }}>Написать</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function ProfileScreen({ spec }: { spec: SpecialistData }) {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [message, setMessage] = useState('');
   const [fnsModalVisible, setFnsModalVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorText, setErrorText] = useState<string | null>(null);
   const fnsServices: FnsService[] = spec.fnsServices ?? [];
   const displayName = spec.name
     ?? ([spec.user?.firstName, spec.user?.lastName].filter(Boolean).join(' ') || '—');
   const memberYear = spec.memberSince
     ?? (spec.createdAt ? new Date(spec.createdAt).getFullYear() : null);
+
+  const canSend = !!message.trim();
+
+  const handleSendPress = () => {
+    if (!canSend) return;
+    if (!isAuthenticated) {
+      router.push({ pathname: '/(auth)/email', params: { role: 'CLIENT' } } as any);
+      return;
+    }
+    setErrorText(null);
+    setConfirmVisible(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!spec.userId) {
+      setErrorText('Не удалось определить специалиста. Попробуйте позже.');
+      return;
+    }
+    setSubmitting(true);
+    setErrorText(null);
+    try {
+      const res = await threadsApi.startDirect({ otherUserId: spec.userId });
+      const data = (res as any).data ?? res;
+      const threadId: string | undefined = data?.threadId ?? data?.thread_id;
+      if (!threadId) throw new Error('Сервер не вернул идентификатор чата');
+      const firstMessage = message.trim();
+      if (firstMessage) {
+        try {
+          await threadsApi.sendMessage(threadId, { content: firstMessage });
+        } catch {
+          // fall through — navigate anyway, user can retry sending in chat
+        }
+      }
+      setConfirmVisible(false);
+      setMessage('');
+      router.push(`/chat/${threadId}` as any);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 429) {
+          setErrorText('Лимит обращений в день исчерпан, попробуйте завтра');
+        } else if (status === 409) {
+          setErrorText('Нельзя открыть чат с этим пользователем');
+        } else {
+          const raw = (err.response?.data as any)?.message;
+          setErrorText(Array.isArray(raw) ? raw.join(', ') : (raw || 'Не удалось открыть чат'));
+        }
+      } else {
+        setErrorText('Не удалось открыть чат');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <ScrollView className="flex-1 bg-white">
@@ -210,14 +337,24 @@ function ProfileScreen({ spec }: { spec: SpecialistData }) {
             onChangeText={setMessage}
           />
           <Pressable
-            className={`mt-1 h-12 flex-row items-center justify-center gap-2 rounded-lg shadow-sm ${message.trim() ? 'bg-brandPrimary' : 'bg-gray-300'}`}
-            disabled={!message.trim()}
+            className={`mt-1 h-12 flex-row items-center justify-center gap-2 rounded-lg shadow-sm ${canSend ? 'bg-brandPrimary' : 'bg-gray-300'}`}
+            disabled={!canSend}
+            onPress={handleSendPress}
+            accessibilityLabel="Написать специалисту"
           >
             <Feather name="send" size={18} color="#FFFFFF" />
-            <Text className="text-base font-semibold text-white">Отправить</Text>
+            <Text className="text-base font-semibold text-white">Написать</Text>
           </Pressable>
         </View>
       </View>
+      <WriteSpecialistConfirm
+        visible={confirmVisible}
+        displayName={displayName}
+        onClose={() => { if (!submitting) { setConfirmVisible(false); setErrorText(null); } }}
+        onConfirm={handleConfirm}
+        submitting={submitting}
+        errorText={errorText}
+      />
     </ScrollView>
   );
 }
