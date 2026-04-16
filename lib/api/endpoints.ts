@@ -236,6 +236,30 @@ export const threads = {
 };
 
 // ---------------------------------------------------------------------------
+// Responses — specialist replies to a client request (core product action).
+// Thin alias over POST /api/threads, kept as a separate namespace because
+// "respond to a request" is the language the UI uses.
+// ---------------------------------------------------------------------------
+export interface CreateResponseResult {
+  id: string;
+  threadId: string;
+  requestId: string;
+  created: boolean;
+}
+
+export const responses = {
+  /** POST /api/responses — body { requestId, message } */
+  create(data: { requestId: string; message: string }) {
+    return client.post<CreateResponseResult>('/responses', data);
+  },
+
+  /** POST /api/requests/:id/respond — body { message } (REST-shape alias) */
+  respondToRequest(requestId: string, message: string) {
+    return client.post<CreateResponseResult>(`/requests/${requestId}/respond`, { message });
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Specialist portal (post-W-1: returns threads with request info)
 // ---------------------------------------------------------------------------
 export const specialistPortal = {

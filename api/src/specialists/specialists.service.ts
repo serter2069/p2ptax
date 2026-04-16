@@ -107,7 +107,45 @@ export class SpecialistsService {
     return profile;
   }
 
+  /**
+   * Lazy-create an empty SpecialistProfile for a user that doesn't have one yet.
+   * Called from getMyProfile / updateProfile so /specialists/me never 404s for
+   * a user with role=SPECIALIST (they may have signed up before onboarding
+   * filled in work-areas, or been promoted by admin).
+   *
+   * Returns the existing profile if present, creates a minimal one otherwise.
+   * Nick is derived from user.username (unique) or falls back to user id.
+   */
+  private async ensureProfile(userId: string) {
+    const existing = await this.prisma.specialistProfile.findUnique({ where: { userId } });
+    if (existing) return existing;
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Pick a unique nick: prefer user.username, fall back to user id (cuid,
+    // collision-free). If somehow the derived nick is already taken, append
+    // a short random suffix.
+    let nick = user.username?.trim() || user.id;
+    const taken = await this.prisma.specialistProfile.findUnique({ where: { nick } });
+    if (taken) {
+      nick = `${nick}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
+    return this.prisma.specialistProfile.create({
+      data: {
+        userId,
+        nick,
+        cities: [],
+        services: [],
+        fnsOffices: [],
+        badges: [],
+      },
+    });
+  }
+
   async getMyProfile(userId: string) {
+    await this.ensureProfile(userId);
     const profile = await this.prisma.specialistProfile.findUnique({
       where: { userId },
       include: {
@@ -123,8 +161,7 @@ export class SpecialistsService {
   }
 
   async updateProfile(userId: string, dto: UpdateSpecialistProfileDto) {
-    const profile = await this.prisma.specialistProfile.findUnique({ where: { userId } });
-    if (!profile) throw new NotFoundException('Profile not found');
+    const profile = await this.ensureProfile(userId);
 
     // Validate badges against allowed list
     const data: any = { ...dto };

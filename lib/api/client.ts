@@ -81,23 +81,37 @@ function processQueue(error: unknown, token: string | null = null) {
 }
 
 // ---------------------------------------------------------------------------
-// Response interceptor — error toasts for non-401 errors
+// Response interceptor — error toasts + label normalization.
+// Runs LAST on errors (axios invokes response error interceptors in reverse
+// registration order, so the refresh interceptor below runs first; only when
+// refresh gives up or the error is not a 401 do we arrive here).
 // ---------------------------------------------------------------------------
 client.interceptors.response.use(
   undefined,
   (error: AxiosError) => {
     const status = error.response?.status;
 
-    if (status && status !== 401) {
-      if (status >= 500) {
-        toast.error('Ошибка сервера, попробуйте позже');
-      } else if (status >= 400) {
-        const data = error.response?.data as { message?: string } | undefined;
-        const message = data?.message || 'Произошла ошибка запроса';
-        toast.error(message);
-      }
-    } else if (status === 401) {
-      // 401 is handled by the refresh interceptor below — skip toast
+    // Normalize 401 errors so downstream code never sees a stale message from
+    // a previous response. Bug: before this, error.message sometimes carried
+    // the "Not Found" text from the preceding 404 request on the same axios
+    // instance (axios reuses the Error object in the refresh-retry path),
+    // leading the UI to say "404" for what was really an auth failure.
+    if (status === 401) {
+      const data = error.response?.data as { message?: string } | undefined;
+      error.message = data?.message || 'Unauthorized';
+      // 401 toast is intentionally suppressed — the refresh interceptor
+      // (registered after this one, therefore runs first) handles UX: it
+      // either retries the request or emits the unauthorized event which
+      // triggers logout.
+      return Promise.reject(error);
+    }
+
+    if (status && status >= 500) {
+      toast.error('Ошибка сервера, попробуйте позже');
+    } else if (status && status >= 400) {
+      const data = error.response?.data as { message?: string } | undefined;
+      const message = data?.message || 'Произошла ошибка запроса';
+      toast.error(message);
     } else if (!error.response && error.message !== 'canceled') {
       // Network error (no response at all)
       toast.error('Нет соединения с сервером');

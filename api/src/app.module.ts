@@ -20,6 +20,7 @@ import { StatsModule } from './stats/stats.module';
 import { ContentModule } from './content/content.module';
 import { ProtoModule } from './proto/proto.module';
 import { SearchModule } from './search/search.module';
+import { ResponsesModule } from './responses/responses.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { SearchModule } from './search/search.module';
     ContentModule,
     ProtoModule,
     SearchModule,
+    ResponsesModule,
   ],
   controllers: [AppController],
 })
