@@ -178,6 +178,35 @@ export class AuthService {
       update: { lastLoginAt: new Date() },
     });
 
+    // Ensure a SpecialistProfile exists for users who signed up as SPECIALIST.
+    // Without this, PATCH /specialists/me 404s on first save. The profile is
+    // intentionally minimal (empty fields) — onboarding fills it in later.
+    if (isNewUser && user.role === Role.SPECIALIST) {
+      const existingProfile = await this.prisma.specialistProfile.findUnique({
+        where: { userId: user.id },
+      });
+      if (!existingProfile) {
+        // Nick must be unique; fall back to user.id (cuid) when username is null.
+        const candidateNick = user.username?.trim() || user.id;
+        const nickTaken = await this.prisma.specialistProfile.findUnique({
+          where: { nick: candidateNick },
+        });
+        const nick = nickTaken
+          ? `${candidateNick}-${Math.random().toString(36).slice(2, 6)}`
+          : candidateNick;
+        await this.prisma.specialistProfile.create({
+          data: {
+            userId: user.id,
+            nick,
+            cities: [],
+            services: [],
+            fnsOffices: [],
+            badges: [],
+          },
+        });
+      }
+    }
+
     const tokens = await this.generateTokens(user);
     return {
       ...tokens,
