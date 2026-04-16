@@ -1,21 +1,26 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
-import { MOCK_CITIES, MOCK_FNS } from '../../constants/protoMockData';
+import { requests as requestsApi, ifns } from '../../lib/api/endpoints';
 import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
 
 // ---------------------------------------------------------------------------
-// Mock Data
+// Types
 // ---------------------------------------------------------------------------
-
-const MOCK_REQUESTS = [
-  { id: 1, title: 'Выездная проверка ООО «Ромашка»', description: 'Назначена выездная налоговая проверка. Нужен специалист для сопровождения.', city: 'Москва', fns: 'ФНС №15 по г. Москве', service: 'Выездная проверка', date: '12.04.2026', author: 'Елена В.', memberSince: 2024, messageCount: 3 },
-  { id: 2, title: 'Камеральная проверка декларации', description: 'Получил требование о предоставлении документов при камеральной проверке.', city: 'Москва', fns: 'ФНС №46 по г. Москве', service: 'Камеральная проверка', date: '11.04.2026', author: 'Дмитрий К.', memberSince: 2023, messageCount: 5 },
-  { id: 3, title: 'Оперативный контроль — помощь', description: 'Пришло уведомление от отдела оперативного контроля.', city: 'Санкт-Петербург', fns: 'ФНС №1 по г. Санкт-Петербургу', service: 'Отдел оперативного контроля', date: '10.04.2026', author: 'Татьяна Ф.', memberSince: 2022, messageCount: 1 },
-  { id: 4, title: 'Не знаю какая услуга — нужна помощь', description: 'Получил письмо от налоговой, не понимаю что делать.', city: 'Казань', fns: 'ФНС №3 по г. Казани', service: 'Не знаю', date: '09.04.2026', author: 'Иван М.', memberSince: 2025, messageCount: 0 },
-];
+interface FeedRequest {
+  id: string;
+  title: string;
+  description?: string | null;
+  city?: string | null;
+  ifnsCode?: string | null;
+  serviceCategory?: string | null;
+  createdAt: string;
+  client?: { firstName?: string | null; lastName?: string | null; createdAt?: string | null } | null;
+  _count?: { threads?: number };
+  [key: string]: unknown;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,13 +38,14 @@ function pluralSpecialists(n: number): string {
 // Cascading City → FNS picker (single unified field, multi-select FNS)
 // ---------------------------------------------------------------------------
 function CityFnsPicker({
-  city, selectedFns, onCityChange, onFnsToggle, onRemoveFns,
+  city, selectedFns, onCityChange, onFnsToggle, onRemoveFns, cities, fnsByCity,
 }: {
   city: string; selectedFns: string[];
   onCityChange: (v: string) => void; onFnsToggle: (v: string) => void; onRemoveFns: (v: string) => void;
+  cities: string[]; fnsByCity: Record<string, string[]>;
 }) {
   const [openLevel, setOpenLevel] = useState<'city' | 'fns' | null>(null);
-  const fnsOptions = city ? (MOCK_FNS[city] || []) : [];
+  const fnsOptions = city ? (fnsByCity[city] || []) : [];
 
   const summary = city
     ? selectedFns.length > 0
@@ -94,7 +100,7 @@ function CityFnsPicker({
                 >
                   <Text className="text-sm text-textMuted">Все города</Text>
                 </Pressable>
-                {MOCK_CITIES.map((c) => (
+                {cities.map((c) => (
                   <Pressable
                     key={c}
                     className="border-b border-bgSecondary px-3 py-2.5"
@@ -145,8 +151,8 @@ function CityFnsPicker({
 // ---------------------------------------------------------------------------
 // Request Card
 // ---------------------------------------------------------------------------
-function RequestFeedCard({ title, description, city, fns, service, date, author, memberSince, messageCount, onWrite }: {
-  title: string; description: string; city: string; fns: string; service: string; date: string; author: string; memberSince: number; messageCount: number;
+function RequestFeedCard({ title, description, city, fns, service, date, author, messageCount, onWrite }: {
+  title: string; description: string; city: string; fns: string; service: string; date: string; author: string; messageCount: number;
   onWrite: () => void;
 }) {
   return (
@@ -178,7 +184,6 @@ function RequestFeedCard({ title, description, city, fns, service, date, author,
           </View>
           <View>
             <Text className="text-sm font-medium text-textPrimary">{author}</Text>
-            <Text className="text-xs text-textMuted">на сайте с {memberSince} г.</Text>
           </View>
         </View>
         <Text className="text-xs text-textMuted">{date}</Text>
@@ -211,6 +216,54 @@ function FeedState() {
   const [filterCity, setFilterCity] = useState('');
   const [selectedFns, setSelectedFns] = useState<string[]>([]);
   const [writeTarget, setWriteTarget] = useState<WriteConfirmModalRequest | null>(null);
+  const [feedData, setFeedData] = useState<FeedRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [cities, setCities] = useState<string[]>([]);
+  const [fnsByCity, setFnsByCity] = useState<Record<string, string[]>>({});
+
+  // Load cities for filter
+  useEffect(() => {
+    ifns.getCities()
+      .then((res) => {
+        const data = (res as any).data ?? res;
+        const list: string[] = Array.isArray(data) ? data.map((c: any) => c.name ?? c) : [];
+        setCities(list);
+      })
+      .catch(() => { /* non-critical */ });
+  }, []);
+
+  // Load FNS when city changes
+  useEffect(() => {
+    if (!filterCity || fnsByCity[filterCity]) return;
+    ifns.getIfns({ city: filterCity })
+      .then((res) => {
+        const data = (res as any).data ?? res;
+        const list: string[] = Array.isArray(data) ? data.map((f: any) => f.name ?? f) : [];
+        setFnsByCity((prev) => ({ ...prev, [filterCity]: list }));
+      })
+      .catch(() => { /* non-critical */ });
+  }, [filterCity]);
+
+  // Load feed
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    const params: Record<string, unknown> = {};
+    if (filterCity) params.city = filterCity;
+    if (selectedFns.length > 0) params.ifns = selectedFns[0];
+    requestsApi.getPublicFeed(params)
+      .then((res) => {
+        if (mounted) {
+          const data = (res as any).data ?? res;
+          setFeedData(Array.isArray(data) ? data : (data.items ?? data.requests ?? []));
+          setError(null);
+        }
+      })
+      .catch((e) => { if (mounted) setError(e.message ?? 'Ошибка'); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [filterCity, selectedFns]);
 
   const handleCityChange = (v: string) => {
     setFilterCity(v);
@@ -227,12 +280,6 @@ function FeedState() {
     setSelectedFns((prev) => prev.filter((f) => f !== v));
   };
 
-  const requests = MOCK_REQUESTS.filter((r) => {
-    if (filterCity && r.city !== filterCity) return false;
-    if (selectedFns.length > 0 && !selectedFns.includes(r.fns)) return false;
-    return true;
-  });
-
   const hasFilters = !!(filterCity || selectedFns.length > 0);
 
   return (
@@ -240,7 +287,7 @@ function FeedState() {
       {/* Header */}
       <View>
         <Text className="text-xl font-bold text-textPrimary">Заявки</Text>
-        <Text className="mt-0.5 text-sm text-textMuted">{requests.length} активных заявок</Text>
+        {!loading && <Text className="mt-0.5 text-sm text-textMuted">{feedData.length} активных заявок</Text>}
       </View>
 
       {/* Unified City/FNS filter */}
@@ -265,11 +312,22 @@ function FeedState() {
           onCityChange={handleCityChange}
           onFnsToggle={handleFnsToggle}
           onRemoveFns={handleRemoveFns}
+          cities={cities}
+          fnsByCity={fnsByCity}
         />
       </View>
 
       {/* Request cards */}
-      {requests.length === 0 ? (
+      {loading ? (
+        <View className="items-center py-10">
+          <ActivityIndicator color={Colors.brandPrimary} />
+        </View>
+      ) : error ? (
+        <View className="items-center gap-3 py-10">
+          <Feather name="alert-circle" size={28} color={Colors.statusError} />
+          <Text className="text-sm text-statusError">{error}</Text>
+        </View>
+      ) : feedData.length === 0 ? (
         <View className="items-center gap-3 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
             <Feather name="inbox" size={32} color={Colors.textMuted} />
@@ -279,27 +337,31 @@ function FeedState() {
         </View>
       ) : (
         <View className="gap-3">
-          {requests.map((r) => (
-            <RequestFeedCard
-              key={r.id}
-              title={r.title}
-              description={r.description}
-              city={r.city}
-              fns={r.fns}
-              service={r.service}
-              date={r.date}
-              author={r.author}
-              memberSince={r.memberSince}
-              messageCount={r.messageCount}
-              onWrite={() => setWriteTarget({
-                id: String(r.id),
-                title: r.title,
-                description: r.description,
-                city: r.city,
-                service: r.service,
-              })}
-            />
-          ))}
+          {feedData.map((r) => {
+            const authorName = r.client
+              ? [r.client.firstName, r.client.lastName].filter(Boolean).join(' ') || '—'
+              : '—';
+            return (
+              <RequestFeedCard
+                key={r.id}
+                title={r.title}
+                description={r.description ?? ''}
+                city={r.city ?? '—'}
+                fns={r.ifnsCode ?? '—'}
+                service={r.serviceCategory ?? '—'}
+                date={r.createdAt ? new Date(r.createdAt).toLocaleDateString('ru-RU') : '—'}
+                author={authorName}
+                messageCount={r._count?.threads ?? 0}
+                onWrite={() => setWriteTarget({
+                  id: String(r.id),
+                  title: r.title,
+                  description: r.description ?? '',
+                  city: r.city ?? '',
+                  service: r.serviceCategory ?? '',
+                })}
+              />
+            );
+          })}
         </View>
       )}
 

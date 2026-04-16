@@ -1,31 +1,32 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, Pressable, useWindowDimensions } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, Pressable, useWindowDimensions, ActivityIndicator, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '../../components/Header';
+import { specialists as specialistsApi } from '../../lib/api/endpoints';
+import { Colors } from '../../constants/Colors';
 
 // ---------------------------------------------------------------------------
-// Mock data
+// Types
 // ---------------------------------------------------------------------------
-const MOCK_SPECIALISTS = [
-  { id: '1', name: 'Алексей Петров', city: 'Москва', rating: 4.8, reviewCount: 12, memberSince: 2022,
-    fnsServices: [
-      { fns: 'ФНС №15 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка'] },
-      { fns: 'ФНС №46 по г. Москве', services: ['Камеральная проверка', 'Отдел оперативного контроля'] },
-    ]},
-  { id: '2', name: 'Ольга Смирнова', city: 'Москва', rating: 4.5, reviewCount: 8, memberSince: 2023,
-    fnsServices: [
-      { fns: 'ФНС №15 по г. Москве', services: ['Выездная проверка'] },
-    ]},
-  { id: '3', name: 'Игорь Козлов', city: 'Санкт-Петербург', rating: 4.9, reviewCount: 25, memberSince: 2021,
-    fnsServices: [
-      { fns: 'ФНС №1 по г. Санкт-Петербургу', services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'] },
-    ]},
-  { id: '4', name: 'Анна Морозова', city: 'Казань', rating: 4.7, reviewCount: 15, memberSince: 2023,
-    fnsServices: [
-      { fns: 'ФНС №3 по г. Казани', services: ['Камеральная проверка'] },
-      { fns: 'ФНС №14 по г. Казани', services: ['Выездная проверка', 'Отдел оперативного контроля'] },
-    ]},
-];
+interface FnsService {
+  fns: string;
+  services: string[];
+}
+
+interface Specialist {
+  id: string;
+  username?: string | null;
+  name?: string | null;
+  user?: { firstName?: string | null; lastName?: string | null } | null;
+  city?: string | null;
+  rating?: number | null;
+  reviewCount?: number | null;
+  memberSince?: number | null;
+  createdAt?: string | null;
+  fnsServices?: FnsService[] | null;
+  workAreas?: Array<{ fnsId?: string; departments?: string[] }> | null;
+  [key: string]: unknown;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -99,39 +100,50 @@ function DropdownSelect({ label, icon, value, options, onSelect, placeholder, di
 // Specialist Card
 // ---------------------------------------------------------------------------
 function SpecialistCard({ specialist, matchedFns }: {
-  specialist: typeof MOCK_SPECIALISTS[0];
-  matchedFns?: string; // if set, show only this FNS + its services
+  specialist: Specialist;
+  matchedFns?: string;
 }) {
+  const fnsServices: FnsService[] = specialist.fnsServices ?? [];
   const fnsToShow = matchedFns
-    ? specialist.fnsServices.filter(f => f.fns === matchedFns)
-    : specialist.fnsServices;
+    ? fnsServices.filter(f => f.fns === matchedFns)
+    : fnsServices;
+  const displayName = specialist.name
+    ?? ([specialist.user?.firstName, specialist.user?.lastName].filter(Boolean).join(' ') || '—');
+  const memberYear = specialist.memberSince
+    ?? (specialist.createdAt ? new Date(specialist.createdAt).getFullYear() : null);
 
   return (
     <View className="flex-1 bg-white rounded-xl p-4 border border-sky-100 gap-3" style={{ minWidth: 280, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}>
       {/* Header: avatar + info */}
       <View className="flex-row gap-3">
         <View className="w-12 h-12 rounded-full bg-sky-50 items-center justify-center">
-          <Text className="text-base font-bold text-sky-600">{getInitials(specialist.name)}</Text>
+          <Text className="text-base font-bold text-sky-600">{getInitials(displayName)}</Text>
         </View>
         <View className="flex-1 gap-0.5">
-          <Text className="text-base font-semibold text-slate-900">{specialist.name}</Text>
+          <Text className="text-base font-semibold text-slate-900">{displayName}</Text>
           <View className="flex-row items-center gap-1">
             <Feather name="map-pin" size={12} color="#94A3B8" />
-            <Text className="text-sm text-slate-400">{specialist.city}</Text>
+            <Text className="text-sm text-slate-400">{specialist.city ?? '—'}</Text>
           </View>
-          <View className="flex-row items-center gap-1 mt-0.5">
-            <Stars rating={specialist.rating} />
-            <Text className="text-sm font-bold text-slate-900">{specialist.rating}</Text>
-            <Text className="text-xs text-slate-400">({specialist.reviewCount})</Text>
-          </View>
+          {specialist.rating != null && (
+            <View className="flex-row items-center gap-1 mt-0.5">
+              <Stars rating={specialist.rating} />
+              <Text className="text-sm font-bold text-slate-900">{specialist.rating}</Text>
+              {specialist.reviewCount != null && (
+                <Text className="text-xs text-slate-400">({specialist.reviewCount})</Text>
+              )}
+            </View>
+          )}
         </View>
       </View>
 
       {/* Member since */}
-      <View className="flex-row items-center gap-1">
-        <Feather name="calendar" size={12} color="#94A3B8" />
-        <Text className="text-xs text-slate-400">На сайте с {specialist.memberSince} г.</Text>
-      </View>
+      {memberYear && (
+        <View className="flex-row items-center gap-1">
+          <Feather name="calendar" size={12} color="#94A3B8" />
+          <Text className="text-xs text-slate-400">На сайте с {memberYear} г.</Text>
+        </View>
+      )}
 
       {/* FNS blocks */}
       {fnsToShow.map((entry) => (
@@ -168,35 +180,69 @@ function CatalogState() {
 
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedFns, setSelectedFns] = useState('');
+  const [allSpecialists, setAllSpecialists] = useState<Specialist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Derive cities from mock data
-  const cities = useMemo(() => [...new Set(MOCK_SPECIALISTS.map(s => s.city))], []);
+  useEffect(() => {
+    let mounted = true;
+    specialistsApi.getSpecialists()
+      .then((res) => {
+        if (mounted) {
+          const data = (res as any).data ?? res;
+          setAllSpecialists(Array.isArray(data) ? data : (data.items ?? data.specialists ?? []));
+        }
+      })
+      .catch((e) => { if (mounted) setError(e.message ?? 'Ошибка'); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  // Derive cities from real data
+  const cities = useMemo(() => [...new Set(allSpecialists.map(s => s.city).filter(Boolean) as string[])], [allSpecialists]);
 
   // Derive FNS options filtered by selected city
   const fnsOptions = useMemo(() => {
     if (!selectedCity) return [];
-    const allFns = MOCK_SPECIALISTS
+    const allFns = allSpecialists
       .filter(s => s.city === selectedCity)
-      .flatMap(s => s.fnsServices.map(f => f.fns));
+      .flatMap(s => (s.fnsServices ?? []).map(f => f.fns));
     return [...new Set(allFns)];
-  }, [selectedCity]);
+  }, [selectedCity, allSpecialists]);
 
   const handleCityChange = (city: string) => {
     setSelectedCity(city);
-    setSelectedFns(''); // reset FNS when city changes
+    setSelectedFns('');
   };
 
   // Filter specialists
   const filtered = useMemo(() => {
-    return MOCK_SPECIALISTS.filter((sp) => {
+    return allSpecialists.filter((sp) => {
       if (selectedCity && sp.city !== selectedCity) return false;
-      if (selectedFns && !sp.fnsServices.some(f => f.fns === selectedFns)) return false;
+      if (selectedFns && !(sp.fnsServices ?? []).some(f => f.fns === selectedFns)) return false;
       return true;
     });
-  }, [selectedCity, selectedFns]);
+  }, [selectedCity, selectedFns, allSpecialists]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={Colors.brandPrimary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
+        <Feather name="alert-circle" size={28} color="#EF4444" />
+        <Text style={{ color: '#EF4444', textAlign: 'center' }}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
-    <View className="p-5 gap-3">
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, gap: 12 }}>
       {/* Header */}
       <View className="gap-0.5">
         <Text className="text-xl font-bold text-slate-900">Каталог специалистов</Text>
@@ -267,7 +313,7 @@ function CatalogState() {
           ))}
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 }
 

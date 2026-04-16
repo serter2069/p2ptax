@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-import { MOCK_ADMIN_STATS } from '../../constants/protoMockData';
+import { admin } from '../../lib/api/endpoints';
 import { Header } from '../../components/Header';
 
 function SkeletonBlock({ width, height, radius }: { width: string | number; height: number; radius?: number }) {
@@ -50,48 +50,44 @@ function ChartPlaceholder({ title }: { title: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+interface AdminStats {
+  totalUsers?: number;
+  totalSpecialists?: number;
+  totalRequests?: number;
+  openComplaints?: number;
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
 // STATE: DEFAULT (populated with stats)
 // ---------------------------------------------------------------------------
 
-function DefaultDashboard() {
-  const st = MOCK_ADMIN_STATS;
-
+function DefaultDashboard({ st }: { st: AdminStats }) {
   const activities = [
-    { icon: 'user-plus', action: 'Регистрация', detail: 'Новый пользователь: Сергей К.', time: '5 мин назад' },
-    { icon: 'file-text', action: 'Заявка', detail: 'Новая заявка: Декларация 3-НДФЛ', time: '12 мин назад' },
+    { icon: 'user-plus', action: 'Регистрация', detail: 'Новый пользователь', time: '5 мин назад' },
+    { icon: 'file-text', action: 'Заявка', detail: 'Новая заявка в системе', time: '12 мин назад' },
     { icon: 'shield', action: 'Модерация', detail: 'Специалист ожидает проверки', time: '30 мин назад' },
-    { icon: 'star', action: 'Отзыв', detail: 'Новый отзыв от Елены В.', time: '1 час назад' },
-    { icon: 'alert-triangle', action: 'Жалоба', detail: 'Жалоба на специалиста Козлова Д.', time: '2 часа назад' },
+    { icon: 'star', action: 'Отзыв', detail: 'Новый отзыв', time: '1 час назад' },
+    { icon: 'alert-triangle', action: 'Жалоба', detail: 'Новая жалоба на специалиста', time: '2 часа назад' },
   ];
 
   return (
-    <View style={s.container}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={s.container}>
       <View style={s.pageHeader}>
         <Text style={s.pageTitle}>Панель администратора</Text>
-        <Text style={s.pageSubtitle}>Обзор за сегодня</Text>
+        <Text style={s.pageSubtitle}>Обзор платформы</Text>
       </View>
 
       <View style={s.statsGrid}>
-        <StatCard label="Всего пользователей" value={st.totalUsers} color={Colors.textPrimary} trend="+23 сегодня" icon="users" />
-        <StatCard label="Специалистов" value={st.totalSpecialists} color={Colors.brandPrimary} icon="briefcase" />
-        <StatCard label="Всего заявок" value={st.totalRequests} color={Colors.textPrimary} trend="+15 сегодня" icon="file-text" />
-        <StatCard label="Активные заявки" value={st.activeRequests} color={Colors.statusSuccess} icon="check-circle" />
-        <StatCard label="На модерации" value={st.pendingModeration} color={Colors.statusWarning} icon="clock" />
-        <StatCard label="Средний рейтинг" value={st.avgRating} color={Colors.brandPrimary} icon="star" />
+        <StatCard label="Всего пользователей" value={st.totalUsers ?? '—'} color={Colors.textPrimary} icon="users" />
+        <StatCard label="Специалистов" value={st.totalSpecialists ?? '—'} color={Colors.brandPrimary} icon="briefcase" />
+        <StatCard label="Всего заявок" value={st.totalRequests ?? '—'} color={Colors.textPrimary} icon="file-text" />
+        <StatCard label="Открытые жалобы" value={st.openComplaints ?? '—'} color={Colors.statusWarning} icon="alert-triangle" />
       </View>
 
-      <View style={s.revenue}>
-        <Feather name="dollar-sign" size={24} color="rgba(255,255,255,0.7)" />
-        <Text style={s.revenueLabel}>Общий доход</Text>
-        <Text style={s.revenueValue}>{st.revenue}</Text>
-        <View style={s.revenueTrend}>
-          <Feather name="trending-up" size={14} color="rgba(255,255,255,0.8)" />
-          <Text style={s.revenueTrendText}>+12% к прошлому месяцу</Text>
-        </View>
-      </View>
-
-      <ChartPlaceholder title="Регистрации за неделю" />
-      <ChartPlaceholder title="Заявки за неделю" />
+      <ChartPlaceholder title="Активность за неделю" />
 
       <View style={s.recentSection}>
         <View style={s.sectionHeader}>
@@ -113,15 +109,54 @@ function DefaultDashboard() {
           </View>
         ))}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    setError(null);
+    admin.getStats()
+      .then((res) => {
+        setStats((res as any).data ?? res);
+      })
+      .catch((e) => {
+        setError(e.message ?? 'Ошибка загрузки');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => { load(); }, []);
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Header variant="auth" />
-      <DefaultDashboard />
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md }}>
+          <ActivityIndicator color={Colors.brandPrimary} />
+          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Загрузка...</Text>
+        </View>
+      ) : error ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl, gap: Spacing.md }}>
+          <Feather name="alert-circle" size={32} color={Colors.statusError} />
+          <Text style={{ fontSize: Typography.fontSize.base, color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+          <Pressable
+            onPress={load}
+            style={{ paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn }}
+          >
+            <Text style={{ color: Colors.white, fontWeight: Typography.fontWeight.semibold }}>Повторить</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <DefaultDashboard st={stats ?? {}} />
+      )}
     </View>
   );
 }
@@ -143,15 +178,6 @@ const s = StyleSheet.create({
   statValue: { fontSize: 22, fontWeight: Typography.fontWeight.bold },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statTrend: { fontSize: Typography.fontSize.xs, color: Colors.statusSuccess },
-
-  revenue: {
-    backgroundColor: Colors.textPrimary, borderRadius: BorderRadius.card, padding: Spacing.lg, alignItems: 'center', gap: Spacing.xs,
-    ...Shadows.md,
-  },
-  revenueLabel: { fontSize: Typography.fontSize.base, color: 'rgba(255,255,255,0.7)' },
-  revenueValue: { fontSize: 28, fontWeight: Typography.fontWeight.bold, color: Colors.white },
-  revenueTrend: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: Spacing.xs },
-  revenueTrendText: { fontSize: Typography.fontSize.xs, color: 'rgba(255,255,255,0.6)' },
 
   chartCard: {
     backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg,
