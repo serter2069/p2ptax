@@ -19,5 +19,6 @@ export {
   admin,
   search,
   promotions,
+  upload,
 } from './endpoints';
 export type { CreateThreadResponse } from './endpoints';
