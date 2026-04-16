@@ -10,8 +10,8 @@ export default function RootLayout() {
   return (
     <>
       <Head>
-        <title>P2PTax Proto</title>
-        <meta name="description" content="P2PTax Proto Viewer" />
+        <title>Налоговик — найти налогового специалиста</title>
+        <meta name="description" content="Сервис поиска налоговых специалистов. Заявки, чат, отзывы." />
       </Head>
       <ErrorBoundary>
         <AuthProvider>

@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } fro
 import { Feather } from '@expo/vector-icons';
 import { router, useRouter } from 'expo-router';
 import { Colors, Shadows } from '../constants/Colors';
-import { ifns } from '../lib/api/endpoints';
+import { ifns, specialists, stats } from '../lib/api/endpoints';
 import { Header } from '../components/Header';
 
 // Fixed service list per product spec
@@ -227,26 +227,74 @@ function HeroSection() {
 }
 
 // =====================================================================
-// SPECIALISTS CAROUSEL — 12 cards, horizontal scroll
+// SPECIALISTS CAROUSEL — real data from API
 // =====================================================================
 
-const SPECIALISTS = [
-  { name: 'Алексей Петров', city: 'Москва', fns: 'ФНС №46', service: 'Выездная проверка', rating: 4.9, reviews: 34, since: 2020, initials: 'АП', color: '#0284C7' },
-  { name: 'Елена Морозова', city: 'Москва', fns: 'ФНС №15', service: 'Камеральная проверка', rating: 4.8, reviews: 28, since: 2021, initials: 'ЕМ', color: '#059669' },
-  { name: 'Дмитрий Волков', city: 'СПб', fns: 'ФНС №1', service: 'Отдел оперативного контроля', rating: 4.9, reviews: 41, since: 2019, initials: 'ДВ', color: '#7C3AED' },
-  { name: 'Ольга Смирнова', city: 'Новосибирск', fns: 'ФНС №12', service: 'Камеральная проверка', rating: 4.7, reviews: 19, since: 2022, initials: 'ОС', color: '#DC2626' },
-  { name: 'Игорь Козлов', city: 'Казань', fns: 'ФНС №3', service: 'Выездная проверка', rating: 4.8, reviews: 23, since: 2021, initials: 'ИК', color: '#D97706' },
-  { name: 'Анна Фёдорова', city: 'Екатеринбург', fns: 'ФНС №8', service: 'Камеральная проверка', rating: 4.6, reviews: 15, since: 2023, initials: 'АФ', color: '#0891B2' },
-  { name: 'Сергей Новиков', city: 'Ростов-на-Дону', fns: 'ФНС №5', service: 'Выездная проверка', rating: 4.9, reviews: 37, since: 2020, initials: 'СН', color: '#4F46E5' },
-  { name: 'Мария Кузнецова', city: 'Москва', fns: 'ФНС №7', service: 'Выездная проверка', rating: 4.7, reviews: 22, since: 2022, initials: 'МК', color: '#BE185D' },
-  { name: 'Павел Тихонов', city: 'Самара', fns: 'ФНС №11', service: 'Камеральная проверка', rating: 4.8, reviews: 31, since: 2020, initials: 'ПТ', color: '#0D9488' },
-  { name: 'Наталья Соколова', city: 'Москва', fns: 'ФНС №33', service: 'Отдел оперативного контроля', rating: 4.6, reviews: 17, since: 2023, initials: 'НС', color: '#9333EA' },
-  { name: 'Виктор Лебедев', city: 'Краснодар', fns: 'ФНС №2', service: 'Выездная проверка', rating: 4.9, reviews: 44, since: 2019, initials: 'ВЛ', color: '#B91C1C' },
-  { name: 'Татьяна Миронова', city: 'СПб', fns: 'ФНС №25', service: 'Камеральная проверка', rating: 4.7, reviews: 26, since: 2021, initials: 'ТМ', color: '#1D4ED8' },
-];
+interface FeaturedSpecialist {
+  nick: string;
+  displayName: string;
+  avatarUrl: string | null;
+  cities: string[];
+  services: string[];
+  badges: string[];
+  experience: number | null;
+  headline: string | null;
+  createdAt: string;
+}
+
+// Deterministic color from nick string
+function nickColor(nick: string): string {
+  const palette = ['#0284C7', '#059669', '#7C3AED', '#DC2626', '#D97706', '#0891B2', '#4F46E5', '#BE185D', '#0D9488', '#9333EA', '#B91C1C', '#1D4ED8'];
+  let hash = 0;
+  for (let i = 0; i < nick.length; i++) hash = nick.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
+}
+
+function initials(displayName: string): string {
+  return displayName
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0] ?? '')
+    .join('')
+    .toUpperCase();
+}
+
+function SpecialistCardSkeleton() {
+  return (
+    <View className="gap-3 rounded-2xl bg-white p-4" style={{ width: 220, ...Shadows.sm }}>
+      <View className="flex-row items-center gap-3">
+        <View className="rounded-full bg-bgSecondary" style={{ width: 48, height: 48 }} />
+        <View className="flex-1 gap-1.5">
+          <View className="h-3 rounded bg-bgSecondary" style={{ width: '80%' }} />
+          <View className="h-2.5 rounded bg-bgSecondary" style={{ width: '50%' }} />
+        </View>
+      </View>
+      <View className="h-2.5 rounded bg-bgSecondary" style={{ width: '60%' }} />
+      <View className="h-6 rounded-full bg-bgSecondary" style={{ width: '70%' }} />
+      <View className="h-2.5 rounded bg-bgSecondary" style={{ width: '40%' }} />
+      <View className="h-9 rounded-lg bg-bgSecondary" />
+    </View>
+  );
+}
 
 function SpecialistsCarousel() {
   const router = useRouter();
+  const [featured, setFeatured] = useState<FeaturedSpecialist[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    specialists.getFeatured()
+      .then((res) => {
+        const data = (res as any).data ?? res;
+        setFeatured(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setFeatured([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Hide section entirely when no data and not loading
+  if (!loading && featured.length === 0) return null;
+
   return (
     <View className="py-10" style={{ backgroundColor: Colors.bgSecondary }}>
       <View className="mb-6 w-full self-center px-5" style={{ maxWidth: 800 }}>
@@ -255,9 +303,6 @@ function SpecialistsCarousel() {
         </Text>
         <Text className="text-2xl font-bold text-textPrimary">
           Работают на платформе
-        </Text>
-        <Text className="mt-1 text-sm text-textSecondary">
-          {SPECIALISTS.length} специалистов из {new Set(SPECIALISTS.map(s => s.city)).size} городов
         </Text>
       </View>
 
@@ -268,52 +313,57 @@ function SpecialistsCarousel() {
         decelerationRate="fast"
         snapToInterval={232}
       >
-        {SPECIALISTS.map((spec) => (
-          <View
-            key={spec.name}
-            className="gap-3 rounded-2xl bg-white p-4"
-            style={{ width: 220, ...Shadows.sm }}
-          >
-            {/* Avatar */}
-            <View className="flex-row items-center gap-3">
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => <SpecialistCardSkeleton key={i} />)
+          : featured.map((spec) => {
+            const color = nickColor(spec.nick);
+            const inits = initials(spec.displayName);
+            const city = spec.cities?.[0] ?? '';
+            const service = spec.services?.[0] ?? '';
+            return (
               <View
-                className="items-center justify-center rounded-full"
-                style={{ width: 48, height: 48, backgroundColor: spec.color + '15' }}
+                key={spec.nick}
+                className="gap-3 rounded-2xl bg-white p-4"
+                style={{ width: 220, ...Shadows.sm }}
               >
-                <Text style={{ fontSize: 16, fontWeight: '700', color: spec.color }}>{spec.initials}</Text>
+                {/* Avatar */}
+                <View className="flex-row items-center gap-3">
+                  <View
+                    className="items-center justify-center rounded-full"
+                    style={{ width: 48, height: 48, backgroundColor: color + '15' }}
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: '700', color }}>{inits}</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-sm font-semibold text-textPrimary" numberOfLines={1}>{spec.displayName}</Text>
+                    {city ? <Text className="text-xs text-textMuted">{city}</Text> : null}
+                  </View>
+                </View>
+
+                {/* Headline or service chip */}
+                {spec.headline ? (
+                  <Text className="text-xs text-textSecondary" numberOfLines={2}>{spec.headline}</Text>
+                ) : service ? (
+                  <View className="self-start rounded-full px-2.5 py-1" style={{ backgroundColor: Colors.brandPrimary + '12' }}>
+                    <Text className="text-xs font-medium" style={{ color: Colors.brandPrimary }}>{service}</Text>
+                  </View>
+                ) : null}
+
+                {/* Experience */}
+                {spec.experience != null ? (
+                  <Text className="text-xs text-textMuted">Опыт: {spec.experience} лет</Text>
+                ) : null}
+
+                <Pressable
+                  className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg border border-brandPrimary"
+                  onPress={() => router.push(`/specialists/${spec.nick}` as any)}
+                >
+                  <Text className="text-xs font-semibold text-brandPrimary">Подробнее</Text>
+                </Pressable>
               </View>
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-textPrimary">{spec.name}</Text>
-                <Text className="text-xs text-textMuted">{spec.city}</Text>
-              </View>
-            </View>
-
-            {/* FNS */}
-            <View className="flex-row items-center gap-1.5">
-              <Feather name="home" size={12} color={Colors.brandPrimary} />
-              <Text className="text-xs font-medium text-brandPrimary">{spec.fns}</Text>
-            </View>
-
-            {/* Service chip */}
-            <View className="self-start rounded-full px-2.5 py-1" style={{ backgroundColor: Colors.brandPrimary + '12' }}>
-              <Text className="text-xs font-medium" style={{ color: Colors.brandPrimary }}>{spec.service}</Text>
-            </View>
-
-            {/* Rating + since */}
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-1">
-                <Feather name="star" size={12} color="#D97706" />
-                <Text className="text-xs font-semibold text-textPrimary">{spec.rating}</Text>
-                <Text className="text-xs text-textMuted">({spec.reviews})</Text>
-              </View>
-              <Text className="text-xs text-textMuted">c {spec.since} г.</Text>
-            </View>
-
-            <Pressable className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg border border-brandPrimary" onPress={() => router.push(`/specialists/${spec.initials.toLowerCase()}` as any)}>
-              <Text className="text-xs font-semibold text-brandPrimary">Подробнее</Text>
-            </Pressable>
-          </View>
-        ))}
+            );
+          })
+        }
       </ScrollView>
     </View>
   );
@@ -397,23 +447,38 @@ function HowItWorksSection() {
 }
 
 // =====================================================================
-// STATS + TRUST
+// STATS + TRUST — real data from API
 // =====================================================================
+
+interface LandingStats {
+  specialistsCount: number;
+  ifnsCount: number;
+  requestsCount: number;
+}
 
 function StatsSection() {
   const { isDesktop } = useLayout();
+  const [data, setData] = useState<LandingStats | null>(null);
 
-  const stats = [
-    { value: '230+', label: 'специалистов', icon: 'users' as const },
-    { value: '47', label: 'городов', icon: 'map-pin' as const },
-    { value: '1 200+', label: 'обращений', icon: 'file-text' as const },
-    { value: '4.8', label: 'средний рейтинг', icon: 'star' as const },
+  useEffect(() => {
+    stats.getLandingStats()
+      .then((res) => {
+        const d = (res as any).data ?? res;
+        setData(d && typeof d === 'object' ? d : null);
+      })
+      .catch(() => {});
+  }, []);
+
+  const items = [
+    { value: data ? String(data.specialistsCount) : '—', label: 'специалистов', icon: 'users' as const },
+    { value: data ? String(data.ifnsCount) : '—', label: 'инспекций', icon: 'map-pin' as const },
+    { value: data ? String(data.requestsCount) : '—', label: 'обращений', icon: 'file-text' as const },
   ];
 
   return (
     <View className="bg-white px-5 py-10">
       <View className={`w-full self-center ${isDesktop ? 'flex-row justify-around' : 'flex-row flex-wrap justify-center gap-6'}`} style={{ maxWidth: 800 }}>
-        {stats.map((stat) => (
+        {items.map((stat) => (
           <View key={stat.label} className="items-center gap-1" style={{ minWidth: 80 }}>
             <Feather name={stat.icon} size={18} color={Colors.textMuted} />
             <Text className="text-2xl font-bold text-textPrimary">{stat.value}</Text>
