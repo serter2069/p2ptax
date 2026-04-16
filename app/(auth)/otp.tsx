@@ -3,11 +3,11 @@ import { View, Text, Pressable, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Header } from '../../components/Header';
-import { auth, users } from '../../lib/api/endpoints';
+import { auth } from '../../lib/api/endpoints';
 
 export default function OtpScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { email, role } = useLocalSearchParams<{ email: string; role?: string }>();
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,19 +44,20 @@ export default function OtpScreen() {
     setLoading(true);
     setError('');
     try {
-      await auth.verifyOtp(email, code);
-      // Check if user has a profile (firstName set means onboarding done)
-      try {
-        const meRes = await users.getMe();
-        const me = (meRes as any).data ?? meRes;
-        if (me?.firstName) {
-          router.replace('/(tabs)/dashboard');
-        } else {
-          router.replace('/(onboarding)/profile');
-        }
-      } catch {
-        // If getMe fails, go to onboarding to be safe
-        router.replace('/(onboarding)/profile');
+      // Pass role (lowercase) so backend assigns it on first registration
+      const normalizedRole = role ? role.toLowerCase() : 'client';
+      const res = await auth.verifyOtp(email, code, normalizedRole);
+      const data = (res as any).data ?? res;
+      const isNewUser: boolean = data?.isNewUser ?? false;
+      const userRole: string = data?.user?.role ?? role ?? 'CLIENT';
+
+      if (isNewUser) {
+        // New user: start onboarding
+        router.replace('/(onboarding)/username' as any);
+      } else if (userRole === 'SPECIALIST') {
+        router.replace('/(tabs)/specialist-dashboard' as any);
+      } else {
+        router.replace('/(tabs)/dashboard' as any);
       }
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Неверный код. Попробуйте ещё раз.';

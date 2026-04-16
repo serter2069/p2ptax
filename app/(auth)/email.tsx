@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Header } from '../../components/Header';
 import { auth } from '../../lib/api/endpoints';
 
 export default function AuthEmailScreen() {
   const router = useRouter();
+  const { role } = useLocalSearchParams<{ role?: string }>();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // If role is missing, redirect to role selection
+  useEffect(() => {
+    if (!role) {
+      router.replace('/(auth)/role');
+    }
+  }, [role]);
 
   const handleSubmit = async () => {
     if (!email || !email.includes('@')) {
@@ -20,7 +28,7 @@ export default function AuthEmailScreen() {
     setLoading(true);
     try {
       await auth.requestOtp(email.trim().toLowerCase());
-      router.push({ pathname: '/(auth)/otp', params: { email: email.trim().toLowerCase() } });
+      router.push({ pathname: '/(auth)/otp', params: { email: email.trim().toLowerCase(), role: role ?? 'CLIENT' } });
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Не удалось отправить код. Попробуйте ещё раз.';
       setError(Array.isArray(msg) ? msg.join(', ') : msg);
@@ -38,7 +46,9 @@ export default function AuthEmailScreen() {
           <Feather name="shield" size={28} color="#0284C7" />
         </View>
         <Text className="text-2xl font-bold text-textPrimary">Налоговик</Text>
-        <Text className="text-base text-textMuted">Найдите налогового специалиста</Text>
+        <Text className="text-base text-textMuted">
+          {role === 'SPECIALIST' ? 'Регистрация специалиста' : 'Найдите налогового специалиста'}
+        </Text>
       </View>
 
       <View className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6">
