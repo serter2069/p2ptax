@@ -4,9 +4,11 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Header } from '../../components/Header';
 import { auth } from '../../lib/api/endpoints';
+import { useAuth } from '../../lib/auth';
 
 export default function OtpScreen() {
   const router = useRouter();
+  const { login: authLogin } = useAuth();
   const { email, role } = useLocalSearchParams<{ email: string; role?: string }>();
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -50,6 +52,25 @@ export default function OtpScreen() {
       const data = (res as any).data ?? res;
       const isNewUser: boolean = data?.isNewUser ?? false;
       const userRole: string = data?.user?.role ?? role ?? 'CLIENT';
+
+      // Sync AuthContext so downstream screens (onboarding) see the correct role
+      // Without this, useAuth() returns role=null and specialist-only steps are skipped.
+      try {
+        const u = data?.user ?? {};
+        await authLogin(
+          data.accessToken,
+          data.refreshToken,
+          {
+            id: u.userId ?? u.id ?? '',
+            email: u.email ?? email,
+            role: (u.role ?? userRole) as 'CLIENT' | 'SPECIALIST' | 'ADMIN',
+            username: u.username ?? undefined,
+            isNewUser,
+          },
+        );
+      } catch {
+        // Non-critical — tokens are already stored by verifyOtp
+      }
 
       if (isNewUser) {
         // New user: start onboarding

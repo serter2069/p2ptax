@@ -1,19 +1,28 @@
 import { Controller, Post, Body, UseGuards, Res, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { IsEmail, IsString, Length, IsOptional, IsIn, Matches } from 'class-validator';
+import { IsString, Length, IsOptional, IsIn, Matches } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Response, Request as ExpressRequest } from 'express';
 import { AuthService } from './auth.service';
 import { EmailThrottlerGuard } from './email-throttler.guard';
 import { IpThrottlerGuard } from './ip-throttler.guard';
 
+// Accept any reasonable email including test TLDs like .p2ptax / .test / .local.
+// Stricter than frontend .includes('@') but friendlier than validator.js @IsEmail
+// which rejects TLDs containing digits (breaks e2e and dev flows).
+const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z0-9]{2,}$/;
+
 class RequestOtpDto {
-  @IsEmail()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @IsString({ message: 'Введите корректный email адрес' })
+  @Matches(EMAIL_REGEX, { message: 'Введите корректный email адрес' })
   email!: string;
 }
 
 class VerifyOtpDto {
-  @IsEmail()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @IsString({ message: 'Введите корректный email адрес' })
+  @Matches(EMAIL_REGEX, { message: 'Введите корректный email адрес' })
   email!: string;
 
   @IsString({ message: 'code must be a string' })
