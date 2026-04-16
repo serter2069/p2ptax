@@ -14,10 +14,10 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
@@ -37,10 +37,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
@@ -94,7 +94,6 @@ jobs:
           npm run build
 
       - name: Run DB migrations
-        continue-on-error: true
         run: |
           cd $DEPLOY_DIR/api
           export DOPPLER_TOKEN=$(cat /etc/doppler/p2ptax-stg.token)
@@ -113,7 +112,7 @@ jobs:
 
       - name: Restart API
         run: |
-          pm2 restart p2ptax-api
+          pm2 reload p2ptax-api
           pm2 save
 
       - name: Verify staging
@@ -156,7 +155,7 @@ jobs:
           chmod -R u=rwX,g=rX,o= $DEPLOY_DIR
           [ -f $DEPLOY_DIR/api/start.sh ] && chmod 750 $DEPLOY_DIR/api/start.sh
 
-          pm2 restart p2ptax-api
+          pm2 reload p2ptax-api
           pm2 save
 
           sleep 5

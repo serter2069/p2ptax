@@ -1,13 +1,25 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { Toggle } from '../../components/proto/Toggle';
+import { useAuth } from '../../lib/auth/AuthContext';
 
 function IdleState() {
+  const { logout } = useAuth();
+  const router = useRouter();
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(false);
   const [publicProfile, setPublicProfile] = useState(true);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      router.replace('/(auth)/email');
+    }
+  };
 
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 20 }}>
@@ -52,6 +64,7 @@ function IdleState() {
 
       {/* Logout */}
       <Pressable
+        onPress={handleLogout}
         className="h-12 flex-row items-center justify-center gap-2 rounded-xl"
         style={{ backgroundColor: Colors.statusBg.error }}
       >

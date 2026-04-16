@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { Colors } from '../constants/Colors';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { AuthProvider } from '../lib/auth/AuthContext';
 
 export default function RootLayout() {
   return (
@@ -13,12 +14,14 @@ export default function RootLayout() {
         <meta name="description" content="P2PTax Proto Viewer" />
       </Head>
       <ErrorBoundary>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: Colors.bgPrimary },
-          }}
-        />
+        <AuthProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: Colors.bgPrimary },
+            }}
+          />
+        </AuthProvider>
       </ErrorBoundary>
     </>
   );
