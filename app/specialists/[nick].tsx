@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Header } from '../../components/Header';
 
 const MOCK_SPECIALIST = {
   name: 'Алексей Петров',
@@ -231,5 +233,11 @@ function ProfileScreen({ initialMessage = '', initialFnsOpen = false }: { initia
 }
 
 export default function SpecialistProfileScreen() {
-  return <ProfileScreen />;
+  const router = useRouter();
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="back" backTitle="Специалист" onBack={() => router.back()} />
+      <ProfileScreen />
+    </View>
+  );
 }

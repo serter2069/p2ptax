@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { MOCK_MESSAGES, MockMessage } from '../../constants/protoMockData';
+import { Header } from '../../components/Header';
 
 function ChatHeader({ name, online }: { name: string; online: boolean }) {
   const initials = name.split(' ').map(n => n[0]).join('');
@@ -77,12 +79,14 @@ function TypingIndicator() {
 }
 
 export default function ChatScreen() {
+  const router = useRouter();
   const [messages] = useState<MockMessage[]>(MOCK_MESSAGES);
   const [inputText, setInputText] = useState('');
   const handleSend = () => { if (!inputText.trim()) return; setInputText(''); };
 
   return (
     <View style={{ flex: 1 }}>
+      <Header variant="back" backTitle="Чат" onBack={() => router.back()} />
       <ChatHeader name="Алексей Петров" online={true} />
       <SystemMessage text="Заявка: Камеральная проверка декларации по НДС" />
       <View style={{ padding: Spacing.md, gap: Spacing.xs }}>

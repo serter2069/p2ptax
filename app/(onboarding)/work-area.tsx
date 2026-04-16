@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Header } from '../../components/Header';
 
 const SVCS = ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'];
 const CF: Record<string, string[]> = {
@@ -105,5 +107,11 @@ function WorkAreaScreen({ preset, validationError }: { preset?: { cities: string
 }
 
 export default function WorkAreaScreenPage() {
-  return <WorkAreaScreen />;
+  const router = useRouter();
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="back" backTitle="Регион" onBack={() => router.back()} />
+      <WorkAreaScreen />
+    </View>
+  );
 }

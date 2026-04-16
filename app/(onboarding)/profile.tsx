@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Header } from '../../components/Header';
 
 function ProfileScreen({ initialFilled, uploading }: {
   initialFilled?: boolean; uploading?: boolean;
@@ -108,5 +110,11 @@ function ProfileScreen({ initialFilled, uploading }: {
 }
 
 export default function OnboardingProfilePage() {
-  return <ProfileScreen />;
+  const router = useRouter();
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="back" backTitle="Профиль" onBack={() => router.back()} />
+      <ProfileScreen />
+    </View>
+  );
 }

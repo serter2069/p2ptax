@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Header } from '../../components/Header';
+import { useAuth } from '../../lib/auth/AuthContext';
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -271,5 +273,13 @@ function CatalogState() {
 }
 
 export default function SpecialistsCatalogPage() {
-  return <CatalogState />;
+  const { isAuthenticated, user } = useAuth();
+  const variant = isAuthenticated ? 'auth' : 'guest';
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'EV';
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant={variant} initials={initials} />
+      <CatalogState />
+    </View>
+  );
 }

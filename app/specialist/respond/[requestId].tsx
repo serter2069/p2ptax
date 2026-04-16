@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
+import { Header } from '../../../components/Header';
 
 function IdleState() {
   const [message, setMessage] = useState('Здравствуйте! Готов помочь с декларацией. Опыт — 8 лет, 200+ успешных деклараций.');
@@ -89,5 +91,11 @@ function ErrorState() {
 }
 
 export default function RespondScreen() {
-  return <IdleState />;
+  const router = useRouter();
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="back" backTitle="Отклик" onBack={() => router.back()} />
+      <IdleState />
+    </View>
+  );
 }
