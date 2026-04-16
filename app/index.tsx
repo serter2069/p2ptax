@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors, Shadows } from '../constants/Colors';
 import { MOCK_CITIES, MOCK_FNS, MOCK_SERVICES } from '../constants/protoMockData';
 
@@ -399,6 +400,8 @@ function StatsSection() {
 // =====================================================================
 
 function BottomCTA() {
+  const router = useRouter();
+
   return (
     <View className="items-center px-5 py-10" style={{ backgroundColor: Colors.bgSecondary }}>
       <View className="w-full items-center gap-4 rounded-2xl bg-white p-8" style={{ maxWidth: 600, ...Shadows.md }}>
@@ -407,7 +410,11 @@ function BottomCTA() {
         <Text className="max-w-sm text-center text-sm text-textSecondary">
           Воспользуйтесь каталогом, чтобы найти специалиста с опытом работы в вашей налоговой инспекции
         </Text>
-        <Pressable className="h-12 w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary" style={{ maxWidth: 300 }}>
+        <Pressable
+          className="h-12 w-full flex-row items-center justify-center gap-2 rounded-xl bg-brandPrimary"
+          style={{ maxWidth: 300 }}
+          onPress={() => router.push('/specialists' as any)}
+        >
           <Feather name="search" size={16} color={Colors.white} />
           <Text className="text-base font-semibold text-white">Открыть каталог</Text>
         </Pressable>
@@ -416,7 +423,7 @@ function BottomCTA() {
       <View className="mt-6 flex-row items-center gap-2">
         <Feather name="briefcase" size={14} color={Colors.textMuted} />
         <Text className="text-sm text-textMuted">Вы налоговый специалист?</Text>
-        <Pressable>
+        <Pressable onPress={() => router.push('/(auth)/email')}>
           <Text className="text-sm font-medium text-brandPrimary">Присоединиться</Text>
         </Pressable>
       </View>

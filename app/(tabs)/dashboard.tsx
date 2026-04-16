@@ -109,14 +109,9 @@ function QuickActions() {
 export default function DashboardScreen() {
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1">
-          <Text className="text-xl font-bold text-textPrimary">{getGreeting()}, Елена!</Text>
-          <Text className="text-sm text-textMuted">Ваши заявки и сообщения</Text>
-        </View>
-        <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-bgSurface">
-          <Feather name="bell" size={20} color={Colors.textPrimary} />
-        </Pressable>
+      <View>
+        <Text className="text-xl font-bold text-textPrimary">{getGreeting()}, Елена!</Text>
+        <Text className="text-sm text-textMuted">Ваши заявки и сообщения</Text>
       </View>
 
       <View className="flex-row gap-2">

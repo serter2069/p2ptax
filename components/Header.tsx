@@ -20,7 +20,17 @@ function LogoBlock() {
   );
 }
 
-function BurgerDrawer({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+function BurgerDrawer({
+  open,
+  onToggle,
+  onLogin,
+  onBurgerLink,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onLogin?: () => void;
+  onBurgerLink?: (label: string) => void;
+}) {
   if (!open) return null;
   return (
     <>
@@ -39,13 +49,26 @@ function BurgerDrawer({ open, onToggle }: { open: boolean; onToggle: () => void 
         }}
       >
         {BURGER_LINKS.map((link) => (
-          <Pressable key={link.label} className="flex-row items-center gap-3 py-2.5">
+          <Pressable
+            key={link.label}
+            className="flex-row items-center gap-3 py-2.5"
+            onPress={() => {
+              onBurgerLink?.(link.label);
+              onToggle();
+            }}
+          >
             <Feather name={link.icon} size={18} color={Colors.textSecondary} />
             <Text className="text-base text-textSecondary">{link.label}</Text>
           </Pressable>
         ))}
         <View className="my-2 h-px bg-borderLight" />
-        <Pressable className="flex-row items-center gap-3 py-2.5">
+        <Pressable
+          className="flex-row items-center gap-3 py-2.5"
+          onPress={() => {
+            onLogin?.();
+            onToggle();
+          }}
+        >
           <Feather name="log-in" size={18} color={Colors.brandPrimary} />
           <Text className="text-base font-semibold text-brandPrimary">Войти</Text>
         </Pressable>
@@ -60,12 +83,18 @@ export function Header({
   initials = 'EV',
   hasNotif = false,
   onBack,
+  onLogin,
+  onProfile,
+  onBurgerLink,
 }: {
   variant: 'guest' | 'auth' | 'back';
   backTitle?: string;
   initials?: string;
   hasNotif?: boolean;
   onBack?: () => void;
+  onLogin?: () => void;
+  onProfile?: () => void;
+  onBurgerLink?: (label: string) => void;
 }) {
   const [burgerOpen, setBurgerOpen] = useState(false);
 
@@ -97,7 +126,10 @@ export function Header({
         >
           <LogoBlock />
           <View className="flex-row items-center gap-4">
-            <Pressable className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4">
+            <Pressable
+              className="h-9 flex-row items-center gap-1.5 rounded-lg bg-brandPrimary px-4"
+              onPress={onLogin}
+            >
               <Text className="text-sm font-semibold text-white">Войти</Text>
             </Pressable>
             <Pressable onPress={() => setBurgerOpen(!burgerOpen)}>
@@ -109,7 +141,12 @@ export function Header({
             </Pressable>
           </View>
         </View>
-        <BurgerDrawer open={burgerOpen} onToggle={() => setBurgerOpen(false)} />
+        <BurgerDrawer
+          open={burgerOpen}
+          onToggle={() => setBurgerOpen(false)}
+          onLogin={onLogin}
+          onBurgerLink={onBurgerLink}
+        />
       </View>
     );
   }
@@ -128,12 +165,13 @@ export function Header({
             <View className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-statusError" />
           )}
         </Pressable>
-        <View
+        <Pressable
           className="h-8 w-8 items-center justify-center rounded-full border bg-bgSecondary"
           style={{ borderColor: Colors.border }}
+          onPress={onProfile}
         >
           <Text className="text-xs font-bold text-brandPrimary">{initials}</Text>
-        </View>
+        </Pressable>
       </View>
     </View>
   );
