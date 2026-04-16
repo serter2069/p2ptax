@@ -1,17 +1,41 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, Switch, ActivityIndicator } from 'react-native';
+import { View, Pressable, Switch, ActivityIndicator, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors, Spacing, BorderRadius } from '../../constants/Colors';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { users } from '../../lib/api/endpoints';
+import {
+  Button,
+  Card,
+  Container,
+  Heading,
+  Screen,
+  Text,
+} from '../../components/ui';
 
 function SettingRow({ label, value, danger, icon, onPress }: { label: string; value?: string; danger?: boolean; icon?: string; onPress?: () => void }) {
   return (
-    <Pressable onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary }}>
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.bgSecondary,
+      }}
+    >
       {icon && <Feather name={icon as any} size={18} color={danger ? Colors.statusError : Colors.textMuted} />}
-      <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: danger ? Colors.statusError : Colors.textPrimary }}>{label}</Text>
-      {value && <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted, marginRight: Spacing.sm }}>{value}</Text>}
+      <Text
+        variant="caption"
+        style={{ flex: 1, color: danger ? Colors.statusError : Colors.textPrimary }}
+      >
+        {label}
+      </Text>
+      {value && <Text variant="caption" style={{ marginRight: Spacing.sm }}>{value}</Text>}
       <Feather name="chevron-right" size={16} color={Colors.textMuted} />
     </Pressable>
   );
@@ -19,12 +43,39 @@ function SettingRow({ label, value, danger, icon, onPress }: { label: string; va
 
 function ToggleRow({ label, icon, enabled, onToggle, saving }: { label: string; icon: string; enabled: boolean; onToggle: (next: boolean) => void; saving?: boolean }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.bgSecondary,
+      }}
+    >
       <Feather name={icon as any} size={18} color={Colors.textMuted} />
-      <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textPrimary }}>{label}</Text>
+      <Text variant="caption" style={{ flex: 1, color: Colors.textPrimary }}>{label}</Text>
       {saving && <ActivityIndicator size="small" color={Colors.textMuted} style={{ marginRight: Spacing.sm }} />}
-      <Switch value={enabled} onValueChange={onToggle} trackColor={{ false: '#D1D5DB', true: '#0284C7' }} thumbColor="#fff" />
+      <Switch
+        value={enabled}
+        onValueChange={onToggle}
+        trackColor={{ false: Colors.borderLight, true: Colors.brandPrimary }}
+        thumbColor={Colors.white}
+      />
     </View>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      variant="caption"
+      weight="semibold"
+      style={{ color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}
+    >
+      {children}
+    </Text>
   );
 }
 
@@ -73,71 +124,122 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <View style={{ padding: Spacing.lg, alignItems: 'center' }}>
-        <ActivityIndicator color={Colors.brandPrimary} />
-      </View>
+      <Screen>
+        <View style={{ padding: Spacing.lg, alignItems: 'center' }}>
+          <ActivityIndicator color={Colors.brandPrimary} />
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={{ padding: Spacing.lg, gap: Spacing.lg }}>
-      <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>Настройки</Text>
-      <View style={{ gap: Spacing.sm }}>
-        <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Уведомления</Text>
-        <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadows.sm }}>
-          <ToggleRow label="Email-уведомления" icon="mail" enabled={emailNotif} onToggle={handleEmailToggle} saving={saving} />
-        </View>
-      </View>
-      <View style={{ gap: Spacing.sm }}>
-        <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Аккаунт</Text>
-        <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadows.sm }}>
-          <SettingRow label="Email" value={user?.email ?? '—'} icon="mail" />
-        </View>
-      </View>
-      <View style={{ gap: Spacing.sm }}>
-        <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Информация</Text>
-        <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadows.sm }}>
-          <SettingRow label="Политика конфиденциальности" icon="shield" onPress={() => router.push('/terms' as any)} />
-          <SettingRow label="Условия использования" icon="file-text" onPress={() => router.push('/terms' as any)} />
-          <SettingRow label="Версия" value="1.0.0" icon="info" />
-        </View>
-      </View>
-      <View style={{ gap: Spacing.sm }}>
-        <Pressable onPress={() => setShowLogout(!showLogout)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, height: 48, backgroundColor: Colors.statusBg.error, borderRadius: BorderRadius.btn }}>
-          <Feather name="log-out" size={18} color={Colors.statusError} />
-          <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.statusError }}>Выйти из аккаунта</Text>
-        </Pressable>
-        {showLogout && (
-          <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.statusBg.error, gap: Spacing.md, ...Shadows.sm }}>
-            <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>Вы уверены, что хотите выйти?</Text>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <Pressable onPress={() => setShowLogout(false)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
-                <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Отмена</Text>
+    <Screen>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+        <Container>
+          <View style={{ gap: Spacing.lg }}>
+            <Heading level={3}>Настройки</Heading>
+
+            <View style={{ gap: Spacing.sm }}>
+              <SectionLabel>Уведомления</SectionLabel>
+              <Card padding="sm" variant="outlined" style={{ padding: 0, overflow: 'hidden' }}>
+                <ToggleRow
+                  label="Email-уведомления"
+                  icon="mail"
+                  enabled={emailNotif}
+                  onToggle={handleEmailToggle}
+                  saving={saving}
+                />
+              </Card>
+            </View>
+
+            <View style={{ gap: Spacing.sm }}>
+              <SectionLabel>Аккаунт</SectionLabel>
+              <Card padding="sm" variant="outlined" style={{ padding: 0, overflow: 'hidden' }}>
+                <SettingRow label="Email" value={user?.email ?? '—'} icon="mail" />
+              </Card>
+            </View>
+
+            <View style={{ gap: Spacing.sm }}>
+              <SectionLabel>Информация</SectionLabel>
+              <Card padding="sm" variant="outlined" style={{ padding: 0, overflow: 'hidden' }}>
+                <SettingRow label="Политика конфиденциальности" icon="shield" onPress={() => router.push('/terms' as any)} />
+                <SettingRow label="Условия использования" icon="file-text" onPress={() => router.push('/terms' as any)} />
+                <SettingRow label="Версия" value="1.0.0" icon="info" />
+              </Card>
+            </View>
+
+            <View style={{ gap: Spacing.sm }}>
+              <Pressable
+                onPress={() => setShowLogout(!showLogout)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: Spacing.sm,
+                  height: 48,
+                  backgroundColor: Colors.statusBg.error,
+                  borderRadius: BorderRadius.btn,
+                }}
+              >
+                <Feather name="log-out" size={18} color={Colors.statusError} />
+                <Text variant="caption" weight="semibold" style={{ color: Colors.statusError }}>Выйти из аккаунта</Text>
               </Pressable>
-              <Pressable onPress={handleLogout} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError }}>
-                <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Выйти</Text>
+              {showLogout && (
+                <Card variant="outlined" style={{ borderColor: Colors.statusBg.error }}>
+                  <View style={{ gap: Spacing.md }}>
+                    <Text variant="caption" align="center" style={{ color: Colors.textSecondary }}>
+                      Вы уверены, что хотите выйти?
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                      <View style={{ flex: 1 }}>
+                        <Button variant="secondary" onPress={() => setShowLogout(false)} fullWidth>Отмена</Button>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Button variant="danger" onPress={handleLogout} fullWidth>Выйти</Button>
+                      </View>
+                    </View>
+                  </View>
+                </Card>
+              )}
+
+              <Pressable
+                onPress={() => setShowDelete(!showDelete)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: Spacing.sm,
+                  height: 48,
+                  backgroundColor: 'transparent',
+                  borderWidth: 1,
+                  borderColor: Colors.statusBg.error,
+                  borderRadius: BorderRadius.btn,
+                }}
+              >
+                <Feather name="trash-2" size={18} color={Colors.statusError} />
+                <Text variant="caption" weight="semibold" style={{ color: Colors.statusError }}>Удалить аккаунт</Text>
               </Pressable>
+              {showDelete && (
+                <Card variant="outlined" style={{ borderColor: Colors.statusBg.error }}>
+                  <View style={{ gap: Spacing.md }}>
+                    <Text variant="caption" align="center" style={{ color: Colors.textSecondary }}>
+                      Это действие необратимо. Все данные будут удалены.
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                      <View style={{ flex: 1 }}>
+                        <Button variant="secondary" onPress={() => setShowDelete(false)} fullWidth>Отмена</Button>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Button variant="danger" onPress={() => { /* TODO: implement delete */ }} fullWidth>Удалить</Button>
+                      </View>
+                    </View>
+                  </View>
+                </Card>
+              )}
             </View>
           </View>
-        )}
-        <Pressable onPress={() => setShowDelete(!showDelete)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, height: 48, backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.statusBg.error, borderRadius: BorderRadius.btn }}>
-          <Feather name="trash-2" size={18} color={Colors.statusError} />
-          <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.statusError }}>Удалить аккаунт</Text>
-        </Pressable>
-        {showDelete && (
-          <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.statusBg.error, gap: Spacing.md, ...Shadows.sm }}>
-            <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>Это действие необратимо. Все данные будут удалены.</Text>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <Pressable onPress={() => setShowDelete(false)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
-                <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Отмена</Text>
-              </Pressable>
-              <Pressable style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError }}>
-                <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Удалить</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-      </View>
-    </View>
+        </Container>
+      </ScrollView>
+    </Screen>
   );
 }

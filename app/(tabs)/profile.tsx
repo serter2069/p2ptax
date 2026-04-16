@@ -1,29 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { users, upload } from '../../lib/api/endpoints';
+import {
+  Button,
+  Card,
+  Container,
+  Heading,
+  Input,
+  Screen,
+  Text,
+} from '../../components/ui';
 
 function InfoRow({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
       <Feather name={icon as any} size={16} color={Colors.textMuted} />
-      <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>{label}</Text>
-      <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textPrimary }}>{value}</Text>
+      <Text variant="caption" style={{ flex: 1 }}>{label}</Text>
+      <Text variant="caption" weight="medium" style={{ color: Colors.textPrimary }}>{value}</Text>
     </View>
   );
 }
 
 function StatBlock({ icon, value, label }: { icon: string; value: string; label: string }) {
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.md, alignItems: 'center', gap: Spacing.xs, borderWidth: 1, borderColor: Colors.border, ...Shadows.sm }}>
-      <Feather name={icon as any} size={18} color={Colors.brandPrimary} />
-      <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>{value}</Text>
-      <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.textMuted }}>{label}</Text>
-    </View>
+    <Card style={{ flex: 1 }} padding="sm" variant="outlined">
+      <View style={{ alignItems: 'center', gap: Spacing.xs }}>
+        <Feather name={icon as any} size={18} color={Colors.brandPrimary} />
+        <Text variant="body" weight="bold">{value}</Text>
+        <Text variant="caption">{label}</Text>
+      </View>
+    </Card>
   );
 }
 
@@ -38,10 +49,37 @@ function formatDate(iso?: string): string {
   return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function Avatar({ initials, size = 64 }: { initials: string; size?: number }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: Colors.bgSurface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: Typography.fontSize.xl,
+          fontWeight: Typography.fontWeight.bold,
+          color: Colors.brandPrimary,
+          fontFamily: Typography.fontFamily.bold,
+        }}
+      >
+        {initials}
+      </Text>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const { user, refreshUser } = useAuth();
 
-  // Profile data from API
   const [profile, setProfile] = useState<{
     firstName?: string;
     lastName?: string;
@@ -70,7 +108,6 @@ export default function ProfileScreen() {
         setCity(d.city ?? d.profile?.city ?? '');
       })
       .catch(() => {
-        // Fallback to cached auth user
         if (user) {
           setFirstName(user.firstName ?? '');
           setLastName(user.lastName ?? '');
@@ -135,9 +172,11 @@ export default function ProfileScreen() {
 
   if (profileLoading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={Colors.brandPrimary} />
-      </View>
+      <Screen>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={Colors.brandPrimary} />
+        </View>
+      </Screen>
     );
   }
 
@@ -148,114 +187,138 @@ export default function ProfileScreen() {
 
   if (editMode) {
     return (
-      <View style={{ padding: Spacing.lg, gap: Spacing.lg }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.lg }}>
-          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bgSurface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
-            <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary }}>{initials}</Text>
-          </View>
-          <Pressable
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-            onPress={handleChangePicture}
-            disabled={avatarLoading}
-          >
-            {avatarLoading ? (
-              <ActivityIndicator size="small" color={Colors.brandPrimary} />
-            ) : (
-              <>
-                <Feather name="camera" size={14} color={Colors.brandPrimary} />
-                <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium }}>Изменить фото</Text>
-              </>
-            )}
-          </Pressable>
-        </View>
-        <View style={{ gap: Spacing.lg }}>
-          <View style={{ gap: Spacing.xs }}>
-            <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary }}>Имя</Text>
-            <TextInput value={firstName} onChangeText={setFirstName} style={{ height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary, outlineStyle: 'none' } as any} />
-          </View>
-          <View style={{ gap: Spacing.xs }}>
-            <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary }}>Фамилия</Text>
-            <TextInput value={lastName} onChangeText={setLastName} style={{ height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary, outlineStyle: 'none' } as any} />
-          </View>
-          <View style={{ gap: Spacing.xs }}>
-            <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary }}>Email</Text>
-            <TextInput value={email} editable={false} style={{ height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary, opacity: 0.5, outlineStyle: 'none' } as any} />
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Feather name="lock" size={12} color={Colors.textMuted} />
-              <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.textMuted }}>Email нельзя изменить</Text>
+      <Screen>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+          <Container>
+            <View style={{ gap: Spacing.lg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.lg }}>
+                <Avatar initials={initials} />
+                <Button
+                  variant="ghost"
+                  size="md"
+                  icon={avatarLoading
+                    ? <ActivityIndicator size="small" color={Colors.brandPrimary} />
+                    : <Feather name="camera" size={14} color={Colors.brandPrimary} />}
+                  onPress={handleChangePicture}
+                  disabled={avatarLoading}
+                >
+                  Изменить фото
+                </Button>
+              </View>
+
+              <View style={{ gap: Spacing.lg }}>
+                <Input
+                  label="Имя"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                />
+                <Input
+                  label="Фамилия"
+                  value={lastName}
+                  onChangeText={setLastName}
+                />
+                <View style={{ gap: Spacing.xs }}>
+                  <Input
+                    label="Email"
+                    value={email}
+                    onChangeText={() => { /* noop, not editable */ }}
+                    editable={false}
+                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                    <Feather name="lock" size={12} color={Colors.textMuted} />
+                    <Text variant="caption">Email нельзя изменить</Text>
+                  </View>
+                </View>
+                <Input
+                  label="Город"
+                  value={city}
+                  onChangeText={setCity}
+                />
+              </View>
+
+              <View style={{ gap: Spacing.sm }}>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  loading={saving}
+                  disabled={saving}
+                  icon={<Feather name="check" size={16} color={Colors.white} />}
+                  onPress={handleSave}
+                  fullWidth
+                >
+                  Сохранить
+                </Button>
+                <Button variant="secondary" size="lg" onPress={handleCancel} fullWidth>
+                  Отмена
+                </Button>
+              </View>
             </View>
-          </View>
-          <View style={{ gap: Spacing.xs }}>
-            <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.medium, color: Colors.textSecondary }}>Город</Text>
-            <TextInput value={city} onChangeText={setCity} style={{ height: 48, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.card, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.base, color: Colors.textPrimary, outlineStyle: 'none' } as any} />
-          </View>
-        </View>
-        <View style={{ gap: Spacing.sm }}>
-          <Pressable
-            onPress={handleSave}
-            disabled={saving}
-            style={{ height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.sm, ...Shadows.sm }}
-          >
-            {saving ? (
-              <ActivityIndicator color={Colors.white} />
-            ) : (
-              <>
-                <Feather name="check" size={16} color={Colors.white} />
-                <Text style={{ fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Сохранить</Text>
-              </>
-            )}
-          </Pressable>
-          <Pressable onPress={handleCancel} style={{ height: 48, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
-            <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textMuted }}>Отмена</Text>
-          </Pressable>
-        </View>
-      </View>
+          </Container>
+        </ScrollView>
+      </Screen>
     );
   }
 
   return (
-    <View style={{ padding: Spacing.lg, gap: Spacing.lg }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.lg }}>
-        <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bgSurface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
-          <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary }}>{initials}</Text>
-        </View>
-        <View>
-          <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>{displayName}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-            <Feather name="user" size={14} color={Colors.textMuted} />
-            <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textMuted }}>
-              {user?.role === 'SPECIALIST' ? 'Специалист' : 'Клиент'}
-            </Text>
+    <Screen>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+        <Container>
+          <View style={{ gap: Spacing.lg }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.lg }}>
+              <Avatar initials={initials} />
+              <View>
+                <Heading level={3}>{displayName}</Heading>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 2 }}>
+                  <Feather name="user" size={14} color={Colors.textMuted} />
+                  <Text variant="muted">
+                    {user?.role === 'SPECIALIST' ? 'Специалист' : 'Клиент'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <StatBlock icon="file-text" value={String(stats?.total ?? stats?.requestsCreated ?? '—')} label="Заявок" />
+              <StatBlock icon="check-circle" value={String(stats?.closed ?? stats?.completed ?? '—')} label="Завершено" />
+              {user?.role === 'SPECIALIST' ? (
+                <StatBlock icon="star" value={stats?.rating != null ? String(stats.rating) : '—'} label="Рейтинг" />
+              ) : (
+                <StatBlock
+                  icon="message-circle"
+                  value={String(stats?.specialistsContacted ?? stats?.threadsCount ?? stats?.responses ?? '—')}
+                  label="Откликов"
+                />
+              )}
+            </View>
+
+            <Card variant="outlined">
+              <View style={{ gap: Spacing.md }}>
+                <InfoRow label="Email" value={email} icon="mail" />
+                <InfoRow label="Город" value={profile.city ?? '—'} icon="map-pin" />
+                <InfoRow label="Регистрация" value={formatDate((profile as any).createdAt)} icon="calendar" />
+              </View>
+            </Card>
+
+            <Button
+              variant="primary"
+              size="lg"
+              icon={<Feather name="edit-2" size={16} color={Colors.white} />}
+              onPress={() => setEditMode(true)}
+              fullWidth
+            >
+              Редактировать
+            </Button>
+
+            <Card onPress={() => router.push('/(tabs)/settings' as any)} variant="outlined">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <Feather name="settings" size={16} color={Colors.textMuted} />
+                <Text variant="body" style={{ flex: 1 }}>Настройки</Text>
+                <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+              </View>
+            </Card>
           </View>
-        </View>
-      </View>
-      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-        <StatBlock icon="file-text" value={String(stats?.total ?? stats?.requestsCreated ?? '—')} label="Заявок" />
-        <StatBlock icon="check-circle" value={String(stats?.closed ?? stats?.completed ?? '—')} label="Завершено" />
-        {user?.role === 'SPECIALIST' ? (
-          <StatBlock icon="star" value={stats?.rating != null ? String(stats.rating) : '—'} label="Рейтинг" />
-        ) : (
-          <StatBlock
-            icon="message-circle"
-            value={String(stats?.specialistsContacted ?? stats?.threadsCount ?? stats?.responses ?? '—')}
-            label="Откликов"
-          />
-        )}
-      </View>
-      <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadows.sm }}>
-        <InfoRow label="Email" value={email} icon="mail" />
-        <InfoRow label="Город" value={profile.city ?? '—'} icon="map-pin" />
-        <InfoRow label="Регистрация" value={formatDate((profile as any).createdAt)} icon="calendar" />
-      </View>
-      <Pressable onPress={() => setEditMode(true)} style={{ height: 48, backgroundColor: Colors.brandPrimary, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.sm, ...Shadows.sm }}>
-        <Feather name="edit-2" size={16} color={Colors.white} />
-        <Text style={{ fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Редактировать</Text>
-      </Pressable>
-      <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.bgCard, padding: Spacing.lg, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border }} onPress={() => router.push('/(tabs)/settings' as any)}>
-        <Feather name="settings" size={16} color={Colors.textMuted} />
-        <Text style={{ fontSize: Typography.fontSize.base, color: Colors.textPrimary }}>Настройки</Text>
-        <Feather name="chevron-right" size={16} color={Colors.textMuted} style={{ marginLeft: 'auto' }} />
-      </Pressable>
-    </View>
+        </Container>
+      </ScrollView>
+    </Screen>
   );
 }

@@ -1,11 +1,20 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { Colors, Spacing, BorderRadius } from '../../constants/Colors';
 import { requests as requestsApi, ifns, categories as categoriesApi } from '../../lib/api/endpoints';
 import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
 import { Header } from '../../components/Header';
+import {
+  Button,
+  Card,
+  Container,
+  EmptyState,
+  Heading,
+  Screen,
+  Text,
+} from '../../components/ui';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,8 +24,9 @@ interface FeedRequest {
   title: string;
   description?: string | null;
   city?: string | null;
-  ifnsCode?: string | null;
-  serviceCategory?: string | null;
+  ifnsName?: string | null;
+  serviceType?: string | null;
+  category?: string | null;
   createdAt: string;
   client?: { firstName?: string | null; lastName?: string | null; createdAt?: string | null } | null;
   _count?: { threads?: number };
@@ -49,32 +59,63 @@ function SelectDropdown({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <View className="gap-2">
+    <View style={{ gap: Spacing.sm }}>
       <Pressable onPress={() => setOpen(!open)}>
-        <View className={`h-11 flex-row items-center gap-2 rounded-lg border px-3 ${open ? 'border-brandPrimary' : 'border-borderLight'} bg-white`}>
+        <View
+          style={{
+            height: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: Spacing.sm,
+            borderRadius: BorderRadius.input,
+            borderWidth: 1,
+            borderColor: open ? Colors.brandPrimary : Colors.borderLight,
+            backgroundColor: Colors.white,
+            paddingHorizontal: Spacing.md,
+          }}
+        >
           <Feather name={icon} size={16} color={Colors.textMuted} />
-          <Text className={`flex-1 text-sm ${value ? 'text-textPrimary' : 'text-textMuted'}`} numberOfLines={1}>
+          <Text
+            variant="caption"
+            style={{ flex: 1, color: value ? Colors.textPrimary : Colors.textMuted }}
+            numberOfLines={1}
+          >
             {value || placeholder}
           </Text>
           <Feather name={open ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
         </View>
       </Pressable>
       {open && (
-        <View className="overflow-hidden rounded-lg border border-borderLight bg-white shadow-sm" style={{ maxHeight: 240 }}>
+        <View
+          style={{
+            overflow: 'hidden',
+            borderRadius: BorderRadius.input,
+            borderWidth: 1,
+            borderColor: Colors.borderLight,
+            backgroundColor: Colors.white,
+            maxHeight: 240,
+          }}
+        >
           <ScrollView>
             <Pressable
-              className="border-b border-bgSecondary px-3 py-2.5"
+              style={{ borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2 }}
               onPress={() => { onChange(''); setOpen(false); }}
             >
-              <Text className="text-sm text-textMuted">Все</Text>
+              <Text variant="caption" style={{ color: Colors.textMuted }}>Все</Text>
             </Pressable>
             {options.map((o) => (
               <Pressable
                 key={o}
-                className="border-b border-bgSecondary px-3 py-2.5"
+                style={{ borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2 }}
                 onPress={() => { onChange(o); setOpen(false); }}
               >
-                <Text className={`text-sm ${value === o ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{o}</Text>
+                <Text
+                  variant="caption"
+                  weight={value === o ? 'semibold' : undefined}
+                  style={{ color: value === o ? Colors.brandPrimary : Colors.textPrimary }}
+                >
+                  {o}
+                </Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -92,55 +133,62 @@ function RequestFeedCard({ title, description, city, fns, service, date, author,
   onWrite: () => void;
 }) {
   return (
-    <View className="gap-2 rounded-xl border border-borderLight bg-white p-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 2 }}>
-      <View className="flex-row items-center justify-between">
-        <Text className="flex-1 text-base font-semibold text-textPrimary" numberOfLines={1}>{title}</Text>
-        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
-      </View>
-      <Text className="text-sm leading-5 text-textSecondary" numberOfLines={2}>{description}</Text>
-      <View className="flex-row flex-wrap gap-2">
-        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
-          <Feather name="map-pin" size={11} color={Colors.brandPrimary} />
-          <Text className="text-xs font-medium text-brandPrimary">{city}</Text>
-        </View>
-        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
-          <Feather name="home" size={11} color={Colors.brandPrimary} />
-          <Text className="text-xs font-medium text-brandPrimary">{fns}</Text>
-        </View>
-        <View className="flex-row items-center gap-1 rounded-full bg-bgSecondary px-2 py-0.5">
-          <Feather name="briefcase" size={11} color={Colors.brandPrimary} />
-          <Text className="text-xs font-medium text-brandPrimary">{service}</Text>
-        </View>
-      </View>
-      {/* Author + date row */}
-      <View className="mt-1 flex-row items-center justify-between border-t border-borderLight pt-2">
-        <View className="flex-row items-center gap-2">
-          <View className="h-7 w-7 items-center justify-center rounded-full bg-bgSecondary">
-            <Feather name="user" size={14} color={Colors.textMuted} />
+    <Card variant="elevated">
+      <View style={{ gap: Spacing.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1 }}>
+            <Text variant="body" weight="semibold" numberOfLines={1}>{title}</Text>
           </View>
-          <View>
-            <Text className="text-sm font-medium text-textPrimary">{author}</Text>
+          <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+        </View>
+        <Text variant="caption" style={{ color: Colors.textSecondary, lineHeight: 20 }} numberOfLines={2}>{description}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, borderRadius: BorderRadius.full, backgroundColor: Colors.bgSecondary, paddingHorizontal: Spacing.sm, paddingVertical: 2 }}>
+            <Feather name="map-pin" size={11} color={Colors.brandPrimary} />
+            <Text variant="caption" weight="medium" style={{ color: Colors.brandPrimary }}>{city}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, borderRadius: BorderRadius.full, backgroundColor: Colors.bgSecondary, paddingHorizontal: Spacing.sm, paddingVertical: 2 }}>
+            <Feather name="home" size={11} color={Colors.brandPrimary} />
+            <Text variant="caption" weight="medium" style={{ color: Colors.brandPrimary }}>{fns}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, borderRadius: BorderRadius.full, backgroundColor: Colors.bgSecondary, paddingHorizontal: Spacing.sm, paddingVertical: 2 }}>
+            <Feather name="briefcase" size={11} color={Colors.brandPrimary} />
+            <Text variant="caption" weight="medium" style={{ color: Colors.brandPrimary }}>{service}</Text>
           </View>
         </View>
-        <Text className="text-xs text-textMuted">{date}</Text>
-      </View>
-      {/* Message count + Write CTA */}
-      <View className="mt-1 flex-row items-center justify-between gap-2">
-        <View className="flex-row items-center gap-1.5">
-          <Feather name="message-circle" size={12} color={messageCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
-          <Text className={messageCount > 0 ? 'text-xs font-semibold text-brandPrimary' : 'text-xs text-textMuted'}>
-            {pluralSpecialists(messageCount)}
-          </Text>
+        {/* Author + date */}
+        <View style={{ marginTop: Spacing.xxs, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Colors.borderLight, paddingTop: Spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+            <View style={{ width: 28, height: 28, borderRadius: BorderRadius.full, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' }}>
+              <Feather name="user" size={14} color={Colors.textMuted} />
+            </View>
+            <Text variant="caption" weight="medium">{author}</Text>
+          </View>
+          <Text variant="caption">{date}</Text>
         </View>
-        <Pressable
-          onPress={onWrite}
-          className="h-9 flex-row items-center justify-center gap-1.5 rounded-lg bg-brandPrimary px-4"
-        >
-          <Feather name="send" size={13} color={Colors.white} />
-          <Text className="text-xs font-semibold text-white">Написать</Text>
-        </Pressable>
+        {/* Message count + Write CTA */}
+        <View style={{ marginTop: Spacing.xxs, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+            <Feather name="message-circle" size={12} color={messageCount > 0 ? Colors.brandPrimary : Colors.textMuted} />
+            <Text
+              variant="caption"
+              weight={messageCount > 0 ? 'semibold' : undefined}
+              style={{ color: messageCount > 0 ? Colors.brandPrimary : Colors.textMuted }}
+            >
+              {pluralSpecialists(messageCount)}
+            </Text>
+          </View>
+          <Button
+            variant="primary"
+            size="md"
+            icon={<Feather name="send" size={13} color={Colors.white} />}
+            onPress={onWrite}
+          >
+            Написать
+          </Button>
+        </View>
       </View>
-    </View>
+    </Card>
   );
 }
 
@@ -203,106 +251,119 @@ function FeedState() {
   const hasFilters = !!(filterCity || filterCategory);
 
   return (
-    <View className="flex-1 bg-white">
-    <Header variant="auth" />
-    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      {/* Page title */}
-      <View>
-        <Text className="text-xl font-bold text-textPrimary">Заявки</Text>
-        {!loading && <Text className="mt-0.5 text-sm text-textMuted">{feedData.length} активных заявок</Text>}
-      </View>
+    <Screen bg={Colors.white}>
+      <Header variant="auth" />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+        <Container>
+          <View style={{ gap: Spacing.lg }}>
+            {/* Page title */}
+            <View>
+              <Heading level={3}>Заявки</Heading>
+              {!loading && <Text variant="caption" style={{ marginTop: 2 }}>{feedData.length} активных заявок</Text>}
+            </View>
 
-      {/* City + Service Category filters */}
-      <View className="gap-3 rounded-xl border border-borderLight bg-bgSecondary p-4">
-        <View className="flex-row items-center gap-2">
-          <Feather name="sliders" size={14} color={Colors.brandPrimary} />
-          <Text className="text-sm font-semibold text-textPrimary">Фильтры</Text>
-          {hasFilters && (
-            <Pressable
-              onPress={() => { setFilterCity(''); setFilterCategory(''); }}
-              className="ml-auto flex-row items-center gap-1"
+            {/* Filters */}
+            <View
+              style={{
+                gap: Spacing.md,
+                borderRadius: BorderRadius.card,
+                borderWidth: 1,
+                borderColor: Colors.borderLight,
+                backgroundColor: Colors.bgSecondary,
+                padding: Spacing.lg,
+              }}
             >
-              <Feather name="x" size={14} color={Colors.textMuted} />
-              <Text className="text-xs text-textMuted">Сбросить</Text>
-            </Pressable>
-          )}
-        </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <Feather name="sliders" size={14} color={Colors.brandPrimary} />
+                <Text variant="body" weight="semibold">Фильтры</Text>
+                {hasFilters && (
+                  <Pressable
+                    onPress={() => { setFilterCity(''); setFilterCategory(''); }}
+                    style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}
+                  >
+                    <Feather name="x" size={14} color={Colors.textMuted} />
+                    <Text variant="caption">Сбросить</Text>
+                  </Pressable>
+                )}
+              </View>
 
-        <SelectDropdown
-          icon="map-pin"
-          placeholder="Город"
-          value={filterCity}
-          options={cities}
-          onChange={setFilterCity}
-        />
-        <SelectDropdown
-          icon="briefcase"
-          placeholder="Услуга"
-          value={filterCategory}
-          options={categoryOptions}
-          onChange={setFilterCategory}
-        />
-      </View>
-
-      {/* Request cards */}
-      {loading ? (
-        <View className="items-center py-10">
-          <ActivityIndicator color={Colors.brandPrimary} />
-        </View>
-      ) : error ? (
-        <View className="items-center gap-3 py-10">
-          <Feather name="alert-circle" size={28} color={Colors.statusError} />
-          <Text className="text-sm text-statusError">{error}</Text>
-        </View>
-      ) : feedData.length === 0 ? (
-        <View className="items-center gap-3 py-10">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
-            <Feather name="inbox" size={32} color={Colors.textMuted} />
-          </View>
-          <Text className="text-lg font-semibold text-textPrimary">Нет заявок</Text>
-          <Text className="max-w-[260px] text-center text-sm text-textMuted">Попробуйте изменить параметры фильтров</Text>
-        </View>
-      ) : (
-        <View className="gap-3">
-          {feedData.map((r) => {
-            const authorName = r.client
-              ? [r.client.firstName, r.client.lastName].filter(Boolean).join(' ') || '—'
-              : '—';
-            return (
-              <RequestFeedCard
-                key={r.id}
-                title={r.title}
-                description={r.description ?? ''}
-                city={r.city ?? '—'}
-                fns={r.ifnsCode ?? '—'}
-                service={r.serviceCategory ?? '—'}
-                date={r.createdAt ? new Date(r.createdAt).toLocaleDateString('ru-RU') : '—'}
-                author={authorName}
-                messageCount={r._count?.threads ?? 0}
-                onWrite={() => setWriteTarget({
-                  id: String(r.id),
-                  title: r.title,
-                  description: r.description ?? '',
-                  city: r.city ?? '',
-                  service: r.serviceCategory ?? '',
-                })}
+              <SelectDropdown
+                icon="map-pin"
+                placeholder="Город"
+                value={filterCity}
+                options={cities}
+                onChange={setFilterCity}
               />
-            );
-          })}
-        </View>
-      )}
+              <SelectDropdown
+                icon="briefcase"
+                placeholder="Услуга"
+                value={filterCategory}
+                options={categoryOptions}
+                onChange={setFilterCategory}
+              />
+            </View>
 
-      <WriteConfirmModal
-        visible={writeTarget !== null}
-        request={writeTarget}
-        onClose={() => setWriteTarget(null)}
-        onSuccess={(threadId) => {
-          setWriteTarget(null);
-          router.push(`/chat/${threadId}` as any);
-        }}
-      />
-    </ScrollView>
-    </View>
+            {/* Request cards */}
+            {loading ? (
+              <View style={{ alignItems: 'center', paddingVertical: Spacing['3xl'] }}>
+                <ActivityIndicator color={Colors.brandPrimary} />
+              </View>
+            ) : error ? (
+              <EmptyState
+                icon={<Feather name="alert-circle" size={28} color={Colors.statusError} />}
+                title="Ошибка"
+                description={error}
+              />
+            ) : feedData.length === 0 ? (
+              <EmptyState
+                icon={<Feather name="inbox" size={32} color={Colors.textMuted} />}
+                title="Нет заявок"
+                description="Попробуйте изменить параметры фильтров"
+              />
+            ) : (
+              <View style={{ gap: Spacing.md }}>
+                {feedData.map((r) => {
+                  const authorName = r.client
+                    ? [r.client.firstName, r.client.lastName].filter(Boolean).join(' ') || '—'
+                    : '—';
+                  const serviceLabel = r.serviceType ?? r.category ?? '—';
+                  return (
+                    <RequestFeedCard
+                      key={r.id}
+                      title={r.title}
+                      description={r.description ?? ''}
+                      city={r.city ?? '—'}
+                      fns={r.ifnsName ?? '—'}
+                      service={serviceLabel}
+                      date={r.createdAt ? new Date(r.createdAt).toLocaleDateString('ru-RU') : '—'}
+                      author={authorName}
+                      messageCount={r._count?.threads ?? 0}
+                      onWrite={() => setWriteTarget({
+                        id: String(r.id),
+                        title: r.title,
+                        description: r.description ?? '',
+                        city: r.city ?? '',
+                        service: serviceLabel !== '—' ? serviceLabel : '',
+                      })}
+                    />
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        </Container>
+
+        <WriteConfirmModal
+          visible={writeTarget !== null}
+          request={writeTarget}
+          onClose={() => setWriteTarget(null)}
+          onSuccess={(threadId) => {
+            setWriteTarget(null);
+            router.push(`/chat/${threadId}` as any);
+          }}
+        />
+      </ScrollView>
+    </Screen>
   );
 }
 

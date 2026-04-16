@@ -1,14 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { Colors, Spacing, Typography, BorderRadius } from '../../constants/Colors';
 import { threads as threadsApi } from '../../lib/api/endpoints';
 import { useAuth } from '../../lib/auth';
 import { Header } from '../../components/Header';
+import {
+  Button,
+  Card,
+  Container,
+  EmptyState,
+  Heading,
+  Input,
+  Screen,
+  Text,
+} from '../../components/ui';
 
 // ---------------------------------------------------------------------------
-// Types — shape from GET /threads?grouped_by=request
+// Types
 // ---------------------------------------------------------------------------
 interface LastMessage {
   id: string;
@@ -121,74 +131,60 @@ function ThreadRow({
   const unread = isUnreadForMe(thread, currentUserId);
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.md,
-        paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.sm,
-        backgroundColor: Colors.bgCard,
-        borderRadius: BorderRadius.card,
-        borderWidth: 1,
-        borderColor: Colors.border,
-        ...Shadows.sm,
-      }}
-    >
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          backgroundColor: Colors.bgSurface,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: Colors.border,
-        }}
-      >
-        <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.bold, color: Colors.brandPrimary }}>{initials}</Text>
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Card onPress={onPress} padding="sm" variant="outlined">
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: Colors.bgSurface,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: Colors.border,
+          }}
+        >
           <Text
             style={{
-              fontSize: Typography.fontSize.base,
-              fontWeight: unread ? Typography.fontWeight.bold : Typography.fontWeight.medium,
-              color: Colors.textPrimary,
-            }}
-          >
-            {name}
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>{when}</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-          <Text
-            style={{
-              flex: 1,
               fontSize: Typography.fontSize.sm,
-              color: unread ? Colors.textPrimary : Colors.textMuted,
-              fontWeight: unread ? Typography.fontWeight.medium : undefined,
+              fontWeight: Typography.fontWeight.bold,
+              color: Colors.brandPrimary,
+              fontFamily: Typography.fontFamily.bold,
             }}
-            numberOfLines={1}
           >
-            {preview}
+            {initials}
           </Text>
-          {unread && (
-            <View
-              style={{
-                backgroundColor: Colors.brandPrimary,
-                minWidth: 10,
-                height: 10,
-                borderRadius: 5,
-              }}
-            />
-          )}
         </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text variant="body" weight={unread ? 'bold' : 'medium'} numberOfLines={1}>{name}</Text>
+            <Text variant="caption">{when}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+            <Text
+              variant="caption"
+              weight={unread ? 'medium' : undefined}
+              style={{ flex: 1, color: unread ? Colors.textPrimary : Colors.textMuted }}
+              numberOfLines={1}
+            >
+              {preview}
+            </Text>
+            {unread && (
+              <View
+                style={{
+                  backgroundColor: Colors.brandPrimary,
+                  minWidth: 10,
+                  height: 10,
+                  borderRadius: 5,
+                }}
+              />
+            )}
+          </View>
+        </View>
+        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
       </View>
-      <Feather name="chevron-right" size={16} color={Colors.textMuted} />
-    </Pressable>
+    </Card>
   );
 }
 
@@ -205,17 +201,15 @@ function GroupSection({
   return (
     <View style={{ gap: Spacing.sm }}>
       <View style={{ gap: 2 }}>
-        <Text style={{ fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary }} numberOfLines={2}>
-          {group.request.title}
-        </Text>
+        <Text variant="body" weight="semibold" numberOfLines={2}>{group.request.title}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
           {group.request.city ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
               <Feather name="map-pin" size={11} color={Colors.textMuted} />
-              <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.textMuted }}>{group.request.city}</Text>
+              <Text variant="caption">{group.request.city}</Text>
             </View>
           ) : null}
-          <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.textMuted }}>
+          <Text variant="caption">
             {count} {count === 1 ? 'специалист' : count >= 2 && count <= 4 ? 'специалиста' : 'специалистов'}
           </Text>
         </View>
@@ -236,81 +230,74 @@ function GroupSection({
 
 function LoadingState() {
   return (
-    <View style={{ padding: Spacing.lg, gap: Spacing.md }}>
-      <View style={{ height: 28, width: '40%', backgroundColor: Colors.bgSurface, borderRadius: BorderRadius.md }} />
-      {[0, 1, 2].map((i) => (
-        <View key={i} style={{ height: 72, backgroundColor: Colors.bgSurface, borderRadius: BorderRadius.card }} />
-      ))}
-      <View style={{ alignItems: 'center', paddingTop: Spacing.sm }}>
-        <ActivityIndicator size="small" color={Colors.brandPrimary} />
+    <Container>
+      <View style={{ gap: Spacing.md, paddingVertical: Spacing.lg }}>
+        <View style={{ height: 28, width: '40%', backgroundColor: Colors.bgSurface, borderRadius: BorderRadius.md }} />
+        {[0, 1, 2].map((i) => (
+          <View key={i} style={{ height: 72, backgroundColor: Colors.bgSurface, borderRadius: BorderRadius.card }} />
+        ))}
+        <View style={{ alignItems: 'center', paddingTop: Spacing.sm }}>
+          <ActivityIndicator size="small" color={Colors.brandPrimary} />
+        </View>
       </View>
-    </View>
+    </Container>
   );
 }
 
-function EmptyState() {
+function MessagesEmpty() {
   return (
-    <View style={{ alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing['3xl'] }}>
-      <View
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: 36,
-          backgroundColor: Colors.bgSurface,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: Colors.border,
-        }}
-      >
-        <Feather name="message-circle" size={36} color={Colors.brandPrimary} />
-      </View>
-      <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary }}>
-        У вас пока нет сообщений
-      </Text>
-      <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 300 }}>
-        Когда специалисты напишут по вашим заявкам, диалоги появятся здесь.
-      </Text>
-    </View>
+    <EmptyState
+      icon={
+        <View
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            backgroundColor: Colors.bgSurface,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: Colors.border,
+          }}
+        >
+          <Feather name="message-circle" size={36} color={Colors.brandPrimary} />
+        </View>
+      }
+      title="У вас пока нет сообщений"
+      description="Когда специалисты напишут по вашим заявкам, диалоги появятся здесь."
+    />
   );
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <View style={{ alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing['3xl'] }}>
-      <View
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: 36,
-          backgroundColor: Colors.statusBg.error,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Feather name="alert-triangle" size={36} color={Colors.statusError} />
-      </View>
-      <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary }}>
-        Ошибка загрузки
-      </Text>
-      <Pressable
-        onPress={onRetry}
-        style={{
-          height: 44,
-          paddingHorizontal: Spacing['2xl'],
-          borderRadius: BorderRadius.btn,
-          backgroundColor: Colors.brandPrimary,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: Spacing.sm,
-        }}
-      >
-        <Feather name="refresh-cw" size={16} color={Colors.white} />
-        <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>
+    <EmptyState
+      icon={
+        <View
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            backgroundColor: Colors.statusBg.error,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Feather name="alert-triangle" size={36} color={Colors.statusError} />
+        </View>
+      }
+      title="Ошибка загрузки"
+      action={
+        <Button
+          variant="primary"
+          size="lg"
+          icon={<Feather name="refresh-cw" size={16} color={Colors.white} />}
+          onPress={onRetry}
+        >
           Повторить
-        </Text>
-      </Pressable>
-    </View>
+        </Button>
+      }
+    />
   );
 }
 
@@ -363,81 +350,85 @@ export default function MessagesScreen() {
     return sum;
   }, [groups, user?.id]);
 
-  if (loading) return <View style={{ flex: 1 }}><Header variant="auth" /><LoadingState /></View>;
-  if (error) return <View style={{ flex: 1 }}><Header variant="auth" /><ErrorState onRetry={load} /></View>;
+  if (loading) return <Screen><Header variant="auth" /><LoadingState /></Screen>;
+  if (error) {
+    return (
+      <Screen>
+        <Header variant="auth" />
+        <Container>
+          <ErrorState onRetry={load} />
+        </Container>
+      </Screen>
+    );
+  }
 
   return (
-    <View style={{ flex: 1 }}>
-    <Header variant="auth" />
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, gap: Spacing.md }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>
-          Сообщения
-        </Text>
-        {totalUnread > 0 && (
-          <View
-            style={{
-              backgroundColor: Colors.brandPrimary,
-              minWidth: 24,
-              height: 24,
-              borderRadius: 12,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: 6,
-            }}
-          >
-            <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.bold, color: Colors.white }}>{totalUnread}</Text>
+    <Screen>
+      <Header variant="auth" />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+        <Container>
+          <View style={{ gap: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <Heading level={3}>Сообщения</Heading>
+              {totalUnread > 0 && (
+                <View
+                  style={{
+                    backgroundColor: Colors.brandPrimary,
+                    minWidth: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: Typography.fontSize.xs,
+                      fontWeight: Typography.fontWeight.bold,
+                      color: Colors.white,
+                      fontFamily: Typography.fontFamily.bold,
+                    }}
+                  >
+                    {totalUnread}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {(groups?.length ?? 0) > 0 ? (
+              <Input
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Поиск по сообщениям..."
+                icon={<Feather name="search" size={16} color={Colors.textMuted} />}
+                rightIcon={search.length > 0 ? (
+                  <Pressable onPress={() => setSearch('')}>
+                    <Feather name="x" size={16} color={Colors.textMuted} />
+                  </Pressable>
+                ) : undefined}
+              />
+            ) : null}
+
+            {(groups?.length ?? 0) === 0 ? (
+              <MessagesEmpty />
+            ) : filtered.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: Spacing['2xl'] }}>
+                <Text variant="muted">Ничего не найдено</Text>
+              </View>
+            ) : (
+              filtered.map((g) => (
+                <GroupSection
+                  key={g.request.id}
+                  group={g}
+                  currentUserId={user?.id}
+                  onOpenThread={(id) => router.push(`/chat/${id}` as any)}
+                />
+              ))
+            )}
           </View>
-        )}
-      </View>
-
-      {(groups?.length ?? 0) > 0 ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: Spacing.sm,
-            height: 40,
-            backgroundColor: Colors.bgCard,
-            borderWidth: 1,
-            borderColor: Colors.border,
-            borderRadius: BorderRadius.card,
-            paddingHorizontal: Spacing.md,
-          }}
-        >
-          <Feather name="search" size={16} color={Colors.textMuted} />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Поиск по сообщениям..."
-            placeholderTextColor={Colors.textMuted}
-            style={{ flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textPrimary, paddingVertical: 0, outlineStyle: 'none' } as any}
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')}>
-              <Feather name="x" size={16} color={Colors.textMuted} />
-            </Pressable>
-          )}
-        </View>
-      ) : null}
-
-      {(groups?.length ?? 0) === 0 ? (
-        <EmptyState />
-      ) : filtered.length === 0 ? (
-        <View style={{ alignItems: 'center', paddingVertical: Spacing['2xl'] }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Ничего не найдено</Text>
-        </View>
-      ) : (
-        filtered.map((g) => (
-          <GroupSection
-            key={g.request.id}
-            group={g}
-            currentUserId={user?.id}
-            onOpenThread={(id) => router.push(`/chat/${id}` as any)}
-          />
-        ))
-      )}
-    </ScrollView>
-    </View>
+        </Container>
+      </ScrollView>
+    </Screen>
   );
 }
