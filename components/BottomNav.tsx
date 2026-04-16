@@ -19,7 +19,7 @@ const CLIENT_TABS: TabDef[] = [
 
 const SPECIALIST_TABS: TabDef[] = [
   { id: 'dashboard', icon: 'briefcase', label: 'Кабинет' },
-  { id: 'responses', icon: 'send', label: 'Отклики' },
+  { id: 'responses', icon: 'send', label: 'Диалоги' },
   { id: 'messages', icon: 'message-circle', label: 'Сообщения', badge: true },
   { id: 'profile', icon: 'user', label: 'Профиль' },
 ];

@@ -126,14 +126,6 @@ export const requests = {
     return client.patch(`/requests/${id}`, data);
   },
 
-  getResponses(id: string) {
-    return client.get(`/requests/${id}/responses`);
-  },
-
-  getMyResponses() {
-    return client.get('/requests/my-responses');
-  },
-
   extendRequest(id: string) {
     return client.post(`/requests/${id}/extend`);
   },
@@ -161,11 +153,22 @@ export const specialists = {
 };
 
 // ---------------------------------------------------------------------------
-// Threads (Chat)
+// Threads (Chat) — direct-chat flow (W-1/W-2)
 // ---------------------------------------------------------------------------
+export interface CreateThreadResponse {
+  thread_id: string;
+  created: boolean;
+}
+
 export const threads = {
+  /** GET /threads — flat list of current user's threads */
   getThreads() {
     return client.get('/threads');
+  },
+
+  /** GET /threads?grouped_by=request — client-side grouped by request */
+  getThreadsGroupedByRequest() {
+    return client.get('/threads', { params: { grouped_by: 'request' } });
   },
 
   getMessages(threadId: string, params?: Record<string, unknown>) {
@@ -176,8 +179,38 @@ export const threads = {
     return client.post(`/threads/${threadId}/messages`, data);
   },
 
-  startThread(otherUserId: string, requestId?: string) {
-    return client.post('/threads/start', { otherUserId, ...(requestId && { requestId }) });
+  /**
+   * POST /threads — direct-chat flow (W-1). Specialist opens thread on a request.
+   * Returns 201 when created, 200 when existing thread returned.
+   * Errors: 409 CLOSED/CANCELLED request, 429 20 threads/24h limit.
+   */
+  createForRequest(data: { requestId: string; firstMessage: string }) {
+    return client.post<CreateThreadResponse>('/threads', data);
+  },
+
+  /** PATCH /threads/:id/read — mark caller's side as read (204). */
+  markRead(threadId: string) {
+    return client.patch<void>(`/threads/${threadId}/read`);
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Specialist portal (post-W-1: returns threads with request info)
+// ---------------------------------------------------------------------------
+export const specialistPortal = {
+  /** GET /specialist/responses — specialist's own threads with request info */
+  getMyThreads() {
+    return client.get('/specialist/responses');
+  },
+
+  /** GET /specialist/feed — open requests matching specialist's cities */
+  getFeed(params?: Record<string, unknown>) {
+    return client.get('/specialist/feed', { params });
+  },
+
+  /** GET /specialist/profile — current specialist profile */
+  getProfile() {
+    return client.get('/specialist/profile');
   },
 };
 

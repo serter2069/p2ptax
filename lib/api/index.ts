@@ -6,4 +6,18 @@ export {
   setRefreshToken,
   clearTokens,
 } from './storage';
-export { auth, users, requests, specialists, threads, ifns, stats, reviews, admin, search, promotions } from './endpoints';
+export {
+  auth,
+  users,
+  requests,
+  specialists,
+  specialistPortal,
+  threads,
+  ifns,
+  stats,
+  reviews,
+  admin,
+  search,
+  promotions,
+} from './endpoints';
+export type { CreateThreadResponse } from './endpoints';

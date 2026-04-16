@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { Header } from '../../components/Header';
+import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
 
 const MOCK_REQUEST = {
   title: 'Выездная проверка ООО «Ромашка»',
@@ -84,9 +85,9 @@ function RequestCard() {
 }
 
 // ---------------------------------------------------------------------------
-// Response count badge
+// Thread count badge
 // ---------------------------------------------------------------------------
-function ResponseCountBadge() {
+function ThreadCountBadge() {
   return (
     <View className="flex-row items-center gap-2 rounded-lg bg-bgSecondary px-3 py-2">
       <Feather name="users" size={14} color={Colors.brandPrimary} />
@@ -98,58 +99,60 @@ function ResponseCountBadge() {
 }
 
 // ---------------------------------------------------------------------------
-// State 1: Authorized user — textarea + paperclip + send
+// Specialist action panel — opens the WriteConfirmModal
 // ---------------------------------------------------------------------------
-function AuthorizedState() {
-  const [message, setMessage] = useState('');
-
+function WriteActionPanel({ onWrite }: { onWrite: () => void }) {
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <RequestCard />
-      <ResponseCountBadge />
-
-      {/* Message input */}
-      <View className="gap-2">
-        <Text className="text-sm font-medium text-textSecondary">Написать клиенту</Text>
-        <TextInput
-          value={message}
-          onChangeText={setMessage}
-          multiline
-          placeholder="Напишите первое сообщение клиенту..."
-          placeholderTextColor={Colors.textMuted}
-          className="min-h-[100px] rounded-lg border border-borderLight bg-white p-3 text-base text-textPrimary"
-          style={{ textAlignVertical: 'top', outlineStyle: 'none' as any }}
-        />
-      </View>
-
-      {/* Send row: attachment + send button */}
-      <View className="flex-row items-center gap-3">
-        <Pressable className="h-12 w-12 items-center justify-center rounded-lg border border-borderLight bg-white">
-          <Feather name="paperclip" size={20} color={Colors.textMuted} />
-        </Pressable>
-        <Pressable className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary">
-          <Feather name="send" size={16} color={Colors.white} />
-          <Text className="text-base font-semibold text-white">Отправить</Text>
-        </Pressable>
-      </View>
-
-      {/* Hint */}
+    <View className="gap-2">
+      <Pressable
+        onPress={onWrite}
+        className="h-12 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary"
+      >
+        <Feather name="send" size={16} color={Colors.white} />
+        <Text className="text-base font-semibold text-white">Написать</Text>
+      </Pressable>
       <View className="flex-row items-center justify-center gap-1.5">
         <Feather name="info" size={14} color={Colors.textMuted} />
         <Text className="text-center text-sm text-textMuted">
-          После отправки вы будете перенаправлены в чат
+          После первого сообщения откроется чат
         </Text>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 export default function PublicRequestDetailPage() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const requestId = rawId ?? '';
+  const [writeOpen, setWriteOpen] = useState(false);
+
+  const writeRequest: WriteConfirmModalRequest = {
+    id: requestId,
+    title: MOCK_REQUEST.title,
+    description: MOCK_REQUEST.description,
+    city: MOCK_REQUEST.city,
+    service: MOCK_REQUEST.service,
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Header variant="back" backTitle="Заявка" onBack={() => router.back()} />
-      <AuthorizedState />
+      <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+        <RequestCard />
+        <ThreadCountBadge />
+        <WriteActionPanel onWrite={() => setWriteOpen(true)} />
+      </ScrollView>
+      <WriteConfirmModal
+        visible={writeOpen && !!requestId}
+        request={writeOpen ? writeRequest : null}
+        onClose={() => setWriteOpen(false)}
+        onSuccess={(threadId) => {
+          setWriteOpen(false);
+          router.push(`/chat/${threadId}` as any);
+        }}
+      />
     </View>
   );
 }
