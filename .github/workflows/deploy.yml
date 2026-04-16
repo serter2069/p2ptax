@@ -93,6 +93,15 @@ jobs:
           npx prisma generate
           npm run build
 
+      - name: Prisma migrate status (fail on drift)
+        working-directory: ${{ env.DEPLOY_DIR }}/api
+        run: |
+          export DOPPLER_TOKEN=$(cat /etc/doppler/p2ptax-stg.token)
+          doppler run --project p2ptax --config stg -- npx prisma migrate status || {
+            echo "::error::Prisma migration drift detected. Deploy aborted."
+            exit 1
+          }
+
       - name: Run DB migrations
         run: |
           cd $DEPLOY_DIR/api
