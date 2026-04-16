@@ -79,7 +79,7 @@ const COLOR_GROUPS = [
       { label: 'Primary', value: Colors.textPrimary, token: 'textPrimary' },
       { label: 'Secondary', value: Colors.textSecondary, token: 'textSecondary' },
       { label: 'Muted', value: Colors.textMuted, token: 'textMuted' },
-      { label: 'Accent', value: Colors.textAccent, token: 'textAccent' },
+      { label: 'Brand', value: Colors.brandPrimary, token: 'brandPrimary' },
     ],
   },
   {
@@ -88,7 +88,7 @@ const COLOR_GROUPS = [
       { label: 'Success', value: Colors.statusSuccess, token: 'statusSuccess' },
       { label: 'Warning', value: Colors.statusWarning, token: 'statusWarning' },
       { label: 'Error', value: Colors.statusError, token: 'statusError' },
-      { label: 'Info', value: Colors.statusInfo, token: 'statusInfo' },
+      { label: 'Info', value: Colors.brandPrimary, token: 'brandPrimary' },
       { label: 'Neutral', value: Colors.statusNeutral, token: 'statusNeutral' },
     ],
   },
@@ -353,7 +353,7 @@ function BadgesSection({ isDesktop }: { isDesktop: boolean }) {
         <View style={[styles.badge, { backgroundColor: Colors.statusBg.neutral }]}>
           <Text style={[styles.badgeText, { color: Colors.statusNeutral }]}>Draft</Text>
         </View>
-        <View style={[styles.badge, { backgroundColor: Colors.statusBg.accent }]}>
+        <View style={[styles.badge, { backgroundColor: Colors.statusBg.info }]}>
           <Feather name="zap" size={12} color={Colors.brandPrimary} />
           <Text style={[styles.badgeText, { color: Colors.brandPrimary }]}>New</Text>
         </View>

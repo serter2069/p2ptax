@@ -14,7 +14,7 @@ const AUTO_DISMISS_MS = 3000;
 const TYPE_STYLES: Record<ToastMessage['type'], { bg: string; text: string }> = {
   success: { bg: Colors.statusBg.success, text: Colors.statusSuccess },
   error: { bg: Colors.statusBg.error, text: Colors.statusError },
-  info: { bg: Colors.statusBg.info, text: Colors.statusInfo },
+  info: { bg: Colors.statusBg.info, text: Colors.brandPrimary },
 };
 
 function ToastItem({ item, onDismiss }: { item: ToastMessage; onDismiss: (id: string) => void }) {

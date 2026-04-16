@@ -8,7 +8,7 @@ type FilterKey = 'all' | 'active' | 'deactivated';
 type Status = 'sent' | 'viewed' | 'accepted' | 'deactivated';
 
 const STATUS_CFG: Record<Status, { label: string; bg: string; fg: string; icon: string }> = {
-  sent: { label: 'Отправлен', bg: Colors.statusBg.info, fg: Colors.statusInfo, icon: 'send' },
+  sent: { label: 'Отправлен', bg: Colors.statusBg.info, fg: Colors.brandPrimary, icon: 'send' },
   viewed: { label: 'Просмотрен', bg: Colors.statusBg.warning, fg: Colors.statusWarning, icon: 'eye' },
   accepted: { label: 'Принят', bg: Colors.statusBg.success, fg: Colors.statusSuccess, icon: 'check-circle' },
   deactivated: { label: 'Отклонён', bg: Colors.statusBg.error, fg: Colors.statusError, icon: 'x-circle' },

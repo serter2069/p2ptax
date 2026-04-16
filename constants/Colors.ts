@@ -1,51 +1,51 @@
+import palette from './palette.js';
+
+const p = palette as Record<string, string>;
+
 export const Colors = {
   // Backgrounds
-  bgPrimary: '#FFFFFF',
-  bgSecondary: '#F0F9FF',
-  bgSurface: '#F0F9FF',
-  bgCard: '#FFFFFF',
+  bgPrimary: p.bgPrimary,
+  bgSecondary: p.bgSecondary,
+  bgSurface: p.bgSurface,
+  bgCard: p.bgCard,
 
   // Text
-  textPrimary: '#0C1A2E',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  textAccent: '#0284C7',
+  textPrimary: p.textPrimary,
+  textSecondary: p.textSecondary,
+  textMuted: p.textMuted,
 
-  // Brand
-  brandPrimary: '#0284C7',
-  brandPrimaryHover: '#0369A1',
-  brandSecondary: '#0369A1',
+  // Brand (canonical)
+  brandPrimary: p.brandPrimary,
+  brandPrimaryHover: p.brandPrimaryHover,
+  brandSecondary: p.brandSecondary,
 
   // Status
-  statusSuccess: '#15803D',
-  statusWarning: '#D97706',
-  statusError: '#DC2626',
-  statusErrorHover: '#B91C1C',
-  statusInfo: '#0284C7',
+  statusSuccess: p.statusSuccess,
+  statusWarning: p.statusWarning,
+  statusError: p.statusError,
+  statusErrorHover: p.statusErrorHover,
+  statusNeutral: p.statusNeutral,
+
+  // Ratings / alerts
+  amber: p.amber,
+  warning: p.warning,
+  successBg: p.successBg,
 
   // Utilities
-  white: '#FFFFFF',
+  white: p.white,
 
-  // Status neutral (grey)
-  statusNeutral: '#6B7280',
-
-  // Status background tints (for badges)
+  // Status background tints (for badges) — grouped view of the flat palette keys
   statusBg: {
-    success: '#DCFCE7',
-    warning: '#FEF9C3',
-    error: '#FEE2E2',
-    info: '#E0F2FE',
-    accent: '#E0F2FE',
-    familiar: '#E0F2FE',
-    neutral: '#F3F4F6',
+    success: p.statusBgSuccess,
+    warning: p.statusBgWarning,
+    error: p.statusBgError,
+    info: p.statusBgInfo,
+    neutral: p.statusBgNeutral,
   },
 
-  // Extended text
-  textFamiliar: '#0284C7',
-
   // Borders
-  border: '#BAE6FD',
-  borderLight: '#E0F2FE',
+  border: p.border,
+  borderLight: p.borderLight,
 } as const;
 
 export const Spacing = {

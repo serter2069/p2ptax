@@ -365,8 +365,8 @@ function ToastsSection() {
         </View>
       </View>
 
-      <View style={[styles.toast, { borderLeftColor: Colors.statusInfo }]}>
-        <Feather name="info" size={18} color={Colors.statusInfo} />
+      <View style={[styles.toast, { borderLeftColor: Colors.brandPrimary }]}>
+        <Feather name="info" size={18} color={Colors.brandPrimary} />
         <View style={styles.toastBody}>
           <Text style={styles.toastTitle}>Info</Text>
           <Text style={styles.toastMsg}>3 new responses to your request.</Text>
