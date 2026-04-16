@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Header } from '../../components/Header';
 import { auth } from '../../lib/api/endpoints';
+import { Button, Card, Container, Heading, Input, Screen, Text } from '../../components/ui';
+import { Colors, Spacing } from '../../constants/Colors';
 
 export default function AuthEmailScreen() {
   const router = useRouter();
@@ -38,66 +40,72 @@ export default function AuthEmailScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen>
       <Header variant="back" backTitle="Вход" onBack={() => router.back()} />
-      <View className="flex-1 items-center justify-center bg-white px-4 py-8">
-      <View className="mb-8 items-center gap-2">
-        <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
-          <Feather name="shield" size={28} color="#0284C7" />
-        </View>
-        <Text className="text-2xl font-bold text-textPrimary">Налоговик</Text>
-        <Text className="text-base text-textMuted">
-          {role === 'SPECIALIST' ? 'Регистрация специалиста' : 'Найдите налогового специалиста'}
-        </Text>
-      </View>
-
-      <View className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6">
-        <Text className="mb-1 text-center text-lg font-bold text-textPrimary">Войти или зарегистрироваться</Text>
-        <Text className="mb-4 text-center text-sm text-textMuted">Отправим код подтверждения на ваш email</Text>
-
-        <Text className="mb-1 text-sm font-medium text-textSecondary">Email</Text>
-        <View className={`mb-2 h-12 flex-row items-center gap-2 rounded-lg border px-4 ${error ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'} ${loading ? 'opacity-60' : ''}`}>
-          <Feather name="mail" size={18} color={error ? '#DC2626' : '#94A3B8'} />
-          <TextInput
-            value={email}
-            onChangeText={(t) => { setEmail(t); if (error) setError(''); }}
-            placeholder="your@email.com"
-            placeholderTextColor="#94A3B8"
-            className="flex-1 text-base text-textPrimary"
-            style={{ outlineStyle: 'none' } as any}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!loading}
-          />
-          {email.length > 0 && !loading && (
-            <Pressable onPress={() => setEmail('')} hitSlop={8}>
-              <Feather name="x-circle" size={16} color="#94A3B8" />
-            </Pressable>
-          )}
-        </View>
-
-        {error ? (
-          <View className="mb-2 flex-row items-center gap-1">
-            <Feather name="alert-circle" size={14} color="#DC2626" />
-            <Text className="text-sm text-red-600">{error}</Text>
+      <Container>
+        <View style={{ paddingVertical: Spacing['2xl'], gap: Spacing['2xl'] }}>
+          <View style={{ alignItems: 'center', gap: Spacing.sm }}>
+            <View
+              style={{
+                height: 64,
+                width: 64,
+                borderRadius: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: Colors.bgSecondary,
+              }}
+            >
+              <Feather name="shield" size={28} color={Colors.brandPrimary} />
+            </View>
+            <Heading level={2} align="center">Налоговик</Heading>
+            <Text variant="muted" align="center">
+              {role === 'SPECIALIST' ? 'Регистрация специалиста' : 'Найдите налогового специалиста'}
+            </Text>
           </View>
-        ) : null}
 
-        <Pressable
-          onPress={handleSubmit}
-          disabled={loading}
-          className={`mt-1 h-12 items-center justify-center rounded-lg bg-brandPrimary ${loading ? 'opacity-60' : ''}`}
-        >
-          <Text className="text-base font-semibold text-white">
-            {loading ? 'Отправка...' : 'Отправить код'}
+          <Card variant="outlined" padding="lg">
+            <View style={{ gap: Spacing.lg }}>
+              <View style={{ gap: Spacing.xs }}>
+                <Heading level={4} align="center">Войти или зарегистрироваться</Heading>
+                <Text variant="caption" align="center">Отправим код подтверждения на ваш email</Text>
+              </View>
+
+              <Input
+                label="Email"
+                value={email}
+                onChangeText={(t) => { setEmail(t); if (error) setError(''); }}
+                placeholder="your@email.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!loading}
+                error={error || undefined}
+                icon={<Feather name="mail" size={18} color={error ? Colors.statusError : Colors.textMuted} />}
+                rightIcon={
+                  email.length > 0 && !loading ? (
+                    <Pressable onPress={() => setEmail('')} hitSlop={8}>
+                      <Feather name="x-circle" size={16} color={Colors.textMuted} />
+                    </Pressable>
+                  ) : undefined
+                }
+              />
+
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={loading}
+                onPress={handleSubmit}
+              >
+                {loading ? 'Отправка...' : 'Отправить код'}
+              </Button>
+            </View>
+          </Card>
+
+          <Text variant="caption" align="center">
+            {'Нажимая кнопку, вы соглашаетесь с\nусловиями использования'}
           </Text>
-        </Pressable>
-      </View>
-
-      <Text className="mt-6 text-center text-xs text-textMuted">
-        {'Нажимая кнопку, вы соглашаетесь с\nусловиями использования'}
-      </Text>
-      </View>
-    </View>
+        </View>
+      </Container>
+    </Screen>
   );
 }

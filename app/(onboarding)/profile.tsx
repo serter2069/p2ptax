@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Header } from '../../components/Header';
 import { users, upload, specialists } from '../../lib/api/endpoints';
 import { useAuth } from '../../lib/auth';
+import { Button, Container, Heading, Input, Screen, Text } from '../../components/ui';
+import { BorderRadius, Colors, Spacing } from '../../constants/Colors';
 
 export default function OnboardingProfilePage() {
   const router = useRouter();
@@ -37,7 +39,6 @@ export default function OnboardingProfilePage() {
     setError('');
     setLoading(true);
     try {
-      // Upload avatar first if selected
       if (avatarUri) {
         setUploading(true);
         try {
@@ -52,9 +53,8 @@ export default function OnboardingProfilePage() {
         }
       }
 
-      // Save profile fields. For specialists, bio/telegram/phone live on SpecialistProfile,
-      // so route through PATCH /specialists/me. Clients use PATCH /users/me/profile
-      // (bio/telegram are ignored for clients — their schema has no such columns).
+      // Specialists: bio/telegram/phone on SpecialistProfile via PATCH /specialists/me.
+      // Clients: only phone via PATCH /users/me/profile.
       if (role === 'SPECIALIST') {
         const specialistData: Record<string, string> = {};
         if (description.trim()) specialistData.bio = description.trim();
@@ -73,9 +73,6 @@ export default function OnboardingProfilePage() {
 
       await refreshUser();
 
-      // New SA flow: profile is the LAST step for both roles.
-      // SPECIALIST: name → work-area → profile → specialist-dashboard
-      // CLIENT: name → profile → dashboard
       if (role === 'SPECIALIST') {
         router.replace('/(tabs)/specialist-dashboard' as any);
       } else {
@@ -89,133 +86,159 @@ export default function OnboardingProfilePage() {
     }
   }
 
+  const stepCopy = role === 'SPECIALIST' ? 'Шаг 3 из 3' : 'Шаг 2 из 2';
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen>
       <Header variant="back" backTitle="Профиль" onBack={() => router.back()} />
-      <View className="flex-1 bg-white px-4 py-6">
-        {/* Progress — profile is the FINAL step for both roles */}
-        <View className="mb-1 h-1 rounded-full bg-bgSecondary">
-          <View className="h-1 rounded-full bg-green-600" style={{ width: '100%' }} />
-        </View>
-        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">
-          {role === 'SPECIALIST' ? 'Шаг 3 из 3' : 'Шаг 2 из 2'}
-        </Text>
+      <Container>
+        <View style={{ paddingVertical: Spacing.xl, gap: Spacing.lg }}>
+          <View>
+            <View style={{ height: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.bgSecondary }}>
+              <View style={{ height: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.statusSuccess, width: '100%' }} />
+            </View>
+            <Text
+              variant="caption"
+              style={{ marginTop: Spacing.xs, textTransform: 'uppercase', letterSpacing: 1 }}
+            >
+              {stepCopy}
+            </Text>
+          </View>
 
-        <Text className="text-xl font-bold text-textPrimary">
-          {role === 'SPECIALIST' ? 'Расскажите о себе' : 'Контактные данные'}
-        </Text>
-        <Text className="mb-4 text-base text-textMuted">
-          {role === 'SPECIALIST'
-            ? 'Эта информация поможет клиентам выбрать вас'
-            : 'Добавьте телефон, чтобы специалисты могли связаться с вами быстрее'}
-        </Text>
+          <View style={{ gap: Spacing.xs }}>
+            <Heading level={3}>
+              {role === 'SPECIALIST' ? 'Расскажите о себе' : 'Контактные данные'}
+            </Heading>
+            <Text variant="muted">
+              {role === 'SPECIALIST'
+                ? 'Эта информация поможет клиентам выбрать вас'
+                : 'Добавьте телефон, чтобы специалисты могли связаться с вами быстрее'}
+            </Text>
+          </View>
 
-        {/* Avatar */}
-        <View className="mb-4 flex-row items-center gap-4">
-          <View className={`h-16 w-16 items-center justify-center rounded-full ${avatarUri ? 'bg-brandPrimary' : 'border-2 border-dashed border-gray-300 bg-bgSecondary'}`}>
-            <Feather name="user" size={28} color={avatarUri ? '#fff' : '#0284C7'} />
-            {uploading && (
-              <View className="absolute inset-0 items-center justify-center rounded-full bg-black/50">
-                <ActivityIndicator size="small" color="#fff" />
+          {/* Avatar */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.lg }}>
+            <View
+              style={{
+                height: 64,
+                width: 64,
+                borderRadius: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: avatarUri ? Colors.brandPrimary : Colors.bgSecondary,
+                borderWidth: avatarUri ? 0 : 2,
+                borderColor: Colors.border,
+                borderStyle: 'dashed',
+                overflow: 'hidden',
+              }}
+            >
+              <Feather name="user" size={28} color={avatarUri ? Colors.white : Colors.brandPrimary} />
+              {uploading && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 32,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                  }}
+                >
+                  <ActivityIndicator size="small" color={Colors.white} />
+                </View>
+              )}
+            </View>
+            <View style={{ gap: Spacing.xxs }}>
+              <Pressable onPress={pickAvatar} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                <Feather name="camera" size={14} color={Colors.brandPrimary} />
+                <Text variant="body" weight="medium" style={{ color: Colors.brandPrimary }}>
+                  {avatarUri ? 'Изменить фото' : 'Загрузить фото'}
+                </Text>
+              </Pressable>
+              <Text variant="caption">JPG или PNG, до 5 МБ</Text>
+            </View>
+          </View>
+
+          <View style={{ gap: Spacing.md }}>
+            {/* Description — specialist only */}
+            {role === 'SPECIALIST' && (
+              <View style={{ gap: Spacing.xs }}>
+                <Input
+                  label="О себе"
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Расскажите о вашем опыте..."
+                  multiline
+                  maxLength={maxChars}
+                />
+                <Text
+                  variant="caption"
+                  align="right"
+                  style={description.length > maxChars ? { color: Colors.statusError } : undefined}
+                >
+                  {description.length}/{maxChars}
+                </Text>
               </View>
             )}
-          </View>
-          <View>
-            <Pressable className="flex-row items-center gap-1" onPress={pickAvatar}>
-              <Feather name="camera" size={14} color="#0284C7" />
-              <Text className="text-base font-medium text-brandPrimary">{avatarUri ? 'Изменить фото' : 'Загрузить фото'}</Text>
-            </Pressable>
-            <Text className="text-xs text-textMuted">JPG или PNG, до 5 МБ</Text>
-          </View>
-        </View>
 
-        {/* Description — specialist only (clients have no bio column) */}
-        {role === 'SPECIALIST' && (
-          <View className="mb-3">
-            <View className="mb-1 flex-row items-center justify-between">
-              <Text className="text-sm font-medium text-textSecondary">О себе</Text>
-              <Text className={`text-xs ${description.length > maxChars ? 'text-red-600' : 'text-textMuted'}`}>{description.length}/{maxChars}</Text>
-            </View>
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Расскажите о вашем опыте..."
-              placeholderTextColor="#94A3B8"
-              multiline
-              className="rounded-lg border border-gray-200 p-3 text-base text-textPrimary"
-              style={{ minHeight: 80, textAlignVertical: 'top', outlineStyle: 'none' as any }}
-              maxLength={maxChars}
-            />
-          </View>
-        )}
-
-        {/* Phone */}
-        <View className="mb-3">
-          <Text className="mb-1 text-sm font-medium text-textSecondary">Телефон</Text>
-          <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
-            <Feather name="phone" size={16} color="#94A3B8" />
-            <TextInput
+            {/* Phone */}
+            <Input
+              label="Телефон"
               value={phone}
               onChangeText={setPhone}
               placeholder="+7XXXXXXXXXX"
-              placeholderTextColor="#94A3B8"
-              className="flex-1 text-base text-textPrimary"
-              style={{ outlineStyle: 'none' as any }}
               keyboardType="phone-pad"
+              icon={<Feather name="phone" size={16} color={Colors.textMuted} />}
             />
-          </View>
-        </View>
 
-        {/* Telegram — specialist only */}
-        {role === 'SPECIALIST' && (
-          <View className="mb-4">
-            <Text className="mb-1 text-sm font-medium text-textSecondary">Telegram</Text>
-            <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
-              <Feather name="send" size={16} color="#94A3B8" />
-              <TextInput
+            {/* Telegram — specialist only */}
+            {role === 'SPECIALIST' && (
+              <Input
+                label="Telegram"
                 value={telegram}
                 onChangeText={setTelegram}
                 placeholder="@username"
-                placeholderTextColor="#94A3B8"
-                className="flex-1 text-base text-textPrimary"
-                style={{ outlineStyle: 'none' as any }}
+                icon={<Feather name="send" size={16} color={Colors.textMuted} />}
               />
+            )}
+          </View>
+
+          {error ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing.xs,
+                borderRadius: BorderRadius.lg,
+                backgroundColor: Colors.bgSecondary,
+                paddingHorizontal: Spacing.md,
+                paddingVertical: Spacing.sm,
+              }}
+            >
+              <Feather name="alert-circle" size={14} color={Colors.statusError} />
+              <Text variant="caption" style={{ color: Colors.statusError }}>{error}</Text>
+            </View>
+          ) : null}
+
+          {/* Buttons */}
+          <View style={{ flexDirection: 'row', gap: Spacing.md }}>
+            <Button variant="ghost" size="lg" onPress={() => router.back()}>
+              Назад
+            </Button>
+            <View style={{ flex: 1 }}>
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={loading}
+                onPress={handleFinish}
+              >
+                Завершить
+              </Button>
             </View>
           </View>
-        )}
-
-        {error ? (
-          <View className="mb-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
-            <Feather name="alert-circle" size={14} color="#DC2626" />
-            <Text className="text-sm text-red-600">{error}</Text>
-          </View>
-        ) : null}
-
-        {/* Buttons */}
-        <View className="flex-row gap-3">
-          <Pressable
-            className="h-12 flex-row items-center justify-center gap-1 rounded-lg border border-gray-200 px-4"
-            onPress={() => router.back()}
-          >
-            <Feather name="arrow-left" size={16} color="#475569" />
-            <Text className="text-base font-medium text-textSecondary">Назад</Text>
-          </Pressable>
-          <Pressable
-            className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary ${loading ? 'opacity-60' : ''}`}
-            onPress={handleFinish}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Feather name="check" size={16} color="#fff" />
-                <Text className="text-base font-semibold text-white">Завершить</Text>
-              </>
-            )}
-          </Pressable>
         </View>
-      </View>
-    </View>
+      </Container>
+    </Screen>
   );
 }

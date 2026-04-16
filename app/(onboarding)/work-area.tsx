@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/Header';
 import { specialists } from '../../lib/api/endpoints';
 import { useCities, useFnsOffices, type CityItem, type FnsOfficeItem } from '../../hooks/useFnsData';
+import { Button, Container, Heading, Input, Screen, Text } from '../../components/ui';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/Colors';
 
 const SVCS = ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'];
 
@@ -73,11 +75,10 @@ export default function WorkAreaScreenPage() {
     setLoading(true);
     try {
       const workAreas = Object.entries(bind).map(([key, departments]) => ({
-        fnsId: key, // key is "cityId:fnsId"
+        fnsId: key,
         departments,
       }));
       await specialists.saveWorkAreas(workAreas);
-      // New SA flow: work-area (step 2) → profile (step 3 — final)
       router.push('/(onboarding)/profile' as any);
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || 'Ошибка сохранения';
@@ -88,111 +89,145 @@ export default function WorkAreaScreenPage() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen>
       <Header variant="back" backTitle="Регион" onBack={() => router.back()} />
-      <View className="flex-1 bg-white px-4 py-6">
-        <View className="mb-1 h-1 rounded-full bg-bgSecondary">
-          <View className="h-1 rounded-full bg-brandPrimary" style={{ width: '66%' }} />
-        </View>
-        <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 2 из 3</Text>
-        <Text className="text-xl font-bold text-textPrimary">Рабочая зона</Text>
-        <Text className="mb-4 text-base text-textMuted">Выберите города, инспекции и услуги</Text>
-        <View className="mb-2 h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
-          <Feather name="search" size={18} color="#94A3B8" />
-          <TextInput
+      <Container>
+        <View style={{ paddingVertical: Spacing.xl, gap: Spacing.lg }}>
+          <View>
+            <View style={{ height: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.bgSecondary }}>
+              <View style={{ height: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.brandPrimary, width: '66%' }} />
+            </View>
+            <Text
+              variant="caption"
+              style={{ marginTop: Spacing.xs, textTransform: 'uppercase', letterSpacing: 1 }}
+            >
+              Шаг 2 из 3
+            </Text>
+          </View>
+
+          <View style={{ gap: Spacing.xs }}>
+            <Heading level={3}>Рабочая зона</Heading>
+            <Text variant="muted">Выберите города, инспекции и услуги</Text>
+          </View>
+
+          <Input
             value={search}
             onChangeText={setSearch}
             placeholder="Найти город..."
-            placeholderTextColor="#94A3B8"
-            className="flex-1 text-base text-textPrimary"
-            style={{ outlineStyle: 'none' as any }}
             editable={!citiesLoading}
+            icon={<Feather name="search" size={18} color={Colors.textMuted} />}
+            rightIcon={
+              search.length > 0 ? (
+                <Pressable onPress={() => setSearch('')}>
+                  <Feather name="x" size={16} color={Colors.textMuted} />
+                </Pressable>
+              ) : undefined
+            }
           />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')}><Feather name="x" size={16} color="#94A3B8" /></Pressable>
-          )}
-        </View>
 
-        {citiesLoading && (
-          <View className="flex-row items-center gap-2 px-4 py-3">
-            <ActivityIndicator size="small" color="#94A3B8" />
-            <Text className="text-sm text-textMuted">Загружаем список городов...</Text>
-          </View>
-        )}
-
-        {!citiesLoading && debouncedSearch && filtered.length === 0 && (
-          <View className="px-4 py-3">
-            <Text className="text-sm text-textMuted">Ничего не найдено</Text>
-          </View>
-        )}
-
-        {filtered.map((c) => (
-          <Pressable
-            key={c.id}
-            className="flex-row items-center gap-2 border-b border-gray-100 px-4 py-3"
-            onPress={() => addCity(c)}
-          >
-            <Feather name="map-pin" size={14} color="#94A3B8" />
-            <View className="flex-1">
-              <Text className="text-base text-textPrimary">{c.name}</Text>
-              {c.region && c.region !== c.name && (
-                <Text className="text-xs text-textMuted">{c.region}</Text>
-              )}
+          {citiesLoading && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}>
+              <ActivityIndicator size="small" color={Colors.textMuted} />
+              <Text variant="caption">Загружаем список городов...</Text>
             </View>
-            <Feather name="plus" size={14} color="#0284C7" />
-          </Pressable>
-        ))}
+          )}
 
-        {selectedCities.length === 0 && !search && !citiesLoading && (
-          <View className="items-center py-6 opacity-60">
-            <Feather name="map-pin" size={20} color="#94A3B8" />
-            <Text className="mt-1 text-base text-textMuted">Начните вводить название города</Text>
+          {!citiesLoading && debouncedSearch && filtered.length === 0 && (
+            <View style={{ paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}>
+              <Text variant="caption">Ничего не найдено</Text>
+            </View>
+          )}
+
+          {filtered.length > 0 && (
+            <View>
+              {filtered.map((c) => (
+                <Pressable
+                  key={c.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: Spacing.sm,
+                    borderBottomWidth: 1,
+                    borderBottomColor: Colors.borderLight,
+                    paddingHorizontal: Spacing.lg,
+                    paddingVertical: Spacing.md,
+                  }}
+                  onPress={() => addCity(c)}
+                >
+                  <Feather name="map-pin" size={14} color={Colors.textMuted} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text variant="body">{c.name}</Text>
+                    {c.region && c.region !== c.name && (
+                      <Text variant="caption">{c.region}</Text>
+                    )}
+                  </View>
+                  <Feather name="plus" size={14} color={Colors.brandPrimary} />
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          {selectedCities.length === 0 && !search && !citiesLoading && (
+            <View style={{ alignItems: 'center', paddingVertical: Spacing['2xl'], opacity: 0.6, gap: Spacing.xs }}>
+              <Feather name="map-pin" size={20} color={Colors.textMuted} />
+              <Text variant="muted">Начните вводить название города</Text>
+            </View>
+          )}
+
+          {selectedCities.length > 0 && (
+            <View style={{ gap: Spacing.sm }}>
+              {selectedCities.map((city) => (
+                <CityRow
+                  key={city.id}
+                  city={city}
+                  expanded={expanded === city.id}
+                  onToggle={() => setExpanded(expanded === city.id ? null : city.id)}
+                  onRemove={() => removeCity(city.id)}
+                  bind={bind}
+                  toggleFns={toggleFns}
+                  toggleSvc={toggleSvc}
+                />
+              ))}
+            </View>
+          )}
+
+          {error ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing.xs,
+                borderRadius: BorderRadius.lg,
+                backgroundColor: Colors.bgSecondary,
+                paddingHorizontal: Spacing.md,
+                paddingVertical: Spacing.sm,
+              }}
+            >
+              <Feather name="alert-circle" size={14} color={Colors.statusError} />
+              <Text variant="caption" weight="medium" style={{ color: Colors.statusError }}>{error}</Text>
+            </View>
+          ) : null}
+
+          <View style={{ flexDirection: 'row', gap: Spacing.md }}>
+            <Button variant="ghost" size="lg" onPress={() => router.back()}>
+              Назад
+            </Button>
+            <View style={{ flex: 1 }}>
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                disabled={total === 0 || loading}
+                loading={loading}
+                onPress={handleNext}
+              >
+                Далее
+              </Button>
+            </View>
           </View>
-        )}
-
-        {selectedCities.map((city) => (
-          <CityRow
-            key={city.id}
-            city={city}
-            expanded={expanded === city.id}
-            onToggle={() => setExpanded(expanded === city.id ? null : city.id)}
-            onRemove={() => removeCity(city.id)}
-            bind={bind}
-            toggleFns={toggleFns}
-            toggleSvc={toggleSvc}
-          />
-        ))}
-
-        {error ? (
-          <View className="flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
-            <Feather name="alert-circle" size={14} color="#DC2626" />
-            <Text className="text-sm font-medium text-red-600">{error}</Text>
-          </View>
-        ) : null}
-        <View className="mt-4 flex-row gap-3">
-          <Pressable
-            className="h-12 flex-row items-center justify-center gap-1 rounded-lg border border-gray-200 px-4"
-            onPress={() => router.back()}
-          >
-            <Feather name="arrow-left" size={16} color="#475569" /><Text className="text-base font-medium text-textSecondary">Назад</Text>
-          </Pressable>
-          <Pressable
-            className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-brandPrimary ${(total === 0 || loading) ? 'opacity-40' : ''}`}
-            disabled={total === 0 || loading}
-            onPress={handleNext}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Text className="text-base font-semibold text-white">Далее</Text>
-                <Feather name="arrow-right" size={16} color="#fff" />
-              </>
-            )}
-          </Pressable>
         </View>
-      </View>
-    </View>
+      </Container>
+    </Screen>
   );
 }
 
@@ -214,31 +249,83 @@ function CityRow({ city, expanded, onToggle, onRemove, bind, toggleFns, toggleSv
   const cnt = Object.keys(bind).filter((x) => x.startsWith(city.id + ':')).length;
 
   return (
-    <View className="mb-2 overflow-hidden rounded-lg border border-gray-200">
-      <Pressable className="flex-row items-center justify-between px-4 py-3" onPress={onToggle}>
-        <View className="flex-row items-center gap-2">
-          <Feather name="map-pin" size={14} color="#0284C7" />
-          <Text className="text-base font-semibold text-textPrimary">{city.name}</Text>
+    <View
+      style={{
+        overflow: 'hidden',
+        borderRadius: BorderRadius.lg,
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+        backgroundColor: Colors.white,
+      }}
+    >
+      <Pressable
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: Spacing.lg,
+          paddingVertical: Spacing.md,
+        }}
+        onPress={onToggle}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1 }}>
+          <Feather name="map-pin" size={14} color={Colors.brandPrimary} />
+          <Text variant="body" weight="semibold">{city.name}</Text>
           {cnt > 0 && (
-            <View className="h-5 w-5 items-center justify-center rounded-full bg-brandPrimary">
-              <Text className="text-xs font-bold text-white">{cnt}</Text>
+            <View
+              style={{
+                height: 20,
+                width: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: BorderRadius.full,
+                backgroundColor: Colors.brandPrimary,
+              }}
+            >
+              <Text
+                variant="caption"
+                weight="bold"
+                style={{ color: Colors.white, fontSize: Typography.fontSize.xs }}
+              >
+                {cnt}
+              </Text>
             </View>
           )}
         </View>
-        <View className="flex-row items-center gap-3">
-          <Pressable onPress={onRemove}><Feather name="trash-2" size={14} color="#94A3B8" /></Pressable>
-          <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color="#94A3B8" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+          <Pressable onPress={onRemove} hitSlop={8}>
+            <Feather name="trash-2" size={14} color={Colors.textMuted} />
+          </Pressable>
+          <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
         </View>
       </Pressable>
+
       {expanded && loading && (
-        <View className="flex-row items-center gap-2 border-t border-gray-100 px-4 py-3">
-          <ActivityIndicator size="small" color="#94A3B8" />
-          <Text className="text-sm text-textMuted">Загружаем инспекции...</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: Spacing.sm,
+            borderTopWidth: 1,
+            borderTopColor: Colors.borderLight,
+            paddingHorizontal: Spacing.lg,
+            paddingVertical: Spacing.md,
+          }}
+        >
+          <ActivityIndicator size="small" color={Colors.textMuted} />
+          <Text variant="caption">Загружаем инспекции...</Text>
         </View>
       )}
       {expanded && !loading && offices.length === 0 && (
-        <View className="border-t border-gray-100 px-4 py-3">
-          <Text className="text-sm text-textMuted">Нет доступных инспекций</Text>
+        <View
+          style={{
+            borderTopWidth: 1,
+            borderTopColor: Colors.borderLight,
+            paddingHorizontal: Spacing.lg,
+            paddingVertical: Spacing.md,
+          }}
+        >
+          <Text variant="caption">Нет доступных инспекций</Text>
         </View>
       )}
       {expanded && !loading && offices.map((fns: FnsOfficeItem) => {
@@ -246,25 +333,82 @@ function CityRow({ city, expanded, onToggle, onRemove, bind, toggleFns, toggleSv
         const sel = key in bind;
         const sv = bind[key] || [];
         return (
-          <View key={fns.id} className="border-t border-gray-100">
-            <Pressable className="flex-row items-center gap-3 px-4 py-3" onPress={() => toggleFns(city.id, fns.id)}>
-              <View className={`h-5 w-5 items-center justify-center rounded border ${sel ? 'border-brandPrimary bg-brandPrimary' : 'border-gray-300'}`}>
-                {sel && <Feather name="check" size={13} color="#fff" />}
+          <View
+            key={fns.id}
+            style={{ borderTopWidth: 1, borderTopColor: Colors.borderLight }}
+          >
+            <Pressable
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing.md,
+                paddingHorizontal: Spacing.lg,
+                paddingVertical: Spacing.md,
+              }}
+              onPress={() => toggleFns(city.id, fns.id)}
+            >
+              <View
+                style={{
+                  height: 20,
+                  width: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: BorderRadius.sm,
+                  borderWidth: 1,
+                  borderColor: sel ? Colors.brandPrimary : Colors.border,
+                  backgroundColor: sel ? Colors.brandPrimary : Colors.white,
+                }}
+              >
+                {sel && <Feather name="check" size={13} color={Colors.white} />}
               </View>
-              <Text className={`flex-1 text-sm ${sel ? 'font-medium text-brandPrimary' : 'text-textPrimary'}`}>{fns.name}</Text>
+              <Text
+                variant="caption"
+                weight={sel ? 'medium' : 'regular'}
+                style={{
+                  flex: 1,
+                  color: sel ? Colors.brandPrimary : Colors.textPrimary,
+                }}
+              >
+                {fns.name}
+              </Text>
             </Pressable>
             {sel && (
-              <View className="flex-row flex-wrap gap-2 px-4 pb-3 pl-12">
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: Spacing.sm,
+                  paddingLeft: Spacing['3xl'],
+                  paddingRight: Spacing.lg,
+                  paddingBottom: Spacing.md,
+                }}
+              >
                 {SVCS.map((svc) => {
                   const on = sv.includes(svc);
                   return (
                     <Pressable
                       key={svc}
-                      className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${on ? 'border-brandPrimary bg-bgSecondary' : 'border-gray-200'}`}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: Spacing.xs,
+                        borderRadius: BorderRadius.full,
+                        borderWidth: 1,
+                        borderColor: on ? Colors.brandPrimary : Colors.border,
+                        backgroundColor: on ? Colors.bgSecondary : 'transparent',
+                        paddingHorizontal: Spacing.md,
+                        paddingVertical: Spacing.xs,
+                      }}
                       onPress={() => toggleSvc(key, svc)}
                     >
-                      {on && <Feather name="check" size={12} color="#0284C7" />}
-                      <Text className={`text-xs ${on ? 'font-medium text-brandPrimary' : 'text-textSecondary'}`}>{svc}</Text>
+                      {on && <Feather name="check" size={12} color={Colors.brandPrimary} />}
+                      <Text
+                        variant="caption"
+                        weight={on ? 'medium' : 'regular'}
+                        style={{ color: on ? Colors.brandPrimary : Colors.textSecondary }}
+                      >
+                        {svc}
+                      </Text>
                     </Pressable>
                   );
                 })}
