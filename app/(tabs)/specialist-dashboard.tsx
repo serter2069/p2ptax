@@ -5,6 +5,7 @@ import { router, useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { specialistPortal } from '../../lib/api/endpoints';
 import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
+import { Header } from '../../components/Header';
 
 interface FeedItem {
   id: string;
@@ -110,24 +111,32 @@ export default function SpecialistDashboardScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={Colors.brandPrimary} />
+      <View style={{ flex: 1 }}>
+        <Header variant="auth" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={Colors.brandPrimary} />
+        </View>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
-        <Feather name="alert-circle" size={28} color={Colors.statusError} />
-        <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+      <View style={{ flex: 1 }}>
+        <Header variant="auth" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
+          <Feather name="alert-circle" size={28} color={Colors.statusError} />
+          <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+        </View>
       </View>
     );
   }
 
   if (feedData.length === 0) {
     return (
-      <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <View className="flex-1 bg-white">
+        <Header variant="auth" />
+        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
         <Text className="text-xl font-bold text-textPrimary">Заявки</Text>
         <View className="items-center gap-3 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full border border-borderLight bg-bgSecondary">
@@ -142,12 +151,15 @@ export default function SpecialistDashboardScreen() {
             <Text className="text-sm font-semibold text-brandPrimary">Настройки</Text>
           </Pressable>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <View className="flex-1 bg-white">
+    <Header variant="auth" />
+    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <View>
         <Text className="text-xl font-bold text-textPrimary">Заявки</Text>
         <Text className="text-sm text-textMuted">{feedData.length} заявок в вашем регионе</Text>
@@ -193,5 +205,6 @@ export default function SpecialistDashboardScreen() {
         }}
       />
     </ScrollView>
+    </View>
   );
 }

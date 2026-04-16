@@ -6,6 +6,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Colors } from '../../../constants/Colors';
 import { Toggle } from '../../../components/proto/Toggle';
 import { ifns, requests, upload } from '../../../lib/api/endpoints';
+import { Header } from '../../../components/Header';
 
 // Fixed service list per product spec
 const SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка', 'Не знаю'];
@@ -234,7 +235,9 @@ export default function NewRequestScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <View className="flex-1 bg-white">
+    <Header variant="back" backTitle="Новая заявка" onBack={() => router.back()} />
+    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <Text className="text-xl font-bold text-textPrimary">Новая заявка</Text>
       <LocationServicePicker
         city={city}
@@ -303,5 +306,6 @@ export default function NewRequestScreen() {
         )}
       </Pressable>
     </ScrollView>
+    </View>
   );
 }

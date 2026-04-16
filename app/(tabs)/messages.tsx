@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { threads as threadsApi } from '../../lib/api/endpoints';
 import { useAuth } from '../../lib/auth';
+import { Header } from '../../components/Header';
 
 // ---------------------------------------------------------------------------
 // Types — shape from GET /threads?grouped_by=request
@@ -362,10 +363,12 @@ export default function MessagesScreen() {
     return sum;
   }, [groups, user?.id]);
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState onRetry={load} />;
+  if (loading) return <View style={{ flex: 1 }}><Header variant="auth" /><LoadingState /></View>;
+  if (error) return <View style={{ flex: 1 }}><Header variant="auth" /><ErrorState onRetry={load} /></View>;
 
   return (
+    <View style={{ flex: 1 }}>
+    <Header variant="auth" />
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, gap: Spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
         <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>
@@ -435,5 +438,6 @@ export default function MessagesScreen() {
         ))
       )}
     </ScrollView>
+    </View>
   );
 }

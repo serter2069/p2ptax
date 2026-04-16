@@ -3,21 +3,21 @@ import { View, Text, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../constants/Colors';
+import { useAuth } from '../lib/auth';
 
-const BURGER_LINKS: { icon: 'home' | 'users' | 'credit-card'; label: string; route: string }[] = [
+const BURGER_LINKS: { icon: 'home' | 'users'; label: string; route: string }[] = [
   { icon: 'home', label: 'Главная', route: '/' },
   { icon: 'users', label: 'Специалисты', route: '/specialists' },
-  { icon: 'credit-card', label: 'Тарифы', route: '/' }, // TODO: /pricing when page exists
 ];
 
 function LogoBlock() {
   return (
-    <View className="flex-row items-center gap-2">
+    <Pressable className="flex-row items-center gap-2" onPress={() => router.push('/')}>
       <View className="h-7 w-7 items-center justify-center rounded-md bg-brandPrimary">
         <Feather name="shield" size={16} color={Colors.white} />
       </View>
       <Text className="text-lg font-bold text-textPrimary">Налоговик</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -58,32 +58,28 @@ function BurgerDrawer({ open, onToggle }: { open: boolean; onToggle: () => void 
 export function Header({
   variant,
   backTitle,
-  initials = 'EV',
   hasNotif = false,
   onBack,
 }: {
   variant: 'guest' | 'auth' | 'back';
   backTitle?: string;
-  initials?: string;
   hasNotif?: boolean;
   onBack?: () => void;
 }) {
   const [burgerOpen, setBurgerOpen] = useState(false);
+  const { user } = useAuth();
 
   if (variant === 'back') {
     return (
       <View
-        className="h-14 flex-row items-center justify-between border-b bg-bgCard px-4"
+        className="h-14 flex-row items-center border-b bg-bgCard px-4"
         style={{ borderBottomColor: Colors.borderLight }}
       >
-        <Pressable className="flex-row items-center gap-2" onPress={onBack}>
+        <Pressable className="flex-row items-center gap-2" onPress={onBack ?? (() => router.back())}>
           <Feather name="arrow-left" size={20} color={Colors.brandPrimary} />
           <Text className="text-base font-semibold text-textPrimary">
             {backTitle ?? 'Назад'}
           </Text>
-        </Pressable>
-        <Pressable>
-          <Feather name="more-vertical" size={20} color={Colors.textMuted} />
         </Pressable>
       </View>
     );
@@ -116,6 +112,10 @@ export function Header({
   }
 
   // variant === 'auth'
+  const initials = user
+    ? ((user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')).toUpperCase() || 'U'
+    : 'U';
+
   return (
     <View
       className="h-14 flex-row items-center justify-between border-b bg-bgCard px-4"
@@ -123,7 +123,7 @@ export function Header({
     >
       <LogoBlock />
       <View className="flex-row items-center gap-3">
-        <Pressable>
+        <Pressable onPress={() => router.push('/(tabs)/messages' as any)}>
           <Feather name="bell" size={20} color={Colors.textSecondary} />
           {hasNotif && (
             <View className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-statusError" />

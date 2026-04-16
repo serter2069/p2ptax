@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { requests as requestsApi, ifns } from '../../lib/api/endpoints';
 import { WriteConfirmModal, WriteConfirmModalRequest } from '../../components/WriteConfirmModal';
+import { Header } from '../../components/Header';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -283,8 +284,10 @@ function FeedState() {
   const hasFilters = !!(filterCity || selectedFns.length > 0);
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      {/* Header */}
+    <View className="flex-1 bg-white">
+    <Header variant="auth" />
+    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      {/* Page title */}
       <View>
         <Text className="text-xl font-bold text-textPrimary">Заявки</Text>
         {!loading && <Text className="mt-0.5 text-sm text-textMuted">{feedData.length} активных заявок</Text>}
@@ -375,6 +378,7 @@ function FeedState() {
         }}
       />
     </ScrollView>
+    </View>
   );
 }
 

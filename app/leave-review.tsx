@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../constants/Colors';
 import { reviews } from '../lib/api/endpoints';
+import { Header } from '../components/Header';
 
 export default function LeaveReviewScreen() {
   const { requestId, specialistNick } = useLocalSearchParams<{
@@ -59,7 +60,9 @@ export default function LeaveReviewScreen() {
 
   if (submitted) {
     return (
-      <View className="flex-1 items-center justify-center bg-white p-8 gap-6">
+      <View className="flex-1 bg-white">
+      <Header variant="back" onBack={() => router.back()} />
+      <View className="flex-1 items-center justify-center p-8 gap-6">
         <View className="h-16 w-16 items-center justify-center rounded-full bg-statusSuccess/10">
           <Feather name="check-circle" size={32} color={Colors.statusSuccess} />
         </View>
@@ -74,6 +77,7 @@ export default function LeaveReviewScreen() {
           <Text className="text-base font-semibold text-white">Вернуться к заявкам</Text>
         </Pressable>
       </View>
+      </View>
     );
   }
 
@@ -82,6 +86,7 @@ export default function LeaveReviewScreen() {
       className="flex-1"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <Header variant="back" onBack={() => router.back()} />
       <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 20 }}>
         <Text className="text-xl font-bold text-textPrimary">Оставить отзыв</Text>
         {specialistNick && (

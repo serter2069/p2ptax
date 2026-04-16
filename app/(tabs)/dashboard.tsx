@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { requests, threads } from "../../lib/api/endpoints";
+import { Header } from "../../components/Header";
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -170,10 +171,16 @@ interface RequestItem {
   _count?: { threads?: number };
 }
 
+interface ThreadParticipant {
+  firstName?: string;
+  lastName?: string;
+  nick?: string;
+}
+
 interface ThreadItem {
   id: string;
-  specialist?: { firstName?: string; lastName?: string; nick?: string; [key: string]: unknown };
-  client?: { firstName?: string; lastName?: string; [key: string]: unknown };
+  specialist?: ThreadParticipant;
+  client?: ThreadParticipant;
   lastMessage?: { content?: string; createdAt?: string };
   unreadCount?: number;
 }
@@ -217,7 +224,9 @@ export default function DashboardScreen() {
   const firstName = user?.firstName ?? user?.email?.split('@')[0] ?? 'друг';
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <View className="flex-1 bg-white">
+    <Header variant="auth" />
+    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
           <Text className="text-xl font-bold text-textPrimary">{getGreeting()}, {firstName}!</Text>
@@ -308,5 +317,6 @@ export default function DashboardScreen() {
         )}
       </View>
     </ScrollView>
+    </View>
   );
 }
