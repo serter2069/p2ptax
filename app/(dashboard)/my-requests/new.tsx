@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Alert, View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 import { Colors } from '../../../constants/Colors';
 import { Toggle } from '../../../components/proto/Toggle';
-import { ifns, requests } from '../../../lib/api/endpoints';
+import { ifns, requests, upload } from '../../../lib/api/endpoints';
 
 // Fixed service list per product spec
 const SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка', 'Не знаю'];
@@ -109,7 +110,7 @@ export default function NewRequestScreen() {
   const [selectedFns, setSelectedFns] = useState<IfnsItem | null>(null);
   const [service, setService] = useState('');
   const [publicVisible, setPublicVisible] = useState(false);
-  const [files] = useState<{ name: string; size: string }[]>([]);
+  const [files, setFiles] = useState<{ uri: string; name: string; size: string; mimeType: string }[]>([]);
   const [cities, setCities] = useState<CityItem[]>([]);
   const [fnsByCity, setFnsByCity] = useState<Record<string, IfnsItem[]>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -152,6 +153,37 @@ export default function NewRequestScreen() {
     setService('');
   };
 
+  const handlePickFiles = async () => {
+    if (files.length >= 5) {
+      Alert.alert('Максимум 5 файлов');
+      return;
+    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/jpeg', 'image/png'],
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+      if (result.canceled || !result.assets) return;
+      const remaining = 5 - files.length;
+      const toAdd = result.assets.slice(0, remaining).map((a) => ({
+        uri: a.uri,
+        name: a.name,
+        mimeType: a.mimeType ?? 'application/octet-stream',
+        size: a.size ? (a.size < 1024 * 1024
+          ? `${Math.round(a.size / 1024)} КБ`
+          : `${(a.size / 1024 / 1024).toFixed(1)} МБ`) : '',
+      }));
+      setFiles((prev) => [...prev, ...toAdd]);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось выбрать файл');
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     if (!isValid || submitting) return;
 
@@ -171,6 +203,19 @@ export default function NewRequestScreen() {
       const res = await requests.createRequest(payload);
       const result = (res as any).data ?? res;
       const id = result?.id;
+
+      // Upload documents if any were selected
+      if (id && files.length > 0) {
+        const formData = new FormData();
+        for (const f of files) {
+          formData.append('files', { uri: f.uri, name: f.name, type: f.mimeType } as any);
+        }
+        try {
+          await upload.requestDocuments(id, formData);
+        } catch {
+          // Non-blocking — request was created, just log
+        }
+      }
 
       if (id) {
         router.replace(`/(dashboard)/my-requests/${id}` as any);
@@ -228,12 +273,16 @@ export default function NewRequestScreen() {
       </View>
       <View className="gap-2">
         <Text className="text-sm font-medium text-textSecondary">Файлы</Text>
-        {files.map((f, i) => (<FileItem key={i} name={f.name} size={f.size} onRemove={() => {}} />))}
-        <Pressable className="h-10 flex-row items-center justify-center gap-2 rounded-lg border border-dashed border-borderLight bg-bgSurface">
-          <Feather name="paperclip" size={16} color={Colors.brandPrimary} />
-          <Text className="text-sm font-medium text-brandPrimary">Прикрепить файл</Text>
-        </Pressable>
-        {/* TODO: wire file upload to api.upload when document upload endpoint is available */}
+        {files.map((f, i) => (<FileItem key={i} name={f.name} size={f.size} onRemove={() => handleRemoveFile(i)} />))}
+        {files.length < 5 && (
+          <Pressable
+            onPress={handlePickFiles}
+            className="h-10 flex-row items-center justify-center gap-2 rounded-lg border border-dashed border-borderLight bg-bgSurface"
+          >
+            <Feather name="paperclip" size={16} color={Colors.brandPrimary} />
+            <Text className="text-sm font-medium text-brandPrimary">Прикрепить файл</Text>
+          </Pressable>
+        )}
         <Text className="text-xs text-textMuted">PDF, JPG, PNG до 10 МБ. Макс. 5 файлов.</Text>
       </View>
       <View className="py-1">

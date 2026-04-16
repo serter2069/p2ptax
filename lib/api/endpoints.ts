@@ -414,4 +414,13 @@ export const upload = {
       { headers: { 'Content-Type': 'multipart/form-data' } },
     );
   },
+
+  /** Upload documents to a request. Returns array of document records. */
+  requestDocuments(requestId: string, formData: FormData) {
+    return client.post(
+      `/requests/${requestId}/documents`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
 };

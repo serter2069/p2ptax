@@ -11,7 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 import { requests } from '../../../lib/api/endpoints';
-import { useAuth } from '../../../stores/authStore';
+import { useAuth } from '../../../lib/auth';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -233,7 +233,7 @@ export default function RequestDetailScreen() {
   const status = request.status as RequestStatus;
   const statusLabel = STATUS_LABELS[status] ?? status;
   const statusColor = STATUS_COLORS[status] ?? Colors.textMuted;
-  const isOwner = user?.userId === request.clientId;
+  const isOwner = user?.id === request.clientId;
   const canClose = isOwner && CLOSEABLE_STATUSES.includes(status);
   const isClosed = status === 'CLOSED' || status === 'CANCELLED';
 
