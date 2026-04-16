@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Switch } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
+import { useAuth } from '../../lib/auth/AuthContext';
 
 function SettingRow({ label, value, danger, icon, onPress }: { label: string; value?: string; danger?: boolean; icon?: string; onPress?: () => void }) {
   return (
@@ -25,11 +27,21 @@ function ToggleRow({ label, icon, enabled, onToggle }: { label: string; icon: st
 }
 
 export default function SettingsScreen() {
+  const { logout } = useAuth();
+  const router = useRouter();
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(false);
   const [responseNotif, setResponseNotif] = useState(true);
   const [showLogout, setShowLogout] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      router.replace('/(auth)/email');
+    }
+  };
 
   return (
     <View style={{ padding: Spacing.lg, gap: Spacing.lg }}>
@@ -68,7 +80,7 @@ export default function SettingsScreen() {
             <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>Вы уверены, что хотите выйти?</Text>
             <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
               <Pressable onPress={() => setShowLogout(false)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}><Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Отмена</Text></Pressable>
-              <Pressable style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError }}><Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Выйти</Text></Pressable>
+              <Pressable onPress={handleLogout} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError }}><Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Выйти</Text></Pressable>
             </View>
           </View>
         )}
