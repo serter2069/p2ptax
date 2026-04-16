@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Prisma, Role } from '@prisma/client';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -463,6 +463,138 @@ export class SpecialistsService {
     });
 
     return { items, total, page, pages };
+  }
+
+  /**
+   * Replace the specialist's work-area assignments (FNS + services).
+   *
+   * Request shape: `workAreas: [{ fnsId: "<cityId:ifnsId>" | "<ifnsId>", departments?: string[] }]`.
+   * `departments` contains Service names (e.g. "Выездная проверка") which are
+   * mapped to Service rows and inserted into SpecialistService.
+   *
+   * Behaviour:
+   * - Full replace: wipes existing SpecialistFns + SpecialistService rows first.
+   * - Auto-creates SpecialistProfile on first save (nick = user.username).
+   * - Promotes the user to SPECIALIST on successful save.
+   * - Throws 400 when workAreas is empty or composite fnsId cannot be parsed.
+   */
+  async saveWorkAreas(
+    userId: string,
+    workAreas: Array<{ fnsId: string; departments?: string[] }>,
+  ): Promise<{ ok: true; count: number }> {
+    if (!Array.isArray(workAreas) || workAreas.length === 0) {
+      throw new BadRequestException('Нужно выбрать хотя бы одну ФНС');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.username) {
+      throw new BadRequestException('Username must be set before saving work areas');
+    }
+
+    // Parse composite "cityId:ifnsId" → take the second segment. If no colon,
+    // treat the whole value as a bare ifnsId (legacy flow).
+    const parsed = workAreas.map((w) => {
+      const raw = String(w.fnsId ?? '').trim();
+      if (!raw) throw new BadRequestException('fnsId не может быть пустым');
+      const idx = raw.indexOf(':');
+      const ifnsId = idx >= 0 ? raw.slice(idx + 1).trim() : raw;
+      if (!ifnsId) throw new BadRequestException(`Некорректный fnsId: ${raw}`);
+      const departments = Array.isArray(w.departments)
+        ? w.departments.map((d) => d.trim()).filter(Boolean)
+        : [];
+      return { ifnsId, departments };
+    });
+
+    // Validate every ifnsId exists in Ifns table so we never persist dangling refs.
+    const ifnsIds = [...new Set(parsed.map((p) => p.ifnsId))];
+    const foundIfns = await this.prisma.ifns.findMany({
+      where: { id: { in: ifnsIds } },
+      select: { id: true, name: true, city: { select: { name: true } } },
+    });
+    const foundSet = new Set(foundIfns.map((f) => f.id));
+    const missing = ifnsIds.filter((id) => !foundSet.has(id));
+    if (missing.length > 0) {
+      throw new BadRequestException(`ФНС не найдены: ${missing.join(', ')}`);
+    }
+
+    // Fetch or create SpecialistProfile (auto-create on first save).
+    let profile = await this.prisma.specialistProfile.findUnique({ where: { userId } });
+    if (!profile) {
+      const nickTaken = await this.prisma.specialistProfile.findUnique({
+        where: { nick: user.username },
+      });
+      if (nickTaken) throw new ConflictException('Nick already taken');
+      profile = await this.prisma.specialistProfile.create({
+        data: {
+          userId,
+          nick: user.username,
+          cities: [],
+          services: [],
+          fnsOffices: [],
+          badges: [],
+        },
+      });
+    }
+
+    // Resolve department names → Service ids (batch lookup).
+    const allDeptNames = [...new Set(parsed.flatMap((p) => p.departments))];
+    const services = allDeptNames.length > 0
+      ? await this.prisma.service.findMany({ where: { name: { in: allDeptNames } } })
+      : [];
+    const serviceByName = new Map(services.map((s) => [s.name, s.id]));
+
+    // Mirror data for legacy String[] columns so existing catalog filters keep working.
+    const mirrorCities = [...new Set(foundIfns.map((f) => f.city.name))];
+    const mirrorFnsOffices = [...new Set(foundIfns.map((f) => f.name))];
+    const mirrorServices = [...new Set(allDeptNames.filter((n) => serviceByName.has(n)))];
+
+    // Full-replace strategy: wipe then insert.
+    await this.prisma.$transaction([
+      this.prisma.specialistService.deleteMany({ where: { specialistId: profile.id } }),
+      this.prisma.specialistFns.deleteMany({ where: { specialistId: profile.id } }),
+    ]);
+
+    // Batch insert SpecialistFns.
+    await this.prisma.specialistFns.createMany({
+      data: ifnsIds.map((fnsId) => ({ specialistId: profile!.id, fnsId })),
+      skipDuplicates: true,
+    });
+
+    // Batch insert SpecialistService — only rows where Service name was found.
+    const serviceLinks: Array<{ specialistId: string; fnsId: string; serviceId: string }> = [];
+    for (const entry of parsed) {
+      for (const deptName of entry.departments) {
+        const serviceId = serviceByName.get(deptName);
+        if (!serviceId) continue;
+        serviceLinks.push({ specialistId: profile.id, fnsId: entry.ifnsId, serviceId });
+      }
+    }
+    if (serviceLinks.length > 0) {
+      await this.prisma.specialistService.createMany({
+        data: serviceLinks,
+        skipDuplicates: true,
+      });
+    }
+
+    // Update profile mirror columns + mark profileComplete + promote role.
+    await this.prisma.$transaction([
+      this.prisma.specialistProfile.update({
+        where: { id: profile.id },
+        data: {
+          cities: mirrorCities,
+          fnsOffices: mirrorFnsOffices,
+          services: mirrorServices.length > 0 ? mirrorServices : profile.services,
+          profileComplete: true,
+        },
+      }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { role: Role.SPECIALIST },
+      }),
+    ]);
+
+    return { ok: true, count: parsed.length };
   }
 
   async updateAvatarUrl(userId: string, avatarUrl: string) {

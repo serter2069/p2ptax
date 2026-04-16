@@ -8,6 +8,24 @@ const USERNAME_REGEX = /^[a-zA-Z0-9_-]+$/;
 const USERNAME_CHECK_REGEX = /^[a-zA-Z0-9_-]+$/;
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
+// Cyrillic → Latin map for username auto-generation (GOST 7.79-2000 scheme B).
+const TRANSLIT_MAP: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo',
+  ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm',
+  н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u',
+  ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch',
+  ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+  ї: 'yi', і: 'i', є: 'ye', ґ: 'g',
+};
+
+function transliterate(text: string): string {
+  return text.toLowerCase().split('').map((ch) => TRANSLIT_MAP[ch] ?? ch).join('');
+}
+
+function slugifyName(text: string): string {
+  return transliterate(text).replace(/[^a-z0-9]/g, '');
+}
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -110,6 +128,56 @@ export class UsersService {
     });
 
     return { id: updated.id, email: updated.email, role: updated.role, username: updated.username, firstName: updated.firstName, lastName: updated.lastName, phone: updated.phone, city: updated.city, avatarUrl: updated.avatarUrl };
+  }
+
+  /**
+   * Onboarding step 1 (new flow): set firstName + lastName.
+   *
+   * Auto-generates a hidden username on first save:
+   *   transliterated firstName + '_' + transliterated lastName + '_' + 4-digit suffix.
+   * Retries up to 5 times on suffix collision. Username remains unique on User table
+   * and is reused later as SpecialistProfile.nick.
+   */
+  async setName(
+    userId: string,
+    firstName: string,
+    lastName: string,
+  ): Promise<{ id: string; email: string; role: string; username: string; firstName: string; lastName: string }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    let username = user.username;
+    if (!username) {
+      const base = `${slugifyName(firstName)}_${slugifyName(lastName)}`.replace(/^_|_$/g, '');
+      const safeBase = base.length >= 3 ? base.slice(0, 15) : 'user';
+      // Try up to 5 times to find a free suffix — a 4-digit space gives 10k candidates.
+      for (let i = 0; i < 5; i++) {
+        const suffix = Math.floor(1000 + Math.random() * 9000).toString();
+        const candidate = `${safeBase}_${suffix}`.slice(0, 20);
+        const taken = await this.prisma.user.findUnique({ where: { username: candidate } });
+        if (!taken) {
+          username = candidate;
+          break;
+        }
+      }
+      if (!username) {
+        throw new ConflictException('Unable to generate unique username — please retry');
+      }
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { firstName, lastName, username },
+    });
+
+    return {
+      id: updated.id,
+      email: updated.email,
+      role: updated.role,
+      username: updated.username!,
+      firstName: updated.firstName ?? '',
+      lastName: updated.lastName ?? '',
+    };
   }
 
   /** Set username (+ optional firstName/lastName) for a user. */

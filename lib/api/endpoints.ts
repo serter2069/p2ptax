@@ -72,6 +72,11 @@ export const users = {
     return client.patch('/users/me/username', data);
   },
 
+  /** Onboarding step 1 (new flow): save firstName + lastName. Backend auto-generates username. */
+  setName(data: { firstName: string; lastName: string }) {
+    return client.patch('/users/me/name', data);
+  },
+
   getSettings() {
     return client.get('/users/me/settings');
   },
