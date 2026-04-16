@@ -18,7 +18,7 @@ function SkeletonBlock({ width, height, radius }: { width: string | number; heig
 }
 
 const STATUS_CONFIG: Record<SpecialistResponseStatus, { label: string; bg: string; color: string; icon: string }> = {
-  sent: { label: 'Отправлен', bg: Colors.statusBg.info, color: Colors.statusInfo, icon: 'send' },
+  sent: { label: 'Отправлен', bg: Colors.statusBg.info, color: Colors.brandPrimary, icon: 'send' },
   viewed: { label: 'Просмотрен', bg: Colors.statusBg.warning, color: Colors.statusWarning, icon: 'eye' },
   accepted: { label: 'Принят', bg: Colors.statusBg.success, color: Colors.statusSuccess, icon: 'check-circle' },
   deactivated: { label: 'Деактивирован', bg: Colors.statusBg.error, color: Colors.statusError, icon: 'x-circle' },

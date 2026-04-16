@@ -1,3 +1,5 @@
+const palette = require('./constants/palette.js');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -9,33 +11,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        bgPrimary: '#FFFFFF',
-        bgSecondary: '#F0F9FF',
-        bgSurface: '#F0F9FF',
-        bgCard: '#FFFFFF',
-        textPrimary: '#0C1A2E',
-        textSecondary: '#475569',
-        textMuted: '#94A3B8',
-        textAccent: '#0284C7',
-        textFamiliar: '#0284C7',
-        brandPrimary: '#0284C7',
-        brandPrimaryHover: '#0369A1',
-        brandSecondary: '#0369A1',
-        statusSuccess: '#15803D',
-        statusWarning: '#D97706',
-        statusError: '#DC2626',
-        statusErrorHover: '#B91C1C',
-        statusInfo: '#0284C7',
-        statusNeutral: '#6B7280',
-        statusBgSuccess: '#DCFCE7',
-        statusBgWarning: '#FEF9C3',
-        statusBgError: '#FEE2E2',
-        statusBgInfo: '#E0F2FE',
-        statusBgAccent: '#E0F2FE',
-        statusBgFamiliar: '#E0F2FE',
-        statusBgNeutral: '#F3F4F6',
-        border: '#BAE6FD',
-        borderLight: '#E0F2FE',
+        ...palette,
       },
     },
   },

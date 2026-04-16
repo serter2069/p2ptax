@@ -88,7 +88,7 @@ const COLOR_GROUPS = [
       { label: 'Primary', value: Colors.textPrimary, token: 'textPrimary' },
       { label: 'Secondary', value: Colors.textSecondary, token: 'textSecondary' },
       { label: 'Muted', value: Colors.textMuted, token: 'textMuted' },
-      { label: 'Accent', value: Colors.textAccent, token: 'textAccent' },
+      { label: 'Brand', value: Colors.brandPrimary, token: 'brandPrimary' },
     ],
   },
   {
@@ -97,7 +97,7 @@ const COLOR_GROUPS = [
       { label: 'Success', value: Colors.statusSuccess, token: 'statusSuccess' },
       { label: 'Warning', value: Colors.statusWarning, token: 'statusWarning' },
       { label: 'Error', value: Colors.statusError, token: 'statusError' },
-      { label: 'Info', value: Colors.statusInfo, token: 'statusInfo' },
+      { label: 'Info', value: Colors.brandPrimary, token: 'brandPrimary' },
       { label: 'Neutral', value: Colors.statusNeutral, token: 'statusNeutral' },
     ],
   },
@@ -379,7 +379,7 @@ function BadgesSection({ isDesktop }: { isDesktop: boolean }) {
         <View className="flex-row items-center gap-1 rounded-full px-2 py-1" style={{ backgroundColor: Colors.statusBg.neutral }}>
           <Text className="text-xs font-semibold" style={{ color: Colors.statusNeutral }}>Черновик</Text>
         </View>
-        <View className="flex-row items-center gap-1 rounded-full px-2 py-1" style={{ backgroundColor: Colors.statusBg.accent }}>
+        <View className="flex-row items-center gap-1 rounded-full px-2 py-1" style={{ backgroundColor: Colors.statusBg.info }}>
           <Feather name="zap" size={12} color={Colors.brandPrimary} />
           <Text className="text-xs font-semibold text-brandPrimary">Новый</Text>
         </View>

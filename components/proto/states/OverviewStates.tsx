@@ -102,7 +102,7 @@ const s = StyleSheet.create({
   projectTagline: {
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.medium,
-    color: Colors.textAccent,
+    color: Colors.brandPrimary,
     marginTop: Spacing.xs,
   },
   projectDesc: {
@@ -223,7 +223,7 @@ const s = StyleSheet.create({
   stepChipText: {
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.medium,
-    color: Colors.textAccent,
+    color: Colors.brandPrimary,
   },
   progressCard: {
     backgroundColor: Colors.bgCard,
