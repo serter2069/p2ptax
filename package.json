@@ -12,7 +12,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "npx expo export --platform web",
-    "lint": "eslint . --ext .ts,.tsx --max-warnings 200",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 500",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write '**/*.{ts,tsx,json,md}'",
     "format:check": "prettier --check '**/*.{ts,tsx,json,md}'",

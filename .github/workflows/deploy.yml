@@ -48,6 +48,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: ESLint (Phase 4 UI guardrails)
+        run: npm run lint
+        continue-on-error: true
+
       - name: Build frontend (web)
         run: npx expo export --platform web
 
