@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [development]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+
+      # --- API ---
+      - name: Install API deps
+        working-directory: ./api
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: ./api
+        run: npx prisma generate
+
+      - name: API type check
+        working-directory: ./api
+        run: npm run build
+
+      # --- Frontend (Expo, root) ---
+      - name: Install app deps
+        run: npm ci --legacy-peer-deps
+
+      - name: App lint
+        run: npm run lint
+
+      - name: App type check
+        run: npx tsc --noEmit

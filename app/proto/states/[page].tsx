@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { ProtoLayout } from '../../../components/proto/ProtoLayout';
-import { PageIdProvider } from '../../../components/proto/StateSection';
+import { PageIdProvider, StateFilterProvider } from '../../../components/proto/StateSection';
 import { getPageById } from '../../../constants/pageRegistry';
 import { Colors, Typography, Spacing } from '../../../constants/Colors';
 
@@ -76,9 +76,21 @@ const STATE_MAP: Record<string, React.ComponentType> = {
 };
 
 export default function ProtoStatesPage() {
-  const { page } = useLocalSearchParams<{ page: string }>();
+  const { page, state } = useLocalSearchParams<{ page: string; state?: string }>();
   const pageData = getPageById(page || '');
   const StatesComponent = page ? STATE_MAP[page] : undefined;
+  const firstClaimedRef = useRef(false);
+
+  // Reset on each render so "first only" logic works correctly
+  firstClaimedRef.current = false;
+
+  const claimFirst = useCallback(() => {
+    if (firstClaimedRef.current) return false;
+    firstClaimedRef.current = true;
+    return true;
+  }, []);
+
+  const stateFilter = typeof state === 'string' ? state : undefined;
 
   if (!pageData || !StatesComponent) {
     return (
@@ -91,9 +103,11 @@ export default function ProtoStatesPage() {
 
   return (
     <PageIdProvider value={page || ''}>
-      <ProtoLayout title={pageData.title} route={pageData.route} nav={pageData.nav} activeTab={pageData.activeTab}>
-        <StatesComponent />
-      </ProtoLayout>
+      <StateFilterProvider value={{ filter: stateFilter, claimFirst }}>
+        <ProtoLayout title={pageData.title} route={pageData.route} nav={pageData.nav} activeTab={pageData.activeTab}>
+          <StatesComponent />
+        </ProtoLayout>
+      </StateFilterProvider>
     </PageIdProvider>
   );
 }

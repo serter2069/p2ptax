@@ -3,8 +3,6 @@ name: Deploy P2PTax Staging
 on:
   push:
     branches: [development]
-  pull_request:
-    branches: [development]
 
 concurrency:
   group: deploy-${{ github.ref }}
