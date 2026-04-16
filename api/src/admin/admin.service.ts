@@ -193,7 +193,7 @@ export class AdminService {
         skip,
         include: {
           client: { select: { id: true, email: true } },
-          _count: { select: { responses: true } },
+          _count: { select: { threads: true } },
         },
       }),
       this.prisma.request.count(),

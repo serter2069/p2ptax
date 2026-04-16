@@ -1,6 +1,18 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { RequestStatus, Role } from '@prisma/client';
+
+/** Max new threads a specialist can open per 24h window. SA: "Лимит 20 сообщений в день". */
+const SPECIALIST_DAILY_THREAD_LIMIT = 20;
 
 @Injectable()
 export class ChatService {
@@ -148,36 +160,46 @@ export class ChatService {
     return thread;
   }
 
-  /** Save a message to DB */
+  /** Save a message to DB and bump thread's lastMessageAt */
   async createMessage(
     threadId: string,
     senderId: string,
     content: string,
     attachment?: { url: string; type: string; name: string },
   ) {
-    return this.prisma.message.create({
-      data: {
-        threadId,
-        senderId,
-        content,
-        ...(attachment && {
-          attachmentUrl: attachment.url,
-          attachmentType: attachment.type,
-          attachmentName: attachment.name,
-        }),
-      },
-      select: {
-        id: true,
-        threadId: true,
-        senderId: true,
-        content: true,
-        readAt: true,
-        createdAt: true,
-        attachmentUrl: true,
-        attachmentType: true,
-        attachmentName: true,
-      },
-    });
+    const now = new Date();
+    const [message] = await this.prisma.$transaction([
+      this.prisma.message.create({
+        data: {
+          threadId,
+          senderId,
+          content,
+          createdAt: now,
+          ...(attachment && {
+            attachmentUrl: attachment.url,
+            attachmentType: attachment.type,
+            attachmentName: attachment.name,
+          }),
+        },
+        select: {
+          id: true,
+          threadId: true,
+          senderId: true,
+          content: true,
+          readAt: true,
+          createdAt: true,
+          attachmentUrl: true,
+          attachmentType: true,
+          attachmentName: true,
+        },
+      }),
+      this.prisma.thread.update({
+        where: { id: threadId },
+        data: { lastMessageAt: now },
+        select: { id: true },
+      }),
+    ]);
+    return message;
   }
 
   /** Mark message as read */
@@ -206,6 +228,306 @@ export class ChatService {
         attachmentUrl: true,
         attachmentType: true,
         attachmentName: true,
+      },
+    });
+  }
+
+  /**
+   * POST /api/threads — direct-chat flow (W-1).
+   * Atomically creates Thread + first Message. UNIQUE (requestId, specialistId)
+   * makes this call idempotent: duplicate invocation returns the existing thread
+   * with `created: false` and does NOT insert another first message.
+   *
+   * Role: SPECIALIST only.
+   * Business rules:
+   *  - request must exist and not be CLOSED/CANCELLED (→ 409)
+   *  - message length 10-1000 (DTO validation)
+   *  - specialist cannot create >20 new threads in a rolling 24h window (→ 429)
+   */
+  async createThreadForRequest(
+    specialistId: string,
+    specialistRole: Role,
+    requestId: string,
+    firstMessage: string,
+  ): Promise<{ thread_id: string; created: boolean }> {
+    if (specialistRole !== Role.SPECIALIST) {
+      throw new ForbiddenException('Only specialists can initiate threads on requests');
+    }
+
+    const trimmed = firstMessage.trim();
+    if (trimmed.length < 10 || trimmed.length > 1000) {
+      throw new BadRequestException('firstMessage должно быть от 10 до 1000 символов');
+    }
+
+    // Load the request with its owner
+    const request = await this.prisma.request.findUnique({
+      where: { id: requestId },
+      select: { id: true, clientId: true, status: true },
+    });
+    if (!request) throw new NotFoundException('Request not found');
+
+    if (request.clientId === specialistId) {
+      throw new BadRequestException('Cannot open a thread on your own request');
+    }
+
+    if (
+      request.status === RequestStatus.CLOSED ||
+      request.status === RequestStatus.CANCELLED
+    ) {
+      throw new ConflictException('Заявка закрыта — написать нельзя');
+    }
+
+    // Idempotency shortcut: thread already exists for (request, specialist)
+    const existing = await this.prisma.thread.findUnique({
+      where: { requestId_specialistId: { requestId, specialistId } },
+      select: { id: true },
+    });
+    if (existing) {
+      return { thread_id: existing.id, created: false };
+    }
+
+    // Rate limit: count threads opened by this specialist in the last 24h
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentCount = await this.prisma.thread.count({
+      where: { specialistId, createdAt: { gte: dayAgo } },
+    });
+    if (recentCount >= SPECIALIST_DAILY_THREAD_LIMIT) {
+      throw new HttpException(
+        { message: 'Лимит 20 сообщений в день' },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const clientId = request.clientId;
+    const [p1, p2] = [specialistId, clientId].sort();
+    const now = new Date();
+
+    // Atomic: create Thread + first Message. If a parallel request wins the @@unique
+    // race we translate the error into the idempotent branch.
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const thread = await tx.thread.create({
+          data: {
+            participant1Id: p1,
+            participant2Id: p2,
+            requestId,
+            specialistId,
+            lastMessageAt: now,
+          },
+          select: { id: true },
+        });
+
+        await tx.message.create({
+          data: {
+            threadId: thread.id,
+            senderId: specialistId,
+            content: trimmed,
+            createdAt: now,
+          },
+        });
+
+        // Bump request.lastActivityAt; auto-transition NEW/OPEN → IN_PROGRESS
+        const statusUpdate: Record<string, unknown> = { lastActivityAt: now };
+        if (
+          request.status === RequestStatus.NEW ||
+          request.status === RequestStatus.OPEN
+        ) {
+          statusUpdate.status = RequestStatus.IN_PROGRESS;
+        }
+        await tx.request.update({ where: { id: requestId }, data: statusUpdate });
+
+        return thread.id;
+      });
+
+      return { thread_id: result, created: true };
+    } catch (err: unknown) {
+      // P2002 = unique constraint violation (raced upsert) → return existing
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        (err as { code?: string }).code === 'P2002'
+      ) {
+        const again = await this.prisma.thread.findUnique({
+          where: { requestId_specialistId: { requestId, specialistId } },
+          select: { id: true },
+        });
+        if (again) return { thread_id: again.id, created: false };
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * GET /api/threads?grouped_by=request — client-side grouped view.
+   * Returns the caller's threads grouped by the parent request.
+   */
+  async getThreadsGroupedByRequest(userId: string) {
+    const threads = await this.prisma.thread.findMany({
+      where: {
+        OR: [{ participant1Id: userId }, { participant2Id: userId }],
+        requestId: { not: null },
+      },
+      include: {
+        request: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            city: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+        participant1: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            specialistProfile: {
+              select: { nick: true, displayName: true, avatarUrl: true },
+            },
+          },
+        },
+        participant2: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            specialistProfile: {
+              select: { nick: true, displayName: true, avatarUrl: true },
+            },
+          },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            content: true,
+            senderId: true,
+            createdAt: true,
+            readAt: true,
+          },
+        },
+      },
+    });
+
+    // Group by requestId
+    const byRequest = new Map<
+      string,
+      {
+        request: NonNullable<(typeof threads)[number]['request']>;
+        threads: Array<{
+          id: string;
+          participant1: (typeof threads)[number]['participant1'];
+          participant2: (typeof threads)[number]['participant2'];
+          lastMessage: (typeof threads)[number]['messages'][number] | null;
+          lastMessageAt: Date | null;
+          createdAt: Date;
+        }>;
+      }
+    >();
+
+    for (const t of threads) {
+      if (!t.request) continue;
+      const entry = byRequest.get(t.request.id) ?? {
+        request: t.request,
+        threads: [],
+      };
+      entry.threads.push({
+        id: t.id,
+        participant1: t.participant1,
+        participant2: t.participant2,
+        lastMessage: t.messages[0] ?? null,
+        lastMessageAt: t.lastMessageAt,
+        createdAt: t.createdAt,
+      });
+      byRequest.set(t.request.id, entry);
+    }
+
+    // Sort threads inside each group by last activity, groups by request.createdAt desc
+    const groups = Array.from(byRequest.values()).map((g) => ({
+      ...g,
+      threads: g.threads.sort((a, b) => {
+        const aDate = a.lastMessage?.createdAt ?? a.createdAt;
+        const bDate = b.lastMessage?.createdAt ?? b.createdAt;
+        return bDate.getTime() - aDate.getTime();
+      }),
+    }));
+    groups.sort(
+      (a, b) =>
+        new Date(b.request.createdAt).getTime() -
+        new Date(a.request.createdAt).getTime(),
+    );
+
+    return groups;
+  }
+
+  /**
+   * PATCH /api/threads/:id/read — read receipt.
+   * Updates clientLastReadAt or specialistLastReadAt depending on caller's participant role.
+   */
+  async markThreadRead(userId: string, threadId: string): Promise<void> {
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: {
+        id: true,
+        participant1Id: true,
+        participant2Id: true,
+        specialistId: true,
+      },
+    });
+    if (!thread) throw new NotFoundException('Thread not found');
+    if (
+      thread.participant1Id !== userId &&
+      thread.participant2Id !== userId
+    ) {
+      throw new ForbiddenException('Not a participant of this thread');
+    }
+
+    const now = new Date();
+    const isSpecialist = thread.specialistId === userId;
+    await this.prisma.thread.update({
+      where: { id: threadId },
+      data: isSpecialist
+        ? { specialistLastReadAt: now }
+        : { clientLastReadAt: now },
+      select: { id: true },
+    });
+  }
+
+  /**
+   * Specialist portal: list all threads opened by this specialist with request info.
+   * Replaces the legacy /specialist/responses endpoint (W-1).
+   */
+  async findSpecialistThreads(specialistId: string) {
+    return this.prisma.thread.findMany({
+      where: { specialistId },
+      orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        request: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            city: true,
+            status: true,
+            createdAt: true,
+            clientId: true,
+          },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            content: true,
+            senderId: true,
+            createdAt: true,
+            readAt: true,
+          },
+        },
       },
     });
   }

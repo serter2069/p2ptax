@@ -14,8 +14,7 @@ import { InAppNotificationService } from '../notifications/in-app-notification.s
 import { StorageService } from '../storage/storage.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { CreateQuickRequestDto } from './dto/create-quick-request.dto';
-import { RespondRequestDto } from './dto/respond-request.dto';
-import { RequestStatus, ResponseStatus, Prisma } from '@prisma/client';
+import { RequestStatus, Prisma } from '@prisma/client';
 
 const PAGE_SIZE = 20;
 const DEFAULT_MAX_REQUESTS = 5;
@@ -48,7 +47,7 @@ export class RequestsService {
         serviceType: true,
         budget: true,
         createdAt: true,
-        _count: { select: { responses: true } },
+        _count: { select: { threads: true } },
       },
     });
   }
@@ -178,7 +177,7 @@ export class RequestsService {
         take: PAGE_SIZE,
         include: {
           client: { select: { id: true } },
-          _count: { select: { responses: true } },
+          _count: { select: { threads: true } },
         },
       }),
       this.prisma.request.count({ where }),
@@ -192,14 +191,25 @@ export class RequestsService {
       where: { clientId },
       orderBy: { createdAt: 'desc' },
       include: {
-        _count: { select: { responses: true } },
-        responses: {
+        _count: { select: { threads: true } },
+        threads: {
           include: {
-            specialist: {
+            participant1: {
               select: {
                 id: true, email: true,
                 specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
               },
+            },
+            participant2: {
+              select: {
+                id: true, email: true,
+                specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+              },
+            },
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { id: true, content: true, senderId: true, createdAt: true, readAt: true },
             },
           },
           orderBy: { createdAt: 'desc' },
@@ -211,15 +221,13 @@ export class RequestsService {
   async getDashboardStats(clientId: string) {
     const maxRequests = await this.getMaxRequests();
 
-    const [totalRequests, activeRequests, totalResponses, acceptedResponses] =
+    // Post-migration: "responses" concept replaced by threads. Count threads on client's requests.
+    const [totalRequests, activeRequests, totalThreads] =
       await Promise.all([
         this.prisma.request.count({ where: { clientId } }),
         this.prisma.request.count({ where: { clientId, status: { in: [RequestStatus.NEW, RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON] } } }),
-        this.prisma.response.count({
+        this.prisma.thread.count({
           where: { request: { clientId } },
-        }),
-        this.prisma.response.count({
-          where: { request: { clientId }, status: ResponseStatus.accepted },
         }),
       ]);
 
@@ -227,47 +235,25 @@ export class RequestsService {
       totalRequests,
       maxRequests,
       activeRequests,
-      totalResponses,
-      acceptedResponses,
+      totalResponses: totalThreads,
+      acceptedResponses: 0,
     };
-  }
-
-  async findResponses(requestId: string, userId: string) {
-    const request = await this.prisma.request.findUnique({
-      where: { id: requestId },
-      select: { clientId: true },
-    });
-    if (!request) throw new NotFoundException('Request not found');
-    if (request.clientId !== userId) throw new ForbiddenException('Only the request owner can view responses');
-
-    // Bulk-update sent → viewed for this request's responses
-    await this.prisma.response.updateMany({
-      where: { requestId, status: ResponseStatus.sent },
-      data: { status: ResponseStatus.viewed, viewedAt: new Date() },
-    });
-
-    return this.prisma.response.findMany({
-      where: { requestId },
-      include: {
-        specialist: {
-          select: {
-            id: true, email: true,
-            specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
   }
 
   async findById(requestId: string, userId: string | null) {
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
       include: {
-        _count: { select: { responses: true } },
-        responses: {
+        _count: { select: { threads: true } },
+        threads: {
           include: {
-            specialist: {
+            participant1: {
+              select: {
+                id: true, email: true,
+                specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+              },
+            },
+            participant2: {
               select: {
                 id: true, email: true,
                 specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
@@ -280,12 +266,12 @@ export class RequestsService {
     });
     if (!request) throw new NotFoundException('Request not found');
 
-    // Owner gets full data; everyone else gets public fields only (no clientId, no responses)
+    // Owner gets full data; everyone else gets public fields only (no clientId, no threads)
     if (userId !== null && userId === request.clientId) {
       return request;
     }
 
-    const { clientId: _omit, responses: _resp, ...publicFields } = request;
+    const { clientId: _omit, threads: _th, ...publicFields } = request;
     return publicFields;
   }
 
@@ -305,7 +291,7 @@ export class RequestsService {
         status: true,
         createdAt: true,
         updatedAt: true,
-        _count: { select: { responses: true } },
+        _count: { select: { threads: true } },
       },
     });
 
@@ -314,134 +300,7 @@ export class RequestsService {
     }
 
     const { _count, ...rest } = request;
-    return { ...rest, responseCount: _count.responses };
-  }
-
-  async respond(specialistId: string, requestId: string, dto: RespondRequestDto) {
-    // Validate deadline is in the future (if provided)
-    let deadlineDate: Date | undefined;
-    if (dto.deadline) {
-      deadlineDate = new Date(dto.deadline);
-      if (deadlineDate <= new Date()) {
-        throw new BadRequestException('Deadline must be a future date');
-      }
-    }
-
-    // Check request exists and is open
-    const request = await this.prisma.request.findUnique({
-      where: { id: requestId },
-      include: { client: { select: { id: true, email: true, notifyNewResponses: true } } },
-    });
-    if (!request) throw new NotFoundException('Request not found');
-    const acceptableForResponse = new Set<RequestStatus>([RequestStatus.NEW, RequestStatus.OPEN, RequestStatus.IN_PROGRESS, RequestStatus.CLOSING_SOON]);
-    if (!acceptableForResponse.has(request.status)) {
-      throw new BadRequestException('Request is not open for responses');
-    }
-
-    // Check specialist's cities cover the request's city
-    const specialistProfile = await this.prisma.specialistProfile.findUnique({
-      where: { userId: specialistId },
-      select: { cities: true },
-    });
-    if (!specialistProfile) {
-      throw new BadRequestException('Specialist profile not found');
-    }
-    const requestCityLower = request.city.toLowerCase();
-    const coversCity = specialistProfile.cities.some(
-      (c) => c.toLowerCase() === requestCityLower,
-    );
-    if (!coversCity) {
-      throw new BadRequestException('Ваш профиль не обслуживает город этого запроса');
-    }
-
-    // Check specialist hasn't already responded (@@unique will catch too, but better UX)
-    const existing = await this.prisma.response.findUnique({
-      where: { specialistId_requestId: { specialistId, requestId } },
-    });
-    if (existing) throw new ConflictException('Already responded to this request');
-
-    // Chat-first model: create Response + Thread + first Message in one transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      const response = await tx.response.create({
-        data: {
-          specialistId,
-          requestId,
-          comment: dto.comment,
-          price: dto.price ?? 0,
-          deadline: deadlineDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-      });
-
-      // Update lastActivityAt and auto-transition to IN_PROGRESS if NEW or OPEN
-      const statusUpdate: Record<string, unknown> = { lastActivityAt: new Date() };
-      if (request.status === RequestStatus.NEW || request.status === RequestStatus.OPEN) {
-        statusUpdate.status = RequestStatus.IN_PROGRESS;
-      }
-      await tx.request.update({
-        where: { id: requestId },
-        data: statusUpdate,
-      });
-
-      // Create thread between specialist and client (chat-first flow)
-      const clientId = request.client.id;
-      const [p1, p2] =
-        specialistId < clientId
-          ? [specialistId, clientId]
-          : [clientId, specialistId];
-
-      const thread = await tx.thread.upsert({
-        where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
-        create: { participant1Id: p1, participant2Id: p2 },
-        update: {},
-      });
-
-      // Create first message in the thread from the specialist's comment
-      const message = await tx.message.create({
-        data: {
-          threadId: thread.id,
-          senderId: specialistId,
-          content: dto.comment,
-        },
-      });
-
-      return { response, thread: { id: thread.id }, message: { id: message.id } };
-    });
-
-    // Notify client about new response — fire-and-forget
-    if (request.client.notifyNewResponses) {
-      this.emailService.notifyNewResponse(request.client.email, requestId, specialistId, request.client.id);
-    }
-
-    // In-app notification for the client
-    this.inAppNotifService.create({
-      userId: request.client.id,
-      type: 'NEW_RESPONSE',
-      title: 'Новый отклик',
-      body: `Специалист откликнулся на заявку "${request.title}"`,
-      data: { requestId, responseId: result.response.id },
-    }).catch(() => {});
-
-    return result;
-  }
-
-  async findMyResponses(specialistId: string) {
-    return this.prisma.response.findMany({
-      where: { specialistId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        request: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            city: true,
-            status: true,
-            createdAt: true,
-            clientId: true,
-          },
-        },
-      },
-    });
+    return { ...rest, responseCount: _count.threads };
   }
 
   /**
@@ -449,11 +308,12 @@ export class RequestsService {
    * Called from ChatGateway. Only transitions from OPEN or NEW.
    */
   async autoTransitionToInProgress(specialistId: string, threadParticipantIds: [string, string]): Promise<void> {
-    // Find requests where this specialist responded and the other participant is the client
     const [p1, p2] = threadParticipantIds;
     const otherUserId = p1 === specialistId ? p2 : p1;
 
-    const responses = await this.prisma.response.findMany({
+    // Direct-chat model: transition any NEW/OPEN requests owned by the other user
+    // that have a thread with this specialist
+    const threads = await this.prisma.thread.findMany({
       where: {
         specialistId,
         request: {
@@ -464,9 +324,9 @@ export class RequestsService {
       select: { requestId: true },
     });
 
-    if (responses.length === 0) return;
+    const requestIds = threads.map((t) => t.requestId).filter((id): id is string => id !== null);
+    if (requestIds.length === 0) return;
 
-    const requestIds = responses.map((r) => r.requestId);
     const { count } = await this.prisma.request.updateMany({
       where: {
         id: { in: requestIds },
@@ -504,11 +364,12 @@ export class RequestsService {
       throw new BadRequestException('Request must be CLOSED to leave a review');
     }
 
-    // Validate specialist responded to this request
-    const response = await this.prisma.response.findUnique({
-      where: { specialistId_requestId: { specialistId, requestId } },
+    // Validate specialist participated in a thread on this request
+    const thread = await this.prisma.thread.findFirst({
+      where: { requestId, specialistId },
+      select: { id: true },
     });
-    if (!response) throw new BadRequestException('This specialist did not respond to this request');
+    if (!thread) throw new BadRequestException('This specialist did not respond to this request');
 
     // Check for duplicate
     const existing = await this.prisma.review.findUnique({
@@ -542,8 +403,10 @@ export class RequestsService {
     await this.prisma.$transaction(async (tx) => {
       // Delete reviews for this request
       await tx.review.deleteMany({ where: { requestId } });
-      // Delete responses for this request
-      await tx.response.deleteMany({ where: { requestId } });
+      // Delete messages in all threads for this request
+      await tx.message.deleteMany({ where: { thread: { requestId } } });
+      // Delete threads for this request
+      await tx.thread.deleteMany({ where: { requestId } });
       // Delete the request itself
       await tx.request.delete({ where: { id: requestId } });
     });
@@ -617,103 +480,6 @@ export class RequestsService {
     return this.prisma.request.update({
       where: { id: requestId },
       data: { status },
-    });
-  }
-
-  /**
-   * Accept a response: changes status to accepted + creates/ensures thread exists.
-   * Only the request owner (client) can accept.
-   */
-  async acceptResponse(responseId: string, clientId: string) {
-    const response = await this.prisma.response.findUnique({
-      where: { id: responseId },
-      include: {
-        request: { select: { clientId: true, title: true } },
-        specialist: { select: { id: true, email: true, notifyNewResponses: true } },
-      },
-    });
-    if (!response) throw new NotFoundException('Response not found');
-    if (response.request.clientId !== clientId) {
-      throw new ForbiddenException('Only the request owner can accept responses');
-    }
-    if (response.status === ResponseStatus.accepted) {
-      throw new ConflictException('Response is already accepted');
-    }
-    if (response.status === ResponseStatus.deactivated) {
-      throw new ConflictException('Cannot accept a deactivated response');
-    }
-
-    const now = new Date();
-
-    // Update response + ensure thread in transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.response.update({
-        where: { id: responseId },
-        data: { status: ResponseStatus.accepted, acceptedAt: now },
-      });
-
-      // Create thread: enforce participant1Id < participant2Id
-      const specialistId = response.specialistId;
-      const [p1, p2] =
-        specialistId < clientId
-          ? [specialistId, clientId]
-          : [clientId, specialistId];
-
-      const thread = await tx.thread.upsert({
-        where: { participant1Id_participant2Id: { participant1Id: p1, participant2Id: p2 } },
-        create: { participant1Id: p1, participant2Id: p2 },
-        update: {},
-      });
-
-      return { response: updated, thread };
-    });
-
-    // Notify specialist that their response was accepted — fire-and-forget
-    if (response.specialist.notifyNewResponses) {
-      const client = await this.prisma.user.findUnique({
-        where: { id: clientId },
-        select: { email: true, firstName: true, lastName: true },
-      });
-      const clientName = [client?.firstName, client?.lastName].filter(Boolean).join(' ') || client?.email || 'Клиент';
-      this.emailService.notifyResponseAccepted(
-        response.specialist.email,
-        clientName,
-        response.request.title,
-        response.specialist.id,
-      );
-    }
-
-    return result;
-  }
-
-  /**
-   * Patch a response: specialist can deactivate a sent/viewed response.
-   * Deactivating an accepted response returns 409.
-   */
-  async patchResponse(responseId: string, specialistId: string, status: string) {
-    const response = await this.prisma.response.findUnique({
-      where: { id: responseId },
-    });
-    if (!response) throw new NotFoundException('Response not found');
-    if (response.specialistId !== specialistId) {
-      throw new ForbiddenException('You can only modify your own responses');
-    }
-
-    if (status !== 'deactivated') {
-      throw new BadRequestException('Only status=deactivated is supported');
-    }
-
-    if (response.status === ResponseStatus.accepted) {
-      throw new ConflictException('Cannot deactivate an accepted response');
-    }
-
-    if (response.status === ResponseStatus.deactivated) {
-      throw new ConflictException('Response is already deactivated');
-    }
-
-    return this.prisma.response.update({
-      where: { id: responseId },
-      data: { status: ResponseStatus.deactivated },
     });
   }
 

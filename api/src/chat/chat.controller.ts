@@ -6,6 +6,8 @@ import {
   Param,
   Query,
   Body,
+  HttpCode,
+  HttpStatus,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -23,6 +25,8 @@ import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
 import { StartThreadDto } from './dto/start-thread.dto';
 import { SendMessageDto } from './dto/send-message.dto';
+import { CreateThreadDto } from './dto/create-thread.dto';
+import { Role } from '@prisma/client';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -47,26 +51,65 @@ export class ChatController {
   ) {}
 
   @Get()
-  getThreads(@Request() req: { user: { id: string } }) {
+  getThreads(
+    @Request() req: { user: { id: string } },
+    @Query('grouped_by') groupedBy?: string,
+  ) {
+    if (groupedBy === 'request') {
+      return this.chatService.getThreadsGroupedByRequest(req.user.id);
+    }
     return this.chatService.getThreads(req.user.id);
   }
 
-  // POST /threads — create/upsert thread (UC-030)
+  /**
+   * POST /threads — direct-chat flow (W-1).
+   * Body { request_id, first_message }: specialist clicks "Написать" on a request
+   * and atomically creates Thread + first Message. Idempotent on (request, specialist).
+   * Returns { thread_id, created }.
+   */
   @Post()
   createThread(
-    @Request() req: { user: { id: string } },
-    @Body() dto: StartThreadDto,
+    @Request() req: { user: { id: string; role: Role } },
+    @Body() dto: CreateThreadDto | StartThreadDto,
   ) {
-    return this.chatService.startThread(req.user.id, dto.otherUserId, dto.requestId);
+    // Heuristic: new direct-chat shape = { requestId, firstMessage }
+    if (
+      typeof (dto as CreateThreadDto).firstMessage === 'string' &&
+      typeof (dto as CreateThreadDto).requestId === 'string'
+    ) {
+      const ct = dto as CreateThreadDto;
+      return this.chatService.createThreadForRequest(
+        req.user.id,
+        req.user.role,
+        ct.requestId,
+        ct.firstMessage,
+      );
+    }
+    // Legacy shape: { otherUserId, requestId? } — kept for backwards compat during rollout
+    const st = dto as StartThreadDto;
+    if (!st.otherUserId) {
+      throw new BadRequestException('firstMessage is required');
+    }
+    return this.chatService.startThread(req.user.id, st.otherUserId, st.requestId);
   }
 
-  // POST /threads/start — upsert thread (legacy alias)
+  // POST /threads/start — upsert thread (legacy alias, kept for W-2 frontend migration window)
   @Post('start')
   startThread(
     @Request() req: { user: { id: string } },
     @Body() dto: StartThreadDto,
   ) {
     return this.chatService.startThread(req.user.id, dto.otherUserId, dto.requestId);
+  }
+
+  /** PATCH /threads/:id/read — update last-read timestamp for the caller's side */
+  @Patch(':id/read')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async markThreadRead(
+    @Request() req: { user: { id: string } },
+    @Param('id') threadId: string,
+  ): Promise<void> {
+    await this.chatService.markThreadRead(req.user.id, threadId);
   }
 
   @Get(':id/messages')

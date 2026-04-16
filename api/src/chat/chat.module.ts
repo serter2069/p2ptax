@@ -14,5 +14,6 @@ import { RequestsModule } from '../requests/requests.module';
   ],
   controllers: [ChatController],
   providers: [ChatGateway, ChatService],
+  exports: [ChatService],
 })
 export class ChatModule {}
