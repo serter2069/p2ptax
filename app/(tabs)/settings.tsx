@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, Switch } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, Pressable, Switch, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { useAuth } from '../../lib/auth/AuthContext';
+import { users } from '../../lib/api/endpoints';
 
 function SettingRow({ label, value, danger, icon, onPress }: { label: string; value?: string; danger?: boolean; icon?: string; onPress?: () => void }) {
   return (
@@ -16,12 +17,13 @@ function SettingRow({ label, value, danger, icon, onPress }: { label: string; va
   );
 }
 
-function ToggleRow({ label, icon, enabled, onToggle }: { label: string; icon: string; enabled: boolean; onToggle: () => void }) {
+function ToggleRow({ label, icon, enabled, onToggle, saving }: { label: string; icon: string; enabled: boolean; onToggle: (next: boolean) => void; saving?: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.bgSecondary }}>
       <Feather name={icon as any} size={18} color={Colors.textMuted} />
       <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: Colors.textPrimary }}>{label}</Text>
-      <Switch value={enabled} onValueChange={() => onToggle()} trackColor={{ false: '#D1D5DB', true: '#0284C7' }} thumbColor="#fff" />
+      {saving && <ActivityIndicator size="small" color={Colors.textMuted} style={{ marginRight: Spacing.sm }} />}
+      <Switch value={enabled} onValueChange={onToggle} trackColor={{ false: '#D1D5DB', true: '#0284C7' }} thumbColor="#fff" />
     </View>
   );
 }
@@ -30,8 +32,36 @@ export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [emailNotif, setEmailNotif] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    users.getMe()
+      .then((res: any) => {
+        const me = res.data as { notifyNewMessages?: boolean };
+        if (typeof me?.notifyNewMessages === 'boolean') setEmailNotif(me.notifyNewMessages);
+      })
+      .catch(() => { /* default stays true */ })
+      .finally(() => setLoading(false));
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  const handleEmailToggle = (next: boolean) => {
+    setEmailNotif(next);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaving(true);
+    saveTimerRef.current = setTimeout(() => {
+      users.updateSettings({ notifyNewMessages: next })
+        .catch(() => setEmailNotif(!next))
+        .finally(() => setSaving(false));
+    }, 400);
+  };
 
   const handleLogout = async () => {
     try {
@@ -41,23 +71,27 @@ export default function SettingsScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <View style={{ padding: Spacing.lg, alignItems: 'center' }}>
+        <ActivityIndicator color={Colors.brandPrimary} />
+      </View>
+    );
+  }
+
   return (
     <View style={{ padding: Spacing.lg, gap: Spacing.lg }}>
       <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>Настройки</Text>
       <View style={{ gap: Spacing.sm }}>
         <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Уведомления</Text>
         <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadows.sm }}>
-          <ToggleRow label="Email-уведомления" icon="mail" enabled={emailNotif} onToggle={() => setEmailNotif(!emailNotif)} />
+          <ToggleRow label="Email-уведомления" icon="mail" enabled={emailNotif} onToggle={handleEmailToggle} saving={saving} />
         </View>
       </View>
       <View style={{ gap: Spacing.sm }}>
         <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Аккаунт</Text>
         <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadows.sm }}>
           <SettingRow label="Email" value={user?.email ?? '—'} icon="mail" />
-          {/* TODO: Language screen not implemented yet */}
-          <SettingRow label="Язык" value="Русский" icon="globe" />
-          {/* TODO: Theme screen not implemented yet */}
-          <SettingRow label="Тема" value="Светлая" icon="sun" />
         </View>
       </View>
       <View style={{ gap: Spacing.sm }}>
