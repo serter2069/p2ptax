@@ -295,12 +295,36 @@ export const admin = {
     return client.get('/admin/stats');
   },
 
+  getWeeklyStats() {
+    return client.get<Array<{
+      date: string;
+      signups: number;
+      newSpecialists: number;
+      newRequests: number;
+      newResponses: number;
+    }>>('/admin/stats/weekly');
+  },
+
+  getActivity(limit = 20) {
+    return client.get<Array<{
+      type: string;
+      actorName: string;
+      targetName: string;
+      action: string;
+      createdAt: string;
+    }>>('/admin/activity', { params: { limit } });
+  },
+
   getUsers(params?: { role?: string; page?: number; limit?: number }) {
     return client.get('/admin/users', { params });
   },
 
   blockUser(id: string, isBlocked: boolean) {
     return client.patch(`/admin/users/${id}`, { isBlocked });
+  },
+
+  closeAllUserRequests(id: string) {
+    return client.post<{ closed: number }>(`/admin/users/${id}/close-all-requests`);
   },
 
   getSpecialists(params?: { page?: number; limit?: number }) {
