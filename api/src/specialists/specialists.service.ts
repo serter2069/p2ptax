@@ -375,12 +375,17 @@ export class SpecialistsService {
     }
 
     // Compute activity aggregates for all profiles in batch (for sort by rating/responses)
-    const responseCounts = await this.prisma.response.groupBy({
+    // Post-migration: "responses" replaced by threads owned by the specialist
+    const threadCountsRaw = await this.prisma.thread.groupBy({
       by: ['specialistId'],
       where: { specialistId: { in: allUserIds } },
       _count: { id: true },
     });
-    const countMap = new Map(responseCounts.map((r) => [r.specialistId, r._count.id]));
+    const countMap = new Map<string, number>(
+      threadCountsRaw
+        .filter((r): r is typeof r & { specialistId: string } => r.specialistId !== null)
+        .map((r) => [r.specialistId, r._count.id]),
+    );
 
     const ratingAggs = await this.prisma.review.groupBy({
       by: ['specialistId'],
@@ -550,8 +555,9 @@ export class SpecialistsService {
   }
 
   private async computeActivity(userId: string) {
+    // Post-migration: "responseCount" = number of threads specialist opened (direct-chat flow)
     const [responseCount, ratingAgg] = await Promise.all([
-      this.prisma.response.count({ where: { specialistId: userId } }),
+      this.prisma.thread.count({ where: { specialistId: userId } }),
       this.prisma.review.aggregate({
         where: { specialistId: userId },
         _avg: { rating: true },

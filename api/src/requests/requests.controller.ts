@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Patch,
   Delete,
   Param,
@@ -18,7 +17,6 @@ import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { CreateQuickRequestDto } from './dto/create-quick-request.dto';
-import { RespondRequestDto } from './dto/respond-request.dto';
 import { PatchRequestDto } from './dto/patch-request.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
@@ -58,14 +56,6 @@ export class RequestsController {
   @UseGuards(JwtAuthGuard)
   getMy(@Request() req: any) {
     return this.requestsService.findMy(req.user.id);
-  }
-
-  // GET /requests/my-responses — specialist's own responses with request info
-  @Get('my-responses')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SPECIALIST)
-  getMyResponses(@Request() req: any) {
-    return this.requestsService.findMyResponses(req.user.id);
   }
 
   // GET /requests/recent — public, recent open requests for landing page
@@ -122,13 +112,6 @@ export class RequestsController {
     return this.requestsService.findPublicById(id);
   }
 
-  // GET /requests/:id/responses — owner gets list of responses
-  @Get(':id/responses')
-  @UseGuards(JwtAuthGuard)
-  getResponses(@Request() req: any, @Param('id') id: string) {
-    return this.requestsService.findResponses(id, req.user.id);
-  }
-
   // POST /requests/:id/documents — upload documents to a request
   @Post(':id/documents')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -164,18 +147,6 @@ export class RequestsController {
   @UseGuards(OptionalJwtAuthGuard)
   getById(@Request() req: any, @Param('id') id: string) {
     return this.requestsService.findById(id, req.user?.id ?? null);
-  }
-
-  // POST /requests/:id/respond — specialist responds to a request
-  @Post(':id/respond')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SPECIALIST)
-  respond(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: RespondRequestDto,
-  ) {
-    return this.requestsService.respond(req.user.id, id, dto);
   }
 
   // POST /requests/:id/reviews — create review for specialist on this request
@@ -235,23 +206,4 @@ export class RequestsController {
     return this.requestsService.updateFields(req.user.id, id, dto);
   }
 
-  // PUT /responses/:id/accept — client accepts a response
-  @Put('responses/:id/accept')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.CLIENT)
-  acceptResponse(@Request() req: any, @Param('id') id: string) {
-    return this.requestsService.acceptResponse(id, req.user.id);
-  }
-
-  // PATCH /responses/:id — specialist deactivates own response
-  @Patch('responses/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SPECIALIST)
-  patchResponse(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() body: { status: string },
-  ) {
-    return this.requestsService.patchResponse(id, req.user.id, body.status);
-  }
 }

@@ -481,13 +481,7 @@ export class UsersService {
         await tx.thread.deleteMany({ where: { id: { in: threadIds } } });
       }
 
-      // 5. Responses by user (specialist responding to others' requests)
-      await tx.response.deleteMany({ where: { specialistId: userId } });
-
-      // 6. Responses to user's own requests (from other specialists)
-      if (requestIds.length > 0) {
-        await tx.response.deleteMany({ where: { requestId: { in: requestIds } } });
-      }
+      // 5-6. (Legacy Response model dropped in W-1 migration — threads handle this now.)
 
       // 7. Requests
       await tx.request.deleteMany({ where: { clientId: userId } });

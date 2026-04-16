@@ -11,6 +11,7 @@ import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
 import { SpecialistsService } from './specialists.service';
 import { RequestsService } from '../requests/requests.service';
+import { ChatService } from '../chat/chat.service';
 
 /**
  * Specialist portal routes: /api/specialist/*
@@ -23,6 +24,7 @@ export class SpecialistPortalController {
   constructor(
     private readonly specialistsService: SpecialistsService,
     private readonly requestsService: RequestsService,
+    private readonly chatService: ChatService,
   ) {}
 
   /** GET /specialist/profile — current specialist's profile */
@@ -31,10 +33,10 @@ export class SpecialistPortalController {
     return this.specialistsService.getMyProfile(req.user.id);
   }
 
-  /** GET /specialist/responses — specialist's responses with request info */
+  /** GET /specialist/responses — specialist's threads with request info (post-migration) */
   @Get('responses')
   getResponses(@Request() req: any) {
-    return this.requestsService.findMyResponses(req.user.id);
+    return this.chatService.findSpecialistThreads(req.user.id);
   }
 
   /** GET /specialist/feed — open requests in specialist's cities */

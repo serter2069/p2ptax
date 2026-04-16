@@ -43,16 +43,15 @@ export class ReviewsService {
       throw new BadRequestException('Request must be CLOSED to leave a review');
     }
 
-    // Validate specialist responded to this request
-    const response = await this.prisma.response.findUnique({
+    // Validate specialist participated in a thread on this request
+    const thread = await this.prisma.thread.findFirst({
       where: {
-        specialistId_requestId: {
-          specialistId,
-          requestId: dto.requestId,
-        },
+        requestId: dto.requestId,
+        specialistId,
       },
+      select: { id: true },
     });
-    if (!response) {
+    if (!thread) {
       throw new BadRequestException('This specialist did not respond to this request');
     }
 
@@ -221,12 +220,12 @@ export class ReviewsService {
     }
     const specialistId = specialistProfile.userId;
 
-    // Find a closed request from this client that this specialist responded to
+    // Find a closed request from this client that this specialist opened a thread on
     const closedRequest = await this.prisma.request.findFirst({
       where: {
         clientId,
         status: RequestStatus.CLOSED,
-        responses: {
+        threads: {
           some: { specialistId },
         },
       },
