@@ -389,6 +389,51 @@ export class RequestsService {
   }
 
   /**
+   * Close a request manually. Owner only. Allowed from NEW/OPEN/IN_PROGRESS/CLOSING_SOON.
+   * Returns the updated request with threads so frontend can show review CTAs.
+   */
+  async closeRequest(clientId: string, requestId: string) {
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.clientId !== clientId) throw new ForbiddenException('Not your request');
+
+    const closeable = new Set<RequestStatus>([
+      RequestStatus.NEW,
+      RequestStatus.OPEN,
+      RequestStatus.IN_PROGRESS,
+      RequestStatus.CLOSING_SOON,
+    ]);
+    if (!closeable.has(request.status)) {
+      throw new BadRequestException(`Cannot close a request with status ${request.status}`);
+    }
+
+    return this.prisma.request.update({
+      where: { id: requestId },
+      data: { status: RequestStatus.CLOSED },
+      include: {
+        _count: { select: { threads: true } },
+        threads: {
+          include: {
+            participant1: {
+              select: {
+                id: true, email: true,
+                specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+              },
+            },
+            participant2: {
+              select: {
+                id: true, email: true,
+                specialistProfile: { select: { nick: true, displayName: true, avatarUrl: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+  }
+
+  /**
    * Delete a request and all related responses/reviews.
    * Only the owner can delete, and only OPEN requests.
    */

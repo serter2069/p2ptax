@@ -129,6 +129,10 @@ export const requests = {
   extendRequest(id: string) {
     return client.post(`/requests/${id}/extend`);
   },
+
+  closeRequest(id: string) {
+    return client.patch(`/requests/${id}/close`);
+  },
 };
 
 // ---------------------------------------------------------------------------
