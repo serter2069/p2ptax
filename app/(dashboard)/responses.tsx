@@ -3,6 +3,8 @@ import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-nati
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
 import { MOCK_RESPONSES } from '../../constants/protoMockData';
+import { Header } from '../../components/Header';
+import { useAuth } from '../../lib/auth/AuthContext';
 
 function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
@@ -99,7 +101,14 @@ function DefaultResponses() {
 }
 
 export default function ResponsesScreen() {
-  return <DefaultResponses />;
+  const { user } = useAuth();
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'EV';
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="auth" initials={initials} />
+      <DefaultResponses />
+    </View>
+  );
 }
 
 const s = StyleSheet.create({

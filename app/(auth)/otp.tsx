@@ -1,8 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Header } from '../../components/Header';
 
 export default function OtpScreen() {
+  const router = useRouter();
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,7 +29,9 @@ export default function OtpScreen() {
   };
 
   return (
-    <View className="flex-1 items-center bg-white px-4 py-8">
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="back" backTitle="Подтверждение" onBack={() => router.back()} />
+      <View className="flex-1 items-center bg-white px-4 py-8">
       <View className="w-full max-w-sm">
         <Pressable className="flex-row items-center gap-1 py-1">
           <Feather name="arrow-left" size={20} color="#475569" />
@@ -81,6 +86,7 @@ export default function OtpScreen() {
             <Text className="text-sm font-medium text-brandPrimary">Отправить код повторно</Text>
           </>
         )}
+      </View>
       </View>
     </View>
   );

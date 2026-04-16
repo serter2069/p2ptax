@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Header } from '../../components/Header';
 
 export default function AuthEmailScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,7 +21,9 @@ export default function AuthEmailScreen() {
   };
 
   return (
-    <View className="flex-1 items-center justify-center bg-white px-4 py-8">
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="back" backTitle="Вход" onBack={() => router.back()} />
+      <View className="flex-1 items-center justify-center bg-white px-4 py-8">
       <View className="mb-8 items-center gap-2">
         <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
           <Feather name="shield" size={28} color="#0284C7" />
@@ -73,6 +78,7 @@ export default function AuthEmailScreen() {
       <Text className="mt-6 text-center text-xs text-textMuted">
         {'Нажимая кнопку, вы соглашаетесь с\nусловиями использования'}
       </Text>
+      </View>
     </View>
   );
 }

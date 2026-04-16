@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Header } from '../../components/Header';
 
 export default function UsernameScreen() {
+  const router = useRouter();
   const [value, setValue] = useState('');
   const [error, setError] = useState('');
   const [available, setAvailable] = useState(false);
@@ -10,7 +13,9 @@ export default function UsernameScreen() {
   const canContinue = available && agreed && value.length >= 2;
 
   return (
-    <View className="flex-1 bg-white px-4 py-6">
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="back" backTitle="Имя" onBack={() => router.back()} />
+      <View className="flex-1 bg-white px-4 py-6">
       <View className="mb-1 h-1 rounded-full bg-bgSecondary"><View className="h-1 rounded-full bg-brandPrimary" style={{ width: '33%' }} /></View>
       <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">Шаг 1 из 3</Text>
       <Text className="text-xl font-bold text-textPrimary">Как вас зовут?</Text>
@@ -31,6 +36,7 @@ export default function UsernameScreen() {
         <Text className="text-base font-semibold text-white">Далее</Text>
         <Feather name="arrow-right" size={16} color="#fff" />
       </Pressable>
+      </View>
     </View>
   );
 }

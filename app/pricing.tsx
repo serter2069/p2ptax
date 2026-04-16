@@ -3,6 +3,8 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/Colors';
 import { MOCK_PRICING_PLANS } from '../constants/protoMockData';
+import { Header } from '../components/Header';
+import { useAuth } from '../lib/auth/AuthContext';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -158,7 +160,15 @@ function DefaultState() {
 }
 
 export default function PricingPage() {
-  return <DefaultState />;
+  const { isAuthenticated, user } = useAuth();
+  const variant = isAuthenticated ? 'auth' : 'guest';
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'EV';
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant={variant} initials={initials} />
+      <DefaultState />
+    </View>
+  );
 }
 
 // ---------------------------------------------------------------------------

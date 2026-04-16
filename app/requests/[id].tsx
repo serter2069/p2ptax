@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
+import { Header } from '../../components/Header';
 
 const MOCK_REQUEST = {
   title: 'Выездная проверка ООО «Ромашка»',
@@ -143,5 +145,11 @@ function AuthorizedState() {
 }
 
 export default function PublicRequestDetailPage() {
-  return <AuthorizedState />;
+  const router = useRouter();
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Header variant="back" backTitle="Заявка" onBack={() => router.back()} />
+      <AuthorizedState />
+    </View>
+  );
 }
