@@ -41,11 +41,27 @@ export class UsersService {
     return { available: !existing && !existingUser };
   }
 
-  /** Return current user profile (id, email, role, username, firstName, lastName, phone, city, avatarUrl, createdAt). */
-  async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null; firstName: string | null; lastName: string | null; phone: string | null; city: string | null; avatarUrl: string | null; createdAt: Date }> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+  /** Return current user profile (id, email, role, username, firstName, lastName, phone, city, avatarUrl, createdAt, notifyNewMessages, isAvailable?). */
+  async getMe(userId: string): Promise<{ id: string; email: string; role: string; username: string | null; firstName: string | null; lastName: string | null; phone: string | null; city: string | null; avatarUrl: string | null; createdAt: Date; notifyNewMessages: boolean; isAvailable?: boolean }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { specialistProfile: { select: { isAvailable: true } } },
+    });
     if (!user) throw new NotFoundException('User not found');
-    return { id: user.id, email: user.email, role: user.role, username: user.username, firstName: user.firstName, lastName: user.lastName, phone: user.phone, city: user.city, avatarUrl: user.avatarUrl, createdAt: user.createdAt };
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      city: user.city,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      notifyNewMessages: user.notifyNewMessages,
+      ...(user.specialistProfile ? { isAvailable: user.specialistProfile.isAvailable } : {}),
+    };
   }
 
   /**
@@ -265,16 +281,18 @@ export class UsersService {
     return { notifyNewMessages: user.notifyNewMessages };
   }
 
-  /** Update user settings (backward-compatible: maps old emailNotifications to notifyNewMessages) */
+  /** Update user settings. Accepts both `notifyNewMessages` (preferred) and legacy `emailNotifications`. */
   async updateSettings(
     userId: string,
-    settings: { emailNotifications?: boolean },
+    settings: { emailNotifications?: boolean; notifyNewMessages?: boolean },
   ): Promise<{ notifyNewMessages: boolean }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
     const data: Record<string, unknown> = {};
-    if (settings.emailNotifications !== undefined) {
+    if (settings.notifyNewMessages !== undefined) {
+      data.notifyNewMessages = settings.notifyNewMessages;
+    } else if (settings.emailNotifications !== undefined) {
       data.notifyNewMessages = settings.emailNotifications;
     }
 

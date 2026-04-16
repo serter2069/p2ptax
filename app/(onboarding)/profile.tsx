@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Header } from '../../components/Header';
-import { users, upload } from '../../lib/api/endpoints';
+import { users, upload, specialists } from '../../lib/api/endpoints';
 import { useAuth } from '../../lib/auth';
 
 export default function OnboardingProfilePage() {
@@ -52,12 +52,24 @@ export default function OnboardingProfilePage() {
         }
       }
 
-      // Save profile fields
-      await users.updateProfile({
-        ...(description ? { bio: description } : {}),
-        ...(phone ? { phone } : {}),
-        ...(telegram ? { telegram } : {}),
-      } as any);
+      // Save User fields (phone) via /users/me/profile — handles phone + city + names.
+      if (phone) {
+        await users.updateProfile({ phone } as any);
+      }
+
+      // Save specialist-only fields (bio, telegram) via /specialists/me — works only when
+      // a SpecialistProfile already exists. For new specialists the profile is created in
+      // step 3 (work-area), so this call 404s gracefully and the values are re-applied there.
+      if (role === 'SPECIALIST' && (description || telegram)) {
+        try {
+          await specialists.updateProfile({
+            ...(description ? { bio: description } : {}),
+            ...(telegram ? { telegram } : {}),
+          });
+        } catch {
+          // Profile not yet created — values will be re-entered or merged in a later step.
+        }
+      }
 
       await refreshUser();
 

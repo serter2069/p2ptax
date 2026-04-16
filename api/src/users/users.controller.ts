@@ -35,6 +35,10 @@ class UpdateSettingsDto {
   @IsBoolean()
   @IsOptional()
   emailNotifications?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  notifyNewMessages?: boolean;
 }
 
 class UpdateNotificationSettingsDto {

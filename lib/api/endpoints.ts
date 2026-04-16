@@ -162,6 +162,21 @@ export const specialists = {
   saveWorkAreas(workAreas: { fnsId: string; departments: string[] }[]) {
     return client.post('/specialists/work-areas', { workAreas });
   },
+
+  /** PATCH /specialists/me — update specialist profile fields (bio, telegram, isAvailable, etc.) */
+  updateProfile(data: {
+    bio?: string;
+    displayName?: string;
+    headline?: string;
+    telegram?: string;
+    whatsapp?: string;
+    phone?: string;
+    officeAddress?: string;
+    workingHours?: string;
+    isAvailable?: boolean;
+  }) {
+    return client.patch('/specialists/me', data);
+  },
 };
 
 // ---------------------------------------------------------------------------
