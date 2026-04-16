@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../constants/Colors';
 import { useAuth } from '../lib/auth';
+import { notifications } from '../lib/api/endpoints';
 
 const BURGER_LINKS: { icon: 'home' | 'users'; label: string; route: string }[] = [
   { icon: 'home', label: 'Главная', route: '/' },
@@ -58,16 +59,38 @@ function BurgerDrawer({ open, onToggle }: { open: boolean; onToggle: () => void 
 export function Header({
   variant,
   backTitle,
-  hasNotif = false,
+  hasNotif,
   onBack,
 }: {
   variant: 'guest' | 'auth' | 'back';
   backTitle?: string;
+  /** Optional override. If undefined, fetches unread count from /notifications/unread-count. */
   hasNotif?: boolean;
   onBack?: () => void;
 }) {
   const [burgerOpen, setBurgerOpen] = useState(false);
-  const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { user, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (variant !== 'auth' || !isAuthenticated || hasNotif !== undefined) return;
+    let cancelled = false;
+    const load = () => {
+      notifications.unreadCount()
+        .then((res) => {
+          if (!cancelled) setUnreadCount(res.data?.count ?? 0);
+        })
+        .catch(() => { /* non-critical */ });
+    };
+    load();
+    const t = setInterval(load, 60000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [variant, isAuthenticated, hasNotif]);
+
+  const showNotifDot = hasNotif ?? unreadCount > 0;
 
   if (variant === 'back') {
     return (
@@ -123,9 +146,9 @@ export function Header({
     >
       <LogoBlock />
       <View className="flex-row items-center gap-3">
-        <Pressable onPress={() => router.push('/(tabs)/messages' as any)}>
+        <Pressable onPress={() => router.push('/notifications' as any)}>
           <Feather name="bell" size={20} color={Colors.textSecondary} />
-          {hasNotif && (
+          {showNotifDot && (
             <View className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-statusError" />
           )}
         </Pressable>

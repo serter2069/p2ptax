@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
@@ -24,10 +24,12 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   CLOSED: { label: 'Закрыта', color: Colors.textMuted, bg: Colors.statusBg.neutral },
 };
 
-function RequestCard({ id, title, service, fns, city, status, date, messageCount }: {
+function RequestCard({ id, title, service, fns, city, status, date, messageCount, onRequestClose }: {
   id: string; title: string; service: string; fns: string; city: string; status: string; date: string; messageCount: number;
+  onRequestClose?: () => void;
 }) {
   const st = STATUS_MAP[status] || STATUS_MAP.ACTIVE;
+  const isCloseable = status === 'ACTIVE' || status === 'CLOSING_SOON';
   return (
     <Pressable style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadows.sm }} onPress={() => router.push(`/(dashboard)/my-requests/${id}` as any)}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm }}>
@@ -57,6 +59,16 @@ function RequestCard({ id, title, service, fns, city, status, date, messageCount
             <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium }}>{messageCount} сообщ.</Text>
           </View>
         )}
+        {isCloseable && onRequestClose && (
+          <Pressable
+            onPress={(e) => { e.stopPropagation?.(); onRequestClose(); }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.statusBg.error }}
+            hitSlop={8}
+          >
+            <Feather name="x-circle" size={12} color={Colors.statusError} />
+            <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.statusError }}>Закрыть</Text>
+          </Pressable>
+        )}
         <Feather name="chevron-right" size={16} color={Colors.textMuted} />
       </View>
     </Pressable>
@@ -68,6 +80,8 @@ export default function RequestsScreen() {
   const [allData, setAllData] = useState<ApiRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [closeTarget, setCloseTarget] = useState<ApiRequest | null>(null);
+  const [closing, setClosing] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -82,6 +96,20 @@ export default function RequestsScreen() {
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
+
+  const handleConfirmClose = useCallback(async () => {
+    if (!closeTarget || closing) return;
+    try {
+      setClosing(true);
+      await requestsApi.closeRequest(closeTarget.id);
+      setAllData((prev) => prev.map((r) => (r.id === closeTarget.id ? { ...r, status: 'CLOSED' } : r)));
+      setCloseTarget(null);
+    } catch {
+      // keep modal open on failure
+    } finally {
+      setClosing(false);
+    }
+  }, [closeTarget, closing]);
 
   const activeRequests = allData.filter((r) => ['ACTIVE', 'CLOSING_SOON'].includes(r.status));
   const completedRequests = allData.filter((r) => r.status === 'CLOSED');
@@ -148,9 +176,44 @@ export default function RequestsScreen() {
           status={r.status}
           date={r.createdAt ? new Date(r.createdAt).toLocaleDateString('ru-RU') : '—'}
           messageCount={r._count?.threads ?? 0}
+          onRequestClose={() => setCloseTarget(r)}
         />
       ))}
     </ScrollView>
+    <Modal visible={closeTarget !== null} transparent animationType="fade" onRequestClose={() => !closing && setCloseTarget(null)}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(15,36,71,0.4)', alignItems: 'center', justifyContent: 'center', padding: Spacing.lg }}>
+        <View style={{ width: '100%', maxWidth: 360, backgroundColor: Colors.white, borderRadius: BorderRadius.card, padding: Spacing.lg, gap: Spacing.md, ...Shadows.sm }}>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>
+            Закрыть заявку?
+          </Text>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 20 }}>
+            Её больше не увидят специалисты.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm }}>
+            <Pressable
+              onPress={() => !closing && setCloseTarget(null)}
+              style={{ flex: 1, height: 44, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}
+            >
+              <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted, fontWeight: Typography.fontWeight.medium }}>Отмена</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleConfirmClose}
+              disabled={closing}
+              style={{ flex: 1, height: 44, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError, flexDirection: 'row', gap: 6 }}
+            >
+              {closing ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <>
+                  <Feather name="x-circle" size={14} color={Colors.white} />
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Закрыть</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
     </View>
   );
 }

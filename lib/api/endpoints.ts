@@ -268,6 +268,15 @@ export const ifns = {
 };
 
 // ---------------------------------------------------------------------------
+// Categories (service categories)
+// ---------------------------------------------------------------------------
+export const categories = {
+  list() {
+    return client.get<Array<{ id: string; name: string; slug: string; icon?: string | null; sortOrder: number }>>('/categories');
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Dashboard
 // ---------------------------------------------------------------------------
 export const dashboard = {
