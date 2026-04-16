@@ -66,12 +66,20 @@ export class RequestsService {
   }
 
   private async getMaxRequests(): Promise<number> {
-    const setting = await this.prisma.setting.findUnique({
-      where: { key: 'max_requests_per_client' },
-    });
-    if (setting) {
-      const parsed = parseInt(setting.value, 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
+    try {
+      const setting = await this.prisma.setting.findUnique({
+        where: { key: 'max_requests_per_client' },
+      });
+      if (setting) {
+        const parsed = parseInt(setting.value, 10);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    } catch (err) {
+      // Fallback if settings table is missing (pending migration) or DB blip —
+      // never block request creation because of a config-lookup failure.
+      this.logger.warn(
+        `getMaxRequests: settings lookup failed, using DEFAULT_MAX_REQUESTS=${DEFAULT_MAX_REQUESTS}. ${(err as Error).message}`,
+      );
     }
     return DEFAULT_MAX_REQUESTS;
   }
