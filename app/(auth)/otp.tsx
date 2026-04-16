@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
+import { Platform, Pressable, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Header } from '../../components/Header';
 import { auth } from '../../lib/api/endpoints';
 import { useAuth } from '../../lib/auth';
+import { Button, Container, Heading, Screen, Text } from '../../components/ui';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/Colors';
 
 export default function OtpScreen() {
   const router = useRouter();
@@ -53,8 +55,7 @@ export default function OtpScreen() {
       const isNewUser: boolean = data?.isNewUser ?? false;
       const userRole: string = data?.user?.role ?? role ?? 'CLIENT';
 
-      // Sync AuthContext so downstream screens (onboarding) see the correct role
-      // Without this, useAuth() returns role=null and specialist-only steps are skipped.
+      // Sync AuthContext so downstream screens (onboarding) see the correct role.
       try {
         const u = data?.user ?? {};
         await authLogin(
@@ -73,7 +74,6 @@ export default function OtpScreen() {
       }
 
       if (isNewUser) {
-        // New user: start onboarding
         router.replace('/(onboarding)/username' as any);
       } else if (userRole === 'SPECIALIST') {
         router.replace('/(tabs)/specialist-dashboard' as any);
@@ -106,67 +106,136 @@ export default function OtpScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen>
       <Header variant="back" backTitle="Подтверждение" onBack={() => router.back()} />
-      <View className="flex-1 items-center bg-white px-4 py-8">
-      <View className="w-full max-w-sm">
-        <Pressable className="flex-row items-center gap-1 py-1" onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color="#475569" />
-          <Text className="text-sm text-textSecondary">Изменить email</Text>
-        </Pressable>
-      </View>
-      <View className="mt-6 items-center gap-2">
-        <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
-          <Feather name="mail" size={28} color="#0284C7" />
-        </View>
-        <Text className="text-xl font-bold text-textPrimary">Введите код</Text>
-        <View className="flex-row items-center">
-          <Text className="text-base text-textMuted">Код отправлен на </Text>
-          <Text className="text-base font-medium text-textPrimary">{email ?? '...'}</Text>
-        </View>
-      </View>
-      <View className="mt-5 flex-row justify-center gap-2">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <View key={i} className={`h-14 w-12 items-center justify-center rounded-lg border-2 ${error ? 'border-red-500 bg-red-50' : digits[i] ? 'border-brandPrimary bg-bgSecondary' : 'border-gray-200 bg-white'}`}>
-            <TextInput
-              ref={(ref) => { inputRefs.current[i] = ref; }}
-              value={digits[i]}
-              onChangeText={(v) => handleDigitChange(i, v)}
-              keyboardType="number-pad"
-              maxLength={1}
-              selectTextOnFocus
-              editable={!loading}
-              className="h-full w-full text-center text-2xl font-bold text-textPrimary"
-              style={{ outlineStyle: 'none' } as any}
-            />
+      <Container>
+        <View style={{ paddingVertical: Spacing['2xl'], gap: Spacing.lg, alignItems: 'center' }}>
+          <View style={{ alignSelf: 'stretch' }}>
+            <Button
+              variant="ghost"
+              size="md"
+              onPress={() => router.back()}
+              icon={<Feather name="arrow-left" size={18} color={Colors.brandPrimary} />}
+            >
+              Изменить email
+            </Button>
           </View>
-        ))}
-      </View>
-      {error ? (
-        <View className="mt-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
-          <Feather name="alert-circle" size={14} color="#DC2626" />
-          <Text className="text-sm font-medium text-red-600">{error}</Text>
+
+          <View style={{ alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm }}>
+            <View
+              style={{
+                height: 64,
+                width: 64,
+                borderRadius: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: Colors.bgSecondary,
+              }}
+            >
+              <Feather name="mail" size={28} color={Colors.brandPrimary} />
+            </View>
+            <Heading level={3} align="center">Введите код</Heading>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Text variant="muted">Код отправлен на </Text>
+              <Text variant="body" weight="medium">{email ?? '...'}</Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: Spacing.sm, marginTop: Spacing.md }}>
+            {[0, 1, 2, 3, 4, 5].map((i) => {
+              const filled = !!digits[i];
+              const borderColor = error
+                ? Colors.statusError
+                : filled
+                ? Colors.brandPrimary
+                : Colors.borderLight;
+              const bgColor = error ? Colors.bgSecondary : filled ? Colors.bgSecondary : Colors.white;
+              return (
+                <View
+                  key={i}
+                  style={{
+                    height: 56,
+                    width: 48,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: BorderRadius.lg,
+                    borderWidth: 2,
+                    borderColor,
+                    backgroundColor: bgColor,
+                  }}
+                >
+                  <TextInput
+                    ref={(ref) => { inputRefs.current[i] = ref; }}
+                    value={digits[i]}
+                    onChangeText={(v) => handleDigitChange(i, v)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    selectTextOnFocus
+                    editable={!loading}
+                    style={[
+                      {
+                        height: '100%',
+                        width: '100%',
+                        textAlign: 'center',
+                        fontSize: Typography.fontSize['2xl'],
+                        fontWeight: Typography.fontWeight.bold,
+                        fontFamily: Typography.fontFamily.bold,
+                        color: Colors.textPrimary,
+                      },
+                      Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null,
+                    ]}
+                  />
+                </View>
+              );
+            })}
+          </View>
+
+          {error ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing.xs,
+                borderRadius: BorderRadius.lg,
+                backgroundColor: Colors.bgSecondary,
+                paddingHorizontal: Spacing.md,
+                paddingVertical: Spacing.sm,
+              }}
+            >
+              <Feather name="alert-circle" size={14} color={Colors.statusError} />
+              <Text variant="caption" weight="medium" style={{ color: Colors.statusError }}>{error}</Text>
+            </View>
+          ) : null}
+
+          <View style={{ alignSelf: 'stretch', maxWidth: 320, width: '100%', alignItems: 'center' }}>
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              loading={loading}
+              onPress={handleSubmit}
+            >
+              {loading ? 'Проверка...' : 'Подтвердить'}
+            </Button>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.xs }}>
+            {resendTimer > 0 ? (
+              <>
+                <Feather name="clock" size={14} color={Colors.textMuted} />
+                <Text variant="caption">Отправить повторно через {resendTimer} сек</Text>
+              </>
+            ) : (
+              <Pressable onPress={handleResend} disabled={resendLoading} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                <Feather name="refresh-cw" size={14} color={Colors.brandPrimary} />
+                <Text variant="caption" weight="medium" style={{ color: Colors.brandPrimary }}>
+                  {resendLoading ? 'Отправка...' : 'Отправить код повторно'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
         </View>
-      ) : null}
-      <Pressable onPress={handleSubmit} disabled={loading} className={`mt-4 h-12 w-full max-w-xs items-center justify-center rounded-lg bg-brandPrimary ${loading ? 'opacity-60' : ''}`}>
-        <Text className="text-base font-semibold text-white">{loading ? 'Проверка...' : 'Подтвердить'}</Text>
-      </Pressable>
-      <View className="mt-3 flex-row items-center gap-1">
-        {resendTimer > 0 ? (
-          <>
-            <Feather name="clock" size={14} color="#94A3B8" />
-            <Text className="text-sm text-textMuted">Отправить повторно через {resendTimer} сек</Text>
-          </>
-        ) : (
-          <Pressable onPress={handleResend} disabled={resendLoading} className="flex-row items-center gap-1">
-            <Feather name="refresh-cw" size={14} color="#0284C7" />
-            <Text className="text-sm font-medium text-brandPrimary">
-              {resendLoading ? 'Отправка...' : 'Отправить код повторно'}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-      </View>
-    </View>
+      </Container>
+    </Screen>
   );
 }

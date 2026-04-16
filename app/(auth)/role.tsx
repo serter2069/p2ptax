@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/Header';
-import { Colors } from '../../constants/Colors';
+import { Card, Container, Heading, Screen, Text } from '../../components/ui';
+import { BorderRadius, Colors, Spacing } from '../../constants/Colors';
 
 export default function RoleScreen() {
   const router = useRouter();
@@ -13,47 +14,76 @@ export default function RoleScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen>
       <Header variant="back" backTitle="Выбор роли" onBack={() => router.back()} />
-      <View className="flex-1 items-center justify-center bg-white px-4 py-8">
-        <View className="mb-8 items-center gap-2">
-          <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-bgSecondary">
-            <Feather name="shield" size={28} color={Colors.brandPrimary} />
+      <Container>
+        <View style={{ paddingVertical: Spacing['2xl'], gap: Spacing['2xl'] }}>
+          <View style={{ alignItems: 'center', gap: Spacing.sm }}>
+            <View
+              style={{
+                height: 64,
+                width: 64,
+                borderRadius: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: Colors.bgSecondary,
+              }}
+            >
+              <Feather name="shield" size={28} color={Colors.brandPrimary} />
+            </View>
+            <Heading level={2} align="center">Налоговик</Heading>
+            <Text variant="muted" align="center">Кто вы на платформе?</Text>
           </View>
-          <Text className="text-2xl font-bold text-textPrimary">Налоговик</Text>
-          <Text className="text-base text-textMuted">Кто вы на платформе?</Text>
-        </View>
 
-        <View className="w-full max-w-md gap-4">
-          <Pressable
-            onPress={() => selectRole('CLIENT')}
-            className="rounded-2xl border-2 border-borderLight bg-white p-6 active:border-brandPrimary active:bg-bgSecondary"
-            style={{ borderColor: Colors.borderLight }}
-          >
-            <View className="mb-3 h-12 w-12 items-center justify-center rounded-xl bg-bgSecondary">
-              <Feather name="search" size={24} color={Colors.brandPrimary} />
-            </View>
-            <Text className="text-lg font-bold text-textPrimary">Я ищу специалиста</Text>
-            <Text className="mt-1 text-sm leading-5 text-textMuted">
-              Нужна помощь с налоговой проверкой или вопросом — найду специалиста по своей ФНС
-            </Text>
-          </Pressable>
+          <View style={{ gap: Spacing.lg }}>
+            <Card variant="outlined" padding="lg" onPress={() => selectRole('CLIENT')}>
+              <View style={{ gap: Spacing.md }}>
+                <View
+                  style={{
+                    height: 48,
+                    width: 48,
+                    borderRadius: BorderRadius.xl,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: Colors.bgSecondary,
+                  }}
+                >
+                  <Feather name="search" size={24} color={Colors.brandPrimary} />
+                </View>
+                <View style={{ gap: Spacing.xs }}>
+                  <Heading level={4}>Я ищу специалиста</Heading>
+                  <Text variant="muted">
+                    Нужна помощь с налоговой проверкой или вопросом — найду специалиста по своей ФНС
+                  </Text>
+                </View>
+              </View>
+            </Card>
 
-          <Pressable
-            onPress={() => selectRole('SPECIALIST')}
-            className="rounded-2xl border-2 border-borderLight bg-white p-6 active:border-brandPrimary active:bg-bgSecondary"
-            style={{ borderColor: Colors.borderLight }}
-          >
-            <View className="mb-3 h-12 w-12 items-center justify-center rounded-xl bg-bgSecondary">
-              <Feather name="briefcase" size={24} color={Colors.brandPrimary} />
-            </View>
-            <Text className="text-lg font-bold text-textPrimary">Я специалист по налогам</Text>
-            <Text className="mt-1 text-sm leading-5 text-textMuted">
-              Консультирую клиентов по вопросам налоговых проверок в конкретных ФНС
-            </Text>
-          </Pressable>
+            <Card variant="outlined" padding="lg" onPress={() => selectRole('SPECIALIST')}>
+              <View style={{ gap: Spacing.md }}>
+                <View
+                  style={{
+                    height: 48,
+                    width: 48,
+                    borderRadius: BorderRadius.xl,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: Colors.bgSecondary,
+                  }}
+                >
+                  <Feather name="briefcase" size={24} color={Colors.brandPrimary} />
+                </View>
+                <View style={{ gap: Spacing.xs }}>
+                  <Heading level={4}>Я специалист по налогам</Heading>
+                  <Text variant="muted">
+                    Консультирую клиентов по вопросам налоговых проверок в конкретных ФНС
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          </View>
         </View>
-      </View>
-    </View>
+      </Container>
+    </Screen>
   );
 }
