@@ -1,8 +1,20 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-import { MOCK_REQUESTS } from '../../constants/protoMockData';
+import { requests as requestsApi } from '../../lib/api/endpoints';
+
+interface ApiRequest {
+  id: string;
+  title: string;
+  serviceCategory?: string | null;
+  ifnsCode?: string | null;
+  city?: string | null;
+  status: string;
+  createdAt: string;
+  _count?: { threads?: number };
+  [key: string]: unknown;
+}
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   NEW: { label: 'Новая', color: Colors.brandPrimary, bg: Colors.statusBg.info },
@@ -53,13 +65,47 @@ function RequestCard({ title, service, fns, city, status, date, messageCount }: 
 
 export default function RequestsScreen() {
   const [tab, setTab] = useState<'active' | 'completed' | 'all'>('active');
-  const activeRequests = MOCK_REQUESTS.filter((r) => ['NEW', 'ACTIVE', 'IN_PROGRESS'].includes(r.status));
-  const completedRequests = MOCK_REQUESTS.filter((r) => ['COMPLETED', 'CANCELLED'].includes(r.status));
-  const allRequests = MOCK_REQUESTS;
-  const visibleRequests = tab === 'active' ? activeRequests : tab === 'completed' ? completedRequests : allRequests;
+  const [allData, setAllData] = useState<ApiRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    requestsApi.getMyRequests()
+      .then((res) => {
+        if (mounted) {
+          const data = (res as any).data ?? res;
+          setAllData(Array.isArray(data) ? data : (data.items ?? data.requests ?? []));
+        }
+      })
+      .catch((e) => { if (mounted) setError(e.message ?? 'Ошибка'); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  const activeRequests = allData.filter((r) => ['NEW', 'ACTIVE', 'IN_PROGRESS'].includes(r.status));
+  const completedRequests = allData.filter((r) => ['COMPLETED', 'CANCELLED'].includes(r.status));
+  const visibleRequests = tab === 'active' ? activeRequests : tab === 'completed' ? completedRequests : allData;
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={Colors.brandPrimary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl, gap: Spacing.md }}>
+        <Feather name="alert-circle" size={28} color={Colors.statusError} />
+        <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={{ padding: Spacing.lg, gap: Spacing.md }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, gap: Spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>Мои заявки</Text>
         <Pressable style={{ backgroundColor: Colors.brandPrimary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.btn, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
@@ -71,16 +117,30 @@ export default function RequestsScreen() {
         {([
           { key: 'active' as const, label: `Активные (${activeRequests.length})` },
           { key: 'completed' as const, label: `Завершённые (${completedRequests.length})` },
-          { key: 'all' as const, label: `Все (${allRequests.length})` },
+          { key: 'all' as const, label: `Все (${allData.length})` },
         ]).map((t) => (
           <Pressable key={t.key} onPress={() => setTab(t.key)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: tab === t.key ? Colors.brandPrimary : Colors.border, backgroundColor: tab === t.key ? Colors.brandPrimary : Colors.bgCard }}>
             <Text style={{ fontSize: Typography.fontSize.xs, color: tab === t.key ? Colors.white : Colors.textMuted, fontWeight: tab === t.key ? Typography.fontWeight.semibold : Typography.fontWeight.medium }}>{t.label}</Text>
           </Pressable>
         ))}
       </View>
-      {visibleRequests.map((r) => (
-        <RequestCard key={r.id} title={r.title} service={r.service} fns={r.fns} city={r.city} status={r.status} date={r.createdAt} messageCount={r.messageCount} />
+      {visibleRequests.length === 0 ? (
+        <View style={{ alignItems: 'center', paddingVertical: 40, gap: Spacing.md }}>
+          <Feather name="inbox" size={32} color={Colors.textMuted} />
+          <Text style={{ color: Colors.textMuted }}>Заявок нет</Text>
+        </View>
+      ) : visibleRequests.map((r) => (
+        <RequestCard
+          key={r.id}
+          title={r.title}
+          service={r.serviceCategory ?? '—'}
+          fns={r.ifnsCode ?? '—'}
+          city={r.city ?? '—'}
+          status={r.status}
+          date={r.createdAt ? new Date(r.createdAt).toLocaleDateString('ru-RU') : '—'}
+          messageCount={r._count?.threads ?? 0}
+        />
       ))}
-    </View>
+    </ScrollView>
   );
 }

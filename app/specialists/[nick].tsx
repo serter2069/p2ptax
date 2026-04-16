@@ -1,40 +1,31 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, Modal, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Header } from '../../components/Header';
+import { specialists as specialistsApi } from '../../lib/api/endpoints';
+import { Colors } from '../../constants/Colors';
 
-const MOCK_SPECIALIST = {
-  name: 'Алексей Петров',
-  city: 'Москва',
-  memberSince: 2022,
-  avatar: null,
-  rating: 4.8,
-  reviewCount: 12,
-  about: `Специализируюсь на сопровождении налоговых проверок для юридических лиц и индивидуальных предпринимателей. Более 10 лет опыта работы в сфере налогового консультирования.
+interface FnsService {
+  fns: string;
+  services: string[];
+}
 
-Основные направления работы:
-— Подготовка к выездным налоговым проверкам: анализ рисков, систематизация документации, разработка стратегии защиты интересов налогоплательщика.
-— Сопровождение камеральных проверок: подготовка пояснений, ответы на требования ФНС, представление интересов в налоговых органах.
-— Работа с отделом оперативного контроля: консультирование по вопросам оперативных мероприятий, подготовка ответов на запросы.
-
-Имею успешный опыт работы со сложными случаями: крупные доначисления, встречные проверки, проверки по цепочкам контрагентов. Регулярно повышаю квалификацию, слежу за изменениями в налоговом законодательстве.
-
-Работаю в нескольких ФНС города Москвы, что позволяет оперативно решать вопросы клиентов в разных районах. Консультирую как лично, так и дистанционно.
-
-Гарантирую конфиденциальность и индивидуальный подход к каждому клиенту. Первая консультация — бесплатно.`,
-  fnsServices: [
-    { fns: 'ФНС №15 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка'] },
-    { fns: 'ФНС №46 по г. Москве', services: ['Камеральная проверка', 'Отдел оперативного контроля'] },
-    { fns: 'ФНС №7 по г. Москве', services: ['Выездная проверка'] },
-    { fns: 'ФНС №1 по г. Москве', services: ['Выездная проверка', 'Камеральная проверка', 'Отдел оперативного контроля'] },
-    { fns: 'ФНС №33 по г. Москве', services: ['Камеральная проверка'] },
-  ],
-  reviews: [
-    { author: 'Мария К.', date: '15.03.2024', rating: 5, text: 'Отличный специалист, помог с камеральной проверкой' },
-    { author: 'Иван С.', date: '20.02.2024', rating: 4, text: 'Быстро и профессионально сопроводил выездную проверку' },
-  ],
-};
+interface SpecialistData {
+  id: string;
+  username?: string | null;
+  name?: string | null;
+  user?: { firstName?: string | null; lastName?: string | null } | null;
+  city?: string | null;
+  memberSince?: number | null;
+  createdAt?: string | null;
+  rating?: number | null;
+  reviewCount?: number | null;
+  about?: string | null;
+  fnsServices?: FnsService[] | null;
+  reviews?: Array<{ author?: string; date?: string; rating: number; text?: string }> | null;
+  [key: string]: unknown;
+}
 
 function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
@@ -65,14 +56,11 @@ function ReviewItem({ author, rating, text, date }: { author: string; rating: nu
   );
 }
 
-function FnsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const spec = MOCK_SPECIALIST;
-
+function FnsModal({ visible, onClose, fnsServices }: { visible: boolean; onClose: () => void; fnsServices: FnsService[] }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 items-center justify-center bg-black/50 px-4">
         <View className="w-full max-w-lg rounded-2xl bg-white">
-          {/* Header */}
           <View className="flex-row items-center justify-between border-b border-gray-200 px-5 py-4">
             <View className="flex-row items-center gap-2">
               <Feather name="briefcase" size={18} color="#0284C7" />
@@ -82,14 +70,9 @@ function FnsModal({ visible, onClose }: { visible: boolean; onClose: () => void 
               <Feather name="x" size={22} color="#64748B" />
             </Pressable>
           </View>
-
-          {/* Scrollable FNS list */}
           <ScrollView className="max-h-96 px-5 py-3">
-            {spec.fnsServices.map((group, idx) => (
-              <View
-                key={group.fns}
-                className={`gap-2 py-3 ${idx < spec.fnsServices.length - 1 ? 'border-b border-gray-100' : ''}`}
-              >
+            {fnsServices.map((group, idx) => (
+              <View key={group.fns} className={`gap-2 py-3 ${idx < fnsServices.length - 1 ? 'border-b border-gray-100' : ''}`}>
                 <View className="flex-row items-center gap-2">
                   <Feather name="home" size={14} color="#64748B" />
                   <Text className="text-base font-semibold text-textPrimary">{group.fns}</Text>
@@ -111,10 +94,14 @@ function FnsModal({ visible, onClose }: { visible: boolean; onClose: () => void 
   );
 }
 
-function ProfileScreen({ initialMessage = '', initialFnsOpen = false }: { initialMessage?: string; initialFnsOpen?: boolean }) {
-  const [message, setMessage] = useState(initialMessage);
-  const [fnsModalVisible, setFnsModalVisible] = useState(initialFnsOpen);
-  const spec = MOCK_SPECIALIST;
+function ProfileScreen({ spec }: { spec: SpecialistData }) {
+  const [message, setMessage] = useState('');
+  const [fnsModalVisible, setFnsModalVisible] = useState(false);
+  const fnsServices: FnsService[] = spec.fnsServices ?? [];
+  const displayName = spec.name
+    ?? ([spec.user?.firstName, spec.user?.lastName].filter(Boolean).join(' ') || '—');
+  const memberYear = spec.memberSince
+    ?? (spec.createdAt ? new Date(spec.createdAt).getFullYear() : null);
 
   return (
     <ScrollView className="flex-1 bg-white">
@@ -122,86 +109,89 @@ function ProfileScreen({ initialMessage = '', initialFnsOpen = false }: { initia
         {/* Profile card */}
         <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
           <View className="flex-row gap-4">
-            {/* Avatar placeholder */}
             <View className="h-20 w-20 items-center justify-center rounded-full bg-bgSecondary">
               <Feather name="user" size={32} color="#94A3B8" />
             </View>
             <View className="flex-1 gap-1">
-              <Text className="text-xl font-bold text-textPrimary">{spec.name}</Text>
-              <View className="flex-row items-center gap-1">
-                <Feather name="map-pin" size={14} color="#94A3B8" />
-                <Text className="text-base text-textMuted">{spec.city}</Text>
-              </View>
-              <View className="flex-row items-center gap-1">
-                <Stars rating={Math.round(spec.rating)} size={16} />
-                <Text className="text-sm text-textMuted">{spec.rating} ({spec.reviewCount} отзывов)</Text>
-              </View>
-              <View className="mt-1 flex-row items-center gap-1">
-                <Feather name="clock" size={13} color="#94A3B8" />
-                <Text className="text-sm text-textMuted">На сайте с {spec.memberSince} г.</Text>
-              </View>
+              <Text className="text-xl font-bold text-textPrimary">{displayName}</Text>
+              {spec.city && (
+                <View className="flex-row items-center gap-1">
+                  <Feather name="map-pin" size={14} color="#94A3B8" />
+                  <Text className="text-base text-textMuted">{spec.city}</Text>
+                </View>
+              )}
+              {spec.rating != null && (
+                <View className="flex-row items-center gap-1">
+                  <Stars rating={Math.round(spec.rating)} size={16} />
+                  <Text className="text-sm text-textMuted">{spec.rating} ({spec.reviewCount ?? 0} отзывов)</Text>
+                </View>
+              )}
+              {memberYear && (
+                <View className="mt-1 flex-row items-center gap-1">
+                  <Feather name="clock" size={13} color="#94A3B8" />
+                  <Text className="text-sm text-textMuted">На сайте с {memberYear} г.</Text>
+                </View>
+              )}
             </View>
           </View>
-
-          {/* About — long text */}
-          <Text className="text-base leading-6 text-textSecondary">{spec.about}</Text>
+          {spec.about && <Text className="text-base leading-6 text-textSecondary">{spec.about}</Text>}
         </View>
 
         {/* FNS preview (first 2 open) + "Подробнее" for rest */}
-        <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <View className="flex-row items-center gap-2">
-            <Feather name="briefcase" size={16} color="#0284C7" />
-            <Text className="text-lg font-semibold text-textPrimary">ФНС и услуги</Text>
-          </View>
-
-          {/* Show first 2 FNS inline */}
-          {spec.fnsServices.slice(0, 2).map((group, idx) => (
-            <View key={group.fns} className={`gap-2 ${idx > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
-              <View className="flex-row items-center gap-2">
-                <Feather name="home" size={14} color="#64748B" />
-                <Text className="text-base font-medium text-textPrimary">{group.fns}</Text>
-              </View>
-              <View className="flex-row flex-wrap gap-2 pl-6">
-                {group.services.map((svc) => (
-                  <View key={svc} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
-                    <Feather name="check" size={12} color="#0284C7" />
-                    <Text className="text-sm text-brandPrimary">{svc}</Text>
-                  </View>
-                ))}
-              </View>
+        {fnsServices.length > 0 && (
+          <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <View className="flex-row items-center gap-2">
+              <Feather name="briefcase" size={16} color="#0284C7" />
+              <Text className="text-lg font-semibold text-textPrimary">ФНС и услуги</Text>
             </View>
-          ))}
+            {fnsServices.slice(0, 2).map((group, idx) => (
+              <View key={group.fns} className={`gap-2 ${idx > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="home" size={14} color="#64748B" />
+                  <Text className="text-base font-medium text-textPrimary">{group.fns}</Text>
+                </View>
+                <View className="flex-row flex-wrap gap-2 pl-6">
+                  {group.services.map((svc) => (
+                    <View key={svc} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
+                      <Feather name="check" size={12} color="#0284C7" />
+                      <Text className="text-sm text-brandPrimary">{svc}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))}
+            {fnsServices.length > 2 && (
+              <Pressable
+                onPress={() => setFnsModalVisible(true)}
+                className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary py-2.5"
+              >
+                <Text className="text-sm font-semibold text-brandPrimary">Все ФНС и услуги ({fnsServices.length})</Text>
+                <Feather name="chevron-right" size={16} color="#0284C7" />
+              </Pressable>
+            )}
+          </View>
+        )}
 
-          {/* "Подробнее" button if more than 2 */}
-          {spec.fnsServices.length > 2 && (
-            <Pressable
-              onPress={() => setFnsModalVisible(true)}
-              className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary py-2.5"
-            >
-              <Text className="text-sm font-semibold text-brandPrimary">
-                Все ФНС и услуги ({spec.fnsServices.length})
-              </Text>
-              <Feather name="chevron-right" size={16} color="#0284C7" />
-            </Pressable>
-          )}
-        </View>
-
-        <FnsModal visible={fnsModalVisible} onClose={() => setFnsModalVisible(false)} />
+        <FnsModal visible={fnsModalVisible} onClose={() => setFnsModalVisible(false)} fnsServices={fnsServices} />
 
         {/* Reviews */}
-        <View className="gap-3">
-          <View className="flex-row items-center gap-2">
-            <Feather name="message-square" size={16} color="#0284C7" />
-            <Text className="text-lg font-semibold text-textPrimary">Отзывы</Text>
-            <Pressable className="ml-auto flex-row items-center">
-              <Text className="text-base font-medium text-brandPrimary">Все {spec.reviewCount}</Text>
-              <Feather name="chevron-right" size={16} color="#0284C7" />
-            </Pressable>
+        {(spec.reviews ?? []).length > 0 && (
+          <View className="gap-3">
+            <View className="flex-row items-center gap-2">
+              <Feather name="message-square" size={16} color="#0284C7" />
+              <Text className="text-lg font-semibold text-textPrimary">Отзывы</Text>
+            </View>
+            {(spec.reviews ?? []).map((r, i) => (
+              <ReviewItem
+                key={i}
+                author={r.author ?? '—'}
+                rating={r.rating}
+                text={r.text ?? ''}
+                date={r.date ?? ''}
+              />
+            ))}
           </View>
-          {spec.reviews.map((r) => (
-            <ReviewItem key={r.date} author={r.author} rating={r.rating} text={r.text} date={r.date} />
-          ))}
-        </View>
+        )}
 
         {/* Message textarea */}
         <View className="gap-2">
@@ -234,10 +224,40 @@ function ProfileScreen({ initialMessage = '', initialFnsOpen = false }: { initia
 
 export default function SpecialistProfileScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ nick?: string | string[] }>();
+  const rawNick = Array.isArray(params.nick) ? params.nick[0] : params.nick;
+  const nick = rawNick ?? '';
+  const [specData, setSpecData] = useState<SpecialistData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!nick) return;
+    let mounted = true;
+    specialistsApi.getSpecialist(nick)
+      .then((res) => {
+        if (mounted) setSpecData((res as any).data ?? res);
+      })
+      .catch((e) => { if (mounted) setError(e.message ?? 'Ошибка'); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [nick]);
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Header variant="back" backTitle="Специалист" onBack={() => router.back()} />
-      <ProfileScreen />
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={Colors.brandPrimary} />
+        </View>
+      ) : error ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
+          <Feather name="alert-circle" size={28} color={Colors.statusError} />
+          <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+        </View>
+      ) : specData ? (
+        <ProfileScreen spec={specData} />
+      ) : null}
     </View>
   );
 }

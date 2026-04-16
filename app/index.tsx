@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Shadows } from '../constants/Colors';
-import { MOCK_CITIES, MOCK_FNS, MOCK_SERVICES } from '../constants/protoMockData';
+import { ifns } from '../lib/api/endpoints';
 import { Header } from '../components/Header';
+
+// Fixed service list per product spec
+const SERVICES = ['Выездная проверка', 'Отдел оперативного контроля', 'Камеральная проверка', 'Не знаю'];
 
 // =====================================================================
 // HELPERS
@@ -21,12 +24,14 @@ function useLayout() {
 
 function LandingLocationPicker({
   city, fns, service, onCityChange, onFnsChange, onServiceChange,
+  cities, fnsByCity,
 }: {
   city: string; fns: string; service: string;
   onCityChange: (v: string) => void; onFnsChange: (v: string) => void; onServiceChange: (v: string) => void;
+  cities: string[]; fnsByCity: Record<string, string[]>;
 }) {
   const [openLevel, setOpenLevel] = useState<'city' | 'fns' | 'service' | null>(null);
-  const fnsOptions = city ? (MOCK_FNS[city] || []) : [];
+  const fnsOptions = city ? (fnsByCity[city] || []) : [];
 
   const summary = city
     ? [city, fns, service].filter(Boolean).join(' / ')
@@ -78,7 +83,7 @@ function LandingLocationPicker({
 
           {/* Options */}
           <ScrollView nestedScrollEnabled style={{ maxHeight: 160 }}>
-            {openLevel === 'city' && MOCK_CITIES.map((c) => (
+            {openLevel === 'city' && cities.map((c) => (
               <Pressable
                 key={c}
                 className="border-b border-bgSecondary px-3 py-2.5"
@@ -96,7 +101,7 @@ function LandingLocationPicker({
                 <Text className={`text-sm ${fns === f ? 'font-semibold text-brandPrimary' : 'text-textPrimary'}`}>{f}</Text>
               </Pressable>
             ))}
-            {openLevel === 'service' && MOCK_SERVICES.map((s) => (
+            {openLevel === 'service' && SERVICES.map((s) => (
               <Pressable
                 key={s}
                 className="border-b border-bgSecondary px-3 py-2.5"
@@ -122,6 +127,28 @@ function HeroSection() {
   const [fns, setFns] = useState('');
   const [service, setService] = useState('');
   const [description, setDescription] = useState('');
+  const [cities, setCities] = useState<string[]>([]);
+  const [fnsByCity, setFnsByCity] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    ifns.getCities()
+      .then((res) => {
+        const data = (res as any).data ?? res;
+        setCities(Array.isArray(data) ? data.map((c: any) => c.name ?? c) : []);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!city || fnsByCity[city]) return;
+    ifns.getIfns({ city })
+      .then((res) => {
+        const data = (res as any).data ?? res;
+        const list: string[] = Array.isArray(data) ? data.map((f: any) => f.name ?? f) : [];
+        setFnsByCity((prev) => ({ ...prev, [city]: list }));
+      })
+      .catch(() => {});
+  }, [city]);
 
   return (
     <View className="bg-white px-5" style={{ paddingTop: 40, paddingBottom: 40 }}>
@@ -167,6 +194,7 @@ function HeroSection() {
               <LandingLocationPicker
                 city={city} fns={fns} service={service}
                 onCityChange={setCity} onFnsChange={setFns} onServiceChange={setService}
+                cities={cities} fnsByCity={fnsByCity}
               />
             </View>
 
@@ -455,15 +483,7 @@ export default function LandingPage() {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.white }}>
-      <Header
-        variant="guest"
-        onLogin={() => router.push('/(auth)/email')}
-        onBurgerLink={(label) => {
-          if (label === 'Главная') router.push('/');
-          if (label === 'Специалисты') router.push('/specialists' as any);
-          if (label === 'Тарифы') router.push('/pricing' as any);
-        }}
-      />
+      <Header variant="guest" />
       <ScrollView style={{ backgroundColor: Colors.white }}>
         <HeroSection />
         <SpecialistsCarousel />

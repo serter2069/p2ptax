@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../../constants/Colors';
-import { MOCK_MESSAGES, MockMessage } from '../../constants/protoMockData';
 import { Header } from '../../components/Header';
-import { threads as threadsApi } from '../../lib/api/endpoints';
+import { useChat, type ChatMessage } from '../../lib/hooks/useChat';
+import { getAccessToken } from '../../lib/api/storage';
+import { users } from '../../lib/api/endpoints';
 
 function ChatHeader({ name, online }: { name: string; online: boolean }) {
   const initials = name.split(' ').map(n => n[0]).join('');
@@ -25,20 +26,21 @@ function ChatHeader({ name, online }: { name: string; online: boolean }) {
   );
 }
 
-function MessageBubble({ msg }: { msg: MockMessage }) {
-  const { text, fromMe, time, read, attachment } = msg;
+function MessageBubble({ msg, myId }: { msg: ChatMessage; myId: string | undefined }) {
+  const fromMe = msg.senderId === myId;
+  const time = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+  const read = !!msg.readAt;
   return (
     <View style={{ flexDirection: 'row', justifyContent: fromMe ? 'flex-end' : 'flex-start' }}>
       <View style={{ maxWidth: '78%', padding: Spacing.md, borderRadius: BorderRadius.lg, backgroundColor: fromMe ? Colors.brandPrimary : Colors.bgCard, borderWidth: fromMe ? 0 : 1, borderColor: Colors.border, borderBottomRightRadius: fromMe ? BorderRadius.sm : BorderRadius.lg, borderBottomLeftRadius: fromMe ? BorderRadius.lg : BorderRadius.sm }}>
-        {text ? <Text style={{ fontSize: Typography.fontSize.sm, color: fromMe ? Colors.white : Colors.textPrimary, lineHeight: 20 }}>{text}</Text> : null}
-        {attachment && (
+        {msg.content ? <Text style={{ fontSize: Typography.fontSize.sm, color: fromMe ? Colors.white : Colors.textPrimary, lineHeight: 20 }}>{msg.content}</Text> : null}
+        {msg.attachmentUrl && (
           <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.sm, borderRadius: BorderRadius.md, marginTop: Spacing.xs, backgroundColor: fromMe ? 'rgba(255,255,255,0.12)' : Colors.bgSurface }}>
             <View style={{ width: 36, height: 36, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: fromMe ? 'rgba(255,255,255,0.15)' : Colors.statusBg.error }}>
-              <Feather name={attachment.type === 'pdf' ? 'file-text' : 'image'} size={18} color={fromMe ? Colors.white : (attachment.type === 'pdf' ? Colors.statusError : Colors.brandPrimary)} />
+              <Feather name={msg.attachmentType === 'pdf' ? 'file-text' : 'image'} size={18} color={fromMe ? Colors.white : Colors.brandPrimary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.medium, color: fromMe ? Colors.white : Colors.textPrimary }} numberOfLines={1}>{attachment.name}</Text>
-              <Text style={{ fontSize: 10, color: fromMe ? 'rgba(255,255,255,0.6)' : Colors.textMuted, marginTop: 1 }}>{attachment.size}</Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.medium, color: fromMe ? Colors.white : Colors.textPrimary }} numberOfLines={1}>{msg.attachmentName ?? 'Файл'}</Text>
             </View>
             <Feather name="download" size={14} color={fromMe ? 'rgba(255,255,255,0.6)' : Colors.textMuted} />
           </Pressable>
@@ -84,32 +86,67 @@ export default function ChatScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
   const threadId = rawId ?? '';
-  const [messages] = useState<MockMessage[]>(MOCK_MESSAGES);
   const [inputText, setInputText] = useState('');
-  const handleSend = () => { if (!inputText.trim()) return; setInputText(''); };
+  const [token, setToken] = useState<string | null>(null);
+  const [myId, setMyId] = useState<string | undefined>(undefined);
 
-  // Mark thread read on mount (best-effort — W-3 wires up real messages loading)
-  useEffect(() => {
-    if (!threadId) return;
-    threadsApi.markRead(threadId).catch(() => { /* ignore */ });
-  }, [threadId]);
+  // Load token + current user id
+  useState(() => {
+    getAccessToken().then((t) => setToken(t));
+    users.getMe().then((res) => {
+      const me = (res as any).data ?? res;
+      setMyId(me?.id);
+    }).catch(() => {});
+  });
+
+  const {
+    messages,
+    loading,
+    loadError,
+    sending,
+    typingVisible,
+    sendMessage,
+  } = useChat({ threadId: threadId || undefined, userId: myId, token });
+
+  const handleSend = async () => {
+    const text = inputText.trim();
+    if (!text) return;
+    setInputText('');
+    try { await sendMessage(text); } catch { /* ignore */ }
+  };
 
   return (
     <View style={{ flex: 1 }}>
       <Header variant="back" backTitle="Чат" onBack={() => router.back()} />
-      <ChatHeader name="Алексей Петров" online={true} />
-      <SystemMessage text="Заявка: Камеральная проверка декларации по НДС" />
-      <View style={{ padding: Spacing.md, gap: Spacing.xs }}>
-        {messages.map((m) => (<MessageBubble key={m.id} msg={m} />))}
-        <TypingIndicator />
-      </View>
-      <View style={{ position: 'relative' }}>
-        <View style={{ padding: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.bgCard }}>
-          <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
-            <Pressable style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><Feather name="paperclip" size={18} color={Colors.textMuted} /></Pressable>
-            <TextInput value={inputText} onChangeText={setInputText} placeholder="Введите сообщение..." placeholderTextColor={Colors.textMuted} style={{ flex: 1, height: 40, backgroundColor: Colors.bgPrimary, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.sm, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.border, outlineStyle: 'none' } as any} onSubmitEditing={handleSend} returnKeyType="send" />
-            <Pressable onPress={handleSend} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.brandPrimary, alignItems: 'center', justifyContent: 'center', opacity: inputText.trim() ? 1 : 0.5, ...Shadows.sm }}><Feather name="arrow-up" size={18} color={Colors.white} /></Pressable>
+      <ChatHeader name="Чат" online={false} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: Spacing.md, gap: Spacing.xs }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {loading ? (
+          <View style={{ alignItems: 'center', paddingTop: 32 }}>
+            <ActivityIndicator color={Colors.brandPrimary} />
           </View>
+        ) : loadError ? (
+          <View style={{ alignItems: 'center', paddingTop: 32, gap: 8 }}>
+            <Feather name="alert-circle" size={24} color={Colors.statusError} />
+            <Text style={{ color: Colors.statusError }}>Не удалось загрузить сообщения</Text>
+          </View>
+        ) : messages.length === 0 ? (
+          <View style={{ alignItems: 'center', paddingTop: 32 }}>
+            <Text style={{ color: Colors.textMuted }}>Нет сообщений. Напишите первым!</Text>
+          </View>
+        ) : (
+          messages.map((m) => (<MessageBubble key={m.id} msg={m} myId={myId} />))
+        )}
+        {typingVisible && <TypingIndicator />}
+      </ScrollView>
+      <View style={{ padding: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.bgCard }}>
+        <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
+          <Pressable style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><Feather name="paperclip" size={18} color={Colors.textMuted} /></Pressable>
+          <TextInput value={inputText} onChangeText={setInputText} placeholder="Введите сообщение..." placeholderTextColor={Colors.textMuted} style={{ flex: 1, height: 40, backgroundColor: Colors.bgPrimary, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.lg, fontSize: Typography.fontSize.sm, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.border, outlineStyle: 'none' } as any} onSubmitEditing={handleSend} returnKeyType="send" />
+          <Pressable onPress={handleSend} disabled={sending} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.brandPrimary, alignItems: 'center', justifyContent: 'center', opacity: (inputText.trim() && !sending) ? 1 : 0.5, ...Shadows.sm }}><Feather name="arrow-up" size={18} color={Colors.white} /></Pressable>
         </View>
       </View>
     </View>
