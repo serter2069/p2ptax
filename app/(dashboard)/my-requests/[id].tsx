@@ -54,9 +54,13 @@ interface RequestDetail {
   category: string | null;
   status: RequestStatus;
   createdAt: string;
+  lastActivityAt?: string;
+  extensionsCount?: number;
   threads: Thread[];
   _count: { threads: number };
 }
+
+const MAX_EXTENSIONS = 3;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -154,6 +158,7 @@ export default function RequestDetailScreen() {
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
+  const [extending, setExtending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRequest = useCallback(async () => {
@@ -173,6 +178,20 @@ export default function RequestDetailScreen() {
   useEffect(() => {
     fetchRequest();
   }, [fetchRequest]);
+
+  const handleExtend = useCallback(async () => {
+    if (!request || extending) return;
+    try {
+      setExtending(true);
+      const res = await requests.extendRequest(request.id);
+      setRequest(res.data as RequestDetail);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message ?? 'Не удалось продлить заявку';
+      Alert.alert('Ошибка', msg);
+    } finally {
+      setExtending(false);
+    }
+  }, [request, extending]);
 
   const handleClose = useCallback(() => {
     if (!request) return;
@@ -234,6 +253,9 @@ export default function RequestDetailScreen() {
   const isOwner = user?.id === request.clientId;
   const canClose = isOwner && CLOSEABLE_STATUSES.includes(status);
   const isClosed = status === 'CLOSED';
+  const extensionsCount = request.extensionsCount ?? 0;
+  const canExtend =
+    isOwner && status === 'CLOSING_SOON' && extensionsCount < MAX_EXTENSIONS;
 
   return (
     <View className="flex-1 bg-white">
@@ -274,6 +296,26 @@ export default function RequestDetailScreen() {
             <Text className="text-sm text-textMuted">{formatDate(request.createdAt)}</Text>
           </View>
         </View>
+
+        {/* Extend button — owner, CLOSING_SOON, extensionsCount < 3 */}
+        {canExtend && (
+          <Pressable
+            onPress={handleExtend}
+            disabled={extending}
+            className="h-10 flex-row items-center justify-center gap-1.5 rounded-lg border border-brandPrimary bg-brandPrimary/10"
+          >
+            {extending ? (
+              <ActivityIndicator size="small" color={Colors.brandPrimary} />
+            ) : (
+              <>
+                <Feather name="refresh-cw" size={14} color={Colors.brandPrimary} />
+                <Text className="text-sm font-medium text-brandPrimary">
+                  Продлить (осталось {MAX_EXTENSIONS - extensionsCount})
+                </Text>
+              </>
+            )}
+          </Pressable>
+        )}
 
         {/* Close button — owner only, closeable statuses */}
         {canClose && (

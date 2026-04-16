@@ -11,12 +11,13 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
   Request,
   ForbiddenException,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { randomUUID } from 'crypto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StorageService } from '../storage/storage.service';
@@ -28,17 +29,18 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { Role } from '@prisma/client';
 
+// SA biz-files: chat attachments restricted to PDF + JPG + PNG only.
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
-  'image/gif',
-  'image/webp',
   'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]);
 
-const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png']);
+
+// SA screen-chat: up to 3 attachments per attach action.
+const MAX_CHAT_ATTACHMENTS = 3;
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10 MB per file
 
 @Controller('threads')
 @UseGuards(JwtAuthGuard)
@@ -121,11 +123,11 @@ export class ChatController {
     return this.chatService.getMessages(req.user.id, threadId, parseInt(page ?? '1', 10) || 1);
   }
 
-  // POST /threads/:id/upload — upload a file attachment for a thread message
+  // POST /threads/:id/upload — upload a single file attachment (legacy, kept for backward compat)
   @Post(':id/upload')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB max
+      limits: { fileSize: MAX_ATTACHMENT_SIZE },
       fileFilter: (_req, file, cb) => {
         if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
           cb(null, true);
@@ -144,9 +146,39 @@ export class ChatController {
       throw new BadRequestException('No file uploaded');
     }
 
-    // Image limit: 10 MB
-    if (IMAGE_MIME_TYPES.has(file.mimetype) && file.size > 10 * 1024 * 1024) {
-      throw new BadRequestException('Image files must be under 10 MB');
+    // Verify caller is a thread participant
+    const thread = await this.chatService.verifyParticipant(req.user.id, threadId);
+    if (!thread) {
+      throw new NotFoundException('Thread not found or access denied');
+    }
+
+    return this.persistAttachment(threadId, file);
+  }
+
+  // POST /threads/:id/uploads — upload up to 3 file attachments at once (SA biz-files / screen-chat)
+  @Post(':id/uploads')
+  @UseInterceptors(
+    FilesInterceptor('files', MAX_CHAT_ATTACHMENTS, {
+      limits: { fileSize: MAX_ATTACHMENT_SIZE, files: MAX_CHAT_ATTACHMENTS },
+      fileFilter: (_req, file, cb) => {
+        if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException(`File type not allowed: ${file.mimetype}`), false);
+        }
+      },
+    }),
+  )
+  async uploadChatFiles(
+    @Request() req: { user: { id: string } },
+    @Param('id') threadId: string,
+    @UploadedFiles() files: Express.Multer.File[] | undefined,
+  ): Promise<Array<{ url: string; signedUrl: string; type: string; name: string }>> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files uploaded');
+    }
+    if (files.length > MAX_CHAT_ATTACHMENTS) {
+      throw new BadRequestException(`Maximum ${MAX_CHAT_ATTACHMENTS} files per message`);
     }
 
     // Verify caller is a thread participant
@@ -155,6 +187,18 @@ export class ChatController {
       throw new NotFoundException('Thread not found or access denied');
     }
 
+    const results: Array<{ url: string; signedUrl: string; type: string; name: string }> = [];
+    for (const file of files) {
+      results.push(await this.persistAttachment(threadId, file));
+    }
+    return results;
+  }
+
+  /** Store a single uploaded chat file in S3 and return attachment metadata. */
+  private async persistAttachment(
+    threadId: string,
+    file: Express.Multer.File,
+  ): Promise<{ url: string; signedUrl: string; type: string; name: string }> {
     const ext = file.originalname.split('.').pop()?.toLowerCase() || 'bin';
     const fileId = randomUUID();
     const key = `chat/${threadId}/${fileId}.${ext}`;

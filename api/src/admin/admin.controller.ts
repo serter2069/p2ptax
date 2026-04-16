@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Param,
@@ -25,6 +26,20 @@ export class AdminController {
     return this.adminService.getStats();
   }
 
+  /** GET /admin/stats/weekly — last 7 days: signups, new requests, new responses */
+  @Get('stats/weekly')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getWeeklyStats() {
+    return this.adminService.getWeeklyStats();
+  }
+
+  /** GET /admin/activity — recent platform events (new users, specialists, requests) */
+  @Get('activity')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  getActivity(@Query('limit') limit?: string) {
+    return this.adminService.getActivity(limit ? parseInt(limit, 10) : 20);
+  }
+
   /** GET /admin/users — all users, optional ?role=CLIENT|SPECIALIST&page=1&limit=50 */
   @Get('users')
   @UseGuards(JwtAuthGuard, AdminGuard)
@@ -41,6 +56,13 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   blockUser(@Param('id') id: string, @Body() dto: BlockUserDto) {
     return this.adminService.blockUser(id, dto.isBlocked);
+  }
+
+  /** POST /admin/users/:id/close-all-requests — close every active request of a user */
+  @Post('users/:id/close-all-requests')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  closeAllUserRequests(@Param('id') id: string) {
+    return this.adminService.closeAllUserRequests(id);
   }
 
   /** GET /admin/specialists — all specialist profiles, optional ?page=1&limit=50 */

@@ -186,7 +186,7 @@ export const threads = {
   /**
    * POST /threads — direct-chat flow (W-1). Specialist opens thread on a request.
    * Returns 201 when created, 200 when existing thread returned.
-   * Errors: 409 CLOSED/CANCELLED request, 429 20 threads/24h limit.
+   * Errors: 409 CLOSED request, 429 20 threads/24h limit.
    */
   createForRequest(data: { requestId: string; firstMessage: string }) {
     return client.post<CreateThreadResponse>('/threads', data);
@@ -295,12 +295,36 @@ export const admin = {
     return client.get('/admin/stats');
   },
 
+  getWeeklyStats() {
+    return client.get<Array<{
+      date: string;
+      signups: number;
+      newSpecialists: number;
+      newRequests: number;
+      newResponses: number;
+    }>>('/admin/stats/weekly');
+  },
+
+  getActivity(limit = 20) {
+    return client.get<Array<{
+      type: string;
+      actorName: string;
+      targetName: string;
+      action: string;
+      createdAt: string;
+    }>>('/admin/activity', { params: { limit } });
+  },
+
   getUsers(params?: { role?: string; page?: number; limit?: number }) {
     return client.get('/admin/users', { params });
   },
 
   blockUser(id: string, isBlocked: boolean) {
     return client.patch(`/admin/users/${id}`, { isBlocked });
+  },
+
+  closeAllUserRequests(id: string) {
+    return client.post<{ closed: number }>(`/admin/users/${id}/close-all-requests`);
   },
 
   getSpecialists(params?: { page?: number; limit?: number }) {
@@ -406,10 +430,23 @@ export const upload = {
     });
   },
 
-  /** Upload file attachment in a chat thread. Returns { url, signedUrl, type, name }. */
+  /** Upload single file attachment in a chat thread (legacy). Returns { url, signedUrl, type, name }. */
   chatAttachment(threadId: string, formData: FormData) {
     return client.post<{ url: string; signedUrl: string; type: string; name: string }>(
       `/threads/${threadId}/upload`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
+
+  /**
+   * Upload up to 3 file attachments in a single chat thread request.
+   * FormData must include field name 'files' per file.
+   * Returns array of { url, signedUrl, type, name } (one per uploaded file).
+   */
+  chatAttachments(threadId: string, formData: FormData) {
+    return client.post<Array<{ url: string; signedUrl: string; type: string; name: string }>>(
+      `/threads/${threadId}/uploads`,
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } },
     );

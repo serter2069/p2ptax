@@ -29,24 +29,83 @@ function StatCard({ label, value, color, trend, icon }: { label: string; value: 
   );
 }
 
-function ChartPlaceholder({ title }: { title: string }) {
+interface WeeklyBucket {
+  date: string;
+  signups: number;
+  newSpecialists: number;
+  newRequests: number;
+  newResponses: number;
+}
+
+const DOW_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+function WeeklyChart({ title, data }: { title: string; data: WeeklyBucket[] }) {
+  // Total activity per day (signups + requests + responses)
+  const totals = data.map((b) => b.signups + b.newRequests + b.newResponses);
+  const max = Math.max(1, ...totals);
+  const labels = data.map((b) => {
+    const d = new Date(b.date + 'T00:00:00');
+    return DOW_RU[d.getDay()];
+  });
+  const allZero = totals.every((t) => t === 0);
+
   return (
     <View style={s.chartCard}>
       <Text style={s.chartTitle}>{title}</Text>
-      <View style={s.chartArea}>
-        <View style={s.chartBars}>
-          {[40, 65, 45, 80, 55, 70, 90].map((h, i) => (
-            <View key={i} style={[s.chartBar, { height: h, backgroundColor: i === 6 ? Colors.brandPrimary : Colors.bgSecondary }]} />
-          ))}
+      {allZero ? (
+        <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>
+            Нет активности за последние 7 дней
+          </Text>
         </View>
-        <View style={s.chartLabels}>
-          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((d) => (
-            <Text key={d} style={s.chartLabel}>{d}</Text>
-          ))}
+      ) : (
+        <View style={s.chartArea}>
+          <View style={s.chartBars}>
+            {totals.map((t, i) => {
+              const h = Math.max(4, Math.round((t / max) * 100));
+              const isLast = i === totals.length - 1;
+              return (
+                <View
+                  key={i}
+                  style={[
+                    s.chartBar,
+                    { height: h, backgroundColor: isLast ? Colors.brandPrimary : Colors.bgSecondary },
+                  ]}
+                />
+              );
+            })}
+          </View>
+          <View style={s.chartLabels}>
+            {labels.map((d, i) => (
+              <Text key={i} style={s.chartLabel}>{d}</Text>
+            ))}
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
+}
+
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  const diffSec = Math.max(0, Math.floor((now - then) / 1000));
+  if (diffSec < 60) return 'только что';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} мин назад`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} ч назад`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay} дн назад`;
+}
+
+function activityIconFor(type: string): string {
+  if (type.startsWith('user.signup')) return 'user-plus';
+  if (type === 'user.specialist_signup' || type === 'specialist.profile_created') return 'briefcase';
+  if (type === 'request.created') return 'file-text';
+  if (type === 'user.blocked') return 'shield-off';
+  if (type === 'review.created') return 'star';
+  return 'activity';
 }
 
 // ---------------------------------------------------------------------------
@@ -60,19 +119,27 @@ interface AdminStats {
   [key: string]: unknown;
 }
 
+interface ActivityRow {
+  type: string;
+  actorName: string;
+  targetName: string;
+  action: string;
+  createdAt: string;
+}
+
 // ---------------------------------------------------------------------------
 // STATE: DEFAULT (populated with stats)
 // ---------------------------------------------------------------------------
 
-function DefaultDashboard({ st }: { st: AdminStats }) {
-  const activities = [
-    { icon: 'user-plus', action: 'Регистрация', detail: 'Новый пользователь', time: '5 мин назад' },
-    { icon: 'file-text', action: 'Заявка', detail: 'Новая заявка в системе', time: '12 мин назад' },
-    { icon: 'shield', action: 'Модерация', detail: 'Специалист ожидает проверки', time: '30 мин назад' },
-    { icon: 'star', action: 'Отзыв', detail: 'Новый отзыв', time: '1 час назад' },
-    { icon: 'alert-triangle', action: 'Жалоба', detail: 'Новая жалоба на специалиста', time: '2 часа назад' },
-  ];
-
+function DefaultDashboard({
+  st,
+  weekly,
+  activities,
+}: {
+  st: AdminStats;
+  weekly: WeeklyBucket[];
+  activities: ActivityRow[];
+}) {
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={s.container}>
       <View style={s.pageHeader}>
@@ -87,7 +154,7 @@ function DefaultDashboard({ st }: { st: AdminStats }) {
         <StatCard label="Открытые жалобы" value={st.openComplaints ?? '—'} color={Colors.statusWarning} icon="alert-triangle" />
       </View>
 
-      <ChartPlaceholder title="Активность за неделю" />
+      <WeeklyChart title="Активность за неделю" data={weekly} />
 
       <View style={s.recentSection}>
         <View style={s.sectionHeader}>
@@ -96,18 +163,33 @@ function DefaultDashboard({ st }: { st: AdminStats }) {
             <Text style={s.sectionBadgeText}>{activities.length}</Text>
           </View>
         </View>
-        {activities.map((item, i) => (
-          <View key={i} style={s.activityRow}>
-            <View style={s.activityIconWrap}>
-              <Feather name={item.icon as any} size={16} color={Colors.brandPrimary} />
-            </View>
-            <View style={s.activityContent}>
-              <Text style={s.activityAction}>{item.action}: <Text style={s.activityDetail}>{item.detail}</Text></Text>
-              <Text style={s.activityTime}>{item.time}</Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+        {activities.length === 0 ? (
+          <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
+            <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>
+              Пока нет активности
+            </Text>
           </View>
-        ))}
+        ) : (
+          activities.map((item, i) => {
+            const detailText = item.targetName
+              ? `${item.actorName} — ${item.targetName}`
+              : item.actorName;
+            return (
+              <View key={i} style={s.activityRow}>
+                <View style={s.activityIconWrap}>
+                  <Feather name={activityIconFor(item.type) as any} size={16} color={Colors.brandPrimary} />
+                </View>
+                <View style={s.activityContent}>
+                  <Text style={s.activityAction} numberOfLines={1}>
+                    {item.action}: <Text style={s.activityDetail}>{detailText}</Text>
+                  </Text>
+                  <Text style={s.activityTime}>{formatRelativeTime(item.createdAt)}</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+              </View>
+            );
+          })
+        )}
       </View>
     </ScrollView>
   );
@@ -115,18 +197,22 @@ function DefaultDashboard({ st }: { st: AdminStats }) {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [weekly, setWeekly] = useState<WeeklyBucket[]>([]);
+  const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
     setError(null);
-    admin.getStats()
-      .then((res) => {
-        setStats((res as any).data ?? res);
+    Promise.all([admin.getStats(), admin.getWeeklyStats(), admin.getActivity(20)])
+      .then(([statsRes, weeklyRes, activityRes]) => {
+        setStats(((statsRes as any).data ?? statsRes) as AdminStats);
+        setWeekly((((weeklyRes as any).data ?? weeklyRes) as WeeklyBucket[]) ?? []);
+        setActivities((((activityRes as any).data ?? activityRes) as ActivityRow[]) ?? []);
       })
       .catch((e) => {
-        setError(e.message ?? 'Ошибка загрузки');
+        setError(e?.message ?? 'Ошибка загрузки');
       })
       .finally(() => {
         setLoading(false);
@@ -155,7 +241,7 @@ export default function AdminDashboardPage() {
           </Pressable>
         </View>
       ) : (
-        <DefaultDashboard st={stats ?? {}} />
+        <DefaultDashboard st={stats ?? {}} weekly={weekly} activities={activities} />
       )}
     </View>
   );
