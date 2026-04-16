@@ -119,7 +119,7 @@ export default function NewRequestScreen() {
   // Validation
   const titleError = title.length > 0 && title.length < 5 ? 'Минимум 5 символов' : null;
   const descError = description.length > 0 && description.length < 20 ? 'Минимум 20 символов' : null;
-  const isValid = title.length >= 5 && description.length >= 20 && !!service;
+  const isValid = title.length >= 5 && description.length >= 20 && !!city && !!service;
 
   // Load cities
   useEffect(() => {

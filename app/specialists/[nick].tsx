@@ -13,20 +13,31 @@ interface FnsService {
   services: string[];
 }
 
+interface SpecialistActivity {
+  responseCount?: number;
+  avgRating?: number | null;
+  reviewCount?: number | null;
+}
+
 interface SpecialistData {
-  id: string;
   userId?: string | null;
-  username?: string | null;
-  name?: string | null;
-  user?: { firstName?: string | null; lastName?: string | null } | null;
-  city?: string | null;
+  nick: string;
+  displayName?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  experience?: number | null;
+  hourlyRate?: number | null;
+  cities?: string[] | null;
+  services?: string[] | null;
+  fnsOffices?: string[] | null;
+  fnsGroupedByCity?: Array<{ city: string; fns: string[] }> | null;
   memberSince?: number | null;
   createdAt?: string | null;
+  activity?: SpecialistActivity | null;
   rating?: number | null;
   reviewCount?: number | null;
-  about?: string | null;
-  fnsServices?: FnsService[] | null;
   reviews?: Array<{ author?: string; date?: string; rating: number; text?: string }> | null;
+  avatarUrl?: string | null;
   [key: string]: unknown;
 }
 
@@ -170,9 +181,15 @@ function ProfileScreen({ spec }: { spec: SpecialistData }) {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
-  const fnsServices: FnsService[] = spec.fnsServices ?? [];
-  const displayName = spec.name
-    ?? ([spec.user?.firstName, spec.user?.lastName].filter(Boolean).join(' ') || '—');
+  // Backend returns fnsGroupedByCity = Array<{ city; fns: string[] }>. Map to flat FnsService list
+  // using the specialist's service names (same for all offices — no per-FNS mapping in current API).
+  const allServices = spec.services ?? [];
+  const fnsServices: FnsService[] = (spec.fnsOffices ?? []).map((fns) => ({ fns, services: allServices }));
+  const displayName = spec.displayName || spec.nick || '—';
+  const city = spec.cities?.[0] ?? null;
+  const rating = spec.rating ?? spec.activity?.avgRating ?? null;
+  const reviewCount = spec.reviewCount ?? spec.activity?.reviewCount ?? 0;
+  const about = spec.bio ?? spec.headline ?? null;
   const memberYear = spec.memberSince
     ?? (spec.createdAt ? new Date(spec.createdAt).getFullYear() : null);
 
@@ -241,16 +258,19 @@ function ProfileScreen({ spec }: { spec: SpecialistData }) {
             </View>
             <View className="flex-1 gap-1">
               <Text className="text-xl font-bold text-textPrimary">{displayName}</Text>
-              {spec.city && (
+              {spec.headline && (
+                <Text className="text-sm text-textSecondary">{spec.headline}</Text>
+              )}
+              {city && (
                 <View className="flex-row items-center gap-1">
                   <Feather name="map-pin" size={14} color="#94A3B8" />
-                  <Text className="text-base text-textMuted">{spec.city}</Text>
+                  <Text className="text-base text-textMuted">{city}</Text>
                 </View>
               )}
-              {spec.rating != null && (
+              {rating != null && (
                 <View className="flex-row items-center gap-1">
-                  <Stars rating={Math.round(spec.rating)} size={16} />
-                  <Text className="text-sm text-textMuted">{spec.rating} ({spec.reviewCount ?? 0} отзывов)</Text>
+                  <Stars rating={Math.round(rating)} size={16} />
+                  <Text className="text-sm text-textMuted">{rating} ({reviewCount} отзывов)</Text>
                 </View>
               )}
               {memberYear && (
@@ -261,7 +281,7 @@ function ProfileScreen({ spec }: { spec: SpecialistData }) {
               )}
             </View>
           </View>
-          {spec.about && <Text className="text-base leading-6 text-textSecondary">{spec.about}</Text>}
+          {about && <Text className="text-base leading-6 text-textSecondary">{about}</Text>}
         </View>
 
         {/* FNS preview (first 2 open) + "Подробнее" for rest */}
