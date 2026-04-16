@@ -1,17 +1,39 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { Toggle } from '../../components/proto/Toggle';
 import { useAuth } from '../../lib/auth/AuthContext';
+import { users, specialistPortal } from '../../lib/api/endpoints';
 
 function IdleState() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(false);
   const [publicProfile, setPublicProfile] = useState(true);
+
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [phone, setPhone] = useState('');
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      users.getMe().catch(() => null),
+      specialistPortal.getProfile().catch(() => null),
+    ]).then(([meRes, spRes]) => {
+      if (meRes?.data) {
+        const me = meRes.data as any;
+        setEmail(me.email ?? user?.email ?? '');
+        setPhone(me.phone ?? '');
+      }
+      if (spRes?.data) {
+        const sp = spRes.data as any;
+        if (!phone && sp.phone) setPhone(sp.phone);
+      }
+    }).finally(() => setProfileLoading(false));
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -33,7 +55,11 @@ function IdleState() {
           <Text className="text-sm font-medium text-textMuted">Email</Text>
           <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
             <Feather name="mail" size={16} color={Colors.textMuted} />
-            <Text className="ml-2 flex-1 text-base text-textSecondary">alex@mail.ru</Text>
+            {profileLoading ? (
+              <ActivityIndicator size="small" color={Colors.textMuted} style={{ marginLeft: 8 }} />
+            ) : (
+              <Text className="ml-2 flex-1 text-base text-textSecondary">{email || '—'}</Text>
+            )}
           </View>
         </View>
 
@@ -41,8 +67,13 @@ function IdleState() {
           <Text className="text-sm font-medium text-textMuted">Телефон</Text>
           <View className="h-11 flex-row items-center rounded-lg border border-borderLight bg-bgSecondary px-3">
             <Feather name="phone" size={16} color={Colors.textMuted} />
-            <Text className="ml-2 flex-1 text-base text-textSecondary">+7 (916) 123-45-67</Text>
-            <Pressable hitSlop={8}>
+            {profileLoading ? (
+              <ActivityIndicator size="small" color={Colors.textMuted} style={{ marginLeft: 8 }} />
+            ) : (
+              <Text className="ml-2 flex-1 text-base text-textSecondary">{phone || '—'}</Text>
+            )}
+            {/* TODO: phone edit screen not implemented */}
+            <Pressable hitSlop={8} onPress={() => router.push('/(tabs)/profile' as any)}>
               <Feather name="edit-2" size={16} color={Colors.brandPrimary} />
             </Pressable>
           </View>

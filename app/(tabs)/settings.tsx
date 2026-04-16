@@ -27,7 +27,7 @@ function ToggleRow({ label, icon, enabled, onToggle }: { label: string; icon: st
 }
 
 export default function SettingsScreen() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(false);
@@ -57,16 +57,18 @@ export default function SettingsScreen() {
       <View style={{ gap: Spacing.sm }}>
         <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Аккаунт</Text>
         <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadows.sm }}>
-          <SettingRow label="Email" value="elena@mail.ru" icon="mail" />
+          <SettingRow label="Email" value={user?.email ?? '—'} icon="mail" />
+          {/* TODO: Language screen not implemented yet */}
           <SettingRow label="Язык" value="Русский" icon="globe" />
+          {/* TODO: Theme screen not implemented yet */}
           <SettingRow label="Тема" value="Светлая" icon="sun" />
         </View>
       </View>
       <View style={{ gap: Spacing.sm }}>
         <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Информация</Text>
         <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadows.sm }}>
-          <SettingRow label="Политика конфиденциальности" icon="shield" />
-          <SettingRow label="Условия использования" icon="file-text" />
+          <SettingRow label="Политика конфиденциальности" icon="shield" onPress={() => router.push('/terms' as any)} />
+          <SettingRow label="Условия использования" icon="file-text" onPress={() => router.push('/terms' as any)} />
           <SettingRow label="Версия" value="1.0.0" icon="info" />
         </View>
       </View>
@@ -79,8 +81,12 @@ export default function SettingsScreen() {
           <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.statusBg.error, gap: Spacing.md, ...Shadows.sm }}>
             <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>Вы уверены, что хотите выйти?</Text>
             <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <Pressable onPress={() => setShowLogout(false)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}><Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Отмена</Text></Pressable>
-              <Pressable onPress={handleLogout} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError }}><Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Выйти</Text></Pressable>
+              <Pressable onPress={() => setShowLogout(false)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Отмена</Text>
+              </Pressable>
+              <Pressable onPress={handleLogout} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Выйти</Text>
+              </Pressable>
             </View>
           </View>
         )}
@@ -92,8 +98,12 @@ export default function SettingsScreen() {
           <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.statusBg.error, gap: Spacing.md, ...Shadows.sm }}>
             <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>Это действие необратимо. Все данные будут удалены.</Text>
             <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <Pressable onPress={() => setShowDelete(false)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}><Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Отмена</Text></Pressable>
-              <Pressable style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError }}><Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Удалить</Text></Pressable>
+              <Pressable onPress={() => setShowDelete(false)} style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted }}>Отмена</Text>
+              </Pressable>
+              <Pressable style={{ flex: 1, height: 40, borderRadius: BorderRadius.btn, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.statusError }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.white }}>Удалить</Text>
+              </Pressable>
             </View>
           </View>
         )}
