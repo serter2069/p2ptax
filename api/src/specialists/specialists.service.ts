@@ -200,8 +200,9 @@ export class SpecialistsService {
     const activity = await this.computeActivity(profile.userId);
     const fnsGroupedByCity = this.groupFnsByCity(profile.specialistFns, profile.specialistServices);
 
-    // Strip internal IDs from public profile response; structured contact fields are public
-    const { id: _id, userId: _userId, specialistFns: _sf, specialistServices: _ss, ...publicProfile } = profile;
+    // Strip internal profile id; expose userId so clients can open a direct chat thread.
+    // userId is non-sensitive (already broadcast in chat presence events).
+    const { id: _id, specialistFns: _sf, specialistServices: _ss, ...publicProfile } = profile;
     return {
       ...publicProfile,
       activity,
