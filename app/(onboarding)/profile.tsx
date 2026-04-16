@@ -101,8 +101,14 @@ export default function OnboardingProfilePage() {
           {role === 'SPECIALIST' ? 'Шаг 3 из 3' : 'Шаг 2 из 2'}
         </Text>
 
-        <Text className="text-xl font-bold text-textPrimary">Расскажите о себе</Text>
-        <Text className="mb-4 text-base text-textMuted">Эта информация поможет клиентам выбрать вас</Text>
+        <Text className="text-xl font-bold text-textPrimary">
+          {role === 'SPECIALIST' ? 'Расскажите о себе' : 'Контактные данные'}
+        </Text>
+        <Text className="mb-4 text-base text-textMuted">
+          {role === 'SPECIALIST'
+            ? 'Эта информация поможет клиентам выбрать вас'
+            : 'Добавьте телефон, чтобы специалисты могли связаться с вами быстрее'}
+        </Text>
 
         {/* Avatar */}
         <View className="mb-4 flex-row items-center gap-4">
@@ -123,23 +129,25 @@ export default function OnboardingProfilePage() {
           </View>
         </View>
 
-        {/* Description */}
-        <View className="mb-3">
-          <View className="mb-1 flex-row items-center justify-between">
-            <Text className="text-sm font-medium text-textSecondary">О себе</Text>
-            <Text className={`text-xs ${description.length > maxChars ? 'text-red-600' : 'text-textMuted'}`}>{description.length}/{maxChars}</Text>
+        {/* Description — specialist only (clients have no bio column) */}
+        {role === 'SPECIALIST' && (
+          <View className="mb-3">
+            <View className="mb-1 flex-row items-center justify-between">
+              <Text className="text-sm font-medium text-textSecondary">О себе</Text>
+              <Text className={`text-xs ${description.length > maxChars ? 'text-red-600' : 'text-textMuted'}`}>{description.length}/{maxChars}</Text>
+            </View>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Расскажите о вашем опыте..."
+              placeholderTextColor="#94A3B8"
+              multiline
+              className="rounded-lg border border-gray-200 p-3 text-base text-textPrimary"
+              style={{ minHeight: 80, textAlignVertical: 'top', outlineStyle: 'none' as any }}
+              maxLength={maxChars}
+            />
           </View>
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Расскажите о вашем опыте..."
-            placeholderTextColor="#94A3B8"
-            multiline
-            className="rounded-lg border border-gray-200 p-3 text-base text-textPrimary"
-            style={{ minHeight: 80, textAlignVertical: 'top', outlineStyle: 'none' as any }}
-            maxLength={maxChars}
-          />
-        </View>
+        )}
 
         {/* Phone */}
         <View className="mb-3">
@@ -158,21 +166,23 @@ export default function OnboardingProfilePage() {
           </View>
         </View>
 
-        {/* Telegram */}
-        <View className="mb-4">
-          <Text className="mb-1 text-sm font-medium text-textSecondary">Telegram</Text>
-          <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
-            <Feather name="send" size={16} color="#94A3B8" />
-            <TextInput
-              value={telegram}
-              onChangeText={setTelegram}
-              placeholder="@username"
-              placeholderTextColor="#94A3B8"
-              className="flex-1 text-base text-textPrimary"
-              style={{ outlineStyle: 'none' as any }}
-            />
+        {/* Telegram — specialist only */}
+        {role === 'SPECIALIST' && (
+          <View className="mb-4">
+            <Text className="mb-1 text-sm font-medium text-textSecondary">Telegram</Text>
+            <View className="h-12 flex-row items-center gap-2 rounded-lg border border-gray-200 px-4">
+              <Feather name="send" size={16} color="#94A3B8" />
+              <TextInput
+                value={telegram}
+                onChangeText={setTelegram}
+                placeholder="@username"
+                placeholderTextColor="#94A3B8"
+                className="flex-1 text-base text-textPrimary"
+                style={{ outlineStyle: 'none' as any }}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
         {error ? (
           <View className="mb-3 flex-row items-center gap-1 rounded-lg bg-red-50 px-3 py-2">
