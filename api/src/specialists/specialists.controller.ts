@@ -6,6 +6,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { SpecialistsService } from './specialists.service';
 import { CreateSpecialistProfileDto } from './dto/create-specialist-profile.dto';
 import { UpdateSpecialistProfileDto } from './dto/update-specialist-profile.dto';
+import { SaveWorkAreasDto } from './dto/save-work-areas.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
@@ -94,6 +95,20 @@ export class SpecialistsController {
   @Roles(Role.SPECIALIST)
   deleteAvatar(@Request() req: any) {
     return this.specialistsService.deleteAvatar(req.user.id, this.storageService);
+  }
+
+  /**
+   * POST /specialists/work-areas
+   *
+   * Replaces the specialist's selected FNS offices + departments in one call.
+   * Called from the onboarding "work-area" screen; also usable later from
+   * profile-editor. JWT-only (no role guard) so onboarding — where the user
+   * still has role=CLIENT until this call promotes them — can complete.
+   */
+  @Post('work-areas')
+  @UseGuards(JwtAuthGuard)
+  saveWorkAreas(@Request() req: any, @Body() dto: SaveWorkAreasDto) {
+    return this.specialistsService.saveWorkAreas(req.user.id, dto.workAreas);
   }
 
   @Get('cities')

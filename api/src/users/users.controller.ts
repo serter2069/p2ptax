@@ -81,6 +81,21 @@ class UpdateProfileDto {
   city?: string;
 }
 
+// Russian + English letters, space, hyphen, apostrophe (e.g. "Анна-Мария", "O'Neil")
+const NAME_REGEX = /^[a-zA-Zа-яА-ЯёЁ\s'-]+$/;
+
+class SetNameDto {
+  @IsString()
+  @Length(2, 50)
+  @Matches(NAME_REGEX, { message: 'firstName: только буквы, пробел, дефис и апостроф' })
+  firstName!: string;
+
+  @IsString()
+  @Length(2, 50)
+  @Matches(NAME_REGEX, { message: 'lastName: только буквы, пробел, дефис и апостроф' })
+  lastName!: string;
+}
+
 class SetupSpecialistProfileDto {
   @IsArray()
   @IsString({ each: true })
@@ -228,7 +243,7 @@ export class UsersController {
     return this.usersService.updateProfile(req.user.id, { avatarUrl });
   }
 
-  /** PATCH /users/me/username — set or update username + name */
+  /** PATCH /users/me/username — set or update username + name (legacy) */
   @Patch('me/username')
   setUsername(
     @Request() req: { user: { id: string } },
@@ -238,9 +253,30 @@ export class UsersController {
   }
 
   /**
-   * PATCH /users/me/specialist-profile — onboarding step 3.
-   * No role guard — any authenticated user can call this during onboarding.
-   * Creates SpecialistProfile (nick = username) and promotes user to SPECIALIST role.
+   * PATCH /users/me/name — onboarding step 1 (new flow).
+   * Accepts firstName + lastName only. Auto-generates a hidden username
+   * (transliterated firstName + lastName + random suffix) when username is not set yet.
+   */
+  @Patch('me/name')
+  setName(
+    @Request() req: { user: { id: string } },
+    @Body() body: SetNameDto,
+  ) {
+    return this.usersService.setName(req.user.id, body.firstName.trim(), body.lastName.trim());
+  }
+
+  /**
+   * PATCH /users/me/specialist-profile — legacy onboarding endpoint.
+   *
+   * In the new flow (Batch 4 / Task E), profile creation happens via
+   * POST /specialists/work-areas. This endpoint remains for legacy clients.
+   *
+   * No role guard — onboarding users are still CLIENT at call time. The service
+   * enforces access control: it requires a username to have been set (onboarding
+   * step 1) and rejects already-promoted SPECIALIST users (they should use
+   * PATCH /specialists/me to edit). CLIENT users with an existing profile fall
+   * through to the "update existing" branch, which is the idempotent re-entry
+   * path used by tests.
    */
   @Patch('me/specialist-profile')
   setupSpecialistProfile(

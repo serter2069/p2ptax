@@ -52,30 +52,32 @@ export default function OnboardingProfilePage() {
         }
       }
 
-      // Save User fields (phone) via /users/me/profile — handles phone + city + names.
-      if (phone) {
-        await users.updateProfile({ phone } as any);
-      }
-
-      // Save specialist-only fields (bio, telegram) via /specialists/me — works only when
-      // a SpecialistProfile already exists. For new specialists the profile is created in
-      // step 3 (work-area), so this call 404s gracefully and the values are re-applied there.
-      if (role === 'SPECIALIST' && (description || telegram)) {
-        try {
-          await specialists.updateProfile({
-            ...(description ? { bio: description } : {}),
-            ...(telegram ? { telegram } : {}),
-          });
-        } catch {
-          // Profile not yet created — values will be re-entered or merged in a later step.
+      // Save profile fields. For specialists, bio/telegram/phone live on SpecialistProfile,
+      // so route through PATCH /specialists/me. Clients use PATCH /users/me/profile
+      // (bio/telegram are ignored for clients — their schema has no such columns).
+      if (role === 'SPECIALIST') {
+        const specialistData: Record<string, string> = {};
+        if (description.trim()) specialistData.bio = description.trim();
+        if (phone.trim()) specialistData.phone = phone.trim();
+        if (telegram.trim()) specialistData.telegram = telegram.trim();
+        if (Object.keys(specialistData).length > 0) {
+          await specialists.updateProfile(specialistData);
+        }
+      } else {
+        const clientData: Record<string, string> = {};
+        if (phone.trim()) clientData.phone = phone.trim();
+        if (Object.keys(clientData).length > 0) {
+          await users.updateProfile(clientData);
         }
       }
 
       await refreshUser();
 
-      // SPECIALIST continues to work-area (step 3/3), CLIENT is done (step 2/2)
+      // New SA flow: profile is the LAST step for both roles.
+      // SPECIALIST: name → work-area → profile → specialist-dashboard
+      // CLIENT: name → profile → dashboard
       if (role === 'SPECIALIST') {
-        router.push('/(onboarding)/work-area' as any);
+        router.replace('/(tabs)/specialist-dashboard' as any);
       } else {
         router.replace('/(tabs)/dashboard' as any);
       }
@@ -91,12 +93,12 @@ export default function OnboardingProfilePage() {
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Header variant="back" backTitle="Профиль" onBack={() => router.back()} />
       <View className="flex-1 bg-white px-4 py-6">
-        {/* Progress */}
+        {/* Progress — profile is the FINAL step for both roles */}
         <View className="mb-1 h-1 rounded-full bg-bgSecondary">
-          <View className="h-1 rounded-full bg-green-600" style={{ width: role === 'SPECIALIST' ? '66%' : '100%' }} />
+          <View className="h-1 rounded-full bg-green-600" style={{ width: '100%' }} />
         </View>
         <Text className="mb-4 text-xs uppercase tracking-wider text-textMuted">
-          {role === 'SPECIALIST' ? 'Шаг 2 из 3' : 'Шаг 2 из 2'}
+          {role === 'SPECIALIST' ? 'Шаг 3 из 3' : 'Шаг 2 из 2'}
         </Text>
 
         <Text className="text-xl font-bold text-textPrimary">Расскажите о себе</Text>
