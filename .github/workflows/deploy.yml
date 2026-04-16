@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [development]
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -16,6 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install API dependencies
         working-directory: ./api
@@ -38,12 +43,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build frontend (web)
         run: npx expo export --platform web
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+          retention-days: 1
 
   deploy:
     needs: [validate, build]
@@ -63,11 +76,15 @@ jobs:
           git fetch origin development
           git reset --hard origin/development
 
-      - name: Install and build frontend
+      - name: Download prebuilt web dist
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: ${{ env.DEPLOY_DIR }}/dist/
+      - name: Install frontend runtime deps
         run: |
           cd $DEPLOY_DIR
-          npm ci
-          npx expo export --platform web
+          npm ci --prefer-offline --no-audit --no-fund
 
       - name: Install and build API
         run: |
@@ -91,8 +108,7 @@ jobs:
       - name: Fix permissions
         run: |
           chown -R deployer:www-data $DEPLOY_DIR
-          find $DEPLOY_DIR -type d -exec chmod 750 {} \;
-          find $DEPLOY_DIR -type f -exec chmod 640 {} \;
+          chmod -R u=rwX,g=rX,o= $DEPLOY_DIR
           [ -f $DEPLOY_DIR/api/start.sh ] && chmod 750 $DEPLOY_DIR/api/start.sh
 
       - name: Restart API
@@ -137,8 +153,7 @@ jobs:
           echo "{\"version\":\"$(git rev-parse --short HEAD)\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"rollback\":true}" > dist/version.json
 
           chown -R deployer:www-data $DEPLOY_DIR
-          find $DEPLOY_DIR -type d -exec chmod 750 {} \;
-          find $DEPLOY_DIR -type f -exec chmod 640 {} \;
+          chmod -R u=rwX,g=rX,o= $DEPLOY_DIR
           [ -f $DEPLOY_DIR/api/start.sh ] && chmod 750 $DEPLOY_DIR/api/start.sh
 
           pm2 restart p2ptax-api
