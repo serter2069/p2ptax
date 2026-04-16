@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  Pressable,
   ActivityIndicator,
-  ScrollView,
+  Pressable,
   RefreshControl,
+  ScrollView,
+  View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/Colors';
+import { BorderRadius, Colors, Shadows, Spacing, Typography } from '../constants/Colors';
 import { Header } from '../components/Header';
 import { notifications as notificationsApi } from '../lib/api/endpoints';
+import { Container, EmptyState, Heading, Screen, Text } from '../components/ui';
 
 type NotifType = 'NEW_MESSAGE' | 'REQUEST_UPDATE' | 'REVIEW' | 'SYSTEM' | string;
 
@@ -28,7 +28,7 @@ interface NotifItem {
 const TYPE_ICON: Record<string, { icon: string; color: string }> = {
   NEW_MESSAGE: { icon: 'message-circle', color: Colors.brandPrimary },
   REQUEST_UPDATE: { icon: 'file-text', color: Colors.statusSuccess },
-  REVIEW: { icon: 'star', color: '#F59E0B' },
+  REVIEW: { icon: 'star', color: Colors.amber },
   SYSTEM: { icon: 'info', color: Colors.textMuted },
 };
 
@@ -122,60 +122,56 @@ export default function NotificationsScreen() {
   const unreadCount = items.filter((n) => !n.isRead).length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.white }}>
+    <Screen bg={Colors.white}>
       <Header variant="back" backTitle="Уведомления" onBack={() => router.back()} />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: Spacing.lg, gap: Spacing.md }}
+        contentContainerStyle={{ paddingVertical: Spacing.lg }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brandPrimary} />}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary }}>
-            Уведомления
-          </Text>
-          {unreadCount > 0 && (
-            <Pressable
-              onPress={handleMarkAll}
-              disabled={markingAll}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-            >
-              {markingAll ? (
-                <ActivityIndicator size="small" color={Colors.brandPrimary} />
-              ) : (
-                <Feather name="check-circle" size={14} color={Colors.brandPrimary} />
-              )}
-              <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium }}>
-                Прочитать все
-              </Text>
-            </Pressable>
-          )}
-        </View>
-
-        {loading ? (
-          <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-            <ActivityIndicator color={Colors.brandPrimary} />
-          </View>
-        ) : error ? (
-          <View style={{ alignItems: 'center', paddingVertical: 40, gap: Spacing.md }}>
-            <Feather name="alert-circle" size={28} color={Colors.statusError} />
-            <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
-            <Pressable onPress={fetchList}>
-              <Text style={{ color: Colors.brandPrimary, fontWeight: Typography.fontWeight.medium }}>Повторить</Text>
-            </Pressable>
-          </View>
-        ) : items.length === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: 40, gap: Spacing.md }}>
-            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' }}>
-              <Feather name="bell-off" size={28} color={Colors.textMuted} />
+        <Container>
+          <View style={{ gap: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Heading level={2}>Уведомления</Heading>
+              {unreadCount > 0 ? (
+                <Pressable
+                  onPress={handleMarkAll}
+                  disabled={markingAll}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                >
+                  {markingAll ? (
+                    <ActivityIndicator size="small" color={Colors.brandPrimary} />
+                  ) : (
+                    <Feather name="check-circle" size={14} color={Colors.brandPrimary} />
+                  )}
+                  <Text variant="caption" weight="medium" style={{ color: Colors.brandPrimary }}>
+                    Прочитать все
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
-            <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary }}>
-              Пока тихо
-            </Text>
-            <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.textMuted, textAlign: 'center', maxWidth: 260 }}>
-              Когда появятся новые сообщения или обновления по заявкам — вы увидите их здесь.
-            </Text>
-          </View>
-        ) : (
+
+            {loading ? (
+              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                <ActivityIndicator color={Colors.brandPrimary} />
+              </View>
+            ) : error ? (
+              <View style={{ alignItems: 'center', paddingVertical: 40, gap: Spacing.md }}>
+                <Feather name="alert-circle" size={28} color={Colors.statusError} />
+                <Text align="center" style={{ color: Colors.statusError }}>{error}</Text>
+                <Pressable onPress={fetchList}>
+                  <Text weight="medium" style={{ color: Colors.brandPrimary }}>Повторить</Text>
+                </Pressable>
+              </View>
+            ) : items.length === 0 ? (
+              <EmptyState
+                icon={<View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name="bell-off" size={28} color={Colors.textMuted} />
+                </View>}
+                title="Пока тихо"
+                description="Когда появятся новые сообщения или обновления по заявкам — вы увидите их здесь."
+              />
+            ) : (
           items.map((n) => {
             const meta = TYPE_ICON[n.type] ?? TYPE_ICON.SYSTEM;
             return (
@@ -209,27 +205,25 @@ export default function NotificationsScreen() {
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Text
-                      style={{
-                        flex: 1,
-                        fontSize: Typography.fontSize.sm,
-                        fontWeight: n.isRead ? Typography.fontWeight.medium : Typography.fontWeight.bold,
-                        color: Colors.textPrimary,
-                      }}
+                      variant="caption"
+                      weight={n.isRead ? 'medium' : 'bold'}
                       numberOfLines={1}
+                      style={{ flex: 1, color: Colors.textPrimary }}
                     >
                       {n.title}
                     </Text>
-                    {!n.isRead && (
+                    {!n.isRead ? (
                       <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.brandPrimary }} />
-                    )}
+                    ) : null}
                   </View>
                   <Text
-                    style={{ fontSize: Typography.fontSize.sm, color: Colors.textSecondary, lineHeight: 18 }}
+                    variant="caption"
                     numberOfLines={2}
+                    style={{ color: Colors.textSecondary, lineHeight: 18 }}
                   >
                     {n.body}
                   </Text>
-                  <Text style={{ fontSize: Typography.fontSize.xs, color: Colors.textMuted, marginTop: 2 }}>
+                  <Text variant="caption" style={{ marginTop: 2 }}>
                     {formatTimeAgo(n.createdAt)}
                   </Text>
                 </View>
@@ -237,7 +231,9 @@ export default function NotificationsScreen() {
             );
           })
         )}
+          </View>
+        </Container>
       </ScrollView>
-    </View>
+    </Screen>
   );
 }

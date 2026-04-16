@@ -1,12 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import axios from 'axios';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Header } from '../../components/Header';
 import { specialists as specialistsApi, threads as threadsApi } from '../../lib/api/endpoints';
-import { Colors } from '../../constants/Colors';
+import { BorderRadius, Colors, Spacing } from '../../constants/Colors';
 import { useAuth } from '../../lib/auth/AuthContext';
+import {
+  Button,
+  Card,
+  Container,
+  Heading,
+  Input,
+  Modal,
+  Rating,
+  Screen,
+  Text,
+} from '../../components/ui';
 
 interface FnsService {
   fns: string;
@@ -41,69 +52,68 @@ interface SpecialistData {
   [key: string]: unknown;
 }
 
-function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
-  return (
-    <View className="flex-row gap-0.5">
-      {[1, 2, 3, 4, 5].map(i => (
-        <Feather key={i} name="star" size={size} color={i <= rating ? '#F59E0B' : '#E2E8F0'} />
-      ))}
-    </View>
-  );
-}
-
 function ReviewItem({ author, rating, text, date }: { author: string; rating: number; text: string; date: string }) {
   return (
-    <View className="gap-1 border-b border-bgSecondary py-3">
-      <View className="flex-row justify-between">
-        <View className="flex-row items-center gap-1">
-          <Feather name="user" size={14} color="#94A3B8" />
-          <Text className="text-base font-semibold text-textPrimary">{author}</Text>
+    <View style={{
+      gap: Spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.bgSecondary,
+      paddingVertical: Spacing.md,
+    }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+          <Feather name="user" size={14} color={Colors.textMuted} />
+          <Text weight="semibold">{author}</Text>
         </View>
-        <View className="flex-row items-center gap-1">
-          <Feather name="calendar" size={12} color="#94A3B8" />
-          <Text className="text-sm text-textMuted">{date}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+          <Feather name="calendar" size={12} color={Colors.textMuted} />
+          <Text variant="caption">{date}</Text>
         </View>
       </View>
-      <Stars rating={rating} />
-      <Text className="text-base leading-6 text-textSecondary">{text}</Text>
+      <Rating value={rating} size="sm" showNumeric={false} />
+      <Text style={{ lineHeight: 24 }}>{text}</Text>
     </View>
   );
 }
 
 function FnsModal({ visible, onClose, fnsServices }: { visible: boolean; onClose: () => void; fnsServices: FnsService[] }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View className="flex-1 items-center justify-center bg-black/50 px-4">
-        <View className="w-full max-w-lg rounded-2xl bg-white">
-          <View className="flex-row items-center justify-between border-b border-gray-200 px-5 py-4">
-            <View className="flex-row items-center gap-2">
-              <Feather name="briefcase" size={18} color="#0284C7" />
-              <Text className="text-lg font-bold text-textPrimary">ФНС и услуги</Text>
-            </View>
-            <Pressable onPress={onClose} className="rounded-full p-1">
-              <Feather name="x" size={22} color="#64748B" />
-            </Pressable>
+    <Modal visible={visible} onClose={onClose} title="ФНС и услуги" maxWidth={520}>
+      {fnsServices.map((group, idx) => (
+        <View
+          key={group.fns}
+          style={{
+            gap: Spacing.sm,
+            paddingVertical: Spacing.md,
+            borderTopWidth: idx > 0 ? 1 : 0,
+            borderTopColor: Colors.borderLight,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+            <Feather name="home" size={14} color={Colors.textMuted} />
+            <Text weight="semibold">{group.fns}</Text>
           </View>
-          <ScrollView className="max-h-96 px-5 py-3">
-            {fnsServices.map((group, idx) => (
-              <View key={group.fns} className={`gap-2 py-3 ${idx < fnsServices.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                <View className="flex-row items-center gap-2">
-                  <Feather name="home" size={14} color="#64748B" />
-                  <Text className="text-base font-semibold text-textPrimary">{group.fns}</Text>
-                </View>
-                <View className="flex-row flex-wrap gap-2 pl-6">
-                  {group.services.map((svc) => (
-                    <View key={svc} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
-                      <Feather name="check" size={12} color="#0284C7" />
-                      <Text className="text-sm text-brandPrimary">{svc}</Text>
-                    </View>
-                  ))}
-                </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, paddingLeft: Spacing['2xl'] }}>
+            {group.services.map((svc) => (
+              <View
+                key={svc}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  borderRadius: BorderRadius.full,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: 6,
+                  backgroundColor: Colors.statusBg.info,
+                }}
+              >
+                <Feather name="check" size={12} color={Colors.brandPrimary} />
+                <Text variant="caption" style={{ color: Colors.brandPrimary }}>{svc}</Text>
               </View>
             ))}
-          </ScrollView>
+          </View>
         </View>
-      </View>
+      ))}
     </Modal>
   );
 }
@@ -124,51 +134,40 @@ function WriteSpecialistConfirm({
   errorText: string | null;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(12,26,46,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-        <View style={{ width: '100%', maxWidth: 420, backgroundColor: Colors.white, borderRadius: 16, padding: 20, gap: 14 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.bgSecondary, alignItems: 'center', justifyContent: 'center' }}>
-              <Feather name="send" size={16} color={Colors.brandPrimary} />
-            </View>
-            <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: Colors.textPrimary }}>Написать специалисту</Text>
-            <Pressable onPress={onClose} hitSlop={8} style={{ padding: 4 }} accessibilityLabel="Закрыть">
-              <Feather name="x" size={20} color={Colors.textMuted} />
-            </Pressable>
-          </View>
-          <Text style={{ fontSize: 15, color: Colors.textSecondary, lineHeight: 21 }}>
-            Открыть чат с <Text style={{ fontWeight: '600', color: Colors.textPrimary }}>{displayName}</Text>?
-            Ваше первое сообщение будет отправлено, и специалист получит уведомление.
-          </Text>
-          {errorText ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 8, backgroundColor: Colors.statusBg?.error ?? '#FEE2E2' }}>
-              <Feather name="alert-circle" size={14} color={Colors.statusError} />
-              <Text style={{ flex: 1, fontSize: 13, color: Colors.statusError }}>{errorText}</Text>
-            </View>
-          ) : null}
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pressable
-              onPress={onClose}
-              disabled={submitting}
-              style={{ flex: 1, height: 44, borderRadius: 10, borderWidth: 1, borderColor: Colors.borderLight, alignItems: 'center', justifyContent: 'center', opacity: submitting ? 0.5 : 1 }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: '500', color: Colors.textSecondary }}>Отмена</Text>
-            </Pressable>
-            <Pressable
-              onPress={onConfirm}
-              disabled={submitting}
-              style={{ flex: 1, height: 44, borderRadius: 10, backgroundColor: Colors.brandPrimary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: submitting ? 0.7 : 1 }}
-            >
-              {submitting ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <Feather name="send" size={15} color={Colors.white} />
-              )}
-              <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.white }}>Написать</Text>
-            </Pressable>
-          </View>
+    <Modal
+      visible={visible}
+      onClose={onClose}
+      title="Написать специалисту"
+      maxWidth={420}
+      primaryAction={{
+        label: 'Написать',
+        onPress: onConfirm,
+        loading: submitting,
+        disabled: submitting,
+      }}
+      secondaryAction={{
+        label: 'Отмена',
+        onPress: onClose,
+        disabled: submitting,
+      }}
+    >
+      <Text style={{ lineHeight: 21 }}>
+        Открыть чат с <Text weight="semibold">{displayName}</Text>?
+        Ваше первое сообщение будет отправлено, и специалист получит уведомление.
+      </Text>
+      {errorText ? (
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: BorderRadius.md,
+          backgroundColor: Colors.statusBg.error,
+        }}>
+          <Feather name="alert-circle" size={14} color={Colors.statusError} />
+          <Text variant="caption" style={{ flex: 1, color: Colors.statusError }}>{errorText}</Text>
         </View>
-      </View>
+      ) : null}
     </Modal>
   );
 }
@@ -248,125 +247,153 @@ function ProfileScreen({ spec }: { spec: SpecialistData }) {
   };
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      <View className="gap-4 p-4">
-        {/* Profile card */}
-        <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <View className="flex-row gap-4">
-            <View className="h-20 w-20 items-center justify-center rounded-full bg-bgSecondary">
-              <Feather name="user" size={32} color="#94A3B8" />
-            </View>
-            <View className="flex-1 gap-1">
-              <Text className="text-xl font-bold text-textPrimary">{displayName}</Text>
-              {spec.headline && (
-                <Text className="text-sm text-textSecondary">{spec.headline}</Text>
-              )}
-              {city && (
-                <View className="flex-row items-center gap-1">
-                  <Feather name="map-pin" size={14} color="#94A3B8" />
-                  <Text className="text-base text-textMuted">{city}</Text>
+    <ScrollView style={{ flex: 1, backgroundColor: Colors.white }}>
+      <Container>
+        <View style={{ gap: Spacing.lg, paddingVertical: Spacing.lg }}>
+          {/* Profile card */}
+          <Card variant="outlined" padding="md">
+            <View style={{ gap: Spacing.md }}>
+              <View style={{ flexDirection: 'row', gap: Spacing.lg }}>
+                <View style={{
+                  width: 80,
+                  height: 80,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 9999,
+                  backgroundColor: Colors.bgSecondary,
+                }}>
+                  <Feather name="user" size={32} color={Colors.textMuted} />
                 </View>
-              )}
-              {rating != null && (
-                <View className="flex-row items-center gap-1">
-                  <Stars rating={Math.round(rating)} size={16} />
-                  <Text className="text-sm text-textMuted">{rating} ({reviewCount} отзывов)</Text>
-                </View>
-              )}
-              {memberYear && (
-                <View className="mt-1 flex-row items-center gap-1">
-                  <Feather name="clock" size={13} color="#94A3B8" />
-                  <Text className="text-sm text-textMuted">На сайте с {memberYear} г.</Text>
-                </View>
-              )}
-            </View>
-          </View>
-          {about && <Text className="text-base leading-6 text-textSecondary">{about}</Text>}
-        </View>
-
-        {/* FNS preview (first 2 open) + "Подробнее" for rest */}
-        {fnsServices.length > 0 && (
-          <View className="gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <View className="flex-row items-center gap-2">
-              <Feather name="briefcase" size={16} color="#0284C7" />
-              <Text className="text-lg font-semibold text-textPrimary">ФНС и услуги</Text>
-            </View>
-            {fnsServices.slice(0, 2).map((group, idx) => (
-              <View key={group.fns} className={`gap-2 ${idx > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
-                <View className="flex-row items-center gap-2">
-                  <Feather name="home" size={14} color="#64748B" />
-                  <Text className="text-base font-medium text-textPrimary">{group.fns}</Text>
-                </View>
-                <View className="flex-row flex-wrap gap-2 pl-6">
-                  {group.services.map((svc) => (
-                    <View key={svc} className="flex-row items-center gap-1 rounded-full bg-sky-50 px-3 py-1.5">
-                      <Feather name="check" size={12} color="#0284C7" />
-                      <Text className="text-sm text-brandPrimary">{svc}</Text>
+                <View style={{ flex: 1, gap: Spacing.xs }}>
+                  <Heading level={3}>{displayName}</Heading>
+                  {spec.headline ? (
+                    <Text variant="caption">{spec.headline}</Text>
+                  ) : null}
+                  {city ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                      <Feather name="map-pin" size={14} color={Colors.textMuted} />
+                      <Text variant="muted">{city}</Text>
                     </View>
-                  ))}
+                  ) : null}
+                  {rating != null ? (
+                    <Rating value={Number(rating)} reviewCount={reviewCount} size="md" />
+                  ) : null}
+                  {memberYear ? (
+                    <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                      <Feather name="clock" size={13} color={Colors.textMuted} />
+                      <Text variant="caption">На сайте с {memberYear} г.</Text>
+                    </View>
+                  ) : null}
                 </View>
               </View>
-            ))}
-            {fnsServices.length > 2 && (
-              <Pressable
-                onPress={() => setFnsModalVisible(true)}
-                className="mt-1 flex-row items-center justify-center gap-2 rounded-lg border border-brandPrimary py-2.5"
-              >
-                <Text className="text-sm font-semibold text-brandPrimary">Все ФНС и услуги ({fnsServices.length})</Text>
-                <Feather name="chevron-right" size={16} color="#0284C7" />
-              </Pressable>
-            )}
-          </View>
-        )}
-
-        <FnsModal visible={fnsModalVisible} onClose={() => setFnsModalVisible(false)} fnsServices={fnsServices} />
-
-        {/* Reviews */}
-        {(spec.reviews ?? []).length > 0 && (
-          <View className="gap-3">
-            <View className="flex-row items-center gap-2">
-              <Feather name="message-square" size={16} color="#0284C7" />
-              <Text className="text-lg font-semibold text-textPrimary">Отзывы</Text>
+              {about ? <Text style={{ lineHeight: 24 }}>{about}</Text> : null}
             </View>
-            {(spec.reviews ?? []).map((r, i) => (
-              <ReviewItem
-                key={i}
-                author={r.author ?? '—'}
-                rating={r.rating}
-                text={r.text ?? ''}
-                date={r.date ?? ''}
-              />
-            ))}
-          </View>
-        )}
+          </Card>
 
-        {/* Message textarea */}
-        <View className="gap-2">
-          <View className="flex-row items-center gap-2">
-            <Feather name="edit-3" size={16} color="#0284C7" />
-            <Text className="text-lg font-semibold text-textPrimary">Написать специалисту</Text>
+          {/* FNS preview (first 2 open) + "Подробнее" for rest */}
+          {fnsServices.length > 0 ? (
+            <Card variant="outlined" padding="md">
+              <View style={{ gap: Spacing.md }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                  <Feather name="briefcase" size={16} color={Colors.brandPrimary} />
+                  <Heading level={4}>ФНС и услуги</Heading>
+                </View>
+                {fnsServices.slice(0, 2).map((group, idx) => (
+                  <View
+                    key={group.fns}
+                    style={{
+                      gap: Spacing.sm,
+                      borderTopWidth: idx > 0 ? 1 : 0,
+                      borderTopColor: Colors.borderLight,
+                      paddingTop: idx > 0 ? Spacing.md : 0,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                      <Feather name="home" size={14} color={Colors.textMuted} />
+                      <Text weight="medium">{group.fns}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, paddingLeft: Spacing['2xl'] }}>
+                      {group.services.map((svc) => (
+                        <View
+                          key={svc}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            borderRadius: BorderRadius.full,
+                            paddingHorizontal: Spacing.md,
+                            paddingVertical: 6,
+                            backgroundColor: Colors.statusBg.info,
+                          }}
+                        >
+                          <Feather name="check" size={12} color={Colors.brandPrimary} />
+                          <Text variant="caption" style={{ color: Colors.brandPrimary }}>{svc}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+                {fnsServices.length > 2 ? (
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    onPress={() => setFnsModalVisible(true)}
+                    icon={<Feather name="chevron-right" size={16} color={Colors.brandPrimary} />}
+                  >
+                    {`Все ФНС и услуги (${fnsServices.length})`}
+                  </Button>
+                ) : null}
+              </View>
+            </Card>
+          ) : null}
+
+          <FnsModal visible={fnsModalVisible} onClose={() => setFnsModalVisible(false)} fnsServices={fnsServices} />
+
+          {/* Reviews */}
+          {(spec.reviews ?? []).length > 0 ? (
+            <View style={{ gap: Spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <Feather name="message-square" size={16} color={Colors.brandPrimary} />
+                <Heading level={4}>Отзывы</Heading>
+              </View>
+              {(spec.reviews ?? []).map((r, i) => (
+                <ReviewItem
+                  key={i}
+                  author={r.author ?? '—'}
+                  rating={r.rating}
+                  text={r.text ?? ''}
+                  date={r.date ?? ''}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          {/* Message textarea */}
+          <View style={{ gap: Spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <Feather name="edit-3" size={16} color={Colors.brandPrimary} />
+              <Heading level={4}>Написать специалисту</Heading>
+            </View>
+            <Input
+              value={message}
+              onChangeText={setMessage}
+              placeholder="Опишите вашу задачу или задайте вопрос..."
+              multiline
+              numberOfLines={4}
+            />
+            <Button
+              fullWidth
+              disabled={!canSend}
+              onPress={handleSendPress}
+              icon={<Feather name="send" size={18} color={Colors.white} />}
+              accessibilityLabel="Написать специалисту"
+            >
+              Написать
+            </Button>
           </View>
-          <TextInput
-            className="min-h-[100px] rounded-lg bg-white p-3 text-base text-textPrimary"
-            style={{ borderWidth: 1, borderColor: '#E5E7EB', outlineStyle: 'none' } as any}
-            placeholder="Опишите вашу задачу или задайте вопрос..."
-            placeholderTextColor="#94A3B8"
-            multiline
-            textAlignVertical="top"
-            value={message}
-            onChangeText={setMessage}
-          />
-          <Pressable
-            className={`mt-1 h-12 flex-row items-center justify-center gap-2 rounded-lg shadow-sm ${canSend ? 'bg-brandPrimary' : 'bg-gray-300'}`}
-            disabled={!canSend}
-            onPress={handleSendPress}
-            accessibilityLabel="Написать специалисту"
-          >
-            <Feather name="send" size={18} color="#FFFFFF" />
-            <Text className="text-base font-semibold text-white">Написать</Text>
-          </Pressable>
         </View>
-      </View>
+      </Container>
+
       <WriteSpecialistConfirm
         visible={confirmVisible}
         displayName={displayName}
@@ -401,20 +428,20 @@ export default function SpecialistProfileScreen() {
   }, [nick]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <Screen bg={Colors.white}>
       <Header variant="back" backTitle="Специалист" onBack={() => router.back()} />
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={Colors.brandPrimary} />
         </View>
       ) : error ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing['2xl'], gap: Spacing.md }}>
           <Feather name="alert-circle" size={28} color={Colors.statusError} />
-          <Text style={{ color: Colors.statusError, textAlign: 'center' }}>{error}</Text>
+          <Text align="center" style={{ color: Colors.statusError }}>{error}</Text>
         </View>
       ) : specData ? (
         <ProfileScreen spec={specData} />
       ) : null}
-    </View>
+    </Screen>
   );
 }

@@ -1,16 +1,8 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  Modal,
-  StyleSheet,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/Colors';
+import { Colors, Spacing } from '../constants/Colors';
+import { Badge, Input, Modal, Text } from './ui';
 import * as api from '../lib/api/endpoints';
 
 type TargetType = 'user' | 'request' | 'thread';
@@ -59,186 +51,53 @@ export function ComplaintButton({ targetId, targetType = 'user', label = 'Пож
 
   return (
     <>
-      <Pressable onPress={open} style={s.trigger}>
+      <Pressable
+        onPress={open}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingVertical: Spacing.xs }}
+      >
         <Feather name="flag" size={14} color={Colors.textMuted} />
-        <Text style={s.triggerText}>{label}</Text>
+        <Text variant="caption" style={{ color: Colors.textMuted }}>{label}</Text>
       </Pressable>
 
-      <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
-        <View style={s.overlay}>
-          <View style={s.modal}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Отправить жалобу</Text>
-              <Pressable onPress={() => setVisible(false)}>
-                <Feather name="x" size={20} color={Colors.textMuted} />
+      <Modal
+        visible={visible}
+        onClose={() => setVisible(false)}
+        title="Отправить жалобу"
+        maxWidth={420}
+        primaryAction={{
+          label: 'Отправить',
+          onPress: handleSubmit,
+          loading: submitting,
+          disabled: submitting,
+        }}
+        secondaryAction={{
+          label: 'Отмена',
+          onPress: () => setVisible(false),
+          disabled: submitting,
+        }}
+      >
+        <Text variant="label">Причина</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+          {REASON_OPTIONS.map((opt) => {
+            const active = reason === opt.value;
+            return (
+              <Pressable key={opt.value} onPress={() => setReason(opt.value)}>
+                <Badge variant={active ? 'info' : 'default'}>{opt.label}</Badge>
               </Pressable>
-            </View>
-
-            <Text style={s.label}>Причина</Text>
-            <View style={s.reasonGrid}>
-              {REASON_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.value}
-                  style={[s.reasonOption, reason === opt.value && s.reasonOptionActive]}
-                  onPress={() => setReason(opt.value)}
-                >
-                  <Text style={[s.reasonText, reason === opt.value && s.reasonTextActive]}>
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={s.label}>Комментарий <Text style={s.optional}>(необязательно)</Text></Text>
-            <TextInput
-              style={s.textArea}
-              placeholder="Опишите проблему подробнее..."
-              placeholderTextColor={Colors.textMuted}
-              multiline
-              numberOfLines={4}
-              value={comment}
-              onChangeText={setComment}
-              maxLength={500}
-            />
-
-            <View style={s.actions}>
-              <Pressable style={s.cancelBtn} onPress={() => setVisible(false)}>
-                <Text style={s.cancelText}>Отмена</Text>
-              </Pressable>
-              <Pressable
-                style={[s.submitBtn, submitting && s.submitDisabled]}
-                onPress={handleSubmit}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={s.submitText}>Отправить</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
+            );
+          })}
         </View>
+
+        <Input
+          label="Комментарий (необязательно)"
+          value={comment}
+          onChangeText={setComment}
+          placeholder="Опишите проблему подробнее..."
+          multiline
+          numberOfLines={4}
+          maxLength={500}
+        />
       </Modal>
     </>
   );
 }
-
-const s = StyleSheet.create({
-  trigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.xs,
-  },
-  triggerText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.lg,
-  },
-  modal: {
-    backgroundColor: '#fff',
-    borderRadius: BorderRadius.card,
-    padding: Spacing.xl,
-    width: '100%',
-    maxWidth: 420,
-    gap: Spacing.md,
-    ...Shadows.lg,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  modalTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-  },
-
-  label: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-    color: Colors.textSecondary,
-  },
-  optional: {
-    fontWeight: Typography.fontWeight.regular,
-    color: Colors.textMuted,
-  },
-
-  reasonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  reasonOption: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  reasonOptionActive: {
-    borderColor: Colors.brandPrimary,
-    backgroundColor: Colors.bgSecondary,
-  },
-  reasonText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textMuted,
-  },
-  reasonTextActive: {
-    color: Colors.brandPrimary,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-
-  textArea: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  cancelBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-  },
-  submitBtn: {
-    flex: 1,
-    backgroundColor: Colors.brandPrimary,
-    borderRadius: BorderRadius.md,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitDisabled: { opacity: 0.5 },
-  submitText: {
-    color: '#fff',
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-});

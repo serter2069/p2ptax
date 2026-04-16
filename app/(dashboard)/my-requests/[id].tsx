@@ -1,19 +1,28 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Alert,
   ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Colors } from '../../../constants/Colors';
+import { BorderRadius, Colors, Spacing } from '../../../constants/Colors';
 import { requests, specialists as specialistsApi, threads as threadsApi } from '../../../lib/api/endpoints';
 import { useAuth } from '../../../lib/auth';
 import { Header } from '../../../components/Header';
 import { adaptThread } from '../../../lib/types/thread';
+import {
+  Badge,
+  BadgeVariant,
+  Button,
+  Card,
+  Container,
+  Heading,
+  Screen,
+  Text,
+} from '../../../components/ui';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -73,10 +82,10 @@ const STATUS_LABELS: Record<RequestStatus, string> = {
   CLOSED: 'Закрыта',
 };
 
-const STATUS_COLORS: Record<RequestStatus, string> = {
-  ACTIVE: Colors.statusSuccess,
-  CLOSING_SOON: '#F97316',
-  CLOSED: Colors.textMuted,
+const STATUS_BADGE_VARIANT: Record<RequestStatus, BadgeVariant> = {
+  ACTIVE: 'success',
+  CLOSING_SOON: 'warning',
+  CLOSED: 'default',
 };
 
 function formatDate(iso: string) {
@@ -177,18 +186,18 @@ function RecommendedSpecialists({ request }: { request: RequestDetail }) {
   }, [writingTo, request.id]);
 
   return (
-    <View className="gap-3">
-      <Text className="text-base font-semibold text-textPrimary">Рекомендуемые специалисты</Text>
+    <View style={{ gap: Spacing.md }}>
+      <Heading level={4}>Рекомендуемые специалисты</Heading>
       {loading ? (
-        <View className="items-center py-6">
+        <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
           <ActivityIndicator color={Colors.brandPrimary} />
         </View>
       ) : error ? (
-        <Text className="text-sm text-statusError">{error}</Text>
+        <Text variant="caption" style={{ color: Colors.statusError }}>{error}</Text>
       ) : items.length === 0 ? (
-        <View className="rounded-xl border border-borderLight bg-bgCard p-4">
-          <Text className="text-sm text-textMuted">Пока никого не нашли по этим параметрам</Text>
-        </View>
+        <Card variant="outlined" padding="md">
+          <Text variant="caption">Пока никого не нашли по этим параметрам</Text>
+        </Card>
       ) : (
         items.map((s) => {
           const name = s.displayName ?? s.nick ?? 'Специалист';
@@ -196,45 +205,48 @@ function RecommendedSpecialists({ request }: { request: RequestDetail }) {
           const rating = s.activity?.avgRating;
           const city = (s.cities ?? [])[0];
           return (
-            <View
-              key={s.nick ?? name}
-              className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3"
-            >
-              <View className="h-10 w-10 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
-                <Text className="text-sm font-bold text-brandPrimary">{initials}</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-textPrimary" numberOfLines={1}>{name}</Text>
-                <View className="mt-0.5 flex-row items-center gap-2">
-                  {rating != null && (
-                    <View className="flex-row items-center gap-1">
-                      <Feather name="star" size={11} color="#F59E0B" />
-                      <Text className="text-xs text-textMuted">{Number(rating).toFixed(1)}</Text>
-                    </View>
-                  )}
-                  {city && (
-                    <View className="flex-row items-center gap-1">
-                      <Feather name="map-pin" size={11} color={Colors.textMuted} />
-                      <Text className="text-xs text-textMuted" numberOfLines={1}>{city}</Text>
-                    </View>
-                  )}
+            <Card key={s.nick ?? name} variant="outlined" padding="sm">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 9999,
+                  borderWidth: 1,
+                  borderColor: Colors.borderLight,
+                  backgroundColor: Colors.bgSurface,
+                }}>
+                  <Text weight="bold" style={{ color: Colors.brandPrimary, fontSize: 13 }}>{initials}</Text>
                 </View>
+                <View style={{ flex: 1 }}>
+                  <Text weight="semibold" numberOfLines={1}>{name}</Text>
+                  <View style={{ marginTop: 2, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                    {rating != null ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Feather name="star" size={11} color={Colors.amber} />
+                        <Text variant="caption">{Number(rating).toFixed(1)}</Text>
+                      </View>
+                    ) : null}
+                    {city ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Feather name="map-pin" size={11} color={Colors.textMuted} />
+                        <Text variant="caption" numberOfLines={1}>{city}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+                <Button
+                  size="md"
+                  onPress={() => s.nick && handleWrite(s.nick)}
+                  disabled={!s.nick || writingTo === s.nick}
+                  loading={writingTo === s.nick}
+                  icon={<Feather name="send" size={12} color={Colors.white} />}
+                >
+                  Написать
+                </Button>
               </View>
-              <Pressable
-                onPress={() => s.nick && handleWrite(s.nick)}
-                disabled={!s.nick || writingTo === s.nick}
-                className="h-9 flex-row items-center justify-center gap-1 rounded-lg bg-brandPrimary px-3"
-              >
-                {writingTo === s.nick ? (
-                  <ActivityIndicator size="small" color={Colors.white} />
-                ) : (
-                  <>
-                    <Feather name="send" size={12} color={Colors.white} />
-                    <Text className="text-xs font-semibold text-white">Написать</Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
+            </Card>
           );
         })
       )}
@@ -256,8 +268,15 @@ function ReviewCTAList({
   if (threads.length === 0) return null;
 
   return (
-    <View className="gap-3 rounded-xl border border-brandPrimary/30 bg-brandPrimary/5 p-4">
-      <Text className="text-sm font-semibold text-brandPrimary">
+    <View style={{
+      gap: Spacing.md,
+      padding: Spacing.lg,
+      borderRadius: BorderRadius.xl,
+      borderWidth: 1,
+      borderColor: Colors.brandPrimary + '4D',
+      backgroundColor: Colors.brandPrimary + '0D',
+    }}>
+      <Text weight="semibold" style={{ color: Colors.brandPrimary }}>
         Заявка закрыта. Оставьте отзыв специалисту:
       </Text>
       {threads.map((thread) => {
@@ -274,14 +293,32 @@ function ReviewCTAList({
                 `/leave-review?requestId=${requestId}&specialistId=${specialist.id}${nick ? `&specialistNick=${nick}` : ''}` as any,
               )
             }
-            className="flex-row items-center gap-3 rounded-lg border border-borderLight bg-white p-3"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: Spacing.md,
+              padding: Spacing.md,
+              borderRadius: BorderRadius.lg,
+              borderWidth: 1,
+              borderColor: Colors.borderLight,
+              backgroundColor: Colors.white,
+            }}
           >
-            <View className="h-9 w-9 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
-              <Text className="text-xs font-bold text-brandPrimary">{initials}</Text>
+            <View style={{
+              width: 36,
+              height: 36,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 9999,
+              borderWidth: 1,
+              borderColor: Colors.borderLight,
+              backgroundColor: Colors.bgSurface,
+            }}>
+              <Text weight="bold" style={{ color: Colors.brandPrimary, fontSize: 12 }}>{initials}</Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-sm font-semibold text-textPrimary">{displayName}</Text>
-              {nick && <Text className="text-xs text-textMuted">@{nick}</Text>}
+            <View style={{ flex: 1 }}>
+              <Text weight="semibold">{displayName}</Text>
+              {nick ? <Text variant="caption">@{nick}</Text> : null}
             </View>
             <Feather name="star" size={16} color={Colors.brandPrimary} />
           </Pressable>
@@ -364,34 +401,32 @@ export default function RequestDetailScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-white">
+      <Screen bg={Colors.white}>
         <Header variant="back" onBack={() => router.back()} />
-        <View className="flex-1 items-center justify-center">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={Colors.brandPrimary} />
         </View>
-      </View>
+      </Screen>
     );
   }
 
   if (error || !request) {
     return (
-      <View className="flex-1 bg-white">
+      <Screen bg={Colors.white}>
         <Header variant="back" onBack={() => router.back()} />
-        <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-center text-base text-statusError">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl, gap: Spacing.md }}>
+          <Text align="center" style={{ color: Colors.statusError }}>
             {error ?? 'Заявка не найдена'}
           </Text>
-          <Pressable onPress={fetchRequest} className="mt-4">
-            <Text className="text-sm text-brandPrimary">Повторить</Text>
-          </Pressable>
+          <Button variant="ghost" onPress={fetchRequest}>Повторить</Button>
         </View>
-      </View>
+      </Screen>
     );
   }
 
   const status = request.status as RequestStatus;
   const statusLabel = STATUS_LABELS[status] ?? status;
-  const statusColor = STATUS_COLORS[status] ?? Colors.textMuted;
+  const statusVariant = STATUS_BADGE_VARIANT[status] ?? 'default';
   const isOwner = user?.id === request.clientId;
   const canClose = isOwner && CLOSEABLE_STATUSES.includes(status);
   const isClosed = status === 'CLOSED';
@@ -400,135 +435,139 @@ export default function RequestDetailScreen() {
     isOwner && status === 'CLOSING_SOON' && extensionsCount < MAX_EXTENSIONS;
 
   return (
-    <View className="flex-1 bg-white">
-    <Header variant="back" backTitle={request.title} onBack={() => router.back()} />
-    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      {/* Request card */}
-      <View className="gap-4 rounded-xl border border-borderLight bg-white p-4">
-        <View className="flex-row items-start justify-between gap-2">
-          <Text className="flex-1 text-lg font-bold text-textPrimary">{request.title}</Text>
-          <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: statusColor + '18' }}>
-            <Text className="text-xs font-semibold" style={{ color: statusColor }}>
-              {statusLabel}
-            </Text>
-          </View>
-        </View>
-
-        <Text className="text-base leading-6 text-textSecondary">{request.description}</Text>
-
-        <View className="gap-2">
-          <View className="flex-row items-center gap-2">
-            <Feather name="map-pin" size={14} color={Colors.textMuted} />
-            <Text className="text-sm text-textMuted">{request.city}</Text>
-          </View>
-          {request.ifnsName && (
-            <View className="flex-row items-center gap-2">
-              <Feather name="home" size={14} color={Colors.textMuted} />
-              <Text className="text-sm text-textMuted">{request.ifnsName}</Text>
-            </View>
-          )}
-          {request.serviceType && (
-            <View className="flex-row items-center gap-2">
-              <Feather name="briefcase" size={14} color={Colors.textMuted} />
-              <Text className="text-sm text-textMuted">{request.serviceType}</Text>
-            </View>
-          )}
-          <View className="flex-row items-center gap-2">
-            <Feather name="calendar" size={14} color={Colors.textMuted} />
-            <Text className="text-sm text-textMuted">{formatDate(request.createdAt)}</Text>
-          </View>
-        </View>
-
-        {/* Extend button — owner, CLOSING_SOON, extensionsCount < 3 */}
-        {canExtend && (
-          <Pressable
-            onPress={handleExtend}
-            disabled={extending}
-            className="h-10 flex-row items-center justify-center gap-1.5 rounded-lg border border-brandPrimary bg-brandPrimary/10"
-          >
-            {extending ? (
-              <ActivityIndicator size="small" color={Colors.brandPrimary} />
-            ) : (
-              <>
-                <Feather name="refresh-cw" size={14} color={Colors.brandPrimary} />
-                <Text className="text-sm font-medium text-brandPrimary">
-                  Продлить (осталось {MAX_EXTENSIONS - extensionsCount})
-                </Text>
-              </>
-            )}
-          </Pressable>
-        )}
-
-        {/* Close button — owner only, closeable statuses */}
-        {canClose && (
-          <Pressable
-            onPress={handleClose}
-            disabled={closing}
-            className="h-10 flex-row items-center justify-center gap-1.5 rounded-lg border border-statusError bg-statusError/10"
-          >
-            {closing ? (
-              <ActivityIndicator size="small" color={Colors.statusError} />
-            ) : (
-              <>
-                <Feather name="x-circle" size={14} color={Colors.statusError} />
-                <Text className="text-sm font-medium text-statusError">Закрыть заявку</Text>
-              </>
-            )}
-          </Pressable>
-        )}
-      </View>
-
-      {/* Recommended specialists — owner only, active / closing_soon */}
-      {isOwner && !isClosed && <RecommendedSpecialists request={request} />}
-
-      {/* Review CTAs — shown immediately after closing if threads exist */}
-      {isClosed && isOwner && request.threads.length > 0 && (
-        <ReviewCTAList
-          requestId={request.id}
-          threads={request.threads}
-          clientId={request.clientId}
-        />
-      )}
-
-      {/* Threads list */}
-      {request.threads.length > 0 && (
-        <View className="gap-3">
-          <Text className="text-base font-semibold text-textPrimary">
-            Сообщения ({request._count.threads})
-          </Text>
-          {request.threads.map((thread) => {
-            const specialist = getSpecialist(thread, request.clientId);
-            const displayName =
-              specialist.specialistProfile?.displayName ?? specialist.email;
-            const initials = getInitials(
-              specialist.specialistProfile?.displayName,
-              specialist.email,
-            );
-
-            return (
-              <Pressable
-                key={thread.id}
-                onPress={() => router.push(`/chat/${thread.id}` as any)}
-                className="flex-row items-center gap-3 rounded-xl border border-borderLight bg-white p-3"
-              >
-                <View className="h-10 w-10 items-center justify-center rounded-full border border-borderLight bg-bgSurface">
-                  <Text className="text-sm font-bold text-brandPrimary">{initials}</Text>
+    <Screen bg={Colors.white}>
+      <Header variant="back" backTitle={request.title} onBack={() => router.back()} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.lg }}>
+        <Container>
+          <View style={{ gap: Spacing.lg }}>
+            {/* Request card */}
+            <Card variant="outlined" padding="md" style={{ gap: Spacing.lg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Heading level={3}>{request.title}</Heading>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-sm font-semibold text-textPrimary">{displayName}</Text>
-                  {specialist.specialistProfile?.nick && (
-                    <Text className="text-xs text-textMuted">
-                      @{specialist.specialistProfile.nick}
-                    </Text>
-                  )}
+                <Badge variant={statusVariant}>{statusLabel}</Badge>
+              </View>
+
+              <Text style={{ lineHeight: 24 }}>{request.description}</Text>
+
+              <View style={{ gap: Spacing.sm }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                  <Feather name="map-pin" size={14} color={Colors.textMuted} />
+                  <Text variant="caption">{request.city}</Text>
                 </View>
-                <Feather name="chevron-right" size={16} color={Colors.textMuted} />
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-    </ScrollView>
-    </View>
+                {request.ifnsName ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                    <Feather name="home" size={14} color={Colors.textMuted} />
+                    <Text variant="caption">{request.ifnsName}</Text>
+                  </View>
+                ) : null}
+                {request.serviceType ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                    <Feather name="briefcase" size={14} color={Colors.textMuted} />
+                    <Text variant="caption">{request.serviceType}</Text>
+                  </View>
+                ) : null}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                  <Feather name="calendar" size={14} color={Colors.textMuted} />
+                  <Text variant="caption">{formatDate(request.createdAt)}</Text>
+                </View>
+              </View>
+
+              {/* Extend button — owner, CLOSING_SOON, extensionsCount < 3 */}
+              {canExtend ? (
+                <Button
+                  variant="secondary"
+                  onPress={handleExtend}
+                  disabled={extending}
+                  loading={extending}
+                  fullWidth
+                  icon={<Feather name="refresh-cw" size={14} color={Colors.brandPrimary} />}
+                >
+                  {`Продлить (осталось ${MAX_EXTENSIONS - extensionsCount})`}
+                </Button>
+              ) : null}
+
+              {/* Close button — owner only, closeable statuses */}
+              {canClose ? (
+                <Button
+                  variant="danger"
+                  onPress={handleClose}
+                  disabled={closing}
+                  loading={closing}
+                  fullWidth
+                  icon={<Feather name="x-circle" size={14} color={Colors.white} />}
+                >
+                  Закрыть заявку
+                </Button>
+              ) : null}
+            </Card>
+
+            {/* Recommended specialists — owner only, active / closing_soon */}
+            {isOwner && !isClosed ? <RecommendedSpecialists request={request} /> : null}
+
+            {/* Review CTAs — shown immediately after closing if threads exist */}
+            {isClosed && isOwner && request.threads.length > 0 ? (
+              <ReviewCTAList
+                requestId={request.id}
+                threads={request.threads}
+                clientId={request.clientId}
+              />
+            ) : null}
+
+            {/* Threads list */}
+            {request.threads.length > 0 ? (
+              <View style={{ gap: Spacing.md }}>
+                <Heading level={4}>
+                  {`Сообщения (${request._count.threads})`}
+                </Heading>
+                {request.threads.map((thread) => {
+                  const specialist = getSpecialist(thread, request.clientId);
+                  const displayName =
+                    specialist.specialistProfile?.displayName ?? specialist.email;
+                  const initials = getInitials(
+                    specialist.specialistProfile?.displayName,
+                    specialist.email,
+                  );
+
+                  return (
+                    <Card
+                      key={thread.id}
+                      onPress={() => router.push(`/chat/${thread.id}` as any)}
+                      variant="outlined"
+                      padding="sm"
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+                        <View style={{
+                          width: 40,
+                          height: 40,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 9999,
+                          borderWidth: 1,
+                          borderColor: Colors.borderLight,
+                          backgroundColor: Colors.bgSurface,
+                        }}>
+                          <Text weight="bold" style={{ color: Colors.brandPrimary, fontSize: 13 }}>{initials}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text weight="semibold">{displayName}</Text>
+                          {specialist.specialistProfile?.nick ? (
+                            <Text variant="caption">
+                              @{specialist.specialistProfile.nick}
+                            </Text>
+                          ) : null}
+                        </View>
+                        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+                      </View>
+                    </Card>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+        </Container>
+      </ScrollView>
+    </Screen>
   );
 }
