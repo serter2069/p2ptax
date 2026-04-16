@@ -30,8 +30,6 @@ export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [emailNotif, setEmailNotif] = useState(true);
-  const [pushNotif, setPushNotif] = useState(false);
-  const [responseNotif, setResponseNotif] = useState(true);
   const [showLogout, setShowLogout] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
 
@@ -50,8 +48,6 @@ export default function SettingsScreen() {
         <Text style={{ fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Уведомления</Text>
         <View style={{ backgroundColor: Colors.bgCard, borderRadius: BorderRadius.card, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadows.sm }}>
           <ToggleRow label="Email-уведомления" icon="mail" enabled={emailNotif} onToggle={() => setEmailNotif(!emailNotif)} />
-          <ToggleRow label="Push-уведомления" icon="bell" enabled={pushNotif} onToggle={() => setPushNotif(!pushNotif)} />
-          <ToggleRow label="Новые отклики" icon="message-circle" enabled={responseNotif} onToggle={() => setResponseNotif(!responseNotif)} />
         </View>
       </View>
       <View style={{ gap: Spacing.sm }}>

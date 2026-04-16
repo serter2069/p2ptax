@@ -240,7 +240,7 @@ export class ChatService {
    *
    * Role: SPECIALIST only.
    * Business rules:
-   *  - request must exist and not be CLOSED/CANCELLED (→ 409)
+   *  - request must exist and not be CLOSED (→ 409)
    *  - message length 10-1000 (DTO validation)
    *  - specialist cannot create >20 new threads in a rolling 24h window (→ 429)
    */
@@ -270,10 +270,7 @@ export class ChatService {
       throw new BadRequestException('Cannot open a thread on your own request');
     }
 
-    if (
-      request.status === RequestStatus.CLOSED ||
-      request.status === RequestStatus.CANCELLED
-    ) {
+    if (request.status === RequestStatus.CLOSED) {
       throw new ConflictException('Заявка закрыта — написать нельзя');
     }
 
@@ -326,15 +323,11 @@ export class ChatService {
           },
         });
 
-        // Bump request.lastActivityAt; auto-transition NEW/OPEN → IN_PROGRESS
-        const statusUpdate: Record<string, unknown> = { lastActivityAt: now };
-        if (
-          request.status === RequestStatus.NEW ||
-          request.status === RequestStatus.OPEN
-        ) {
-          statusUpdate.status = RequestStatus.IN_PROGRESS;
-        }
-        await tx.request.update({ where: { id: requestId }, data: statusUpdate });
+        // Bump request.lastActivityAt
+        await tx.request.update({
+          where: { id: requestId },
+          data: { lastActivityAt: now },
+        });
 
         return thread.id;
       });

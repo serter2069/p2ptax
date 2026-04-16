@@ -3,14 +3,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { IsString, IsArray, IsBoolean, IsOptional, IsIn, Length, Matches, MinLength, ArrayMinSize, IsEmail } from 'class-validator';
+import { IsString, IsArray, IsBoolean, IsOptional, IsIn, Length, Matches, ArrayMinSize, IsEmail } from 'class-validator';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard, Public } from '../auth/jwt-auth.guard';
 import { EmailThrottlerGuard } from '../auth/email-throttler.guard';
 import { IpThrottlerGuard } from '../auth/ip-throttler.guard';
 import { UsersService } from './users.service';
 import { StorageService } from '../storage/storage.service';
-import { PushNotificationService } from '../notifications/push-notification.service';
 
 const AVATAR_UPLOADS_DIR = join(__dirname, '..', '..', 'uploads', 'avatars');
 if (!existsSync(AVATAR_UPLOADS_DIR)) {
@@ -39,10 +38,6 @@ class UpdateSettingsDto {
 }
 
 class UpdateNotificationSettingsDto {
-  @IsBoolean()
-  @IsOptional()
-  new_responses?: boolean;
-
   @IsBoolean()
   @IsOptional()
   new_messages?: boolean;
@@ -129,29 +124,12 @@ class ChangeEmailConfirmDto {
   code!: string;
 }
 
-class SavePushTokenDto {
-  @IsString()
-  @MinLength(1)
-  token!: string;
-
-  @IsString()
-  @IsIn(['ios', 'android', 'web'])
-  platform!: string;
-}
-
-class DeletePushTokenDto {
-  @IsString()
-  @MinLength(1)
-  token!: string;
-}
-
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly storageService: StorageService,
-    private readonly pushService: PushNotificationService,
   ) {}
 
   /**
@@ -336,25 +314,5 @@ export class UsersController {
     @Body() body: ChangeEmailConfirmDto,
   ) {
     return this.usersService.confirmEmailChange(req.user.id, body.newEmail, body.code);
-  }
-
-  /** POST /users/me/push-token — save Expo push token */
-  @Post('me/push-token')
-  async savePushToken(
-    @Request() req: { user: { id: string } },
-    @Body() body: SavePushTokenDto,
-  ) {
-    await this.pushService.saveToken(req.user.id, body.token, body.platform);
-    return { ok: true };
-  }
-
-  /** DELETE /users/me/push-token — remove push token on logout */
-  @Delete('me/push-token')
-  async deletePushToken(
-    @Request() req: { user: { id: string } },
-    @Body() body: DeletePushTokenDto,
-  ) {
-    await this.pushService.removeToken(body.token);
-    return { ok: true };
   }
 }

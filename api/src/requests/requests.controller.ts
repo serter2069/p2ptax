@@ -161,7 +161,7 @@ export class RequestsController {
     return this.requestsService.createReviewForRequest(req.user.id, id, body);
   }
 
-  // PATCH /requests/:id/close — client closes own request (NEW/OPEN/IN_PROGRESS/CLOSING_SOON)
+  // PATCH /requests/:id/close — client closes own request (ACTIVE/CLOSING_SOON)
   @Patch(':id/close')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CLIENT)
@@ -169,7 +169,7 @@ export class RequestsController {
     return this.requestsService.closeRequest(req.user.id, id);
   }
 
-  // DELETE /requests/:id — client deletes own request (only OPEN status)
+  // DELETE /requests/:id — client deletes own request (only ACTIVE status)
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CLIENT)

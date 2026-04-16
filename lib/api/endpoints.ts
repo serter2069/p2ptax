@@ -81,11 +81,11 @@ export const users = {
   },
 
   getNotificationSettings() {
-    return client.get<{ new_responses: boolean; new_messages: boolean }>('/users/me/notification-settings');
+    return client.get<{ new_messages: boolean }>('/users/me/notification-settings');
   },
 
-  updateNotificationSettings(data: { new_responses?: boolean; new_messages?: boolean }) {
-    return client.patch<{ new_responses: boolean; new_messages: boolean }>('/users/me/notification-settings', data);
+  updateNotificationSettings(data: { new_messages?: boolean }) {
+    return client.patch<{ new_messages: boolean }>('/users/me/notification-settings', data);
   },
 
   /** Step 1: send OTP to the new email address */

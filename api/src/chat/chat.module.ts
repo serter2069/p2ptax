@@ -3,14 +3,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { ChatGateway } from './chat.gateway';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
-import { RequestsModule } from '../requests/requests.module';
 
 @Module({
   imports: [
     JwtModule.register({
       secret: process.env.JWT_SECRET!,
     }),
-    RequestsModule,
   ],
   controllers: [ChatController],
   providers: [ChatGateway, ChatService],

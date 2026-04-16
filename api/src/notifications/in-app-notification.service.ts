@@ -1,17 +1,12 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationType, Prisma } from '@prisma/client';
-import { PushNotificationService } from './push-notification.service';
 
 const PAGE_SIZE = 20;
 
 @Injectable()
 export class InAppNotificationService {
-  constructor(
-    private prisma: PrismaService,
-    @Inject(forwardRef(() => PushNotificationService))
-    private pushService: PushNotificationService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   /** List user notifications, paginated, newest first */
   async list(userId: string, page = 1) {
@@ -52,7 +47,7 @@ export class InAppNotificationService {
     });
   }
 
-  /** Create a notification entry and send push notification */
+  /** Create a notification entry (in-app only — push is post-MVP) */
   async create(input: {
     userId: string;
     type: NotificationType;
@@ -60,18 +55,6 @@ export class InAppNotificationService {
     body: string;
     data?: Prisma.InputJsonValue;
   }) {
-    const notification = await this.prisma.notification.create({ data: input });
-
-    // Fire-and-forget push notification
-    this.pushService
-      .sendPush(
-        input.userId,
-        input.title,
-        input.body,
-        input.data as Record<string, unknown> | undefined,
-      )
-      .catch(() => {});
-
-    return notification;
+    return this.prisma.notification.create({ data: input });
   }
 }

@@ -50,8 +50,7 @@ export class SearchService {
     const where = {
       status: {
         in: [
-          RequestStatus.OPEN,
-          RequestStatus.IN_PROGRESS,
+          RequestStatus.ACTIVE,
           RequestStatus.CLOSING_SOON,
         ],
       },
