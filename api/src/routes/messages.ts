@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { sendNotification } from "../notifications/notification.service";
 
 const router = Router();
 
@@ -192,6 +193,17 @@ router.post("/:threadId", authMiddleware, async (req: Request, res: Response) =>
       where: { id: threadId },
       data: { lastMessageAt: now },
     });
+
+    // Notify the other participant
+    const recipientId = thread.clientId === userId ? thread.specialistId : thread.clientId;
+    const senderName = message.sender.firstName || "Пользователь";
+    sendNotification({
+      userId: recipientId,
+      type: "new_message",
+      title: `Новое сообщение от ${senderName}`,
+      body: trimmedText ? trimmedText.slice(0, 200) : "Вложение",
+      entityId: threadId,
+    }).catch((err: Error) => console.warn("[notifications] new_message trigger failed:", err.message));
 
     res.json({ message: { ...message, files: savedFiles } });
   } catch (error) {

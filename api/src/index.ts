@@ -15,6 +15,8 @@ import userRoutes from "./routes/user";
 import specialistRoutes from "./routes/specialist";
 import threadsRoutes from "./routes/threads";
 import adminRoutes from "./routes/admin";
+import notificationsRoutes from "./routes/notifications";
+import { startNotificationWorker } from "./notifications/notification.processor";
 
 const app = express();
 const PORT = process.env.PORT || 3812;
@@ -40,7 +42,10 @@ app.use("/api/user", userRoutes);
 app.use("/api/specialist", specialistRoutes);
 app.use("/api/threads", threadsRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`);
+  // Start BullMQ worker (graceful degradation if Valkey unavailable)
+  startNotificationWorker();
 });
