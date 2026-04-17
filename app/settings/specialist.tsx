@@ -15,6 +15,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiGet, apiPatch, ApiError } from "@/lib/api";
 
 interface FnsServiceItem {
@@ -43,6 +44,7 @@ interface SpecialistProfileData {
 
 export default function SpecialistSettings() {
   const router = useRouter();
+  const { ready } = useRequireAuth();
   const { user, updateUser, signOut } = useAuth();
   const [data, setData] = useState<SpecialistProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,7 +148,7 @@ export default function SpecialistSettings() {
     ]);
   };
 
-  if (loading) {
+  if (!ready || loading) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <HeaderBack title="Настройки" />

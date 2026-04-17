@@ -1,8 +1,9 @@
-import { View, Text, Pressable, ScrollView, Switch } from "react-native";
+import { View, Text, Pressable, ScrollView, Switch, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useState } from "react";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 function SettingRow({
   icon,
@@ -39,9 +40,18 @@ function SectionTitle({ title }: { title: string }) {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { ready } = useRequireAuth();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [messageEnabled, setMessageEnabled] = useState(true);
+
+  if (!ready) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#1e3a8a" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
