@@ -1,99 +1,119 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   TextInput,
   ScrollView,
-  Pressable,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
-import { apiGet, apiPost, ApiError } from "@/lib/api";
+import Button from "@/components/ui/Button";
+import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface RequestDetail {
+interface RequestSummary {
   id: string;
   title: string;
   description: string;
   status: string;
   city: { id: string; name: string };
   fns: { id: string; name: string; code: string };
+  user: { id: string; firstName: string | null; lastName: string | null };
 }
+
+interface RateLimitInfo {
+  writesToday: number;
+  limit: number;
+}
+
+const MAX_CHARS = 1000;
+const MIN_CHARS = 10;
+const DAILY_LIMIT = 20;
 
 export default function SpecialistConfirmWrite() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [request, setRequest] = useState<RequestDetail | null>(null);
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+
+  const [request, setRequest] = useState<RequestSummary | null>(null);
+  const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchRequest() {
-      try {
-        const data = await apiGet<RequestDetail>(`/api/requests/${id}/public`);
-        setRequest(data);
-      } catch (err) {
-        setError("Не удалось загрузить заявку");
-      } finally {
-        setLoading(false);
-      }
+  const load = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setSubmitError(null);
+    try {
+      const [req, rl] = await Promise.all([
+        api<RequestSummary>(`/api/requests/${id}/public`),
+        api<RateLimitInfo>("/api/threads/rate-limit"),
+      ]);
+      setRequest(req);
+      setRateLimit(rl);
+    } catch {
+      setSubmitError("Не удалось загрузить данные");
+    } finally {
+      setLoading(false);
     }
-    if (id) fetchRequest();
   }, [id]);
 
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== "SPECIALIST") {
+        router.replace("/auth/email" as never);
+        return;
+      }
+      load();
+    }
+  }, [authLoading, isAuthenticated, user, load, router]);
+
   const handleSend = async () => {
-    if (message.length < 10 || sending) return;
+    if (message.length < MIN_CHARS || sending) return;
+    if (rateLimit && rateLimit.writesToday >= DAILY_LIMIT) return;
 
     setSending(true);
-    setError(null);
+    setSubmitError(null);
 
     try {
-      const result = await apiPost<{ id: string }>("/api/threads", {
-        requestId: id,
-        firstMessage: message,
+      const result = await api<{ id: string }>("/api/threads", {
+        method: "POST",
+        body: { requestId: id, firstMessage: message },
       });
       router.replace(`/threads/${result.id}` as never);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          if (err.message === "Заявка закрыта") {
-            setError("Заявка закрыта");
-          } else {
-            // Thread already exists — parse threadId from response
-            try {
-              const parsed = JSON.parse(
-                (err as unknown as { message: string }).message
-              );
-              if (parsed.threadId) {
-                router.replace(`/threads/${parsed.threadId}` as never);
-                return;
-              }
-            } catch {
-              // Try extracting threadId from error message
-            }
-            setError("Вы уже писали по этой заявке");
-          }
+          setSubmitError("Заявка закрыта — отклик невозможен");
         } else if (err.status === 429) {
-          setError("Лимит 20 сообщений в день");
+          setSubmitError(
+            "Лимит откликов на сегодня исчерпан (20 в день). Попробуйте завтра."
+          );
+          if (rateLimit) {
+            setRateLimit({ ...rateLimit, writesToday: DAILY_LIMIT });
+          }
         } else {
-          setError(err.message);
+          setSubmitError("Не удалось отправить сообщение. Попробуйте ещё раз.");
         }
       } else {
-        setError("Ошибка отправки");
+        setSubmitError("Не удалось отправить сообщение. Попробуйте ещё раз.");
       }
     } finally {
       setSending(false);
     }
   };
 
-  if (loading) {
+  const isLimitReached = rateLimit !== null && rateLimit.writesToday >= DAILY_LIMIT;
+  const canSubmit = message.length >= MIN_CHARS && !isLimitReached && !sending;
+
+  if (loading || authLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
         <HeaderBack title="Написать клиенту" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#1e3a8a" />
@@ -103,89 +123,136 @@ export default function SpecialistConfirmWrite() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-slate-50" edges={["top", "bottom"]}>
       <HeaderBack title="Написать клиенту" />
-      <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
         <ResponsiveContainer>
-          {/* Request summary */}
+          {/* Subtitle */}
+          <Text className="text-sm text-slate-500 mt-4 mb-3">
+            Прочитайте заявку и напишите первое сообщение
+          </Text>
+
+          {/* Rate limit info */}
+          {rateLimit !== null && (
+            <View
+              className={`rounded-xl px-4 py-3 mb-4 border ${
+                isLimitReached
+                  ? "bg-red-50 border-red-200"
+                  : "bg-slate-100 border-slate-200"
+              }`}
+            >
+              <Text
+                className={`text-sm font-medium ${
+                  isLimitReached ? "text-red-600" : "text-slate-600"
+                }`}
+              >
+                {isLimitReached
+                  ? "Лимит откликов на сегодня исчерпан (20 в день). Попробуйте завтра."
+                  : `Вы отправили ${rateLimit.writesToday} из ${rateLimit.limit} обращений сегодня`}
+              </Text>
+            </View>
+          )}
+
+          {/* Request summary card */}
           {request && (
-            <View className="bg-slate-50 rounded-xl p-4 mt-4 border border-slate-200">
-              <Text className="text-base font-semibold text-slate-900 mb-2">
+            <View
+              className="bg-white rounded-2xl border border-slate-100 p-4 mb-4"
+              style={{
+                shadowColor: "#0F172A",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                Заявка клиента
+              </Text>
+              <Text className="text-base font-semibold text-slate-900 mb-2 leading-snug">
                 {request.title}
               </Text>
-              <View className="flex-row flex-wrap gap-1.5 mb-2">
-                <View className="bg-white px-2 py-0.5 rounded border border-slate-200">
-                  <Text className="text-xs text-slate-400">{request.city.name}</Text>
+              <View className="flex-row flex-wrap gap-1.5 mb-3">
+                <View className="bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+                  <Text className="text-xs text-slate-600">{request.city.name}</Text>
                 </View>
-                <View className="bg-white px-2 py-0.5 rounded border border-slate-200">
-                  <Text className="text-xs text-slate-400">{request.fns.name}</Text>
+                <View className="bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+                  <Text className="text-xs text-slate-600">{request.fns.name}</Text>
                 </View>
               </View>
-              <Text className="text-sm text-slate-400" numberOfLines={3}>
+              <Text className="text-sm text-slate-500 leading-5" numberOfLines={3}>
                 {request.description}
               </Text>
             </View>
           )}
 
-          {/* Message input */}
-          <Text className="text-sm font-medium text-slate-900 mt-6 mb-2">
+          {/* Message textarea */}
+          <Text className="text-sm font-semibold text-slate-900 mb-2">
             Ваше сообщение
           </Text>
           <TextInput
             accessibilityLabel="Ваше сообщение"
             value={message}
-            onChangeText={setMessage}
-            placeholder="Здравствуйте! Могу помочь с..."
+            onChangeText={(t) => {
+              if (t.length <= MAX_CHARS) setMessage(t);
+            }}
+            placeholder="Здравствуйте! Я специалист по... Могу помочь с вашей ситуацией. Расскажите подробнее..."
             placeholderTextColor="#94a3b8"
             multiline
-            maxLength={1000}
+            editable={!isLimitReached}
             style={{
-              minHeight: 120,
+              minHeight: 140,
               borderWidth: 1,
-              borderColor: "#e2e8f0",
+              borderColor: isLimitReached ? "#e2e8f0" : "#cbd5e1",
               borderRadius: 12,
-              padding: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
               fontSize: 16,
               color: "#0f172a",
-              backgroundColor: "#f9fafb",
+              backgroundColor: isLimitReached ? "#f8fafc" : "#ffffff",
               textAlignVertical: "top",
+              opacity: isLimitReached ? 0.5 : 1,
             }}
           />
-          <Text className="text-xs text-slate-400 mt-1 text-right">
-            {message.length}/1000
-          </Text>
 
-          {error && (
-            <View className="bg-red-50 border border-red-200 rounded-xl p-3 mt-3">
-              <Text className="text-sm text-red-600">{error}</Text>
+          {/* Counter + min-length hint */}
+          <View className="flex-row justify-between items-center mt-1 mb-1">
+            {message.length > 0 && message.length < MIN_CHARS ? (
+              <Text className="text-xs text-red-500">Минимум 10 символов</Text>
+            ) : (
+              <View />
+            )}
+            <Text className="text-xs text-slate-400 ml-auto">
+              {message.length}/{MAX_CHARS}
+            </Text>
+          </View>
+
+          {/* Submit error */}
+          {submitError && (
+            <View className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-3">
+              <Text className="text-sm text-red-600">{submitError}</Text>
             </View>
           )}
 
-          {/* Actions */}
-          <Pressable
-            accessibilityLabel="Отправить"
-            onPress={handleSend}
-            disabled={message.length < 10 || sending}
-            className={`rounded-xl py-3 items-center mt-4 ${
-              message.length < 10 || sending ? "bg-blue-900 opacity-50" : "bg-blue-900"
-            }`}
-          >
-            {sending ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text className="text-white text-base font-semibold">Отправить</Text>
-            )}
-          </Pressable>
-
-          <Pressable
-            accessibilityLabel="Отмена"
-            onPress={() => router.back()}
-            className="rounded-xl py-3 items-center mt-2 bg-slate-100"
-          >
-            <Text className="text-slate-900 text-base font-semibold">Отмена</Text>
-          </Pressable>
-
-          <View className="h-8" />
+          {/* Action buttons */}
+          <View className="mt-5 gap-3">
+            <Button
+              label="Отправить сообщение"
+              onPress={handleSend}
+              disabled={!canSubmit}
+              loading={sending}
+              icon="send"
+            />
+            <Button
+              variant="secondary"
+              label="Отмена"
+              onPress={() => router.back()}
+            />
+          </View>
         </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
