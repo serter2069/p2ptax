@@ -1,0 +1,43 @@
+import { View, Text } from "react-native";
+import Feather from "@expo/vector-icons/Feather";
+import Button from "./Button";
+
+export interface EmptyStateProps {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  title: string;
+  subtitle?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
+export default function EmptyState({
+  icon,
+  title,
+  subtitle,
+  actionLabel,
+  onAction,
+}: EmptyStateProps) {
+  return (
+    <View className="items-center justify-center py-12 px-8">
+      <View
+        className="items-center justify-center rounded-full bg-slate-100"
+        style={{ width: 72, height: 72 }}
+      >
+        <Feather name={icon} size={32} color="#94a3b8" />
+      </View>
+      <Text className="text-base font-semibold text-slate-900 mt-4 text-center">
+        {title}
+      </Text>
+      {subtitle && (
+        <Text className="text-sm text-slate-500 mt-2 text-center">
+          {subtitle}
+        </Text>
+      )}
+      {actionLabel && onAction && (
+        <View className="mt-4">
+          <Button variant="secondary" label={actionLabel} onPress={onAction} fullWidth={false} />
+        </View>
+      )}
+    </View>
+  );
+}
