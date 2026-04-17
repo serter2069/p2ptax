@@ -588,8 +588,7 @@ Dependencies: none (entry point from any unauth trigger)
 
 ---
 **Screen: AuthOTP**
-Status: TODO
-Type: form
+Status: DONE
 Route: /auth/otp
 Access: public (guest only)
 
