@@ -1,14 +1,18 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import HeaderHome from "@/components/HeaderHome";
+import EmptyState from "@/components/EmptyState";
 
 export default function AdminModeration() {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       <HeaderHome />
-      <View className="flex-1 items-center justify-center px-4">
-        <Text className="text-2xl font-bold text-slate-900">Moderation</Text>
-        <Text className="text-sm text-slate-400 mt-2">All clear</Text>
+      <View className="flex-1">
+        <EmptyState
+          icon="check-circle"
+          title="Всё чисто"
+          subtitle="Нет элементов, требующих модерации"
+        />
       </View>
     </SafeAreaView>
   );
