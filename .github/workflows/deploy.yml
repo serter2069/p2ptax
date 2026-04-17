@@ -1,0 +1,35 @@
+name: Deploy Staging
+on:
+  push:
+    branches: [development]
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: [ci]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/development'
+    steps:
+      - name: Deploy to staging
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 95.217.84.161
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/p2ptax
+            git pull origin development
+            npm ci
+            npx expo export --platform web
+            cd api
+            npm ci
+            npx prisma migrate deploy
+            npx prisma generate
+            npm run build
+            cd ..
+            pm2 restart ecosystem.config.js
+            sleep 3
+            curl -sf http://localhost:3812/api/health || echo "Health check failed"
+            echo '{"version":"'$(git rev-parse --short HEAD)'","deployed":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > dist/version.json
