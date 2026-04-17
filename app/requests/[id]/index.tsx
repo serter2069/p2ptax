@@ -151,7 +151,10 @@ export default function PublicRequestDetail() {
       <View className="border-t border-slate-200 px-4 py-3">
         <ResponsiveContainer>
           {isAuthenticated && isSpecialist ? (
-            <Pressable className="bg-blue-900 rounded-xl py-3 items-center">
+            <Pressable
+              onPress={() => router.push(`/requests/${id}/write` as never)}
+              className="bg-blue-900 rounded-xl py-3 items-center"
+            >
               <Text className="text-white font-semibold text-base">
                 Написать клиенту
               </Text>

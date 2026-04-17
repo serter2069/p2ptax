@@ -55,7 +55,7 @@ async function main() {
 
   // Settings
   const settings = [
-    { key: "max_requests_per_client", value: "5" },
+    { key: "requests_limit", value: "5" },
     { key: "max_threads_per_request", value: "10" },
     { key: "auto_close_days", value: "30" },
     { key: "max_extensions", value: "3" },
