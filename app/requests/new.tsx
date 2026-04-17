@@ -244,21 +244,23 @@ export default function NewRequest() {
 
       {/* Sticky submit button */}
       <View className="border-t border-slate-200 px-4 py-3 bg-white">
-        <Pressable
-          onPress={handleSubmit}
-          disabled={!formValid || submitting}
-          className={`rounded-xl py-3 items-center ${
-            formValid && !submitting ? "bg-blue-900" : "bg-slate-300"
-          }`}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text className="text-white font-semibold text-base">
-              Опубликовать
-            </Text>
-          )}
-        </Pressable>
+        <View className="w-full" style={{ maxWidth: 520, alignSelf: "center" }}>
+          <Pressable
+            onPress={handleSubmit}
+            disabled={!formValid || submitting}
+            className={`rounded-xl py-3 items-center ${
+              formValid && !submitting ? "bg-blue-900" : "bg-slate-300"
+            }`}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text className="text-white font-semibold text-base">
+                Опубликовать
+              </Text>
+            )}
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );

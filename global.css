@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Theme background — #F8FAFC (slate-50) replaces default #f2f2f2 */
+html, body, #root {
+  background-color: #F8FAFC;
+}
