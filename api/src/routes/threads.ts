@@ -6,6 +6,27 @@ const router = Router();
 
 router.use(authMiddleware);
 
+// GET /api/threads/rate-limit — today's write count for specialist
+router.get("/rate-limit", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const count = await prisma.thread.count({
+      where: {
+        specialistId: userId,
+        createdAt: { gte: todayStart },
+      },
+    });
+
+    res.json({ writesToday: count, limit: 20 });
+  } catch (error) {
+    console.error("threads rate-limit error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/threads — threads for current user (specialist or client)
 router.get("/", async (req: Request, res: Response) => {
   try {

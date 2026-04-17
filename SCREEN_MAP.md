@@ -323,7 +323,7 @@ Dependencies: none
 
 ---
 **Screen: PublicRequestDetail**
-Status: TODO
+Status: DONE
 Type: detail
 Route: /requests/[id]
 Access: public (guest, client, specialist, admin)
@@ -392,7 +392,7 @@ Dependencies: PublicRequestsFeed, LandingScreen
 
 ---
 **Screen: SpecialistsCatalog**
-Status: TODO
+Status: DONE
 Type: list
 Route: /specialists
 Access: public (guest, client, specialist, admin)
@@ -453,7 +453,7 @@ Dependencies: none
 
 ---
 **Screen: SpecialistPublicProfile**
-Status: TODO
+Status: DONE
 Type: detail
 Route: /specialists/[id]
 Access: public (guest, client, specialist, admin)
@@ -656,7 +656,7 @@ Dependencies: AuthEmail (passes email param)
 
 ---
 **Screen: OnboardingName**
-Status: TODO
+Status: DONE
 Type: form
 Route: /onboarding/name
 Access: specialist (new, step 1/3)
@@ -711,7 +711,7 @@ Dependencies: AuthOTP
 
 ---
 **Screen: OnboardingWorkArea**
-Status: TODO
+Status: DONE
 Type: form
 Route: /onboarding/work-area
 Access: specialist (new, step 2/3)
@@ -779,7 +779,7 @@ Dependencies: OnboardingName
 
 ---
 **Screen: OnboardingProfile**
-Status: TODO
+Status: DONE
 Type: form
 Route: /onboarding/profile
 Access: specialist (new, step 3/3)
@@ -857,7 +857,7 @@ Dependencies: OnboardingWorkArea
 
 ---
 **Screen: ClientDashboard**
-Status: TODO
+Status: DONE
 Type: showcase
 Route: /(client-tabs)/dashboard
 Access: auth required, role: client
@@ -918,7 +918,7 @@ Dependencies: none
 
 ---
 **Screen: MyRequests**
-Status: TODO
+Status: DONE
 Type: list
 Route: /(client-tabs)/requests
 Access: auth required, role: client
@@ -985,7 +985,7 @@ Dependencies: none
 
 ---
 **Screen: MyRequestsNew**
-Status: TODO
+Status: DONE
 Type: form
 Route: /requests/new
 Access: auth required, role: client
@@ -1062,7 +1062,7 @@ Dependencies: ClientDashboard, MyRequests
 
 ---
 **Screen: MyRequestDetail**
-Status: TODO
+Status: DONE
 Type: detail
 Route: /requests/[id]/detail
 Access: auth required, role: client (owner)
@@ -1139,7 +1139,7 @@ Dependencies: MyRequests, ClientDashboard
 
 ---
 **Screen: MessagesGrouped**
-Status: TODO
+Status: DONE
 Type: list
 Route: /requests/[id]/messages
 Access: auth required, role: client
@@ -1197,7 +1197,7 @@ Dependencies: MyRequestDetail
 
 ---
 **Screen: ClientMessages**
-Status: TODO
+Status: DONE
 Type: chat
 Route: /(client-tabs)/messages
 Access: auth required, role: client
@@ -1255,7 +1255,7 @@ Dependencies: none
 
 ---
 **Screen: ClientSettings**
-Status: TODO
+Status: DONE
 Type: settings
 Route: /settings/client
 Access: auth required, role: client
@@ -1344,7 +1344,7 @@ Dependencies: ClientDashboard
 
 ---
 **Screen: SpecialistDashboard**
-Status: TODO
+Status: DONE
 Type: showcase
 Route: /(specialist-tabs)/dashboard
 Access: auth required, role: specialist
@@ -1412,7 +1412,7 @@ Dependencies: none
 
 ---
 **Screen: SpecialistConfirmWrite**
-Status: TODO
+Status: DONE
 Type: form
 Route: /requests/[id]/write (modal)
 Access: auth required, role: specialist
@@ -1484,7 +1484,7 @@ Dependencies: SpecialistDashboard, PublicRequestsFeed
 
 ---
 **Screen: SpecialistMyThreads**
-Status: TODO
+Status: DONE
 Type: list
 Route: /(specialist-tabs)/threads
 Access: auth required, role: specialist
@@ -1553,7 +1553,7 @@ Dependencies: none
 
 ---
 **Screen: SpecialistSettings**
-Status: TODO
+Status: DONE
 Type: settings
 Route: /settings/specialist
 Access: auth required, role: specialist
@@ -1655,7 +1655,7 @@ Dependencies: SpecialistPublicProfile (own profile), SpecialistDashboard
 
 ---
 **Screen: ChatThread**
-Status: TODO
+Status: DONE
 Type: chat
 Route: /threads/[id]
 Access: auth required, role: client + specialist (thread participants only)
@@ -1769,7 +1769,7 @@ Dependencies: AuthEmail, OnboardingName, ClientSettings, SpecialistSettings
 
 ---
 **Screen: AdminDashboard**
-Status: TODO
+Status: DONE
 Type: showcase
 Route: /(admin-tabs)/dashboard
 Access: auth required, role: admin
@@ -1829,7 +1829,7 @@ Dependencies: none (admin root)
 
 ---
 **Screen: AdminUsers**
-Status: TODO
+Status: DONE
 Type: list
 Route: /(admin-tabs)/users
 Access: auth required, role: admin
@@ -1913,7 +1913,7 @@ Dependencies: AdminDashboard
 
 ---
 **Screen: AdminModeration**
-Status: TODO
+Status: DONE
 Type: list
 Route: /(admin-tabs)/moderation
 Access: auth required, role: admin
@@ -1959,7 +1959,7 @@ Dependencies: AdminDashboard
 
 ---
 **Screen: AdminSettings**
-Status: TODO
+Status: DONE
 Type: settings
 Route: /admin/settings
 Access: auth required, role: admin
