@@ -51,6 +51,7 @@ export default function SpecialistsCatalog() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
@@ -58,8 +59,19 @@ export default function SpecialistsCatalog() {
   const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
+  const hasFilters =
+    selectedCityId !== null ||
+    selectedFnsId !== null ||
+    selectedServiceIds.length > 0;
+
   const selectedCity = cities.find((c) => c.id === selectedCityId);
   const fnsOffices = selectedCity?.fnsOffices || [];
+
+  const resetFilters = useCallback(() => {
+    setSelectedCityId(null);
+    setSelectedFnsId(null);
+    setSelectedServiceIds([]);
+  }, []);
 
   const fetchSpecialists = useCallback(
     async (pageNum: number, append = false) => {
@@ -79,8 +91,10 @@ export default function SpecialistsCatalog() {
         }
         setHasMore(res.hasMore);
         setPage(pageNum);
+        setError(null);
       } catch (e) {
         console.error("Fetch specialists error:", e);
+        setError("Не удалось загрузить список");
       }
     },
     [selectedCityId, selectedFnsId, selectedServiceIds]
@@ -103,6 +117,7 @@ export default function SpecialistsCatalog() {
       setLoading(false);
     }
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refetch on filter change
@@ -142,6 +157,72 @@ export default function SpecialistsCatalog() {
     [router]
   );
 
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View className="flex-1 items-center justify-center py-16">
+          <ActivityIndicator size="large" color="#1e3a5f" />
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <EmptyState
+          icon="exclamation-circle"
+          title="Не удалось загрузить список"
+          subtitle="Проверьте соединение с интернетом и попробуйте снова"
+          actionLabel="Повторить"
+          onAction={() => {
+            setLoading(true);
+            fetchSpecialists(1).finally(() => setLoading(false));
+          }}
+        />
+      );
+    }
+
+    if (specialists.length === 0) {
+      return (
+        <EmptyState
+          icon="user-times"
+          title="Специалистов не найдено"
+          subtitle="Попробуйте изменить фильтры или выбрать другой город"
+          actionLabel={hasFilters ? "Сбросить фильтры" : undefined}
+          onAction={hasFilters ? resetFilters : undefined}
+        />
+      );
+    }
+
+    return (
+      <FlatList
+        data={specialists}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8 }}
+        renderItem={({ item }) => (
+          <SpecialistCard
+            id={item.id}
+            firstName={item.firstName}
+            lastName={item.lastName}
+            avatarUrl={item.avatarUrl}
+            services={item.services}
+            cities={item.cities}
+            onPress={handleSpecialistPress}
+          />
+        )}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator size="small" color="#1e3a5f" style={{ paddingVertical: 16 }} />
+          ) : null
+        }
+      />
+    );
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="Специалисты" />
@@ -157,44 +238,7 @@ export default function SpecialistsCatalog() {
           selectedFnsId={selectedFnsId}
           onFnsChange={setSelectedFnsId}
         />
-        {loading ? (
-          <View className="flex-1 items-center justify-center py-16">
-            <ActivityIndicator size="large" color="#1e3a5f" />
-          </View>
-        ) : specialists.length === 0 ? (
-          <EmptyState
-            icon="user-times"
-            title="Специалисты не найдены"
-            subtitle="Попробуйте изменить фильтры"
-          />
-        ) : (
-          <FlatList
-            data={specialists}
-            keyExtractor={(item) => item.id}
-            contentContainerClassName="pb-4 pt-2"
-            renderItem={({ item }) => (
-              <SpecialistCard
-                id={item.id}
-                firstName={item.firstName}
-                lastName={item.lastName}
-                avatarUrl={item.avatarUrl}
-                services={item.services}
-                cities={item.cities}
-                onPress={handleSpecialistPress}
-              />
-            )}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              loadingMore ? (
-                <ActivityIndicator size="small" color="#1e3a5f" className="py-4" />
-              ) : null
-            }
-          />
-        )}
+        {renderContent()}
       </ResponsiveContainer>
     </SafeAreaView>
   );
