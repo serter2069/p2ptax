@@ -144,6 +144,7 @@ export default function MyRequestDetail() {
             {error || "Заявка не найдена"}
           </Text>
           <Pressable
+            accessibilityLabel="Назад"
             onPress={() => router.back()}
             className="mt-4 bg-blue-900 rounded-xl px-6 py-3"
           >
@@ -169,7 +170,7 @@ export default function MyRequestDetail() {
       <HeaderBack
         title={request.title}
         rightAction={
-          <Pressable onPress={handleDelete}>
+          <Pressable accessibilityLabel="Удалить заявку" onPress={handleDelete}>
             <FontAwesome name="trash-o" size={18} color="#ef4444" />
           </Pressable>
         }
@@ -209,6 +210,7 @@ export default function MyRequestDetail() {
                 {request.files.map((file) => (
                   <Pressable
                     key={file.id}
+                    accessibilityLabel={`Открыть файл ${file.filename}`}
                     onPress={() => handleFilePress(file)}
                     className="flex-row items-center bg-slate-50 rounded-lg p-3 mb-2"
                   >
@@ -233,6 +235,7 @@ export default function MyRequestDetail() {
 
             {/* Messages button */}
             <Pressable
+              accessibilityLabel="Сообщения"
               onPress={() => router.push(`/requests/${id}/messages` as never)}
               className="flex-row items-center justify-center bg-slate-50 border border-slate-200 rounded-xl py-3 mb-4"
             >
@@ -245,6 +248,7 @@ export default function MyRequestDetail() {
             {/* Extend button (for closing_soon) */}
             {canExtend && (
               <Pressable
+                accessibilityLabel="Продлить заявку"
                 onPress={handleExtend}
                 disabled={extending}
                 className="bg-amber-500 rounded-xl py-3 items-center mb-4"

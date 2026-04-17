@@ -81,7 +81,7 @@ export default function OnboardingProfileScreen() {
             </Text>
 
             {/* Avatar area */}
-            <Pressable className="items-center mb-6">
+            <Pressable accessibilityLabel="Добавить фото" className="items-center mb-6">
               <View className="w-20 h-20 rounded-full bg-slate-100 items-center justify-center border-2 border-dashed border-slate-300">
                 <FontAwesome name="camera" size={24} color="#94a3b8" />
               </View>
@@ -93,6 +93,7 @@ export default function OnboardingProfileScreen() {
             {/* About */}
             <Text className="text-sm text-slate-500 mb-1">О себе</Text>
             <TextInput
+              accessibilityLabel="О себе"
               style={{
                 height: 100,
                 borderRadius: 12,
@@ -122,6 +123,7 @@ export default function OnboardingProfileScreen() {
             {/* Phone */}
             <Text className="text-sm text-slate-500 mb-1">Телефон</Text>
             <TextInput
+              accessibilityLabel="Телефон"
               style={{
                 height: 48,
                 borderRadius: 12,
@@ -144,6 +146,7 @@ export default function OnboardingProfileScreen() {
             {/* Telegram */}
             <Text className="text-sm text-slate-500 mb-1">Telegram</Text>
             <TextInput
+              accessibilityLabel="Telegram"
               style={{
                 height: 48,
                 borderRadius: 12,
@@ -166,6 +169,7 @@ export default function OnboardingProfileScreen() {
             {/* WhatsApp */}
             <Text className="text-sm text-slate-500 mb-1">WhatsApp</Text>
             <TextInput
+              accessibilityLabel="WhatsApp"
               style={{
                 height: 48,
                 borderRadius: 12,
@@ -199,6 +203,7 @@ export default function OnboardingProfileScreen() {
                 color: "#0f172a",
                 marginBottom: 16,
               }}
+              accessibilityLabel="Адрес офиса"
               placeholder="г. Москва, ул. Примерная, 1"
               placeholderTextColor="#94a3b8"
               value={officeAddress}
@@ -220,6 +225,7 @@ export default function OnboardingProfileScreen() {
                 color: "#0f172a",
                 marginBottom: 24,
               }}
+              accessibilityLabel="Часы работы"
               placeholder="Пн-Пт 9:00-18:00"
               placeholderTextColor="#94a3b8"
               value={workingHours}
@@ -234,6 +240,7 @@ export default function OnboardingProfileScreen() {
             ) : null}
 
             <Pressable
+              accessibilityLabel="Завершить"
               onPress={handleSubmit}
               disabled={isLoading}
               className={`h-12 rounded-xl items-center justify-center ${

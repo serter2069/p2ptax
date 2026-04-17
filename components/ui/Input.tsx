@@ -62,6 +62,7 @@ export default function Input({
           />
         )}
         <TextInput
+          accessibilityLabel={label || placeholder}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}

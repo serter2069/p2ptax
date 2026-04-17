@@ -107,6 +107,7 @@ export default function ClientDashboard() {
 
               {/* Create request button */}
               <Pressable
+                accessibilityLabel="Создать заявку"
                 onPress={() => router.push("/requests/new" as never)}
                 disabled={atLimit}
                 className={`rounded-xl py-3 items-center mb-6 ${
@@ -124,7 +125,7 @@ export default function ClientDashboard() {
                   Мои заявки
                 </Text>
                 {requests.length > 0 && (
-                  <Pressable onPress={() => router.push("/(client-tabs)/requests" as never)}>
+                  <Pressable accessibilityLabel="Все заявки" onPress={() => router.push("/(client-tabs)/requests" as never)}>
                     <Text className="text-sm text-blue-900 font-medium">
                       Все заявки
                     </Text>

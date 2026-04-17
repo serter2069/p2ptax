@@ -176,7 +176,7 @@ export default function OnboardingWorkAreaScreen() {
                     </Text>
                     <Text className="text-xs text-slate-400">{item.cityName}</Text>
                   </View>
-                  <Pressable onPress={() => removeFns(item.fnsId)}>
+                  <Pressable accessibilityLabel="Удалить отделение" onPress={() => removeFns(item.fnsId)}>
                     <FontAwesome name="times" size={16} color="#94a3b8" />
                   </Pressable>
                 </View>
@@ -187,6 +187,7 @@ export default function OnboardingWorkAreaScreen() {
                   return (
                     <Pressable
                       key={svc.id}
+                      accessibilityLabel={svc.name}
                       onPress={() => toggleService(item.fnsId, svc.id)}
                       className="flex-row items-center py-1.5"
                     >
@@ -225,6 +226,7 @@ export default function OnboardingWorkAreaScreen() {
                   {cities.map((city) => (
                     <Pressable
                       key={city.id}
+                      accessibilityLabel={city.name}
                       onPress={() => handleCitySelect(city)}
                       className="px-4 py-3 border-b border-slate-100 active:bg-slate-50"
                     >
@@ -254,6 +256,7 @@ export default function OnboardingWorkAreaScreen() {
                     .map((fns) => (
                       <Pressable
                         key={fns.id}
+                        accessibilityLabel={fns.name}
                         onPress={() => handleFnsSelect(fns)}
                         className="px-4 py-3 border-b border-slate-100 active:bg-slate-50"
                       >
@@ -279,6 +282,7 @@ export default function OnboardingWorkAreaScreen() {
             {/* Add city button */}
             {!showCityPicker && !showFnsPicker && (
               <Pressable
+                accessibilityLabel="Добавить город"
                 onPress={() => {
                   setShowCityPicker(true);
                   setShowFnsPicker(false);
@@ -294,6 +298,7 @@ export default function OnboardingWorkAreaScreen() {
 
             {showCityPicker && (
               <Pressable
+                accessibilityLabel="Отмена"
                 onPress={() => setShowCityPicker(false)}
                 className="mb-4"
               >
@@ -305,6 +310,7 @@ export default function OnboardingWorkAreaScreen() {
 
             {showFnsPicker && (
               <Pressable
+                accessibilityLabel="Отмена"
                 onPress={() => {
                   setShowFnsPicker(false);
                   setSelectedCityId(null);
@@ -324,6 +330,7 @@ export default function OnboardingWorkAreaScreen() {
             ) : null}
 
             <Pressable
+              accessibilityLabel="Далее"
               onPress={handleNext}
               disabled={!canProceed || isLoading}
               className={`h-12 rounded-xl items-center justify-center ${

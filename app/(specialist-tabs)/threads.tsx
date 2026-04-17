@@ -148,6 +148,7 @@ function FilterChip({
 }) {
   return (
     <Pressable
+      accessibilityLabel={label}
       onPress={onPress}
       className={`px-4 py-2 rounded-full border ${
         active ? "bg-blue-900 border-blue-900" : "bg-white border-slate-200"
@@ -194,6 +195,7 @@ function ThreadCard({
 
   return (
     <Pressable
+      accessibilityLabel={`Чат с ${name}`}
       onPress={onPress}
       className="flex-row items-center py-3 border-b border-slate-100"
     >

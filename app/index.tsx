@@ -103,6 +103,7 @@ export default function LandingScreen() {
         <Text className="text-lg font-bold text-white">P2PTax</Text>
         {!isAuthenticated && (
           <Pressable
+            accessibilityLabel="Войти"
             onPress={() => router.push("/(auth)/email" as never)}
             className="bg-white/20 rounded-lg px-4 min-h-[44px] items-center justify-center"
           >
@@ -133,6 +134,7 @@ export default function LandingScreen() {
               {cities.map((city) => (
                 <Pressable
                   key={city.id}
+                  accessibilityLabel={city.name}
                   onPress={() => handleCitySelect(city.id)}
                   className={`px-3 py-2 rounded-lg mr-2 border ${
                     selectedCityId === city.id
@@ -162,6 +164,7 @@ export default function LandingScreen() {
                 {fnsOffices.map((fns) => (
                   <Pressable
                     key={fns.id}
+                    accessibilityLabel={fns.name}
                     onPress={() =>
                       setSelectedFnsId(selectedFnsId === fns.id ? null : fns.id)
                     }
@@ -193,6 +196,7 @@ export default function LandingScreen() {
               {services.map((s) => (
                 <Pressable
                   key={s.id}
+                  accessibilityLabel={s.name}
                   onPress={() =>
                     setSelectedServiceId(selectedServiceId === s.id ? null : s.id)
                   }
@@ -218,6 +222,7 @@ export default function LandingScreen() {
 
           {/* CTA button */}
           <Pressable
+            accessibilityLabel="Отправить заявку"
             onPress={() => {
               if (!isAuthenticated) {
                 router.push("/(auth)/email" as never);
@@ -234,6 +239,7 @@ export default function LandingScreen() {
           {/* Navigation links */}
           <View className="flex-row gap-3 mb-6">
             <Pressable
+              accessibilityLabel="Все заявки"
               onPress={() => router.push("/requests" as never)}
               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-3 items-center"
             >
@@ -243,6 +249,7 @@ export default function LandingScreen() {
               </Text>
             </Pressable>
             <Pressable
+              accessibilityLabel="Все специалисты"
               onPress={() => router.push("/specialists" as never)}
               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-3 items-center"
             >

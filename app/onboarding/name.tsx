@@ -62,6 +62,7 @@ export default function OnboardingNameScreen() {
 
           <Text className="text-sm text-slate-500 mb-1">Имя</Text>
           <TextInput
+            accessibilityLabel="Имя"
             style={{
               height: 48,
               borderRadius: 12,
@@ -88,6 +89,7 @@ export default function OnboardingNameScreen() {
 
           <Text className="text-sm text-slate-500 mb-1">Фамилия</Text>
           <TextInput
+            accessibilityLabel="Фамилия"
             style={{
               height: 48,
               borderRadius: 12,
@@ -114,6 +116,7 @@ export default function OnboardingNameScreen() {
 
           {/* Terms checkbox */}
           <Pressable
+            accessibilityLabel="Принять условия использования"
             onPress={() => setAgreed(!agreed)}
             className="flex-row items-start mb-6"
           >
@@ -146,6 +149,7 @@ export default function OnboardingNameScreen() {
           ) : null}
 
           <Pressable
+            accessibilityLabel="Далее"
             onPress={handleNext}
             disabled={!canProceed || isLoading}
             className={`h-12 rounded-xl items-center justify-center ${

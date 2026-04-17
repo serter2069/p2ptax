@@ -68,7 +68,7 @@ function ConversationItem({
   unread,
 }: (typeof CONVERSATIONS)[0]) {
   return (
-    <Pressable className="flex-row items-center px-4 py-3 active:bg-gray-50">
+    <Pressable accessibilityLabel={`Чат с ${name}`} className="flex-row items-center px-4 py-3 active:bg-gray-50">
       <View
         className="w-12 h-12 rounded-full items-center justify-center"
         style={{ backgroundColor: avatarColor }}

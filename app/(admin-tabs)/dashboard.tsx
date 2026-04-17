@@ -37,7 +37,7 @@ function StatCard({
   );
 
   if (onPress) {
-    return <Pressable onPress={onPress}>{content}</Pressable>;
+    return <Pressable accessibilityLabel={label} onPress={onPress}>{content}</Pressable>;
   }
   return content;
 }

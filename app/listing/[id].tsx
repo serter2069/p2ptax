@@ -65,10 +65,10 @@ export default function ListingDetailScreen() {
 
       {/* Bottom Action Bar */}
       <View className="flex-row px-4 py-3 border-t border-gray-100 gap-3">
-        <Pressable className="flex-1 h-12 rounded-xl bg-blue-600 items-center justify-center active:bg-blue-700">
+        <Pressable accessibilityLabel="Написать продавцу" className="flex-1 h-12 rounded-xl bg-blue-600 items-center justify-center active:bg-blue-700">
           <Text className="text-white text-base font-semibold">Message Seller</Text>
         </Pressable>
-        <Pressable className="w-12 h-12 rounded-xl border border-gray-200 items-center justify-center active:bg-gray-50">
+        <Pressable accessibilityLabel="Добавить в избранное" className="w-12 h-12 rounded-xl border border-gray-200 items-center justify-center active:bg-gray-50">
           <FontAwesome name="heart-o" size={20} color="#6b7280" />
         </Pressable>
       </View>

@@ -138,6 +138,7 @@ export default function AuthOtpScreen() {
             {digits.map((digit, i) => (
               <TextInput
                 key={i}
+                accessibilityLabel={`Цифра ${i + 1} кода подтверждения`}
                 ref={(ref) => {
                   inputRefs.current[i] = ref;
                 }}
@@ -172,6 +173,7 @@ export default function AuthOtpScreen() {
           ) : null}
 
           <Pressable
+            accessibilityLabel="Подтвердить"
             onPress={() => handleVerify(digits.join(""))}
             disabled={isLoading || digits.join("").length !== CODE_LENGTH}
             className={`h-12 rounded-xl items-center justify-center mt-4 ${
@@ -190,6 +192,7 @@ export default function AuthOtpScreen() {
           </Pressable>
 
           <Pressable
+            accessibilityLabel="Отправить повторно"
             onPress={handleResend}
             disabled={resendTimer > 0}
             className="mt-4 py-3"

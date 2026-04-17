@@ -131,6 +131,7 @@ export default function MyRequests() {
                 />
                 {item.status !== "CLOSED" && (
                   <Pressable
+                    accessibilityLabel="Закрыть заявку"
                     onPress={() => handleClose(item.id, item.title)}
                     className="self-end -mt-1 mb-3 px-3 py-1.5 bg-red-600 rounded-lg"
                   >
@@ -146,6 +147,7 @@ export default function MyRequests() {
             }
             ListFooterComponent={
               <Pressable
+                accessibilityLabel="Создать заявку"
                 onPress={() => router.push("/requests/new" as never)}
                 className="bg-blue-900 rounded-xl py-3 items-center mt-2"
               >

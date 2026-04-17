@@ -132,6 +132,7 @@ export default function SpecialistConfirmWrite() {
             Ваше сообщение
           </Text>
           <TextInput
+            accessibilityLabel="Ваше сообщение"
             value={message}
             onChangeText={setMessage}
             placeholder="Здравствуйте! Могу помочь с..."
@@ -162,6 +163,7 @@ export default function SpecialistConfirmWrite() {
 
           {/* Actions */}
           <Pressable
+            accessibilityLabel="Отправить"
             onPress={handleSend}
             disabled={message.length < 10 || sending}
             className={`rounded-xl py-3 items-center mt-4 ${
@@ -176,6 +178,7 @@ export default function SpecialistConfirmWrite() {
           </Pressable>
 
           <Pressable
+            accessibilityLabel="Отмена"
             onPress={() => router.back()}
             className="rounded-xl py-3 items-center mt-2 bg-slate-100"
           >

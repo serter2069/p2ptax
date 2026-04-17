@@ -25,6 +25,7 @@ export default function PrivacyPolicyScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-row items-center h-14 bg-white border-b border-slate-200 px-4">
         <Pressable
+          accessibilityLabel="Назад"
           onPress={() => router.back()}
           className="w-10 h-10 items-center justify-center -ml-2"
         >

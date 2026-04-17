@@ -27,6 +27,7 @@ export default function EmptyState({
       )}
       {actionLabel && onAction && (
         <Pressable
+          accessibilityLabel={actionLabel}
           onPress={onAction}
           className="mt-4 bg-blue-900 rounded-xl px-6 py-3"
         >
