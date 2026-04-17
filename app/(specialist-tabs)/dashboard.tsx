@@ -6,6 +6,7 @@ import {
   RefreshControl,
   Pressable,
   ActivityIndicator,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -15,14 +16,14 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPatch } from "@/lib/api";
 
 interface Stats {
   threadsTotal: number;
   newMessages: number;
 }
 
-interface RequestItem {
+interface MatchingRequest {
   id: string;
   title: string;
   description: string;
@@ -30,48 +31,104 @@ interface RequestItem {
   createdAt: string;
   city: { id: string; name: string };
   fns: { id: string; name: string; code: string };
-  threadsCount: number;
+  service?: string;
   isMyRegion: boolean;
-  existingThreadId: string | null;
+  hasThread: boolean;
+  threadId: string | null;
+  // legacy compat
+  existingThreadId?: string | null;
+}
+
+interface DashboardData {
+  isAvailable: boolean;
+  activeThreads: number;
+  matchingRequests: MatchingRequest[];
+  stats: {
+    threadsTotal: number;
+    newMessages: number;
+  };
 }
 
 export default function SpecialistDashboard() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+
   const [stats, setStats] = useState<Stats | null>(null);
-  const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [requests, setRequests] = useState<MatchingRequest[]>([]);
+  const [isAvailable, setIsAvailable] = useState<boolean>(
+    user?.isAvailable ?? true
+  );
+  const [availabilityToggling, setAvailabilityToggling] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const fetchData = useCallback(async () => {
+    setError(false);
     try {
+      // Try unified dashboard endpoint first
+      try {
+        const dashData = await apiGet<DashboardData>("/api/specialists/dashboard");
+        setIsAvailable(dashData.isAvailable);
+        setRequests(dashData.matchingRequests ?? []);
+        setStats({
+          threadsTotal: dashData.stats?.threadsTotal ?? dashData.activeThreads ?? 0,
+          newMessages: dashData.stats?.newMessages ?? 0,
+        });
+        updateUser({ isAvailable: dashData.isAvailable });
+        return;
+      } catch {
+        // Fallback to legacy separate endpoints
+      }
+
       const [statsData, requestsData] = await Promise.all([
         apiGet<Stats>("/api/specialist/stats"),
-        apiGet<{ items: RequestItem[] }>("/api/specialist/requests"),
+        apiGet<{ items: MatchingRequest[] }>("/api/specialist/requests"),
       ]);
       setStats(statsData);
-      setRequests(requestsData.items);
-    } catch (error) {
-      console.error("Dashboard fetch error:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setRequests(requestsData.items ?? []);
+    } catch {
+      setError(true);
     }
-  }, []);
+  }, [updateUser]);
 
   useEffect(() => {
-    fetchData();
+    setLoading(true);
+    fetchData().finally(() => setLoading(false));
   }, [fetchData]);
 
-  const onRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    fetchData();
+    await fetchData();
+    setRefreshing(false);
   }, [fetchData]);
+
+  const handleToggleAvailability = useCallback(
+    async (val: boolean) => {
+      setIsAvailable(val);
+      setAvailabilityToggling(true);
+      try {
+        await apiPatch("/api/specialists/availability", { isAvailable: val });
+        updateUser({ isAvailable: val });
+      } catch {
+        // Revert on error
+        setIsAvailable(!val);
+      } finally {
+        setAvailabilityToggling(false);
+      }
+    },
+    [updateUser]
+  );
+
+  const firstName = user?.firstName ?? "специалист";
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-        <HeaderHome onSettingsPress={() => router.push("/settings/specialist" as never)} />
+      <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+        <HeaderHome
+          notificationCount={0}
+          onSettingsPress={() => router.push("/settings/specialist" as never)}
+        />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#1e3a8a" />
         </View>
@@ -79,129 +136,237 @@ export default function SpecialistDashboard() {
     );
   }
 
+  if (error) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+        <HeaderHome
+          onSettingsPress={() => router.push("/settings/specialist" as never)}
+        />
+        <View className="flex-1 items-center justify-center px-8">
+          <FontAwesome name="exclamation-circle" size={48} color="#94a3b8" />
+          <Text className="text-lg font-semibold text-slate-900 mt-4 text-center">
+            Не удалось загрузить заявки
+          </Text>
+          <Text className="text-sm text-slate-500 mt-2 text-center">
+            Проверьте соединение с интернетом и попробуйте снова
+          </Text>
+          <Pressable
+            accessibilityLabel="Повторить"
+            onPress={() => {
+              setLoading(true);
+              fetchData().finally(() => setLoading(false));
+            }}
+            className="mt-6 bg-blue-900 rounded-xl px-8 py-3"
+          >
+            <Text className="text-white font-semibold text-base">Повторить</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <HeaderHome onSettingsPress={() => router.push("/settings/specialist" as never)} />
+    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+      <HeaderHome
+        notificationCount={stats?.newMessages ?? 0}
+        onSettingsPress={() => router.push("/settings/specialist" as never)}
+      />
       <ScrollView
         className="flex-1"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
         <ResponsiveContainer>
-          {/* Unavailable warning */}
-          {user && !user.isAvailable && (
-            <Pressable
-              accessibilityLabel="Включить приём заявок"
-              onPress={() => router.push("/settings/specialist" as never)}
-              className="bg-amber-50 border border-amber-300 rounded-xl p-4 mt-4"
-            >
-              <View className="flex-row items-center">
-                <FontAwesome name="exclamation-triangle" size={16} color="#b45309" />
-                <Text className="text-sm text-amber-700 font-medium ml-2 flex-1">
-                  Вы в режиме ожидания
-                </Text>
-                <Text className="text-xs text-amber-700 underline">Настройки</Text>
-              </View>
-            </Pressable>
-          )}
+          <View className="py-4">
+            {/* Welcome header */}
+            <Text className="text-2xl font-bold text-slate-900 mb-4">
+              Здравствуйте, {firstName}!
+            </Text>
 
-          {/* Stats */}
-          {stats && (
-            <View className="flex-row gap-3 mt-4">
-              <View className="flex-1 bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <Text className="text-2xl font-bold text-slate-900">
-                  {stats.threadsTotal}
+            {/* Availability toggle */}
+            <View className="bg-white border border-slate-200 rounded-xl p-4 mb-4 flex-row items-center justify-between">
+              <View className="flex-1 mr-3">
+                <Text className="text-sm font-semibold text-slate-900">
+                  Принимаю заявки
                 </Text>
-                <Text className="text-xs text-slate-400 mt-1">Всего диалогов</Text>
+                <Text className="text-xs text-slate-500 mt-0.5">
+                  {isAvailable
+                    ? "Клиенты видят вас в каталоге"
+                    : "Вы не принимаете новые заявки"}
+                </Text>
               </View>
-              <View className="flex-1 bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <Text className="text-2xl font-bold text-blue-900">
-                  {stats.newMessages}
+              <Switch
+                value={isAvailable}
+                onValueChange={handleToggleAvailability}
+                disabled={availabilityToggling}
+                trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
+                thumbColor="#ffffff"
+              />
+            </View>
+
+            {/* Standby banner */}
+            {!isAvailable && (
+              <Pressable
+                accessibilityLabel="Перейти в настройки"
+                onPress={() => router.push("/settings/specialist" as never)}
+                className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-4"
+              >
+                <View className="flex-row items-start">
+                  <FontAwesome
+                    name="exclamation-triangle"
+                    size={16}
+                    color="#b45309"
+                    style={{ marginTop: 2 }}
+                  />
+                  <View className="flex-1 ml-2">
+                    <Text className="text-sm font-semibold text-amber-700">
+                      Вы не принимаете заявки
+                    </Text>
+                    <Text className="text-xs text-amber-600 mt-0.5">
+                      Клиенты не видят ваш профиль в каталоге. Включите приём заявок выше.
+                    </Text>
+                  </View>
+                  <Text className="text-xs text-amber-700 underline ml-2">
+                    Настройки
+                  </Text>
+                </View>
+              </Pressable>
+            )}
+
+            {/* Stats row */}
+            <View className="flex-row gap-3 mb-6">
+              <View className="flex-1 bg-white border border-slate-200 rounded-xl p-4">
+                <Text className="text-2xl font-bold text-slate-900">
+                  {stats?.threadsTotal ?? 0}
                 </Text>
-                <Text className="text-xs text-slate-400 mt-1">Новых сообщений</Text>
+                <Text className="text-xs text-slate-500 mt-1">Всего диалогов</Text>
+              </View>
+              <View className="flex-1 bg-white border border-slate-200 rounded-xl p-4">
+                <Text className="text-2xl font-bold text-blue-900">
+                  {stats?.newMessages ?? 0}
+                </Text>
+                <Text className="text-xs text-slate-500 mt-1">Новых сообщений</Text>
               </View>
             </View>
-          )}
 
-          {/* Matching requests */}
-          <Text className="text-lg font-semibold text-slate-900 mt-6 mb-3">
-            Подходящие заявки
-          </Text>
+            {/* Section header */}
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-lg font-semibold text-slate-900">
+                Подходящие заявки
+              </Text>
+              <Pressable
+                accessibilityLabel="Мои обращения"
+                onPress={() => router.push("/(specialist-tabs)/threads" as never)}
+              >
+                <Text className="text-sm text-blue-900 font-medium">
+                  Мои обращения
+                </Text>
+              </Pressable>
+            </View>
 
-          {requests.length === 0 ? (
-            <EmptyState
-              icon="list-alt"
-              title="Пока нет подходящих заявок"
-              subtitle="Новые заявки появятся здесь"
-            />
-          ) : (
-            requests.map((r) => (
-              <SpecialistRequestCard
-                key={r.id}
-                item={r}
-                onWrite={() => router.push(`/requests/${r.id}/write` as never)}
-                onOpenThread={() =>
-                  r.existingThreadId
-                    ? router.push(`/threads/${r.existingThreadId}` as never)
-                    : undefined
-                }
+            {/* Request list or empty */}
+            {requests.length === 0 ? (
+              <EmptyState
+                icon="list-alt"
+                title="Нет подходящих заявок"
+                subtitle="Расширьте рабочую область, чтобы видеть больше заявок из других городов и инспекций"
+                actionLabel="Расширить рабочую область"
+                onAction={() => router.push("/settings/specialist" as never)}
               />
-            ))
-          )}
+            ) : (
+              requests.map((item) => (
+                <RequestCard
+                  key={item.id}
+                  item={item}
+                  onWrite={() => router.push(`/requests/${item.id}/write` as never)}
+                  onOpenThread={() => {
+                    const tid = item.threadId ?? item.existingThreadId ?? null;
+                    if (tid) router.push(`/threads/${tid}` as never);
+                  }}
+                  onPress={() => router.push(`/requests/${item.id}` as never)}
+                />
+              ))
+            )}
 
-          <View className="h-8" />
+            <View className="h-8" />
+          </View>
         </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function SpecialistRequestCard({
+function RequestCard({
   item,
   onWrite,
   onOpenThread,
+  onPress,
 }: {
-  item: RequestItem;
+  item: MatchingRequest;
   onWrite: () => void;
   onOpenThread: () => void;
+  onPress: () => void;
 }) {
+  const hasThread = item.hasThread || !!(item.existingThreadId);
+
   return (
-    <View className="bg-white border border-slate-200 rounded-xl p-4 mb-3">
-      <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-base font-semibold text-slate-900 flex-1 mr-2" numberOfLines={1}>
+    <Pressable
+      accessibilityLabel={item.title}
+      onPress={onPress}
+      className="bg-white border border-slate-200 rounded-xl p-4 mb-3"
+      style={({ pressed }) => pressed ? { opacity: 0.92 } : undefined}
+    >
+      {/* Title + status */}
+      <View className="flex-row items-start justify-between mb-2">
+        <Text
+          className="text-base font-semibold text-slate-900 flex-1 mr-2"
+          numberOfLines={2}
+        >
           {item.title}
         </Text>
         <StatusBadge status={item.status} />
       </View>
 
+      {/* Chips */}
       <View className="flex-row flex-wrap gap-1.5 mb-2">
-        <View className="bg-slate-50 px-2 py-0.5 rounded">
-          <Text className="text-xs text-slate-400">{item.city.name}</Text>
+        <View className="bg-slate-100 px-2 py-0.5 rounded-full">
+          <Text className="text-xs text-slate-500">{item.city.name}</Text>
         </View>
-        <View className="bg-slate-50 px-2 py-0.5 rounded">
-          <Text className="text-xs text-slate-400">{item.fns.name}</Text>
+        <View className="bg-slate-100 px-2 py-0.5 rounded-full">
+          <Text className="text-xs text-slate-500">{item.fns.name}</Text>
         </View>
+        {item.service ? (
+          <View className="bg-blue-50 px-2 py-0.5 rounded-full">
+            <Text className="text-xs text-blue-700">{item.service}</Text>
+          </View>
+        ) : null}
+        {!item.isMyRegion ? (
+          <View className="bg-slate-100 px-2 py-0.5 rounded-full">
+            <Text className="text-xs text-slate-400">Не ваш регион</Text>
+          </View>
+        ) : null}
       </View>
 
-      <Text className="text-sm text-slate-400 mb-3" numberOfLines={2}>
+      {/* Description */}
+      <Text className="text-sm text-slate-500 mb-3" numberOfLines={2}>
         {item.description}
       </Text>
 
-      {!item.isMyRegion && (
-        <View className="bg-slate-100 px-2 py-1 rounded-full self-start mb-3">
-          <Text className="text-xs text-slate-400">Не ваш регион</Text>
-        </View>
-      )}
-
-      {item.existingThreadId ? (
+      {/* Action */}
+      {hasThread ? (
         <View className="flex-row items-center justify-between">
-          <View className="bg-emerald-50 px-2 py-1 rounded-full">
-            <Text className="text-xs text-emerald-600 font-medium">Вы уже писали</Text>
+          <View className="bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+            <Text className="text-xs text-emerald-700 font-medium">
+              Вы уже откликнулись
+            </Text>
           </View>
           <Pressable
             accessibilityLabel="Открыть чат"
-            onPress={onOpenThread}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onOpenThread();
+            }}
             className="bg-blue-900 rounded-xl px-4 py-2"
           >
             <Text className="text-white text-sm font-semibold">Открыть чат</Text>
@@ -210,12 +375,15 @@ function SpecialistRequestCard({
       ) : (
         <Pressable
           accessibilityLabel="Написать клиенту"
-          onPress={onWrite}
-          className="bg-amber-700 rounded-xl py-3 items-center"
+          onPress={(e) => {
+            e.stopPropagation?.();
+            onWrite();
+          }}
+          className="bg-amber-700 rounded-xl py-2.5 items-center"
         >
-          <Text className="text-white text-sm font-semibold">Написать</Text>
+          <Text className="text-white text-sm font-semibold">Написать клиенту</Text>
         </Pressable>
       )}
-    </View>
+    </Pressable>
   );
 }
