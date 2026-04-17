@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { sendNotification } from "../notifications/notification.service";
 
 const router = Router();
 
@@ -284,6 +285,15 @@ router.post("/", async (req: Request, res: Response) => {
       where: { id: requestId },
       data: { lastActivityAt: now },
     });
+
+    // Notify client: new response on their request
+    sendNotification({
+      userId: request.userId,
+      type: "new_response",
+      title: "Новый отклик на вашу заявку",
+      body: firstMessage.slice(0, 200),
+      entityId: thread.id,
+    }).catch((err: Error) => console.warn("[notifications] new_response trigger failed:", err.message));
 
     res.status(201).json({
       id: thread.id,

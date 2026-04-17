@@ -31,14 +31,16 @@ model User {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  specialistProfile  SpecialistProfile?
-  specialistFns      SpecialistFns[]
-  specialistServices SpecialistService[]
-  requests           Request[]
-  clientThreads      Thread[]  @relation("ClientThreads")
-  specialistThreads  Thread[]  @relation("SpecialistThreads")
-  messages           Message[]
-  refreshTokens      RefreshToken[]
+  specialistProfile       SpecialistProfile?
+  specialistFns           SpecialistFns[]
+  specialistServices      SpecialistService[]
+  requests                Request[]
+  clientThreads           Thread[]  @relation("ClientThreads")
+  specialistThreads       Thread[]  @relation("SpecialistThreads")
+  messages                Message[]
+  refreshTokens           RefreshToken[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
 
   @@map("users")
 }
@@ -219,4 +221,47 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   // new_response | new_message | new_request_in_city | promo_expiring
+  title     String
+  body      String
+  entityId  String?  @map("entity_id") // requestId or threadId
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deliveryLogs NotificationDeliveryLog[]
+
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
+  eventType String  @map("event_type") // new_response | new_message | new_request_in_city | promo_expiring
+  email     Boolean @default(true)
+  inApp     Boolean @default(true) @map("in_app")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventType])
+  @@map("notification_preferences")
+}
+
+model NotificationDeliveryLog {
+  id             String   @id @default(uuid())
+  notificationId String?  @map("notification_id")
+  channel        String   // email | inapp
+  status         String   // sent | skipped | failed
+  reason         String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  @@map("notification_delivery_logs")
 }
