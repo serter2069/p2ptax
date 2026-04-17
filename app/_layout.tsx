@@ -29,12 +29,16 @@ export default function RootLayout() {
 
         {/* Public screens */}
         <Stack.Screen name="requests/index" />
-        <Stack.Screen name="requests/[id]" />
+        <Stack.Screen name="requests/new" />
+        <Stack.Screen name="requests/[id]/index" />
+        <Stack.Screen name="requests/[id]/detail" />
+        <Stack.Screen name="requests/[id]/messages" />
         <Stack.Screen name="specialists/index" />
         <Stack.Screen name="specialists/[id]" />
 
         {/* Shared screens */}
         <Stack.Screen name="settings" />
+        <Stack.Screen name="settings/client" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="legal/privacy" />
         <Stack.Screen name="legal/terms" />
