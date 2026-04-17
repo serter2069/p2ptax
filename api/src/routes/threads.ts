@@ -192,8 +192,8 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    if (firstMessage.length < 10 || firstMessage.length > 1000) {
-      res.status(400).json({ error: "Message must be 10-1000 characters" });
+    if (firstMessage.length < 10 || firstMessage.length > 2000) {
+      res.status(400).json({ error: "Message must be 10-2000 characters" });
       return;
     }
 
