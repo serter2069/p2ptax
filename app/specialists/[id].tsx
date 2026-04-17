@@ -118,6 +118,7 @@ export default function SpecialistPublicProfile() {
             {error || "Специалист не найден"}
           </Text>
           <Pressable
+            accessibilityLabel="Назад"
             onPress={() => router.back()}
             className="mt-4 bg-blue-900 rounded-xl px-6 py-3"
           >
@@ -134,7 +135,7 @@ export default function SpecialistPublicProfile() {
   const initials = getInitials(specialist.firstName, specialist.lastName);
 
   const rightAction = isOwnProfile ? (
-    <Pressable onPress={() => router.push("/settings" as never)}>
+    <Pressable accessibilityLabel="Редактировать профиль" onPress={() => router.push("/settings" as never)}>
       <FontAwesome name="pencil" size={16} color="#0f172a" />
     </Pressable>
   ) : undefined;
@@ -209,6 +210,7 @@ export default function SpecialistPublicProfile() {
                 <View className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                   {specialist.profile.phone && (
                     <Pressable
+                      accessibilityLabel={`Позвонить ${specialist.profile!.phone}`}
                       onPress={() => Linking.openURL(`tel:${specialist.profile!.phone}`)}
                       className="flex-row items-center mb-3"
                     >
@@ -220,6 +222,7 @@ export default function SpecialistPublicProfile() {
                   )}
                   {specialist.profile.telegram && (
                     <Pressable
+                      accessibilityLabel={`Telegram ${specialist.profile!.telegram}`}
                       onPress={() =>
                         Linking.openURL(
                           `https://t.me/${specialist.profile!.telegram!.replace("@", "")}`
@@ -235,6 +238,7 @@ export default function SpecialistPublicProfile() {
                   )}
                   {specialist.profile.whatsapp && (
                     <Pressable
+                      accessibilityLabel={`WhatsApp ${specialist.profile!.whatsapp}`}
                       onPress={() =>
                         Linking.openURL(
                           `https://wa.me/${specialist.profile!.whatsapp!.replace(/\D/g, "")}`

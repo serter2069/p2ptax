@@ -33,6 +33,7 @@ export default function SpecialistCard({
   if (horizontal) {
     return (
       <Pressable
+        accessibilityLabel={name}
         onPress={() => onPress(id)}
         className="bg-white border border-slate-200 rounded-xl p-4 mr-3"
         style={{ width: 200 }}
@@ -64,6 +65,7 @@ export default function SpecialistCard({
 
   return (
     <Pressable
+      accessibilityLabel={name}
       onPress={() => onPress(id)}
       className="bg-white border border-slate-200 rounded-xl p-4 mb-3"
     >

@@ -73,6 +73,7 @@ export default function AuthEmailScreen() {
           </Text>
 
           <TextInput
+            accessibilityLabel="Email адрес"
             style={{
               height: 48,
               borderRadius: 12,
@@ -101,6 +102,7 @@ export default function AuthEmailScreen() {
           ) : null}
 
           <Pressable
+            accessibilityLabel="Продолжить"
             onPress={handleContinue}
             disabled={isLoading || !email.trim()}
             className={`h-12 rounded-xl items-center justify-center mt-6 ${
@@ -119,6 +121,7 @@ export default function AuthEmailScreen() {
           </Pressable>
 
           <Pressable
+            accessibilityLabel="Условия использования"
             onPress={() => router.push("/legal/terms" as never)}
             className="mt-4 py-3"
           >

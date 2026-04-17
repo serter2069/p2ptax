@@ -45,6 +45,7 @@ export default function Button({
 
   return (
     <Pressable
+      accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled || loading}
       className={`${styles.container} ${widthClass} ${opacityClass}`}

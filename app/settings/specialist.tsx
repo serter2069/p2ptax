@@ -170,7 +170,7 @@ export default function SpecialistSettings() {
                 {(lastName[0] || "").toUpperCase()}
               </Text>
             </View>
-            <Pressable className="mt-2 py-2 px-3">
+            <Pressable accessibilityLabel="Изменить фото" className="mt-2 py-2 px-3">
               <Text className="text-sm text-blue-900 font-medium">
                 Изменить фото
               </Text>
@@ -182,6 +182,7 @@ export default function SpecialistSettings() {
             Имя *
           </Text>
           <TextInput
+            accessibilityLabel="Имя"
             value={firstName}
             onChangeText={setFirstName}
             placeholder="Имя"
@@ -203,6 +204,7 @@ export default function SpecialistSettings() {
             Фамилия *
           </Text>
           <TextInput
+            accessibilityLabel="Фамилия"
             value={lastName}
             onChangeText={setLastName}
             placeholder="Фамилия"
@@ -256,6 +258,7 @@ export default function SpecialistSettings() {
 
           <Text className="text-xs text-slate-400 mb-1">Телефон</Text>
           <TextInput
+            accessibilityLabel="Телефон"
             value={phone}
             onChangeText={setPhone}
             placeholder="+7 (___) ___-__-__"
@@ -275,6 +278,7 @@ export default function SpecialistSettings() {
 
           <Text className="text-xs text-slate-400 mt-3 mb-1">Telegram</Text>
           <TextInput
+            accessibilityLabel="Telegram"
             value={telegram}
             onChangeText={setTelegram}
             placeholder="@username"
@@ -294,6 +298,7 @@ export default function SpecialistSettings() {
 
           <Text className="text-xs text-slate-400 mt-3 mb-1">WhatsApp</Text>
           <TextInput
+            accessibilityLabel="WhatsApp"
             value={whatsapp}
             onChangeText={setWhatsapp}
             placeholder="+7 (___) ___-__-__"
@@ -313,6 +318,7 @@ export default function SpecialistSettings() {
 
           <Text className="text-xs text-slate-400 mt-3 mb-1">Адрес офиса</Text>
           <TextInput
+            accessibilityLabel="Адрес офиса"
             value={officeAddress}
             onChangeText={setOfficeAddress}
             placeholder="Адрес"
@@ -331,6 +337,7 @@ export default function SpecialistSettings() {
 
           <Text className="text-xs text-slate-400 mt-3 mb-1">Часы работы</Text>
           <TextInput
+            accessibilityLabel="Часы работы"
             value={workingHours}
             onChangeText={setWorkingHours}
             placeholder="Пн-Пт 9:00-18:00"
@@ -358,6 +365,7 @@ export default function SpecialistSettings() {
               </Text>
             </View>
             <Switch
+              accessibilityLabel="Принимаю заявки"
               value={isAvailable}
               onValueChange={handleToggleAvailable}
               trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
@@ -373,6 +381,7 @@ export default function SpecialistSettings() {
           <View className="flex-row items-center justify-between py-3 border-b border-slate-100">
             <Text className="text-sm text-slate-900">Push-уведомления</Text>
             <Switch
+              accessibilityLabel="Push-уведомления"
               value={pushEnabled}
               onValueChange={setPushEnabled}
               trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
@@ -383,6 +392,7 @@ export default function SpecialistSettings() {
           <View className="flex-row items-center justify-between py-3 border-b border-slate-100">
             <Text className="text-sm text-slate-900">Email-уведомления</Text>
             <Switch
+              accessibilityLabel="Email-уведомления"
               value={emailEnabled}
               onValueChange={setEmailEnabled}
               trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
@@ -392,6 +402,7 @@ export default function SpecialistSettings() {
 
           {/* Save button */}
           <Pressable
+            accessibilityLabel="Сохранить"
             onPress={handleSave}
             disabled={saving}
             className={`rounded-xl py-3 items-center mt-6 ${
@@ -409,6 +420,7 @@ export default function SpecialistSettings() {
 
           {/* Logout */}
           <Pressable
+            accessibilityLabel="Выйти"
             onPress={handleLogout}
             className="rounded-xl py-3 items-center mt-3 border border-red-600"
           >

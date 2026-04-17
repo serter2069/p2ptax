@@ -100,6 +100,7 @@ export default function ClientSettings() {
             {/* Name inputs */}
             <Text className="text-sm font-medium text-slate-900 mb-1">Имя</Text>
             <TextInput
+              accessibilityLabel="Имя"
               value={firstName}
               onChangeText={setFirstName}
               placeholder="Введите имя"
@@ -118,6 +119,7 @@ export default function ClientSettings() {
 
             <Text className="text-sm font-medium text-slate-900 mb-1">Фамилия</Text>
             <TextInput
+              accessibilityLabel="Фамилия"
               value={lastName}
               onChangeText={setLastName}
               placeholder="Введите фамилию"
@@ -141,6 +143,7 @@ export default function ClientSettings() {
 
             {/* Save button */}
             <Pressable
+              accessibilityLabel="Сохранить"
               onPress={handleSave}
               disabled={!hasChanges || saving}
               className={`rounded-xl py-3 items-center mb-6 ${
@@ -160,15 +163,16 @@ export default function ClientSettings() {
             </Text>
             <View className="flex-row items-center justify-between py-3 border-b border-slate-100">
               <Text className="text-base text-slate-900">Push-уведомления</Text>
-              <Switch value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
+              <Switch accessibilityLabel="Push-уведомления" value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
             </View>
             <View className="flex-row items-center justify-between py-3 border-b border-slate-100 mb-6">
               <Text className="text-base text-slate-900">Email-уведомления</Text>
-              <Switch value={emailEnabled} onValueChange={setEmailEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
+              <Switch accessibilityLabel="Email-уведомления" value={emailEnabled} onValueChange={setEmailEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
             </View>
 
             {/* Links */}
             <Pressable
+              accessibilityLabel="Условия использования"
               onPress={() => router.push("/legal/terms" as never)}
               className="flex-row items-center py-3 border-b border-slate-100"
             >
@@ -181,6 +185,7 @@ export default function ClientSettings() {
 
             {/* Logout */}
             <Pressable
+              accessibilityLabel="Выйти"
               onPress={handleLogout}
               className="mt-6 bg-red-600 rounded-xl py-3 items-center"
             >

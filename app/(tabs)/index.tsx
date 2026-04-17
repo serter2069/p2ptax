@@ -24,7 +24,7 @@ const LISTINGS = [
 
 function CategoryChip({ name, icon }: { name: string; icon: React.ComponentProps<typeof FontAwesome>["name"] }) {
   return (
-    <Pressable className="mr-3 items-center">
+    <Pressable accessibilityLabel={name} className="mr-3 items-center">
       <View className="w-14 h-14 rounded-2xl bg-gray-100 items-center justify-center mb-1">
         <FontAwesome name={icon} size={20} color="#4b5563" />
       </View>
@@ -35,7 +35,7 @@ function CategoryChip({ name, icon }: { name: string; icon: React.ComponentProps
 
 function ListingCard({ title, price, location, color }: { title: string; price: string; location: string; color: string }) {
   return (
-    <Pressable className="flex-1 m-1.5">
+    <Pressable accessibilityLabel={title} className="flex-1 m-1.5">
       <View className="rounded-2xl overflow-hidden bg-white" style={{ shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
         <View className="h-36 items-center justify-center" style={{ backgroundColor: color }}>
           <FontAwesome name="image" size={32} color="#9ca3af" />
@@ -75,6 +75,7 @@ export default function HomeScreen() {
               <View className="flex-row items-center h-12 rounded-xl bg-gray-100 px-4">
                 <FontAwesome name="search" size={16} color="#9ca3af" />
                 <TextInput
+                  accessibilityLabel="Поиск объявлений"
                   className="flex-1 ml-3 text-base text-gray-900"
                   placeholder="Search listings..."
                   placeholderTextColor="#9ca3af"
@@ -96,7 +97,7 @@ export default function HomeScreen() {
             {/* Section Title */}
             <View className="flex-row justify-between items-center px-4 mb-2">
               <Text className="text-lg font-bold text-gray-900">Recent Listings</Text>
-              <Pressable>
+              <Pressable accessibilityLabel="Показать все">
                 <Text className="text-sm text-blue-600">See all</Text>
               </Pressable>
             </View>

@@ -30,7 +30,7 @@ export default function CreateScreen() {
 
           <View className="flex-row flex-wrap">
             {/* Add Photo Button */}
-            <Pressable className="w-[31%] aspect-square m-[1%] rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 items-center justify-center">
+            <Pressable accessibilityLabel="Добавить фото" className="w-[31%] aspect-square m-[1%] rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 items-center justify-center">
               <FontAwesome name="camera" size={24} color="#3b82f6" />
               <Text className="text-xs text-blue-600 mt-1 font-medium">Add photo</Text>
             </Pressable>
@@ -60,7 +60,7 @@ export default function CreateScreen() {
 
         {/* Next Button */}
         <View className="px-4 mt-8">
-          <Pressable className="h-14 rounded-xl bg-blue-600 items-center justify-center active:bg-blue-700">
+          <Pressable accessibilityLabel="Далее: детали" className="h-14 rounded-xl bg-blue-600 items-center justify-center active:bg-blue-700">
             <Text className="text-white text-base font-semibold">Next: Details</Text>
           </Pressable>
         </View>

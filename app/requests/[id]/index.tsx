@@ -78,6 +78,7 @@ export default function PublicRequestDetail() {
             {error || "Заявка не найдена"}
           </Text>
           <Pressable
+            accessibilityLabel="Назад"
             onPress={() => router.back()}
             className="mt-4 bg-blue-900 rounded-xl px-6 py-3"
           >
@@ -152,6 +153,7 @@ export default function PublicRequestDetail() {
         <ResponsiveContainer>
           {isAuthenticated && isSpecialist ? (
             <Pressable
+              accessibilityLabel="Написать клиенту"
               onPress={() => router.push(`/requests/${id}/write` as never)}
               className="bg-blue-900 rounded-xl py-3 items-center"
             >
@@ -161,6 +163,7 @@ export default function PublicRequestDetail() {
             </Pressable>
           ) : (
             <Pressable
+              accessibilityLabel={isAuthenticated ? "Написать клиенту" : "Войти для ответа"}
               onPress={() => router.push("/(auth)/email" as never)}
               className="bg-blue-900 rounded-xl py-3 items-center"
             >

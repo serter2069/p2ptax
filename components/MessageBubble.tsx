@@ -58,6 +58,7 @@ export default function MessageBubble({
         {imageFiles.map((img) => (
           <Pressable
             key={img.id}
+            accessibilityLabel={`Изображение ${img.filename}`}
             onPress={() => onImagePress?.(img.url)}
             className="mb-1"
           >
@@ -81,6 +82,7 @@ export default function MessageBubble({
         {docFiles.map((file) => (
           <Pressable
             key={file.id}
+            accessibilityLabel={`Файл ${file.filename}`}
             onPress={() => onFilePress?.(file)}
             className={`flex-row items-center rounded-lg p-2 mb-1 ${
               isOwn ? "bg-blue-800" : "bg-slate-100"

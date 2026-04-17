@@ -92,6 +92,7 @@ export default function SpecialistDashboard() {
           {/* Unavailable warning */}
           {user && !user.isAvailable && (
             <Pressable
+              accessibilityLabel="Включить приём заявок"
               onPress={() => router.push("/settings/specialist" as never)}
               className="bg-amber-50 border border-amber-300 rounded-xl p-4 mt-4"
             >
@@ -199,6 +200,7 @@ function SpecialistRequestCard({
             <Text className="text-xs text-emerald-600 font-medium">Вы уже писали</Text>
           </View>
           <Pressable
+            accessibilityLabel="Открыть чат"
             onPress={onOpenThread}
             className="bg-blue-900 rounded-xl px-4 py-2"
           >
@@ -207,6 +209,7 @@ function SpecialistRequestCard({
         </View>
       ) : (
         <Pressable
+          accessibilityLabel="Написать клиенту"
           onPress={onWrite}
           className="bg-amber-700 rounded-xl py-3 items-center"
         >

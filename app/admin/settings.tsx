@@ -116,6 +116,7 @@ export default function AdminSettings() {
                     {field.label}
                   </Text>
                   <TextInput
+                    accessibilityLabel={field.label}
                     style={{
                       backgroundColor: "#ffffff",
                       borderWidth: 1,
@@ -134,6 +135,7 @@ export default function AdminSettings() {
               ))}
 
               <Pressable
+                accessibilityLabel="Сохранить"
                 onPress={handleSave}
                 disabled={saving}
                 className={`h-12 rounded-xl items-center justify-center mt-2 ${

@@ -32,11 +32,12 @@ export default function SearchScreen() {
           <View className="flex-row items-center h-12 rounded-xl bg-gray-100 px-4">
             <FontAwesome name="search" size={16} color="#9ca3af" />
             <TextInput
+              accessibilityLabel="Поиск"
               className="flex-1 ml-3 text-base text-gray-900"
               placeholder="What are you looking for?"
               placeholderTextColor="#9ca3af"
             />
-            <Pressable className="ml-2 w-10 h-10 rounded-lg bg-blue-600 items-center justify-center">
+            <Pressable accessibilityLabel="Фильтры" className="ml-2 w-10 h-10 rounded-lg bg-blue-600 items-center justify-center">
               <FontAwesome name="sliders" size={16} color="#ffffff" />
             </Pressable>
           </View>
@@ -46,13 +47,14 @@ export default function SearchScreen() {
         <View className="px-4 mb-6">
           <View className="flex-row justify-between items-center mb-3">
             <Text className="text-base font-semibold text-gray-900">Recent Searches</Text>
-            <Pressable>
+            <Pressable accessibilityLabel="Очистить историю поиска">
               <Text className="text-sm text-blue-600">Clear</Text>
             </Pressable>
           </View>
           {RECENT_SEARCHES.map((search, index) => (
             <Pressable
               key={index}
+              accessibilityLabel={search}
               className="flex-row items-center py-3 border-b border-gray-100"
             >
               <FontAwesome name="clock-o" size={16} color="#9ca3af" />
@@ -68,6 +70,7 @@ export default function SearchScreen() {
           {POPULAR_CATEGORIES.map((cat) => (
             <Pressable
               key={cat.id}
+              accessibilityLabel={cat.name}
               className="flex-row items-center p-3 rounded-xl mb-2"
               style={{ backgroundColor: cat.color }}
             >

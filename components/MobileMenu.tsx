@@ -37,7 +37,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable onPress={onClose} className="flex-1 flex-row bg-black/50">
+      <Pressable accessibilityLabel="Закрыть меню" onPress={onClose} className="flex-1 flex-row bg-black/50">
         <Pressable className="w-72 bg-white h-full" onPress={() => {}}>
           {/* User info */}
           <View className="pt-14 pb-6 px-5 bg-blue-900">
@@ -61,7 +61,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           </View>
 
           {/* Close button */}
-          <Pressable onPress={onClose} className="absolute top-12 right-3 w-8 h-8 items-center justify-center">
+          <Pressable accessibilityLabel="Закрыть меню" onPress={onClose} className="absolute top-12 right-3 w-8 h-8 items-center justify-center">
             <FontAwesome name="times" size={20} color="#ffffff" />
           </Pressable>
 
@@ -70,6 +70,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
             {MENU_ITEMS.map((item) => (
               <Pressable
                 key={item.label}
+                accessibilityLabel={item.label}
                 onPress={() => handleNavigate(item.route)}
                 className="flex-row items-center px-5 py-3.5 active:bg-slate-50"
               >
@@ -84,12 +85,13 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           {/* Bottom actions */}
           <View className="border-t border-slate-100 px-5 py-4 pb-8">
             {isAuthenticated ? (
-              <Pressable onPress={handleLogout} className="flex-row items-center py-3">
+              <Pressable accessibilityLabel="Выйти" onPress={handleLogout} className="flex-row items-center py-3">
                 <FontAwesome name="sign-out" size={18} color="#dc2626" />
                 <Text className="text-base font-medium text-red-600 ml-3">Выйти</Text>
               </Pressable>
             ) : (
               <Pressable
+                accessibilityLabel="Войти"
                 onPress={() => handleNavigate("/auth/email")}
                 className="h-12 rounded-xl bg-blue-900 items-center justify-center"
               >

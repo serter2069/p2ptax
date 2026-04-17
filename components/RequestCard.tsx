@@ -24,6 +24,7 @@ export default function RequestCard({
 }: RequestCardProps) {
   return (
     <Pressable
+      accessibilityLabel={title}
       onPress={() => onPress(id)}
       className="bg-white border border-slate-200 rounded-xl p-4 mb-3"
     >

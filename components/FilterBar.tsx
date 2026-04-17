@@ -29,6 +29,7 @@ function FilterChip({
 }) {
   return (
     <Pressable
+      accessibilityLabel={label}
       onPress={onPress}
       className={`px-3 py-1.5 rounded-full mr-2 mb-2 border ${
         active ? "bg-blue-900 border-blue-900" : "bg-white border-slate-200"

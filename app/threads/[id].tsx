@@ -221,6 +221,7 @@ export default function ChatThread() {
         {!isClosed && (
           <View className="flex-row items-end border-t border-slate-200 px-3 py-2 bg-white">
             <TextInput
+              accessibilityLabel="Написать сообщение"
               value={text}
               onChangeText={setText}
               placeholder="Написать сообщение..."
@@ -241,6 +242,7 @@ export default function ChatThread() {
               }}
             />
             <Pressable
+              accessibilityLabel="Отправить сообщение"
               onPress={handleSend}
               disabled={!text.trim() || sending}
               className="w-10 h-10 items-center justify-center ml-2"

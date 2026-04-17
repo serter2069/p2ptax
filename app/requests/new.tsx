@@ -125,6 +125,7 @@ export default function NewRequest() {
               Заголовок
             </Text>
             <TextInput
+              accessibilityLabel="Заголовок заявки"
               value={title}
               onChangeText={setTitle}
               placeholder="Опишите кратко вашу ситуацию"
@@ -149,6 +150,7 @@ export default function NewRequest() {
               Город
             </Text>
             <Pressable
+              accessibilityLabel="Выбрать город"
               onPress={() => { setCityOpen(!cityOpen); setFnsOpen(false); }}
               className="h-12 border border-slate-200 rounded-[10px] bg-slate-50 px-4 flex-row items-center justify-between"
             >
@@ -162,6 +164,7 @@ export default function NewRequest() {
                 {cities.map((city) => (
                   <Pressable
                     key={city.id}
+                    accessibilityLabel={city.name}
                     onPress={() => handleCitySelect(city.id)}
                     className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
                   >
@@ -176,6 +179,7 @@ export default function NewRequest() {
               Отделение ФНС
             </Text>
             <Pressable
+              accessibilityLabel="Выбрать отделение ФНС"
               onPress={() => {
                 if (!selectedCityId) return;
                 setFnsOpen(!fnsOpen);
@@ -200,6 +204,7 @@ export default function NewRequest() {
                 {fnsOptions.map((fns) => (
                   <Pressable
                     key={fns.id}
+                    accessibilityLabel={`${fns.name} (${fns.code})`}
                     onPress={() => handleFnsSelect(fns.id)}
                     className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
                   >
@@ -216,6 +221,7 @@ export default function NewRequest() {
               Описание
             </Text>
             <TextInput
+              accessibilityLabel="Описание заявки"
               value={description}
               onChangeText={setDescription}
               placeholder="Опишите подробно вашу ситуацию (минимум 10 символов)"
@@ -246,6 +252,7 @@ export default function NewRequest() {
       <View className="border-t border-slate-200 px-4 py-3 bg-white">
         <View className="w-full" style={{ maxWidth: 520, alignSelf: "center" }}>
           <Pressable
+            accessibilityLabel="Опубликовать"
             onPress={handleSubmit}
             disabled={!formValid || submitting}
             className={`rounded-xl py-3 items-center ${

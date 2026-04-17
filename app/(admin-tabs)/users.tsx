@@ -208,6 +208,7 @@ export default function AdminUsers() {
       {/* Search header */}
       <View className="bg-blue-900 px-4 pb-3 pt-2">
         <TextInput
+          accessibilityLabel="Поиск по email или имени"
           style={{
             backgroundColor: "rgba(255,255,255,0.15)",
             borderRadius: 10,
@@ -234,6 +235,7 @@ export default function AdminUsers() {
           {FILTER_OPTIONS.map((opt) => (
             <Pressable
               key={opt.key}
+              accessibilityLabel={opt.label}
               onPress={() => setFilter(opt.key)}
               className={`px-3 py-1.5 rounded-full border ${
                 filter === opt.key
@@ -280,6 +282,7 @@ export default function AdminUsers() {
                 users.map((user) => (
                   <View key={user.id}>
                     <Pressable
+                      accessibilityLabel={`${[user.firstName, user.lastName].filter(Boolean).join(" ") || user.email}`}
                       onPress={() =>
                         setExpandedId(expandedId === user.id ? null : user.id)
                       }
@@ -354,6 +357,7 @@ export default function AdminUsers() {
 
                         <View className="flex-row gap-2 flex-wrap">
                           <Pressable
+                            accessibilityLabel={user.isBanned ? "Разблокировать" : "Заблокировать"}
                             onPress={() => toggleBan(user)}
                             className={`px-3 py-2 rounded-lg ${
                               user.isBanned ? "bg-emerald-600" : "bg-red-600"
@@ -366,6 +370,7 @@ export default function AdminUsers() {
 
                           {user.role === "CLIENT" && (
                             <Pressable
+                              accessibilityLabel="Закрыть все заявки"
                               onPress={() => closeAllRequests(user)}
                               className="px-3 py-2 rounded-lg bg-amber-500"
                             >
