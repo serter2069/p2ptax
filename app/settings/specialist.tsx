@@ -18,8 +18,27 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { apiGet, apiPatch } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+interface ContactMethodItem {
+  id: string;
+  type: string;
+  value: string;
+  label: string | null;
+  order: number;
+}
+
+const CONTACT_TYPE_LABELS: Record<string, string> = {
+  phone: "Телефон",
+  email: "Email",
+  telegram: "Telegram",
+  whatsapp: "WhatsApp",
+  vk: "ВКонтакте",
+  website: "Сайт",
+};
+
+const CONTACT_TYPES = Object.keys(CONTACT_TYPE_LABELS);
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
@@ -88,11 +107,20 @@ export default function SpecialistSettings() {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
 
+  // ContactMethod state
+  const [contacts, setContacts] = useState<ContactMethodItem[]>([]);
+  const [addingContact, setAddingContact] = useState(false);
+  const [newContactType, setNewContactType] = useState("phone");
+  const [newContactValue, setNewContactValue] = useState("");
+  const [contactSaving, setContactSaving] = useState(false);
+  const [showTypePicker, setShowTypePicker] = useState(false);
+
   const fetchProfile = useCallback(async () => {
     try {
-      const profile = await apiGet<SpecialistProfileData>(
-        "/api/specialist/profile"
-      );
+      const [profile, contactsData] = await Promise.all([
+        apiGet<SpecialistProfileData>("/api/specialist/profile"),
+        apiGet<{ items: ContactMethodItem[] }>("/api/profile/contacts"),
+      ]);
       setData(profile);
       setFirstName(profile.firstName || "");
       setLastName(profile.lastName || "");
@@ -106,6 +134,7 @@ export default function SpecialistSettings() {
         setOfficeAddress(profile.profile.officeAddress || "");
         setWorkingHours(profile.profile.workingHours || "");
       }
+      setContacts(contactsData.items);
     } catch (error) {
       console.error("Profile fetch error:", error);
     } finally {
@@ -177,6 +206,48 @@ export default function SpecialistSettings() {
     } finally {
       setAvailabilityLoading(false);
     }
+  };
+
+  const handleAddContact = async () => {
+    if (!newContactValue.trim()) {
+      Alert.alert("Ошибка", "Введите значение контакта");
+      return;
+    }
+    setContactSaving(true);
+    try {
+      const created = await apiPost<ContactMethodItem>("/api/profile/contacts", {
+        type: newContactType,
+        value: newContactValue.trim(),
+        order: contacts.length,
+      });
+      setContacts((prev) => [...prev, created]);
+      setAddingContact(false);
+      setNewContactValue("");
+      setNewContactType("phone");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Не удалось добавить контакт";
+      Alert.alert("Ошибка", msg);
+    } finally {
+      setContactSaving(false);
+    }
+  };
+
+  const handleDeleteContact = (id: string) => {
+    Alert.alert("Удалить контакт?", "Это действие нельзя отменить", [
+      { text: "Отмена", style: "cancel" },
+      {
+        text: "Удалить",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await apiDelete(`/api/profile/contacts/${id}`);
+            setContacts((prev) => prev.filter((c) => c.id !== id));
+          } catch {
+            Alert.alert("Ошибка", "Не удалось удалить контакт");
+          }
+        },
+      },
+    ]);
   };
 
   const handleSave = async () => {
@@ -463,49 +534,144 @@ export default function SpecialistSettings() {
               </Pressable>
             )}
 
-            {/* Contacts */}
+            {/* Contacts — structured ContactMethod */}
             <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
               Контакты
             </Text>
 
-            <Text className="text-sm font-medium text-slate-900 mb-1">
-              Телефон
-            </Text>
-            <TextInput
-              accessibilityLabel="Телефон"
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="+7 (___) ___-__-__"
-              placeholderTextColor="#94a3b8"
-              keyboardType="phone-pad"
-              style={INPUT_STYLE}
-            />
+            {contacts.map((contact) => (
+              <View
+                key={contact.id}
+                className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-2"
+              >
+                <View className="flex-1">
+                  <Text className="text-xs text-slate-400 mb-0.5">
+                    {CONTACT_TYPE_LABELS[contact.type] || contact.type}
+                  </Text>
+                  <Text className="text-sm font-medium text-slate-900">
+                    {contact.value}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Удалить контакт"
+                  onPress={() => handleDeleteContact(contact.id)}
+                  className="ml-2 p-2"
+                >
+                  <FontAwesome name="trash-o" size={16} color="#dc2626" />
+                </Pressable>
+              </View>
+            ))}
 
-            <Text className="text-sm font-medium text-slate-900 mb-1">
-              Telegram
-            </Text>
-            <TextInput
-              accessibilityLabel="Telegram"
-              value={telegram}
-              onChangeText={setTelegram}
-              placeholder="@username"
-              placeholderTextColor="#94a3b8"
-              autoCapitalize="none"
-              style={INPUT_STYLE}
-            />
-
-            <Text className="text-sm font-medium text-slate-900 mb-1">
-              WhatsApp
-            </Text>
-            <TextInput
-              accessibilityLabel="WhatsApp"
-              value={whatsapp}
-              onChangeText={setWhatsapp}
-              placeholder="+7 (___) ___-__-__"
-              placeholderTextColor="#94a3b8"
-              keyboardType="phone-pad"
-              style={INPUT_STYLE}
-            />
+            {addingContact ? (
+              <View className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-2">
+                <Text className="text-sm font-medium text-slate-900 mb-2">Тип контакта</Text>
+                <Pressable
+                  accessibilityLabel="Выбрать тип контакта"
+                  onPress={() => setShowTypePicker(!showTypePicker)}
+                  className="flex-row items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 mb-3"
+                >
+                  <Text className="text-base text-slate-900">
+                    {CONTACT_TYPE_LABELS[newContactType]}
+                  </Text>
+                  <FontAwesome name="chevron-down" size={12} color="#94a3b8" />
+                </Pressable>
+                {showTypePicker && (
+                  <View className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-3">
+                    {CONTACT_TYPES.map((t) => (
+                      <Pressable
+                        key={t}
+                        accessibilityLabel={CONTACT_TYPE_LABELS[t]}
+                        onPress={() => {
+                          setNewContactType(t);
+                          setShowTypePicker(false);
+                        }}
+                        className={`px-4 py-3 border-b border-slate-100 ${
+                          newContactType === t ? "bg-blue-50" : ""
+                        }`}
+                      >
+                        <Text
+                          className={`text-base ${
+                            newContactType === t ? "text-blue-900 font-medium" : "text-slate-700"
+                          }`}
+                        >
+                          {CONTACT_TYPE_LABELS[t]}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                <Text className="text-sm font-medium text-slate-900 mb-1">Значение</Text>
+                <TextInput
+                  accessibilityLabel="Значение контакта"
+                  value={newContactValue}
+                  onChangeText={setNewContactValue}
+                  placeholder={
+                    newContactType === "phone" || newContactType === "whatsapp"
+                      ? "+7 (___) ___-__-__"
+                      : newContactType === "telegram"
+                      ? "@username"
+                      : newContactType === "email"
+                      ? "email@example.com"
+                      : newContactType === "vk"
+                      ? "vk.com/username"
+                      : "https://example.com"
+                  }
+                  placeholderTextColor="#94a3b8"
+                  autoCapitalize="none"
+                  keyboardType={
+                    newContactType === "phone" || newContactType === "whatsapp"
+                      ? "phone-pad"
+                      : newContactType === "email"
+                      ? "email-address"
+                      : "default"
+                  }
+                  style={INPUT_STYLE}
+                />
+                <View className="flex-row gap-2">
+                  <Pressable
+                    accessibilityLabel="Отмена"
+                    onPress={() => {
+                      setAddingContact(false);
+                      setNewContactValue("");
+                      setNewContactType("phone");
+                      setShowTypePicker(false);
+                    }}
+                    className="flex-1 border border-slate-200 rounded-xl py-3 items-center"
+                  >
+                    <Text className="text-base text-slate-600">Отмена</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel="Добавить"
+                    onPress={handleAddContact}
+                    disabled={contactSaving}
+                    className={`flex-1 rounded-xl py-3 items-center ${
+                      contactSaving ? "bg-blue-900 opacity-50" : "bg-blue-900"
+                    }`}
+                  >
+                    {contactSaving ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Text className="text-base font-semibold text-white">Добавить</Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            ) : contacts.length < 6 ? (
+              <Pressable
+                accessibilityLabel="Добавить контакт"
+                onPress={() => setAddingContact(true)}
+                className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
+              >
+                <FontAwesome name="plus" size={14} color="#1e3a8a" />
+                <Text className="text-sm text-blue-900 ml-2 font-medium">
+                  Добавить контакт
+                </Text>
+              </Pressable>
+            ) : (
+              <Text className="text-xs text-slate-400 text-center mb-4">
+                Максимум 6 контактов
+              </Text>
+            )}
 
             {/* Office info */}
             <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 mt-2">

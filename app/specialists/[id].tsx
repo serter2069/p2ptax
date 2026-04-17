@@ -32,6 +32,14 @@ interface SpecialistProfile {
   workingHours: string | null;
 }
 
+interface ContactMethodItem {
+  id: string;
+  type: string;
+  value: string;
+  label: string | null;
+  order: number;
+}
+
 interface SpecialistDetail {
   id: string;
   firstName: string | null;
@@ -42,6 +50,34 @@ interface SpecialistDetail {
   profile: SpecialistProfile | null;
   fnsServices: FnsServiceGroup[];
 }
+
+function getContactUrl(type: string, value: string): string | null {
+  switch (type) {
+    case "phone":
+      return `tel:${value}`;
+    case "email":
+      return `mailto:${value}`;
+    case "telegram":
+      return `https://t.me/${value.replace("@", "")}`;
+    case "whatsapp":
+      return `https://wa.me/${value.replace(/\D/g, "")}`;
+    case "vk":
+      return value.startsWith("http") ? value : `https://vk.com/${value.replace(/^vk\.com\//, "")}`;
+    case "website":
+      return value.startsWith("http") ? value : `https://${value}`;
+    default:
+      return null;
+  }
+}
+
+const CONTACT_TYPE_CONFIG: Record<string, { label: string; icon: string; bg: string; color: string }> = {
+  phone: { label: "Телефон", icon: "phone", bg: "#eff6ff", color: "#1e3a8a" },
+  email: { label: "Email", icon: "envelope", bg: "#f0fdf4", color: "#166534" },
+  telegram: { label: "Telegram", icon: "paper-plane", bg: "#f0f9ff", color: "#0284c7" },
+  whatsapp: { label: "WhatsApp", icon: "whatsapp", bg: "#f0fdf4", color: "#059669" },
+  vk: { label: "ВКонтакте", icon: "vk", bg: "#eff6ff", color: "#2563eb" },
+  website: { label: "Сайт", icon: "globe", bg: "#fafaf9", color: "#57534e" },
+};
 
 interface SimilarSpecialist {
   id: string;
@@ -128,6 +164,7 @@ export default function SpecialistPublicProfile() {
   const { user, isAuthenticated } = useAuth();
 
   const [specialist, setSpecialist] = useState<SpecialistDetail | null>(null);
+  const [contacts, setContacts] = useState<ContactMethodItem[]>([]);
   const [similar, setSimilar] = useState<SimilarSpecialist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,12 +175,14 @@ export default function SpecialistPublicProfile() {
   useEffect(() => {
     async function load() {
       try {
-        const [specRes, similarRes] = await Promise.all([
+        const [specRes, similarRes, contactsRes] = await Promise.all([
           api<SpecialistDetail>(`/api/specialists/${id}`, { noAuth: true }),
           api<{ items: SimilarSpecialist[] }>("/api/specialists/featured", { noAuth: true }),
+          api<{ items: ContactMethodItem[] }>(`/api/specialists/${id}/contacts`, { noAuth: true }),
         ]);
         setSpecialist(specRes);
         setSimilar(similarRes.items.filter((s) => s.id !== id));
+        setContacts(contactsRes.items);
       } catch (e) {
         setError("Не удалось загрузить профиль");
         console.error("Specialist detail error:", e);
@@ -220,13 +259,9 @@ export default function SpecialistPublicProfile() {
     </Pressable>
   ) : undefined;
 
-  const hasContacts =
-    specialist.profile &&
-    (specialist.profile.phone ||
-      specialist.profile.telegram ||
-      specialist.profile.whatsapp ||
-      specialist.profile.officeAddress ||
-      specialist.profile.workingHours);
+  const hasContacts = contacts.length > 0 ||
+    (specialist.profile &&
+      (specialist.profile.officeAddress || specialist.profile.workingHours));
 
   const cardShadow = {
     shadowColor: "#0F172A",
@@ -335,88 +370,77 @@ export default function SpecialistPublicProfile() {
               >
                 <Text className="text-base font-semibold text-slate-900 mb-3">Контакты</Text>
 
-                {specialist.profile!.phone && (
-                  <Pressable
-                    accessibilityLabel={`Позвонить ${specialist.profile!.phone}`}
-                    onPress={() => Linking.openURL(`tel:${specialist.profile!.phone}`)}
-                    className="flex-row items-center py-2.5 border-b border-slate-100"
-                  >
+                {contacts.map((contact, index) => {
+                  const cfg = CONTACT_TYPE_CONFIG[contact.type] || {
+                    label: contact.type,
+                    icon: "link",
+                    bg: "#f8fafc",
+                    color: "#64748b",
+                  };
+                  const url = getContactUrl(contact.type, contact.value);
+                  const isLast =
+                    index === contacts.length - 1 &&
+                    !specialist.profile?.officeAddress &&
+                    !specialist.profile?.workingHours;
+
+                  if (url) {
+                    return (
+                      <Pressable
+                        key={contact.id}
+                        accessibilityLabel={`${cfg.label} ${contact.value}`}
+                        onPress={() => Linking.openURL(url)}
+                        className={`flex-row items-center py-2.5 ${isLast ? "" : "border-b border-slate-100"}`}
+                      >
+                        <View
+                          className="w-8 h-8 rounded-full items-center justify-center mr-3"
+                          style={{ backgroundColor: cfg.bg }}
+                        >
+                          <FontAwesome name={cfg.icon as never} size={14} color={cfg.color} />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-xs text-slate-400 mb-0.5">{cfg.label}</Text>
+                          <Text className="text-sm font-medium" style={{ color: cfg.color }}>
+                            {contact.value}
+                          </Text>
+                        </View>
+                        <FontAwesome name="chevron-right" size={12} color="#cbd5e1" />
+                      </Pressable>
+                    );
+                  }
+                  return (
                     <View
-                      className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3"
+                      key={contact.id}
+                      className={`flex-row items-center py-2.5 ${isLast ? "" : "border-b border-slate-100"}`}
                     >
-                      <FontAwesome name="phone" size={14} color="#1e3a8a" />
+                      <View
+                        className="w-8 h-8 rounded-full items-center justify-center mr-3"
+                        style={{ backgroundColor: cfg.bg }}
+                      >
+                        <FontAwesome name={cfg.icon as never} size={14} color={cfg.color} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-xs text-slate-400 mb-0.5">{cfg.label}</Text>
+                        <Text className="text-sm font-medium text-slate-700">{contact.value}</Text>
+                      </View>
                     </View>
-                    <View className="flex-1">
-                      <Text className="text-xs text-slate-400 mb-0.5">Телефон</Text>
-                      <Text className="text-sm font-medium text-blue-900">
-                        {specialist.profile!.phone}
-                      </Text>
-                    </View>
-                    <FontAwesome name="chevron-right" size={12} color="#cbd5e1" />
-                  </Pressable>
-                )}
+                  );
+                })}
 
-                {specialist.profile!.telegram && (
-                  <Pressable
-                    accessibilityLabel={`Telegram ${specialist.profile!.telegram}`}
-                    onPress={() =>
-                      Linking.openURL(
-                        `https://t.me/${specialist.profile!.telegram!.replace("@", "")}`
-                      )
-                    }
-                    className="flex-row items-center py-2.5 border-b border-slate-100"
-                  >
-                    <View className="w-8 h-8 rounded-full bg-sky-50 items-center justify-center mr-3">
-                      <FontAwesome name="paper-plane" size={13} color="#0284c7" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-xs text-slate-400 mb-0.5">Telegram</Text>
-                      <Text className="text-sm font-medium text-sky-700">
-                        {specialist.profile!.telegram}
-                      </Text>
-                    </View>
-                    <FontAwesome name="chevron-right" size={12} color="#cbd5e1" />
-                  </Pressable>
-                )}
-
-                {specialist.profile!.whatsapp && (
-                  <Pressable
-                    accessibilityLabel={`WhatsApp ${specialist.profile!.whatsapp}`}
-                    onPress={() =>
-                      Linking.openURL(
-                        `https://wa.me/${specialist.profile!.whatsapp!.replace(/\D/g, "")}`
-                      )
-                    }
-                    className="flex-row items-center py-2.5 border-b border-slate-100"
-                  >
-                    <View className="w-8 h-8 rounded-full bg-emerald-50 items-center justify-center mr-3">
-                      <FontAwesome name="whatsapp" size={15} color="#059669" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-xs text-slate-400 mb-0.5">WhatsApp</Text>
-                      <Text className="text-sm font-medium text-emerald-700">
-                        {specialist.profile!.whatsapp}
-                      </Text>
-                    </View>
-                    <FontAwesome name="chevron-right" size={12} color="#cbd5e1" />
-                  </Pressable>
-                )}
-
-                {specialist.profile!.officeAddress && (
-                  <View className="flex-row items-start py-2.5 border-b border-slate-100">
+                {specialist.profile?.officeAddress && (
+                  <View className={`flex-row items-start py-2.5 ${specialist.profile?.workingHours ? "border-b border-slate-100" : ""}`}>
                     <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
                       <FontAwesome name="map-marker" size={14} color="#64748b" />
                     </View>
                     <View className="flex-1">
                       <Text className="text-xs text-slate-400 mb-0.5">Адрес офиса</Text>
                       <Text className="text-sm text-slate-700 leading-5">
-                        {specialist.profile!.officeAddress}
+                        {specialist.profile.officeAddress}
                       </Text>
                     </View>
                   </View>
                 )}
 
-                {specialist.profile!.workingHours && (
+                {specialist.profile?.workingHours && (
                   <View className="flex-row items-center py-2.5">
                     <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
                       <FontAwesome name="clock-o" size={14} color="#64748b" />
@@ -424,7 +448,7 @@ export default function SpecialistPublicProfile() {
                     <View className="flex-1">
                       <Text className="text-xs text-slate-400 mb-0.5">Часы работы</Text>
                       <Text className="text-sm text-slate-700">
-                        {specialist.profile!.workingHours}
+                        {specialist.profile.workingHours}
                       </Text>
                     </View>
                   </View>
