@@ -560,6 +560,74 @@ router.get("/moderation/queue", async (_req: Request, res: Response) => {
   res.json({ items: [] });
 });
 
+// ─── Complaints ──────────────────────────────────────────────────────────────
+
+// GET /api/admin/complaints?status=NEW|REVIEWED&page=1&limit=20
+router.get("/complaints", async (req: Request, res: Response) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: Record<string, unknown> = {};
+    if (status === "NEW" || status === "REVIEWED") {
+      where.status = status;
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.complaint.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: {
+          reporter: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+          targetUser: {
+            select: { id: true, email: true, firstName: true, lastName: true, role: true },
+          },
+        },
+      }),
+      prisma.complaint.count({ where }),
+    ]);
+
+    res.json({ items, total, page, limit, hasMore: skip + items.length < total });
+  } catch (error) {
+    console.error("admin/complaints GET error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /api/admin/complaints/:id/review — mark complaint as reviewed
+router.patch("/complaints/:id/review", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const complaint = await prisma.complaint.update({
+      where: { id },
+      data: { status: "REVIEWED", reviewedAt: new Date() },
+      include: {
+        reporter: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
+        targetUser: {
+          select: { id: true, email: true, firstName: true, lastName: true, role: true },
+        },
+      },
+    });
+    res.json(complaint);
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === "P2025") {
+      res.status(404).json({ error: "Complaint not found" });
+      return;
+    }
+    console.error("admin/complaints/:id/review PATCH error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/admin/settings
 router.get("/settings", async (_req: Request, res: Response) => {
   try {
