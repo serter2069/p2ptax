@@ -14,6 +14,7 @@ import dashboardRoutes from "./routes/dashboard";
 import userRoutes from "./routes/user";
 import specialistRoutes from "./routes/specialist";
 import threadsRoutes from "./routes/threads";
+import adminRoutes from "./routes/admin";
 
 const app = express();
 const PORT = process.env.PORT || 3812;
@@ -38,6 +39,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/specialist", specialistRoutes);
 app.use("/api/threads", threadsRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`);

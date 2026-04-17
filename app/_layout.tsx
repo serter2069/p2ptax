@@ -47,6 +47,9 @@ export default function RootLayout() {
         <Stack.Screen name="legal/privacy" />
         <Stack.Screen name="legal/terms" />
         <Stack.Screen name="brand" />
+
+        {/* Admin detail screens */}
+        <Stack.Screen name="admin/settings" />
       </Stack>
     </AuthProvider>
   );
