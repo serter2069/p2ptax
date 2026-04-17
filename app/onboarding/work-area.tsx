@@ -57,11 +57,11 @@ export default function OnboardingWorkAreaScreen() {
     const loadData = async () => {
       try {
         const [citiesRes, servicesRes] = await Promise.all([
-          api<{ cities: City[] }>("/api/cities", { noAuth: true }),
-          api<{ services: ServiceItem[] }>("/api/services", { noAuth: true }),
+          api<{ items: City[] }>("/api/cities", { noAuth: true }),
+          api<{ items: ServiceItem[] }>("/api/services", { noAuth: true }),
         ]);
-        setCities(citiesRes.cities);
-        setServices(servicesRes.services);
+        setCities(citiesRes.items);
+        setServices(servicesRes.items);
       } catch {
         setError("Не удалось загрузить данные");
       }
