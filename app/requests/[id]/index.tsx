@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import Head from "expo-router/head";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
@@ -235,8 +236,17 @@ export default function PublicRequestDetail() {
     );
   };
 
+  const ogDescription = `Заявка на налоговую помощь в ${request.city.name}. ${request.description}`.slice(0, 160);
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
+      <Head>
+        <title>{request.title} | P2PTax</title>
+        <meta property="og:title" content={`${request.title} | P2PTax`} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:url" content={`https://p2ptax.ru/requests/${id}`} />
+        <meta property="og:type" content="article" />
+      </Head>
       <HeaderBack title="Заявка" />
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 16 }}>

@@ -45,6 +45,15 @@ export default function SpecialistTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="promotion"
+        options={{
+          title: "Продвижение",
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesome name="rocket" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
