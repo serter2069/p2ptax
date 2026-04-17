@@ -120,7 +120,7 @@ export default function AuthEmailScreen() {
 
           <Pressable
             onPress={() => router.push("/legal/terms" as never)}
-            className="mt-4"
+            className="mt-4 py-3"
           >
             <Text className="text-sm text-slate-400 text-center underline">
               Условия использования

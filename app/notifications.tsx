@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useState } from "react";
+import ResponsiveContainer from "@/components/ResponsiveContainer";
 
 interface Notification {
   id: string;
@@ -133,29 +134,31 @@ export default function NotificationsScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 pt-2 pb-3 border-b border-slate-50">
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="mr-3">
+          <Pressable onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
             <FontAwesome name="arrow-left" size={18} color="#0f172a" />
           </Pressable>
           <Text className="text-2xl font-bold text-slate-900">Уведомления</Text>
         </View>
-        <Pressable onPress={markAllRead}>
+        <Pressable onPress={markAllRead} className="py-3 pl-3">
           <Text className="text-sm text-blue-900 font-medium">Прочитать все</Text>
         </Pressable>
       </View>
 
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <NotificationItem item={item} onToggleRead={toggleRead} />
-        )}
-        ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <FontAwesome name="bell-slash-o" size={48} color="#94a3b8" />
-            <Text className="text-base text-slate-400 mt-4">Нет уведомлений</Text>
-          </View>
-        }
-      />
+      <ResponsiveContainer>
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <NotificationItem item={item} onToggleRead={toggleRead} />
+          )}
+          ListEmptyComponent={
+            <View className="flex-1 items-center justify-center py-20">
+              <FontAwesome name="bell-slash-o" size={48} color="#94a3b8" />
+              <Text className="text-base text-slate-400 mt-4">Нет уведомлений</Text>
+            </View>
+          }
+        />
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 }

@@ -160,11 +160,11 @@ export default function ClientSettings() {
             </Text>
             <View className="flex-row items-center justify-between py-3 border-b border-slate-100">
               <Text className="text-base text-slate-900">Push-уведомления</Text>
-              <Switch value={pushEnabled} onValueChange={setPushEnabled} />
+              <Switch value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
             </View>
             <View className="flex-row items-center justify-between py-3 border-b border-slate-100 mb-6">
               <Text className="text-base text-slate-900">Email-уведомления</Text>
-              <Switch value={emailEnabled} onValueChange={setEmailEnabled} />
+              <Switch value={emailEnabled} onValueChange={setEmailEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
             </View>
 
             {/* Links */}

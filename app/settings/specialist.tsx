@@ -170,7 +170,7 @@ export default function SpecialistSettings() {
                 {(lastName[0] || "").toUpperCase()}
               </Text>
             </View>
-            <Pressable className="mt-2">
+            <Pressable className="mt-2 py-2 px-3">
               <Text className="text-sm text-blue-900 font-medium">
                 Изменить фото
               </Text>

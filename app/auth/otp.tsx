@@ -11,7 +11,8 @@ const CODE_LENGTH = 6;
 
 export default function AuthOtpScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const params = useLocalSearchParams<{ email: string }>();
+  const email = typeof params.email === "string" ? params.email : Array.isArray(params.email) ? params.email[0] : "";
   const { signIn } = useAuth();
 
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
@@ -130,7 +131,7 @@ export default function AuthOtpScreen() {
       <ResponsiveContainer>
         <View className="flex-1" style={{ paddingTop: "12%" }}>
           <Text className="text-base text-slate-900 text-center mb-6">
-            Код отправлен на {email}
+            Код отправлен на{email ? ` ${email}` : ""}
           </Text>
 
           <View className="flex-row justify-center gap-2 mb-4">
@@ -191,7 +192,7 @@ export default function AuthOtpScreen() {
           <Pressable
             onPress={handleResend}
             disabled={resendTimer > 0}
-            className="mt-4"
+            className="mt-4 py-3"
           >
             <Text
               className={`text-sm text-center ${
