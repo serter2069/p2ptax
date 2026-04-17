@@ -4,16 +4,15 @@ import {
   Text,
   FlatList,
   Pressable,
-  ActivityIndicator,
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import EmptyState from "@/components/EmptyState";
-import { api } from "@/lib/api";
+import ErrorState from "@/components/ui/ErrorState";
+import { api, ApiError } from "@/lib/api";
 
 interface ThreadItem {
   id: string;
@@ -65,13 +64,20 @@ export default function RequestMessages() {
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchThreads = useCallback(async () => {
     if (!id) return;
+    setError(null);
     try {
       const res = await api<{ items: ThreadItem[] }>(`/api/threads?request_id=${id}`);
       setThreads(res.items);
     } catch (e) {
+      if (e instanceof ApiError) {
+        setError("Не удалось загрузить сообщения");
+      } else {
+        setError("Проверьте соединение с интернетом и попробуйте снова");
+      }
       console.error("fetch request threads error:", e);
     } finally {
       setLoading(false);
@@ -91,8 +97,10 @@ export default function RequestMessages() {
   const renderThread = useCallback(
     ({ item }: { item: ThreadItem }) => {
       const hasUnread = item.unreadCount > 0;
+      const name = displayName(item.otherUser);
       return (
         <Pressable
+          accessibilityLabel={`Чат с ${name}`}
           onPress={() => router.push(`/threads/${item.id}` as never)}
           className="flex-row items-center py-3 border-b border-slate-100"
         >
@@ -116,14 +124,18 @@ export default function RequestMessages() {
               className={`text-base ${hasUnread ? "font-bold" : "font-semibold"} text-slate-900`}
               numberOfLines={1}
             >
-              {displayName(item.otherUser)}
+              {name}
             </Text>
-            {item.lastMessage && (
+            {item.lastMessage ? (
               <Text
                 className={`text-sm mt-0.5 ${hasUnread ? "font-semibold text-slate-700" : "text-slate-400"}`}
                 numberOfLines={1}
               >
                 {truncate(item.lastMessage.text, 60)}
+              </Text>
+            ) : (
+              <Text className="text-sm mt-0.5 text-slate-400" numberOfLines={1}>
+                Нет сообщений
               </Text>
             )}
           </View>
@@ -144,8 +156,34 @@ export default function RequestMessages() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Сообщения" />
+        <ResponsiveContainer>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} className="flex-row items-center py-3 border-b border-slate-100">
+              <View className="w-10 h-10 rounded-full bg-slate-200" />
+              <View className="flex-1 ml-3">
+                <View className="h-4 bg-slate-200 rounded mb-2" style={{ width: "55%" }} />
+                <View className="h-3 bg-slate-200 rounded" style={{ width: "80%" }} />
+              </View>
+              <View className="h-3 bg-slate-200 rounded ml-2" style={{ width: 32 }} />
+            </View>
+          ))}
+        </ResponsiveContainer>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <HeaderBack title="Сообщения" />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ErrorState
+            message={error}
+            onRetry={() => {
+              setLoading(true);
+              fetchThreads();
+            }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -169,8 +207,8 @@ export default function RequestMessages() {
           ListEmptyComponent={
             <EmptyState
               icon="comments-o"
-              title="Специалисты ещё не написали"
-              subtitle="Отклики от специалистов появятся здесь"
+              title="Пока нет сообщений"
+              subtitle="Специалисты увидят вашу заявку и напишут вам первыми"
             />
           }
           contentContainerStyle={{ flexGrow: 1 }}
