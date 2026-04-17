@@ -108,10 +108,13 @@ Font family: system default (San Francisco on iOS, Roboto on Android, system-ui 
 
 ## Screens
 
+Statuses: `TODO` — not started | `IN PROGRESS` — being built | `DONE` — implemented, tsc passes, visually verified
+
 ### AUTH
 
 ---
 **Screen: EmailScreen**
+Status: DONE
 Route: /(auth)/email
 Access: public
 
@@ -142,6 +145,7 @@ Dependencies: none (entry point)
 
 ---
 **Screen: OtpScreen**
+Status: DONE
 Route: /(auth)/otp
 Access: public (but requires email from previous screen)
 
@@ -175,6 +179,7 @@ Dependencies: EmailScreen (passes email param)
 
 ---
 **Screen: HomeScreen**
+Status: DONE
 Route: /(tabs)/index
 Access: auth required, roles: [USER, ADMIN]
 
@@ -200,6 +205,7 @@ Dependencies: none
 
 ---
 **Screen: SearchScreen**
+Status: DONE
 Route: /(tabs)/search
 Access: auth required, roles: [USER, ADMIN]
 
@@ -224,6 +230,7 @@ Dependencies: none
 
 ---
 **Screen: CreateScreen**
+Status: DONE
 Route: /(tabs)/create
 Access: auth required, roles: [USER, ADMIN]
 
@@ -258,6 +265,7 @@ Dependencies: none
 
 ---
 **Screen: MessagesScreen**
+Status: DONE
 Route: /(tabs)/messages
 Access: auth required, roles: [USER, ADMIN]
 
@@ -282,6 +290,7 @@ Dependencies: none
 
 ---
 **Screen: ProfileScreen**
+Status: DONE
 Route: /(tabs)/profile
 Access: auth required, roles: [USER, ADMIN]
 
@@ -314,6 +323,7 @@ Dependencies: none
 
 ---
 **Screen: ListingDetail**
+Status: DONE
 Route: /listing/[id]
 Access: public (viewable without auth)
 
@@ -349,6 +359,7 @@ Dependencies: HomeScreen, SearchScreen (navigation source)
 
 ---
 **Screen: SettingsScreen**
+Status: DONE
 Route: /settings
 Access: auth required, roles: [USER, ADMIN]
 
@@ -381,6 +392,7 @@ Dependencies: ProfileScreen
 
 ---
 **Screen: NotificationsScreen**
+Status: DONE
 Route: /notifications
 Access: auth required, roles: [USER, ADMIN]
 
@@ -409,6 +421,7 @@ Dependencies: ProfileScreen, HomeScreen (header badge)
 
 ---
 **Screen: PrivacyScreen**
+Status: DONE
 Route: /legal/privacy
 Access: public
 
@@ -429,6 +442,7 @@ Dependencies: SettingsScreen, EmailScreen
 
 ---
 **Screen: TermsScreen**
+Status: DONE
 Route: /legal/terms
 Access: public
 

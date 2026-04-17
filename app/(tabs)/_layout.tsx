@@ -22,9 +22,6 @@ export default function TabLayout() {
             display: isMobile ? "flex" : "none",
             borderTopWidth: 1,
             borderTopColor: "#f3f4f6",
-            height: 60,
-            paddingBottom: 8,
-            paddingTop: 4,
           },
           headerShown: false,
         }}
