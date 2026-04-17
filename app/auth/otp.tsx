@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth, UserData } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
+import ResponsiveContainer from "@/components/ResponsiveContainer";
 
 const CODE_LENGTH = 6;
 
@@ -45,10 +46,10 @@ export default function AuthOtpScreen() {
 
         await signIn(data.accessToken, data.refreshToken, data.user);
 
-        // Route based on role
+        // Route based on user state
         if (!data.user.role) {
-          // New user, no role yet
-          router.replace("/auth/email" as never);
+          // New user — go to onboarding
+          router.replace("/onboarding/name" as never);
           return;
         }
 
@@ -57,7 +58,12 @@ export default function AuthOtpScreen() {
             router.replace("/(client-tabs)/dashboard" as never);
             break;
           case "SPECIALIST":
-            router.replace("/(specialist-tabs)/dashboard" as never);
+            if (!data.user.firstName) {
+              // Incomplete onboarding
+              router.replace("/onboarding/name" as never);
+            } else {
+              router.replace("/(specialist-tabs)/dashboard" as never);
+            }
             break;
           case "ADMIN":
             router.replace("/(admin-tabs)/dashboard" as never);
@@ -66,7 +72,7 @@ export default function AuthOtpScreen() {
             router.replace("/(client-tabs)/dashboard" as never);
         }
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Wrong code";
+        const msg = e instanceof Error ? e.message : "Неверный код";
         setError(msg);
         setDigits(Array(CODE_LENGTH).fill(""));
         inputRefs.current[0]?.focus();
@@ -114,73 +120,91 @@ export default function AuthOtpScreen() {
       });
       setResendTimer(60);
     } catch {
-      setError("Failed to resend code");
+      setError("Не удалось отправить код");
     }
   };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <HeaderBack title="Verification" />
-      <View className="flex-1 px-8" style={{ paddingTop: "13%" }}>
-        <Text className="text-base text-slate-900 text-center mb-6">
-          Code sent to {email}
-        </Text>
-
-        <View className="flex-row justify-center gap-2 mb-4">
-          {digits.map((digit, i) => (
-            <TextInput
-              key={i}
-              ref={(ref) => {
-                inputRefs.current[i] = ref;
-              }}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                borderWidth: error ? 1 : 1,
-                borderColor: error ? "#dc2626" : "#e2e8f0",
-                backgroundColor: error ? "#fef2f2" : "#f8fafc",
-                textAlign: "center",
-                fontSize: 20,
-                fontWeight: "700",
-                color: "#0f172a",
-              }}
-              value={digit}
-              onChangeText={(v) => handleDigitChange(i, v)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(i, nativeEvent.key)}
-              keyboardType="number-pad"
-              maxLength={1}
-              editable={!isLoading}
-            />
-          ))}
-        </View>
-
-        {error ? (
-          <Text className="text-xs text-red-600 text-center mb-4">{error}</Text>
-        ) : null}
-
-        <Pressable
-          onPress={() => handleVerify(digits.join(""))}
-          disabled={isLoading || digits.join("").length !== CODE_LENGTH}
-          className={`h-12 rounded-xl items-center justify-center mt-4 ${
-            isLoading || digits.join("").length !== CODE_LENGTH
-              ? "bg-blue-900 opacity-50"
-              : "bg-blue-900 active:bg-slate-900"
-          }`}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text className="text-white text-base font-semibold">Verify</Text>
-          )}
-        </Pressable>
-
-        <Pressable onPress={handleResend} disabled={resendTimer > 0} className="mt-4">
-          <Text className="text-sm text-slate-400 text-center">
-            {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend code"}
+      <HeaderBack title="Подтверждение" />
+      <ResponsiveContainer>
+        <View className="flex-1" style={{ paddingTop: "12%" }}>
+          <Text className="text-base text-slate-900 text-center mb-6">
+            Код отправлен на {email}
           </Text>
-        </Pressable>
-      </View>
+
+          <View className="flex-row justify-center gap-2 mb-4">
+            {digits.map((digit, i) => (
+              <TextInput
+                key={i}
+                ref={(ref) => {
+                  inputRefs.current[i] = ref;
+                }}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: error ? "#dc2626" : "#e2e8f0",
+                  backgroundColor: error ? "#fef2f2" : "#f8fafc",
+                  textAlign: "center",
+                  fontSize: 20,
+                  fontWeight: "700",
+                  color: "#0f172a",
+                }}
+                value={digit}
+                onChangeText={(v) => handleDigitChange(i, v)}
+                onKeyPress={({ nativeEvent }) =>
+                  handleKeyPress(i, nativeEvent.key)
+                }
+                keyboardType="number-pad"
+                maxLength={1}
+                editable={!isLoading}
+              />
+            ))}
+          </View>
+
+          {error ? (
+            <Text className="text-xs text-red-600 text-center mb-4">
+              {error}
+            </Text>
+          ) : null}
+
+          <Pressable
+            onPress={() => handleVerify(digits.join(""))}
+            disabled={isLoading || digits.join("").length !== CODE_LENGTH}
+            className={`h-12 rounded-xl items-center justify-center mt-4 ${
+              isLoading || digits.join("").length !== CODE_LENGTH
+                ? "bg-blue-900 opacity-50"
+                : "bg-blue-900 active:bg-slate-900"
+            }`}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text className="text-white text-base font-semibold">
+                Подтвердить
+              </Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={handleResend}
+            disabled={resendTimer > 0}
+            className="mt-4"
+          >
+            <Text
+              className={`text-sm text-center ${
+                resendTimer > 0 ? "text-slate-300" : "text-slate-400"
+              }`}
+            >
+              {resendTimer > 0
+                ? `Отправить повторно (${resendTimer}с)`
+                : "Отправить повторно"}
+            </Text>
+          </Pressable>
+        </View>
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 }

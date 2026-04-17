@@ -2,13 +2,20 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import ResponsiveContainer from "@/components/ResponsiveContainer";
 
 function SectionHeading({ children }: { children: string }) {
-  return <Text className="text-lg font-bold text-gray-900 mt-6 mb-2">{children}</Text>;
+  return (
+    <Text className="text-lg font-bold text-slate-900 mt-6 mb-2">
+      {children}
+    </Text>
+  );
 }
 
 function Paragraph({ children }: { children: string }) {
-  return <Text className="text-base text-gray-600 leading-7 mb-3">{children}</Text>;
+  return (
+    <Text className="text-base text-slate-500 leading-7 mb-3">{children}</Text>
+  );
 }
 
 export default function PrivacyPolicyScreen() {
@@ -16,70 +23,75 @@ export default function PrivacyPolicyScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView className="flex-1" contentContainerClassName="px-4 pb-12">
-        {/* Header */}
-        <View className="flex-row items-center pt-2 pb-3 border-b border-gray-100 mb-4">
-          <Pressable onPress={() => router.back()} className="mr-3">
-            <FontAwesome name="arrow-left" size={18} color="#374151" />
-          </Pressable>
-          <Text className="text-2xl font-bold text-gray-900">Privacy Policy</Text>
-        </View>
+      <View className="flex-row items-center h-14 bg-white border-b border-slate-200 px-4">
+        <Pressable
+          onPress={() => router.back()}
+          className="w-10 h-10 items-center justify-center -ml-2"
+        >
+          <FontAwesome name="arrow-left" size={18} color="#0f172a" />
+        </Pressable>
+        <Text className="flex-1 text-center text-base font-semibold text-slate-900">
+          Политика конфиденциальности
+        </Text>
+        <View className="w-10" />
+      </View>
 
-        <Text className="text-sm text-gray-400 mb-4">Last updated: April 2026</Text>
+      <ResponsiveContainer>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48 }}
+        >
+          <Text className="text-sm text-slate-400 mt-4 mb-4">
+            Последнее обновление: апрель 2026
+          </Text>
 
-        <Paragraph>
-          This Privacy Policy describes how Etalon ("we", "us", or "our") collects, uses, and
-          shares information about you when you use our marketplace application and services.
-        </Paragraph>
+          <Paragraph>
+            Настоящая Политика конфиденциальности описывает, как P2PTax собирает,
+            использует и защищает ваши персональные данные при использовании нашей
+            платформы.
+          </Paragraph>
 
-        <SectionHeading>1. Information We Collect</SectionHeading>
-        <Paragraph>
-          We collect information you provide directly to us, such as when you create an account,
-          post a listing, send a message, or contact us for support. This includes your email
-          address, name, profile information, and listing details.
-        </Paragraph>
+          <SectionHeading>1. Собираемые данные</SectionHeading>
+          <Paragraph>
+            Мы собираем данные, которые вы предоставляете при регистрации и
+            использовании платформы: адрес электронной почты, имя, контактную
+            информацию и данные о профессиональной деятельности.
+          </Paragraph>
 
-        <SectionHeading>2. How We Use Your Information</SectionHeading>
-        <Paragraph>
-          We use the information we collect to provide, maintain, and improve our services,
-          process transactions, send you technical notices and support messages, and respond
-          to your comments and questions.
-        </Paragraph>
+          <SectionHeading>2. Использование данных</SectionHeading>
+          <Paragraph>
+            Данные используются для предоставления и улучшения наших услуг,
+            обработки запросов, отправки уведомлений и обеспечения безопасности
+            платформы.
+          </Paragraph>
 
-        <SectionHeading>3. Sharing of Information</SectionHeading>
-        <Paragraph>
-          We do not sell your personal information. We may share information with third-party
-          service providers who perform services on our behalf, such as email delivery, hosting,
-          and analytics. We may also share information when required by law.
-        </Paragraph>
+          <SectionHeading>3. Передача данных</SectionHeading>
+          <Paragraph>
+            Мы не продаём ваши персональные данные третьим лицам. Данные могут
+            передаваться только поставщикам услуг, обеспечивающим работу
+            платформы, а также по требованию закона.
+          </Paragraph>
 
-        <SectionHeading>4. Data Security</SectionHeading>
-        <Paragraph>
-          We take reasonable measures to help protect information about you from loss, theft,
-          misuse, unauthorized access, disclosure, alteration, and destruction. All data is
-          transmitted over encrypted connections (TLS/SSL).
-        </Paragraph>
+          <SectionHeading>4. Безопасность</SectionHeading>
+          <Paragraph>
+            Мы принимаем разумные меры для защиты ваших данных. Все данные
+            передаются по зашифрованным каналам (TLS/SSL).
+          </Paragraph>
 
-        <SectionHeading>5. Data Retention</SectionHeading>
-        <Paragraph>
-          We retain your personal information for as long as your account is active or as
-          needed to provide you services. You may request deletion of your account and
-          associated data at any time through the app settings.
-        </Paragraph>
+          <SectionHeading>5. Ваши права</SectionHeading>
+          <Paragraph>
+            Вы имеете право на доступ, исправление или удаление своих
+            персональных данных. Для этого обратитесь к нам через приложение или
+            по адресу: privacy@p2ptax.ru
+          </Paragraph>
 
-        <SectionHeading>6. Your Rights</SectionHeading>
-        <Paragraph>
-          You have the right to access, correct, or delete your personal information.
-          You may also object to or restrict certain processing of your data. To exercise
-          these rights, contact us through the app or at privacy@etalon.app.
-        </Paragraph>
-
-        <SectionHeading>7. Contact Us</SectionHeading>
-        <Paragraph>
-          If you have any questions about this Privacy Policy, please contact us at
-          privacy@etalon.app.
-        </Paragraph>
-      </ScrollView>
+          <SectionHeading>6. Контакты</SectionHeading>
+          <Paragraph>
+            По вопросам, связанным с Политикой конфиденциальности, обращайтесь по
+            адресу: privacy@p2ptax.ru
+          </Paragraph>
+        </ScrollView>
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 }
