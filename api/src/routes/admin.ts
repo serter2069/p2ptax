@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { roleGuard } from "../middleware/auth";
@@ -230,6 +231,328 @@ router.post(
     }
   }
 );
+
+// ─── Cities CRUD ────────────────────────────────────────────────────────────
+
+// GET /api/admin/cities
+router.get("/cities", async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      prisma.city.findMany({
+        orderBy: { name: "asc" },
+        skip,
+        take: limit,
+        include: { _count: { select: { fnsOffices: true } } },
+      }),
+      prisma.city.count(),
+    ]);
+
+    res.json({
+      items: items.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        officesCount: c._count.fnsOffices,
+      })),
+      total,
+      page,
+      limit,
+      hasMore: skip + items.length < total,
+    });
+  } catch (error) {
+    console.error("admin/cities error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/cities
+router.post("/cities", async (req: Request, res: Response) => {
+  try {
+    const { name, slug } = req.body as { name?: string; slug?: string };
+    if (!name || !slug) {
+      res.status(400).json({ error: "name and slug are required" });
+      return;
+    }
+    const city = await prisma.city.create({ data: { name, slug } });
+    res.status(201).json(city);
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === "P2002") {
+      res.status(409).json({ error: "City with this slug already exists" });
+      return;
+    }
+    console.error("admin/cities POST error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /api/admin/cities/:id
+router.patch("/cities/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { name, slug } = req.body as { name?: string; slug?: string };
+    const data: Prisma.CityUpdateInput = {};
+    if (name) data.name = name;
+    if (slug) data.slug = slug;
+
+    const city = await prisma.city.update({ where: { id }, data });
+    res.json(city);
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === "P2025") {
+      res.status(404).json({ error: "City not found" });
+      return;
+    }
+    if (e.code === "P2002") {
+      res.status(409).json({ error: "Slug already in use" });
+      return;
+    }
+    console.error("admin/cities/:id PATCH error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/admin/cities/:id — guard: no IFNS offices attached
+router.delete("/cities/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const officesCount = await prisma.fnsOffice.count({ where: { cityId: id } });
+    if (officesCount > 0) {
+      res.status(409).json({
+        error: `Cannot delete city: ${officesCount} IFNS office(s) attached`,
+      });
+      return;
+    }
+    await prisma.city.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === "P2025") {
+      res.status(404).json({ error: "City not found" });
+      return;
+    }
+    console.error("admin/cities/:id DELETE error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─── IFNS CRUD ───────────────────────────────────────────────────────────────
+
+// GET /api/admin/ifns
+router.get("/ifns", async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const skip = (page - 1) * limit;
+    const cityId = req.query.cityId as string | undefined;
+    const q = req.query.q as string | undefined;
+
+    const where: Prisma.FnsOfficeWhereInput = {};
+    if (cityId) where.cityId = cityId;
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" } },
+        { code: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.fnsOffice.findMany({
+        where,
+        orderBy: [{ city: { name: "asc" } }, { name: "asc" }],
+        skip,
+        take: limit,
+        include: { city: { select: { id: true, name: true, slug: true } } },
+      }),
+      prisma.fnsOffice.count({ where }),
+    ]);
+
+    res.json({ items, total, page, limit, hasMore: skip + items.length < total });
+  } catch (error) {
+    console.error("admin/ifns error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/ifns
+router.post("/ifns", async (req: Request, res: Response) => {
+  try {
+    const { name, code, cityId, address, searchAliases } = req.body as {
+      name?: string;
+      code?: string;
+      cityId?: string;
+      address?: string;
+      searchAliases?: string;
+    };
+    if (!name || !code || !cityId) {
+      res.status(400).json({ error: "name, code, and cityId are required" });
+      return;
+    }
+    const office = await prisma.fnsOffice.create({
+      data: {
+        name,
+        code,
+        cityId,
+        address: address ?? null,
+        searchAliases: searchAliases ?? null,
+      },
+      include: { city: { select: { id: true, name: true, slug: true } } },
+    });
+    res.status(201).json(office);
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === "P2002") {
+      res.status(409).json({ error: "IFNS with this code already exists" });
+      return;
+    }
+    if (e.code === "P2025") {
+      res.status(404).json({ error: "City not found" });
+      return;
+    }
+    console.error("admin/ifns POST error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /api/admin/ifns/:id
+router.patch("/ifns/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { name, code, cityId, address, searchAliases } = req.body as {
+      name?: string;
+      code?: string;
+      cityId?: string;
+      address?: string;
+      searchAliases?: string;
+    };
+    const data: Prisma.FnsOfficeUpdateInput = {};
+    if (name !== undefined) data.name = name;
+    if (code !== undefined) data.code = code;
+    if (cityId !== undefined) data.city = { connect: { id: cityId } };
+    if (address !== undefined) data.address = address;
+    if (searchAliases !== undefined) data.searchAliases = searchAliases;
+
+    const office = await prisma.fnsOffice.update({
+      where: { id },
+      data,
+      include: { city: { select: { id: true, name: true, slug: true } } },
+    });
+    res.json(office);
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === "P2025") {
+      res.status(404).json({ error: "IFNS office not found" });
+      return;
+    }
+    if (e.code === "P2002") {
+      res.status(409).json({ error: "Code already in use" });
+      return;
+    }
+    console.error("admin/ifns/:id PATCH error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/admin/ifns/:id
+router.delete("/ifns/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const [specialistCount, requestCount] = await Promise.all([
+      prisma.specialistFns.count({ where: { fnsId: id } }),
+      prisma.request.count({ where: { fnsId: id } }),
+    ]);
+    if (specialistCount > 0 || requestCount > 0) {
+      res.status(409).json({
+        error: `Cannot delete IFNS: referenced by ${specialistCount} specialist(s) and ${requestCount} request(s)`,
+      });
+      return;
+    }
+    await prisma.fnsOffice.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === "P2025") {
+      res.status(404).json({ error: "IFNS office not found" });
+      return;
+    }
+    console.error("admin/ifns/:id DELETE error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/ifns/import — bulk JSON import [{code, name, citySlug, address, searchAliases}]
+router.post("/ifns/import", async (req: Request, res: Response) => {
+  try {
+    const items = req.body as {
+      code: string;
+      name: string;
+      citySlug: string;
+      address?: string;
+      searchAliases?: string;
+    }[];
+
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: "Body must be a non-empty array" });
+      return;
+    }
+
+    const slugs = [...new Set(items.map((i) => i.citySlug))];
+    const cities = await prisma.city.findMany({ where: { slug: { in: slugs } } });
+    const cityMap = new Map(cities.map((c) => [c.slug, c.id]));
+
+    const unknownSlugs = slugs.filter((s) => !cityMap.has(s));
+    if (unknownSlugs.length > 0) {
+      res.status(400).json({ error: `Unknown city slugs: ${unknownSlugs.join(", ")}` });
+      return;
+    }
+
+    let created = 0;
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const item of items) {
+      const cityId = cityMap.get(item.citySlug);
+      if (!cityId) continue;
+      try {
+        const existing = await prisma.fnsOffice.findUnique({ where: { code: item.code } });
+        if (existing) {
+          await prisma.fnsOffice.update({
+            where: { code: item.code },
+            data: {
+              name: item.name,
+              cityId,
+              address: item.address ?? null,
+              searchAliases: item.searchAliases ?? null,
+            },
+          });
+          updated++;
+        } else {
+          await prisma.fnsOffice.create({
+            data: {
+              name: item.name,
+              code: item.code,
+              cityId,
+              address: item.address ?? null,
+              searchAliases: item.searchAliases ?? null,
+            },
+          });
+          created++;
+        }
+      } catch {
+        errors.push(`Failed to import code ${item.code}`);
+      }
+    }
+
+    res.json({ created, updated, errors });
+  } catch (error) {
+    console.error("admin/ifns/import error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // GET /api/admin/moderation/queue
 router.get("/moderation/queue", async (_req: Request, res: Response) => {
