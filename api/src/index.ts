@@ -12,6 +12,8 @@ import requestsRoutes from "./routes/requests";
 import referenceRoutes from "./routes/reference";
 import dashboardRoutes from "./routes/dashboard";
 import userRoutes from "./routes/user";
+import specialistRoutes from "./routes/specialist";
+import threadsRoutes from "./routes/threads";
 
 const app = express();
 const PORT = process.env.PORT || 3812;
@@ -34,6 +36,8 @@ app.use("/api/requests", requestsRoutes);
 app.use("/api", referenceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/specialist", specialistRoutes);
+app.use("/api/threads", threadsRoutes);
 
 app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`);
