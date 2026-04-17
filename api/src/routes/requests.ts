@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
+import { verifyAccessToken } from "../lib/jwt";
 
 const router = Router();
 
@@ -61,16 +62,29 @@ router.get("/public", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/requests/:id/public — single request detail (public)
+// GET /api/requests/:id/public — single request detail (public, optional auth)
 router.get("/:id/public", async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
+
+    // Resolve optional caller identity (specialist check for existing thread)
+    let callerId: string | null = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const payload = verifyAccessToken(authHeader.slice(7));
+        callerId = payload.userId;
+      } catch {
+        // ignore invalid tokens — public route, auth is optional
+      }
+    }
+
     const result = await prisma.request.findUnique({
       where: { id },
       include: {
         city: true,
         fns: true,
-        user: true,
+        user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
         _count: { select: { threads: true } },
       },
     });
@@ -78,6 +92,20 @@ router.get("/:id/public", async (req: Request, res: Response) => {
     if (!result) {
       res.status(404).json({ error: "Request not found" });
       return;
+    }
+
+    // Check if caller already has an existing thread on this request (specialist flow)
+    let hasExistingThread = false;
+    let existingThreadId: string | null = null;
+    if (callerId && callerId !== result.userId) {
+      const thread = await prisma.thread.findFirst({
+        where: { requestId: id, specialistId: callerId },
+        select: { id: true },
+      });
+      if (thread) {
+        hasExistingThread = true;
+        existingThreadId = thread.id;
+      }
     }
 
     res.json({
@@ -96,6 +124,8 @@ router.get("/:id/public", async (req: Request, res: Response) => {
         avatarUrl: result.user.avatarUrl,
       },
       threadsCount: result._count.threads,
+      hasExistingThread,
+      existingThreadId,
     });
   } catch (error) {
     console.error("requests/:id/public error:", error);
