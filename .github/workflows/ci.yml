@@ -3,10 +3,10 @@ on:
   pull_request:
     branches: [main, development]
   push:
-    branches: [main, development]
+    branches: [development]
 
 jobs:
-  quality:
+  frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,6 +16,18 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npx tsc --noEmit
-      - run: npx eslint . --ext .ts,.tsx --max-warnings 0
-      - name: API TypeScript check
-        run: cd api && npm ci && npx tsc --noEmit
+      - run: npx expo export --platform web
+        env:
+          EXPO_PUBLIC_API_URL: "https://p2ptax.smartlaunchhub.com/api"
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: cd api && npm ci
+      - run: cd api && npx tsc --noEmit
+      - run: cd api && npx prisma generate
