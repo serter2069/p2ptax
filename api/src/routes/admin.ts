@@ -172,6 +172,12 @@ router.patch("/users/:id", async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const { isBanned, firstName, lastName, role } = req.body;
 
+    // Self-block protection: admin cannot block their own account
+    if (isBanned === true && req.user?.userId === id) {
+      res.status(400).json({ error: "Нельзя заблокировать собственный аккаунт" });
+      return;
+    }
+
     const data: Record<string, unknown> = {};
     if (typeof isBanned === "boolean") data.isBanned = isBanned;
     if (typeof firstName === "string") data.firstName = firstName;
