@@ -517,4 +517,68 @@ router.post("/:id/extend", authMiddleware, async (req: Request, res: Response) =
   }
 });
 
+// GET /api/requests/:id/recommendations — matching specialists (auth required, client owner)
+router.get("/:id/recommendations", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    const request = await prisma.request.findUnique({
+      where: { id },
+      select: { userId: true, fnsId: true, cityId: true },
+    });
+
+    if (!request) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+
+    if (request.userId !== userId) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    // Find specialists who cover this FNS and are available
+    const specialistFnsList = await prisma.specialistFns.findMany({
+      where: { fnsId: request.fnsId },
+      take: 10,
+      include: {
+        specialist: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+            isAvailable: true,
+            specialistProfile: {
+              select: { description: true },
+            },
+            specialistServices: {
+              where: { fnsId: request.fnsId },
+              include: { service: { select: { id: true, name: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    const specialists = specialistFnsList
+      .filter((sf) => sf.specialist.isAvailable)
+      .slice(0, 3)
+      .map((sf) => ({
+        id: sf.specialist.id,
+        firstName: sf.specialist.firstName,
+        lastName: sf.specialist.lastName,
+        avatarUrl: sf.specialist.avatarUrl,
+        description: sf.specialist.specialistProfile?.description ?? null,
+        services: sf.specialist.specialistServices.map((ss) => ss.service.name),
+      }));
+
+    res.json({ items: specialists });
+  } catch (error) {
+    console.error("requests/:id/recommendations error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
