@@ -59,4 +59,20 @@ router.get("/services", async (_req: Request, res: Response) => {
   }
 });
 
+// GET /api/stats — public platform statistics
+router.get("/stats", async (_req: Request, res: Response) => {
+  try {
+    const [specialistsCount, citiesCount, consultationsCount] = await Promise.all([
+      prisma.user.count({ where: { role: "SPECIALIST", isBanned: false } }),
+      prisma.city.count(),
+      prisma.thread.count(),
+    ]);
+
+    res.json({ specialistsCount, citiesCount, consultationsCount });
+  } catch (error) {
+    console.error("stats error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

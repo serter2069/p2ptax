@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -16,12 +15,6 @@ import { api } from "@/lib/api";
 import SpecialistCard from "@/components/SpecialistCard";
 import ErrorState from "@/components/ui/ErrorState";
 
-interface CityOption {
-  id: string;
-  name: string;
-  fnsOffices: { id: string; name: string; code: string }[];
-}
-
 interface FeaturedSpecialist {
   id: string;
   firstName: string | null;
@@ -31,85 +24,116 @@ interface FeaturedSpecialist {
   cities: { id: string; name: string }[];
 }
 
-const SERVICE_OPTIONS = [
-  "Выездная проверка",
-  "Камеральная проверка",
-  "Отдел оперативного контроля",
-  "Не знаю",
-];
+interface RecentRequest {
+  id: string;
+  title: string | null;
+  description: string;
+  status: string;
+  createdAt: string;
+  city: { id: string; name: string };
+  fns: { id: string; name: string; code: string };
+  threadsCount: number;
+}
 
-const BENEFITS = [
-  {
-    icon: "shield" as const,
-    title: "Проверенные специалисты",
-    description:
-      "Консультанты с реальным опытом работы в налоговых инспекциях вашего города",
-  },
-  {
-    icon: "clock-o" as const,
-    title: "Быстрый отклик",
-    description:
-      "Специалисты отвечают в течение нескольких часов, а не дней",
-  },
-  {
-    icon: "handshake-o" as const,
-    title: "Полностью бесплатно",
-    description:
-      "Никаких комиссий и скрытых платежей — связывайтесь напрямую",
-  },
-];
+interface PlatformStats {
+  specialistsCount: number;
+  citiesCount: number;
+  consultationsCount: number;
+}
 
-const STEPS = [
+const CLIENT_STEPS = [
   {
     number: "1",
-    title: "Опишите проблему",
-    description:
-      "Укажите город, инспекцию и тип проверки. Добавьте описание ситуации.",
+    title: "Создайте заявку",
+    description: "Укажите город, инспекцию и тип проверки. Опишите ситуацию.",
   },
   {
     number: "2",
     title: "Получите отклики",
-    description:
-      "Специалисты из вашего города увидят заявку и напишут вам первыми.",
+    description: "Специалисты из вашего города увидят заявку и напишут первыми.",
   },
   {
     number: "3",
     title: "Выберите специалиста",
-    description:
-      "Общайтесь в чате, сравнивайте подходы и выбирайте того, кому доверяете.",
+    description: "Общайтесь в чате, сравнивайте подходы, доверяйте тому, кто подошёл.",
   },
 ];
 
+const SPECIALIST_STEPS = [
+  {
+    number: "1",
+    title: "Зарегистрируйтесь",
+    description: "Укажите специализацию, опыт и города, в которых работаете.",
+  },
+  {
+    number: "2",
+    title: "Получайте заявки",
+    description: "Система подбирает заявки клиентов под ваш профиль и регион.",
+  },
+  {
+    number: "3",
+    title: "Помогайте клиентам",
+    description: "Открывайте диалог, консультируйте и получайте новых клиентов.",
+  },
+];
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "CLOSING_SOON") {
+    return (
+      <View className="bg-amber-500/10 px-2 py-0.5 rounded">
+        <Text className="text-xs text-amber-600">Скоро закрывается</Text>
+      </View>
+    );
+  }
+  return (
+    <View className="bg-emerald-600/10 px-2 py-0.5 rounded">
+      <Text className="text-xs text-emerald-600">Активна</Text>
+    </View>
+  );
+}
+
 export default function LandingScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
-  const formRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const [cities, setCities] = useState<CityOption[]>([]);
   const [featured, setFeatured] = useState<FeaturedSpecialist[]>([]);
+  const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
+  const [stats, setStats] = useState<PlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Quick request form state
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [description, setDescription] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  // Redirect authenticated users to their dashboard
+  useEffect(() => {
+    if (isAuthenticated && user?.role) {
+      if (user.role === "SPECIALIST") {
+        router.replace("/specialist/dashboard" as never);
+      } else if (user.role === "CLIENT") {
+        router.replace("/requests" as never);
+      } else if (user.role === "ADMIN") {
+        router.replace("/admin/users" as never);
+      }
+    }
+  }, [isAuthenticated, user, router]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
-      const [citiesRes, featuredRes] = await Promise.all([
-        api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
+      const [featuredRes, requestsRes, statsRes] = await Promise.all([
         api<{ items: FeaturedSpecialist[] }>("/api/specialists/featured", {
           noAuth: true,
         }),
+        api<{ items: RecentRequest[] }>("/api/requests/public?limit=3", {
+          noAuth: true,
+        }),
+        api<PlatformStats>("/api/stats", { noAuth: true }),
       ]);
-      setCities(citiesRes.items);
-      setFeatured(featuredRes.items);
+      setFeatured(featuredRes.items.slice(0, 3));
+      setRecentRequests(requestsRes.items.slice(0, 3));
+      setStats(statsRes);
     } catch {
       setError(true);
     } finally {
@@ -121,20 +145,6 @@ export default function LandingScreen() {
     loadData();
   }, [loadData]);
 
-  const handleCitySelect = useCallback(
-    (id: string) => {
-      setSelectedCityId(selectedCityId === id ? null : id);
-    },
-    [selectedCityId]
-  );
-
-  const handleServiceSelect = useCallback(
-    (name: string) => {
-      setSelectedService(selectedService === name ? null : name);
-    },
-    [selectedService]
-  );
-
   const handleSpecialistPress = useCallback(
     (id: string) => {
       router.push(`/specialists/${id}` as never);
@@ -142,40 +152,13 @@ export default function LandingScreen() {
     [router]
   );
 
-  const handleSubmitRequest = useCallback(async () => {
-    if (!isAuthenticated) {
-      router.push("/auth/email" as never);
-      return;
-    }
-    // Authenticated: submit quick request
-    if (!selectedCityId || !description.trim()) return;
-    setSubmitting(true);
-    try {
-      await api("/api/requests/public", {
-        method: "POST",
-        body: {
-          cityId: selectedCityId,
-          service: selectedService,
-          description: description.trim(),
-        },
-      });
-      setDescription("");
-      setSelectedCityId(null);
-      setSelectedService(null);
-      router.push("/requests" as never);
-    } catch {
-      // Error handled silently
-    } finally {
-      setSubmitting(false);
-    }
-  }, [isAuthenticated, selectedCityId, selectedService, description, router]);
+  const containerStyle = isDesktop
+    ? { maxWidth: 520, width: "100%" as const, alignSelf: "center" as const }
+    : undefined;
 
-  const scrollViewRef = useRef<ScrollView>(null);
-
-  const scrollToForm = useCallback(() => {
-    // Simple scroll to approximate form position
-    scrollViewRef.current?.scrollTo({ y: 600, animated: true });
-  }, []);
+  const wideContainerStyle = isDesktop
+    ? { maxWidth: 900, width: "100%" as const, alignSelf: "center" as const }
+    : undefined;
 
   if (loading) {
     return (
@@ -199,244 +182,193 @@ export default function LandingScreen() {
     );
   }
 
-  const containerStyle = isDesktop
-    ? { maxWidth: 520, width: "100%" as const, alignSelf: "center" as const }
-    : undefined;
-
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
       <View className="flex-row items-center justify-between h-14 bg-blue-900 px-4">
         <Text className="text-lg font-bold text-white">P2PTax</Text>
         <View className="flex-row items-center gap-3">
-          {!isAuthenticated && (
-            <Pressable
-              accessibilityLabel="Войти"
-              onPress={() => router.push("/auth/email" as never)}
-              className="bg-white/20 rounded-lg px-4 min-h-[44px] items-center justify-center"
-            >
-              <Text className="text-white font-medium text-sm">Войти</Text>
-            </Pressable>
-          )}
+          <Pressable
+            accessibilityLabel="Войти"
+            onPress={() => router.push("/auth/email" as never)}
+            className="bg-white/20 rounded-lg px-4 min-h-[44px] items-center justify-center"
+          >
+            <Text className="text-white font-medium text-sm">Войти</Text>
+          </Pressable>
         </View>
       </View>
 
-      <ScrollView ref={scrollViewRef}>
-        {/* HERO SECTION — dark bg */}
-        <View className="bg-blue-900 py-12 px-4">
+      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
+
+        {/* ─── HERO ─── */}
+        <View className="bg-blue-900 pt-12 pb-14 px-4">
           <View style={containerStyle}>
-            <Text className="text-2xl font-bold text-white text-center">
-              Налоговая проверка?{"\n"}Найдём специалиста за минуту
+            <Text className="text-2xl font-bold text-white text-center leading-8">
+              Налоговая помощь рядом
             </Text>
             <Text className="text-sm text-blue-200 text-center mt-3 leading-5">
-              Бесплатный сервис для связи с налоговыми консультантами по всей
-              России. Выездные, камеральные проверки, оперативный контроль —
-              получите помощь от практиков, а не теоретиков.
+              Найдите специалиста по P2P и криптовалютным операциям в вашем городе
             </Text>
-            <Pressable
-              accessibilityLabel="Оставить заявку"
-              onPress={scrollToForm}
-              className="bg-amber-700 rounded-xl h-12 items-center justify-center mt-6"
-              style={isDesktop ? { maxWidth: 280, alignSelf: "center" } : undefined}
+
+            {/* Two CTAs */}
+            <View
+              className="mt-8 gap-3"
+              style={isDesktop ? { flexDirection: "row", justifyContent: "center" } : undefined}
             >
-              <Text className="text-white font-semibold text-base">
-                Оставить заявку
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* BENEFITS SECTION */}
-        <View className="py-10 px-4 bg-slate-50">
-          <View style={containerStyle}>
-            <Text className="text-xl font-semibold text-slate-900 text-center mb-6">
-              Почему выбирают Налоговик
-            </Text>
-            <View className={isDesktop ? "flex-row gap-4" : ""}>
-              {BENEFITS.map((b) => (
-                <View
-                  key={b.title}
-                  className={`bg-white border border-slate-200 rounded-xl p-4 ${
-                    isDesktop ? "flex-1" : "mb-3"
-                  }`}
-                >
-                  <View className="w-10 h-10 rounded-full bg-blue-900/10 items-center justify-center mb-3">
-                    <FontAwesome name={b.icon} size={18} color="#1e3a8a" />
-                  </View>
-                  <Text className="text-base font-semibold text-slate-900 mb-1">
-                    {b.title}
-                  </Text>
-                  <Text className="text-sm text-slate-500 leading-5">
-                    {b.description}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* HOW IT WORKS */}
-        <View className="py-10 px-4 bg-white">
-          <View style={containerStyle}>
-            <Text className="text-xl font-semibold text-slate-900 text-center mb-6">
-              Как это работает
-            </Text>
-            <View className={isDesktop ? "flex-row gap-6" : ""}>
-              {STEPS.map((s) => (
-                <View
-                  key={s.number}
-                  className={`items-center ${isDesktop ? "flex-1" : "mb-6"}`}
-                >
-                  <View className="w-10 h-10 rounded-full bg-blue-900 items-center justify-center mb-3">
-                    <Text className="text-white font-bold text-base">
-                      {s.number}
-                    </Text>
-                  </View>
-                  <Text className="text-base font-semibold text-slate-900 text-center mb-1">
-                    {s.title}
-                  </Text>
-                  <Text className="text-sm text-slate-500 text-center leading-5">
-                    {s.description}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* QUICK REQUEST FORM */}
-        <View ref={formRef} className="py-10 px-4 bg-slate-50">
-          <View style={containerStyle}>
-            <View className="bg-white rounded-2xl p-6 border border-slate-200">
-              <Text className="text-xl font-semibold text-slate-900 text-center mb-6">
-                Опишите вашу ситуацию
-              </Text>
-
-              {/* City select */}
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-slate-900 mb-2">
-                  Город
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {cities.map((city) => (
-                    <Pressable
-                      key={city.id}
-                      accessibilityLabel={city.name}
-                      onPress={() => handleCitySelect(city.id)}
-                      className={`px-3 py-2 rounded-lg mr-2 border ${
-                        selectedCityId === city.id
-                          ? "bg-blue-900 border-blue-900"
-                          : "bg-white border-slate-200"
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm ${
-                          selectedCityId === city.id
-                            ? "text-white font-medium"
-                            : "text-slate-900"
-                        }`}
-                      >
-                        {city.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-
-              {/* Service select */}
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-slate-900 mb-2">
-                  Тип проверки
-                </Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {SERVICE_OPTIONS.map((name) => (
-                    <Pressable
-                      key={name}
-                      accessibilityLabel={name}
-                      onPress={() => handleServiceSelect(name)}
-                      className={`px-3 py-2 rounded-lg border ${
-                        selectedService === name
-                          ? "bg-blue-900 border-blue-900"
-                          : "bg-white border-slate-200"
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm ${
-                          selectedService === name
-                            ? "text-white font-medium"
-                            : "text-slate-900"
-                        }`}
-                      >
-                        {name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              {/* Description textarea */}
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-slate-900 mb-2">
-                  Описание проблемы
-                </Text>
-                <TextInput
-                  accessibilityLabel="Описание проблемы"
-                  style={{
-                    minHeight: 100,
-                    borderRadius: 12,
-                    backgroundColor: "#f8fafc",
-                    borderWidth: 1,
-                    borderColor: "#e2e8f0",
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    fontSize: 14,
-                    color: "#0f172a",
-                    textAlignVertical: "top",
-                  }}
-                  placeholder="Кратко опишите вашу ситуацию: что случилось, какие документы пришли, что требует инспекция"
-                  placeholderTextColor="#94a3b8"
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  numberOfLines={4}
-                />
-              </View>
-
-              {/* Submit */}
               <Pressable
-                accessibilityLabel="Отправить заявку"
-                onPress={handleSubmitRequest}
-                disabled={submitting}
-                className={`bg-amber-700 rounded-xl h-12 items-center justify-center ${
-                  submitting ? "opacity-50" : ""
-                }`}
+                accessibilityLabel="Найти специалиста"
+                onPress={() => router.push("/specialists" as never)}
+                className="bg-amber-700 rounded-xl h-12 items-center justify-center"
+                style={isDesktop ? { width: 200 } : undefined}
               >
-                {submitting ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text className="text-white font-semibold text-base">
-                    Отправить заявку
-                  </Text>
-                )}
+                <Text className="text-white font-semibold text-base">
+                  Найти специалиста
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Я специалист"
+                onPress={() => router.push("/auth/email" as never)}
+                className="border border-white/30 rounded-xl h-12 items-center justify-center"
+                style={[
+                  { backgroundColor: "rgba(255,255,255,0.12)" },
+                  isDesktop ? { width: 200 } : undefined,
+                ]}
+              >
+                <Text className="text-white font-semibold text-base">
+                  Я специалист
+                </Text>
               </Pressable>
             </View>
           </View>
         </View>
 
-        {/* FEATURED SPECIALISTS */}
+        {/* ─── STATS ─── */}
+        {stats && (
+          <View className="bg-slate-900 py-8 px-4">
+            <View
+              style={wideContainerStyle}
+              className="flex-row justify-around"
+            >
+              <View className="items-center">
+                <Text className="text-2xl font-bold text-white">
+                  {stats.specialistsCount}+
+                </Text>
+                <Text className="text-xs text-slate-400 mt-1 text-center">
+                  специалистов
+                </Text>
+              </View>
+              <View
+                style={{ width: 1, backgroundColor: "#334155", marginHorizontal: 8 }}
+              />
+              <View className="items-center">
+                <Text className="text-2xl font-bold text-white">
+                  {stats.citiesCount}
+                </Text>
+                <Text className="text-xs text-slate-400 mt-1 text-center">
+                  городов
+                </Text>
+              </View>
+              <View
+                style={{ width: 1, backgroundColor: "#334155", marginHorizontal: 8 }}
+              />
+              <View className="items-center">
+                <Text className="text-2xl font-bold text-white">
+                  {stats.consultationsCount}+
+                </Text>
+                <Text className="text-xs text-slate-400 mt-1 text-center">
+                  консультаций
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ─── HOW IT WORKS ─── */}
+        <View className="py-10 px-4 bg-white">
+          <View style={containerStyle}>
+            <Text className="text-xl font-semibold text-slate-900 text-center mb-8">
+              Как это работает
+            </Text>
+
+            {/* For clients */}
+            <View className="mb-8">
+              <View className="flex-row items-center mb-4">
+                <View className="w-7 h-7 rounded-full bg-blue-900/10 items-center justify-center mr-2">
+                  <FontAwesome name="user" size={13} color="#1e3a8a" />
+                </View>
+                <Text className="text-base font-semibold text-slate-900">
+                  Для клиентов
+                </Text>
+              </View>
+              <View className={isDesktop ? "flex-row gap-4" : ""}>
+                {CLIENT_STEPS.map((s) => (
+                  <View
+                    key={s.number}
+                    className={`items-center ${isDesktop ? "flex-1" : "mb-5"}`}
+                  >
+                    <View className="w-10 h-10 rounded-full bg-blue-900 items-center justify-center mb-3">
+                      <Text className="text-white font-bold text-base">{s.number}</Text>
+                    </View>
+                    <Text className="text-sm font-semibold text-slate-900 text-center mb-1">
+                      {s.title}
+                    </Text>
+                    <Text className="text-sm text-slate-500 text-center leading-5">
+                      {s.description}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Divider */}
+            <View className="border-t border-slate-100 mb-8" />
+
+            {/* For specialists */}
+            <View>
+              <View className="flex-row items-center mb-4">
+                <View className="w-7 h-7 rounded-full bg-amber-700/10 items-center justify-center mr-2">
+                  <FontAwesome name="briefcase" size={13} color="#b45309" />
+                </View>
+                <Text className="text-base font-semibold text-slate-900">
+                  Для специалистов
+                </Text>
+              </View>
+              <View className={isDesktop ? "flex-row gap-4" : ""}>
+                {SPECIALIST_STEPS.map((s) => (
+                  <View
+                    key={s.number}
+                    className={`items-center ${isDesktop ? "flex-1" : "mb-5"}`}
+                  >
+                    <View className="w-10 h-10 rounded-full bg-amber-700 items-center justify-center mb-3">
+                      <Text className="text-white font-bold text-base">{s.number}</Text>
+                    </View>
+                    <Text className="text-sm font-semibold text-slate-900 text-center mb-1">
+                      {s.title}
+                    </Text>
+                    <Text className="text-sm text-slate-500 text-center leading-5">
+                      {s.description}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ─── FEATURED SPECIALISTS ─── */}
         {featured.length > 0 && (
-          <View className="py-10 px-4 bg-white">
+          <View className="py-10 px-4 bg-slate-50">
             <View style={containerStyle}>
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-xl font-semibold text-slate-900">
-                  Специалисты на платформе
+                  Специалисты
                 </Text>
                 <Pressable
                   accessibilityLabel="Все специалисты"
                   onPress={() => router.push("/specialists" as never)}
                 >
                   <Text className="text-sm font-medium text-blue-900">
-                    Все специалисты
+                    Все →
                   </Text>
                 </Pressable>
               </View>
@@ -455,56 +387,97 @@ export default function LandingScreen() {
                   />
                 ))}
               </ScrollView>
-
-              {/* Navigation links */}
-              <View className="flex-row gap-3 mt-6">
-                <Pressable
-                  accessibilityLabel="Все заявки"
-                  onPress={() => router.push("/requests" as never)}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-3 items-center"
-                >
-                  <FontAwesome name="list" size={18} color="#1e3a8a" />
-                  <Text className="text-sm font-medium text-slate-900 mt-1">
-                    Все заявки
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityLabel="Все специалисты"
-                  onPress={() => router.push("/specialists" as never)}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-3 items-center"
-                >
-                  <FontAwesome name="users" size={18} color="#1e3a8a" />
-                  <Text className="text-sm font-medium text-slate-900 mt-1">
-                    Все специалисты
-                  </Text>
-                </Pressable>
-              </View>
             </View>
           </View>
         )}
 
-        {/* FINAL CTA */}
-        <View className="py-10 px-4 bg-slate-50">
+        {/* ─── RECENT REQUESTS ─── */}
+        {recentRequests.length > 0 && (
+          <View className="py-10 px-4 bg-white">
+            <View style={containerStyle}>
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-xl font-semibold text-slate-900">
+                  Свежие заявки
+                </Text>
+                <Pressable
+                  accessibilityLabel="Все заявки"
+                  onPress={() => router.push("/requests" as never)}
+                >
+                  <Text className="text-sm font-medium text-blue-900">
+                    Все →
+                  </Text>
+                </Pressable>
+              </View>
+              {recentRequests.map((r) => (
+                <Pressable
+                  key={r.id}
+                  accessibilityLabel={r.title || "Заявка"}
+                  onPress={() => router.push(`/requests/${r.id}` as never)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-3"
+                  style={({ pressed }) =>
+                    pressed ? { opacity: 0.85 } : undefined
+                  }
+                >
+                  <View className="flex-row items-start justify-between mb-2">
+                    <Text
+                      className="text-base font-semibold text-slate-900 flex-1 mr-2"
+                      numberOfLines={1}
+                    >
+                      {r.title || r.city.name}
+                    </Text>
+                    <StatusBadge status={r.status} />
+                  </View>
+                  <Text
+                    className="text-sm text-slate-500 leading-5 mb-2"
+                    numberOfLines={2}
+                  >
+                    {r.description}
+                  </Text>
+                  <View className="flex-row items-center gap-3">
+                    <View className="flex-row items-center gap-1">
+                      <FontAwesome name="map-marker" size={11} color="#94a3b8" />
+                      <Text className="text-xs text-slate-400">{r.city.name}</Text>
+                    </View>
+                    {r.threadsCount > 0 && (
+                      <View className="flex-row items-center gap-1">
+                        <FontAwesome name="comments" size={11} color="#94a3b8" />
+                        <Text className="text-xs text-slate-400">
+                          {r.threadsCount}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* ─── CTA SECTION ─── */}
+        <View className="py-12 px-4 bg-blue-900">
           <View style={containerStyle}>
-            <Text className="text-lg font-semibold text-slate-900 text-center mb-3">
-              Не откладывайте — чем раньше обратитесь, тем больше шансов решить
-              вопрос
+            <Text className="text-xl font-bold text-white text-center mb-2">
+              Готовы начать?
+            </Text>
+            <Text className="text-sm text-blue-200 text-center mb-6 leading-5">
+              Разместите заявку бесплатно и получите отклики от специалистов
             </Text>
             <Pressable
-              accessibilityLabel="Оставить заявку бесплатно"
-              onPress={scrollToForm}
-              className="bg-blue-900 rounded-xl h-12 items-center justify-center mb-4"
+              accessibilityLabel="Разместить заявку бесплатно"
+              onPress={() => router.push("/auth/email" as never)}
+              className="bg-amber-700 rounded-xl h-12 items-center justify-center"
+              style={isDesktop ? { maxWidth: 280, alignSelf: "center" } : undefined}
             >
               <Text className="text-white font-semibold text-base">
-                Оставить заявку бесплатно
+                Разместить заявку бесплатно
               </Text>
             </Pressable>
-            <Text className="text-xs text-slate-400 text-center leading-4">
-              Сервис бесплатный. Мы не берём комиссию и не передаём ваши данные
-              третьим лицам.
+            <Text className="text-xs text-blue-200/70 text-center mt-4 leading-4">
+              Сервис бесплатный. Без комиссий и скрытых платежей.
             </Text>
           </View>
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
