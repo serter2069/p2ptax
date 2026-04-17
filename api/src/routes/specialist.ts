@@ -173,6 +173,7 @@ router.patch("/profile", async (req: Request, res: Response) => {
       lastName,
       avatarUrl,
       isAvailable,
+      description,
       phone,
       telegram,
       whatsapp,
@@ -196,6 +197,7 @@ router.patch("/profile", async (req: Request, res: Response) => {
 
     // Update or create specialist profile
     const profileUpdate: Record<string, unknown> = {};
+    if (description !== undefined) profileUpdate.description = description;
     if (phone !== undefined) profileUpdate.phone = phone;
     if (telegram !== undefined) profileUpdate.telegram = telegram;
     if (whatsapp !== undefined) profileUpdate.whatsapp = whatsapp;
@@ -208,6 +210,7 @@ router.patch("/profile", async (req: Request, res: Response) => {
         update: profileUpdate,
         create: {
           userId,
+          description: profileUpdate.description as string | undefined,
           phone: profileUpdate.phone as string | undefined,
           telegram: profileUpdate.telegram as string | undefined,
           whatsapp: profileUpdate.whatsapp as string | undefined,
