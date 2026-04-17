@@ -14,6 +14,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import RequestCard from "@/components/RequestCard";
 import EmptyState from "@/components/EmptyState";
 import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardStats {
   requestsUsed: number;
@@ -34,13 +35,16 @@ interface RequestItem {
 
 export default function ClientDashboard() {
   const router = useRouter();
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
+      setError(false);
       const [statsRes, requestsRes] = await Promise.all([
         api<DashboardStats>("/api/dashboard/stats"),
         api<{ items: RequestItem[] }>("/api/requests/my?limit=3"),
@@ -49,6 +53,7 @@ export default function ClientDashboard() {
       setRequests(requestsRes.items);
     } catch (e) {
       console.error("Dashboard fetch error:", e);
+      setError(true);
     }
   }, []);
 
@@ -69,9 +74,9 @@ export default function ClientDashboard() {
     : 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       <HeaderHome
-        notificationCount={stats?.unreadMessages || 0}
+        notificationCount={stats?.unreadMessages ?? 0}
         onSettingsPress={() => router.push("/settings/client" as never)}
       />
       <ScrollView
@@ -81,16 +86,45 @@ export default function ClientDashboard() {
         }
       >
         <ResponsiveContainer>
+          {/* Welcome header */}
+          <View className="pt-4 pb-2">
+            <Text className="text-2xl font-bold text-slate-900">
+              Здравствуйте, {user?.firstName ?? ""}!
+            </Text>
+          </View>
+
           {loading ? (
-            <View className="flex-1 items-center justify-center py-16">
+            <View className="items-center justify-center py-16">
               <ActivityIndicator size="large" color="#1e3a8a" />
             </View>
+          ) : error ? (
+            <View className="items-center justify-center py-16 px-8">
+              <Text className="text-lg font-semibold text-slate-900 text-center mb-2">
+                Не удалось загрузить данные
+              </Text>
+              <Text className="text-sm text-slate-500 text-center mb-6">
+                Проверьте соединение с интернетом и попробуйте снова
+              </Text>
+              <Pressable
+                accessibilityLabel="Повторить"
+                onPress={() => {
+                  setLoading(true);
+                  fetchData().finally(() => setLoading(false));
+                }}
+                className="bg-blue-900 rounded-xl px-6 py-3"
+              >
+                <Text className="text-white font-semibold text-sm">Повторить</Text>
+              </Pressable>
+            </View>
           ) : (
-            <View className="py-4">
+            <View className="pb-6">
               {/* Stats card */}
               <View className="bg-white border border-slate-200 rounded-xl p-4 mb-4">
-                <Text className="text-base font-semibold text-slate-900 mb-2">
-                  {stats?.requestsUsed ?? 0} из {stats?.requestsLimit ?? 5} заявок использовано
+                <Text className="text-sm text-slate-500 mb-1">
+                  Заявок использовано
+                </Text>
+                <Text className="text-xl font-bold text-slate-900 mb-3">
+                  {stats?.requestsUsed ?? 0} из {stats?.requestsLimit ?? 5}
                 </Text>
                 <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <View
@@ -105,18 +139,37 @@ export default function ClientDashboard() {
                 )}
               </View>
 
-              {/* Create request button */}
+              {/* Unread messages badge */}
+              {(stats?.unreadMessages ?? 0) > 0 && (
+                <Pressable
+                  accessibilityLabel="Непрочитанные сообщения"
+                  onPress={() => router.push("/(client-tabs)/messages" as never)}
+                  className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex-row items-center justify-between"
+                >
+                  <Text className="text-sm font-medium text-amber-700">
+                    Непрочитанных сообщений: {stats?.unreadMessages}
+                  </Text>
+                  <Text className="text-xs text-amber-600">Открыть →</Text>
+                </Pressable>
+              )}
+
+              {/* Create request CTA */}
               <Pressable
-                accessibilityLabel="Создать заявку"
-                onPress={() => router.push("/requests/new" as never)}
+                accessibilityLabel={atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
+                onPress={() => !atLimit && router.push("/requests/new" as never)}
                 disabled={atLimit}
-                className={`rounded-xl py-3 items-center mb-6 ${
-                  atLimit ? "bg-slate-300" : "bg-blue-900"
-                }`}
+                className={`rounded-xl p-4 mb-6 ${atLimit ? "bg-slate-100 border border-slate-200" : "bg-blue-900"}`}
               >
-                <Text className="text-white font-semibold text-base">
-                  Создать заявку
+                <Text
+                  className={`font-semibold text-base ${atLimit ? "text-slate-400" : "text-white"}`}
+                >
+                  {atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
                 </Text>
+                {!atLimit && (
+                  <Text className="text-sm text-blue-200 mt-0.5">
+                    Опишите проблему — специалисты откликнутся сами
+                  </Text>
+                )}
               </Pressable>
 
               {/* My requests section */}
@@ -125,9 +178,12 @@ export default function ClientDashboard() {
                   Мои заявки
                 </Text>
                 {requests.length > 0 && (
-                  <Pressable accessibilityLabel="Все заявки" onPress={() => router.push("/(client-tabs)/requests" as never)}>
+                  <Pressable
+                    accessibilityLabel="Смотреть все заявки"
+                    onPress={() => router.push("/(client-tabs)/requests" as never)}
+                  >
                     <Text className="text-sm text-blue-900 font-medium">
-                      Все заявки
+                      Смотреть все
                     </Text>
                   </Pressable>
                 )}
@@ -136,9 +192,9 @@ export default function ClientDashboard() {
               {requests.length === 0 ? (
                 <EmptyState
                   icon="file-text-o"
-                  title="Заявок пока нет"
-                  subtitle="Создайте первую заявку, чтобы найти специалиста"
-                  actionLabel="Создать заявку"
+                  title="У вас пока нет заявок"
+                  subtitle="Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
+                  actionLabel="Создать первую заявку"
                   onAction={() => router.push("/requests/new" as never)}
                 />
               ) : (
