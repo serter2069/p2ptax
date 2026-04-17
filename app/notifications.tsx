@@ -1,9 +1,10 @@
-import { View, Text, Pressable, FlatList } from "react-native";
+import { View, Text, Pressable, FlatList, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useState } from "react";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 interface Notification {
   id: string;
@@ -117,6 +118,7 @@ function NotificationItem({
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { ready } = useRequireAuth();
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
 
   const toggleRead = (id: string) => {
@@ -128,6 +130,14 @@ export default function NotificationsScreen() {
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
+
+  if (!ready) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#1e3a8a" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">

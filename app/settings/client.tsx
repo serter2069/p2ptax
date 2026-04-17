@@ -15,10 +15,12 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiPatch } from "@/lib/api";
 
 export default function ClientSettings() {
   const router = useRouter();
+  const { ready } = useRequireAuth();
   const { user, signOut, updateUser } = useAuth();
 
   const [firstName, setFirstName] = useState(user?.firstName || "");
@@ -76,6 +78,14 @@ export default function ClientSettings() {
     .map((n) => n?.charAt(0)?.toUpperCase())
     .filter(Boolean)
     .join("");
+
+  if (!ready) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#1e3a8a" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
