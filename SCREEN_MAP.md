@@ -141,7 +141,7 @@ Statuses: `TODO` | `IN PROGRESS` | `DONE`
 
 ---
 **Screen: LandingScreen**
-Status: TODO
+Status: DONE
 Type: landing
 Route: /
 Access: public (guest, client, specialist, admin)
@@ -261,7 +261,7 @@ Dependencies: none (entry point)
 
 ---
 **Screen: PublicRequestsFeed**
-Status: TODO
+Status: DONE
 Type: list
 Route: /requests
 Access: public (guest, client, specialist, admin)
@@ -531,7 +531,7 @@ Dependencies: SpecialistsCatalog, LandingScreen
 
 ---
 **Screen: AuthEmail**
-Status: TODO
+Status: DONE
 Type: form
 Route: /auth/email
 Access: public (guest only, auth users redirect to their dashboard)
