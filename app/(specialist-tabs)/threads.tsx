@@ -2,17 +2,17 @@ import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
-  ScrollView,
-  RefreshControl,
+  FlatList,
   Pressable,
-  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/ui/LoadingState";
+import ErrorState from "@/components/ui/ErrorState";
 import { apiGet } from "@/lib/api";
 
 type FilterType = "all" | "unread";
@@ -31,19 +31,22 @@ interface ThreadItem {
   createdAt: string;
 }
 
-export default function SpecialistThreads() {
+export default function SpecialistMyThreads() {
   const router = useRouter();
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchThreads = useCallback(async () => {
     try {
+      setError(null);
       const data = await apiGet<{ items: ThreadItem[] }>("/api/threads");
       setThreads(data.items);
-    } catch (error) {
-      console.error("Threads fetch error:", error);
+    } catch (err) {
+      console.error("Threads fetch error:", err);
+      setError("Не удалось загрузить диалоги");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -51,11 +54,18 @@ export default function SpecialistThreads() {
   }, []);
 
   useEffect(() => {
+    setLoading(true);
     fetchThreads();
   }, [fetchThreads]);
 
-  const onRefresh = useCallback(() => {
+  const handleRefresh = useCallback(() => {
     setRefreshing(true);
+    fetchThreads();
+  }, [fetchThreads]);
+
+  const handleRetry = useCallback(() => {
+    setLoading(true);
+    setError(null);
     fetchThreads();
   }, [fetchThreads]);
 
@@ -64,75 +74,90 @@ export default function SpecialistThreads() {
       ? threads.filter((t) => t.unreadCount > 0)
       : threads;
 
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-        <HeaderHome />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const FilterBar = (
+    <ResponsiveContainer>
+      <Text className="text-xl font-bold text-slate-900 mt-4 mb-3">
+        Мои диалоги
+      </Text>
+      <View className="flex-row gap-2 mb-3">
+        <FilterChip
+          label="Все"
+          active={filter === "all"}
+          onPress={() => setFilter("all")}
+        />
+        <FilterChip
+          label="Непрочитанные"
+          active={filter === "unread"}
+          onPress={() => setFilter("unread")}
+        />
+      </View>
+    </ResponsiveContainer>
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <HeaderHome />
-      <ResponsiveContainer>
-        <Text className="text-xl font-bold text-slate-900 mt-4 mb-3">
-          Мои диалоги
-        </Text>
 
-        {/* Filter chips */}
-        <View className="flex-row gap-2 mb-4">
-          <FilterChip
-            label="Все"
-            active={filter === "all"}
-            onPress={() => setFilter("all")}
-          />
-          <FilterChip
-            label="Непрочитанные"
-            active={filter === "unread"}
-            onPress={() => setFilter("unread")}
-          />
+      {loading ? (
+        <View className="flex-1">
+          {FilterBar}
+          <ResponsiveContainer>
+            <LoadingState variant="skeleton" lines={5} />
+            <LoadingState variant="skeleton" lines={5} />
+            <LoadingState variant="skeleton" lines={5} />
+          </ResponsiveContainer>
         </View>
-      </ResponsiveContainer>
-
-      <ScrollView
-        className="flex-1"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <ResponsiveContainer>
-          {filtered.length === 0 ? (
-            threads.length === 0 ? (
-              <EmptyState
-                icon="comments-o"
-                title="Вы ещё не писали клиентам"
-                subtitle="Найдите подходящую заявку и напишите первое сообщение"
-                actionLabel="Смотреть заявки"
-                onAction={() => router.push("/(specialist-tabs)/requests" as never)}
-              />
-            ) : (
-              <EmptyState
-                icon="check-circle"
-                title="Нет непрочитанных"
-                subtitle="Все сообщения прочитаны"
-              />
-            )
-          ) : (
-            filtered.map((thread) => (
+      ) : error ? (
+        <View className="flex-1">
+          {FilterBar}
+          <ResponsiveContainer>
+            <ErrorState
+              message="Не удалось загрузить диалоги"
+              onRetry={handleRetry}
+            />
+          </ResponsiveContainer>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListHeaderComponent={<>{FilterBar}</>}
+          ListEmptyComponent={
+            <ResponsiveContainer>
+              {threads.length === 0 ? (
+                <EmptyState
+                  icon="comments-o"
+                  title="Вы ещё не написали ни одному клиенту"
+                  subtitle="Откликнитесь на заявку — клиент увидит ваше сообщение и сможет ответить"
+                  actionLabel="Смотреть заявки"
+                  onAction={() =>
+                    router.push("/(specialist-tabs)/requests" as never)
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon="check-circle-o"
+                  title="Нет непрочитанных"
+                  subtitle="Все сообщения прочитаны"
+                />
+              )}
+            </ResponsiveContainer>
+          }
+          ListFooterComponent={<View className="h-8" />}
+          renderItem={({ item }) => (
+            <ResponsiveContainer>
               <ThreadCard
-                key={thread.id}
-                thread={thread}
-                onPress={() => router.push(`/threads/${thread.id}` as never)}
+                thread={item}
+                onPress={() => router.push(`/threads/${item.id}` as never)}
               />
-            ))
+            </ResponsiveContainer>
           )}
-          <View className="h-8" />
-        </ResponsiveContainer>
-      </ScrollView>
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -172,14 +197,18 @@ function ThreadCard({
   thread: ThreadItem;
   onPress: () => void;
 }) {
-  const name = [thread.otherUser.firstName, thread.otherUser.lastName]
-    .filter(Boolean)
-    .join(" ") || "Клиент";
+  const name =
+    [thread.otherUser.firstName, thread.otherUser.lastName]
+      .filter(Boolean)
+      .join(" ") || "Клиент";
 
-  const initials = (
-    (thread.otherUser.firstName?.[0] || "") +
-    (thread.otherUser.lastName?.[0] || "")
-  ).toUpperCase() || "К";
+  const initials =
+    (
+      (thread.otherUser.firstName?.[0] ?? "") +
+      (thread.otherUser.lastName?.[0] ?? "")
+    )
+      .toUpperCase()
+      .slice(0, 2) || "К";
 
   const preview = thread.lastMessage
     ? thread.lastMessage.text.length > 60
@@ -192,17 +221,20 @@ function ThreadCard({
     : "";
 
   const isClosed = thread.request.status === "CLOSED";
+  const hasUnread = thread.unreadCount > 0;
 
   return (
     <Pressable
       accessibilityLabel={`Чат с ${name}`}
       onPress={onPress}
-      className="flex-row items-center py-3 border-b border-slate-100"
+      className="flex-row items-center py-3 border-b border-slate-100 active:bg-slate-50"
     >
-      {/* Avatar */}
-      <View className="w-12 h-12 rounded-full bg-blue-900 items-center justify-center mr-3">
-        <Text className="text-white text-base font-bold">{initials}</Text>
-        {thread.unreadCount > 0 && (
+      {/* Avatar with unread badge */}
+      <View className="relative mr-3">
+        <View className="w-12 h-12 rounded-full bg-blue-900 items-center justify-center">
+          <Text className="text-white text-base font-bold">{initials}</Text>
+        </View>
+        {hasUnread && (
           <View className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-red-600 items-center justify-center px-1">
             <Text className="text-[10px] font-bold text-white">
               {thread.unreadCount > 99 ? "99+" : thread.unreadCount}
@@ -213,10 +245,10 @@ function ThreadCard({
 
       {/* Content */}
       <View className="flex-1 mr-2">
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row items-center gap-2 mb-0.5">
           <Text
-            className={`text-base flex-1 ${
-              thread.unreadCount > 0
+            className={`flex-1 text-base ${
+              hasUnread
                 ? "font-bold text-slate-900"
                 : "font-medium text-slate-900"
             }`}
@@ -225,17 +257,21 @@ function ThreadCard({
             {name}
           </Text>
           {isClosed && (
-            <View className="bg-slate-200 px-1.5 py-0.5 rounded">
-              <Text className="text-[10px] text-slate-400">Заявка закрыта</Text>
+            <View className="bg-slate-100 px-2 py-0.5 rounded">
+              <Text className="text-[10px] font-medium text-slate-400">
+                Заявка закрыта
+              </Text>
             </View>
           )}
         </View>
-        <Text className="text-xs text-slate-400 mt-0.5" numberOfLines={1}>
+
+        <Text className="text-xs text-slate-400 mb-0.5" numberOfLines={1}>
           {thread.request.title}
         </Text>
+
         <Text
-          className={`text-sm mt-0.5 ${
-            thread.unreadCount > 0 ? "font-medium text-slate-900" : "text-slate-400"
+          className={`text-sm ${
+            hasUnread ? "font-medium text-slate-700" : "text-slate-400"
           }`}
           numberOfLines={1}
         >
@@ -243,9 +279,9 @@ function ThreadCard({
         </Text>
       </View>
 
-      {/* Time */}
+      {/* Timestamp */}
       {timeStr ? (
-        <Text className="text-xs text-slate-400">{timeStr}</Text>
+        <Text className="text-xs text-slate-400 self-start mt-1">{timeStr}</Text>
       ) : null}
     </Pressable>
   );
