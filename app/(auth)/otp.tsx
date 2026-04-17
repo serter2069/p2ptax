@@ -37,7 +37,15 @@ export default function OtpScreen() {
       await signIn(data.accessToken, data.refreshToken, data.user);
       router.replace("/(tabs)");
     } catch {
-      setError("Could not connect to server");
+      // Backend unavailable — in dev mode, allow login with 000000
+      if (__DEV__ && codeToVerify === "000000") {
+        console.warn("[DEV] Backend unavailable, mock login with 000000");
+        const mockUser = { id: "dev-user", email: email || "dev@test.com", name: null, avatar: null, role: "USER" };
+        await signIn("dev-mock-token", "dev-mock-refresh", mockUser);
+        router.replace("/(tabs)");
+      } else {
+        setError("Could not connect to server. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }

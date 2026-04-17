@@ -17,11 +17,13 @@ export default function EmailScreen() {
     setError(null);
     setLoading(true);
 
+    const trimmedEmail = email.trim().toLowerCase();
+
     try {
       const res = await fetch(`${API_URL}/api/auth/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: JSON.stringify({ email: trimmedEmail }),
       });
 
       if (!res.ok) {
@@ -30,9 +32,15 @@ export default function EmailScreen() {
         return;
       }
 
-      router.push({ pathname: "/(auth)/otp", params: { email: email.trim().toLowerCase() } });
+      router.push({ pathname: "/(auth)/otp", params: { email: trimmedEmail } });
     } catch {
-      setError("Could not connect to server");
+      // Backend unavailable — in dev mode, allow proceeding anyway
+      if (__DEV__) {
+        console.warn("[DEV] Backend unavailable, proceeding without OTP request");
+        router.push({ pathname: "/(auth)/otp", params: { email: trimmedEmail } });
+      } else {
+        setError("Could not connect to server. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
