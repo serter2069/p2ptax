@@ -45,6 +45,15 @@ export default function AdminTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="complaints"
+        options={{
+          title: "Жалобы",
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesome name="flag" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

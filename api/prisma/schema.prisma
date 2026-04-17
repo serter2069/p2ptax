@@ -41,6 +41,8 @@ model User {
   refreshTokens           RefreshToken[]
   notifications           Notification[]
   notificationPreferences NotificationPreference[]
+  complaintsReported      Complaint[] @relation("ComplaintReporter")
+  complaintsReceived      Complaint[] @relation("ComplaintTarget")
 
   @@map("users")
 }
@@ -267,4 +269,24 @@ model NotificationDeliveryLog {
   notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
 
   @@map("notification_delivery_logs")
+}
+
+enum ComplaintStatus {
+  NEW
+  REVIEWED
+}
+
+model Complaint {
+  id           String          @id @default(uuid())
+  reporterId   String          @map("reporter_id")
+  targetUserId String          @map("target_user_id")
+  text         String
+  status       ComplaintStatus @default(NEW)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  reviewedAt   DateTime?       @map("reviewed_at")
+
+  reporter   User @relation("ComplaintReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser User @relation("ComplaintTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@map("complaints")
 }
