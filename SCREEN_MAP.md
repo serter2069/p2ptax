@@ -1,5 +1,7 @@
 # SCREEN MAP: P2PTax
 
+> System Analysis: https://diagrams.love/canvas?schema=cmnw5361i000czmerbi780b2j
+
 ## Global Layout Rules (ALL screens)
 
 ### Responsive
@@ -140,10 +142,89 @@ Statuses: `TODO` | `IN PROGRESS` | `DONE`
 ---
 **Screen: LandingScreen**
 Status: TODO
+Type: landing
 Route: /
 Access: public (guest, client, specialist, admin)
 
 Description: Main landing page with featured specialists and quick request form
+
+Content:
+  hero_title: "Налоговая проверка? Найдём специалиста за минуту"
+  hero_subtitle: "Бесплатный сервис для связи с налоговыми консультантами по всей России. Выездные, камеральные проверки, оперативный контроль — получите помощь от практиков, а не теоретиков."
+  cta_primary: "Оставить заявку"
+  cta_secondary: "Войти"
+  quick_form_title: "Опишите вашу ситуацию"
+  quick_form_city_label: "Город"
+  quick_form_city_placeholder: "Выберите город"
+  quick_form_service_label: "Тип проверки"
+  quick_form_service_placeholder: "Выберите тип"
+  quick_form_service_options: ["Выездная проверка", "Камеральная проверка", "Отдел оперативного контроля", "Не знаю"]
+  quick_form_description_label: "Описание проблемы"
+  quick_form_description_placeholder: "Кратко опишите вашу ситуацию: что случилось, какие документы пришли, что требует инспекция"
+  quick_form_submit: "Отправить заявку"
+  featured_section_title: "Специалисты на платформе"
+  featured_cta: "Все специалисты"
+  requests_link: "Все заявки"
+  signin_link: "Войти"
+  footer_note: "Сервис бесплатный. Мы не берём комиссию и не передаём ваши данные третьим лицам."
+  error_title: "Не удалось загрузить данные"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
+
+Visual Structure:
+  sections:
+    - id: hero
+      layout: "Полноширинный блок, тёмный фон (blue-900), белый текст"
+      headline: "Налоговая проверка? Найдём специалиста за минуту"
+      subheadline: "Бесплатный сервис для связи с налоговыми консультантами по всей России. Выездные, камеральные проверки, оперативный контроль — получите помощь от практиков, а не теоретиков."
+      cta_button: "Оставить заявку"
+      cta_action: "Скролл к форме быстрой заявки"
+
+    - id: benefits
+      layout: "3 карточки в ряд (desktop), вертикально (mobile)"
+      title: "Почему выбирают Налоговик"
+      items:
+        - icon: "shield-check"
+          title: "Проверенные специалисты"
+          description: "Консультанты с реальным опытом работы в налоговых инспекциях вашего города"
+        - icon: "clock"
+          title: "Быстрый отклик"
+          description: "Специалисты отвечают в течение нескольких часов, а не дней"
+        - icon: "banknotes-off"
+          title: "Полностью бесплатно"
+          description: "Никаких комиссий и скрытых платежей — связывайтесь напрямую"
+
+    - id: how_it_works
+      layout: "3 шага с нумерацией, горизонтально (desktop)"
+      title: "Как это работает"
+      steps:
+        - number: "1"
+          title: "Опишите проблему"
+          description: "Укажите город, инспекцию и тип проверки. Добавьте описание ситуации."
+        - number: "2"
+          title: "Получите отклики"
+          description: "Специалисты из вашего города увидят заявку и напишут вам первыми."
+        - number: "3"
+          title: "Выберите специалиста"
+          description: "Общайтесь в чате, сравнивайте подходы и выбирайте того, кому доверяете."
+
+    - id: quick_form
+      layout: "Форма на белом фоне, отступы xl, скруглённая карточка"
+      title: "Опишите вашу ситуацию"
+      fields: "Город (select), Тип проверки (select), Описание (textarea)"
+      submit_button: "Отправить заявку"
+
+    - id: featured_specialists
+      layout: "Горизонтальный скролл карточек специалистов"
+      title: "Специалисты на платформе"
+      card: "Аватар (md), имя, услуги (chips)"
+      cta_link: "Все специалисты →"
+
+    - id: final_cta
+      layout: "Полноширинный блок, фон surface, текст по центру"
+      headline: "Не откладывайте — чем раньше обратитесь, тем больше шансов решить вопрос"
+      cta_button: "Оставить заявку бесплатно"
+      subtext: "Сервис бесплатный. Мы не берём комиссию и не передаём ваши данные третьим лицам."
 
 Layout:
   - Header: Header-Home (logo left, "Sign In" button right)
@@ -181,10 +262,32 @@ Dependencies: none (entry point)
 ---
 **Screen: PublicRequestsFeed**
 Status: TODO
+Type: list
 Route: /requests
 Access: public (guest, client, specialist, admin)
 
 Description: Feed of all active public requests
+
+Content:
+  page_title: "Заявки"
+  filter_labels:
+    city: "Город"
+    city_placeholder: "Все города"
+    service: "Тип проверки"
+    service_placeholder: "Все типы"
+  card_template:
+    title: "{request.title}"
+    chips: "{city.name} · {fns.name}"
+    service_chip: "{service.name}"
+    description: "{request.description} (2 строки)"
+    counter: "{count} специалистов откликнулись"
+  sort_options: ["Сначала новые", "Сначала старые"]
+  empty_title: "Заявок не найдено"
+  empty_description: "Попробуйте изменить фильтры или сбросить их"
+  empty_cta: "Сбросить фильтры"
+  error_title: "Не удалось загрузить заявки"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Home, title "Requests"
@@ -221,10 +324,36 @@ Dependencies: none
 ---
 **Screen: PublicRequestDetail**
 Status: TODO
+Type: detail
 Route: /requests/[id]
 Access: public (guest, client, specialist, admin)
 
 Description: Full details of a public request
+
+Content:
+  header_title: "Заявка"
+  section_titles:
+    description: "Описание"
+    similar: "Похожие заявки"
+  meta_labels:
+    city: "Город"
+    fns: "Инспекция"
+    service: "Тип проверки"
+    status: "Статус"
+    created: "Создана"
+    responses: "{count} специалистов откликнулись"
+  status_labels:
+    active: "Активна"
+    closing_soon: "Скоро закроется"
+    closed: "Закрыта"
+  action_buttons:
+    guest: "Войдите, чтобы откликнуться"
+    specialist_write: "Написать клиенту"
+    specialist_open_chat: "Открыть чат"
+  badge_not_your_region: "Не ваш регион"
+  error_title: "Заявка не найдена"
+  error_description: "Возможно, она была удалена или вы перешли по неверной ссылке"
+  error_button: "Назад к заявкам"
 
 Layout:
   - Header: Header-Back, title "Request"
@@ -264,10 +393,32 @@ Dependencies: PublicRequestsFeed, LandingScreen
 ---
 **Screen: SpecialistsCatalog**
 Status: TODO
+Type: list
 Route: /specialists
 Access: public (guest, client, specialist, admin)
 
 Description: Directory of available specialists
+
+Content:
+  page_title: "Специалисты"
+  filter_labels:
+    city: "Город"
+    city_placeholder: "Все города"
+    fns: "Инспекция"
+    fns_placeholder: "Сначала выберите город"
+    services: "Услуги"
+  service_checkbox_labels: ["Выездная проверка", "Камеральная проверка", "Отдел оперативного контроля"]
+  card_template:
+    name: "{firstName} {lastName}"
+    services: "{services} (chips)"
+    city: "{city.name}"
+  sort_options: ["По дате регистрации", "По количеству услуг"]
+  empty_title: "Специалистов не найдено"
+  empty_description: "Попробуйте изменить фильтры или выбрать другой город"
+  empty_cta: "Сбросить фильтры"
+  error_title: "Не удалось загрузить список"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Home, title "Specialists"
@@ -303,10 +454,38 @@ Dependencies: none
 ---
 **Screen: SpecialistPublicProfile**
 Status: TODO
+Type: detail
 Route: /specialists/[id]
 Access: public (guest, client, specialist, admin)
 
 Description: Public profile of a specialist
+
+Content:
+  header_title: "Профиль специалиста"
+  section_titles:
+    about: "О специалисте"
+    fns_services: "Инспекции и услуги"
+    contacts: "Контакты"
+    similar: "Похожие специалисты"
+  meta_labels:
+    available: "Принимает заявки"
+    not_available: "Не принимает заявки"
+    phone: "Телефон"
+    telegram: "Telegram"
+    whatsapp: "WhatsApp"
+    address: "Адрес офиса"
+    hours: "Часы работы"
+    registered: "На платформе с"
+  action_buttons:
+    call: "Позвонить"
+    edit: "Редактировать"
+    toggle_available: "Принимаю заявки"
+    toggle_unavailable: "На паузе"
+  collapse_button: "Показать все"
+  no_reviews_stub: "Отзывы появятся в следующих версиях"
+  error_title: "Специалист не найден"
+  error_description: "Возможно, профиль был удалён или вы перешли по неверной ссылке"
+  error_button: "Назад к каталогу"
 
 Layout:
   - Header: Header-Back, right: "Edit" (own profile only)
@@ -353,10 +532,25 @@ Dependencies: SpecialistsCatalog, LandingScreen
 ---
 **Screen: AuthEmail**
 Status: TODO
+Type: form
 Route: /auth/email
 Access: public (guest only, auth users redirect to their dashboard)
 
 Description: Email entry for login/registration (single flow)
+
+Content:
+  page_title: "Вход"
+  page_subtitle: "Введите email, чтобы продолжить"
+  field_labels:
+    email: "Email"
+    email_placeholder: "name@example.com"
+    email_error_invalid: "Введите корректный email"
+    email_error_rate_limit: "Слишком много попыток. Подождите минуту."
+  button_submit: "Продолжить"
+  terms_link: "Нажимая «Продолжить», вы соглашаетесь с Условиями использования"
+  error_title: "Ошибка"
+  error_description: "Не удалось отправить код. Попробуйте ещё раз."
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Back (back to Landing)
@@ -395,10 +589,29 @@ Dependencies: none (entry point from any unauth trigger)
 ---
 **Screen: AuthOTP**
 Status: TODO
+Type: form
 Route: /auth/otp
 Access: public (guest only)
 
 Description: Enter 6-digit OTP code
+
+Content:
+  page_title: "Подтверждение"
+  page_subtitle: "Код отправлен на {email}"
+  field_labels:
+    code: "Код подтверждения"
+    code_error_wrong: "Неверный код. Проверьте и попробуйте снова."
+    code_error_expired: "Код истёк. Запросите новый."
+  button_submit: "Подтвердить"
+  resend_link: "Отправить код повторно"
+  resend_countdown: "Отправить повторно через {seconds} сек"
+  role_choice_title: "Кто вы?"
+  role_choice_client: "Мне нужна помощь с налоговой"
+  role_choice_specialist: "Я налоговый специалист"
+  error_title: "Ошибка подтверждения"
+  error_description: "Не удалось проверить код. Попробуйте ещё раз."
+  error_button: "Повторить"
+  success_toast: "Вы успешно вошли"
 
 Layout:
   - Header: Header-Back, title "Verification"
@@ -445,10 +658,29 @@ Dependencies: AuthEmail (passes email param)
 ---
 **Screen: OnboardingName**
 Status: TODO
+Type: form
 Route: /onboarding/name
 Access: specialist (new, step 1/3)
 
 Description: Enter first and last name
+
+Content:
+  page_title: "Ваше имя"
+  page_subtitle: "Шаг 1 из 3"
+  field_labels:
+    first_name: "Имя"
+    first_name_placeholder: "Ив��н"
+    first_name_error_min: "Минимум 2 символа"
+    first_name_error_max: "Максимум 50 символов"
+    last_name: "Фамилия"
+    last_name_placeholder: "Петров"
+    last_name_error_min: "Минимум 2 символа"
+    last_name_error_max: "Максимум 50 символов"
+  checkbox_terms: "Я принимаю Условия использования"
+  button_submit: "Далее"
+  error_title: "Ошибка сохранения"
+  error_description: "Не удалось сохранить данные. Попробуйте ещё раз."
+  error_button: "Повторить"
 
 Layout:
   - Header: none (step indicator 1/3 at top)
@@ -481,10 +713,28 @@ Dependencies: AuthOTP
 ---
 **Screen: OnboardingWorkArea**
 Status: TODO
+Type: form
 Route: /onboarding/work-area
 Access: specialist (new, step 2/3)
 
 Description: Select cities, FNS offices, and services
+
+Content:
+  page_title: "Рабочая область"
+  page_subtitle: "Шаг 2 из 3"
+  field_labels:
+    add_city: "+ Добавить город"
+    city_dropdown_placeholder: "Выберите город"
+    fns_section_title: "Инспекции в {city.name}"
+    services_label: "Услуги"
+    service_options: ["Выездная проверка", "Камеральная проверка", "Отдел оперативного контроля"]
+  chip_remove_label: "Удалить"
+  collapse_button: "Показать все"
+  button_submit: "Далее"
+  validation_hint: "Выберите хотя бы одну инспекцию и одну услугу"
+  error_title: "Ошибка сохранения"
+  error_description: "Не удалось сохранить рабочую область. Попробуйте ещё раз."
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Back (to step 1), step indicator 2/3
@@ -531,10 +781,37 @@ Dependencies: OnboardingName
 ---
 **Screen: OnboardingProfile**
 Status: TODO
+Type: form
 Route: /onboarding/profile
 Access: specialist (new, step 3/3)
 
 Description: Optional profile info (avatar, contacts, description)
+
+Content:
+  page_title: "Профиль"
+  page_subtitle: "Шаг 3 из 3 — всё необязательно, можно заполнить позже"
+  field_labels:
+    avatar: "Фото"
+    avatar_hint: "Нажмите, чтобы загрузить фото"
+    description: "О себе"
+    description_placeholder: "Расскажите о вашем опыте: сколько лет в профессии, какие вопросы решаете, с какими инспекциями работаете"
+    description_counter: "{count}/1000"
+    phone: "Телефон"
+    phone_placeholder: "+7 (___) ___-__-__"
+    telegram: "Telegram"
+    telegram_placeholder: "@username"
+    whatsapp: "WhatsApp"
+    whatsapp_placeholder: "+7 (___) ___-__-__"
+    office_address: "Адрес офиса"
+    office_address_placeholder: "г. Москва, ул. Примерная, д. 1, оф. 100"
+    working_hours: "Часы работы"
+    working_hours_placeholder: "Пн-Пт 9:00-18:00"
+  contacts_note: "Контакты будут видны всем посетителям платформы"
+  button_submit: "Завершить регистрацию"
+  error_title: "Ошибка сохранения"
+  error_description: "Не удалось сохранить профиль. Попробуйте ещё раз."
+  error_button: "Повторить"
+  success_toast: "Регистрация завершена! Добро пожаловать."
 
 Layout:
   - Header: Header-Back (to step 2), step indicator 3/3
@@ -582,10 +859,31 @@ Dependencies: OnboardingWorkArea
 ---
 **Screen: ClientDashboard**
 Status: TODO
+Type: showcase
 Route: /(client-tabs)/dashboard
 Access: auth required, role: client
 
 Description: Client home — stats + recent requests
+
+Content:
+  welcome_message: "Здравствуйте, {firstName}!"
+  stats_labels:
+    requests_used: "Заявок использовано"
+    requests_format: "{used} из {limit}"
+    unread_messages: "Непрочитанных сообщений"
+  action_cards:
+    create_request: "Создать заявку"
+    create_request_subtitle: "Опишите проблему — специалисты откликнутся сами"
+    limit_reached: "Лимит заявок исчерпан"
+  section_titles:
+    my_requests: "Мои заявки"
+    view_all: "Смотреть все"
+  empty_title: "У вас пока нет заявок"
+  empty_description: "Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
+  empty_cta: "Создать первую заявку"
+  error_title: "Не удалось загрузить данные"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Home (app name left, settings gear right → ClientSettings)
@@ -622,10 +920,35 @@ Dependencies: none
 ---
 **Screen: MyRequests**
 Status: TODO
+Type: list
 Route: /(client-tabs)/requests
 Access: auth required, role: client
 
 Description: All client's requests
+
+Content:
+  page_title: "Мои заявки"
+  card_template:
+    title: "{request.title}"
+    status_badge: "{status_label}"
+    city_fns: "{city.name} · {fns.name}"
+    date: "{createdAt}"
+  status_labels:
+    active: "Активна"
+    closing_soon: "Скоро закроется"
+    closed: "Закрыта"
+  swipe_action: "Закрыть"
+  swipe_confirm: "Закрыть заявку? Это действие нельзя отмени��ь."
+  swipe_confirm_yes: "Да, за��рыть"
+  swipe_confirm_no: "Отмена"
+  create_button: "Создать заявку"
+  empty_title: "Заявок пока нет"
+  empty_description: "Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
+  empty_cta: "Создать заявку"
+  error_title: "Не удалось загрузить заявки"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
+  success_toast: "Заявка зак��ыта"
 
 Layout:
   - Header: Header-Home, title "My Requests"
@@ -664,10 +987,37 @@ Dependencies: none
 ---
 **Screen: MyRequestsNew**
 Status: TODO
+Type: form
 Route: /requests/new
 Access: auth required, role: client
 
 Description: Create a new request
+
+Content:
+  page_title: "Новая заявка"
+  field_labels:
+    title: "Заголовок"
+    title_placeholder: "Кратко опишите суть пробле��ы"
+    title_error_min: "Минимум 3 символа"
+    title_error_max: "Максимум 100 символов"
+    city: "Город"
+    city_placeholder: "Выберите город"
+    fns: "Инспекция"
+    fns_placeholder: "Сначала выберите город"
+    description: "Описание"
+    description_placeholder: "Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
+    description_counter: "{count}/2000"
+    description_error_min: "Минимум 10 символов"
+    description_error_max: "Максимум 2000 символов"
+    files: "Документы"
+    files_hint: "PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов"
+    files_add: "+ Прикрепить файл"
+  button_submit: "Опубликовать заявку"
+  limit_message: "Лимит заявок исчерпан ({used}/{limit}). Закройте неактуальные заявки, чтобы создать новую."
+  error_title: "Ошибка публикации"
+  error_description: "Не удалось опубликовать заявку. Проверьте данные и попробуйте ещё р��з."
+  error_button: "Повторить"
+  success_toast: "Заявка опубликована!"
 
 Layout:
   - Header: Header-Back, title "New Request"
@@ -714,10 +1064,43 @@ Dependencies: ClientDashboard, MyRequests
 ---
 **Screen: MyRequestDetail**
 Status: TODO
+Type: detail
 Route: /requests/[id]/detail
 Access: auth required, role: client (owner)
 
 Description: Client's own request details
+
+Content:
+  header_title: "{request.title}"
+  section_titles:
+    description: "Описание"
+    files: "Прикреплённые документы"
+    messages: "Сообщения"
+    recommended: "Рекомендованные специалисты"
+  meta_labels:
+    city: "Город"
+    fns: "Инспекция"
+    service: "Тип проверки"
+    status: "Статус"
+    created: "Создана"
+    responses: "{count} специалистов написали вам"
+  status_labels:
+    active: "Активна"
+    closing_soon: "Скоро закроется"
+    closed: "Закрыта"
+  action_buttons:
+    messages: "Сообщения ({count})"
+    extend: "Продлить заявку"
+    extend_limit: "Продление использовано ({count}/3)"
+    delete: "Удалить заявку"
+  delete_confirm: "Удалить заявку? Все сообщения и файлы будут потеряны. Это действие нельзя отменить."
+  delete_confirm_yes: "Да, удалить"
+  delete_confirm_no: "Отмена"
+  error_title: "Заявка не найдена"
+  error_description: "Возможно, она была удалена"
+  error_button: "Назад"
+  success_toast_extended: "Заявка продлена"
+  success_toast_deleted: "Заявка удалена"
 
 Layout:
   - Header: Header-Back, title = request title, right: delete icon (trash)
@@ -758,10 +1141,25 @@ Dependencies: MyRequests, ClientDashboard
 ---
 **Screen: MessagesGrouped**
 Status: TODO
+Type: list
 Route: /requests/[id]/messages
 Access: auth required, role: client
 
 Description: Client's threads for a specific request, grouped
+
+Content:
+  page_title: "Сообщения"
+  card_template:
+    specialist_name: "{specialist.firstName} {specialist.lastName}"
+    last_message: "{lastMessage} (60 символов)"
+    timestamp: "{time_ago}"
+    unread_badge: "{unreadCount}"
+  empty_title: "Пока нет сообщений"
+  empty_description: "Специалисты увидят вашу заявку и напишут вам первыми"
+  empty_cta: ""
+  error_title: "Не удалось загрузить сообщения"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Back, title "Messages"
@@ -801,10 +1199,26 @@ Dependencies: MyRequestDetail
 ---
 **Screen: ClientMessages**
 Status: TODO
+Type: chat
 Route: /(client-tabs)/messages
 Access: auth required, role: client
 
 Description: All client's threads (across all requests)
+
+Content:
+  page_title: "Сообщения"
+  card_template:
+    specialist_name: "{specialist.firstName} {specialist.lastName}"
+    request_title: "{request.title}"
+    last_message: "{lastMessage} (1 строка)"
+    timestamp: "{time_ago}"
+    unread_badge: "{unreadCount}"
+  empty_title: "Нет сообщений"
+  empty_description: "Когда специалисты откликнутся на ваши заявки, сообщения появятся здесь"
+  empty_cta: "Посмотреть специалистов"
+  error_title: "Не удалось загрузить сообщения"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Home, title "Messages"
@@ -843,10 +1257,48 @@ Dependencies: none
 ---
 **Screen: ClientSettings**
 Status: TODO
+Type: settings
 Route: /settings/client
 Access: auth required, role: client
 
 Description: Client profile settings
+
+Content:
+  page_title: "Настройки"
+  field_labels:
+    avatar: "Фото профиля"
+    avatar_hint: "Нажмите, чтобы изменить"
+    first_name: "Имя"
+    last_name: "Фамилия"
+    email: "Email"
+    email_hint: "(нельзя изменить)"
+    role: "Роль"
+    role_value: "Клиент"
+  button_save: "Сохранить"
+  menu_items:
+    notifications:
+      title: "Уведомления"
+      icon: "bell"
+      items:
+        - label: "Новые сообщения"
+          description: "Получать уведомления о новых сообщениях от специалистов по email"
+        - label: "Предупреждения о закрытии"
+          description: "Предупреждать, когда заявка скоро закроется"
+    legal:
+      title: "Правовая информация"
+      items:
+        - label: "Условия использования"
+  danger_zone:
+    title: "Аккаунт"
+    signout_button: "Выйти из аккаунта"
+    signout_confirm: "Вы уверены, что хотите выйти?"
+    signout_confirm_yes: "Выйти"
+    signout_confirm_no: "Отмена"
+  app_version: "Версия {version}"
+  error_title: "Ошибка сохранения"
+  error_description: "Не удалось сохранить изменения. Попробуйте ещё раз."
+  error_button: "Повторить"
+  success_toast: "Изменения сохранены"
 
 Layout:
   - Header: Header-Back, title "Settings"
@@ -894,10 +1346,33 @@ Dependencies: ClientDashboard
 ---
 **Screen: SpecialistDashboard**
 Status: TODO
+Type: showcase
 Route: /(specialist-tabs)/dashboard
 Access: auth required, role: specialist
 
 Description: Specialist home — matching requests feed
+
+Content:
+  welcome_message: "{firstName}, вот заявки для вас"
+  stats_labels:
+    threads_total: "Всего диалогов"
+    new_messages: "Новых сообщений"
+  standby_banner:
+    title: "Вы на паузе"
+    description: "Клиенты не видят ваш профиль в каталоге. Включите приём заявок в настройках."
+    link: "Перейти в настройки"
+  action_cards:
+    write: "Написать клиенту"
+    open_chat: "Открыть чат"
+  badge_already_wrote: "Вы уже откликнулись"
+  badge_not_your_region: "Не ваш регион"
+  link_my_threads: "Мои диалоги"
+  empty_title: "Нет подходящих заявок"
+  empty_description: "Расширьте рабочую область, чтобы видеть больше заявок из других городов и инспекций"
+  empty_cta: "Расширить рабочую область"
+  error_title: "Не удалось загрузить заявки"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Home (app name left, settings gear right → SpecialistSettings)
@@ -939,10 +1414,31 @@ Dependencies: none
 ---
 **Screen: SpecialistConfirmWrite**
 Status: TODO
+Type: form
 Route: /requests/[id]/write (modal)
 Access: auth required, role: specialist
 
 Description: Confirm modal before starting a thread with client
+
+Content:
+  page_title: "Написать клиенту"
+  page_subtitle: "Прочитайте заявку и напишите первое сообщение"
+  section_titles:
+    request_summary: "Заявка клиента"
+  field_labels:
+    message: "Ваше сообщение"
+    message_placeholder: "Здравствуйте! Я специалист по... Могу помочь с вашей ситуацией. Расскажите подробнее..."
+    message_counter: "{count}/1000"
+    message_error_min: "Минимум 10 символов"
+  button_submit: "Отправить сообщение"
+  button_cancel: "Отмена"
+  error_request_closed: "Заявка закрыта — отклик невозможен"
+  error_thread_exists: "Вы уже писали по этой заявке"
+  error_rate_limit: "Лимит откликов на сегодня исчерпан (20 в день). Попробуйте завтра."
+  error_title: "Ошибка отправки"
+  error_description: "Не удалось отправить сообщение. Попробуйте ещё раз."
+  error_button: "Повторить"
+  success_toast: "Сообщение отправлено. Диалог создан."
 
 Layout:
   - Header: Header-Back, title "Write to Client"
@@ -990,10 +1486,30 @@ Dependencies: SpecialistDashboard, PublicRequestsFeed
 ---
 **Screen: SpecialistMyThreads**
 Status: TODO
+Type: list
 Route: /(specialist-tabs)/threads
 Access: auth required, role: specialist
 
 Description: All specialist's threads
+
+Content:
+  page_title: "Мои диалоги"
+  filter_labels:
+    all: "Все"
+    unread: "Непрочитанные"
+  card_template:
+    request_title: "{request.title} (усечённый)"
+    client_name: "{client.firstName}"
+    last_message: "{lastMessage} (60 символов)"
+    timestamp: "{time_ago}"
+    unread_badge: "{unreadCount}"
+    closed_badge: "Заявка закрыта"
+  empty_title: "Вы ещё не написали ни одному клиенту"
+  empty_description: "Откликнитесь на заявку — клиент увидит ваше сообщение и сможет ответить"
+  empty_cta: "Смотреть заявки"
+  error_title: "Не удалось загрузить диалоги"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Home, title "My Threads"
@@ -1039,10 +1555,56 @@ Dependencies: none
 ---
 **Screen: SpecialistSettings**
 Status: TODO
+Type: settings
 Route: /settings/specialist
 Access: auth required, role: specialist
 
 Description: Specialist profile editing
+
+Content:
+  page_title: "Настройки"
+  field_labels:
+    avatar: "Фото профиля"
+    avatar_hint: "Нажмите, чтобы изменить"
+    first_name: "Имя"
+    first_name_placeholder: "Иван"
+    last_name: "Фамилия"
+    last_name_placeholder: "Петров"
+    fns_section: "Инспекции и услуги"
+    fns_search_placeholder: "Найти инспекцию"
+    services_label: "Услуги"
+    phone: "Телефон"
+    phone_placeholder: "+7 (___) ___-__-__"
+    telegram: "Telegram"
+    telegram_placeholder: "@username"
+    whatsapp: "WhatsApp"
+    whatsapp_placeholder: "+7 (___) ___-__-__"
+    office_address: "Адрес офиса"
+    office_address_placeholder: "г. Москва, ул. Примерная, д. 1"
+    working_hours: "Часы работы"
+    working_hours_placeholder: "Пн-Пт 9:00-18:00"
+  toggle_available:
+    label: "Приём заявок"
+    on: "Принимаю заявки"
+    off: "На паузе"
+    hint: "Когда выключено, ваш профиль скрыт из каталога"
+  button_save: "Сохранить"
+  menu_items:
+    notifications:
+      title: "Уведомления"
+      items:
+        - label: "Новые сообщения"
+          description: "Получать уведомления о новых сообщениях от клиентов по email"
+  danger_zone:
+    title: "Аккаунт"
+    signout_button: "Выйти из аккаунта"
+    signout_confirm: "Вы уверены, что хотите выйти?"
+    signout_confirm_yes: "Выйти"
+    signout_confirm_no: "Отмена"
+  error_title: "Ошибка сохранения"
+  error_description: "Не удалось сохранить изменения. Попробуйте ещё раз."
+  error_button: "Повторить"
+  success_toast: "Изменения сохранены"
 
 Layout:
   - Header: Header-Back, title "Settings"
@@ -1095,10 +1657,31 @@ Dependencies: SpecialistPublicProfile (own profile), SpecialistDashboard
 ---
 **Screen: ChatThread**
 Status: TODO
+Type: chat
 Route: /threads/[id]
 Access: auth required, role: client + specialist (thread participants only)
 
 Description: Chat between client and specialist about a request
+
+Content:
+  header_title: "{otherParticipant.firstName}"
+  input_placeholder: "Введите сообщение..."
+  attach_button: "Прикрепить файл"
+  attach_hint: "PDF, JPG, PNG — до 10 МБ, не более 3 файлов"
+  send_button: "Отправить"
+  typing_indicator: "печатает..."
+  online_status: "в сети"
+  read_receipt_sent: "Отправлено"
+  read_receipt_delivered: "Доставлено"
+  read_receipt_read: "Прочитано"
+  closed_banner: "Заявка закрыта. Чат доступен только для чтения."
+  image_viewer_download: "Скачать"
+  empty_title: "Начните общение"
+  empty_description: "Напишите сообщение, чтобы начать диалог"
+  error_title: "Не удалось загрузить сообщения"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
+  error_send_failed: "Сообщение не отправлено. Повторить?"
 
 Layout:
   - Header: Header-Back, title = other participant's name
@@ -1149,11 +1732,19 @@ Dependencies: ClientMessages, MessagesGrouped, SpecialistMyThreads
 
 ---
 **Screen: TermsScreen**
-Status: TODO
+Status: DONE
+Type: detail
 Route: /terms (modal)
 Access: public
 
 Description: Terms of use (static content)
+
+Content:
+  page_title: "Условия использования"
+  close_button: "Закрыть"
+  error_title: "Не удалось загрузить текст"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Back, title "Terms of Use", close button (x)
@@ -1180,10 +1771,32 @@ Dependencies: AuthEmail, OnboardingName, ClientSettings, SpecialistSettings
 ---
 **Screen: AdminDashboard**
 Status: TODO
+Type: showcase
 Route: /(admin-tabs)/dashboard
 Access: auth required, role: admin
 
 Description: Admin overview with stats
+
+Content:
+  page_title: "Панель управления"
+  welcome_message: "Администратор"
+  stats_labels:
+    active_requests: "Активных заявок"
+    new_users_week: "Новых пользователей за неделю"
+    new_users_month: "Новых пользователей за месяц"
+    threads_week: "Диалогов за неделю"
+    threads_month: "Диалогов за месяц"
+    conversion: "Конверсия заявка → диалог"
+    top_cities: "Топ городов"
+    top_specialists: "Топ специалистов по диалогам"
+    registrations_chart: "Регистрации"
+  action_cards:
+    users: "Управление пользователями"
+    moderation: "Модерация"
+    settings: "Настройки системы"
+  error_title: "Не удалось загрузить статистику"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Home, title "Admin", right: settings gear → AdminSettings
@@ -1218,10 +1831,45 @@ Dependencies: none (admin root)
 ---
 **Screen: AdminUsers**
 Status: TODO
+Type: list
 Route: /(admin-tabs)/users
 Access: auth required, role: admin
 
 Description: User management — search, view, ban
+
+Content:
+  page_title: "Пользователи"
+  search_placeholder: "Поиск по email или имени"
+  filter_labels:
+    all: "Все"
+    clients: "Клиенты"
+    specialists: "Специалисты"
+    banned: "Заблокированные"
+  card_template:
+    name: "{firstName} {lastName}"
+    email: "{email}"
+    role_badge: "{role}"
+    status_badge: "{status}"
+    registered: "Зарегистрирован {date}"
+  action_buttons:
+    ban: "Заблокировать"
+    unban: "Разблокировать"
+    edit: "Редактировать"
+    close_all_requests: "Закрыть все заявки"
+  ban_confirm: "Заблокировать пользователя {name}? Он не сможет входить в систему."
+  ban_confirm_yes: "Заблокировать"
+  ban_confirm_no: "Отмена"
+  role_labels:
+    CLIENT: "Клиент"
+    SPECIALIST: "Специалист"
+    ADMIN: "Админ"
+  empty_title: "Пользователей не найдено"
+  empty_description: "Попробуйте изменить параметры поиска"
+  error_title: "Не удалось загрузить пользователей"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
+  success_toast_ban: "Пользователь заблокирован"
+  success_toast_unban: "Пользователь разблокирован"
 
 Layout:
   - Header: Header-Search (search bar)
@@ -1267,10 +1915,22 @@ Dependencies: AdminDashboard
 ---
 **Screen: AdminModeration**
 Status: TODO
+Type: list
 Route: /(admin-tabs)/moderation
 Access: auth required, role: admin
 
 Description: Content moderation queue (reserved for future, empty in MVP)
+
+Content:
+  page_title: "Модерация"
+  action_buttons:
+    approve: "Одобрить"
+    reject: "Отклонить"
+  empty_title: "Всё чисто"
+  empty_description: "Нет элементов, требующих модерации"
+  error_title: "Не удалось загрузить очередь"
+  error_description: "Проверьте соединение с интернетом и попробуйте снова"
+  error_button: "Повторить"
 
 Layout:
   - Header: Header-Home, title "Moderation"
@@ -1301,10 +1961,42 @@ Dependencies: AdminDashboard
 ---
 **Screen: AdminSettings**
 Status: TODO
+Type: settings
 Route: /admin/settings
 Access: auth required, role: admin
 
 Description: System-wide settings
+
+Content:
+  page_title: "Настройки системы"
+  field_labels:
+    max_requests_per_client:
+      label: "Макс. заявок на клиента"
+      hint: "Лимит заявок за всё время для каждого клиента"
+    max_threads_per_request:
+      label: "Макс. откликов на заявку"
+      hint: "Сколько специалистов могут написать по одной заявке"
+    auto_close_days:
+      label: "Автозакрытие (дни)"
+      hint: "Через сколько дней без активности заявка закрывается автоматически"
+    max_extensions:
+      label: "Макс. продлений"
+      hint: "Сколько раз клиент может продлить заявку"
+    close_warning_days:
+      label: "Предупреждение (дни)"
+      hint: "За сколько дней до закрытия показывать предупреждение"
+    max_file_size_mb:
+      label: "Макс. размер файла (МБ)"
+      hint: "Максимальный размер одного файла"
+    max_files_per_message:
+      label: "Макс. файлов в сообщении"
+      hint: "Максимальное количество файлов в одном сообщении"
+  button_save: "Сохранить настройки"
+  note: "Изменения применяются только к новым заявкам. Существующие заявки не пересчитываются."
+  error_title: "Ошибка сохранения"
+  error_description: "Не удалось сохранить настройки. Проверьте значения и попробуйте ещё раз."
+  error_button: "Повторить"
+  success_toast: "Настройки сохранены"
 
 Layout:
   - Header: Header-Back, title "Settings"
@@ -1438,3 +2130,658 @@ Unique indexes: specialist_fns(specialist_id, fns_id), threads(request_id, speci
 - **Notifications:** MVP email only (no push). Events: new thread, new message, closing warning (3 days), request closed.
 - **Files:** MinIO storage. Avatar 5MB jpg/png/webp → resize 400x400. Documents 10MB pdf/jpg/png max 5. Chat attachments 10MB max 3 per message.
 - **Contacts:** Specialist contacts (phone, telegram, whatsapp, address, hours) are PUBLIC — visible to everyone including guests.
+
+---
+
+## Section 5: DB Schema
+
+> Derived from SA entities, SCREEN_MAP data fields, and existing Prisma schema.
+> All PKs are UUID. All tables have `created_at timestamptz DEFAULT now()`. Prices in kopecks (integer). Strings in Russian.
+
+### Table: users
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK, DEFAULT uuid_generate_v4() | User identifier |
+| email | varchar(255) | UNIQUE, NOT NULL | Login email |
+| role | enum('CLIENT','SPECIALIST','ADMIN') | NULLABLE | Assigned after onboarding or first login choice |
+| first_name | varchar(50) | NULLABLE | First name (2-50 chars) |
+| last_name | varchar(50) | NULLABLE | Last name (2-50 chars) |
+| avatar_url | varchar(512) | NULLABLE | MinIO path to avatar |
+| is_available | boolean | NOT NULL, DEFAULT false | Specialist: accepting requests toggle |
+| is_banned | boolean | NOT NULL, DEFAULT false | Admin ban flag |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Registration timestamp |
+| updated_at | timestamptz | NOT NULL, DEFAULT now() | Last profile update |
+
+### Table: specialist_profiles
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Profile identifier |
+| user_id | uuid | UNIQUE, FK -> users.id ON DELETE CASCADE | One-to-one with user |
+| description | text | NULLABLE, max 1000 chars | About me / experience |
+| phone | varchar(20) | NULLABLE | Phone (+7XXXXXXXXXX), PUBLIC |
+| telegram | varchar(50) | NULLABLE | Telegram @username, PUBLIC |
+| whatsapp | varchar(20) | NULLABLE | WhatsApp number, PUBLIC |
+| office_address | varchar(200) | NULLABLE | Office address, PUBLIC |
+| working_hours | varchar(100) | NULLABLE | e.g. "Пн-Пт 9:00-18:00", PUBLIC |
+
+### Table: cities
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | City identifier |
+| name | varchar(100) | NOT NULL | City name in Russian (e.g. "Москва") |
+
+### Table: fns_offices
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | FNS office identifier |
+| city_id | uuid | NOT NULL, FK -> cities.id ON DELETE CASCADE | Parent city |
+| name | varchar(200) | NOT NULL | Full name (e.g. "ИФНС №1 по г. Москве") |
+| code | varchar(10) | NOT NULL | FNS code (e.g. "7701") |
+
+### Table: services
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Service identifier |
+| name | varchar(100) | NOT NULL | Service name in Russian |
+
+Fixed seed values (3 rows):
+1. "Выездная проверка"
+2. "Камеральная проверка"
+3. "Отдел оперативного контроля"
+
+Note: the 4th option "Не знаю" is a CLIENT-SIDE UI-only choice in the quick request form on Landing — it is NOT stored in the services table. When a client selects "Не знаю", the request is created WITHOUT a service_id (NULL), meaning the client doesn't know which service applies.
+
+### Table: specialist_fns
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Join record identifier |
+| specialist_id | uuid | NOT NULL, FK -> users.id ON DELETE CASCADE | Specialist user |
+| fns_id | uuid | NOT NULL, FK -> fns_offices.id ON DELETE CASCADE | FNS office |
+
+### Table: specialist_services
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Record identifier |
+| specialist_id | uuid | NOT NULL, FK -> users.id ON DELETE CASCADE | Specialist user |
+| fns_id | uuid | NOT NULL, FK -> fns_offices.id ON DELETE CASCADE | FNS office |
+| service_id | uuid | NOT NULL, FK -> services.id ON DELETE CASCADE | Service type |
+| specialist_fns_id | uuid | NOT NULL, FK -> specialist_fns.id ON DELETE CASCADE | Parent join record |
+
+### Table: requests
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Request identifier |
+| user_id | uuid | NOT NULL, FK -> users.id ON DELETE CASCADE | Client who created the request |
+| title | varchar(100) | NOT NULL | Request title (3-100 chars) |
+| city_id | uuid | NOT NULL, FK -> cities.id | City |
+| fns_id | uuid | NOT NULL, FK -> fns_offices.id | FNS office |
+| description | text | NOT NULL | Problem description (10-2000 chars) |
+| status | enum('ACTIVE','CLOSING_SOON','CLOSED') | NOT NULL, DEFAULT 'ACTIVE' | Lifecycle status |
+| last_activity_at | timestamptz | NOT NULL, DEFAULT now() | Last thread/message activity, drives auto-close |
+| extensions_count | integer | NOT NULL, DEFAULT 0 | How many times client extended (max 3) |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Creation timestamp |
+
+### Table: threads
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Thread identifier |
+| request_id | uuid | NOT NULL, FK -> requests.id ON DELETE CASCADE | Parent request |
+| client_id | uuid | NOT NULL, FK -> users.id | Request owner (client) |
+| specialist_id | uuid | NOT NULL, FK -> users.id | Specialist who initiated thread |
+| last_message_at | timestamptz | NULLABLE | Timestamp of last message in thread |
+| client_last_read_at | timestamptz | NULLABLE | Client read cursor for unread calculation |
+| specialist_last_read_at | timestamptz | NULLABLE | Specialist read cursor for unread calculation |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Thread creation (= first message) |
+
+### Table: messages
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Message identifier |
+| thread_id | uuid | NOT NULL, FK -> threads.id ON DELETE CASCADE | Parent thread |
+| sender_id | uuid | NOT NULL, FK -> users.id | Message author (client or specialist) |
+| text | text | NOT NULL | Message body (1-2000 chars) |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Sent timestamp |
+
+### Table: files
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | File identifier |
+| entity_type | varchar(30) | NOT NULL | Polymorphic type: 'avatar', 'document', 'chat_attachment' |
+| entity_id | uuid | NOT NULL | FK to parent entity (user.id, request.id, message.id) |
+| url | varchar(512) | NOT NULL | MinIO file URL |
+| filename | varchar(255) | NOT NULL | Original filename |
+| size | integer | NOT NULL | File size in bytes |
+| mime_type | varchar(50) | NOT NULL | MIME type (e.g. 'application/pdf', 'image/jpeg') |
+| request_id | uuid | NULLABLE, FK -> requests.id ON DELETE SET NULL | Optional direct FK for request attachments |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Upload timestamp |
+
+### Table: settings
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| key | varchar(100) | PK | Setting key |
+| value | varchar(255) | NOT NULL | Setting value (stored as string, parsed by app) |
+
+Default settings rows:
+| key | value | Description |
+|-----|-------|-------------|
+| max_requests_per_client | 5 | Lifetime request limit per client |
+| max_threads_per_request | 10 | Max specialist threads per request |
+| auto_close_days | 30 | Days without activity before auto-close |
+| max_extensions | 3 | Max extensions per request |
+| close_warning_days | 3 | Days before close to show warning |
+| max_file_size_mb | 10 | Max file size in MB |
+| max_files_per_message | 5 | Max files per chat message |
+
+### Table: otp_codes
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | OTP record identifier |
+| email | varchar(255) | NOT NULL | Target email |
+| code | varchar(6) | NOT NULL | 6-digit OTP code |
+| expires_at | timestamptz | NOT NULL | Expiry (15 min from creation) |
+| used | boolean | NOT NULL, DEFAULT false | Whether code was consumed |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Creation timestamp |
+
+### Table: refresh_tokens
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Token record identifier |
+| user_id | uuid | NOT NULL, FK -> users.id ON DELETE CASCADE | Token owner |
+| token | varchar(512) | UNIQUE, NOT NULL | Refresh token value |
+| expires_at | timestamptz | NOT NULL | Token expiry (30 days sliding) |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Issue timestamp |
+
+### Table: notification_settings
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | uuid | PK | Record identifier |
+| user_id | uuid | UNIQUE, FK -> users.id ON DELETE CASCADE | User whose preferences |
+| new_messages | boolean | NOT NULL, DEFAULT true | Email on new messages |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | Creation timestamp |
+| updated_at | timestamptz | NOT NULL, DEFAULT now() | Last update |
+
+### Relations
+
+```
+users 1--1 specialist_profiles (user_id)
+users 1--* specialist_fns (specialist_id)
+users 1--* specialist_services (specialist_id)
+users 1--* requests (user_id)
+users 1--* threads as client (client_id)
+users 1--* threads as specialist (specialist_id)
+users 1--* messages (sender_id)
+users 1--* refresh_tokens (user_id)
+users 1--1 notification_settings (user_id)
+
+cities 1--* fns_offices (city_id)
+cities 1--* requests (city_id)
+
+fns_offices 1--* specialist_fns (fns_id)
+fns_offices 1--* specialist_services (fns_id)
+fns_offices 1--* requests (fns_id)
+
+services 1--* specialist_services (service_id)
+
+specialist_fns 1--* specialist_services (specialist_fns_id)
+
+requests 1--* threads (request_id)
+requests 1--* files (request_id)
+
+threads 1--* messages (thread_id)
+
+files -- polymorphic on (entity_type, entity_id)
+```
+
+### Indexes
+
+```sql
+-- Auth
+CREATE UNIQUE INDEX idx_users_email ON users(email);
+CREATE UNIQUE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX idx_otp_codes_email_expires ON otp_codes(email, expires_at);
+
+-- Specialist join tables
+CREATE UNIQUE INDEX idx_specialist_fns_unique ON specialist_fns(specialist_id, fns_id);
+CREATE UNIQUE INDEX idx_specialist_services_unique ON specialist_services(specialist_id, fns_id, service_id);
+
+-- Requests
+CREATE INDEX idx_requests_user_id ON requests(user_id);
+CREATE INDEX idx_requests_city_id ON requests(city_id);
+CREATE INDEX idx_requests_fns_id ON requests(fns_id);
+CREATE INDEX idx_requests_status ON requests(status);
+CREATE INDEX idx_requests_status_last_activity ON requests(status, last_activity_at);
+CREATE INDEX idx_requests_created_at ON requests(created_at DESC);
+
+-- Threads
+CREATE UNIQUE INDEX idx_threads_request_specialist ON threads(request_id, specialist_id);
+CREATE INDEX idx_threads_client_last_msg ON threads(client_id, last_message_at DESC);
+CREATE INDEX idx_threads_specialist_last_msg ON threads(specialist_id, last_message_at DESC);
+CREATE INDEX idx_threads_request_id ON threads(request_id);
+
+-- Messages
+CREATE INDEX idx_messages_thread_created ON messages(thread_id, created_at);
+CREATE INDEX idx_messages_sender ON messages(sender_id);
+
+-- Files (polymorphic)
+CREATE INDEX idx_files_entity ON files(entity_type, entity_id);
+CREATE INDEX idx_files_request_id ON files(request_id);
+
+-- Notification settings
+CREATE UNIQUE INDEX idx_notification_settings_user ON notification_settings(user_id);
+```
+
+---
+
+## Section 6: API Spec
+
+> All endpoints consolidated from screen Data sections. Base URL: `/api`.
+> Auth: JWT Bearer token in `Authorization` header. Dev OTP: `000000`.
+
+### Auth
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| POST | /api/auth/request-otp | `{email}` | `{success: true}` | No | Rate: 5/min per email. Creates user if not exists. Dev: code=000000 |
+| POST | /api/auth/verify-otp | `{email, code}` | `{accessToken, refreshToken, user: {id, email, role, firstName, lastName}}` | No | 3 wrong attempts -> resend required. Routes by role post-verify |
+| POST | /api/auth/refresh | `{refreshToken}` | `{accessToken, refreshToken}` | No | Token rotation: old refresh invalidated. 30d sliding window |
+| POST | /api/auth/logout | - | `{success: true}` | Yes | Deletes all refresh tokens for user |
+
+### Onboarding (specialist, 3 steps)
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| PUT | /api/onboarding/name | `{firstName, lastName}` | `{success: true}` | Yes (specialist, new) | Step 1/3. Sets role=SPECIALIST, first/last name |
+| PUT | /api/onboarding/work-area | `{fnsServices: [{fnsId, serviceIds: [uuid]}]}` | `{success: true}` | Yes (specialist, new) | Step 2/3. Saves to specialist_fns + specialist_services |
+| PUT | /api/onboarding/profile | `{avatar?, description?, phone?, telegram?, whatsapp?, officeAddress?, workingHours?}` | `{success: true}` | Yes (specialist, new) | Step 3/3. All optional. Completes onboarding, sets is_available=true |
+
+### Reference Data
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/cities | - | `[{id, name}]` | No | Seeded data, ~15 Russian cities |
+| GET | /api/fns | `?city_id=uuid` | `[{id, name, code, cityId}]` | No | FNS offices filtered by city. ~70 total |
+| GET | /api/services | - | `[{id, name}]` | No | 3 fixed rows |
+
+### User Profile
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/user/me | - | `{id, email, role, firstName, lastName, avatarUrl, isAvailable, createdAt}` | Yes | Current user info for settings prefill |
+| PATCH | /api/user/profile | `{firstName?, lastName?, avatar?}` | `{success: true}` | Yes | Client profile update |
+| PATCH | /api/user/notification-settings | `{new_messages: bool}` | `{success: true}` | Yes | Toggle email notifications |
+
+### Specialists
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/specialists | `?city_id&fns_id&services[]=uuid&page=1&limit=20` | `{items: [{id, firstName, lastName, avatar, services, city}], total, hasMore}` | No | Only is_available=true. Paginated |
+| GET | /api/specialists/featured | - | `[{id, firstName, lastName, avatar, services}]` | No | Landing page featured (top 10 newest available) |
+| GET | /api/specialists/:id | - | `{id, firstName, lastName, avatar, description, isAvailable, phone, telegram, whatsapp, officeAddress, workingHours, fnsServices: [{city, fns, services[]}], createdAt}` | No | Public profile. Contacts visible to everyone |
+
+### Specialist Profile (self)
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/specialist/profile | - | Full specialist profile (own) | Yes (specialist) | Prefill settings form |
+| PATCH | /api/specialist/profile | `{firstName?, lastName?, fnsServices?, phone?, telegram?, whatsapp?, officeAddress?, workingHours?, isAvailable?}` | `{success: true}` | Yes (specialist) | isAvailable toggle is instant PATCH |
+| GET | /api/specialist/stats | - | `{threadsTotal, newMessages}` | Yes (specialist) | Dashboard stats |
+| GET | /api/specialist/requests | - | `[{id, title, city, fns, service, description, hasThread, threadId}]` | Yes (specialist) | Matching requests for dashboard |
+
+### Requests (client)
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| POST | /api/requests | `{title, cityId, fnsId, description, files[]}` | `{id, ...request}` | Yes (client) | Create request. 5 lifetime limit (configurable). No moderation |
+| GET | /api/requests | `?limit=N` | `[{id, title, status, city, fns, service, threadsCount, createdAt}]` | Yes (client) | Client's own requests |
+| GET | /api/requests/:id | - | `{id, title, status, city, fns, service, description, files[], threadsCount, extensionsCount, createdAt}` | Yes (client, owner) | Full detail for request owner |
+| PATCH | /api/requests/:id | `{status: 'CLOSED'}` | `{success: true}` | Yes (client, owner) | Manual close |
+| POST | /api/requests/:id/extend | - | `{success: true}` | Yes (client, owner) | Extend request. Max 3 extensions. Resets last_activity_at |
+| DELETE | /api/requests/:id | - | `{success: true}` | Yes (client, owner) | Delete request + cascade files |
+
+### Requests (public)
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/requests/public | `?city_id&service_id&page=1&limit=20` | `{items: [{id, title, city, fns, service, description, threadsCount, createdAt}], total, hasMore}` | No | Public feed. Only ACTIVE+CLOSING_SOON. Paginated |
+| POST | /api/requests/public | `{cityId, serviceId?, description}` | `{id, ...}` | No* | Quick request from landing. *Triggers inline OTP if not auth |
+| GET | /api/requests/:id/public | - | `{id, title, city, fns, service, description, status, threadsCount, createdAt, hasExistingThread?, existingThreadId?}` | No | Public detail. hasExistingThread only for auth specialist |
+
+### Dashboard (client)
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/dashboard/stats | - | `{requestsUsed, requestsLimit, unreadMessages}` | Yes (client) | Client dashboard stats |
+
+### Threads & Messages
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| POST | /api/threads | `{requestId, firstMessage}` | `{threadId}` | Yes (specialist) | Create thread + first message atomically. UNIQUE(request_id, specialist_id). Rate: 20 new/day |
+| GET | /api/threads | `?request_id&grouped_by=request` | `[{id, request, specialist/client, lastMessage, unreadCount, lastMessageAt}]` | Yes | List threads. Grouped if param set. Client sees specialist info, specialist sees client info |
+| GET | /api/threads/:id/messages | - | `[{id, senderId, text, files[], createdAt, readAt}]` | Yes (participant) | Message history for thread |
+| POST | /api/threads/:id/messages | `{text, files[]}` | `{id, ...message}` | Yes (participant) | Send message. 422 if request CLOSED |
+| PATCH | /api/threads/:id/read | - | `{success: true}` | Yes (participant) | Mark thread read. Updates client_last_read_at or specialist_last_read_at |
+
+### File Uploads
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| POST | /api/uploads/avatar | multipart/form-data | `{url}` | Yes | jpg/png/webp, max 5MB. Server resizes to 400x400 |
+| POST | /api/uploads/documents | multipart/form-data | `[{url, filename, size}]` | Yes | pdf/jpg/png, max 10MB each, max 5 files |
+| POST | /api/uploads/chat-attachments | multipart/form-data | `[{url, filename, size}]` | Yes | pdf/jpg/png, max 10MB each, max 3 per message |
+
+### Admin
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/admin/stats | - | `{activeRequests, newUsersWeek, newUsersMonth, threadsWeek, threadsMonth, topCities, topSpecialists, conversion}` | Yes (admin) | Dashboard metrics |
+| GET | /api/admin/users | `?q&role&page=1&limit=20` | `{items: [{id, email, firstName, lastName, role, isBanned, createdAt}], total}` | Yes (admin) | User list with search. Debounce 300ms client-side |
+| PATCH | /api/admin/users/:id | `{isBanned?, firstName?, lastName?, ...}` | `{success: true}` | Yes (admin) | Edit user, ban/unban |
+| POST | /api/admin/users/:id/close-all-requests | - | `{closedCount}` | Yes (admin) | Force-close all active requests for user |
+| GET | /api/admin/settings | - | `{key: value, ...}` | Yes (admin) | All configurable settings |
+| PATCH | /api/admin/settings | `{key: value, ...}` | `{success: true}` | Yes (admin) | Update settings. Applies to new requests only |
+| GET | /api/admin/moderation/queue | - | `{items: []}` | Yes (admin) | MVP: always empty. Reserved for future |
+
+### Content
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/content/terms | - | `{html: "..."}` | No | Terms of use static content |
+
+### Health
+| Method | Endpoint | Body/Query | Response | Auth | Notes |
+|--------|----------|------------|----------|------|-------|
+| GET | /api/health | - | `{status: "ok", version: "..."}` | No | Healthcheck for monitoring |
+
+### WebSocket Events (Chat)
+| Event | Direction | Payload | Description |
+|-------|-----------|---------|-------------|
+| typing | client -> server | `{threadId}` | User is typing |
+| typing | server -> client | `{threadId, userId}` | Other participant is typing |
+| new_message | server -> client | `{threadId, message}` | Real-time new message |
+| presence | server -> client | `{userId, online: bool}` | Online status for chat header |
+
+### Rate Limits Summary
+| Endpoint | Limit | Scope |
+|----------|-------|-------|
+| POST /api/auth/request-otp | 5/min | per email |
+| POST /api/threads | 20 new/day | per specialist |
+| POST /api/requests | 5 lifetime | per client (configurable in settings) |
+| General API | 100/min | per IP |
+
+---
+
+## Section 7: Seed Data
+
+### Developer Test Account (ALWAYS created first)
+| Field | Value |
+|-------|-------|
+| email | serter2069@gmail.com |
+| phone | +17024826083 |
+| first_name | Sergei |
+| last_name | Admin |
+| role | ADMIN |
+| is_available | true |
+| is_banned | false |
+| avatar_url | null |
+
+This account also gets:
+- A specialist_profile with description "Администратор и тестовый специалист"
+- specialist_fns entries for Moscow IFNS #1 and #46
+- specialist_services for all 3 services at each FNS
+- 3 requests as client (active, closing_soon, closed)
+- 5 threads (3 as client recipient, 2 as specialist initiator)
+- Multiple messages in each thread
+- notification_settings with new_messages=true
+
+### Seed: cities (15 rows)
+| name |
+|------|
+| Москва |
+| Санкт-Петербург |
+| Новосибирск |
+| Екатеринбург |
+| Казань |
+| Нижний Новгород |
+| Челябинск |
+| Самара |
+| Омск |
+| Ростов-на-Дону |
+| Уфа |
+| Красноярск |
+| Воронеж |
+| Пермь |
+| Волгоград |
+
+### Seed: fns_offices (~70 rows, examples per city)
+| city | name | code |
+|------|------|------|
+| Москва | ИФНС России №1 по г. Москве | 7701 |
+| Москва | ИФНС России №2 по г. Москве | 7702 |
+| Москва | ИФНС России №3 по г. Москве | 7703 |
+| Москва | ИФНС России №4 по г. Москве | 7704 |
+| Москва | ИФНС России №5 по г. Москве | 7705 |
+| Москва | ИФНС России №7 по г. Москве | 7707 |
+| Москва | ИФНС России №8 по г. Москве | 7708 |
+| Москва | ИФНС России №9 по г. Москве | 7709 |
+| Москва | ИФНС России №10 по г. Москве | 7710 |
+| Москва | ИФНС России №13 по г. Москве | 7713 |
+| Москва | ИФНС России №14 по г. Москве | 7714 |
+| Москва | ИФНС России №15 по г. Москве | 7715 |
+| Москва | ИФНС России №16 по г. Москве | 7716 |
+| Москва | ИФНС России №17 по г. Москве | 7717 |
+| Москва | ИФНС России №18 по г. Москве | 7718 |
+| Москва | ИФНС России №19 по г. Москве | 7719 |
+| Москва | ИФНС России №20 по г. Москве | 7720 |
+| Москва | ИФНС России №21 по г. Москве | 7721 |
+| Москва | ИФНС России №22 по г. Москве | 7722 |
+| Москва | ИФНС России №23 по г. Москве | 7723 |
+| Москва | ИФНС России №24 по г. Москве | 7724 |
+| Москва | ИФНС России №25 по г. Москве | 7725 |
+| Москва | ИФНС России №26 по г. Москве | 7726 |
+| Москва | ИФНС России №27 по г. Москве | 7727 |
+| Москва | ИФНС России №28 по г. Москве | 7728 |
+| Москва | ИФНС России №29 по г. Москве | 7729 |
+| Москва | ИФНС России №30 по г. Москве | 7730 |
+| Москва | ИФНС России №31 по г. Москве | 7731 |
+| Москва | ИФНС России №33 по г. Москве | 7733 |
+| Москва | ИФНС России №34 по г. Москве | 7734 |
+| Москва | ИФНС России №35 по г. Москве | 7735 |
+| Москва | ИФНС России №36 по г. Москве | 7736 |
+| Москва | ИФНС России №43 по г. Москве | 7743 |
+| Москва | ИФНС России №46 по г. Москве | 7746 |
+| Москва | ИФНС России №51 по г. Москве | 7751 |
+| Санкт-Петербург | ИФНС России по Адмиралтейскому р-ну | 7802 |
+| Санкт-Петербург | ИФНС России по Василеостровскому р-ну | 7801 |
+| Санкт-Петербург | ИФНС России по Выборгскому р-ну | 7803 |
+| Санкт-Петербург | ИФНС России по Калининскому р-ну | 7804 |
+| Санкт-Петербург | ИФНС России по Кировскому р-ну | 7805 |
+| Санкт-Петербург | ИФНС России по Красногвардейскому р-ну | 7806 |
+| Санкт-Петербург | ИФНС России по Московскому р-ну | 7810 |
+| Санкт-Петербург | ИФНС России по Невскому р-ну | 7811 |
+| Санкт-Петербург | ИФНС России по Петроградскому р-ну | 7813 |
+| Санкт-Петербург | ИФНС России по Приморскому р-ну | 7814 |
+| Новосибирск | ИФНС России по Дзержинскому р-ну г. Новосибирска | 5401 |
+| Новосибирск | ИФНС России по Железнодорожному р-ну г. Новосибирска | 5402 |
+| Новосибирск | ИФНС России по Заельцовскому р-ну г. Новосибирска | 5403 |
+| Новосибирск | ИФНС России по Кировскому р-ну г. Новосибирска | 5404 |
+| Екатеринбург | ИФНС России по Кировскому р-ну г. Екатеринбурга | 6670 |
+| Екатеринбург | ИФНС России по Ленинскому р-ну г. Екатеринбурга | 6671 |
+| Екатеринбург | ИФНС России по Октябрьскому р-ну г. Екатеринбурга | 6672 |
+| Екатеринбург | ИФНС России по Верх-Исетскому р-ну г. Екатеринбурга | 6673 |
+| Казань | ИФНС России по Авиастроительному р-ну г. Казани | 1684 |
+| Казань | ИФНС России по Вахитовскому р-ну г. Казани | 1685 |
+| Казань | ИФНС России по Кировскому р-ну г. Казани | 1686 |
+| Нижний Новгород | ИФНС России по Автозаводскому р-ну г. Нижнего Новгорода | 5256 |
+| Нижний Новгород | ИФНС России по Канавинскому р-ну г. Нижнего Новгорода | 5257 |
+| Нижний Новгород | ИФНС России по Нижегородскому р-ну г. Нижнего Новгорода | 5258 |
+| Челябинск | ИФНС России по Калининскому р-ну г. Челябинска | 7453 |
+| Челябинск | ИФНС России по Курчатовскому р-ну г. Челябинска | 7454 |
+| Самара | ИФНС России по Железнодорожному р-ну г. Самары | 6311 |
+| Самара | ИФНС России по Кировскому р-ну г. Самары | 6312 |
+| Омск | ИФНС России по Кировскому АО г. Омска | 5501 |
+| Ростов-на-Дону | ИФНС России по Ворошиловскому р-ну г. Ростова-на-Дону | 6163 |
+| Ростов-на-Дону | ИФНС России по Ленинскому р-ну г. Ростова-на-Дону | 6164 |
+| Уфа | ИФНС России по Кировскому р-ну г. Уфы | 0274 |
+| Красноярск | ИФНС России по Железнодорожному р-ну г. Красноярска | 2461 |
+| Воронеж | ИФНС России по Коминтерновскому р-ну г. Воронежа | 3666 |
+| Пермь | ИФНС России по Ленинскому р-ну г. Перми | 5902 |
+| Волгоград | ИФНС России по Дзержинскому р-ну г. Волгограда | 3441 |
+
+### Seed: services (3 rows, fixed)
+| name |
+|------|
+| Выездная проверка |
+| Камеральная проверка |
+| Отдел оперативного контроля |
+
+### Seed: users (50 target)
+
+Breakdown by role:
+- 1 admin (serter2069@gmail.com)
+- 29 clients
+- 20 specialists
+
+Example specialists:
+| first_name | last_name | email | city | services |
+|------------|-----------|-------|------|----------|
+| Иван | Петров | ivan.petrov@example.com | Москва | Выездная проверка, Камеральная проверка |
+| Елена | Сидорова | elena.sidorova@example.com | Москва | Камеральная проверка |
+| Алексей | Козлов | alexey.kozlov@example.com | Санкт-Петербург | Отдел оперативного контроля |
+| Мария | Новикова | maria.novikova@example.com | Екатеринбург | Выездная проверка |
+| Дмитрий | Морозов | dmitry.morozov@example.com | Казань | Камеральная проверка, Отдел оперативного контроля |
+| Анна | Волкова | anna.volkova@example.com | Новосибирск | Выездная проверка, Камеральная проверка, Отдел оперативного контроля |
+| Сергей | Лебедев | sergey.lebedev@example.com | Нижний Новгород | Камеральная проверка |
+| Ольга | Соловьёва | olga.solovyova@example.com | Челябинск | Выездная проверка |
+| Андрей | Васильев | andrey.vasiliev@example.com | Самара | Отдел оперативного контроля |
+| Наталья | Зайцева | natalya.zaitseva@example.com | Ростов-на-Дону | Выездная проверка, Камеральная проверка |
+| Михаил | Павлов | mikhail.pavlov@example.com | Москва | Отдел оперативного контроля |
+| Татьяна | Семёнова | tatyana.semenova@example.com | Санкт-Петербург | Камеральная проверка |
+| Владимир | Голубев | vladimir.golubev@example.com | Москва | Выездная проверка, Камеральная проверка, Отдел оперативного контроля |
+| Екатерина | Виноградова | ekaterina.vinogradova@example.com | Казань | Камеральная проверка |
+| Николай | Богданов | nikolay.bogdanov@example.com | Екатеринбург | Выездная проверка, Отдел оперативного контроля |
+| Юлия | Воробьёва | yulia.vorobyova@example.com | Новосибирск | Камеральная проверка |
+| Александр | Фёдоров | alexandr.fedorov@example.com | Нижний Новгород | Выездная проверка |
+| Ирина | Михайлова | irina.mikhaylova@example.com | Москва | Камеральная проверка, Отдел оперативного контроля |
+| Виктор | Николаев | viktor.nikolaev@example.com | Санкт-Петербург | Выездная проверка |
+| Людмила | Макарова | lyudmila.makarova@example.com | Москва | Камеральная проверка |
+
+2 specialists have is_available=false (Павлов, Макарова) — to test hidden-from-catalog behavior.
+
+Example clients:
+| first_name | last_name | email |
+|------------|-----------|-------|
+| Пётр | Иванов | petr.ivanov@example.com |
+| Светлана | Кузнецова | svetlana.kuznetsova@example.com |
+| Артём | Смирнов | artem.smirnov@example.com |
+| Ксения | Попова | ksenia.popova@example.com |
+| Роман | Соколов | roman.sokolov@example.com |
+| ... | ... | ... (29 total, faker.js generated) |
+
+### Seed: requests (100 target)
+
+Distribution by status:
+- 60 ACTIVE
+- 20 CLOSING_SOON (last_activity_at = now - 27 days)
+- 20 CLOSED (last_activity_at = now - 31+ days)
+
+Distribution by city: weighted toward Москва (40%), СПб (20%), rest 40% spread.
+
+Example requests:
+| title | city | fns | description (truncated) | status |
+|-------|------|-----|-------------------------|--------|
+| Выездная проверка за 2024 год | Москва | ИФНС №1 | Получили уведомление о выездной проверке за 2024 г., нужна помощь... | ACTIVE |
+| Камеральная проверка 3-НДФЛ | Москва | ИФНС №46 | Подал декларацию 3-НДФЛ, налоговая запросила пояснения... | ACTIVE |
+| Требование из ИФНС по НДС | Санкт-Петербург | по Адмиралтейскому р-ну | Пришло требование о предоставлении документов по НДС... | CLOSING_SOON |
+| Оспорить штраф за несвоевременную сдачу | Екатеринбург | по Кировскому р-ну | Начислили штраф 1000 руб за опоздание с декларацией... | ACTIVE |
+| Помощь с возвратом переплаты НДФЛ | Казань | по Вахитовскому р-ну | Переплатил НДФЛ, подал заявление на возврат 3 месяца назад... | CLOSED |
+| Подготовка к выездной проверке ООО | Москва | ИФНС №14 | ООО получило решение о выездной проверке, нужен специалист... | ACTIVE |
+| Камеральная проверка УСН | Новосибирск | по Дзержинскому р-ну | Налоговая просит пояснения по УСН декларации за 2025... | ACTIVE |
+| Оперативный контроль торговой точки | Москва | ИФНС №22 | К нам в магазин пришли из оперативного контроля, выписали протокол... | ACTIVE |
+| Спор по земельному налогу | Ростов-на-Дону | по Ворошиловскому р-ну | Кадастровая стоимость участка завышена, налог считают неправильно... | CLOSING_SOON |
+| Консультация по патентной системе | Самара | по Железнодорожному р-ну | Хочу перейти на патент, нужен специалист для расчёта... | ACTIVE |
+
+serter2069@gmail.com has 3 requests: 1 ACTIVE, 1 CLOSING_SOON, 1 CLOSED.
+
+### Seed: threads (target ~200, derived from requests)
+
+Distribution:
+- Active requests: 2-5 threads each
+- Closing_soon requests: 1-3 threads each
+- Closed requests: 1-2 threads each
+- serter2069@gmail.com: 5 threads total (3 as client, 2 as specialist writing to other clients)
+
+### Seed: messages (500 target)
+
+Distribution:
+- 2-10 messages per thread (average 5)
+- Mix of client and specialist messages per thread
+- First message always from specialist (thread creator)
+- Timestamps spread over 90 days, increasing within thread
+
+Example messages:
+| sender_role | text (example) |
+|-------------|----------------|
+| specialist | Здравствуйте! Я специалист по камеральным проверкам с опытом 8 лет. Могу помочь с вашей ситуацией. Расскажите подробнее, какие документы запросила инспекция? |
+| client | Добрый день! Спасибо за отклик. Инспекция запросила книгу продаж и счета-фактуры за 3 квартал 2025 года. |
+| specialist | Понял. Это стандартный запрос при камеральной проверке НДС. Вам нужно подготовить ответ в течение 10 рабочих дней. Давайте я помогу составить пояснение. |
+| client | Да, было бы отлично. Сколько времени это займёт? |
+| specialist | Обычно на подготовку ответа уходит 2-3 дня. Пришлите мне сканы запроса и имеющихся документов, я посмотрю. |
+
+serter2069@gmail.com threads have 5-8 messages each, covering both roles.
+
+### Seed: notifications_settings
+
+All 50 users get a notification_settings row with new_messages=true (default).
+
+### Seed: settings (admin-configurable)
+| key | value |
+|-----|-------|
+| max_requests_per_client | 5 |
+| max_threads_per_request | 10 |
+| auto_close_days | 30 |
+| max_extensions | 3 |
+| close_warning_days | 3 |
+| max_file_size_mb | 10 |
+| max_files_per_message | 5 |
+
+### Seed Script Rules
+
+```
+Language: TypeScript (runs via ts-node or tsx)
+Location: api/prisma/seed.ts
+Library: @faker-js/faker with locale 'ru'
+Deterministic: faker.seed(42) — same data every run
+
+Execution order (respecting FK constraints):
+1. Clear all tables (reverse order)
+2. cities (15 rows)
+3. fns_offices (~70 rows)
+4. services (3 rows)
+5. settings (7 rows)
+6. users — admin first (serter2069@gmail.com), then specialists (20), then clients (29)
+7. specialist_profiles (20 rows)
+8. specialist_fns + specialist_services (2-5 FNS per specialist, 1-3 services per FNS)
+9. notification_settings (50 rows)
+10. requests (100 rows, spread across clients, 3 for admin)
+11. files for requests (0-3 per request, ~150 total)
+12. threads (200 rows, 5 for admin)
+13. messages (500 rows, spread across threads)
+14. files for messages (0-2 per message, ~100 total)
+
+Timestamps:
+- User created_at: spread over 90 days ago to now
+- Request created_at: spread over 90 days
+- Message created_at: sequential within thread, spread over thread lifetime
+- CLOSING_SOON requests: last_activity_at = now - 27 days
+- CLOSED requests: last_activity_at = now - 31+ days
+
+Status representation:
+- All 3 request statuses present (ACTIVE, CLOSING_SOON, CLOSED)
+- All roles present (CLIENT, SPECIALIST, ADMIN)
+- 2 banned users (1 client, 1 specialist) — to test ban UI
+- 2 specialists with is_available=false — to test hidden-from-catalog
+- Some requests at extension limit (extensions_count=3)
+- Some requests with 0 threads (new, nobody wrote yet)
+
+Volume targets:
+- users: 50 (1 admin + 20 specialists + 29 clients)
+- specialist_profiles: 20
+- specialist_fns: ~60 (avg 3 per specialist)
+- specialist_services: ~120 (avg 2 per FNS link)
+- requests: 100
+- threads: ~200
+- messages: 500
+- files: ~250
+- notification_settings: 50
+- settings: 7
+- otp_codes: 0 (transient, not seeded)
+- refresh_tokens: 0 (transient, not seeded)
+```
