@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import Head from "expo-router/head";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
@@ -236,8 +237,19 @@ export default function SpecialistPublicProfile() {
     elevation: 3,
   };
 
+  const ogDescription = specialist.profile?.description
+    ? specialist.profile.description.slice(0, 160)
+    : `Специалист по налогам P2P ${cities.length > 0 ? `в ${cities[0]}` : ""}`.trim();
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
+      <Head>
+        <title>{name} — специалист по налогам P2P | P2PTax</title>
+        <meta property="og:title" content={`${name} — специалист по налогам P2P | P2PTax`} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:url" content={`https://p2ptax.ru/specialists/${id}`} />
+        <meta property="og:type" content="profile" />
+      </Head>
       <HeaderBack title="Профиль специалиста" rightAction={rightAction} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <ResponsiveContainer>
