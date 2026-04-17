@@ -16,6 +16,7 @@ import specialistRoutes from "./routes/specialist";
 import threadsRoutes from "./routes/threads";
 import adminRoutes from "./routes/admin";
 import notificationsRoutes from "./routes/notifications";
+import contactsRoutes from "./routes/contacts";
 import { startNotificationWorker } from "./notifications/notification.processor";
 
 const app = express();
@@ -43,6 +44,7 @@ app.use("/api/specialist", specialistRoutes);
 app.use("/api/threads", threadsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api", contactsRoutes);
 
 app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`);

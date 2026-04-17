@@ -57,9 +57,24 @@ model SpecialistProfile {
   officeAddress String? @map("office_address")
   workingHours  String? @map("working_hours")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactMethods ContactMethod[]
 
   @@map("specialist_profiles")
+}
+
+model ContactMethod {
+  id        String   @id @default(uuid())
+  profileId String   @map("profile_id")
+  type      String   // phone | email | telegram | whatsapp | vk | website
+  value     String
+  label     String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  profile SpecialistProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("contact_methods")
 }
 
 model SpecialistFns {
