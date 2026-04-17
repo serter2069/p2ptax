@@ -8,6 +8,13 @@ function param(val: string | string[] | undefined): string {
   return Array.isArray(val) ? val[0] : val || "";
 }
 
+interface FileInput {
+  url: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+}
+
 // GET /api/messages/threads — list threads for current user
 router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -53,7 +60,7 @@ router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/messages/:threadId — get messages in thread
+// GET /api/messages/:threadId — get messages in thread (with file attachments)
 router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -83,22 +90,45 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
       orderBy: { createdAt: "asc" },
     });
 
-    res.json({ messages });
+    // Attach files for each message
+    const messageIds = messages.map((m) => m.id);
+    const files = messageIds.length > 0
+      ? await prisma.file.findMany({
+          where: { entityType: "message", entityId: { in: messageIds } },
+          select: { id: true, entityId: true, url: true, filename: true, size: true, mimeType: true },
+        })
+      : [];
+
+    const filesByMessage: Record<string, typeof files> = {};
+    for (const f of files) {
+      if (!filesByMessage[f.entityId]) filesByMessage[f.entityId] = [];
+      filesByMessage[f.entityId].push(f);
+    }
+
+    const result = messages.map((m) => ({
+      ...m,
+      files: filesByMessage[m.id] || [],
+    }));
+
+    res.json({ messages: result });
   } catch (error) {
     console.error("get messages error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// POST /api/messages/:threadId — send message in thread
+// POST /api/messages/:threadId — send message in thread (with optional file attachments)
 router.post("/:threadId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const threadId = param(req.params.threadId);
-    const { text } = req.body;
+    const { text, files } = req.body as { text?: string; files?: FileInput[] };
 
-    if (!text || typeof text !== "string") {
-      res.status(400).json({ error: "Message text is required" });
+    const trimmedText = typeof text === "string" ? text.trim() : "";
+    const attachedFiles: FileInput[] = Array.isArray(files) ? files.slice(0, 3) : [];
+
+    if (!trimmedText && attachedFiles.length === 0) {
+      res.status(400).json({ error: "Message text or at least one file is required" });
       return;
     }
 
@@ -122,11 +152,13 @@ router.post("/:threadId", authMiddleware, async (req: Request, res: Response) =>
       return;
     }
 
+    const now = new Date();
+
     const message = await prisma.message.create({
       data: {
         threadId,
         senderId: userId,
-        text,
+        text: trimmedText,
       },
       include: {
         sender: {
@@ -135,12 +167,33 @@ router.post("/:threadId", authMiddleware, async (req: Request, res: Response) =>
       },
     });
 
+    // Store file records
+    let savedFiles: { id: string; url: string; filename: string; size: number; mimeType: string }[] = [];
+    if (attachedFiles.length > 0) {
+      const created = await prisma.$transaction(
+        attachedFiles.map((f) =>
+          prisma.file.create({
+            data: {
+              entityType: "message",
+              entityId: message.id,
+              url: f.url,
+              filename: f.filename,
+              size: f.size,
+              mimeType: f.mimeType,
+            },
+            select: { id: true, url: true, filename: true, size: true, mimeType: true },
+          })
+        )
+      );
+      savedFiles = created;
+    }
+
     await prisma.thread.update({
       where: { id: threadId },
-      data: { lastMessageAt: new Date() },
+      data: { lastMessageAt: now },
     });
 
-    res.json({ message });
+    res.json({ message: { ...message, files: savedFiles } });
   } catch (error) {
     console.error("send message error:", error);
     res.status(500).json({ error: "Internal server error" });

@@ -8,14 +8,35 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
+import * as DocumentPicker from "expo-document-picker";
+import * as Linking from "expo-linking";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import HeaderBack from "@/components/HeaderBack";
 import MessageBubble from "@/components/MessageBubble";
+import { Avatar } from "@/components/ui";
 import { api, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
+
+interface FileAttachment {
+  id: string;
+  url: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+}
+
+interface PendingFile {
+  uri: string;
+  name: string;
+  size: number;
+  mimeType: string;
+}
 
 interface MessageSender {
   id: string;
@@ -31,6 +52,14 @@ interface MessageItem {
   text: string;
   createdAt: string;
   sender: MessageSender;
+  files: FileAttachment[];
+}
+
+interface OtherUser {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
 }
 
 interface ThreadInfo {
@@ -39,13 +68,20 @@ interface ThreadInfo {
   clientId: string;
   specialistId: string;
   request: { id: string; title: string; status: string };
-  client: { id: string; firstName: string | null; lastName: string | null };
-  specialist: { id: string; firstName: string | null; lastName: string | null };
+  client: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null };
+  specialist: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null };
+  otherUser: OtherUser;
 }
 
 function displayName(user: { firstName: string | null; lastName: string | null }): string {
   const parts = [user.firstName, user.lastName].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : "Пользователь";
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function ChatThread() {
@@ -56,7 +92,9 @@ export default function ChatThread() {
   const [thread, setThread] = useState<ThreadInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [text, setText] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
@@ -65,11 +103,8 @@ export default function ChatThread() {
   const isClosed = thread?.request?.status === "CLOSED";
   const myId = user?.id;
 
-  const otherUserName = useCallback(() => {
-    if (!thread || !myId) return "Чат";
-    const other = thread.clientId === myId ? thread.specialist : thread.client;
-    return displayName(other);
-  }, [thread, myId]);
+  const otherUser = thread?.otherUser ?? null;
+  const otherName = otherUser ? displayName(otherUser) : "Чат";
 
   const fetchMessages = useCallback(async () => {
     if (!id) return;
@@ -84,10 +119,8 @@ export default function ChatThread() {
   const fetchThread = useCallback(async () => {
     if (!id) return;
     try {
-      // Fetch thread info from threads list filtered by this thread
-      const res = await api<{ items: ThreadInfo[] }>(`/api/threads`);
-      const found = res.items.find((t: ThreadInfo) => t.id === id);
-      if (found) setThread(found);
+      const res = await api<ThreadInfo>(`/api/threads/${id}`);
+      setThread(res);
     } catch (e) {
       console.error("fetch thread error:", e);
     }
@@ -102,21 +135,22 @@ export default function ChatThread() {
     }
   }, [id]);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        await Promise.all([fetchMessages(), fetchThread()]);
-        await markAsRead();
-      } catch {
-        setError("Не удалось загрузить сообщения");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all([fetchMessages(), fetchThread()]);
+      await markAsRead();
+    } catch {
+      setError("Не удалось загрузить сообщения");
+    } finally {
+      setLoading(false);
+    }
   }, [fetchMessages, fetchThread, markAsRead]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Poll for new messages every 5 seconds
   useEffect(() => {
@@ -128,26 +162,100 @@ export default function ChatThread() {
     };
   }, [fetchMessages]);
 
+  const handleAttachFile = useCallback(async () => {
+    if (pendingFiles.length >= 3) {
+      Alert.alert("Лимит файлов", "Можно прикрепить не более 3 файлов");
+      return;
+    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/jpeg", "image/png"],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      const fileSize = asset.size ?? 0;
+      if (fileSize > 10 * 1024 * 1024) {
+        Alert.alert("Файл слишком большой", "Максимальный размер файла — 10 МБ");
+        return;
+      }
+      setPendingFiles((prev) => [
+        ...prev,
+        {
+          uri: asset.uri,
+          name: asset.name,
+          size: fileSize,
+          mimeType: asset.mimeType ?? "application/octet-stream",
+        },
+      ]);
+    } catch (e) {
+      console.error("document picker error:", e);
+    }
+  }, [pendingFiles.length]);
+
+  const handleRemovePendingFile = useCallback((index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const uploadFiles = useCallback(async (files: PendingFile[]): Promise<Array<{ url: string; filename: string; size: number; mimeType: string }>> => {
+    if (files.length === 0) return [];
+    const formData = new FormData();
+    for (const f of files) {
+      formData.append("files", {
+        uri: f.uri,
+        name: f.name,
+        type: f.mimeType,
+      } as unknown as Blob);
+    }
+    const token = await AsyncStorage.getItem("p2ptax_access_token");
+    const res = await fetch(`${API_URL}/api/upload/documents`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Ошибка загрузки файлов");
+    const data = (await res.json()) as { files: Array<{ url: string; filename: string; size: number; mimeType: string }> };
+    return data.files;
+  }, []);
+
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
-    if (!trimmed || sending || !id) return;
+    if ((!trimmed && pendingFiles.length === 0) || sending || !id) return;
     setSending(true);
     try {
+      let uploadedFiles: Array<{ url: string; filename: string; size: number; mimeType: string }> = [];
+      if (pendingFiles.length > 0) {
+        setUploading(true);
+        uploadedFiles = await uploadFiles(pendingFiles);
+        setUploading(false);
+      }
+
       const res = await apiPost<{ message: MessageItem }>(`/api/messages/${id}`, {
         text: trimmed,
+        files: uploadedFiles,
       });
       setMessages((prev) => [...prev, res.message]);
       setText("");
+      setPendingFiles([]);
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (e: unknown) {
+      setUploading(false);
       const msg = e instanceof Error ? e.message : "Ошибка отправки";
-      setError(msg);
+      Alert.alert("Ошибка", msg);
     } finally {
       setSending(false);
     }
-  }, [text, sending, id]);
+  }, [text, pendingFiles, sending, id, uploadFiles]);
+
+  const handleFilePress = useCallback((file: FileAttachment) => {
+    const fullUrl = file.url.startsWith("http") ? file.url : `${API_URL}${file.url}`;
+    Linking.openURL(fullUrl).catch(() => {
+      Alert.alert("Ошибка", "Не удалось открыть файл");
+    });
+  }, []);
 
   const renderMessage = useCallback(
     ({ item }: { item: MessageItem }) => (
@@ -155,15 +263,22 @@ export default function ChatThread() {
         text={item.text}
         createdAt={item.createdAt}
         isOwn={item.senderId === myId}
+        files={item.files}
+        onFilePress={handleFilePress}
       />
     ),
-    [myId]
+    [myId, handleFilePress]
   );
 
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Чат" />
+        <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
+          <Pressable onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+            <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+          </Pressable>
+          <Text className="text-base font-semibold text-slate-900">Чат</Text>
+        </View>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#1e3a8a" />
         </View>
@@ -174,9 +289,21 @@ export default function ChatThread() {
   if (error && messages.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Чат" />
+        <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
+          <Pressable onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+            <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+          </Pressable>
+          <Text className="text-base font-semibold text-slate-900">Чат</Text>
+        </View>
         <View className="flex-1 items-center justify-center px-4">
-          <Text className="text-base text-red-600 text-center">{error}</Text>
+          <FontAwesome name="exclamation-circle" size={40} color="#dc2626" />
+          <Text className="text-base text-red-600 text-center mt-3">{error}</Text>
+          <Pressable
+            onPress={loadData}
+            className="mt-4 px-6 py-3 bg-blue-900 rounded-xl"
+          >
+            <Text className="text-white text-sm font-semibold">Повторить</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -184,7 +311,33 @@ export default function ChatThread() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
-      <HeaderBack title={otherUserName()} />
+      {/* Header with avatar + other party name + request title */}
+      <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
+        <Pressable onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+          <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+        </Pressable>
+        {otherUser ? (
+          <Avatar
+            name={displayName(otherUser)}
+            imageUrl={otherUser.avatarUrl ?? undefined}
+            size="sm"
+          />
+        ) : (
+          <View className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center">
+            <FontAwesome name="user" size={16} color="#94a3b8" />
+          </View>
+        )}
+        <View className="ml-3 flex-1">
+          <Text className="text-base font-semibold text-slate-900" numberOfLines={1}>
+            {otherName}
+          </Text>
+          {thread?.request?.title ? (
+            <Text className="text-xs text-slate-500" numberOfLines={1}>
+              {thread.request.title}
+            </Text>
+          ) : null}
+        </View>
+      </View>
 
       <KeyboardAvoidingView
         className="flex-1"
@@ -203,12 +356,15 @@ export default function ChatThread() {
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-16">
               <FontAwesome name="comments-o" size={48} color="#94a3b8" />
-              <Text className="text-sm text-slate-400 mt-3">Нет сообщений</Text>
+              <Text className="text-base text-slate-500 font-medium mt-4">Начните общение</Text>
+              <Text className="text-sm text-slate-400 mt-1 text-center px-4">
+                Напишите сообщение, чтобы начать диалог
+              </Text>
             </View>
           }
         />
 
-        {/* Closed banner */}
+        {/* Request closed banner */}
         {isClosed && (
           <View className="bg-amber-50 border-t border-amber-200 px-4 py-3">
             <Text className="text-sm text-amber-700 text-center">
@@ -217,14 +373,53 @@ export default function ChatThread() {
           </View>
         )}
 
+        {/* Pending files preview strip */}
+        {pendingFiles.length > 0 && (
+          <View className="flex-row flex-wrap px-3 py-2 border-t border-slate-100 bg-slate-50">
+            {pendingFiles.map((f, i) => (
+              <View
+                key={i}
+                className="flex-row items-center bg-white border border-slate-200 rounded-lg px-2 py-1 mr-2 mb-1"
+              >
+                <FontAwesome name="file-o" size={13} color="#1e3a8a" />
+                <Text className="text-xs text-slate-700 mx-1 max-w-[90px]" numberOfLines={1}>
+                  {f.name}
+                </Text>
+                <Text className="text-xs text-slate-400 mr-1">{formatFileSize(f.size)}</Text>
+                <Pressable
+                  onPress={() => handleRemovePendingFile(i)}
+                  accessibilityLabel={`Удалить файл ${f.name}`}
+                >
+                  <FontAwesome name="times" size={11} color="#94a3b8" />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Input bar */}
         {!isClosed && (
           <View className="flex-row items-end border-t border-slate-200 px-3 py-2 bg-white">
+            {/* Attach button */}
+            <Pressable
+              accessibilityLabel="Прикрепить файл (PDF, JPG, PNG — до 10 МБ, не более 3)"
+              onPress={handleAttachFile}
+              disabled={pendingFiles.length >= 3 || sending}
+              className="w-10 h-10 items-center justify-center mr-1"
+            >
+              <FontAwesome
+                name="paperclip"
+                size={20}
+                color={pendingFiles.length >= 3 ? "#cbd5e1" : "#64748b"}
+              />
+            </Pressable>
+
+            {/* Text input — inline style only (no className on TextInput) */}
             <TextInput
-              accessibilityLabel="Написать сообщение"
+              accessibilityLabel="Введите сообщение"
               value={text}
               onChangeText={setText}
-              placeholder="Написать сообщение..."
+              placeholder="Введите сообщение..."
               placeholderTextColor="#94a3b8"
               multiline
               style={{
@@ -241,19 +436,21 @@ export default function ChatThread() {
                 borderColor: "#e2e8f0",
               }}
             />
+
+            {/* Send button */}
             <Pressable
               accessibilityLabel="Отправить сообщение"
               onPress={handleSend}
-              disabled={!text.trim() || sending}
+              disabled={(!text.trim() && pendingFiles.length === 0) || sending}
               className="w-10 h-10 items-center justify-center ml-2"
             >
-              {sending ? (
+              {sending || uploading ? (
                 <ActivityIndicator size="small" color="#1e3a8a" />
               ) : (
                 <FontAwesome
                   name="send"
                   size={20}
-                  color={text.trim() ? "#1e3a8a" : "#94a3b8"}
+                  color={(text.trim() || pendingFiles.length > 0) ? "#1e3a8a" : "#94a3b8"}
                 />
               )}
             </Pressable>

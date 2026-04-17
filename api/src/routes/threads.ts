@@ -130,6 +130,57 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/threads/:id — get single thread by id (participant only)
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const rawId = req.params.id;
+    const threadId = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    const thread = await prisma.thread.findUnique({
+      where: { id: threadId },
+      include: {
+        request: { select: { id: true, title: true, status: true } },
+        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+      },
+    });
+
+    if (!thread) {
+      res.status(404).json({ error: "Thread not found" });
+      return;
+    }
+
+    if (thread.clientId !== userId && thread.specialistId !== userId) {
+      res.status(403).json({ error: "Not a participant" });
+      return;
+    }
+
+    const isClient = thread.clientId === userId;
+    const otherUser = isClient ? thread.specialist : thread.client;
+
+    res.json({
+      id: thread.id,
+      requestId: thread.requestId,
+      clientId: thread.clientId,
+      specialistId: thread.specialistId,
+      request: thread.request,
+      client: thread.client,
+      specialist: thread.specialist,
+      otherUser: {
+        id: otherUser.id,
+        firstName: otherUser.firstName,
+        lastName: otherUser.lastName,
+        avatarUrl: otherUser.avatarUrl,
+      },
+      createdAt: thread.createdAt,
+    });
+  } catch (error) {
+    console.error("threads get error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/threads — create thread with first message (specialist only)
 router.post("/", async (req: Request, res: Response) => {
   try {
