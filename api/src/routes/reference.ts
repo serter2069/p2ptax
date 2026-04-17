@@ -3,14 +3,20 @@ import { prisma } from "../lib/prisma";
 
 const router = Router();
 
-// GET /api/cities
+// GET /api/cities — list all cities with FNS offices
 router.get("/cities", async (_req: Request, res: Response) => {
   try {
     const cities = await prisma.city.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      include: {
+        fnsOffices: {
+          orderBy: { name: "asc" },
+          select: { id: true, name: true, code: true },
+        },
+      },
     });
-    res.json({ cities });
+
+    res.json({ items: cities });
   } catch (error) {
     console.error("cities error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -39,14 +45,14 @@ router.get("/fns", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/services
+// GET /api/services — list all services
 router.get("/services", async (_req: Request, res: Response) => {
   try {
     const services = await prisma.service.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
     });
-    res.json({ services });
+
+    res.json({ items: services });
   } catch (error) {
     console.error("services error:", error);
     res.status(500).json({ error: "Internal server error" });

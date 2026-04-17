@@ -7,6 +7,8 @@ import authRoutes from "./routes/auth";
 import uploadRoutes from "./routes/upload";
 import messagesRoutes from "./routes/messages";
 import onboardingRoutes from "./routes/onboarding";
+import specialistsRoutes from "./routes/specialists";
+import requestsRoutes from "./routes/requests";
 import referenceRoutes from "./routes/reference";
 
 const app = express();
@@ -25,6 +27,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api/onboarding", onboardingRoutes);
+app.use("/api/specialists", specialistsRoutes);
+app.use("/api/requests", requestsRoutes);
 app.use("/api", referenceRoutes);
 
 app.listen(PORT, () => {

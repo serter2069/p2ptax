@@ -27,6 +27,12 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding/work-area" />
         <Stack.Screen name="onboarding/profile" />
 
+        {/* Public screens */}
+        <Stack.Screen name="requests/index" />
+        <Stack.Screen name="requests/[id]" />
+        <Stack.Screen name="specialists/index" />
+        <Stack.Screen name="specialists/[id]" />
+
         {/* Shared screens */}
         <Stack.Screen name="settings" />
         <Stack.Screen name="notifications" />
