@@ -5,6 +5,7 @@ import {
   generateRefreshToken,
   generateOtpCode,
 } from "../lib/jwt";
+import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
 
@@ -29,7 +30,10 @@ router.post("/request-otp", async (req: Request, res: Response) => {
     // In dev: code is always 000000
     console.log(`[DEV] OTP for ${email}: ${code}`);
 
-    res.json({ message: "OTP sent", dev_code: process.env.NODE_ENV === "development" ? code : undefined });
+    res.json({
+      message: "OTP sent",
+      dev_code: process.env.NODE_ENV === "development" ? code : undefined,
+    });
   } catch (error) {
     console.error("request-otp error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -150,6 +154,33 @@ router.post("/refresh", async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("refresh error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/auth/me
+router.get("/me", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatar: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error("me error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

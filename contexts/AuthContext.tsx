@@ -1,37 +1,157 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+
+const TOKEN_KEY = "etalon_access_token";
+const REFRESH_KEY = "etalon_refresh_token";
+
+interface UserData {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar: string | null;
+  role: string;
+}
 
 interface AuthContextType {
   token: string | null;
+  user: UserData | null;
   isAuthenticated: boolean;
-  signIn: (token: string) => void;
-  signOut: () => void;
+  isLoading: boolean;
+  signIn: (accessToken: string, refreshToken: string, user: UserData) => Promise<void>;
+  signOut: () => Promise<void>;
+  refreshAuth: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   token: null,
+  user: null,
   isAuthenticated: false,
-  signIn: () => {},
-  signOut: () => {},
+  isLoading: true,
+  signIn: async () => {},
+  signOut: async () => {},
+  refreshAuth: async () => false,
 });
+
+async function storeTokens(accessToken: string, refreshToken: string) {
+  await AsyncStorage.setItem(TOKEN_KEY, accessToken);
+  await AsyncStorage.setItem(REFRESH_KEY, refreshToken);
+}
+
+async function clearTokens() {
+  await AsyncStorage.removeItem(TOKEN_KEY);
+  await AsyncStorage.removeItem(REFRESH_KEY);
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const signIn = useCallback((newToken: string) => {
-    setToken(newToken);
+  const refreshAuth = useCallback(async (): Promise<boolean> => {
+    try {
+      const refreshToken = await AsyncStorage.getItem(REFRESH_KEY);
+      if (!refreshToken) return false;
+
+      const res = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!res.ok) {
+        await clearTokens();
+        setToken(null);
+        setUser(null);
+        return false;
+      }
+
+      const data = await res.json();
+      await storeTokens(data.accessToken, data.refreshToken);
+      setToken(data.accessToken);
+      return true;
+    } catch {
+      return false;
+    }
   }, []);
 
-  const signOut = useCallback(() => {
+  // Load stored token on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+        if (storedToken) {
+          setToken(storedToken);
+          // Try to get user data
+          try {
+            const res = await fetch(`${API_URL}/api/auth/me`, {
+              headers: { Authorization: `Bearer ${storedToken}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              setUser(data.user);
+            } else {
+              // Token expired, try refresh
+              const refreshed = await refreshAuth();
+              if (!refreshed) {
+                await clearTokens();
+                setToken(null);
+              }
+            }
+          } catch {
+            // Backend unavailable, keep token for offline
+          }
+        }
+      } catch {
+        // Storage error
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [refreshAuth]);
+
+  // Proactive refresh every 12 minutes
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(() => {
+      refreshAuth();
+    }, 12 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [token, refreshAuth]);
+
+  const signIn = useCallback(
+    async (accessToken: string, refreshToken: string, userData: UserData) => {
+      await storeTokens(accessToken, refreshToken);
+      setToken(accessToken);
+      setUser(userData);
+    },
+    []
+  );
+
+  const signOut = useCallback(async () => {
+    await clearTokens();
     setToken(null);
+    setUser(null);
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
         token,
+        user,
         isAuthenticated: !!token,
+        isLoading,
         signIn,
         signOut,
+        refreshAuth,
       }}
     >
       {children}

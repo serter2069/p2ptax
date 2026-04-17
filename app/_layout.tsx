@@ -9,6 +9,10 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="listing/[id]" options={{ headerShown: true, headerTitle: "" }} />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="legal/privacy" />
+        <Stack.Screen name="legal/terms" />
       </Stack>
     </AuthProvider>
   );
