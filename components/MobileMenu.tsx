@@ -4,10 +4,10 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useAuth } from "@/contexts/AuthContext";
 
 const MENU_ITEMS: { label: string; route: string; icon: React.ComponentProps<typeof FontAwesome>["name"] }[] = [
-  { label: "Home", route: "/", icon: "home" },
-  { label: "Requests", route: "/requests", icon: "file-text-o" },
-  { label: "Specialists", route: "/specialists", icon: "users" },
-  { label: "Settings", route: "/settings", icon: "cog" },
+  { label: "Главная", route: "/", icon: "home" },
+  { label: "Заявки", route: "/requests", icon: "file-text-o" },
+  { label: "Специалисты", route: "/specialists", icon: "users" },
+  { label: "Настройки", route: "/settings", icon: "cog" },
 ];
 
 interface MobileMenuProps {
@@ -21,7 +21,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
 
   const displayName = user?.firstName
     ? `${user.firstName} ${user.lastName || ""}`.trim()
-    : "User";
+    : "Профиль";
   const initials = user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
 
   const handleNavigate = (route: string) => {
@@ -43,19 +43,19 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           <View className="pt-14 pb-6 px-5 bg-blue-900">
             {isAuthenticated ? (
               <>
-                <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mb-3">
-                  <Text className="text-2xl font-bold text-white">{initials}</Text>
+                <View className="w-14 h-14 rounded-full bg-slate-50 items-center justify-center mb-3">
+                  <Text className="text-2xl font-bold text-blue-900">{initials}</Text>
                 </View>
                 <Text className="text-lg font-bold text-white">{displayName}</Text>
-                <Text className="text-sm text-blue-100 mt-0.5">{user?.email}</Text>
+                <Text className="text-sm text-slate-50 mt-0.5">{user?.email}</Text>
               </>
             ) : (
               <>
-                <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mb-3">
-                  <FontAwesome name="user" size={24} color="#ffffff" />
+                <View className="w-14 h-14 rounded-full bg-slate-50 items-center justify-center mb-3">
+                  <FontAwesome name="user" size={24} color="#1e3a8a" />
                 </View>
-                <Text className="text-lg font-bold text-white">Guest</Text>
-                <Text className="text-sm text-blue-100 mt-0.5">Sign in to continue</Text>
+                <Text className="text-lg font-bold text-white">Гость</Text>
+                <Text className="text-sm text-slate-50 mt-0.5">Войдите для продолжения</Text>
               </>
             )}
           </View>
@@ -86,14 +86,14 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
             {isAuthenticated ? (
               <Pressable onPress={handleLogout} className="flex-row items-center py-3">
                 <FontAwesome name="sign-out" size={18} color="#dc2626" />
-                <Text className="text-base font-medium text-red-600 ml-3">Sign Out</Text>
+                <Text className="text-base font-medium text-red-600 ml-3">Выйти</Text>
               </Pressable>
             ) : (
               <Pressable
                 onPress={() => handleNavigate("/auth/email")}
                 className="h-12 rounded-xl bg-blue-900 items-center justify-center"
               >
-                <Text className="text-base font-semibold text-white">Sign In</Text>
+                <Text className="text-base font-semibold text-white">Войти</Text>
               </Pressable>
             )}
           </View>

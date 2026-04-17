@@ -91,7 +91,7 @@ export default function LandingScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#1e3a5f" />
+        <ActivityIndicator size="large" color="#1e3a8a" />
       </SafeAreaView>
     );
   }
@@ -237,7 +237,7 @@ export default function LandingScreen() {
               onPress={() => router.push("/requests" as never)}
               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-3 items-center"
             >
-              <FontAwesome name="list" size={18} color="#1e3a5f" />
+              <FontAwesome name="list" size={18} color="#1e3a8a" />
               <Text className="text-sm font-medium text-slate-900 mt-1">
                 Все заявки
               </Text>
@@ -246,7 +246,7 @@ export default function LandingScreen() {
               onPress={() => router.push("/specialists" as never)}
               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-3 items-center"
             >
-              <FontAwesome name="users" size={18} color="#1e3a5f" />
+              <FontAwesome name="users" size={18} color="#1e3a8a" />
               <Text className="text-sm font-medium text-slate-900 mt-1">
                 Все специалисты
               </Text>
