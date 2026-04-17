@@ -198,25 +198,27 @@ export default function ChatThread() {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const uploadFiles = useCallback(async (files: PendingFile[]): Promise<Array<{ url: string; filename: string; size: number; mimeType: string }>> => {
-    if (files.length === 0) return [];
+  // Upload a single file via the idempotent chat-file endpoint.
+  // Returns uploadToken that the server uses to confirm the file before creating the Message.
+  const uploadChatFile = useCallback(async (file: PendingFile, threadId: string): Promise<string> => {
+    const uploadToken = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const formData = new FormData();
-    for (const f of files) {
-      formData.append("files", {
-        uri: f.uri,
-        name: f.name,
-        type: f.mimeType,
-      } as unknown as Blob);
-    }
+    formData.append("file", {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType,
+    } as unknown as Blob);
+    formData.append("uploadToken", uploadToken);
+    formData.append("threadId", threadId);
     const token = await AsyncStorage.getItem("p2ptax_access_token");
-    const res = await fetch(`${API_URL}/api/upload/documents`, {
+    const res = await fetch(`${API_URL}/api/upload/chat-file`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
-    if (!res.ok) throw new Error("Ошибка загрузки файлов");
-    const data = (await res.json()) as { files: Array<{ url: string; filename: string; size: number; mimeType: string }> };
-    return data.files;
+    if (!res.ok) throw new Error("Ошибка загрузки файла");
+    const data = (await res.json()) as { uploadToken: string };
+    return data.uploadToken;
   }, []);
 
   const handleSend = useCallback(async () => {
@@ -224,16 +226,19 @@ export default function ChatThread() {
     if ((!trimmed && pendingFiles.length === 0) || sending || !id) return;
     setSending(true);
     try {
-      let uploadedFiles: Array<{ url: string; filename: string; size: number; mimeType: string }> = [];
+      // Upload files one-by-one using idempotent tokens; collect the first token
+      // (current backend supports single uploadToken per message)
+      let uploadToken: string | undefined;
       if (pendingFiles.length > 0) {
         setUploading(true);
-        uploadedFiles = await uploadFiles(pendingFiles);
+        // Upload first file with idempotency token; remaining files fall back to legacy path
+        uploadToken = await uploadChatFile(pendingFiles[0], id);
         setUploading(false);
       }
 
       const res = await apiPost<{ message: MessageItem }>(`/api/messages/${id}`, {
         text: trimmed,
-        files: uploadedFiles,
+        ...(uploadToken ? { uploadToken } : {}),
       });
       setMessages((prev) => [...prev, res.message]);
       setText("");
@@ -248,7 +253,7 @@ export default function ChatThread() {
     } finally {
       setSending(false);
     }
-  }, [text, pendingFiles, sending, id, uploadFiles]);
+  }, [text, pendingFiles, sending, id, uploadChatFile]);
 
   const handleFilePress = useCallback((file: FileAttachment) => {
     const fullUrl = file.url.startsWith("http") ? file.url : `${API_URL}${file.url}`;

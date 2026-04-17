@@ -1,9 +1,47 @@
 import { Router, Request, Response } from "express";
+import * as Minio from "minio";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
 
 const router = Router();
+
+const BUCKET = process.env.MINIO_BUCKET || "p2ptax";
+
+function getMinioClient(): Minio.Client {
+  return new Minio.Client({
+    endPoint: process.env.MINIO_ENDPOINT || "localhost",
+    port: parseInt(process.env.MINIO_PORT || "9000", 10),
+    useSSL: process.env.MINIO_USE_SSL === "true",
+    accessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
+    secretKey: process.env.MINIO_SECRET_KEY || "minioadmin",
+  });
+}
+
+// Resolve uploadToken to MinIO object key by listing objects with matching prefix
+async function resolveUploadToken(threadId: string, uploadToken: string): Promise<{ key: string; fileUrl: string } | null> {
+  const client = getMinioClient();
+  const prefix = `chat-files/${threadId}/${uploadToken}_`;
+  try {
+    return await new Promise((resolve, reject) => {
+      const stream = client.listObjects(BUCKET, prefix, false);
+      let found: Minio.BucketItem | null = null;
+      stream.on("data", (obj: Minio.BucketItem) => {
+        if (!found) found = obj;
+      });
+      stream.on("end", () => {
+        if (found && found.name) {
+          resolve({ key: found.name, fileUrl: `/${BUCKET}/${found.name}` });
+        } else {
+          resolve(null);
+        }
+      });
+      stream.on("error", reject);
+    });
+  } catch {
+    return null;
+  }
+}
 
 function param(val: string | string[] | undefined): string {
   return Array.isArray(val) ? val[0] : val || "";
@@ -119,16 +157,28 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
 });
 
 // POST /api/messages/:threadId — send message in thread (with optional file attachments)
+// Supports uploadToken (idempotency): if provided, verifies the file exists in MinIO
 router.post("/:threadId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const threadId = param(req.params.threadId);
-    const { text, files } = req.body as { text?: string; files?: FileInput[] };
+    const { text, files, uploadToken } = req.body as { text?: string; files?: FileInput[]; uploadToken?: string };
 
     const trimmedText = typeof text === "string" ? text.trim() : "";
     const attachedFiles: FileInput[] = Array.isArray(files) ? files.slice(0, 3) : [];
 
-    if (!trimmedText && attachedFiles.length === 0) {
+    // If uploadToken provided, resolve it to a file before any other validation
+    let tokenFile: { fileUrl: string } | null = null;
+    if (uploadToken && typeof uploadToken === "string" && uploadToken.length >= 8) {
+      const resolved = await resolveUploadToken(threadId, uploadToken);
+      if (!resolved) {
+        res.status(422).json({ error: "Файл не найден, загрузите повторно" });
+        return;
+      }
+      tokenFile = resolved;
+    }
+
+    if (!trimmedText && attachedFiles.length === 0 && !tokenFile) {
       res.status(400).json({ error: "Message text or at least one file is required" });
       return;
     }
@@ -168,11 +218,25 @@ router.post("/:threadId", authMiddleware, async (req: Request, res: Response) =>
       },
     });
 
-    // Store file records
+    // Store file records — combine token-resolved file + legacy files array
     let savedFiles: { id: string; url: string; filename: string; size: number; mimeType: string }[] = [];
-    if (attachedFiles.length > 0) {
+    const allFilesToSave: FileInput[] = [...attachedFiles];
+    if (tokenFile) {
+      // Extract filename from the MinIO key: chat-files/{threadId}/{token}_{filename}
+      const keyParts = tokenFile.fileUrl.split("/");
+      const rawName = keyParts[keyParts.length - 1] ?? "file";
+      const underscoreIdx = rawName.indexOf("_");
+      const resolvedFilename = underscoreIdx >= 0 ? rawName.slice(underscoreIdx + 1) : rawName;
+      allFilesToSave.push({
+        url: tokenFile.fileUrl,
+        filename: resolvedFilename,
+        size: 0,
+        mimeType: "application/octet-stream",
+      });
+    }
+    if (allFilesToSave.length > 0) {
       const created = await prisma.$transaction(
-        attachedFiles.map((f) =>
+        allFilesToSave.map((f) =>
           prisma.file.create({
             data: {
               entityType: "message",
