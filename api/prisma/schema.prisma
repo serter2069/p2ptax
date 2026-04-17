@@ -93,6 +93,7 @@ model SpecialistService {
 model City {
   id   String @id @default(uuid())
   name String
+  slug String @unique
 
   fnsOffices FnsOffice[]
   requests   Request[]
@@ -101,10 +102,12 @@ model City {
 }
 
 model FnsOffice {
-  id     String @id @default(uuid())
-  cityId String @map("city_id")
-  name   String
-  code   String
+  id             String  @id @default(uuid())
+  cityId         String  @map("city_id")
+  name           String
+  code           String  @unique
+  address        String?
+  searchAliases  String? @map("search_aliases")
 
   city               City              @relation(fields: [cityId], references: [id], onDelete: Cascade)
   specialistFns      SpecialistFns[]
@@ -116,7 +119,7 @@ model FnsOffice {
 
 model Service {
   id   String @id @default(uuid())
-  name String
+  name String @unique
 
   specialistServices SpecialistService[]
 
