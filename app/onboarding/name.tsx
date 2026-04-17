@@ -16,8 +16,20 @@ export default function OnboardingNameScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const firstNameValid = firstName.trim().length >= 2 && firstName.trim().length <= 50;
-  const lastNameValid = lastName.trim().length >= 2 && lastName.trim().length <= 50;
+  const firstNameTrimmed = firstName.trim();
+  const lastNameTrimmed = lastName.trim();
+  const firstNameError = firstNameTrimmed.length > 0 && firstNameTrimmed.length < 2
+    ? "Минимум 2 символа"
+    : firstNameTrimmed.length > 50
+      ? "Максимум 50 символов"
+      : "";
+  const lastNameError = lastNameTrimmed.length > 0 && lastNameTrimmed.length < 2
+    ? "Минимум 2 символа"
+    : lastNameTrimmed.length > 50
+      ? "Максимум 50 символов"
+      : "";
+  const firstNameValid = firstNameTrimmed.length >= 2 && firstNameTrimmed.length <= 50;
+  const lastNameValid = lastNameTrimmed.length >= 2 && lastNameTrimmed.length <= 50;
   const canProceed = firstNameValid && lastNameValid && agreed;
 
   const handleNext = async () => {
@@ -30,7 +42,7 @@ export default function OnboardingNameScreen() {
         user: { id: string; email: string; role: string; firstName: string; lastName: string };
       }>("/api/onboarding/name", {
         method: "PUT",
-        body: { firstName: firstName.trim(), lastName: lastName.trim() },
+        body: { firstName: firstNameTrimmed, lastName: lastNameTrimmed },
       });
 
       updateUser({
@@ -68,7 +80,7 @@ export default function OnboardingNameScreen() {
               borderRadius: 12,
               backgroundColor: "#f8fafc",
               borderWidth: 1,
-              borderColor: firstName.length > 0 && !firstNameValid ? "#dc2626" : "#e2e8f0",
+              borderColor: firstNameError ? "#dc2626" : "#e2e8f0",
               paddingHorizontal: 16,
               fontSize: 16,
               color: "#0f172a",
@@ -81,8 +93,8 @@ export default function OnboardingNameScreen() {
             editable={!isLoading}
             autoCapitalize="words"
           />
-          {firstName.length > 0 && !firstNameValid ? (
-            <Text className="text-xs text-red-600 mb-3">От 2 до 50 символов</Text>
+          {firstNameError ? (
+            <Text className="text-xs text-red-600 mb-3">{firstNameError}</Text>
           ) : (
             <View className="mb-3" />
           )}
@@ -95,7 +107,7 @@ export default function OnboardingNameScreen() {
               borderRadius: 12,
               backgroundColor: "#f8fafc",
               borderWidth: 1,
-              borderColor: lastName.length > 0 && !lastNameValid ? "#dc2626" : "#e2e8f0",
+              borderColor: lastNameError ? "#dc2626" : "#e2e8f0",
               paddingHorizontal: 16,
               fontSize: 16,
               color: "#0f172a",
@@ -108,8 +120,8 @@ export default function OnboardingNameScreen() {
             editable={!isLoading}
             autoCapitalize="words"
           />
-          {lastName.length > 0 && !lastNameValid ? (
-            <Text className="text-xs text-red-600 mb-4">От 2 до 50 символов</Text>
+          {lastNameError ? (
+            <Text className="text-xs text-red-600 mb-4">{lastNameError}</Text>
           ) : (
             <View className="mb-4" />
           )}
@@ -132,12 +144,12 @@ export default function OnboardingNameScreen() {
               )}
             </View>
             <Text className="flex-1 ml-3 text-sm text-slate-500 leading-5">
-              Принимаю{" "}
+              Я принимаю{" "}
               <Text
                 className="text-blue-900 underline"
                 onPress={() => router.push("/legal/terms" as never)}
               >
-                условия использования
+                Условия использования
               </Text>
             </Text>
           </Pressable>
