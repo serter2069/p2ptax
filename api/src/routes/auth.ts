@@ -19,21 +19,33 @@ router.post("/request-otp", async (req: Request, res: Response) => {
       return;
     }
 
+    // Find or create user (no role yet — assigned during onboarding)
+    let user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: { email: email.toLowerCase() },
+      });
+    }
+
+    if (user.isBanned) {
+      res.status(403).json({ error: "Account blocked" });
+      return;
+    }
+
     const code = generateOtpCode();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     await prisma.otpCode.create({
       data: { email: email.toLowerCase(), code, expiresAt },
     });
 
     // In production: send email via nodemailer
-    // In dev: code is always 000000
     console.log(`[DEV] OTP for ${email}: ${code}`);
 
-    res.json({
-      message: "OTP sent",
-      dev_code: process.env.NODE_ENV === "development" ? code : undefined,
-    });
+    res.json({ success: true });
   } catch (error) {
     console.error("request-otp error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -71,15 +83,14 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
       data: { used: true },
     });
 
-    // Find or create user
-    let user = await prisma.user.findUnique({
+    // Find user (created in request-otp)
+    const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: { email: email.toLowerCase() },
-      });
+      res.status(400).json({ error: "User not found" });
+      return;
     }
 
     // Generate tokens
@@ -100,9 +111,9 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
-        avatar: user.avatar,
         role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
       },
     });
   } catch (error) {
@@ -127,6 +138,9 @@ router.post("/refresh", async (req: Request, res: Response) => {
     });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
+      if (storedToken) {
+        await prisma.refreshToken.delete({ where: { id: storedToken.id } });
+      }
       res.status(401).json({ error: "Invalid or expired refresh token" });
       return;
     }
@@ -151,9 +165,34 @@ router.post("/refresh", async (req: Request, res: Response) => {
     res.json({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
+      user: {
+        id: storedToken.user.id,
+        email: storedToken.user.email,
+        role: storedToken.user.role,
+        firstName: storedToken.user.firstName,
+        lastName: storedToken.user.lastName,
+      },
     });
   } catch (error) {
     console.error("refresh error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/auth/logout
+router.post("/logout", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (refreshToken) {
+      await prisma.refreshToken.deleteMany({
+        where: { token: refreshToken, userId: req.user!.userId },
+      });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("logout error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -166,9 +205,11 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       select: {
         id: true,
         email: true,
-        name: true,
-        avatar: true,
         role: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        isAvailable: true,
         createdAt: true,
       },
     });

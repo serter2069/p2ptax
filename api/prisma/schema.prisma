@@ -7,71 +7,216 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  avatar    String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  refreshTokens  RefreshToken[]
-  conversations  ConversationParticipant[]
-  sentMessages   Message[]
+enum Role {
+  CLIENT
+  SPECIALIST
+  ADMIN
 }
 
-enum Role {
-  USER
-  ADMIN
+enum RequestStatus {
+  ACTIVE
+  CLOSING_SOON
+  CLOSED
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  role        Role?
+  firstName   String?  @map("first_name")
+  lastName    String?  @map("last_name")
+  avatarUrl   String?  @map("avatar_url")
+  isAvailable Boolean  @default(false) @map("is_available")
+  isBanned    Boolean  @default(false) @map("is_banned")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  specialistProfile  SpecialistProfile?
+  specialistFns      SpecialistFns[]
+  specialistServices SpecialistService[]
+  requests           Request[]
+  clientThreads      Thread[]  @relation("ClientThreads")
+  specialistThreads  Thread[]  @relation("SpecialistThreads")
+  messages           Message[]
+  refreshTokens      RefreshToken[]
+
+  @@map("users")
+}
+
+model SpecialistProfile {
+  id            String  @id @default(uuid())
+  userId        String  @unique @map("user_id")
+  description   String?
+  phone         String?
+  telegram      String?
+  whatsapp      String?
+  officeAddress String? @map("office_address")
+  workingHours  String? @map("working_hours")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("specialist_profiles")
+}
+
+model SpecialistFns {
+  id           String @id @default(uuid())
+  specialistId String @map("specialist_id")
+  fnsId        String @map("fns_id")
+
+  specialist User      @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  fns        FnsOffice @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+
+  services SpecialistService[]
+
+  @@unique([specialistId, fnsId])
+  @@map("specialist_fns")
+}
+
+model SpecialistService {
+  id              String @id @default(uuid())
+  specialistId    String @map("specialist_id")
+  fnsId           String @map("fns_id")
+  serviceId       String @map("service_id")
+  specialistFnsId String @map("specialist_fns_id")
+
+  specialist    User          @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  fns           FnsOffice     @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  specialistFns SpecialistFns @relation(fields: [specialistFnsId], references: [id], onDelete: Cascade)
+
+  @@unique([specialistId, fnsId, serviceId])
+  @@map("specialist_services")
+}
+
+model City {
+  id   String @id @default(uuid())
+  name String
+
+  fnsOffices FnsOffice[]
+  requests   Request[]
+
+  @@map("cities")
+}
+
+model FnsOffice {
+  id     String @id @default(uuid())
+  cityId String @map("city_id")
+  name   String
+  code   String
+
+  city               City              @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  specialistFns      SpecialistFns[]
+  specialistServices SpecialistService[]
+  requests           Request[]
+
+  @@map("fns_offices")
+}
+
+model Service {
+  id   String @id @default(uuid())
+  name String
+
+  specialistServices SpecialistService[]
+
+  @@map("services")
+}
+
+model Request {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  title           String
+  cityId          String        @map("city_id")
+  fnsId           String        @map("fns_id")
+  description     String
+  status          RequestStatus @default(ACTIVE)
+  lastActivityAt  DateTime      @default(now()) @map("last_activity_at")
+  extensionsCount Int           @default(0) @map("extensions_count")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city    City      @relation(fields: [cityId], references: [id])
+  fns     FnsOffice @relation(fields: [fnsId], references: [id])
+  threads Thread[]
+  files   File[]
+
+  @@map("requests")
+}
+
+model Thread {
+  id                   String    @id @default(uuid())
+  requestId            String    @map("request_id")
+  clientId             String    @map("client_id")
+  specialistId         String    @map("specialist_id")
+  lastMessageAt        DateTime? @map("last_message_at")
+  clientLastReadAt     DateTime? @map("client_last_read_at")
+  specialistLastReadAt DateTime? @map("specialist_last_read_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  request    Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  client     User      @relation("ClientThreads", fields: [clientId], references: [id])
+  specialist User      @relation("SpecialistThreads", fields: [specialistId], references: [id])
+  messages   Message[]
+
+  @@unique([requestId, specialistId])
+  @@map("threads")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  threadId  String   @map("thread_id")
+  senderId  String   @map("sender_id")
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender User   @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model File {
+  id         String   @id @default(uuid())
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  url        String
+  filename   String
+  size       Int
+  mimeType   String   @map("mime_type")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Optional FK to request (for request attachments)
+  requestId String?  @map("request_id")
+  request   Request? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  @@map("files")
+}
+
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
 }
 
 model OtpCode {
   id        String   @id @default(uuid())
   email     String
   code      String
-  expiresAt DateTime
+  expiresAt DateTime @map("expires_at")
   used      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("otp_codes")
 }
 
 model RefreshToken {
   id        String   @id @default(uuid())
-  userId    String
+  userId    String   @map("user_id")
   token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
 
-model Conversation {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  participants ConversationParticipant[]
-  messages     Message[]
-}
-
-model ConversationParticipant {
-  id             String @id @default(uuid())
-  conversationId String
-  userId         String
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, userId])
-}
-
-model Message {
-  id             String   @id @default(uuid())
-  conversationId String
-  senderId       String
-  content        String
-  createdAt      DateTime @default(now())
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  @@map("refresh_tokens")
 }

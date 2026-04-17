@@ -5,20 +5,23 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
-import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
-const TOKEN_KEY = "etalon_access_token";
-const REFRESH_KEY = "etalon_refresh_token";
+const TOKEN_KEY = "p2ptax_access_token";
+const REFRESH_KEY = "p2ptax_refresh_token";
 
-interface UserData {
+export type UserRole = "CLIENT" | "SPECIALIST" | "ADMIN" | null;
+
+export interface UserData {
   id: string;
   email: string;
-  name: string | null;
-  avatar: string | null;
-  role: string;
+  role: UserRole;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl?: string | null;
+  isAvailable?: boolean;
 }
 
 interface AuthContextType {
@@ -29,6 +32,7 @@ interface AuthContextType {
   signIn: (accessToken: string, refreshToken: string, user: UserData) => Promise<void>;
   signOut: () => Promise<void>;
   refreshAuth: () => Promise<boolean>;
+  updateUser: (data: Partial<UserData>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -39,6 +43,7 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => {},
   signOut: async () => {},
   refreshAuth: async () => false,
+  updateUser: () => {},
 });
 
 async function storeTokens(accessToken: string, refreshToken: string) {
@@ -77,6 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       await storeTokens(data.accessToken, data.refreshToken);
       setToken(data.accessToken);
+      if (data.user) {
+        setUser(data.user);
+      }
       return true;
     } catch {
       return false;
@@ -90,7 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
         if (storedToken) {
           setToken(storedToken);
-          // Try to get user data
           try {
             const res = await fetch(`${API_URL}/api/auth/me`, {
               headers: { Authorization: `Bearer ${storedToken}` },
@@ -99,7 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const data = await res.json();
               setUser(data.user);
             } else {
-              // Token expired, try refresh
               const refreshed = await refreshAuth();
               if (!refreshed) {
                 await clearTokens();
@@ -137,9 +143,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    await clearTokens();
-    setToken(null);
-    setUser(null);
+    try {
+      const refreshToken = await AsyncStorage.getItem(REFRESH_KEY);
+      if (token) {
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ refreshToken }),
+        }).catch(() => {});
+      }
+    } finally {
+      await clearTokens();
+      setToken(null);
+      setUser(null);
+    }
+  }, [token]);
+
+  const updateUser = useCallback((data: Partial<UserData>) => {
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
   }, []);
 
   return (
@@ -152,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signOut,
         refreshAuth,
+        updateUser,
       }}
     >
       {children}
