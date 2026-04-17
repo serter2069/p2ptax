@@ -23,10 +23,15 @@ router.get("/", async (req: Request, res: Response) => {
 
     const isSpecialist = user.role === "SPECIALIST";
 
+    const requestIdFilter = req.query.request_id as string | undefined;
+
     const threads = await prisma.thread.findMany({
-      where: isSpecialist
-        ? { specialistId: userId }
-        : { clientId: userId },
+      where: {
+        ...(isSpecialist
+          ? { specialistId: userId }
+          : { clientId: userId }),
+        ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
+      },
       orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
       include: {
         request: {

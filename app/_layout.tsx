@@ -36,6 +36,9 @@ export default function RootLayout() {
         <Stack.Screen name="specialists/index" />
         <Stack.Screen name="specialists/[id]" />
 
+        {/* Chat */}
+        <Stack.Screen name="threads/[id]" />
+
         {/* Specialist flow */}
         <Stack.Screen name="requests/[id]/write" />
         <Stack.Screen name="settings" />
