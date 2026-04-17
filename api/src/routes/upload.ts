@@ -118,6 +118,64 @@ router.post("/documents", authMiddleware, documentUpload.array("files", 5), asyn
   }
 });
 
+// POST /api/upload/chat-file — upload a single chat attachment with idempotency token
+// Body (multipart): file + uploadToken (UUID) + threadId
+const chatFileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["application/pdf", "image/jpeg", "image/png"];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only pdf, jpg, png allowed for chat files"));
+    }
+  },
+});
+
+router.post("/chat-file", authMiddleware, chatFileUpload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: "No file provided" });
+      return;
+    }
+
+    const { uploadToken, threadId } = req.body as { uploadToken?: string; threadId?: string };
+
+    if (!uploadToken || typeof uploadToken !== "string" || uploadToken.length < 8) {
+      res.status(400).json({ error: "uploadToken is required" });
+      return;
+    }
+
+    if (!threadId || typeof threadId !== "string") {
+      res.status(400).json({ error: "threadId is required" });
+      return;
+    }
+
+    const client = getMinioClient();
+    await ensureBucket(client);
+
+    // Sanitize filename: replace unsafe chars, preserve extension
+    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const key = `chat-files/${threadId}/${uploadToken}_${safeName}`;
+
+    await client.putObject(BUCKET, key, req.file.buffer, req.file.size, {
+      "Content-Type": req.file.mimetype,
+    });
+
+    res.json({
+      uploadToken,
+      fileUrl: `/${BUCKET}/${key}`,
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+    });
+  } catch (error) {
+    console.error("chat-file upload error:", error);
+    res.status(500).json({ error: "Upload failed" });
+  }
+});
+
 // GET /api/upload/signed-url/:key — get signed URL
 router.get("/signed-url/:key(*)", async (req: Request, res: Response) => {
   try {
