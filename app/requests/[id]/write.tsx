@@ -29,7 +29,7 @@ interface RateLimitInfo {
   limit: number;
 }
 
-const MAX_CHARS = 1000;
+const MAX_CHARS = 2000;
 const MIN_CHARS = 10;
 const DAILY_LIMIT = 20;
 
@@ -197,6 +197,7 @@ export default function SpecialistConfirmWrite() {
           <TextInput
             accessibilityLabel="Ваше сообщение"
             value={message}
+            maxLength={MAX_CHARS}
             onChangeText={(t) => {
               if (t.length <= MAX_CHARS) setMessage(t);
             }}
