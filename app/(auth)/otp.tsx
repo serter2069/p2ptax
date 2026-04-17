@@ -40,7 +40,7 @@ export default function OtpScreen() {
       // Backend unavailable — in dev mode, allow login with 000000
       if (__DEV__ && codeToVerify === "000000") {
         console.warn("[DEV] Backend unavailable, mock login with 000000");
-        const mockUser = { id: "dev-user", email: email || "dev@test.com", name: null, avatar: null, role: "USER" };
+        const mockUser = { id: "dev-user", email: email || "dev@test.com", role: "CLIENT" as const, firstName: null, lastName: null };
         await signIn("dev-mock-token", "dev-mock-refresh", mockUser);
         router.replace("/(tabs)");
       } else {

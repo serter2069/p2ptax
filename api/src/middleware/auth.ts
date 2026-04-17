@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken, JwtPayload } from "../lib/jwt";
+import { Role } from "@prisma/client";
 
 declare global {
   namespace Express {
@@ -26,4 +27,37 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   } catch {
     res.status(401).json({ error: "Invalid or expired token" });
   }
+}
+
+export function roleGuard(...roles: Role[]) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    // Import prisma lazily to avoid circular deps
+    const { prisma } = await import("../lib/prisma");
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { role: true, isBanned: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (user.isBanned) {
+      res.status(403).json({ error: "Account blocked" });
+      return;
+    }
+
+    if (!user.role || !roles.includes(user.role)) {
+      res.status(403).json({ error: "Insufficient permissions" });
+      return;
+    }
+
+    next();
+  };
 }

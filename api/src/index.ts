@@ -8,7 +8,7 @@ import uploadRoutes from "./routes/upload";
 import messagesRoutes from "./routes/messages";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3812;
 
 app.use(cors());
 app.use(express.json());

@@ -4,65 +4,81 @@ import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
 
-function getParam(param: string | string[]): string {
-  return Array.isArray(param) ? param[0] : param;
+function param(val: string | string[] | undefined): string {
+  return Array.isArray(val) ? val[0] : val || "";
 }
 
-// GET /api/messages — list conversations for current user
-router.get("/", authMiddleware, async (req: Request, res: Response) => {
+// GET /api/messages/threads — list threads for current user
+router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
 
-    const conversations = await prisma.conversation.findMany({
+    const threads = await prisma.thread.findMany({
       where: {
-        participants: { some: { userId } },
+        OR: [{ clientId: userId }, { specialistId: userId }],
       },
       include: {
-        participants: {
-          include: { user: { select: { id: true, name: true, email: true, avatar: true } } },
+        request: {
+          select: { id: true, title: true, status: true },
+        },
+        client: {
+          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+        },
+        specialist: {
+          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
         },
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1,
+          select: { text: true, createdAt: true, senderId: true },
         },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { lastMessageAt: "desc" },
     });
 
-    const result = conversations.map((conv: typeof conversations[number]) => ({
-      id: conv.id,
-      participants: conv.participants.map((p: typeof conv.participants[number]) => p.user),
-      lastMessage: conv.messages[0] || null,
-      updatedAt: conv.updatedAt,
+    const result = threads.map((t) => ({
+      id: t.id,
+      request: t.request,
+      client: t.client,
+      specialist: t.specialist,
+      lastMessage: t.messages[0] || null,
+      lastMessageAt: t.lastMessageAt,
+      createdAt: t.createdAt,
     }));
 
-    res.json({ conversations: result });
+    res.json({ threads: result });
   } catch (error) {
-    console.error("list conversations error:", error);
+    console.error("list threads error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// GET /api/messages/:conversationId — get messages in conversation
-router.get("/:conversationId", authMiddleware, async (req: Request, res: Response) => {
+// GET /api/messages/:threadId — get messages in thread
+router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const conversationId = getParam(req.params.conversationId);
+    const threadId = param(req.params.threadId);
 
-    // Verify user is participant
-    const participant = await prisma.conversationParticipant.findFirst({
-      where: { conversationId, userId },
+    const thread = await prisma.thread.findUnique({
+      where: { id: threadId },
     });
 
-    if (!participant) {
-      res.status(403).json({ error: "Not a participant of this conversation" });
+    if (!thread) {
+      res.status(404).json({ error: "Thread not found" });
+      return;
+    }
+
+    if (thread.clientId !== userId && thread.specialistId !== userId) {
+      res.status(403).json({ error: "Not a participant of this thread" });
       return;
     }
 
     const messages = await prisma.message.findMany({
-      where: { conversationId },
+      where: { threadId },
       include: {
-        sender: { select: { id: true, name: true, email: true, avatar: true } },
+        sender: {
+          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+        },
       },
       orderBy: { createdAt: "asc" },
     });
@@ -74,48 +90,95 @@ router.get("/:conversationId", authMiddleware, async (req: Request, res: Respons
   }
 });
 
-// POST /api/messages/:conversationId — send message
-router.post("/:conversationId", authMiddleware, async (req: Request, res: Response) => {
+// POST /api/messages/:threadId — send message in thread
+router.post("/:threadId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const conversationId = getParam(req.params.conversationId);
-    const { content } = req.body;
+    const threadId = param(req.params.threadId);
+    const { text } = req.body;
 
-    if (!content || typeof content !== "string") {
-      res.status(400).json({ error: "Message content is required" });
+    if (!text || typeof text !== "string") {
+      res.status(400).json({ error: "Message text is required" });
       return;
     }
 
-    // Verify user is participant
-    const participant = await prisma.conversationParticipant.findFirst({
-      where: { conversationId, userId },
+    const thread = await prisma.thread.findUnique({
+      where: { id: threadId },
+      include: { request: { select: { status: true } } },
     });
 
-    if (!participant) {
-      res.status(403).json({ error: "Not a participant of this conversation" });
+    if (!thread) {
+      res.status(404).json({ error: "Thread not found" });
+      return;
+    }
+
+    if (thread.clientId !== userId && thread.specialistId !== userId) {
+      res.status(403).json({ error: "Not a participant of this thread" });
+      return;
+    }
+
+    if (thread.request.status === "CLOSED") {
+      res.status(422).json({ error: "Request is closed. Chat is read-only." });
       return;
     }
 
     const message = await prisma.message.create({
       data: {
-        conversationId,
+        threadId,
         senderId: userId,
-        content,
+        text,
       },
       include: {
-        sender: { select: { id: true, name: true, email: true, avatar: true } },
+        sender: {
+          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+        },
       },
     });
 
-    // Update conversation timestamp
-    await prisma.conversation.update({
-      where: { id: conversationId },
-      data: { updatedAt: new Date() },
+    await prisma.thread.update({
+      where: { id: threadId },
+      data: { lastMessageAt: new Date() },
     });
 
     res.json({ message });
   } catch (error) {
     console.error("send message error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /api/messages/:threadId/read — mark thread as read
+router.patch("/:threadId/read", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const threadId = param(req.params.threadId);
+
+    const thread = await prisma.thread.findUnique({
+      where: { id: threadId },
+    });
+
+    if (!thread) {
+      res.status(404).json({ error: "Thread not found" });
+      return;
+    }
+
+    if (thread.clientId !== userId && thread.specialistId !== userId) {
+      res.status(403).json({ error: "Not a participant" });
+      return;
+    }
+
+    const updateData = thread.clientId === userId
+      ? { clientLastReadAt: new Date() }
+      : { specialistLastReadAt: new Date() };
+
+    await prisma.thread.update({
+      where: { id: threadId },
+      data: updateData,
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("mark read error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
