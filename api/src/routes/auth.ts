@@ -226,4 +226,50 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/auth/set-role — set role for new users (auth required, one-time only)
+router.post("/set-role", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { role } = req.body;
+
+    if (role !== "CLIENT" && role !== "SPECIALIST") {
+      res.status(400).json({ error: "Role must be CLIENT or SPECIALIST" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Guard: role can only be set once
+    if (user.role !== null) {
+      res.status(400).json({ error: "Role already set" });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+
+    res.json({ user: updated });
+  } catch (error) {
+    console.error("set-role error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
