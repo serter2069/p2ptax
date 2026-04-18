@@ -554,6 +554,104 @@ router.post("/ifns/import", async (req: Request, res: Response) => {
   }
 });
 
+// ─── Requests (admin view) ───────────────────────────────────────────────────
+
+// GET /api/admin/requests?status=ACTIVE|CLOSING_SOON|CLOSED&page=1&limit=50
+router.get("/requests", async (req: Request, res: Response) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const q = (req.query.q as string) || "";
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.RequestWhereInput = {};
+    if (status === "ACTIVE" || status === "CLOSING_SOON" || status === "CLOSED") {
+      where.status = status;
+    }
+    if (q) {
+      where.OR = [
+        { title: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.request.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          createdAt: true,
+          lastActivityAt: true,
+          extensionsCount: true,
+          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+          city: { select: { id: true, name: true } },
+          fns: { select: { id: true, name: true, code: true } },
+          _count: { select: { threads: true } },
+        },
+      }),
+      prisma.request.count({ where }),
+    ]);
+
+    res.json({ items, total, page, limit, hasMore: skip + items.length < total });
+  } catch (error) {
+    console.error("admin/requests GET error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─── Specialists (admin view) ─────────────────────────────────────────────────
+
+// GET /api/admin/specialists?q=&page=1&limit=50
+router.get("/specialists", async (req: Request, res: Response) => {
+  try {
+    const q = (req.query.q as string) || "";
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.UserWhereInput = { role: "SPECIALIST" };
+    if (q) {
+      where.OR = [
+        { email: { contains: q, mode: "insensitive" } },
+        { firstName: { contains: q, mode: "insensitive" } },
+        { lastName: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          avatarUrl: true,
+          isAvailable: true,
+          isBanned: true,
+          createdAt: true,
+          _count: { select: { specialistFns: true, specialistServices: true } },
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    res.json({ items, total, page, limit, hasMore: skip + items.length < total });
+  } catch (error) {
+    console.error("admin/specialists GET error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/admin/moderation/queue
 router.get("/moderation/queue", async (_req: Request, res: Response) => {
   // MVP: always return empty array
