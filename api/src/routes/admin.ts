@@ -179,6 +179,22 @@ router.patch("/users/:id", async (req: Request, res: Response) => {
       return;
     }
 
+    // Validate isBanned type if provided
+    if ("isBanned" in req.body && typeof isBanned !== "boolean") {
+      res.status(400).json({ error: "isBanned must be a boolean" });
+      return;
+    }
+
+    // Check user exists before update to avoid leaking P2025
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
     const data: Record<string, unknown> = {};
     if (typeof isBanned === "boolean") data.isBanned = isBanned;
     if (typeof firstName === "string") data.firstName = firstName;

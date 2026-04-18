@@ -789,8 +789,31 @@ async function main() {
     });
   }
 
+  // Admin users — must match ADMIN_EMAILS env var
+  await prisma.user.upsert({
+    where: { email: "admin@p2ptax.ru" },
+    update: { role: "ADMIN" },
+    create: {
+      email: "admin@p2ptax.ru",
+      role: "ADMIN",
+      firstName: "Admin",
+      lastName: "P2PTax",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "ruslan@p2ptax.ru" },
+    update: { role: "ADMIN" },
+    create: {
+      email: "ruslan@p2ptax.ru",
+      role: "ADMIN",
+      firstName: "Ruslan",
+      lastName: "",
+    },
+  });
+
   console.log(
-    `Seed complete: 10 cities, ${fnsCount} FNS offices, 3 services, 7 settings`
+    `Seed complete: 10 cities, ${fnsCount} FNS offices, 3 services, 7 settings, 2 admins`
   );
 }
 
