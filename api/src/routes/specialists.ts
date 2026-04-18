@@ -68,12 +68,17 @@ router.get("/featured", async (_req: Request, res: Response) => {
 });
 
 // GET /api/specialists — catalog with filters
+// SECURITY: all user-supplied values (q, city_id, fns_id, services) are passed
+// exclusively through Prisma ORM parameterized queries — never interpolated into
+// raw SQL strings. Do NOT switch to $queryRaw/$executeRaw with string concatenation.
 router.get("/", async (req: Request, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
     const skip = (page - 1) * limit;
 
+    // Trim and cap search query to prevent abuse; Prisma handles escaping
+    const q = ((req.query.q as string) || "").trim().slice(0, 100);
     const cityId = (req.query.city_id as string) || undefined;
     const fnsId = (req.query.fns_id as string) || undefined;
     const servicesParam = (req.query.services as string) || undefined;
@@ -86,6 +91,14 @@ router.get("/", async (req: Request, res: Response) => {
       isAvailable: true,
       isBanned: false,
     };
+
+    // Name search — uses Prisma `contains` (parameterized ILIKE under the hood)
+    if (q) {
+      where.OR = [
+        { firstName: { contains: q, mode: "insensitive" } },
+        { lastName: { contains: q, mode: "insensitive" } },
+      ];
+    }
 
     if (cityId || fnsId) {
       where.specialistFns = {
