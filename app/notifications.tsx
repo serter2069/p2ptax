@@ -1,118 +1,96 @@
-import { View, Text, Pressable, FlatList, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, FlatList, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import LoadingState from "@/components/ui/LoadingState";
+import ErrorState from "@/components/ui/ErrorState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { api, apiPatch } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
-interface Notification {
+interface NotificationItem {
   id: string;
-  icon: React.ComponentProps<typeof FontAwesome>["name"];
-  iconColor: string;
-  iconBg: string;
+  type: string;
   title: string;
-  message: string;
-  time: string;
-  read: boolean;
+  body: string;
+  entityId: string | null;
+  isRead: boolean;
+  createdAt: string;
 }
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    icon: "comments",
-    iconColor: "#1e3a8a",
-    iconBg: "#f8fafc",
-    title: "Новое сообщение",
-    message: "Алексей К. написал вам по заявке о камеральной проверке",
-    time: "2 мин назад",
-    read: false,
-  },
-  {
-    id: "2",
-    icon: "heart",
-    iconColor: "#b45309",
-    iconBg: "#f8fafc",
-    title: "Добавлено в избранное",
-    message: "Кто-то сохранил вашу заявку",
-    time: "1 час назад",
-    read: false,
-  },
-  {
-    id: "3",
-    icon: "tag",
-    iconColor: "#059669",
-    iconBg: "#f8fafc",
-    title: "Снижение цены",
-    message: "Специалист обновил условия по вашей заявке",
-    time: "3 часа назад",
-    read: true,
-  },
-  {
-    id: "4",
-    icon: "check-circle",
-    iconColor: "#1e3a8a",
-    iconBg: "#f8fafc",
-    title: "Заявка одобрена",
-    message: "Ваша заявка на выездную проверку опубликована",
-    time: "Вчера",
-    read: true,
-  },
-  {
-    id: "5",
-    icon: "star",
-    iconColor: "#f59e0b",
-    iconBg: "#f8fafc",
-    title: "Новый отзыв",
-    message: "Мария С. оставила отзыв",
-    time: "Вчера",
-    read: true,
-  },
-  {
-    id: "6",
-    icon: "bell",
-    iconColor: "#0f172a",
-    iconBg: "#f8fafc",
-    title: "Напоминание",
-    message: "Заполните профиль, чтобы получать больше откликов",
-    time: "2 дня назад",
-    read: true,
-  },
-];
+interface NotificationsResponse {
+  notifications: NotificationItem[];
+  total: number;
+  unreadCount: number;
+  page: number;
+  limit: number;
+}
 
-function NotificationItem({
+function iconForType(type: string): { name: React.ComponentProps<typeof FontAwesome>["name"]; color: string } {
+  switch (type) {
+    case "new_response":
+      return { name: "comments", color: "#1e3a8a" };
+    case "new_message":
+      return { name: "envelope", color: "#1e3a8a" };
+    case "new_request_in_city":
+      return { name: "map-marker", color: "#059669" };
+    case "promo_expiring":
+      return { name: "clock-o", color: "#b45309" };
+    default:
+      return { name: "bell", color: "#0f172a" };
+  }
+}
+
+function formatTime(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Только что";
+  if (diffMin < 60) return `${diffMin} мин назад`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours} ч назад`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Вчера";
+  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+}
+
+function NotificationRow({
   item,
-  onToggleRead,
+  onPress,
 }: {
-  item: Notification;
-  onToggleRead: (id: string) => void;
+  item: NotificationItem;
+  onPress: (id: string) => void;
 }) {
+  const icon = iconForType(item.type);
   return (
     <Pressable
       accessibilityLabel={item.title}
-      onPress={() => onToggleRead(item.id)}
+      onPress={() => onPress(item.id)}
       className={`flex-row items-start px-4 py-3.5 border-b border-slate-50 active:bg-slate-50 ${
-        !item.read ? "bg-slate-50/50" : ""
+        !item.isRead ? "bg-slate-50/50" : ""
       }`}
     >
       <View
         className="w-10 h-10 rounded-full items-center justify-center mt-0.5"
-        style={{ backgroundColor: item.iconBg }}
+        style={{ backgroundColor: "#f8fafc" }}
       >
-        <FontAwesome name={item.icon} size={16} color={item.iconColor} />
+        <FontAwesome name={icon.name} size={16} color={icon.color} />
       </View>
       <View className="flex-1 ml-3">
         <View className="flex-row items-center justify-between">
-          <Text className={`text-sm ${!item.read ? "font-bold text-slate-900" : "font-medium text-slate-900"}`}>
+          <Text className={`text-sm ${!item.isRead ? "font-bold text-slate-900" : "font-medium text-slate-900"}`}>
             {item.title}
           </Text>
-          <Text className="text-xs text-slate-400">{item.time}</Text>
+          <Text className="text-xs text-slate-400">{formatTime(item.createdAt)}</Text>
         </View>
-        <Text className={`text-sm mt-0.5 ${!item.read ? "text-slate-900" : "text-slate-400"}`} numberOfLines={2}>
-          {item.message}
+        <Text className={`text-sm mt-0.5 ${!item.isRead ? "text-slate-900" : "text-slate-400"}`} numberOfLines={2}>
+          {item.body}
         </Text>
       </View>
-      {!item.read && <View className="w-2 h-2 rounded-full bg-amber-700 mt-2 ml-2" />}
+      {!item.isRead && <View className="w-2 h-2 rounded-full bg-amber-700 mt-2 ml-2" />}
     </Pressable>
   );
 }
@@ -120,22 +98,74 @@ function NotificationItem({
 export default function NotificationsScreen() {
   const router = useRouter();
   const { ready } = useRequireAuth();
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
 
-  const toggleRead = (id: string) => {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await api<NotificationsResponse>("/api/notifications");
+      setNotifications(res.notifications);
+      setUnreadCount(res.unreadCount);
+      setError(null);
+    } catch {
+      setError("Не удалось загрузить уведомления");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    setLoading(true);
+    fetchNotifications().finally(() => setLoading(false));
+  }, [ready, fetchNotifications]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchNotifications();
+    setRefreshing(false);
+  }, [fetchNotifications]);
+
+  const handleMarkRead = useCallback(async (id: string) => {
+    const item = notifications.find((n) => n.id === id);
+    if (!item || item.isRead) return;
+    // Optimistic update
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
-  };
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+    try {
+      await apiPatch(`/api/notifications/${id}/read`, {});
+    } catch {
+      // Revert on failure
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: false } : n))
+      );
+      setUnreadCount((prev) => prev + 1);
+    }
+  }, [notifications]);
 
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
+  const handleMarkAllRead = useCallback(async () => {
+    const prevNotifications = notifications;
+    const prevUnread = unreadCount;
+    // Optimistic update
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+    try {
+      await apiPatch("/api/notifications/read-all", {});
+    } catch {
+      // Revert on failure
+      setNotifications(prevNotifications);
+      setUnreadCount(prevUnread);
+    }
+  }, [notifications, unreadCount]);
 
   if (!ready) {
     return (
       <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#1e3a8a" />
+        <LoadingState variant="spinner" />
       </SafeAreaView>
     );
   }
@@ -150,25 +180,54 @@ export default function NotificationsScreen() {
           </Pressable>
           <Text className="text-2xl font-bold text-slate-900">Уведомления</Text>
         </View>
-        <Pressable accessibilityLabel="Прочитать все" onPress={markAllRead} className="py-3 pl-3">
-          <Text className="text-sm text-blue-900 font-medium">Прочитать все</Text>
-        </Pressable>
+        {unreadCount > 0 && (
+          <Pressable accessibilityLabel="Прочитать все" onPress={handleMarkAllRead} className="py-3 pl-3">
+            <Text className="text-sm text-blue-900 font-medium">Прочитать все</Text>
+          </Pressable>
+        )}
       </View>
 
       <ResponsiveContainer>
-        <FlatList
-          data={notifications}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <NotificationItem item={item} onToggleRead={toggleRead} />
-          )}
-          ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-20">
-              <FontAwesome name="bell-slash-o" size={48} color="#94a3b8" />
-              <Text className="text-base text-slate-400 mt-4">Нет уведомлений</Text>
-            </View>
-          }
-        />
+        {loading ? (
+          <View className="pt-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <View key={i} className="mx-4 mb-3">
+                <LoadingState variant="skeleton" lines={2} />
+              </View>
+            ))}
+          </View>
+        ) : error ? (
+          <ErrorState
+            message={error}
+            onRetry={() => {
+              setError(null);
+              setLoading(true);
+              fetchNotifications().finally(() => setLoading(false));
+            }}
+          />
+        ) : (
+          <FlatList
+            data={notifications}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <NotificationRow item={item} onPress={handleMarkRead} />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <View className="flex-1 items-center justify-center py-20">
+                <FontAwesome name="bell-slash-o" size={48} color="#94a3b8" />
+                <Text className="text-base text-slate-400 mt-4">Нет уведомлений</Text>
+                <Text className="text-sm text-slate-300 mt-1">Здесь будут ваши уведомления</Text>
+              </View>
+            }
+          />
+        )}
       </ResponsiveContainer>
     </SafeAreaView>
   );
