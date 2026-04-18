@@ -47,6 +47,7 @@ export default function AuthOtpScreen() {
   const [pendingAuth, setPendingAuth] = useState<PendingAuth | null>(null);
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const isSubmitting = useRef(false);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -83,6 +84,8 @@ export default function AuthOtpScreen() {
   const handleVerify = useCallback(
     async (code: string) => {
       if (code.length !== CODE_LENGTH) return;
+      if (isSubmitting.current) return;
+      isSubmitting.current = true;
       setIsLoading(true);
       setError("");
 
@@ -111,6 +114,7 @@ export default function AuthOtpScreen() {
         setError(msg);
         setDigits(Array(CODE_LENGTH).fill(""));
         setTimeout(() => inputRefs.current[0]?.focus(), 50);
+        isSubmitting.current = false;
       } finally {
         setIsLoading(false);
       }
