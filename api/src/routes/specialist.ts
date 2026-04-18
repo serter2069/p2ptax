@@ -68,37 +68,62 @@ router.get("/requests", async (req: Request, res: Response) => {
       existingThreads.map((t) => [t.requestId, t.id])
     );
 
-    // Get active requests (not closed), ordered by newest
-    const requests = await prisma.request.findMany({
-      where: {
-        status: { not: "CLOSED" },
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        city: true,
-        fns: true,
-        _count: { select: { threads: true } },
-      },
+    const requestInclude = {
+      city: true,
+      fns: true,
+      _count: { select: { threads: true } },
+    } as const;
+
+    // Fetch my-region requests and all other active requests in parallel,
+    // filtering at DB level instead of loading every row into JS memory.
+    const [myRequests, otherRequests] = await Promise.all([
+      // Requests matching this specialist's FNS offices (isMyRegion = true)
+      fnsIds.length > 0
+        ? prisma.request.findMany({
+            where: {
+              status: { not: "CLOSED" },
+              fnsId: { in: fnsIds },
+              cityId: { in: cityIds },
+            },
+            orderBy: { createdAt: "desc" },
+            include: requestInclude,
+          })
+        : Promise.resolve([]),
+      // All other active requests outside specialist's region
+      prisma.request.findMany({
+        where: {
+          status: { not: "CLOSED" },
+          ...(fnsIds.length > 0
+            ? {
+                NOT: {
+                  fnsId: { in: fnsIds },
+                  cityId: { in: cityIds },
+                },
+              }
+            : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        include: requestInclude,
+      }),
+    ]);
+
+    const mapRequest = (r: (typeof myRequests)[number], isMyRegion: boolean) => ({
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      status: r.status,
+      createdAt: r.createdAt,
+      city: { id: r.city.id, name: r.city.name },
+      fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
+      threadsCount: r._count.threads,
+      isMyRegion,
+      existingThreadId: threadByRequest.get(r.id) || null,
     });
 
-    const mapped = requests.map((r) => {
-      const isMyFns = fnsIds.includes(r.fnsId);
-      const isMyCity = cityIds.includes(r.cityId);
-      const existingThreadId = threadByRequest.get(r.id) || null;
-
-      return {
-        id: r.id,
-        title: r.title,
-        description: r.description,
-        status: r.status,
-        createdAt: r.createdAt,
-        city: { id: r.city.id, name: r.city.name },
-        fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
-        threadsCount: r._count.threads,
-        isMyRegion: isMyCity && isMyFns,
-        existingThreadId,
-      };
-    });
+    const mapped = [
+      ...myRequests.map((r) => mapRequest(r, true)),
+      ...otherRequests.map((r) => mapRequest(r, false)),
+    ];
 
     res.json({ items: mapped });
   } catch (error) {
