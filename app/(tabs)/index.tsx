@@ -1,6 +1,7 @@
 import { View, Text, TextInput, ScrollView, Pressable, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 const CATEGORIES = [
   { id: "1", name: "Electronics", icon: "laptop" as const },
@@ -38,7 +39,7 @@ function ListingCard({ title, price, location, color }: { title: string; price: 
     <Pressable accessibilityLabel={title} className="flex-1 m-1.5">
       <View className="rounded-2xl overflow-hidden bg-white" style={{ shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
         <View className="h-36 items-center justify-center" style={{ backgroundColor: color }}>
-          <FontAwesome name="image" size={32} color="#9ca3af" />
+          <FontAwesome name="image" size={32} color={colors.textSecondary} />
         </View>
         <View className="p-3">
           <Text className="text-sm font-semibold text-gray-900" numberOfLines={2}>
@@ -46,7 +47,7 @@ function ListingCard({ title, price, location, color }: { title: string; price: 
           </Text>
           <Text className="text-base font-bold text-blue-600 mt-1">{price}</Text>
           <View className="flex-row items-center mt-1">
-            <FontAwesome name="map-marker" size={12} color="#9ca3af" />
+            <FontAwesome name="map-marker" size={12} color={colors.textSecondary} />
             <Text className="text-xs text-gray-400 ml-1">{location}</Text>
           </View>
         </View>
@@ -73,12 +74,12 @@ export default function HomeScreen() {
             {/* Search Bar */}
             <View className="px-4 mb-4">
               <View className="flex-row items-center h-12 rounded-xl bg-gray-100 px-4">
-                <FontAwesome name="search" size={16} color="#9ca3af" />
+                <FontAwesome name="search" size={16} color={colors.textSecondary} />
                 <TextInput
                   accessibilityLabel="Поиск объявлений"
                   className="flex-1 ml-3 text-base text-gray-900"
                   placeholder="Search listings..."
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.textSecondary}
                 />
               </View>
             </View>

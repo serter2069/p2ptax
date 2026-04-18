@@ -13,6 +13,7 @@ import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
 import EmptyState from "@/components/EmptyState";
 import { api } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -161,7 +162,7 @@ export default function SpecialistsCatalog() {
     if (loading) {
       return (
         <View className="flex-1 items-center justify-center py-16">
-          <ActivityIndicator size="large" color="#1e3a5f" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       );
     }
@@ -216,7 +217,7 @@ export default function SpecialistsCatalog() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           loadingMore ? (
-            <ActivityIndicator size="small" color="#1e3a5f" style={{ paddingVertical: 16 }} />
+            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 16 }} />
           ) : null
         }
       />

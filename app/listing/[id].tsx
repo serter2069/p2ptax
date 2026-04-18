@@ -2,6 +2,7 @@ import { View, Text, ScrollView, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -11,7 +12,7 @@ export default function ListingDetailScreen() {
       <ScrollView className="flex-1">
         {/* Image Placeholder */}
         <View className="h-72 bg-gray-100 items-center justify-center">
-          <FontAwesome name="image" size={48} color="#d1d5db" />
+          <FontAwesome name="image" size={48} color={colors.textSecondary} />
           <Text className="text-sm text-gray-400 mt-2">Listing #{id}</Text>
         </View>
 
@@ -24,10 +25,10 @@ export default function ListingDetailScreen() {
 
           {/* Location & Time */}
           <View className="flex-row items-center mt-3">
-            <FontAwesome name="map-marker" size={14} color="#9ca3af" />
+            <FontAwesome name="map-marker" size={14} color={colors.textSecondary} />
             <Text className="text-sm text-gray-500 ml-1.5">Tbilisi, Georgia</Text>
             <Text className="text-sm text-gray-300 mx-2">|</Text>
-            <FontAwesome name="clock-o" size={14} color="#9ca3af" />
+            <FontAwesome name="clock-o" size={14} color={colors.textSecondary} />
             <Text className="text-sm text-gray-500 ml-1.5">2 hours ago</Text>
           </View>
 

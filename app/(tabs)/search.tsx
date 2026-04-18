@@ -1,6 +1,7 @@
 import { View, Text, TextInput, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 const RECENT_SEARCHES = [
   "iPhone 15",
@@ -30,12 +31,12 @@ export default function SearchScreen() {
         {/* Search Input */}
         <View className="px-4 mb-6">
           <View className="flex-row items-center h-12 rounded-xl bg-gray-100 px-4">
-            <FontAwesome name="search" size={16} color="#9ca3af" />
+            <FontAwesome name="search" size={16} color={colors.textSecondary} />
             <TextInput
               accessibilityLabel="Поиск"
               className="flex-1 ml-3 text-base text-gray-900"
               placeholder="What are you looking for?"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.textSecondary}
             />
             <Pressable accessibilityLabel="Фильтры" className="ml-2 w-10 h-10 rounded-lg bg-blue-600 items-center justify-center">
               <FontAwesome name="sliders" size={16} color="#ffffff" />
@@ -57,9 +58,9 @@ export default function SearchScreen() {
               accessibilityLabel={search}
               className="flex-row items-center py-3 border-b border-gray-100"
             >
-              <FontAwesome name="clock-o" size={16} color="#9ca3af" />
+              <FontAwesome name="clock-o" size={16} color={colors.textSecondary} />
               <Text className="flex-1 ml-3 text-base text-gray-700">{search}</Text>
-              <FontAwesome name="arrow-right" size={12} color="#d1d5db" />
+              <FontAwesome name="arrow-right" size={12} color={colors.textSecondary} />
             </Pressable>
           ))}
         </View>
@@ -81,7 +82,7 @@ export default function SearchScreen() {
                 <Text className="text-base font-medium text-gray-900">{cat.name}</Text>
                 <Text className="text-xs text-gray-500">{cat.count}</Text>
               </View>
-              <FontAwesome name="chevron-right" size={12} color="#9ca3af" />
+              <FontAwesome name="chevron-right" size={12} color={colors.textSecondary} />
             </Pressable>
           ))}
         </View>

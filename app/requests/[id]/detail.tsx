@@ -16,6 +16,7 @@ import HeaderBack from "@/components/HeaderBack";
 import StatusBadge from "@/components/StatusBadge";
 import Avatar from "@/components/ui/Avatar";
 import { api, apiPost, apiDelete } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface FileItem {
   id: string;
@@ -216,7 +217,7 @@ export default function MyRequestDetail() {
         title={request.title}
         rightAction={
           <Pressable accessibilityLabel="Удалить заявку" onPress={handleDelete}>
-            <FontAwesome name="trash-o" size={18} color="#ef4444" />
+            <FontAwesome name="trash-o" size={18} color={colors.error} />
           </Pressable>
         }
       />

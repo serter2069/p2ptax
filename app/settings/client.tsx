@@ -19,6 +19,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiPatch } from "@/lib/api";
+import LoadingState from "@/components/ui/LoadingState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
@@ -168,8 +169,9 @@ export default function ClientSettings() {
 
   if (!ready) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#1e3a8a" />
+      <SafeAreaView className="flex-1 bg-white">
+        <HeaderBack title="Настройки" />
+        <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
     );
   }

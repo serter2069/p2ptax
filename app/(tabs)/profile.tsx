@@ -2,6 +2,7 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useAuth } from "@/contexts/AuthContext";
+import { colors } from "@/lib/theme";
 
 const MENU_ITEMS = [
   { id: "listings", icon: "list-ul" as const, label: "My Listings", badge: "12" },
@@ -74,7 +75,7 @@ export default function ProfileScreen() {
                   <Text className="text-xs font-medium text-blue-600">{item.badge}</Text>
                 </View>
               )}
-              <FontAwesome name="chevron-right" size={12} color="#d1d5db" />
+              <FontAwesome name="chevron-right" size={12} color={colors.textSecondary} />
             </Pressable>
           ))}
         </View>
@@ -86,7 +87,7 @@ export default function ProfileScreen() {
             onPress={signOut}
             className="flex-row items-center justify-center h-12 rounded-xl border border-red-200 active:bg-red-50"
           >
-            <FontAwesome name="sign-out" size={16} color="#ef4444" />
+            <FontAwesome name="sign-out" size={16} color={colors.error} />
             <Text className="text-base font-medium text-red-500 ml-2">Log out</Text>
           </Pressable>
         </View>
