@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -87,6 +88,11 @@ function formatFileSize(bytes: number): string {
 export default function ChatThread() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
+  const desktopStyle = isDesktop
+    ? { maxWidth: 520, width: "100%" as const, alignSelf: "center" as const }
+    : undefined;
 
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [thread, setThread] = useState<ThreadInfo | null>(null);
@@ -316,6 +322,7 @@ export default function ChatThread() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
+      <View className="flex-1" style={desktopStyle}>
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
         <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
@@ -462,6 +469,7 @@ export default function ChatThread() {
           </View>
         )}
       </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
