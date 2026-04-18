@@ -38,6 +38,11 @@ router.post("/request-otp", async (req: Request, res: Response) => {
     const code = generateOtpCode();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
+    // Delete previous unused OTPs for this email
+    await prisma.otpCode.deleteMany({
+      where: { email: email.toLowerCase(), used: false },
+    });
+
     await prisma.otpCode.create({
       data: { email: email.toLowerCase(), code, expiresAt },
     });
