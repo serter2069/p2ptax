@@ -18,6 +18,7 @@ import adminRoutes from "./routes/admin";
 import notificationsRoutes from "./routes/notifications";
 import contactsRoutes from "./routes/contacts";
 import { startNotificationWorker } from "./notifications/notification.processor";
+import { runRequestLifecycleCron } from "./cron/requestLifecycle";
 
 const app = express();
 const PORT = process.env.PORT || 3812;
@@ -49,4 +50,10 @@ app.use("/api", contactsRoutes);
 app.listen(PORT, () => {
   // Start BullMQ worker (graceful degradation if Valkey unavailable)
   startNotificationWorker();
+  // Request lifecycle cron: runs every hour (bug #174 fix: email before deactivate)
+  const CRON_INTERVAL_MS = parseInt(process.env.LIFECYCLE_CRON_INTERVAL_MS || "3600000", 10);
+  runRequestLifecycleCron().catch((err) => console.error("[lifecycle] Initial cron run failed:", err));
+  setInterval(() => {
+    runRequestLifecycleCron().catch((err) => console.error("[lifecycle] Cron run failed:", err));
+  }, CRON_INTERVAL_MS);
 });
