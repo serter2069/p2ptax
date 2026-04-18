@@ -158,13 +158,16 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
 
 // POST /api/messages/:threadId — send message in thread (with optional file attachments)
 // Supports uploadToken (idempotency): if provided, verifies the file exists in MinIO
+// Fix #186: text (content) is optional when uploadToken or files are present.
+// Validation rule: at least one of (text, files, uploadToken) must be non-empty.
 router.post("/:threadId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const threadId = param(req.params.threadId);
+    // text is intentionally optional — attachment-only messages are valid (#186)
     const { text, files, uploadToken } = req.body as { text?: string; files?: FileInput[]; uploadToken?: string };
 
-    // Validate content type and length (bug #187)
+    // Validate content type and length
     if (text !== undefined && typeof text !== "string") {
       res.status(400).json({ error: "content must be a string" });
       return;
@@ -176,7 +179,8 @@ router.post("/:threadId", authMiddleware, async (req: Request, res: Response) =>
     }
     const attachedFiles: FileInput[] = Array.isArray(files) ? files.slice(0, 3) : [];
 
-    // If uploadToken provided, resolve it to a file before any other validation
+    // If uploadToken provided, resolve it to a file before any other validation.
+    // A message with only an uploadToken (no text) is valid — this resolves #186.
     let tokenFile: { fileUrl: string } | null = null;
     if (uploadToken && typeof uploadToken === "string" && uploadToken.length >= 8) {
       const resolved = await resolveUploadToken(threadId, uploadToken);
@@ -187,6 +191,7 @@ router.post("/:threadId", authMiddleware, async (req: Request, res: Response) =>
       tokenFile = resolved;
     }
 
+    // Require at least one of: text, files array, or uploadToken-resolved file
     if (!trimmedText && attachedFiles.length === 0 && !tokenFile) {
       res.status(400).json({ error: "Message text or at least one file is required" });
       return;
