@@ -612,10 +612,13 @@ router.get("/:id/recommendations", authMiddleware, async (req: Request, res: Res
       return;
     }
 
-    // Find specialists who cover this FNS and are available
+    // Find available specialists who cover this FNS — filter at DB level
     const specialistFnsList = await prisma.specialistFns.findMany({
-      where: { fnsId: request.fnsId },
-      take: 10,
+      where: {
+        fnsId: request.fnsId,
+        specialist: { isAvailable: true, isBanned: false },
+      },
+      take: 3,
       include: {
         specialist: {
           select: {
@@ -623,7 +626,6 @@ router.get("/:id/recommendations", authMiddleware, async (req: Request, res: Res
             firstName: true,
             lastName: true,
             avatarUrl: true,
-            isAvailable: true,
             specialistProfile: {
               select: { description: true },
             },
@@ -636,17 +638,14 @@ router.get("/:id/recommendations", authMiddleware, async (req: Request, res: Res
       },
     });
 
-    const specialists = specialistFnsList
-      .filter((sf) => sf.specialist.isAvailable)
-      .slice(0, 3)
-      .map((sf) => ({
-        id: sf.specialist.id,
-        firstName: sf.specialist.firstName,
-        lastName: sf.specialist.lastName,
-        avatarUrl: sf.specialist.avatarUrl,
-        description: sf.specialist.specialistProfile?.description ?? null,
-        services: sf.specialist.specialistServices.map((ss) => ss.service.name),
-      }));
+    const specialists = specialistFnsList.map((sf) => ({
+      id: sf.specialist.id,
+      firstName: sf.specialist.firstName,
+      lastName: sf.specialist.lastName,
+      avatarUrl: sf.specialist.avatarUrl,
+      description: sf.specialist.specialistProfile?.description ?? null,
+      services: sf.specialist.specialistServices.map((ss) => ss.service.name),
+    }));
 
     res.json({ items: specialists });
   } catch (error) {
