@@ -13,6 +13,7 @@ import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import RequestCard from "@/components/RequestCard";
 import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -94,9 +95,7 @@ export default function ClientDashboard() {
           </View>
 
           {loading ? (
-            <View className="items-center justify-center py-16">
-              <ActivityIndicator size="large" color="#1e3a8a" />
-            </View>
+            <LoadingState variant="skeleton" lines={5} />
           ) : error ? (
             <View className="items-center justify-center py-16 px-8">
               <Text className="text-lg font-semibold text-slate-900 text-center mb-2">

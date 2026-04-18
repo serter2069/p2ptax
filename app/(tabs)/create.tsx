@@ -1,6 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 export default function CreateScreen() {
   return (
@@ -41,7 +42,7 @@ export default function CreateScreen() {
                 key={i}
                 className="w-[31%] aspect-square m-[1%] rounded-xl bg-gray-100 items-center justify-center"
               >
-                <FontAwesome name="image" size={20} color="#d1d5db" />
+                <FontAwesome name="image" size={20} color={colors.textSecondary} />
               </View>
             ))}
           </View>

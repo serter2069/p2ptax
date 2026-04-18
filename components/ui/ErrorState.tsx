@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import Button from "./Button";
+import { colors } from "../../lib/theme";
 
 export interface ErrorStateProps {
   message?: string;
@@ -17,7 +18,7 @@ export default function ErrorState({
         className="items-center justify-center rounded-full bg-red-50"
         style={{ width: 72, height: 72 }}
       >
-        <Feather name="alert-circle" size={32} color="#f87171" />
+        <Feather name="alert-circle" size={32} color={colors.error} />
       </View>
       <Text className="text-base font-medium text-slate-900 mt-4 text-center">
         {message}

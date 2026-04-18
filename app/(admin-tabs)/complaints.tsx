@@ -12,6 +12,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
+import { colors } from "@/lib/theme";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
@@ -78,7 +79,7 @@ function StatusBadge({ status }: { status: "NEW" | "REVIEWED" }) {
   return (
     <View className="bg-emerald-50 px-2 py-0.5 rounded-lg flex-row items-center">
       <View
-        style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#047857", marginRight: 5 }}
+        style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success, marginRight: 5 }}
       />
       <Text className="text-xs font-medium text-emerald-700">Рассмотрена</Text>
     </View>
@@ -310,7 +311,7 @@ export default function AdminComplaints() {
             className="items-center justify-center rounded-full bg-red-50"
             style={{ width: 72, height: 72 }}
           >
-            <FontAwesome name="exclamation-circle" size={32} color="#f87171" />
+            <FontAwesome name="exclamation-circle" size={32} color={colors.error} />
           </View>
           <Text className="text-base font-medium text-slate-900 mt-4 text-center">
             Не удалось загрузить жалобы

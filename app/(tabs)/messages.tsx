@@ -1,6 +1,7 @@
 import { View, Text, Pressable, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 const CONVERSATIONS = [
   {
@@ -52,7 +53,7 @@ const CONVERSATIONS = [
     id: "6",
     name: "Elena T.",
     avatar: "E",
-    avatarColor: "#ef4444",
+    avatarColor: colors.error,
     lastMessage: "Sent you the location pin",
     time: "2 days ago",
     unread: false,
@@ -114,7 +115,7 @@ export default function MessagesScreen() {
         renderItem={({ item }) => <ConversationItem {...item} />}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <FontAwesome name="comments-o" size={48} color="#d1d5db" />
+            <FontAwesome name="comments-o" size={48} color={colors.textSecondary} />
             <Text className="text-base text-gray-400 mt-4">No messages yet</Text>
           </View>
         }

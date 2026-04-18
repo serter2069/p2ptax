@@ -279,7 +279,7 @@ export default function ChatThread() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-          <Pressable onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
             <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
@@ -295,7 +295,7 @@ export default function ChatThread() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-          <Pressable onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
             <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
@@ -318,7 +318,7 @@ export default function ChatThread() {
     <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
-        <Pressable onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+        <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
           <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
         </Pressable>
         {otherUser ? (

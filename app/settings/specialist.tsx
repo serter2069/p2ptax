@@ -19,6 +19,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
+import LoadingState from "@/components/ui/LoadingState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface ContactMethodItem {
@@ -309,9 +310,7 @@ export default function SpecialistSettings() {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <HeaderBack title="Настройки специалиста" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
-        </View>
+        <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
     );
   }
