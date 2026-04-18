@@ -121,8 +121,8 @@ export function startNotificationWorker(): void {
       { connection: getRedisConnection() }
     );
 
-    _worker.on("completed", (job) => {
-      console.log(`[notifications] Job ${job.id} completed`);
+    _worker.on("completed", (_job) => {
+      // job completed silently
     });
 
     _worker.on("failed", (job, err) => {
@@ -133,7 +133,7 @@ export function startNotificationWorker(): void {
       console.warn("[notifications] Worker error:", err.message);
     });
 
-    console.log("[notifications] Worker started");
+    // worker started
   } catch (err) {
     console.warn("[notifications] Failed to start worker (Valkey unavailable):", (err as Error).message);
   }

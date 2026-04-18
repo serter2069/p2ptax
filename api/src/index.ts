@@ -47,7 +47,6 @@ app.use("/api/notifications", notificationsRoutes);
 app.use("/api", contactsRoutes);
 
 app.listen(PORT, () => {
-  console.log(`API server running on http://localhost:${PORT}`);
   // Start BullMQ worker (graceful degradation if Valkey unavailable)
   startNotificationWorker();
 });

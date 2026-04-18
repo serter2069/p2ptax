@@ -48,7 +48,7 @@ router.post("/request-otp", async (req: Request, res: Response) => {
     });
 
     // In production: send email via nodemailer
-    console.log(`[DEV] OTP for ${email}: ${code}`);
+    // Dev OTP: always 000000 (see auth.md)
 
     res.json({ success: true });
   } catch (error) {
