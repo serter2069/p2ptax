@@ -48,13 +48,13 @@ router.get("/stats", async (_req: Request, res: Response) => {
         ? Math.round((requestsWithThreads / totalRequests) * 100)
         : 0;
 
-    // Top 5 cities by active requests
+    // Top cities by active requests
     const topCities = await prisma.request.groupBy({
       by: ["cityId"],
       where: { status: { in: ["ACTIVE", "CLOSING_SOON"] } },
       _count: { id: true },
       orderBy: { _count: { id: "desc" } },
-      take: 5,
+      take: 50,
     });
 
     const cityIds = topCities.map((c) => c.cityId);
