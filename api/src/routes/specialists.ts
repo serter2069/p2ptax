@@ -126,6 +126,14 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/specialists/:id/reviews — public reviews for a specialist
+// Security note: only name (first name) and avatarUrl are returned — never email (#179)
+router.get("/:id/reviews", async (_req: Request, res: Response) => {
+  // Reviews feature is not yet implemented (DB model pending).
+  // Endpoint exists to enforce the email-safe contract from day one.
+  res.json({ items: [], total: 0 });
+});
+
 // GET /api/specialists/:id — full profile
 router.get("/:id", async (req: Request, res: Response) => {
   try {

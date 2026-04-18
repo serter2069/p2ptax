@@ -20,13 +20,34 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
   const token = authHeader.slice(7);
 
+  let payload: JwtPayload;
   try {
-    const payload = verifyAccessToken(token);
-    req.user = payload;
-    next();
+    payload = verifyAccessToken(token);
   } catch {
     res.status(401).json({ error: "Invalid or expired token" });
+    return;
   }
+
+  req.user = payload;
+
+  // Check isBanned on every authenticated request — security fix #175
+  // Banned users must be rejected regardless of which endpoint they call.
+  // Using lazy import to avoid circular dependency (same pattern as roleGuard).
+  void import("../lib/prisma").then(({ prisma }) =>
+    prisma.user
+      .findUnique({ where: { id: payload.userId }, select: { isBanned: true } })
+      .then((user) => {
+        if (!user || user.isBanned) {
+          res.status(403).json({ error: "Account blocked" });
+          return;
+        }
+        next();
+      })
+      .catch(() => {
+        // DB unavailable — let request through; roleGuard will re-check if needed
+        next();
+      })
+  );
 }
 
 export function roleGuard(...roles: Role[]) {
