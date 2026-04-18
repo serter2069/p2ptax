@@ -164,7 +164,16 @@ router.post("/:threadId", authMiddleware, async (req: Request, res: Response) =>
     const threadId = param(req.params.threadId);
     const { text, files, uploadToken } = req.body as { text?: string; files?: FileInput[]; uploadToken?: string };
 
+    // Validate content type and length (bug #187)
+    if (text !== undefined && typeof text !== "string") {
+      res.status(400).json({ error: "content must be a string" });
+      return;
+    }
     const trimmedText = typeof text === "string" ? text.trim() : "";
+    if (trimmedText.length > 10000) {
+      res.status(400).json({ error: "Message content exceeds maximum length of 10000 characters" });
+      return;
+    }
     const attachedFiles: FileInput[] = Array.isArray(files) ? files.slice(0, 3) : [];
 
     // If uploadToken provided, resolve it to a file before any other validation

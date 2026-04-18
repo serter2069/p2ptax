@@ -628,6 +628,70 @@ router.patch("/complaints/:id/review", async (req: Request, res: Response) => {
   }
 });
 
+// DELETE /api/admin/users/:id — hard delete with proper FK dependency order
+router.delete("/users/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+
+    // Prevent self-deletion
+    if (req.user?.userId === id) {
+      res.status(400).json({ error: "Нельзя удалить собственный аккаунт" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Collect IDs needed for cascading file deletion
+      const userMessages = await tx.message.findMany({
+        where: { senderId: id },
+        select: { id: true },
+      });
+      const messageIds = userMessages.map((m) => m.id);
+
+      const userRequests = await tx.request.findMany({
+        where: { userId: id },
+        select: { id: true },
+      });
+      const requestIds = userRequests.map((r) => r.id);
+
+      // 2. Delete files attached to user's messages and requests
+      if (messageIds.length > 0) {
+        await tx.file.deleteMany({ where: { entityType: "message", entityId: { in: messageIds } } });
+      }
+      if (requestIds.length > 0) {
+        await tx.file.deleteMany({ where: { entityType: "request", entityId: { in: requestIds } } });
+      }
+
+      // 3. Delete messages sent by user (Message.sender has no cascade)
+      await tx.message.deleteMany({ where: { senderId: id } });
+
+      // 4. Delete threads where user is client or specialist (Thread → User has no cascade)
+      await tx.thread.deleteMany({ where: { OR: [{ clientId: id }, { specialistId: id }] } });
+
+      // 5. Delete user record — remaining relations cascade automatically:
+      //    notifications, notificationPreferences, refreshTokens, complaints,
+      //    requests (→ threads that cascade from request), specialistFns,
+      //    specialistServices, specialistProfile (→ contactMethods)
+      await tx.user.delete({ where: { id } });
+    });
+
+    res.json({ ok: true });
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === "P2025") {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    console.error("admin/users/:id DELETE error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/admin/settings
 router.get("/settings", async (_req: Request, res: Response) => {
   try {
