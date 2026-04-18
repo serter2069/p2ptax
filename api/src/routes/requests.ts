@@ -396,6 +396,80 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
   }
 });
 
+// PATCH /api/requests/:id — update own request (auth required)
+// Only whitelisted fields: title, description. Unknown fields are rejected.
+router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    // Whitelist: only title and description are editable
+    const ALLOWED_KEYS = ["title", "description"];
+    const bodyKeys = Object.keys(req.body);
+    const unknownKeys = bodyKeys.filter((k) => !ALLOWED_KEYS.includes(k));
+    if (unknownKeys.length > 0) {
+      res.status(400).json({ error: `Unknown fields: ${unknownKeys.join(", ")}` });
+      return;
+    }
+
+    const { title, description } = req.body;
+
+    // At least one field must be provided
+    if (title === undefined && description === undefined) {
+      res.status(400).json({ error: "At least one field (title or description) is required" });
+      return;
+    }
+
+    // Validate title if provided
+    if (title !== undefined) {
+      if (typeof title !== "string" || title.length < 3 || title.length > 100) {
+        res.status(400).json({ error: "Title must be 3-100 characters" });
+        return;
+      }
+    }
+
+    // Validate description if provided
+    if (description !== undefined) {
+      if (typeof description !== "string" || description.length < 10 || description.length > 2000) {
+        res.status(400).json({ error: "Description must be 10-2000 characters" });
+        return;
+      }
+    }
+
+    const request = await prisma.request.findUnique({ where: { id } });
+
+    if (!request) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+
+    if (request.userId !== userId) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    if (request.status === "CLOSED") {
+      res.status(400).json({ error: "Cannot edit a closed request" });
+      return;
+    }
+
+    const data: Record<string, unknown> = {};
+    if (title !== undefined) data.title = title.trim();
+    if (description !== undefined) data.description = description.trim();
+
+    const updated = await prisma.request.update({
+      where: { id },
+      data,
+      select: { id: true, title: true, description: true, status: true },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("requests/:id patch error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // DELETE /api/requests/:id — delete own request (auth required)
 router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {

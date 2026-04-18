@@ -29,6 +29,16 @@ router.put("/name", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
+    // Guard: role can only be set once (during onboarding)
+    const existing = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { role: true },
+    });
+    if (existing?.role !== null && existing?.role !== undefined) {
+      res.status(400).json({ error: "Role already set" });
+      return;
+    }
+
     const user = await prisma.user.update({
       where: { id: req.user!.userId },
       data: {
