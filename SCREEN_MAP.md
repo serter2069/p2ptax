@@ -1,5 +1,43 @@
 # SCREEN MAP: P2PTax
 
+## SDLC Status
+
+<!-- SDLC_STATE_BEGIN -->
+```yaml
+phase: 6-TEST
+started_at: 2026-04-18
+updated_at: "2026-04-19T03:47:32Z"
+phases:
+  SA: {status: DONE}
+  CICD: {status: DONE}
+  BRAND: {status: DONE}
+  SCREEN_MAP: {status: DONE}
+  DEV: {status: DONE}
+  TEST: {status: IN_PROGRESS}
+screens:
+  total: 28
+  done: 28
+  in_progress: 0
+  todo: 0
+cycles:
+  audit:
+    run_count: 3
+    last_commit: null
+    last_run: null
+  audit_quality:
+    run_count: 0
+    last_run: null
+  test:
+    run_count: 1
+    last_run: null
+  verify:
+    total_runs: 0
+    escalations_to_opus: 0
+    stops: 0
+```
+<!-- SDLC_STATE_END -->
+
+
 > System Analysis: https://diagrams.love/canvas?schema=cmnw5361i000czmerbi780b2j
 
 ## Global Layout Rules (ALL screens)
@@ -2784,3 +2822,49 @@ Volume targets:
 - otp_codes: 0 (transient, not seeded)
 - refresh_tokens: 0 (transient, not seeded)
 ```
+
+---
+
+## Section 8: Test Cycles Log
+
+| Cycle | Date | L0 | L1 | L2 | L3 | L4 | L5 | Bugs | Status |
+|-------|------|----|----|----|----|----|----|------|--------|
+| 1 | 2026-04-19 | 14/17→PASS | PASS | PASS | 5/5 | PASS | PARTIAL | #1139 #1140 #1141 #1142 #1143 | DONE |
+
+### Cycle 1 — 2026-04-19 (details)
+
+**Infrastructure fixes applied in-session:**
+- Fixed: `EXPO_PUBLIC_API_URL` в Doppler dev → убран лишний `/api` суффикс
+- Fixed: DB schema drift → добавлены City.slug, FnsOffice.address, FnsOffice.searchAliases, таблица complaints
+- Fixed: admin@p2ptax.ru role=null → seed запущен, role=ADMIN применён
+- Fixed: дублированные города (кириллик slug) → удалены 5 записей
+
+**L0 Backend (14/17 → all endpoints verified):**
+- Auth OTP flow: PASS
+- Admin auth: PASS (после фикса seed)
+- Public endpoints: PASS (/api/requests/public, /api/specialists, /api/cities, /api/services)
+- Notifications: PASS
+- Create request: PASS (с корректными полями cityId + fnsId)
+- Admin users list: PASS
+- Validation (401, wrong OTP): PASS
+
+**L1 Code Quality:**
+- TSC frontend: 0 errors
+- TSC backend: 0 errors
+- console.log: api/src/cron/requestLifecycle.ts (1 файл)
+- Hardcoded hex colors: 36 файлов (частично исправлены в предыдущем аудите)
+
+**L2 Layout (5 screens):** All PASS — нет overflow, tiny tap targets, offscreen content
+
+**L3 Flows:** Landing PASS, Auth Email PASS, Email Submit PASS, OTP Screen PASS, Auth Complete PASS
+
+**L4 Elements:** Cities paginated PASS, IFNS by slug PASS, Create Request PASS
+
+**L5 Edge Cases:** Empty title validation PASS, Long title PASS, SQL injection SAFE, IDOR → 403 вместо 404 (bug #1142)
+
+**Open bugs (GitHub issues):**
+- #1139 EXPO_PUBLIC_API_URL конфиг (зафиксировано, нужна проверка staging/prod)
+- #1140 DB schema drift миграция (нужна migration в репо)
+- #1141 cities frontend/API mismatch (fnsOffices vs officesCount)
+- #1142 403 вместо 404 для несуществующих ресурсов
+- #1143 дублированные города (зафиксировано in-session)
