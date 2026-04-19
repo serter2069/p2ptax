@@ -23,6 +23,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 interface CityOption {
   id: string;
   name: string;
+  slug: string;
 }
 
 interface FnsOption {
@@ -106,12 +107,15 @@ export default function NewRequest() {
   }, []);
 
   // Load FNS offices when city changes
-  const loadFnsForCity = useCallback(async (cityId: string) => {
+  const loadFnsForCity = useCallback(async (citySlug: string) => {
     setLoadingFns(true);
     setFnsOffices([]);
     try {
-      const data = await api<{ offices: FnsOption[] }>(`/api/fns?city_id=${cityId}`, { noAuth: true });
-      setFnsOffices(data.offices);
+      const data = await api<{ city: { id: string; name: string; slug: string }; items: FnsOption[] }>(
+        `/api/cities/${citySlug}/ifns`,
+        { noAuth: true }
+      );
+      setFnsOffices(data.items);
     } catch {
       // silent — user can retry by reselecting city
     } finally {
@@ -123,7 +127,7 @@ export default function NewRequest() {
     setSelectedCityId(city.id);
     setSelectedFnsId(null);
     setCityOpen(false);
-    loadFnsForCity(city.id);
+    loadFnsForCity(city.slug);
   }, [loadFnsForCity]);
 
   const handleFnsSelect = useCallback((fns: FnsOption) => {
