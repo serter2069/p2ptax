@@ -19,6 +19,12 @@ router.post("/request-otp", async (req: Request, res: Response) => {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      res.status(400).json({ error: "Invalid email format" });
+      return;
+    }
+
     // Find or create user (no role yet — assigned during onboarding)
     let user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },

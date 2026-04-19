@@ -86,6 +86,29 @@ router.get("/", async (req: Request, res: Response) => {
       ? servicesParam.split(",").filter(Boolean)
       : [];
 
+    // Reject unknown city-related params to catch misuse (e.g. ?city=москва)
+    if (req.query.city && !req.query.city_id) {
+      res.status(400).json({
+        error: "Invalid query parameter: use 'city_id' (UUID) instead of 'city'",
+      });
+      return;
+    }
+
+    // Validate city_id and fns_id are UUID format to prevent DB crashes
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (cityId && !uuidRegex.test(cityId)) {
+      res.status(400).json({
+        error: "Invalid city_id format: must be a valid UUID",
+      });
+      return;
+    }
+    if (fnsId && !uuidRegex.test(fnsId)) {
+      res.status(400).json({
+        error: "Invalid fns_id format: must be a valid UUID",
+      });
+      return;
+    }
+
     const where: Prisma.UserWhereInput = {
       role: "SPECIALIST",
       isAvailable: true,
