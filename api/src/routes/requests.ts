@@ -4,6 +4,11 @@ import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { verifyAccessToken } from "../lib/jwt";
 
+// Strip all HTML tags to prevent XSS
+function stripHtml(str: string): string {
+  return str.replace(/<[^>]*>/g, "").trim();
+}
+
 const router = Router();
 
 // GET /api/requests/public — active requests feed
@@ -162,10 +167,10 @@ router.post("/public", async (req: Request, res: Response) => {
 
     const request = await prisma.request.create({
       data: {
-        title,
+        title: stripHtml(title),
         cityId,
         fnsId,
-        description,
+        description: stripHtml(description),
         userId,
       },
       select: {
@@ -271,10 +276,10 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
 
     const request = await prisma.request.create({
       data: {
-        title,
+        title: stripHtml(title),
         cityId,
         fnsId,
-        description,
+        description: stripHtml(description),
         userId,
       },
       include: {
@@ -454,8 +459,8 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
     }
 
     const data: Record<string, unknown> = {};
-    if (title !== undefined) data.title = title.trim();
-    if (description !== undefined) data.description = description.trim();
+    if (title !== undefined) data.title = stripHtml(title);
+    if (description !== undefined) data.description = stripHtml(description);
 
     const updated = await prisma.request.update({
       where: { id },
