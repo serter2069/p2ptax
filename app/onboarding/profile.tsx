@@ -13,12 +13,11 @@ import { useRouter } from "expo-router";
 import { useState, useRef } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
-import { api } from "@/lib/api";
+import { API_URL, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
 export default function OnboardingProfileScreen() {
   const router = useRouter();

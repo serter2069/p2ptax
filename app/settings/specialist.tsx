@@ -18,7 +18,7 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
+import { API_URL, apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
 import LoadingState from "@/components/ui/LoadingState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -41,7 +41,6 @@ const CONTACT_TYPE_LABELS: Record<string, string> = {
 
 const CONTACT_TYPES = Object.keys(CONTACT_TYPE_LABELS);
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
 interface FnsServiceItem {
   fns: { id: string; name: string; code: string };

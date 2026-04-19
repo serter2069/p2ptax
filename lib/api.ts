@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
 const TOKEN_KEY = "p2ptax_access_token";
 const REFRESH_KEY = "p2ptax_refresh_token";
