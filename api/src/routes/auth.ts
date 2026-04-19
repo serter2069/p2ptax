@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma";
 import {
   signAccessToken,
@@ -9,8 +10,16 @@ import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
 
+const otpRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много запросов. Попробуйте через 15 минут." },
+});
+
 // POST /api/auth/request-otp
-router.post("/request-otp", async (req: Request, res: Response) => {
+router.post("/request-otp", otpRateLimiter, async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
