@@ -37,6 +37,5 @@ jobs:
             npm ci
             npm run build
             cd ..
-            cp nginx-landing.conf /etc/nginx/sites-available/landing-p2ptax
-            ln -sf /etc/nginx/sites-available/landing-p2ptax /etc/nginx/sites-enabled/landing-p2ptax
+            cp nginx-p2ptax.conf /etc/nginx/sites-available/p2ptax
             nginx -t && systemctl reload nginx
