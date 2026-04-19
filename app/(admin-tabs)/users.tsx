@@ -13,8 +13,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
+import { API_URL } from "@/lib/api";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
 type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
 

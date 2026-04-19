@@ -13,8 +13,8 @@ import { useEffect, useState, useCallback } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
+import { API_URL } from "@/lib/api";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
 interface SettingField {
   key: string;

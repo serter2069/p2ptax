@@ -18,11 +18,10 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { apiPatch } from "@/lib/api";
+import { API_URL, apiPatch } from "@/lib/api";
 import LoadingState from "@/components/ui/LoadingState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
 export default function ClientSettings() {
   const router = useRouter();

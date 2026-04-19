@@ -18,11 +18,10 @@ import * as Linking from "expo-linking";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MessageBubble from "@/components/MessageBubble";
 import { Avatar } from "@/components/ui";
-import { api, apiPost, apiPatch } from "@/lib/api";
+import { API_URL, api, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
 interface FileAttachment {
   id: string;

@@ -6,7 +6,7 @@
 ```yaml
 phase: 6-TEST
 started_at: 2026-04-18
-updated_at: "2026-04-19T04:07:20Z"
+updated_at: "2026-04-19T12:00:00Z"
 phases:
   SA: {status: DONE}
   CICD: {status: DONE}
@@ -15,15 +15,20 @@ phases:
   DEV: {status: DONE}
   TEST: {status: IN_PROGRESS}
 screens:
-  total: 28
-  done: 28
+  total: 27
+  done: 27
   in_progress: 0
   todo: 0
 cycles:
   audit:
-    run_count: 3
-    last_commit: null
-    last_run: null
+    run_count: 4
+    last_commit: "316a9c7"
+    last_run:
+      date: "2026-04-19"
+      todo_before: 0
+      todo_after: 0
+      batches: 0
+      strategy: default
   audit_quality:
     run_count: 0
     last_run: null
@@ -48,7 +53,6 @@ autopilot:
     auth_broken: false
     verify_3fail: null
     blocker_issue: null
-    token_budget: false
 ```
 <!-- SDLC_STATE_END -->
 

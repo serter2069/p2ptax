@@ -14,11 +14,10 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
-import { api, apiPost } from "@/lib/api";
+import { API_URL, api, apiPost } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
 interface CityOption {
   id: string;
