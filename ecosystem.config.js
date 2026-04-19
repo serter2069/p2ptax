@@ -12,5 +12,14 @@ module.exports = {
         NODE_ENV: "production",
       },
     },
+    {
+      name: "p2ptax-web",
+      script: "serve",
+      args: "-s dist -l 19006",
+      cwd: ".",
+      instances: 1,
+      autorestart: true,
+      watch: false,
+    },
   ],
 };
