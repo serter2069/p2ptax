@@ -33,3 +33,10 @@ jobs:
             sleep 3
             curl -sf http://localhost:3812/api/health || echo "Health check failed"
             echo '{"version":"'$(git rev-parse --short HEAD)'","deployed":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > dist/version.json
+            cd landing
+            npm ci
+            npm run build
+            cd ..
+            cp nginx-landing.conf /etc/nginx/sites-available/landing-p2ptax
+            ln -sf /etc/nginx/sites-available/landing-p2ptax /etc/nginx/sites-enabled/landing-p2ptax
+            nginx -t && systemctl reload nginx
