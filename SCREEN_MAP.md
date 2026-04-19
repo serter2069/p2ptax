@@ -6,7 +6,7 @@
 ```yaml
 phase: 6-TEST
 started_at: 2026-04-18
-updated_at: "2026-04-19T03:47:32Z"
+updated_at: "2026-04-19T04:05:44Z"
 phases:
   SA: {status: DONE}
   CICD: {status: DONE}
@@ -28,12 +28,27 @@ cycles:
     run_count: 0
     last_run: null
   test:
-    run_count: 1
+    run_count: 2
     last_run: null
   verify:
     total_runs: 0
     escalations_to_opus: 0
     stops: 0
+autopilot:
+  mode: manual
+  paused: false
+  gate_grace_min: 10
+  last_event_at: null
+  last_gate_shown_at: null
+  last_gate_phase: null
+  tick_count_same_phase: 0
+  last_phase_seen: null
+  stops:
+    critical_bug: false
+    auth_broken: false
+    verify_3fail: null
+    blocker_issue: null
+    token_budget: false
 ```
 <!-- SDLC_STATE_END -->
 
@@ -2830,6 +2845,8 @@ Volume targets:
 | Cycle | Date | L0 | L1 | L2 | L3 | L4 | L5 | Bugs | Status |
 |-------|------|----|----|----|----|----|----|------|--------|
 | 1 | 2026-04-19 | 14/17→PASS | PASS | PASS | 5/5 | PASS | PARTIAL | #1139 #1140 #1141 #1142 #1143 | DONE |
+| 2 | 2026-04-19 | 8/8 PASS | PASS | — | PASS | PASS | PASS | 0 new | DONE |
+| 3 | 2026-04-19 | 12/13 PASS | PASS | — | PASS | — | PASS | #1146 #1147 | DONE |
 
 ### Cycle 1 — 2026-04-19 (details)
 
