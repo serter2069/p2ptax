@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { roleGuard } from "../middleware/auth";
+import { normalizeSlug } from "../lib/slug";
 
 const router = Router();
 
@@ -293,7 +294,12 @@ router.post("/cities", async (req: Request, res: Response) => {
       res.status(400).json({ error: "name and slug are required" });
       return;
     }
-    const city = await prisma.city.create({ data: { name, slug } });
+    const normalizedSlug = normalizeSlug(slug);
+    if (!normalizedSlug) {
+      res.status(400).json({ error: "slug is invalid after normalization" });
+      return;
+    }
+    const city = await prisma.city.create({ data: { name, slug: normalizedSlug } });
     res.status(201).json(city);
   } catch (error: unknown) {
     const e = error as { code?: string };
@@ -313,7 +319,14 @@ router.patch("/cities/:id", async (req: Request, res: Response) => {
     const { name, slug } = req.body as { name?: string; slug?: string };
     const data: Prisma.CityUpdateInput = {};
     if (name) data.name = name;
-    if (slug) data.slug = slug;
+    if (slug) {
+      const normalizedSlug = normalizeSlug(slug);
+      if (!normalizedSlug) {
+        res.status(400).json({ error: "slug is invalid after normalization" });
+        return;
+      }
+      data.slug = normalizedSlug;
+    }
 
     const city = await prisma.city.update({ where: { id }, data });
     res.json(city);
