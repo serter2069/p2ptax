@@ -37,5 +37,5 @@ jobs:
             npm ci
             npm run build
             cd ..
-            cp nginx-p2ptax.conf /etc/nginx/sites-available/p2ptax
+            cp nginx-p2ptax.conf /etc/nginx/sites-enabled/p2ptax.smartlaunchhub.com
             nginx -t && systemctl reload nginx
