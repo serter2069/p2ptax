@@ -306,6 +306,34 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/requests/:id — fetch request by id, then check ownership (404 before 403)
+router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    const request = await prisma.request.findUnique({
+      where: { id },
+      select: { id: true, userId: true, title: true, status: true },
+    });
+
+    if (!request) {
+      res.status(404).json({ error: "Заявка не найдена" });
+      return;
+    }
+
+    if (request.userId !== userId) {
+      res.status(403).json({ error: "Нет доступа" });
+      return;
+    }
+
+    res.json({ id: request.id, title: request.title, status: request.status });
+  } catch (error) {
+    console.error("requests/:id error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/requests/:id/detail — own request detail (auth required)
 router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) => {
   try {
