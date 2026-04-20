@@ -13,6 +13,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 import { colors, radiusValue } from "@/lib/theme";
@@ -267,9 +268,15 @@ export default function AdminUsers() {
       </View>
 
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <ResponsiveContainer>
+          <View className="py-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
+                <LoadingState variant="skeleton" lines={4} />
+              </View>
+            ))}
+          </View>
+        </ResponsiveContainer>
       ) : error ? (
         <View className="flex-1 items-center justify-center">
           <ErrorState message="Не удалось загрузить пользователей" onRetry={() => fetchUsers(search, filter, 1)} />

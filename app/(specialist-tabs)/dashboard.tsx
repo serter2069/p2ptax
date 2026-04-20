@@ -5,7 +5,6 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
-  ActivityIndicator,
   Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,6 +14,7 @@ import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/ui/EmptyState";
+import LoadingState from "@/components/ui/LoadingState";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiGet, apiPatch } from "@/lib/api";
@@ -131,9 +131,15 @@ export default function SpecialistDashboard() {
           notificationCount={0}
           onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <ResponsiveContainer>
+          <View className="py-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <View key={i} className="bg-white rounded-xl overflow-hidden border border-slate-200">
+                <LoadingState variant="skeleton" lines={3} />
+              </View>
+            ))}
+          </View>
+        </ResponsiveContainer>
       </SafeAreaView>
     );
   }

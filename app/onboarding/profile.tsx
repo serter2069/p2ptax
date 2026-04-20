@@ -35,6 +35,11 @@ export default function OnboardingProfileScreen() {
   const [workingHours, setWorkingHours] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    phone?: string;
+    telegram?: string;
+    description?: string;
+  }>({});
 
   // Web-only hidden file input ref
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -104,9 +109,26 @@ export default function OnboardingProfileScreen() {
     }
   };
 
+  const validateFields = () => {
+    const errors: typeof fieldErrors = {};
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phone.trim() && phoneDigits.length !== 11) {
+      errors.phone = "Введите полный номер телефона";
+    }
+    if (telegram.trim() && !/^@?[a-zA-Z0-9_]{4,}$/.test(telegram.trim())) {
+      errors.telegram = "Некорректный username Telegram";
+    }
+    if (description.trim().length > 1000) {
+      errors.description = "Максимум 1000 символов";
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async () => {
     if (isLoading) return;
     setError("");
+    if (!validateFields()) return;
     setIsLoading(true);
 
     try {
@@ -235,9 +257,11 @@ export default function OnboardingProfileScreen() {
                 value={description}
                 onChangeText={(t) => {
                   if (t.length <= 1000) setDescription(t);
+                  if (fieldErrors.description) setFieldErrors((e) => ({ ...e, description: undefined }));
                 }}
                 multiline
                 editable={!isLoading}
+                error={fieldErrors.description}
               />
               <Text className="text-xs text-slate-400 text-right mt-1">
                 {description.length}/1000
@@ -250,9 +274,13 @@ export default function OnboardingProfileScreen() {
                 label="Телефон"
                 placeholder="+7 (___) ___-__-__"
                 value={phone}
-                onChangeText={(t) => setPhone(formatPhone(t))}
+                onChangeText={(t) => {
+                  setPhone(formatPhone(t));
+                  if (fieldErrors.phone) setFieldErrors((e) => ({ ...e, phone: undefined }));
+                }}
                 keyboardType="phone-pad"
                 editable={!isLoading}
+                error={fieldErrors.phone}
               />
             </View>
 
@@ -262,9 +290,13 @@ export default function OnboardingProfileScreen() {
                 label="Telegram"
                 placeholder="@username"
                 value={telegram}
-                onChangeText={setTelegram}
+                onChangeText={(t) => {
+                  setTelegram(t);
+                  if (fieldErrors.telegram) setFieldErrors((e) => ({ ...e, telegram: undefined }));
+                }}
                 autoCapitalize="none"
                 editable={!isLoading}
+                error={fieldErrors.telegram}
               />
             </View>
 

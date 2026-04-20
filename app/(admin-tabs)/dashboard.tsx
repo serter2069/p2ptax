@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
@@ -6,6 +6,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -113,9 +114,17 @@ export default function AdminDashboard() {
         onSettingsPress={() => router.push("/admin/settings" as never)}
       />
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <ScrollView className="flex-1">
+          <ResponsiveContainer>
+            <View className="py-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <View key={i} className="bg-white rounded-xl overflow-hidden border border-slate-200">
+                  <LoadingState variant="skeleton" lines={3} />
+                </View>
+              ))}
+            </View>
+          </ResponsiveContainer>
+        </ScrollView>
       ) : error ? (
         <View className="flex-1 items-center justify-center">
           <ErrorState message="Не удалось загрузить статистику" onRetry={fetchStats} />
