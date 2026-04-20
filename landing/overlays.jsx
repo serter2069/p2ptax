@@ -52,12 +52,23 @@ function AuthModal({ onClose, onDone }) {
   const [email, setEmail] = useS('');
   const [code, setCode] = useS(['','','','','','']);
   const [err, setErr] = useS(null);
+  const [busy, setBusy] = useS(false);
   const inputs = useR([]);
 
-  const submitEmail = () => {
+  const submitEmail = async () => {
     if (!/^\S+@\S+\.\S+$/.test(email)) { setErr('Проверьте формат email'); return; }
-    setErr(null); setStep('otp');
-    setTimeout(() => inputs.current[0]?.focus(), 80);
+    setErr(null); setBusy(true);
+    try {
+      if (window.PT_AUTH && window.PT_AUTH.requestOtp) {
+        await window.PT_AUTH.requestOtp(email.trim());
+      }
+      setStep('otp');
+      setTimeout(() => inputs.current[0]?.focus(), 80);
+    } catch (e) {
+      setErr(e.message || 'Не удалось отправить код. Попробуйте позже.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const setDigit = (i, v) => {
@@ -67,9 +78,21 @@ function AuthModal({ onClose, onDone }) {
     if (nc.every(x => x)) setTimeout(() => verify(nc.join('')), 150);
   };
 
-  const verify = (val) => {
-    if (val === '000000') { onDone(); }
-    else { setErr('Неверный код. В демо — 000000'); setCode(['','','','','','']); inputs.current[0]?.focus(); }
+  const verify = async (val) => {
+    if (busy) return;
+    setErr(null); setBusy(true);
+    try {
+      if (window.PT_AUTH && window.PT_AUTH.verifyOtp) {
+        await window.PT_AUTH.verifyOtp(email.trim(), val);
+      }
+      onDone();
+    } catch (e) {
+      setErr(e.message || 'Неверный код');
+      setCode(['','','','','','']);
+      inputs.current[0]?.focus();
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -88,17 +111,19 @@ function AuthModal({ onClose, onDone }) {
               <label>Email</label>
               <input className="input" autoFocus type="email" placeholder="you@company.ru"
                 value={email} onChange={(e)=>setEmail(e.target.value)}
-                onKeyDown={(e)=>e.key==='Enter' && submitEmail()} />
+                onKeyDown={(e)=>e.key==='Enter' && !busy && submitEmail()} />
               {err && <div className="small" style={{color:'var(--danger)'}}>{err}</div>}
             </div>
-            <button className="btn btn-primary btn-block" onClick={submitEmail}>Получить код →</button>
+            <button className="btn btn-primary btn-block" disabled={busy} onClick={submitEmail}>
+              {busy ? 'Отправляем…' : 'Получить код →'}
+            </button>
             <p className="xs dim" style={{marginTop: 16, textAlign:'center'}}>Нажимая, вы принимаете <a style={{textDecoration:'underline'}}>условия</a></p>
           </>
         )}
         {step === 'otp' && (
           <>
             <p className="muted small" style={{marginTop: 0, marginBottom: 20}}>
-              Отправили код на <b>{email}</b>. В демо вводите <span className="mono">000000</span>.
+              Отправили 6-значный код на <b>{email}</b>. Проверьте почту (и папку «Спам»).
             </p>
             <div className="otp-grid">
               {code.map((d, i) => (
@@ -112,10 +137,10 @@ function AuthModal({ onClose, onDone }) {
             {err && <div className="small" style={{color:'var(--danger)', marginBottom: 12}}>{err}</div>}
             <button
               className="btn btn-primary btn-block"
-              disabled={!code.every(x => x)}
-              style={{opacity: code.every(x => x) ? 1 : .4, cursor: code.every(x => x) ? 'pointer' : 'not-allowed', marginBottom: 12}}
+              disabled={!code.every(x => x) || busy}
+              style={{opacity: (code.every(x => x) && !busy) ? 1 : .4, cursor: (code.every(x => x) && !busy) ? 'pointer' : 'not-allowed', marginBottom: 12}}
               onClick={()=>verify(code.join(''))}>
-              Подтвердить код
+              {busy ? 'Проверяем…' : 'Подтвердить код'}
             </button>
             <div className="flex-between">
               <button className="btn btn-subtle" onClick={()=>setStep('email')}>← Изменить email</button>

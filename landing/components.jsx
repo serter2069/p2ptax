@@ -98,6 +98,30 @@ function Select({ value, placeholder, onClick, open }) {
 
 // ---------- top nav ----------
 function Nav({ onAuth, onCreate, onCatalog }) {
+  const [user, setUser] = useState(() => (window.PT_AUTH && window.PT_AUTH.getUser && window.PT_AUTH.getUser()) || null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!window.PT_AUTH || !window.PT_AUTH.onChange) return;
+    const off = window.PT_AUTH.onChange((u) => { setUser(u); if (!u) setMenuOpen(false); });
+    return off;
+  }, []);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const h = (e) => { if (!e.target.closest('.pt-user-menu') && !e.target.closest('.pt-user-btn')) setMenuOpen(false); };
+    document.addEventListener('click', h);
+    return () => document.removeEventListener('click', h);
+  }, [menuOpen]);
+
+  const initials = user ? (
+    (user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase() +
+    (user.lastName?.[0] || '').toUpperCase()
+  ) : '';
+
+  const doLogout = async () => {
+    setMenuOpen(false);
+    try { await window.PT_AUTH.logout(); } catch {}
+  };
+
   return (
     <nav className="nav">
       <div className="container nav-inner">
@@ -112,7 +136,36 @@ function Nav({ onAuth, onCreate, onCatalog }) {
           <a href="#specialists-cta">Для специалистов</a>
         </div>
         <div className="nav-right">
-          <button className="btn btn-subtle" onClick={onAuth}>Войти</button>
+          {user ? (
+            <div style={{position:'relative'}}>
+              <button
+                className="btn btn-subtle pt-user-btn"
+                onClick={(e)=>{ e.stopPropagation(); setMenuOpen(v=>!v); }}
+                style={{display:'inline-flex', alignItems:'center', gap:8}}
+                aria-label="Меню пользователя">
+                <span style={{
+                  display:'inline-flex', alignItems:'center', justifyContent:'center',
+                  width:28, height:28, borderRadius:'50%',
+                  background:'var(--accent)', color:'var(--accent-ink)',
+                  fontSize:12, fontWeight:600, letterSpacing:'.02em'}}>
+                  {initials || 'U'}
+                </span>
+                <span className="dim mono xs" style={{maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                  {user.email || user.firstName || 'Аккаунт'}
+                </span>
+              </button>
+              {menuOpen && (
+                <div className="kebab-menu pt-user-menu" style={{right:0, minWidth:220}}>
+                  <div style={{padding:'8px 12px', fontSize:12, color:'var(--text-mute)', borderBottom:'1px solid var(--line)', marginBottom:4}}>
+                    {user.email}
+                  </div>
+                  <button onClick={doLogout}>Выйти</button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button className="btn btn-subtle" onClick={onAuth}>Войти</button>
+          )}
           <button className="btn btn-primary" onClick={onCreate}>Создать заявку</button>
         </div>
       </div>
