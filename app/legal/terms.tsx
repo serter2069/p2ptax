@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { colors } from "@/lib/theme";
 
 function SectionHeading({ children }: { children: string }) {
   return (
@@ -35,7 +36,7 @@ export default function TermsScreen() {
             onPress={() => router.back()}
             className="w-11 h-11 items-center justify-center"
           >
-            <FontAwesome name="times" size={20} color="#0f172a" />
+            <FontAwesome name="times" size={20} color={colors.text} />
           </Pressable>
         </View>
       </View>

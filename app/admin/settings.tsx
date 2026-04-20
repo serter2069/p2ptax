@@ -14,6 +14,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 
 interface SettingField {
@@ -104,7 +105,7 @@ export default function AdminSettings() {
       <HeaderBack title="Настройки системы" />
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <ScrollView className="flex-1">
@@ -118,14 +119,14 @@ export default function AdminSettings() {
                   <TextInput
                     accessibilityLabel={field.label}
                     style={{
-                      backgroundColor: "#ffffff",
+                      backgroundColor: colors.surface,
                       borderWidth: 1,
-                      borderColor: "#e2e8f0",
+                      borderColor: colors.border,
                       borderRadius: 10,
                       height: 48,
                       paddingHorizontal: 14,
                       fontSize: 16,
-                      color: "#0f172a",
+                      color: colors.text,
                     }}
                     value={getValue(field.key, field.defaultValue)}
                     onChangeText={(val) => setValue(field.key, val)}

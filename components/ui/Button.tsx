@@ -16,7 +16,7 @@ const variantStyles = {
   primary: {
     container: "bg-blue-900 rounded-xl h-12 flex-row items-center justify-center",
     text: "text-white text-base font-semibold",
-    iconColor: "#FFFFFF",
+    iconColor: colors.surface,
   },
   secondary: {
     container: "bg-white border border-slate-200 rounded-xl h-12 flex-row items-center justify-center",
@@ -26,7 +26,7 @@ const variantStyles = {
   destructive: {
     container: "bg-red-600 rounded-xl h-12 flex-row items-center justify-center",
     text: "text-white text-base font-semibold",
-    iconColor: "#FFFFFF",
+    iconColor: colors.surface,
   },
 } as const;
 
@@ -51,7 +51,7 @@ export default function Button({
       className={`${styles.container} ${widthClass} ${opacityClass}`}
       style={({ pressed }) => [
         variant === "primary" && !pressed
-          ? { shadowColor: '#1e3a8a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 3 }
+          ? { shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 3 }
           : undefined,
         pressed ? { opacity: 0.9, transform: [{ scale: 0.98 }] } : undefined,
       ]}

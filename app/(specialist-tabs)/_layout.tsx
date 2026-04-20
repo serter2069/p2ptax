@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 export default function SpecialistTabsLayout() {
   const { width } = useWindowDimensions();
@@ -11,10 +12,10 @@ export default function SpecialistTabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: isMobile
-          ? { height: 60, paddingBottom: 8, borderTopColor: "#e2e8f0" }
+          ? { height: 60, paddingBottom: 8, borderTopColor: colors.border }
           : { display: "none" },
-        tabBarActiveTintColor: "#1e3a8a",
-        tabBarInactiveTintColor: "#94a3b8",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.placeholder,
         tabBarLabelStyle: { fontSize: 12 },
       }}
     >

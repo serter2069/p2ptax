@@ -32,8 +32,8 @@ export default function Input({
     ? colors.error
     : focused
       ? colors.accent
-      : '#e2e8f0';
-  const bgColor = error ? '#fef2f2' : '#FFFFFF';
+      : colors.border;
+  const bgColor = error ? colors.errorBg : colors.surface;
 
   return (
     <View>
@@ -57,7 +57,7 @@ export default function Input({
           <Feather
             name={icon}
             size={18}
-            color="#94a3b8"
+            color={colors.placeholder}
             style={{ marginRight: 8 }}
           />
         )}

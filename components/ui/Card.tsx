@@ -1,4 +1,5 @@
 import { View, Pressable } from "react-native";
+import { colors } from "../../lib/theme";
 
 export interface CardProps {
   children: React.ReactNode;
@@ -27,7 +28,7 @@ export default function Card({
   const shadowStyle =
     variant === "default"
       ? {
-          shadowColor: '#0F172A',
+          shadowColor: colors.text,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.06,
           shadowRadius: 12,

@@ -41,7 +41,7 @@ function SkeletonLines({ lines }: { lines: number }) {
             height: heights[i % heights.length],
             width: widths[i % widths.length],
             borderRadius: 8,
-            backgroundColor: '#e2e8f0',
+            backgroundColor: colors.border,
             opacity,
           }}
         />

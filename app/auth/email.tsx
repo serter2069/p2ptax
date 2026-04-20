@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import { colors } from "@/lib/theme";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -78,15 +79,15 @@ export default function AuthEmailScreen() {
             style={{
               height: 48,
               borderRadius: 12,
-              backgroundColor: error ? "#fef2f2" : "#f8fafc",
+              backgroundColor: error ? colors.errorBg : colors.background,
               borderWidth: 1,
-              borderColor: error ? "#dc2626" : "#e2e8f0",
+              borderColor: error ? colors.error : colors.border,
               paddingHorizontal: 16,
               fontSize: 16,
-              color: "#0f172a",
+              color: colors.text,
             }}
             placeholder="your@email.com"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.placeholder}
             value={email}
             onChangeText={(t) => {
               setEmail(t);

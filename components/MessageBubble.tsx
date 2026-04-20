@@ -1,5 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 interface FileAttachment {
   id: string;
@@ -66,7 +67,7 @@ export default function MessageBubble({
               <FontAwesome
                 name="image"
                 size={32}
-                color={isOwn ? "#ffffff" : "#64748b"}
+                color={isOwn ? colors.surface : colors.textSecondary}
               />
               <Text
                 className={`text-xs mt-1 ${isOwn ? "text-blue-200" : "text-slate-400"}`}
@@ -91,7 +92,7 @@ export default function MessageBubble({
             <FontAwesome
               name={file.mimeType === "application/pdf" ? "file-pdf-o" : "file-o"}
               size={18}
-              color={isOwn ? "#93c5fd" : "#1e3a8a"}
+              color={isOwn ? "#93c5fd" : colors.primary}
             />
             <View className="ml-2 flex-1">
               <Text
@@ -109,7 +110,7 @@ export default function MessageBubble({
             <FontAwesome
               name="download"
               size={12}
-              color={isOwn ? "#93c5fd" : "#94a3b8"}
+              color={isOwn ? "#93c5fd" : colors.placeholder}
             />
           </Pressable>
         ))}

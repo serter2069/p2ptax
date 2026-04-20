@@ -14,6 +14,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 
 type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
@@ -214,7 +215,7 @@ export default function AdminUsers() {
             borderRadius: 10,
             height: 40,
             paddingHorizontal: 14,
-            color: "#ffffff",
+            color: colors.surface,
             fontSize: 15,
           }}
           placeholder="Поиск по email или имени..."
@@ -259,7 +260,7 @@ export default function AdminUsers() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <ScrollView
@@ -273,7 +274,7 @@ export default function AdminUsers() {
             <View className="py-2">
               {users.length === 0 ? (
                 <View className="items-center py-16">
-                  <FontAwesome name="users" size={48} color="#94a3b8" />
+                  <FontAwesome name="users" size={48} color={colors.placeholder} />
                   <Text className="text-base text-slate-400 mt-3">
                     Пользователи не найдены
                   </Text>
@@ -388,7 +389,7 @@ export default function AdminUsers() {
 
               {loadingMore && (
                 <View className="py-4 items-center">
-                  <ActivityIndicator size="small" color="#1e3a8a" />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 </View>
               )}
             </View>

@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useState } from "react";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { colors } from "@/lib/theme";
 
 function SettingRow({
   icon,
@@ -23,10 +24,10 @@ function SettingRow({
       className="flex-row items-center px-4 py-4 border-b border-slate-50 active:bg-slate-50"
     >
       <View className="w-9 h-9 rounded-lg bg-slate-50 items-center justify-center">
-        <FontAwesome name={icon} size={16} color="#0f172a" />
+        <FontAwesome name={icon} size={16} color={colors.text} />
       </View>
       <Text className="flex-1 ml-3 text-base text-slate-900">{label}</Text>
-      {rightElement || <FontAwesome name="chevron-right" size={12} color="#cbd5e1" />}
+      {rightElement || <FontAwesome name="chevron-right" size={12} color={colors.borderLight} />}
     </Pressable>
   );
 }
@@ -49,7 +50,7 @@ export default function SettingsScreen() {
   if (!ready) {
     return (
       <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#1e3a8a" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -60,7 +61,7 @@ export default function SettingsScreen() {
         {/* Header */}
         <View className="flex-row items-center px-4 pt-2 pb-3 border-b border-slate-50">
           <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
-            <FontAwesome name="arrow-left" size={18} color="#0f172a" />
+            <FontAwesome name="arrow-left" size={18} color={colors.text} />
           </Pressable>
           <Text className="text-2xl font-bold text-slate-900">Настройки</Text>
         </View>
@@ -70,21 +71,21 @@ export default function SettingsScreen() {
           icon="bell"
           label="Push-уведомления"
           rightElement={
-            <Switch accessibilityLabel="Push-уведомления" value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
+            <Switch accessibilityLabel="Push-уведомления" value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor={colors.surface} />
           }
         />
         <SettingRow
           icon="envelope"
           label="Email-уведомления"
           rightElement={
-            <Switch accessibilityLabel="Email-уведомления" value={emailEnabled} onValueChange={setEmailEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
+            <Switch accessibilityLabel="Email-уведомления" value={emailEnabled} onValueChange={setEmailEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor={colors.surface} />
           }
         />
         <SettingRow
           icon="comments"
           label="Уведомления о сообщениях"
           rightElement={
-            <Switch accessibilityLabel="Уведомления о сообщениях" value={messageEnabled} onValueChange={setMessageEnabled} trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }} thumbColor="#ffffff" />
+            <Switch accessibilityLabel="Уведомления о сообщениях" value={messageEnabled} onValueChange={setMessageEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor={colors.surface} />
           }
         />
 

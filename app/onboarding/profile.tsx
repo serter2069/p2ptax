@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { colors } from "@/lib/theme";
 
 
 export default function OnboardingProfileScreen() {
@@ -167,7 +168,7 @@ export default function OnboardingProfileScreen() {
                   className="items-center justify-center rounded-full bg-slate-100"
                   style={{ width: 80, height: 80 }}
                 >
-                  <ActivityIndicator color="#1e3a8a" />
+                  <ActivityIndicator color={colors.primary} />
                 </View>
               ) : avatarUrl ? (
                 <View>
@@ -178,14 +179,14 @@ export default function OnboardingProfileScreen() {
                       height: 80,
                       borderRadius: 40,
                       borderWidth: 2,
-                      borderColor: "#e2e8f0",
+                      borderColor: colors.border,
                     }}
                   />
                   <View
                     className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
                     style={{ width: 24, height: 24 }}
                   >
-                    <FontAwesome name="pencil" size={12} color="#fff" />
+                    <FontAwesome name="pencil" size={12} color={colors.surface} />
                   </View>
                 </View>
               ) : (
@@ -195,11 +196,11 @@ export default function OnboardingProfileScreen() {
                     width: 80,
                     height: 80,
                     borderWidth: 2,
-                    borderColor: "#cbd5e1",
+                    borderColor: colors.borderLight,
                     borderStyle: "dashed",
                   }}
                 >
-                  <FontAwesome name="camera" size={24} color="#94a3b8" />
+                  <FontAwesome name="camera" size={24} color={colors.placeholder} />
                 </View>
               )}
               <Text className="text-sm text-slate-400 mt-2">
@@ -232,18 +233,18 @@ export default function OnboardingProfileScreen() {
               style={{
                 height: 100,
                 borderRadius: 12,
-                backgroundColor: "#f8fafc",
+                backgroundColor: colors.background,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
                 fontSize: 16,
-                color: "#0f172a",
+                color: colors.text,
                 textAlignVertical: "top",
                 marginBottom: 4,
               }}
               placeholder="Расскажите о своём опыте: сколько лет в профессии, какие вопросы решаете, с какими инспекциями работаете"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               value={description}
               onChangeText={(t) => {
                 if (t.length <= 1000) setDescription(t);
@@ -262,16 +263,16 @@ export default function OnboardingProfileScreen() {
               style={{
                 height: 48,
                 borderRadius: 12,
-                backgroundColor: "#f8fafc",
+                backgroundColor: colors.background,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 paddingHorizontal: 16,
                 fontSize: 16,
-                color: "#0f172a",
+                color: colors.text,
                 marginBottom: 16,
               }}
               placeholder="+7 (___) ___-__-__"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               value={phone}
               onChangeText={(t) => setPhone(formatPhone(t))}
               keyboardType="phone-pad"
@@ -285,16 +286,16 @@ export default function OnboardingProfileScreen() {
               style={{
                 height: 48,
                 borderRadius: 12,
-                backgroundColor: "#f8fafc",
+                backgroundColor: colors.background,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 paddingHorizontal: 16,
                 fontSize: 16,
-                color: "#0f172a",
+                color: colors.text,
                 marginBottom: 16,
               }}
               placeholder="@username"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               value={telegram}
               onChangeText={setTelegram}
               autoCapitalize="none"
@@ -308,16 +309,16 @@ export default function OnboardingProfileScreen() {
               style={{
                 height: 48,
                 borderRadius: 12,
-                backgroundColor: "#f8fafc",
+                backgroundColor: colors.background,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 paddingHorizontal: 16,
                 fontSize: 16,
-                color: "#0f172a",
+                color: colors.text,
                 marginBottom: 16,
               }}
               placeholder="+7 (___) ___-__-__"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               value={whatsapp}
               onChangeText={(t) => setWhatsapp(formatPhone(t))}
               keyboardType="phone-pad"
@@ -331,16 +332,16 @@ export default function OnboardingProfileScreen() {
               style={{
                 height: 48,
                 borderRadius: 12,
-                backgroundColor: "#f8fafc",
+                backgroundColor: colors.background,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 paddingHorizontal: 16,
                 fontSize: 16,
-                color: "#0f172a",
+                color: colors.text,
                 marginBottom: 16,
               }}
               placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               value={officeAddress}
               onChangeText={setOfficeAddress}
               editable={!isLoading}
@@ -353,16 +354,16 @@ export default function OnboardingProfileScreen() {
               style={{
                 height: 48,
                 borderRadius: 12,
-                backgroundColor: "#f8fafc",
+                backgroundColor: colors.background,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 paddingHorizontal: 16,
                 fontSize: 16,
-                color: "#0f172a",
+                color: colors.text,
                 marginBottom: 24,
               }}
               placeholder="Пн-Пт 9:00-18:00"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               value={workingHours}
               onChangeText={setWorkingHours}
               editable={!isLoading}

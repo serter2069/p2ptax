@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import SpecialistCard from "@/components/SpecialistCard";
 import ErrorState from "@/components/ui/ErrorState";
+import { colors } from "@/lib/theme";
 
 interface FeaturedSpecialist {
   id: string;
@@ -163,7 +164,7 @@ export default function LandingScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#1e3a8a" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -258,7 +259,7 @@ export default function LandingScreen() {
                 </Text>
               </View>
               <View
-                style={{ width: 1, backgroundColor: "#334155", marginHorizontal: 8 }}
+                style={{ width: 1, backgroundColor: colors.textMuted, marginHorizontal: 8 }}
               />
               <View className="items-center">
                 <Text className="text-2xl font-bold text-white">
@@ -269,7 +270,7 @@ export default function LandingScreen() {
                 </Text>
               </View>
               <View
-                style={{ width: 1, backgroundColor: "#334155", marginHorizontal: 8 }}
+                style={{ width: 1, backgroundColor: colors.textMuted, marginHorizontal: 8 }}
               />
               <View className="items-center">
                 <Text className="text-2xl font-bold text-white">
@@ -294,7 +295,7 @@ export default function LandingScreen() {
             <View className="mb-8">
               <View className="flex-row items-center mb-4">
                 <View className="w-7 h-7 rounded-full bg-blue-900/10 items-center justify-center mr-2">
-                  <FontAwesome name="user" size={13} color="#1e3a8a" />
+                  <FontAwesome name="user" size={13} color={colors.primary} />
                 </View>
                 <Text className="text-base font-semibold text-slate-900">
                   Для клиентов
@@ -327,7 +328,7 @@ export default function LandingScreen() {
             <View>
               <View className="flex-row items-center mb-4">
                 <View className="w-7 h-7 rounded-full bg-amber-700/10 items-center justify-center mr-2">
-                  <FontAwesome name="briefcase" size={13} color="#b45309" />
+                  <FontAwesome name="briefcase" size={13} color={colors.accent} />
                 </View>
                 <Text className="text-base font-semibold text-slate-900">
                   Для специалистов
@@ -435,12 +436,12 @@ export default function LandingScreen() {
                   </Text>
                   <View className="flex-row items-center gap-3">
                     <View className="flex-row items-center gap-1">
-                      <FontAwesome name="map-marker" size={11} color="#94a3b8" />
+                      <FontAwesome name="map-marker" size={11} color={colors.placeholder} />
                       <Text className="text-xs text-slate-400">{r.city.name}</Text>
                     </View>
                     {r.threadsCount > 0 && (
                       <View className="flex-row items-center gap-1">
-                        <FontAwesome name="comments" size={11} color="#94a3b8" />
+                        <FontAwesome name="comments" size={11} color={colors.placeholder} />
                         <Text className="text-xs text-slate-400">
                           {r.threadsCount}
                         </Text>

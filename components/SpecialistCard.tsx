@@ -1,5 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 interface SpecialistCardProps {
   id: string;
@@ -79,7 +80,7 @@ export default function SpecialistCard({
           </Text>
           {cities.length > 0 && (
             <View className="flex-row items-center mt-0.5">
-              <FontAwesome name="map-marker" size={10} color="#94a3b8" />
+              <FontAwesome name="map-marker" size={10} color={colors.placeholder} />
               <Text className="text-xs text-slate-400 ml-1" numberOfLines={1}>
                 {cities.map((c) => c.name).join(", ")}
               </Text>

@@ -7,6 +7,7 @@ import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 
 interface Stats {
@@ -108,7 +109,7 @@ export default function AdminDashboard() {
       />
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <ScrollView className="flex-1">

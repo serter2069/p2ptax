@@ -14,6 +14,7 @@ import RequestCard from "@/components/RequestCard";
 import FilterBar from "@/components/FilterBar";
 import EmptyState from "@/components/EmptyState";
 import { api } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -153,7 +154,7 @@ export default function SpecialistPublicRequests() {
 
         {loading ? (
           <View className="flex-1 items-center justify-center py-16">
-            <ActivityIndicator size="large" color="#1e3a8a" />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : error ? (
           <EmptyState
@@ -201,7 +202,7 @@ export default function SpecialistPublicRequests() {
             onEndReachedThreshold={0.5}
             ListFooterComponent={
               loadingMore ? (
-                <ActivityIndicator size="small" color="#1e3a8a" className="py-4" />
+                <ActivityIndicator size="small" color={colors.primary} className="py-4" />
               ) : null
             }
           />

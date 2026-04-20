@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import Button from "@/components/ui/Button";
+import { colors } from "@/lib/theme";
 
 interface EmptyStateProps {
   icon?: React.ComponentProps<typeof FontAwesome>["name"];
@@ -19,7 +20,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <View className="flex-1 items-center justify-center py-16 px-8">
-      <FontAwesome name={icon} size={64} color="#94a3b8" />
+      <FontAwesome name={icon} size={64} color={colors.placeholder} />
       <Text className="text-lg font-semibold text-slate-900 mt-4 text-center">
         {title}
       </Text>

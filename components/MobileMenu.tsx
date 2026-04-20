@@ -2,6 +2,7 @@ import { View, Text, Pressable, Modal } from "react-native";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useAuth } from "@/contexts/AuthContext";
+import { colors } from "@/lib/theme";
 
 const MENU_ITEMS: { label: string; route: string; icon: React.ComponentProps<typeof FontAwesome>["name"] }[] = [
   { label: "Главная", route: "/", icon: "home" },
@@ -52,7 +53,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
             ) : (
               <>
                 <View className="w-14 h-14 rounded-full bg-slate-50 items-center justify-center mb-3">
-                  <FontAwesome name="user" size={24} color="#1e3a8a" />
+                  <FontAwesome name="user" size={24} color={colors.primary} />
                 </View>
                 <Text className="text-lg font-bold text-white">Гость</Text>
                 <Text className="text-sm text-slate-50 mt-0.5">Войдите для продолжения</Text>
@@ -62,7 +63,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
 
           {/* Close button */}
           <Pressable accessibilityLabel="Закрыть меню" onPress={onClose} className="absolute top-12 right-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="times" size={20} color="#ffffff" />
+            <FontAwesome name="times" size={20} color={colors.surface} />
           </Pressable>
 
           {/* Menu items */}
@@ -75,7 +76,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
                 className="flex-row items-center px-5 py-3.5 active:bg-slate-50"
               >
                 <View className="w-8 items-center">
-                  <FontAwesome name={item.icon} size={18} color="#64748b" />
+                  <FontAwesome name={item.icon} size={18} color={colors.textSecondary} />
                 </View>
                 <Text className="text-base text-slate-800 ml-3">{item.label}</Text>
               </Pressable>
@@ -86,7 +87,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           <View className="border-t border-slate-100 px-5 py-4 pb-8">
             {isAuthenticated ? (
               <Pressable accessibilityLabel="Выйти" onPress={handleLogout} className="flex-row items-center py-3">
-                <FontAwesome name="sign-out" size={18} color="#dc2626" />
+                <FontAwesome name="sign-out" size={18} color={colors.error} />
                 <Text className="text-base font-medium text-red-600 ml-3">Выйти</Text>
               </Pressable>
             ) : (
