@@ -2,7 +2,6 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { colors } from "@/lib/theme";
 
 function SectionHeading({ children }: { children: string }) {
@@ -38,7 +37,7 @@ export default function PrivacyPolicyScreen() {
         <View className="w-10" />
       </View>
 
-      <ResponsiveContainer>
+      <View className="flex-1 px-4 md:max-w-[520px] md:self-center md:px-0">
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48 }}
@@ -93,7 +92,7 @@ export default function PrivacyPolicyScreen() {
             адресу: privacy@p2ptax.ru
           </Paragraph>
         </ScrollView>
-      </ResponsiveContainer>
+      </View>
     </SafeAreaView>
   );
 }

@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import { colors } from "@/lib/theme";
 
@@ -59,7 +58,7 @@ export default function AuthEmailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ResponsiveContainer>
+      <View className="flex-1 px-4 md:max-w-[520px] md:self-center md:px-0">
         <View className="flex-1" style={{ paddingTop: "13%" }}>
           <View className="items-center mb-8">
             <View className="w-20 h-20 rounded-2xl bg-blue-900 items-center justify-center mb-4">
@@ -122,7 +121,7 @@ export default function AuthEmailScreen() {
             </Text>
           </Pressable>
         </View>
-      </ResponsiveContainer>
+      </View>
     </SafeAreaView>
   );
 }

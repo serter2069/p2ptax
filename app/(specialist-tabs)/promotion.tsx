@@ -3,7 +3,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderHome from "@/components/HeaderHome";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { colors } from "@/lib/theme";
 
 export default function PromotionScreen() {
@@ -16,7 +15,7 @@ export default function PromotionScreen() {
         onSettingsPress={() => router.push("/settings/specialist" as never)}
       />
       <ScrollView className="flex-1">
-        <ResponsiveContainer>
+        <View className="w-full px-4 md:max-w-[520px] md:self-center md:px-0">
           <View className="py-4">
             <Text className="text-2xl font-bold text-slate-900 mb-2">Продвижение</Text>
             <Text className="text-sm text-slate-500 mb-6">
@@ -57,7 +56,7 @@ export default function PromotionScreen() {
 
             <View className="h-8" />
           </View>
-        </ResponsiveContainer>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
