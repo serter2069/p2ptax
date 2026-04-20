@@ -235,6 +235,7 @@ export default function AdminUsers() {
         >
           {FILTER_OPTIONS.map((opt) => (
             <Pressable
+              accessibilityRole="button"
               key={opt.key}
               accessibilityLabel={opt.label}
               onPress={() => setFilter(opt.key)}
@@ -284,6 +285,7 @@ export default function AdminUsers() {
                 users.map((user) => (
                   <View key={user.id}>
                     <Pressable
+                      accessibilityRole="button"
                       accessibilityLabel={`${[user.firstName, user.lastName].filter(Boolean).join(" ") || user.email}`}
                       onPress={() =>
                         setExpandedId(expandedId === user.id ? null : user.id)
@@ -360,6 +362,7 @@ export default function AdminUsers() {
 
                         <View className="flex-row gap-2 flex-wrap">
                           <Pressable
+                            accessibilityRole="button"
                             accessibilityLabel={user.isBanned ? "Разблокировать" : "Заблокировать"}
                             onPress={() => toggleBan(user)}
                             className={`px-3 py-2 rounded-lg ${
@@ -374,6 +377,7 @@ export default function AdminUsers() {
 
                           {user.role === "CLIENT" && (
                             <Pressable
+                              accessibilityRole="button"
                               accessibilityLabel="Закрыть все заявки"
                               onPress={() => closeAllRequests(user)}
                               className="px-3 py-2 rounded-lg bg-amber-500"

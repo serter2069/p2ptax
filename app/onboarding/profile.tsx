@@ -159,6 +159,7 @@ export default function OnboardingProfileScreen() {
 
             {/* Avatar upload */}
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Добавить фото"
               onPress={handleAvatarPress}
               className="items-center mb-6"
@@ -384,6 +385,7 @@ export default function OnboardingProfileScreen() {
 
             {/* Skip link */}
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Пропустить"
               onPress={handleSubmit}
               disabled={isLoading || avatarUploading}

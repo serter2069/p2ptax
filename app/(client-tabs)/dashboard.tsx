@@ -139,6 +139,7 @@ export default function ClientDashboard() {
               {/* Unread messages badge */}
               {(stats?.unreadMessages ?? 0) > 0 && (
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Непрочитанные сообщения"
                   onPress={() => router.push("/(client-tabs)/messages" as never)}
                   className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex-row items-center justify-between"
@@ -152,6 +153,7 @@ export default function ClientDashboard() {
 
               {/* Create request CTA */}
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel={atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
                 onPress={() => !atLimit && router.push("/requests/new" as never)}
                 disabled={atLimit}
@@ -176,6 +178,7 @@ export default function ClientDashboard() {
                 </Text>
                 {requests.length > 0 && (
                   <Pressable
+                    accessibilityRole="button"
                     accessibilityLabel="Смотреть все заявки"
                     onPress={() => router.push("/(client-tabs)/requests" as never)}
                   >

@@ -190,6 +190,7 @@ export default function LandingScreen() {
         <Text className="text-lg font-bold text-white">P2PTax</Text>
         <View className="flex-row items-center gap-3">
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Войти"
             onPress={() => router.push("/auth/email" as never)}
             className="bg-white/20 rounded-lg px-4 min-h-[44px] items-center justify-center"
@@ -217,6 +218,7 @@ export default function LandingScreen() {
               style={isDesktop ? { flexDirection: "row", justifyContent: "center" } : undefined}
             >
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Найти специалиста"
                 onPress={() => router.push("/specialists" as never)}
                 className="bg-amber-700 rounded-xl h-12 items-center justify-center"
@@ -227,6 +229,7 @@ export default function LandingScreen() {
                 </Text>
               </Pressable>
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Я специалист"
                 onPress={() => router.push("/auth/email" as never)}
                 className="border border-white/30 rounded-xl h-12 items-center justify-center"
@@ -365,6 +368,7 @@ export default function LandingScreen() {
                   Специалисты
                 </Text>
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Все специалисты"
                   onPress={() => router.push("/specialists" as never)}
                 >
@@ -401,6 +405,7 @@ export default function LandingScreen() {
                   Свежие заявки
                 </Text>
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Все заявки"
                   onPress={() => router.push("/requests" as never)}
                 >
@@ -411,6 +416,7 @@ export default function LandingScreen() {
               </View>
               {recentRequests.map((r) => (
                 <Pressable
+                  accessibilityRole="button"
                   key={r.id}
                   accessibilityLabel={r.title || "Заявка"}
                   onPress={() => router.push(`/requests/${r.id}` as never)}
@@ -464,6 +470,7 @@ export default function LandingScreen() {
               Разместите заявку бесплатно и получите отклики от специалистов
             </Text>
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Разместить заявку бесплатно"
               onPress={() => router.push("/auth/email" as never)}
               className="bg-amber-700 rounded-xl h-12 items-center justify-center"

@@ -58,6 +58,7 @@ export default function MessageBubble({
         {/* Image thumbnails */}
         {imageFiles.map((img) => (
           <Pressable
+            accessibilityRole="button"
             key={img.id}
             accessibilityLabel={`Изображение ${img.filename}`}
             onPress={() => onImagePress?.(img.url)}
@@ -82,6 +83,7 @@ export default function MessageBubble({
         {/* Document files */}
         {docFiles.map((file) => (
           <Pressable
+            accessibilityRole="button"
             key={file.id}
             accessibilityLabel={`Файл ${file.filename}`}
             onPress={() => onFilePress?.(file)}

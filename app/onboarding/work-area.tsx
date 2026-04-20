@@ -177,7 +177,7 @@ export default function OnboardingWorkAreaScreen() {
                     </Text>
                     <Text className="text-xs text-slate-400">{item.cityName}</Text>
                   </View>
-                  <Pressable accessibilityLabel="Удалить отделение" onPress={() => removeFns(item.fnsId)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Удалить отделение" onPress={() => removeFns(item.fnsId)}>
                     <FontAwesome name="times" size={16} color={colors.placeholder} />
                   </Pressable>
                 </View>
@@ -187,6 +187,7 @@ export default function OnboardingWorkAreaScreen() {
                   const isChecked = item.serviceIds.includes(svc.id);
                   return (
                     <Pressable
+                      accessibilityRole="button"
                       key={svc.id}
                       accessibilityLabel={svc.name}
                       onPress={() => toggleService(item.fnsId, svc.id)}
@@ -226,6 +227,7 @@ export default function OnboardingWorkAreaScreen() {
                 <ScrollView nestedScrollEnabled>
                   {cities.map((city) => (
                     <Pressable
+                      accessibilityRole="button"
                       key={city.id}
                       accessibilityLabel={city.name}
                       onPress={() => handleCitySelect(city)}
@@ -256,6 +258,7 @@ export default function OnboardingWorkAreaScreen() {
                     )
                     .map((fns) => (
                       <Pressable
+                        accessibilityRole="button"
                         key={fns.id}
                         accessibilityLabel={fns.name}
                         onPress={() => handleFnsSelect(fns)}
@@ -283,6 +286,7 @@ export default function OnboardingWorkAreaScreen() {
             {/* Add city button */}
             {!showCityPicker && !showFnsPicker && (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Добавить город"
                 onPress={() => {
                   setShowCityPicker(true);
@@ -299,6 +303,7 @@ export default function OnboardingWorkAreaScreen() {
 
             {showCityPicker && (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Отмена"
                 onPress={() => setShowCityPicker(false)}
                 className="mb-4"
@@ -311,6 +316,7 @@ export default function OnboardingWorkAreaScreen() {
 
             {showFnsPicker && (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Отмена"
                 onPress={() => {
                   setShowFnsPicker(false);

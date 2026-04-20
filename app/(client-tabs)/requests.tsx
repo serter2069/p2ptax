@@ -134,6 +134,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
           style={{ width: ACTION_WIDTH }}
         >
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Закрыть заявку"
             onPress={closeAndReset}
             className="flex-1 w-full items-center justify-center"
@@ -151,6 +152,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
         {...(isActive ? panResponder.panHandlers : {})}
       >
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel={item.title}
           onPress={() => onPress(item.id)}
           className="bg-white border border-slate-200 rounded-xl p-4"
@@ -331,6 +333,7 @@ export default function MyRequests() {
         <View className="flex-row items-center justify-between mt-4 mb-4">
           <Text className="text-2xl font-bold text-slate-900">Мои заявки</Text>
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Создать заявку"
             onPress={() => router.push("/requests/new" as never)}
             className="bg-blue-900 rounded-xl px-4 py-2 flex-row items-center"

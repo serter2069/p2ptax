@@ -210,6 +210,7 @@ export default function SpecialistDashboard() {
             {/* Standby banner */}
             {!isAvailable && (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Перейти в настройки"
                 onPress={() => router.push("/settings/specialist" as never)}
                 className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-4"
@@ -258,6 +259,7 @@ export default function SpecialistDashboard() {
                 Подходящие заявки
               </Text>
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Мои обращения"
                 onPress={() => router.push("/(specialist-tabs)/threads" as never)}
               >
@@ -314,6 +316,7 @@ function RequestCard({
 
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={item.title}
       onPress={onPress}
       className="bg-white border border-slate-200 rounded-xl p-4 mb-3"
@@ -364,6 +367,7 @@ function RequestCard({
             </Text>
           </View>
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Открыть чат"
             onPress={(e) => {
               e.stopPropagation?.();
@@ -376,6 +380,7 @@ function RequestCard({
         </View>
       ) : (
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Написать клиенту"
           onPress={(e) => {
             e.stopPropagation?.();

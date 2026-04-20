@@ -38,7 +38,7 @@ export default function SearchScreen() {
               placeholder="What are you looking for?"
               placeholderTextColor={colors.textSecondary}
             />
-            <Pressable accessibilityLabel="Фильтры" className="ml-2 w-11 h-11 rounded-lg bg-blue-600 items-center justify-center">
+            <Pressable accessibilityRole="button" accessibilityLabel="Фильтры" className="ml-2 w-11 h-11 rounded-lg bg-blue-600 items-center justify-center">
               <FontAwesome name="sliders" size={16} color="#ffffff" />
             </Pressable>
           </View>
@@ -48,12 +48,13 @@ export default function SearchScreen() {
         <View className="px-4 mb-6">
           <View className="flex-row justify-between items-center mb-3">
             <Text className="text-base font-semibold text-gray-900">Recent Searches</Text>
-            <Pressable accessibilityLabel="Очистить историю поиска">
+            <Pressable accessibilityRole="button" accessibilityLabel="Очистить историю поиска">
               <Text className="text-sm text-blue-600">Clear</Text>
             </Pressable>
           </View>
           {RECENT_SEARCHES.map((search, index) => (
             <Pressable
+              accessibilityRole="button"
               key={index}
               accessibilityLabel={search}
               className="flex-row items-center py-3 border-b border-gray-100"
@@ -70,6 +71,7 @@ export default function SearchScreen() {
           <Text className="text-base font-semibold text-gray-900 mb-3">Popular Categories</Text>
           {POPULAR_CATEGORIES.map((cat) => (
             <Pressable
+              accessibilityRole="button"
               key={cat.id}
               accessibilityLabel={cat.name}
               className="flex-row items-center p-3 rounded-xl mb-2"

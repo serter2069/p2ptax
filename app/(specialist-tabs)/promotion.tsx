@@ -38,6 +38,7 @@ export default function PromotionScreen() {
 
             {/* Profile tip */}
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Улучшить профиль"
               onPress={() => router.push("/settings/specialist" as never)}
               className="bg-blue-900 rounded-xl p-4 mt-4 flex-row items-center"

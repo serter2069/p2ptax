@@ -261,6 +261,7 @@ export default function PublicRequestsFeed() {
                 </View>
               ) : hasMore ? (
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Загрузить ещё"
                   onPress={handleLoadMore}
                   className="py-4 items-center"

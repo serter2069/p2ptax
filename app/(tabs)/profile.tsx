@@ -62,6 +62,7 @@ export default function ProfileScreen() {
         <View className="mt-4">
           {MENU_ITEMS.map((item) => (
             <Pressable
+              accessibilityRole="button"
               key={item.id}
               accessibilityLabel={item.label}
               className="flex-row items-center px-4 py-4 active:bg-gray-50"
@@ -83,6 +84,7 @@ export default function ProfileScreen() {
         {/* Logout */}
         <View className="mt-4 px-4">
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Выйти"
             onPress={signOut}
             className="flex-row items-center justify-center h-12 rounded-xl border border-red-200 active:bg-red-50"

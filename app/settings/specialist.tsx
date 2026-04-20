@@ -326,6 +326,7 @@ export default function SpecialistSettings() {
             {/* Avatar */}
             <View className="items-center mb-4">
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Фото профиля"
                 onPress={handleAvatarPress}
                 className="items-center"
@@ -511,6 +512,7 @@ export default function SpecialistSettings() {
                   </View>
                 ))}
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Изменить рабочую зону"
                   onPress={() => router.push("/onboarding/work-area" as never)}
                   className="flex-row items-center justify-center py-2 mb-4"
@@ -523,6 +525,7 @@ export default function SpecialistSettings() {
               </>
             ) : (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Добавить рабочую зону"
                 onPress={() => router.push("/onboarding/work-area" as never)}
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
@@ -553,6 +556,7 @@ export default function SpecialistSettings() {
                   </Text>
                 </View>
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Удалить контакт"
                   onPress={() => handleDeleteContact(contact.id)}
                   className="ml-2 p-2"
@@ -566,6 +570,7 @@ export default function SpecialistSettings() {
               <View className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-2">
                 <Text className="text-sm font-medium text-slate-900 mb-2">Тип контакта</Text>
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Выбрать тип контакта"
                   onPress={() => setShowTypePicker(!showTypePicker)}
                   className="flex-row items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 mb-3"
@@ -579,6 +584,7 @@ export default function SpecialistSettings() {
                   <View className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-3">
                     {CONTACT_TYPES.map((t) => (
                       <Pressable
+                        accessibilityRole="button"
                         key={t}
                         accessibilityLabel={CONTACT_TYPE_LABELS[t]}
                         onPress={() => {
@@ -652,6 +658,7 @@ export default function SpecialistSettings() {
               </View>
             ) : contacts.length < 6 ? (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Добавить контакт"
                 onPress={() => setAddingContact(true)}
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
@@ -755,6 +762,7 @@ export default function SpecialistSettings() {
 
             <View className="bg-white border border-slate-100 rounded-xl mb-8 overflow-hidden">
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Выйти из аккаунта"
                 onPress={handleLogout}
                 className="flex-row items-center px-4 py-3"

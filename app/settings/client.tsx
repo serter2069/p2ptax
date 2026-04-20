@@ -187,6 +187,7 @@ export default function ClientSettings() {
             {/* Avatar */}
             <View className="items-center mb-6">
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Фото профиля"
                 onPress={handleAvatarPress}
                 className="items-center"
@@ -353,6 +354,7 @@ export default function ClientSettings() {
 
             <View className="bg-white border border-slate-100 rounded-xl mb-8 overflow-hidden">
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Условия использования"
                 onPress={() => router.push("/legal/terms" as never)}
                 className="flex-row items-center px-4 py-3"
@@ -373,6 +375,7 @@ export default function ClientSettings() {
 
             <View className="bg-white border border-slate-100 rounded-xl mb-8 overflow-hidden">
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Выйти из аккаунта"
                 onPress={handleLogout}
                 className="flex-row items-center px-4 py-3 border-b border-slate-100"
@@ -384,6 +387,7 @@ export default function ClientSettings() {
                 </Text>
               </Pressable>
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Удалить аккаунт"
                 onPress={handleDeleteAccount}
                 className="flex-row items-center px-4 py-3"

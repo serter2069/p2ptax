@@ -130,6 +130,7 @@ export default function OnboardingNameScreen() {
 
           {/* Terms checkbox */}
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Принять условия использования"
             onPress={() => setAgreed(!agreed)}
             className="flex-row items-start mb-6"

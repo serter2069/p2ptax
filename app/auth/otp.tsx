@@ -223,6 +223,7 @@ export default function AuthOtpScreen() {
             </Text>
 
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Мне нужна помощь с налоговой"
               onPress={() => handleRoleChoice("CLIENT")}
               className="border-2 border-slate-200 rounded-2xl p-5 mb-4 active:bg-slate-50"
@@ -236,6 +237,7 @@ export default function AuthOtpScreen() {
             </Pressable>
 
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Я налоговый специалист"
               onPress={() => handleRoleChoice("SPECIALIST")}
               className="bg-blue-900 rounded-2xl p-5 active:bg-blue-800"
@@ -341,6 +343,7 @@ export default function AuthOtpScreen() {
 
               {/* Resend link with countdown */}
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel={
                   resendTimer > 0
                     ? `Повторная отправка через ${resendTimer} секунд`

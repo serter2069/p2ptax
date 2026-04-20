@@ -218,6 +218,7 @@ export default function MyRequestDetail() {
         title={request.title}
         rightAction={
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Удалить заявку"
             onPress={handleDelete}
             style={({ pressed }) => [pressed && { opacity: 0.7 }]}
@@ -284,6 +285,7 @@ export default function MyRequestDetail() {
                 </Text>
                 {request.files.map((file) => (
                   <Pressable
+                    accessibilityRole="button"
                     key={file.id}
                     accessibilityLabel={`Открыть файл ${file.filename}`}
                     onPress={() => handleFilePress(file)}
@@ -316,6 +318,7 @@ export default function MyRequestDetail() {
             {/* Extend button (closing_soon + extensions remaining) */}
             {canExtend && (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Продлить заявку"
                 onPress={handleExtend}
                 disabled={extending}
@@ -415,6 +418,7 @@ export default function MyRequestDetail() {
                             </View>
                           )}
                           <Pressable
+                            accessibilityRole="button"
                             accessibilityLabel={`Открыть чат с ${name}`}
                             onPress={() =>
                               router.push(`/threads/${thread.id}` as never)
@@ -433,6 +437,7 @@ export default function MyRequestDetail() {
 
                   {/* View all button */}
                   <Pressable
+                    accessibilityRole="button"
                     accessibilityLabel="Все сообщения"
                     onPress={() =>
                       router.push(`/requests/${id}/messages` as never)
@@ -458,6 +463,7 @@ export default function MyRequestDetail() {
                   const name = getSpecialistName(spec);
                   return (
                     <Pressable
+                      accessibilityRole="button"
                       key={spec.id}
                       accessibilityLabel={`Профиль специалиста ${name}`}
                       onPress={() =>
