@@ -17,7 +17,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
         <Pressable
           accessibilityLabel="Уведомления"
           onPress={() => router.push("/notifications" as never)}
-          className="w-10 h-10 items-center justify-center"
+          className="w-11 h-11 items-center justify-center"
         >
           <FontAwesome name="bell-o" size={18} color="#ffffff" />
           {notificationCount > 0 && (
@@ -32,7 +32,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
           <Pressable
             accessibilityLabel="Настройки"
             onPress={onSettingsPress}
-            className="w-10 h-10 items-center justify-center"
+            className="w-11 h-11 items-center justify-center"
           >
             <FontAwesome name="cog" size={18} color="#ffffff" />
           </Pressable>

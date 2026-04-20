@@ -579,7 +579,7 @@ export default function NewRequest() {
                     <Pressable
                       accessibilityLabel="Удалить файл"
                       onPress={() => handleRemoveFile(index)}
-                      className="w-8 h-8 items-center justify-center"
+                      className="w-11 h-11 items-center justify-center"
                     >
                       <FontAwesome name="times" size={14} color="#94a3b8" />
                     </Pressable>

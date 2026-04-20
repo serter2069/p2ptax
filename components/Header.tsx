@@ -18,7 +18,7 @@ export default function Header() {
     return (
       <>
         <View className="flex-row items-center justify-between px-4 h-14 bg-white border-b border-slate-100">
-          <Pressable accessibilityLabel="Открыть меню" onPress={() => setMenuOpen(true)} className="w-10 h-10 items-center justify-center">
+          <Pressable accessibilityLabel="Открыть меню" onPress={() => setMenuOpen(true)} className="w-11 h-11 items-center justify-center">
             <FontAwesome name="bars" size={20} color="#0f172a" />
           </Pressable>
 
@@ -29,7 +29,7 @@ export default function Header() {
               <Pressable
                 accessibilityLabel="Уведомления"
                 onPress={() => router.push("/notifications" as never)}
-                className="w-10 h-10 items-center justify-center"
+                className="w-11 h-11 items-center justify-center"
               >
                 <FontAwesome name="bell-o" size={18} color="#0f172a" />
               </Pressable>
@@ -41,7 +41,7 @@ export default function Header() {
                     : "/settings/client";
                   router.push(settingsPath as never);
                 }}
-                className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center"
+                className="w-11 h-11 rounded-full bg-blue-100 items-center justify-center"
               >
                 <Text className="text-sm font-bold text-blue-900">{initials}</Text>
               </Pressable>
@@ -50,7 +50,7 @@ export default function Header() {
             <Pressable
               accessibilityLabel="Войти"
               onPress={() => router.push("/auth/email" as never)}
-              className="px-4 h-9 rounded-lg bg-blue-900 items-center justify-center"
+              className="px-4 h-11 rounded-lg bg-blue-900 items-center justify-center"
             >
               <Text className="text-sm font-semibold text-white">Sign In</Text>
             </Pressable>
@@ -74,7 +74,7 @@ export default function Header() {
           <Pressable
             accessibilityLabel="Уведомления"
             onPress={() => router.push("/notifications" as never)}
-            className="w-10 h-10 rounded-lg items-center justify-center active:bg-slate-100"
+            className="w-11 h-11 rounded-lg items-center justify-center active:bg-slate-100"
           >
             <FontAwesome name="bell-o" size={18} color="#0f172a" />
           </Pressable>
@@ -86,7 +86,7 @@ export default function Header() {
                 : "/settings/client";
               router.push(settingsPath as never);
             }}
-            className="w-9 h-9 rounded-full bg-blue-100 items-center justify-center"
+            className="w-11 h-11 rounded-full bg-blue-100 items-center justify-center"
           >
             <Text className="text-sm font-bold text-blue-900">{initials}</Text>
           </Pressable>
@@ -95,7 +95,7 @@ export default function Header() {
         <Pressable
           accessibilityLabel="Войти"
           onPress={() => router.push("/auth/email" as never)}
-          className="px-5 h-10 rounded-lg bg-blue-900 items-center justify-center active:bg-slate-900"
+          className="px-5 h-11 rounded-lg bg-blue-900 items-center justify-center active:bg-slate-900"
         >
           <Text className="text-sm font-semibold text-white">Sign In</Text>
         </Pressable>

@@ -27,7 +27,7 @@ export default function PrivacyPolicyScreen() {
         <Pressable
           accessibilityLabel="Назад"
           onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center -ml-2"
+          className="w-11 h-11 items-center justify-center -ml-2"
         >
           <FontAwesome name="arrow-left" size={18} color="#0f172a" />
         </Pressable>

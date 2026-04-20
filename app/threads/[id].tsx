@@ -284,7 +284,7 @@ export default function ChatThread() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
             <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
@@ -300,7 +300,7 @@ export default function ChatThread() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
             <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
@@ -324,7 +324,7 @@ export default function ChatThread() {
       <View className="flex-1" style={desktopStyle}>
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
-        <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-8 h-8 items-center justify-center">
+        <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
           <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
         </Pressable>
         {otherUser ? (
@@ -416,7 +416,7 @@ export default function ChatThread() {
               accessibilityLabel="Прикрепить файл (PDF, JPG, PNG — до 10 МБ, не более 3)"
               onPress={handleAttachFile}
               disabled={pendingFiles.length >= 3 || sending}
-              className="w-10 h-10 items-center justify-center mr-1"
+              className="w-11 h-11 items-center justify-center mr-1"
             >
               <FontAwesome
                 name="paperclip"
@@ -453,7 +453,7 @@ export default function ChatThread() {
               accessibilityLabel="Отправить сообщение"
               onPress={handleSend}
               disabled={(!text.trim() && pendingFiles.length === 0) || sending}
-              className="w-10 h-10 items-center justify-center ml-2"
+              className="w-11 h-11 items-center justify-center ml-2"
             >
               {sending || uploading ? (
                 <ActivityIndicator size="small" color="#1e3a8a" />

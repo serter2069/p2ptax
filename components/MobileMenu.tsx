@@ -61,7 +61,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           </View>
 
           {/* Close button */}
-          <Pressable accessibilityLabel="Закрыть меню" onPress={onClose} className="absolute top-12 right-3 w-8 h-8 items-center justify-center">
+          <Pressable accessibilityLabel="Закрыть меню" onPress={onClose} className="absolute top-12 right-3 w-11 h-11 items-center justify-center">
             <FontAwesome name="times" size={20} color="#ffffff" />
           </Pressable>
 
