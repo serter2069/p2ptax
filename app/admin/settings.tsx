@@ -12,6 +12,7 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import ErrorState from "@/components/ui/ErrorState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -38,9 +39,11 @@ export default function AdminSettings() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     if (!token) return;
+    setError(false);
     try {
       const res = await fetch(`${API_URL}/api/admin/settings`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -48,9 +51,11 @@ export default function AdminSettings() {
       if (res.ok) {
         const data = await res.json();
         setValues(data);
+      } else {
+        setError(true);
       }
     } catch {
-      // ignore
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -106,6 +111,10 @@ export default function AdminSettings() {
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center">
+          <ErrorState message="Не удалось загрузить настройки" onRetry={fetchSettings} />
         </View>
       ) : (
         <ScrollView className="flex-1">
