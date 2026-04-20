@@ -7,17 +7,166 @@
   const API_BASE = (meta && meta.content) || '/api';
 
   const TIMEOUT_MS = 6000;
+  const REFRESH_KEY = 'p2ptax_refresh';
 
-  async function jget(path) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  // -------- Auth state (in-memory access, persisted refresh) --------
+  const authState = {
+    accessToken: null,
+    user: null,
+  };
+
+  function getRefreshToken() {
+    try { return localStorage.getItem(REFRESH_KEY); } catch { return null; }
+  }
+  function setRefreshToken(t) {
     try {
-      const r = await fetch(API_BASE + path, { signal: ctrl.signal, credentials: 'omit' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return await r.json();
+      if (t) localStorage.setItem(REFRESH_KEY, t);
+      else localStorage.removeItem(REFRESH_KEY);
+    } catch {}
+  }
+
+  function emitAuthChange() {
+    window.dispatchEvent(new CustomEvent('pt:auth-change', { detail: { user: authState.user } }));
+  }
+
+  async function jfetch(path, opts) {
+    opts = opts || {};
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), opts.timeout || TIMEOUT_MS);
+    try {
+      return await fetch(API_BASE + path, {
+        ...opts,
+        signal: ctrl.signal,
+        credentials: 'omit',
+      });
     } finally {
       clearTimeout(t);
     }
+  }
+
+  async function jget(path) {
+    const r = await jfetch(path);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  }
+
+  async function jpost(path, body, extraHeaders) {
+    const r = await jfetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(extraHeaders || {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(data.error || ('HTTP ' + r.status)), { status: r.status, data });
+    return data;
+  }
+
+  // -------- Auth API --------
+  async function requestOtp(email) {
+    return jpost('/auth/request-otp', { email });
+  }
+
+  async function verifyOtp(email, code) {
+    const data = await jpost('/auth/verify-otp', { email, code });
+    authState.accessToken = data.accessToken;
+    authState.user = data.user || null;
+    setRefreshToken(data.refreshToken);
+    emitAuthChange();
+    return data;
+  }
+
+  async function refreshAccess() {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) throw new Error('No refresh token');
+    const r = await jfetch('/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!r.ok) {
+      setRefreshToken(null);
+      authState.accessToken = null;
+      authState.user = null;
+      emitAuthChange();
+      throw new Error('Refresh failed');
+    }
+    const data = await r.json();
+    authState.accessToken = data.accessToken;
+    authState.user = data.user || authState.user;
+    setRefreshToken(data.refreshToken);
+    return data;
+  }
+
+  async function logout() {
+    const refreshToken = getRefreshToken();
+    if (authState.accessToken) {
+      try {
+        await jfetch('/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authState.accessToken,
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch {}
+    }
+    setRefreshToken(null);
+    authState.accessToken = null;
+    authState.user = null;
+    emitAuthChange();
+  }
+
+  async function me() {
+    if (!authState.accessToken) throw new Error('No access token');
+    const r = await jfetch('/auth/me', {
+      headers: { 'Authorization': 'Bearer ' + authState.accessToken },
+    });
+    if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { status: r.status });
+    const data = await r.json();
+    authState.user = data.user || data;
+    return authState.user;
+  }
+
+  // Fetch wrapper with auto-refresh on 401
+  async function authFetch(path, opts) {
+    opts = opts || {};
+    const doFetch = async () => {
+      const headers = {
+        ...(opts.headers || {}),
+      };
+      if (authState.accessToken) headers['Authorization'] = 'Bearer ' + authState.accessToken;
+      return jfetch(path, { ...opts, headers });
+    };
+    let r = await doFetch();
+    if (r.status === 401 && getRefreshToken()) {
+      try {
+        await refreshAccess();
+        r = await doFetch();
+      } catch {
+        // refresh failed — propagate 401 to caller
+      }
+    }
+    return r;
+  }
+
+  async function authJson(path, opts) {
+    const r = await authFetch(path, opts);
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(data.error || ('HTTP ' + r.status)), { status: r.status, data });
+    return data;
+  }
+
+  // Boot: if we have a refresh token, try to restore session
+  async function bootAuth() {
+    if (!getRefreshToken()) { emitAuthChange(); return; }
+    try {
+      await refreshAccess();
+      try { await me(); } catch {}
+    } catch {
+      // refresh expired — stay logged out
+    }
+    emitAuthChange();
   }
 
   // Turn API shapes into the shapes components expect (matching the static fallbacks).
@@ -142,6 +291,26 @@
   }
 
   // Kick off immediately; components can re-read from window.PT_* after 'pt:data-ready'.
-  window.PT_API = { hydrate, jget, API_BASE };
+  window.PT_API = { hydrate, jget, jpost, authFetch, authJson, API_BASE };
+
+  window.PT_AUTH = {
+    requestOtp,
+    verifyOtp,
+    refreshAccess,
+    logout,
+    me,
+    authFetch,
+    authJson,
+    getToken: () => authState.accessToken,
+    getUser: () => authState.user,
+    isAuthenticated: () => !!authState.accessToken,
+    onChange: (cb) => {
+      const h = (e) => cb(e.detail?.user || null);
+      window.addEventListener('pt:auth-change', h);
+      return () => window.removeEventListener('pt:auth-change', h);
+    },
+  };
+
   hydrate();
+  bootAuth();
 })();
