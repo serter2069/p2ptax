@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import ErrorState from "@/components/ui/ErrorState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -62,6 +63,7 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<RoleFilter>("ALL");
   const [page, setPage] = useState(1);
@@ -72,8 +74,10 @@ export default function AdminUsers() {
   const fetchUsers = useCallback(
     async (q: string, role: RoleFilter, p: number, append = false) => {
       if (!token) return;
-      if (p === 1) setLoading(true);
-      else setLoadingMore(true);
+      if (p === 1) {
+        setLoading(true);
+        setError(false);
+      } else setLoadingMore(true);
 
       try {
         const params = new URLSearchParams();
@@ -89,9 +93,11 @@ export default function AdminUsers() {
           const data = await res.json();
           setUsers((prev) => (append ? [...prev, ...data.items] : data.items));
           setHasMore(data.hasMore);
+        } else if (p === 1) {
+          setError(true);
         }
       } catch {
-        // ignore
+        if (p === 1) setError(true);
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -263,6 +269,10 @@ export default function AdminUsers() {
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center">
+          <ErrorState message="Не удалось загрузить пользователей" onRetry={() => fetchUsers(search, filter, 1)} />
         </View>
       ) : (
         <ScrollView

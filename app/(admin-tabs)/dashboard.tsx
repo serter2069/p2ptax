@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import ErrorState from "@/components/ui/ErrorState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -80,9 +81,11 @@ export default function AdminDashboard() {
   const { token } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const fetchStats = useCallback(async () => {
     if (!token) return;
+    setError(false);
     try {
       const res = await fetch(`${API_URL}/api/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -90,9 +93,11 @@ export default function AdminDashboard() {
       if (res.ok) {
         const data = await res.json();
         setStats(data);
+      } else {
+        setError(true);
       }
     } catch {
-      // ignore
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -110,6 +115,10 @@ export default function AdminDashboard() {
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center">
+          <ErrorState message="Не удалось загрузить статистику" onRetry={fetchStats} />
         </View>
       ) : (
         <ScrollView className="flex-1">
