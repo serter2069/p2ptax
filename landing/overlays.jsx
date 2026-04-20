@@ -684,16 +684,59 @@ function CatalogPage({ onOpen }) {
   const [city, setCity] = useS('all');
   const [svc, setSvc] = useS(null);
   const [q, setQ] = useS('');
+  const [serverList, setServerList] = useS(null);
   const dataV = useOVDataVersion();
 
+  // Debounced server-side fetch when filters change
+  useE(() => {
+    if (!window.PT_API?.fetchSpecialists) return;
+    const h = setTimeout(async () => {
+      try {
+        const params = { limit: 50 };
+        if (q.trim()) params.q = q.trim();
+        if (city !== 'all') {
+          const c = OV_getCities().find(x => x.id === city);
+          if (c?._id) params.city_id = c._id;
+        }
+        if (svc) {
+          const srv = OV_getServices().find(x => x.id === svc);
+          if (srv?._id) params.services = srv._id;
+        }
+        const r = await window.PT_API.fetchSpecialists(params);
+        const mapped = (r.items || []).map((s) => {
+          const first = s.firstName || '';
+          const last = s.lastName || '';
+          const cityNames = (s.cities || []).map(c => c.name).filter(Boolean);
+          return {
+            id: s.id,
+            first, last,
+            init: ((first[0] || 'X') + (last[0] || '')).toUpperCase(),
+            role: 'Специалист',
+            fnsLabel: cityNames.length ? 'ИФНС · ' + cityNames.join(', ') : '—',
+            services: (s.services || []).map(x => x.id || x),
+            online: s.isAvailable !== false,
+            cases: s.casesCount || 0,
+            responseTime: s.responseTime || '< 2 ч',
+            city: (s.cities && s.cities[0] && s.cities[0].id) || null,
+          };
+        });
+        setServerList(mapped);
+      } catch {
+        // leave serverList as-is; fallback to static filter
+      }
+    }, 300);
+    return () => clearTimeout(h);
+  }, [city, svc, q, dataV]);
+
   const list = useM(() => {
+    if (serverList) return serverList;
     return OV_getSpecialists().filter(s => {
       if (city !== 'all' && s.city !== city) return false;
       if (svc && !s.services.includes(svc)) return false;
       if (q && !(`${s.first} ${s.last} ${s.role} ${s.fnsLabel}`).toLowerCase().includes(q.toLowerCase())) return false;
       return true;
     });
-  }, [city, svc, q, dataV]);
+  }, [serverList, city, svc, q, dataV]);
 
   return (
     <PageShell crumbs={[{label:'Каталог специалистов'}]}>
@@ -746,7 +789,55 @@ function CatalogPage({ onOpen }) {
 
 // --- Specialist profile (page) ---
 function SpecialistPage({ id, onBack, onCatalog, onMessage }) {
-  const s = OV_getSpecialists().find(x => x.id === id);
+  const cached = OV_getSpecialists().find(x => x.id === id);
+  const [detail, setDetail] = useS(null);
+  const [loading, setLoading] = useS(false);
+
+  useE(() => {
+    if (!id || !window.PT_API?.getSpecialist) return;
+    let alive = true;
+    setLoading(true);
+    window.PT_API.getSpecialist(id).then((d) => {
+      if (!alive) return;
+      // Flatten fnsServices into {fnsList, servicesList} for the UI.
+      const fnsGroups = d.fnsServices || [];
+      const fnsList = fnsGroups.map((g) => ({
+        id: g.fns.id,
+        code: g.fns.name || g.fns.code,
+        city: g.city?.name,
+      }));
+      const svcIds = new Set();
+      const svcNames = [];
+      for (const g of fnsGroups) {
+        for (const svc of g.services || []) {
+          if (!svcIds.has(svc.id)) { svcIds.add(svc.id); svcNames.push(svc); }
+        }
+      }
+      setDetail({
+        id: d.id,
+        first: d.firstName || '',
+        last: d.lastName || '',
+        init: ((d.firstName?.[0] || 'X') + (d.lastName?.[0] || '')).toUpperCase(),
+        role: 'Специалист',
+        phone: d.profile?.phone || '',
+        telegram: d.profile?.telegram || '',
+        whatsapp: d.profile?.whatsapp || '',
+        officeAddress: d.profile?.officeAddress || '',
+        bio: d.profile?.description || '',
+        online: !!d.isAvailable,
+        since: d.createdAt ? new Date(d.createdAt).toLocaleDateString('ru-RU', { year:'numeric', month:'short' }) : '—',
+        fnsDetail: fnsList,
+        servicesDetail: svcNames,
+      });
+    }).catch(() => {
+      // keep the cached entry as the source; leave detail null
+    }).finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [id]);
+
+  const s = detail
+    ? { ...(cached || {}), ...detail, fns: cached?.fns || [], services: cached?.services || [], cases: cached?.cases || 0, fnsLabel: cached?.fnsLabel || (detail.fnsDetail?.map(f=>f.city).filter(Boolean).join(', ')) || '' }
+    : cached;
   if (!s) {
     return (
       <PageShell crumbs={[{label:'Каталог', href:'/catalog'}, {label:'Специалист не найден'}]}>
@@ -785,9 +876,9 @@ function SpecialistPage({ id, onBack, onCatalog, onMessage }) {
         </div>
 
         <div className="prof-stats">
-          <div><div className="prof-stat-val">{s.cases}</div><div className="prof-stat-k">Кейсов</div></div>
-          <div><div className="prof-stat-val">{s.fns.length}</div><div className="prof-stat-k">ИФНС в работе</div></div>
-          <div><div className="prof-stat-val">{s.services.length}</div><div className="prof-stat-k">Видов проверок</div></div>
+          <div><div className="prof-stat-val">{s.cases || 0}</div><div className="prof-stat-k">Кейсов</div></div>
+          <div><div className="prof-stat-val">{(s.fnsDetail?.length ?? s.fns?.length) || 0}</div><div className="prof-stat-k">ИФНС в работе</div></div>
+          <div><div className="prof-stat-val">{(s.servicesDetail?.length ?? s.services?.length) || 0}</div><div className="prof-stat-k">Видов проверок</div></div>
         </div>
 
         <div className="prof-section">
@@ -798,20 +889,33 @@ function SpecialistPage({ id, onBack, onCatalog, onMessage }) {
         <div className="prof-section">
           <h5>Рабочие инспекции</h5>
           <div className="row">
-            {s.fns.map(fid => {
-              const f = fnsById2(s.city, fid);
-              return <span key={fid} className="spec-tag">{ctyById(s.city).name} · {f?.code}</span>;
-            })}
+            {s.fnsDetail && s.fnsDetail.length > 0
+              ? s.fnsDetail.map(f => (
+                  <span key={f.id} className="spec-tag">{[f.city, f.code].filter(Boolean).join(' · ')}</span>
+                ))
+              : (s.fns || []).map(fid => {
+                  const f = fnsById2(s.city, fid);
+                  const cityName = s.city ? ctyById(s.city)?.name : '';
+                  return <span key={fid} className="spec-tag">{[cityName, f?.code].filter(Boolean).join(' · ')}</span>;
+                })}
+            {(!s.fnsDetail || s.fnsDetail.length === 0) && (!s.fns || s.fns.length === 0) && (
+              <span className="dim small">—</span>
+            )}
           </div>
         </div>
 
         <div className="prof-section">
           <h5>Виды проверок</h5>
           <div className="row">
-            {s.services.map(sid => {
-              const srv = srvById(sid);
-              return <span key={sid} className="spec-tag">{srv.name}</span>;
-            })}
+            {s.servicesDetail && s.servicesDetail.length > 0
+              ? s.servicesDetail.map(svc => <span key={svc.id} className="spec-tag">{svc.name}</span>)
+              : (s.services || []).map(sid => {
+                  const srv = srvById(sid);
+                  return <span key={sid} className="spec-tag">{srv.name}</span>;
+                })}
+            {(!s.servicesDetail || s.servicesDetail.length === 0) && (!s.services || s.services.length === 0) && (
+              <span className="dim small">—</span>
+            )}
           </div>
         </div>
 
