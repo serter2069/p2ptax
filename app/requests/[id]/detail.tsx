@@ -217,7 +217,11 @@ export default function MyRequestDetail() {
       <HeaderBack
         title={request.title}
         rightAction={
-          <Pressable accessibilityLabel="Удалить заявку" onPress={handleDelete}>
+          <Pressable
+            accessibilityLabel="Удалить заявку"
+            onPress={handleDelete}
+            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+          >
             <FontAwesome name="trash-o" size={18} color={colors.error} />
           </Pressable>
         }
@@ -284,6 +288,7 @@ export default function MyRequestDetail() {
                     accessibilityLabel={`Открыть файл ${file.filename}`}
                     onPress={() => handleFilePress(file)}
                     className="flex-row items-center bg-slate-50 rounded-xl p-3 mb-2"
+                    style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                   >
                     <FontAwesome
                       name={
@@ -315,6 +320,7 @@ export default function MyRequestDetail() {
                 onPress={handleExtend}
                 disabled={extending}
                 className="bg-amber-500 rounded-xl py-3 items-center mb-4"
+                style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
               >
                 {extending ? (
                   <ActivityIndicator color={colors.surface} />
@@ -414,6 +420,7 @@ export default function MyRequestDetail() {
                               router.push(`/threads/${thread.id}` as never)
                             }
                             className="bg-blue-900 rounded-lg px-3 py-1.5"
+                            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                           >
                             <Text className="text-white text-xs font-semibold">
                               Открыть чат
@@ -431,6 +438,7 @@ export default function MyRequestDetail() {
                       router.push(`/requests/${id}/messages` as never)
                     }
                     className="mt-3 border border-blue-900 rounded-xl py-2.5 items-center"
+                    style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
                   >
                     <Text className="text-blue-900 font-semibold text-sm">
                       Все сообщения ({request.threadsCount})
@@ -456,13 +464,16 @@ export default function MyRequestDetail() {
                         router.push(`/specialists/${spec.id}` as never)
                       }
                       className="bg-white rounded-2xl p-4 mb-3"
-                      style={{
-                        shadowColor: colors.text,
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 8,
-                        elevation: 2,
-                      }}
+                      style={({ pressed }) => [
+                        {
+                          shadowColor: colors.text,
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.05,
+                          shadowRadius: 8,
+                          elevation: 2,
+                        },
+                        pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
+                      ]}
                     >
                       <View className="flex-row items-center">
                         <Avatar

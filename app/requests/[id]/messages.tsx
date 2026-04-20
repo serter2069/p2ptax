@@ -104,6 +104,7 @@ export default function RequestMessages() {
           accessibilityLabel={`Чат с ${name}`}
           onPress={() => router.push(`/threads/${item.id}` as never)}
           className="flex-row items-center py-3 border-b border-slate-100"
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
           {/* Avatar */}
           <View className="w-10 h-10 rounded-full bg-blue-900 items-center justify-center">
