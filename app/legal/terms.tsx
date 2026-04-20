@@ -34,6 +34,7 @@ export default function TermsScreen() {
             accessibilityLabel="Закрыть"
             onPress={() => router.back()}
             className="w-11 h-11 items-center justify-center"
+            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           >
             <FontAwesome name="times" size={20} color={colors.text} />
           </Pressable>

@@ -117,6 +117,7 @@ export default function ClientMessages() {
           accessibilityLabel={`Чат с ${name}`}
           onPress={() => router.push(`/threads/${item.id}` as never)}
           className="flex-row items-center py-3 border-b border-slate-100 active:bg-slate-50"
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
           {/* Avatar with unread badge */}
           <View className="relative mr-3">

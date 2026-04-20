@@ -190,6 +190,7 @@ export default function ClientSettings() {
                 accessibilityLabel="Фото профиля"
                 onPress={handleAvatarPress}
                 className="items-center"
+                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 {avatarUploading ? (
                   <View
@@ -355,6 +356,7 @@ export default function ClientSettings() {
                 accessibilityLabel="Условия использования"
                 onPress={() => router.push("/legal/terms" as never)}
                 className="flex-row items-center px-4 py-3"
+                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <FontAwesome name="file-text-o" size={16} color={colors.placeholder} />
                 <Text className="text-base text-slate-900 ml-3 flex-1">
@@ -374,6 +376,7 @@ export default function ClientSettings() {
                 accessibilityLabel="Выйти из аккаунта"
                 onPress={handleLogout}
                 className="flex-row items-center px-4 py-3 border-b border-slate-100"
+                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <FontAwesome name="sign-out" size={16} color={colors.error} />
                 <Text className="text-base text-red-600 ml-3 flex-1">
@@ -384,6 +387,7 @@ export default function ClientSettings() {
                 accessibilityLabel="Удалить аккаунт"
                 onPress={handleDeleteAccount}
                 className="flex-row items-center px-4 py-3"
+                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <FontAwesome name="trash-o" size={16} color={colors.error} />
                 <Text className="text-base text-red-600 ml-3 flex-1">

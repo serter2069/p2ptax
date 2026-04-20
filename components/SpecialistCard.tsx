@@ -37,7 +37,7 @@ export default function SpecialistCard({
         accessibilityLabel={name}
         onPress={() => onPress(id)}
         className="bg-white border border-slate-200 rounded-xl p-4 mr-3"
-        style={{ width: 200 }}
+        style={({ pressed }) => [{ width: 200 }, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
       >
         <View className="w-12 h-12 rounded-full bg-blue-900 items-center justify-center mb-2">
           <Text className="text-white font-bold text-base">{initials}</Text>
@@ -69,6 +69,7 @@ export default function SpecialistCard({
       accessibilityLabel={name}
       onPress={() => onPress(id)}
       className="bg-white border border-slate-200 rounded-xl p-4 mb-3"
+      style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
     >
       <View className="flex-row items-center">
         <View className="w-12 h-12 rounded-full bg-blue-900 items-center justify-center mr-3">

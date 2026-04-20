@@ -243,6 +243,7 @@ export default function AdminUsers() {
                   ? "bg-blue-900 border-blue-900"
                   : "bg-white border-slate-200"
               }`}
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
               <Text
                 className={`text-sm ${
@@ -288,6 +289,7 @@ export default function AdminUsers() {
                         setExpandedId(expandedId === user.id ? null : user.id)
                       }
                       className="bg-white border-b border-slate-100 px-4 py-3"
+                      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                     >
                       <View className="flex-row items-center">
                         {/* Avatar */}
@@ -363,6 +365,7 @@ export default function AdminUsers() {
                             className={`px-3 py-2 rounded-lg ${
                               user.isBanned ? "bg-emerald-600" : "bg-red-600"
                             }`}
+                            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                           >
                             <Text className="text-xs text-white font-medium">
                               {user.isBanned ? "Разблокировать" : "Заблокировать"}
@@ -374,6 +377,7 @@ export default function AdminUsers() {
                               accessibilityLabel="Закрыть все заявки"
                               onPress={() => closeAllRequests(user)}
                               className="px-3 py-2 rounded-lg bg-amber-500"
+                              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                             >
                               <Text className="text-xs text-white font-medium">
                                 Закрыть все заявки

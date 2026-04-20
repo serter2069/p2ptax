@@ -312,6 +312,7 @@ export default function ChatThread() {
           <Pressable
             onPress={loadData}
             className="mt-4 px-6 py-3 bg-blue-900 rounded-xl"
+            style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
           >
             <Text className="text-white text-sm font-semibold">Повторить</Text>
           </Pressable>
@@ -325,7 +326,7 @@ export default function ChatThread() {
       <View className="flex-1" style={desktopStyle}>
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
-        <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
+        <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
           <FontAwesome name="chevron-left" size={18} color={colors.primary} />
         </Pressable>
         {otherUser ? (
@@ -401,6 +402,7 @@ export default function ChatThread() {
                 <Pressable
                   onPress={() => handleRemovePendingFile(i)}
                   accessibilityLabel={`Удалить файл ${f.name}`}
+                  style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                 >
                   <FontAwesome name="times" size={11} color={colors.placeholder} />
                 </Pressable>
@@ -418,6 +420,7 @@ export default function ChatThread() {
               onPress={handleAttachFile}
               disabled={pendingFiles.length >= 3 || sending}
               className="w-11 h-11 items-center justify-center mr-1"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
               <FontAwesome
                 name="paperclip"
@@ -455,6 +458,7 @@ export default function ChatThread() {
               onPress={handleSend}
               disabled={(!text.trim() && pendingFiles.length === 0) || sending}
               className="w-11 h-11 items-center justify-center ml-2"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
               {sending || uploading ? (
                 <ActivityIndicator size="small" color={colors.primary} />
