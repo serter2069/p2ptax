@@ -1,10 +1,10 @@
 import { View, Text } from "react-native";
-import Feather from "@expo/vector-icons/Feather";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import Button from "./Button";
 import { colors } from "../../lib/theme";
 
 export interface EmptyStateProps {
-  icon: React.ComponentProps<typeof Feather>["name"];
+  icon: React.ComponentProps<typeof FontAwesome>["name"];
   title: string;
   subtitle?: string;
   actionLabel?: string;
@@ -24,7 +24,7 @@ export default function EmptyState({
         className="items-center justify-center rounded-full bg-slate-100"
         style={{ width: 72, height: 72 }}
       >
-        <Feather name={icon} size={32} color={colors.placeholder} />
+        <FontAwesome name={icon} size={32} color={colors.placeholder} />
       </View>
       <Text className="text-base font-semibold text-slate-900 mt-4 text-center">
         {title}

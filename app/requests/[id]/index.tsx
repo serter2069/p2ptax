@@ -204,7 +204,7 @@ export default function PublicRequestDetail() {
                 onPress={() =>
                   router.push(`/threads/${request.existingThreadId}` as never)
                 }
-                icon="message-circle"
+                icon="comment"
               />
             </ResponsiveContainer>
           </View>
