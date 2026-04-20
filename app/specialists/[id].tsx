@@ -1,12 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
   Pressable,
-  Animated,
   Linking,
-  type DimensionValue,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -16,9 +14,10 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import SpecialistCard from "@/components/SpecialistCard";
 import Button from "@/components/ui/Button";
+import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { colors, radiusValue } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 
 interface FnsServiceGroup {
   fns: { id: string; name: string; code: string };
@@ -102,65 +101,6 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("ru-RU", { year: "numeric", month: "long" });
 }
 
-function SkeletonBlock({
-  width,
-  height,
-  borderRadius = radiusValue.sm,
-  marginBottom = 0,
-}: {
-  width?: DimensionValue;
-  height: number;
-  borderRadius?: number;
-  marginBottom?: number;
-}) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [opacity]);
-
-  return (
-    <Animated.View
-      style={[
-        { height, borderRadius, backgroundColor: colors.border, marginBottom, width: width ?? "100%" },
-        { opacity },
-      ]}
-    />
-  );
-}
-
-function ProfileSkeleton() {
-  return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <HeaderBack title="Профиль специалиста" />
-      <ScrollView className="flex-1">
-        <ResponsiveContainer>
-          <View className="py-6 items-center">
-            <SkeletonBlock width={88} height={88} borderRadius={44} marginBottom={12} />
-            <SkeletonBlock width={160} height={22} marginBottom={8} />
-            <SkeletonBlock width={100} height={14} marginBottom={24} />
-            <View className="w-full bg-white rounded-2xl p-4 mb-4">
-              <SkeletonBlock height={16} marginBottom={8} />
-              <SkeletonBlock width="85%" height={16} marginBottom={8} />
-              <SkeletonBlock width="70%" height={16} />
-            </View>
-            <View className="w-full bg-white rounded-2xl p-4">
-              <SkeletonBlock height={80} borderRadius={radiusValue.md} />
-            </View>
-          </View>
-        </ResponsiveContainer>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
 export default function SpecialistPublicProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -212,7 +152,12 @@ export default function SpecialistPublicProfile() {
   }, [isAuthenticated, router]);
 
   if (loading) {
-    return <ProfileSkeleton />;
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <HeaderBack title="Профиль специалиста" />
+        <LoadingState variant="skeleton" lines={5} />
+      </SafeAreaView>
+    );
   }
 
   if (error || !specialist) {

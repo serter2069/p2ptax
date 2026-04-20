@@ -14,8 +14,8 @@ import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/ui/EmptyState";
+import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
-import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiGet, apiPatch } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -150,25 +150,13 @@ export default function SpecialistDashboard() {
         <HeaderHome
           onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
-        <View className="flex-1 items-center justify-center px-8">
-          <FontAwesome name="exclamation-circle" size={48} color={colors.placeholder} />
-          <Text className="text-lg font-semibold text-slate-900 mt-4 text-center">
-            Не удалось загрузить заявки
-          </Text>
-          <Text className="text-sm text-slate-500 mt-2 text-center">
-            Проверьте соединение с интернетом и попробуйте снова
-          </Text>
-          <View className="mt-6">
-            <Button
-              label="Повторить"
-              onPress={() => {
-                setLoading(true);
-                fetchData().finally(() => setLoading(false));
-              }}
-              fullWidth={false}
-            />
-          </View>
-        </View>
+        <ErrorState
+          message="Не удалось загрузить заявки"
+          onRetry={() => {
+            setLoading(true);
+            fetchData().finally(() => setLoading(false));
+          }}
+        />
       </SafeAreaView>
     );
   }

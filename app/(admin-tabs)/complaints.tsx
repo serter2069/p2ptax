@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
 import { API_URL } from "@/lib/api";
@@ -63,37 +64,6 @@ function formatDate(dateStr: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function StatusBadge({ status }: { status: "NEW" | "REVIEWED" }) {
-  if (status === "NEW") {
-    return (
-      <View className="bg-amber-50 px-2 py-0.5 rounded-lg flex-row items-center">
-        <View
-          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent, marginRight: 5 }}
-        />
-        <Text className="text-xs font-medium text-amber-700">Новая</Text>
-      </View>
-    );
-  }
-  return (
-    <View className="bg-emerald-50 px-2 py-0.5 rounded-lg flex-row items-center">
-      <View
-        style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success, marginRight: 5 }}
-      />
-      <Text className="text-xs font-medium text-emerald-700">Рассмотрена</Text>
-    </View>
-  );
-}
-
-function SkeletonRow() {
-  return (
-    <View className="bg-white border-b border-slate-100 px-4 py-4">
-      <View className="h-3 bg-slate-200 rounded w-1/3 mb-2" />
-      <View className="h-3 bg-slate-200 rounded w-2/3 mb-2" />
-      <View className="h-3 bg-slate-200 rounded w-1/2" />
-    </View>
-  );
 }
 
 export default function AdminComplaints() {
@@ -211,7 +181,11 @@ export default function AdminComplaints() {
                 ) : null}
               </Text>
             </View>
-            <StatusBadge status={item.status} />
+            <Badge
+              variant={item.status === "NEW" ? "warning" : "success"}
+              label={item.status === "NEW" ? "Новая" : "Рассмотрена"}
+              size="sm"
+            />
           </View>
 
           <Text className="text-sm text-slate-700 mt-1" numberOfLines={isExpanded ? undefined : 2}>
@@ -304,30 +278,14 @@ export default function AdminComplaints() {
 
       {loading ? (
         <ResponsiveContainer>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <SkeletonRow key={i} />
-          ))}
+          <LoadingState variant="skeleton" lines={5} />
+          <LoadingState variant="skeleton" lines={5} />
         </ResponsiveContainer>
       ) : error ? (
-        <View className="flex-1 items-center justify-center py-12 px-8">
-          <View
-            className="items-center justify-center rounded-full bg-red-50"
-            style={{ width: 72, height: 72 }}
-          >
-            <FontAwesome name="exclamation-circle" size={32} color={colors.error} />
-          </View>
-          <Text className="text-base font-medium text-slate-900 mt-4 text-center">
-            Не удалось загрузить жалобы
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Повторить"
-            onPress={() => fetchComplaints(filter, 1)}
-            className="mt-4 px-4 py-2 rounded-lg border border-slate-300 bg-white"
-          >
-            <Text className="text-sm text-slate-700">Повторить</Text>
-          </Pressable>
-        </View>
+        <ErrorState
+          message="Не удалось загрузить жалобы"
+          onRetry={() => fetchComplaints(filter, 1)}
+        />
       ) : (
         <FlatList
           data={complaints}
@@ -337,24 +295,17 @@ export default function AdminComplaints() {
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-16">
-              <View
-                className="items-center justify-center rounded-full bg-slate-100"
-                style={{ width: 72, height: 72 }}
-              >
-                <FontAwesome name="flag-o" size={32} color={colors.placeholder} />
-              </View>
-              <Text className="text-base font-semibold text-slate-900 mt-4 text-center">
-                Жалоб нет
-              </Text>
-              <Text className="text-sm text-slate-500 mt-2 text-center">
-                {filter === "NEW"
+            <EmptyState
+              icon="flag"
+              title="Жалоб нет"
+              subtitle={
+                filter === "NEW"
                   ? "Нет новых жалоб"
                   : filter === "REVIEWED"
                   ? "Нет рассмотренных жалоб"
-                  : "Жалобы пользователей появятся здесь"}
-              </Text>
-            </View>
+                  : "Жалобы пользователей появятся здесь"
+              }
+            />
           }
           ListFooterComponent={
             loadingMore ? (
