@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   Switch,
-  TextInput,
   Image,
   Platform,
 } from "react-native";
@@ -17,6 +16,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { API_URL, apiPatch } from "@/lib/api";
@@ -250,43 +250,23 @@ export default function ClientSettings() {
             )}
 
             {/* Name fields */}
-            <Text className="text-sm font-medium text-slate-900 mb-1">Имя</Text>
-            <TextInput
-              accessibilityLabel="Имя"
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Введите имя"
-              style={{
-                height: 48,
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                fontSize: 16,
-                backgroundColor: colors.background,
-                color: colors.text,
-                marginBottom: 12,
-              }}
-            />
+            <View className="mb-3">
+              <Input
+                label="Имя"
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="Введите имя"
+              />
+            </View>
 
-            <Text className="text-sm font-medium text-slate-900 mb-1">Фамилия</Text>
-            <TextInput
-              accessibilityLabel="Фамилия"
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Введите фамилию"
-              style={{
-                height: 48,
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                fontSize: 16,
-                backgroundColor: colors.background,
-                color: colors.text,
-                marginBottom: 12,
-              }}
-            />
+            <View className="mb-3">
+              <Input
+                label="Фамилия"
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Введите фамилию"
+              />
+            </View>
 
             {/* Email (read-only) */}
             <Text className="text-sm font-medium text-slate-900 mb-1">

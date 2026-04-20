@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
-  TextInput,
   ScrollView,
   Pressable,
   Switch,
@@ -17,6 +16,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { API_URL, apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
@@ -67,18 +67,6 @@ interface SpecialistProfileData {
   } | null;
   fnsServices: FnsServiceItem[];
 }
-
-const INPUT_STYLE = {
-  height: 48,
-  borderWidth: 1,
-  borderColor: colors.border,
-  borderRadius: 12,
-  paddingHorizontal: 16,
-  fontSize: 16,
-  color: colors.text,
-  backgroundColor: colors.background,
-  marginBottom: 12,
-} as const;
 
 export default function SpecialistSettings() {
   const router = useRouter();
@@ -417,27 +405,25 @@ export default function SpecialistSettings() {
               Личные данные
             </Text>
 
-            <Text className="text-sm font-medium text-slate-900 mb-1">Имя</Text>
-            <TextInput
-              accessibilityLabel="Имя"
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Введите имя"
-              placeholderTextColor={colors.placeholder}
-              maxLength={50}
-              style={INPUT_STYLE}
-            />
+            <View className="mb-3">
+              <Input
+                label="Имя"
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="Введите имя"
+                maxLength={50}
+              />
+            </View>
 
-            <Text className="text-sm font-medium text-slate-900 mb-1">Фамилия</Text>
-            <TextInput
-              accessibilityLabel="Фамилия"
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Введите фамилию"
-              placeholderTextColor={colors.placeholder}
-              maxLength={50}
-              style={INPUT_STYLE}
-            />
+            <View className="mb-3">
+              <Input
+                label="Фамилия"
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Введите фамилию"
+                maxLength={50}
+              />
+            </View>
 
             {/* Email read-only */}
             <Text className="text-sm font-medium text-slate-900 mb-1">
@@ -451,35 +437,20 @@ export default function SpecialistSettings() {
             </View>
 
             {/* Description */}
-            <Text className="text-sm font-medium text-slate-900 mb-1">
-              О себе
-            </Text>
-            <TextInput
-              accessibilityLabel="О себе"
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Расскажите о своём опыте и специализации..."
-              placeholderTextColor={colors.placeholder}
-              multiline
-              numberOfLines={4}
-              maxLength={500}
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                fontSize: 16,
-                color: colors.text,
-                backgroundColor: colors.background,
-                marginBottom: 4,
-                minHeight: 96,
-                textAlignVertical: "top",
-              }}
-            />
-            <Text className="text-xs text-slate-400 text-right mb-4">
-              {description.length}/500
-            </Text>
+            <View className="mb-4">
+              <Input
+                label="О себе"
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Расскажите о своём опыте и специализации..."
+                multiline
+                numberOfLines={4}
+                maxLength={500}
+              />
+              <Text className="text-xs text-slate-400 text-right mt-1">
+                {description.length}/500
+              </Text>
+            </View>
 
             {/* FNS & Services */}
             <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
@@ -606,33 +577,32 @@ export default function SpecialistSettings() {
                     ))}
                   </View>
                 )}
-                <Text className="text-sm font-medium text-slate-900 mb-1">Значение</Text>
-                <TextInput
-                  accessibilityLabel="Значение контакта"
-                  value={newContactValue}
-                  onChangeText={setNewContactValue}
-                  placeholder={
-                    newContactType === "phone" || newContactType === "whatsapp"
-                      ? "+7 (___) ___-__-__"
-                      : newContactType === "telegram"
-                      ? "@username"
-                      : newContactType === "email"
-                      ? "email@example.com"
-                      : newContactType === "vk"
-                      ? "vk.com/username"
-                      : "https://example.com"
-                  }
-                  placeholderTextColor={colors.placeholder}
-                  autoCapitalize="none"
-                  keyboardType={
-                    newContactType === "phone" || newContactType === "whatsapp"
-                      ? "phone-pad"
-                      : newContactType === "email"
-                      ? "email-address"
-                      : "default"
-                  }
-                  style={INPUT_STYLE}
-                />
+                <View className="mb-3">
+                  <Input
+                    label="Значение"
+                    value={newContactValue}
+                    onChangeText={setNewContactValue}
+                    placeholder={
+                      newContactType === "phone" || newContactType === "whatsapp"
+                        ? "+7 (___) ___-__-__"
+                        : newContactType === "telegram"
+                        ? "@username"
+                        : newContactType === "email"
+                        ? "email@example.com"
+                        : newContactType === "vk"
+                        ? "vk.com/username"
+                        : "https://example.com"
+                    }
+                    autoCapitalize="none"
+                    keyboardType={
+                      newContactType === "phone" || newContactType === "whatsapp"
+                        ? "phone-pad"
+                        : newContactType === "email"
+                        ? "email-address"
+                        : "default"
+                    }
+                  />
+                </View>
                 <View className="flex-row gap-2">
                   <View className="flex-1">
                     <Button
@@ -679,29 +649,23 @@ export default function SpecialistSettings() {
               Офис
             </Text>
 
-            <Text className="text-sm font-medium text-slate-900 mb-1">
-              Адрес офиса
-            </Text>
-            <TextInput
-              accessibilityLabel="Адрес офиса"
-              value={officeAddress}
-              onChangeText={setOfficeAddress}
-              placeholder="Город, улица, дом"
-              placeholderTextColor={colors.placeholder}
-              style={INPUT_STYLE}
-            />
+            <View className="mb-3">
+              <Input
+                label="Адрес офиса"
+                value={officeAddress}
+                onChangeText={setOfficeAddress}
+                placeholder="Город, улица, дом"
+              />
+            </View>
 
-            <Text className="text-sm font-medium text-slate-900 mb-1">
-              Часы работы
-            </Text>
-            <TextInput
-              accessibilityLabel="Часы работы"
-              value={workingHours}
-              onChangeText={setWorkingHours}
-              placeholder="Пн-Пт 9:00-18:00"
-              placeholderTextColor={colors.placeholder}
-              style={INPUT_STYLE}
-            />
+            <View className="mb-3">
+              <Input
+                label="Часы работы"
+                value={workingHours}
+                onChangeText={setWorkingHours}
+                placeholder="Пн-Пт 9:00-18:00"
+              />
+            </View>
 
             {/* Save button */}
             <View className="mt-2 mb-4">

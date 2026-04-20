@@ -5,7 +5,6 @@ import {
   FlatList,
   Pressable,
   ActivityIndicator,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -18,6 +17,7 @@ import * as Linking from "expo-linking";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MessageBubble from "@/components/MessageBubble";
 import { Avatar } from "@/components/ui";
+import Input from "@/components/ui/Input";
 import { API_URL, api, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -433,27 +433,15 @@ export default function ChatThread() {
               />
             </Pressable>
 
-            {/* Text input — inline style only (no className on TextInput) */}
-            <TextInput
+            {/* Text input */}
+            <Input
               accessibilityLabel="Введите сообщение"
+              placeholder="Введите сообщение..."
               value={text}
               onChangeText={setText}
-              placeholder="Введите сообщение..."
-              placeholderTextColor={colors.placeholder}
               multiline
-              style={{
-                flex: 1,
-                minHeight: 40,
-                maxHeight: 120,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                fontSize: 16,
-                color: colors.text,
-                backgroundColor: colors.background,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
+              style={{ flex: 1 }}
+              containerStyle={{ borderRadius: 20, minHeight: 40, maxHeight: 120 }}
             />
 
             {/* Send button */}

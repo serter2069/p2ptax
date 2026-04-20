@@ -3,7 +3,6 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
-  TextInput,
   Platform,
   Alert,
 } from "react-native";
@@ -12,6 +11,7 @@ import { useEffect, useState, useCallback } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -112,27 +112,13 @@ export default function AdminSettings() {
           <ResponsiveContainer>
             <View className="py-4 gap-4">
               {SETTINGS_FIELDS.map((field) => (
-                <View key={field.key}>
-                  <Text className="text-sm font-medium text-slate-700 mb-1">
-                    {field.label}
-                  </Text>
-                  <TextInput
-                    accessibilityLabel={field.label}
-                    style={{
-                      backgroundColor: colors.surface,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      borderRadius: 10,
-                      height: 48,
-                      paddingHorizontal: 14,
-                      fontSize: 16,
-                      color: colors.text,
-                    }}
-                    value={getValue(field.key, field.defaultValue)}
-                    onChangeText={(val) => setValue(field.key, val)}
-                    keyboardType="numeric"
-                  />
-                </View>
+                <Input
+                  key={field.key}
+                  label={field.label}
+                  value={getValue(field.key, field.defaultValue)}
+                  onChangeText={(val) => setValue(field.key, val)}
+                  keyboardType="numeric"
+                />
               ))}
 
               <View className="mt-2">

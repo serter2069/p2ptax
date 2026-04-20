@@ -1,11 +1,11 @@
-import { View, Text, TextInput, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import Button from "@/components/ui/Button";
-import { colors } from "@/lib/theme";
+import Input from "@/components/ui/Input";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -73,34 +73,21 @@ export default function AuthEmailScreen() {
             Введите email для продолжения
           </Text>
 
-          <TextInput
+          <Input
             accessibilityLabel="Email адрес"
-            style={{
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: error ? colors.errorBg : colors.background,
-              borderWidth: 1,
-              borderColor: error ? colors.error : colors.border,
-              paddingHorizontal: 16,
-              fontSize: 16,
-              color: colors.text,
-            }}
             placeholder="your@email.com"
-            placeholderTextColor={colors.placeholder}
             value={email}
             onChangeText={(t) => {
               setEmail(t);
               if (error) setError("");
             }}
+            error={error}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
             editable={!isLoading}
             onSubmitEditing={handleContinue}
           />
-          {error ? (
-            <Text className="text-xs text-red-600 mt-1">{error}</Text>
-          ) : null}
 
           <View className="mt-6">
             <Button
