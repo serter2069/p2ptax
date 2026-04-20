@@ -501,15 +501,22 @@ function PageShell({ crumbs, title, action, children }) {
     <section className="page">
       <div className="page-bar">
         <div className="container page-bar-inner">
-          <button className="btn btn-ghost btn-sm" onClick={()=>history.length > 1 ? history.back() : (window.location.hash = '/')}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>history.length > 1 ? history.back() : (window.history.pushState(null,'','/'), window.dispatchEvent(new PopStateEvent('popstate')))}>
             ← Назад
           </button>
           <nav className="crumbs">
-            <a href="#/" onClick={(e)=>{e.preventDefault(); window.location.hash='/';}}>Главная</a>
+            <a href="/" onClick={(e)=>{e.preventDefault(); window.history.pushState(null,'','/'); window.dispatchEvent(new PopStateEvent('popstate'));}}>Главная</a>
             {crumbs && crumbs.map((c, i) => (
               <React.Fragment key={i}>
                 <span className="crumb-sep">/</span>
-                {c.href ? <a href={c.href}>{c.label}</a> : <span className="crumb-cur">{c.label}</span>}
+                {c.href ? (
+                  <a href={c.href} onClick={(e)=>{
+                    e.preventDefault();
+                    if (c.onClick) return c.onClick();
+                    window.history.pushState(null,'', c.href);
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}>{c.label}</a>
+                ) : <span className="crumb-cur">{c.label}</span>}
               </React.Fragment>
             ))}
           </nav>
@@ -591,11 +598,11 @@ function SpecialistPage({ id, onBack, onCatalog, onMessage }) {
   const s = OV_SPECIALISTS.find(x => x.id === id);
   if (!s) {
     return (
-      <PageShell crumbs={[{label:'Каталог', href:'#/catalog'}, {label:'Специалист не найден'}]}>
+      <PageShell crumbs={[{label:'Каталог', href:'/catalog'}, {label:'Специалист не найден'}]}>
         <div className="container" style={{padding:'48px 0'}}>
           <h1>Специалист не найден</h1>
           <p className="dim">Возможно, ссылка устарела. Попробуйте вернуться в каталог.</p>
-          <a className="btn btn-primary" href="#/catalog">В каталог</a>
+          <a className="btn btn-primary" href="/catalog" onClick={(e)=>{e.preventDefault(); onCatalog && onCatalog();}}>В каталог</a>
         </div>
       </PageShell>
     );
@@ -603,7 +610,7 @@ function SpecialistPage({ id, onBack, onCatalog, onMessage }) {
   return (
     <PageShell
       crumbs={[
-        {label:'Каталог', href:'#/catalog'},
+        {label:'Каталог', href:'/catalog', onClick: onCatalog},
         {label: s.first + ' ' + s.last}
       ]}
       action={<button className="btn btn-primary" onClick={()=>onMessage(s.id)}>Написать →</button>}
