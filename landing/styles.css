@@ -1060,7 +1060,7 @@ img, svg { display: block; max-width: 100%; }
   height: 640px;
   max-height: calc(100vh - 80px);
 }
-@media (max-width: 720px) { .chat { grid-template-columns: 1fr; } .chat .chat-list { display: none; } }
+@media (max-width: 720px) and (min-width: 641px) { .chat { grid-template-columns: 1fr; } .chat .chat-list { display: none; } }
 .chat-list {
   border-right: 1px solid var(--line);
   overflow-y: auto;
@@ -1534,3 +1534,195 @@ img, svg { display: block; max-width: 100%; }
 
 /* chips: prevent city/service labels from breaking onto two lines */
 .chip { white-space: nowrap; }
+
+/* ============================================================
+   MOBILE RESPONSIVE — ≤640px overhaul
+   Goal: one codebase serves both mobile and desktop.
+   ============================================================ */
+
+/* Tap-target floor (applies everywhere, not just mobile) */
+.btn { min-height: 44px; }
+.btn-sm { min-height: 40px; }
+.kebab-btn { min-height: 40px; min-width: 40px; }
+.close-btn { min-height: 36px; min-width: 36px; }
+
+@media (max-width: 640px) {
+  /* --- type scale --- */
+  body { font-size: 15px; }
+  .hero-title { font-size: clamp(32px, 10vw, 44px); line-height: 1.08; max-width: none; }
+  .section-title { font-size: clamp(26px, 8vw, 34px); line-height: 1.12; }
+  .reality-title { font-size: clamp(30px, 9vw, 44px); line-height: 1.08; }
+  .final-title { font-size: clamp(40px, 14vw, 68px); line-height: 1.02; }
+
+  /* --- layout padding --- */
+  .section { padding: 56px 0; }
+  .hero { padding: 48px 0 64px; }
+  .final-cta { padding: 72px 0; }
+  .section-head { margin-bottom: 32px; }
+
+  /* --- nav: collapse links, keep primary action --- */
+  .nav-inner { height: 56px; gap: 10px; }
+  .nav-links { display: none; }
+  .nav-right { gap: 8px; }
+  .nav-right .btn-subtle { padding: 8px 10px; font-size: 13px; }
+  .nav-right .btn-primary { padding: 10px 14px; font-size: 13px; }
+  .container { padding: 0 16px; }
+
+  /* --- hero: stack picker vertically, full-width CTAs --- */
+  .hero-grid { gap: 32px; }
+  .search-card { padding: 4px; }
+  .search-row {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+  .search-row > *:first-child { border-radius: 11px 11px 0 0; }
+  .search-row .search-field:first-child { border-radius: 11px 11px 0 0; }
+  .search-submit {
+    border-radius: 0 0 11px 11px;
+    padding: 14px 20px;
+    min-height: 48px;
+  }
+  .search-field { padding: 14px 16px; min-height: 60px; }
+
+  /* hero bottom row: stack, go full width */
+  .hero .row { flex-direction: column; align-items: stretch; gap: 12px; }
+  .hero .row .btn { width: 100%; justify-content: center; }
+  .hero .row .small { text-align: center; }
+
+  /* --- specialist stack (hero right side) --- */
+  .spec-card { padding: 12px; gap: 10px; }
+  .spec-card .spec-tag { font-size: 10px; padding: 3px 8px; }
+
+  /* --- situations / steps already stack at 820px — tighten padding --- */
+  .situation { padding: 24px 20px; min-height: auto; }
+  .step { padding: 22px 18px; min-height: auto; }
+  .situation-title { font-size: 26px; }
+  .step-title { font-size: 22px; }
+
+  /* --- catalog toolbar scrolls horizontally on mobile --- */
+  .cat-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 10px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .cat-toolbar::-webkit-scrollbar { display: none; }
+  .cat-toolbar > * { flex-shrink: 0; }
+  .cat-card { padding: 16px; }
+
+  /* --- coverage: smaller map, list below --- */
+  .coverage-viz { padding: 16px; aspect-ratio: 4/3; }
+  .city-list { max-height: 360px; }
+
+  /* --- reality timeline: single column, narrower day --- */
+  .timeline-item { grid-template-columns: 92px 1fr; gap: 12px; padding: 16px 0; }
+
+  /* --- specialists-cta / cases --- */
+  .specialists-cta { padding: 32px 22px; }
+  .spec-stat { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* --- footer --- */
+  .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+  .legal { flex-direction: column; gap: 8px; }
+
+  /* --- modal: full-screen on mobile --- */
+  .modal-backdrop { padding: 0; align-items: stretch; }
+  .modal,
+  .modal.lg,
+  .modal.xl {
+    max-width: 100%;
+    max-height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+    border: 0;
+  }
+  .modal-head { padding: 14px 16px; gap: 8px; flex-wrap: wrap; }
+  .modal-head .step-dots { order: 3; width: 100%; font-size: 11px; }
+  .modal-body { padding: 20px 16px; }
+  .modal-foot {
+    padding: 12px 16px;
+    border-radius: 0;
+    position: sticky;
+    bottom: 0;
+    background: var(--surface-2);
+  }
+  .modal-foot .btn { flex: 1; justify-content: center; }
+  .otp-grid { gap: 6px; }
+  .otp-box { font-size: 20px; }
+
+  /* new-request step 1: force single column even if city picked */
+  .modal-body > .fade-in > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+  .pub-toggle { grid-template-columns: 1fr; }
+
+  /* --- specialist profile: avatar above name, stacked buttons --- */
+  .prof { padding: 20px; }
+  .prof-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 18px;
+    margin-bottom: 18px;
+  }
+  .prof-head > div[style] { width: 100%; }
+  .prof-stats { grid-template-columns: 1fr 1fr 1fr; padding: 14px; gap: 8px; }
+  .prof-stat-val { font-size: 22px; }
+  .prof-contact { flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 0; }
+
+  /* page-bar action button full width below crumbs on small screens */
+  .page-bar-inner { flex-wrap: wrap; gap: 10px; }
+  .page-bar-inner > .btn-primary { width: 100%; }
+  .crumbs { font-size: 12px; }
+
+  /* --- chat: full-width body, sticky composer, sidebar becomes top drawer --- */
+  .chat { grid-template-columns: 1fr; height: auto; min-height: calc(100vh - 160px); }
+  .page-card .chat { grid-template-columns: 1fr; }
+  /* reveal chat-list above conversation as a horizontal scroller */
+  .chat .chat-list,
+  .page-card .chat-list {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    -webkit-overflow-scrolling: touch;
+  }
+  .chat-item {
+    grid-template-columns: auto auto;
+    flex: 0 0 auto;
+    border-bottom: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg);
+  }
+  .chat-item-last, .chat-item-time { display: none; }
+  .chat-body { padding: 14px 12px; }
+  .msg { max-width: 88%; }
+  .msg-file { min-width: 180px; }
+  .chat-foot {
+    padding: 10px 12px;
+    position: sticky;
+    bottom: 0;
+    background: var(--bg);
+    z-index: var(--z-base);
+  }
+  .chat-attach { width: 44px; height: 44px; }
+  .chat-foot .input { min-height: 44px; }
+
+  /* --- tweaks panel scaling --- */
+  .tweaks-panel { width: calc(100vw - 40px); max-width: 320px; }
+}
+
+/* tighten mid-range (641–760px) — picker rows stay readable */
+@media (max-width: 760px) and (min-width: 641px) {
+  .nav-links { gap: 16px; font-size: 13px; }
+  .search-row { grid-template-columns: 1fr 1fr; }
+  .search-row > *:first-child { border-radius: 11px 0 0 0; }
+  .search-row .search-submit { grid-column: 1 / -1; border-radius: 0 0 11px 11px; }
+}
