@@ -2,16 +2,30 @@
 (function(){
 const { useState, useEffect, useRef, useMemo, Fragment } = React;
 
-const {
-  PT_CITIES: CITIES, PT_FNS: FNS_BY_CITY, PT_SERVICES: SERVICES,
-  PT_SPECIALISTS: SPECIALISTS, PT_SAMPLE_REQUEST: SAMPLE_REQUEST,
-  PT_SAMPLE_MESSAGES: SAMPLE_MESSAGES, PT_SITUATIONS: SITUATIONS,
-  PT_TIMELINE: TIMELINE,
-} = window;
+// Live getters — re-read window.PT_* on every call so api.js hydration is picked up.
+const getCities = () => window.PT_CITIES || [];
+const getFns = () => window.PT_FNS || {};
+const getServices = () => window.PT_SERVICES || [];
+const getSpecialists = () => window.PT_SPECIALISTS || [];
+const SAMPLE_REQUEST = window.PT_SAMPLE_REQUEST;
+const SAMPLE_MESSAGES = window.PT_SAMPLE_MESSAGES;
+const SITUATIONS = window.PT_SITUATIONS;
+const TIMELINE = window.PT_TIMELINE;
 
-const serviceById = (id) => SERVICES.find(s => s.id === id);
-const cityById = (id) => CITIES.find(c => c.id === id);
-const fnsById = (cityId, id) => (FNS_BY_CITY[cityId] || []).find(f => f.id === id);
+const serviceById = (id) => getServices().find(s => s.id === id);
+const cityById = (id) => getCities().find(c => c.id === id);
+const fnsById = (cityId, id) => (getFns()[cityId] || []).find(f => f.id === id);
+
+// bump a local counter when api.js finishes hydrating so components re-render
+function useDataVersion() {
+  const [v, bump] = useState(0);
+  useEffect(() => {
+    const h = () => bump((n) => n + 1);
+    window.addEventListener('pt:data-ready', h);
+    return () => window.removeEventListener('pt:data-ready', h);
+  }, []);
+  return v;
+}
 
 // ---------- primitives ----------
 function Pill({ children, active, onClick, className='' }) {
@@ -108,6 +122,7 @@ function Nav({ onAuth, onCreate, onCatalog }) {
 
 // ---------- hero ----------
 function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }) {
+  const dataV = useDataVersion();
   const [openField, setOpenField] = useState(null);
   const [cityQuery, setCityQuery] = useState('');
   const cardRef = useRef(null);
@@ -115,7 +130,7 @@ function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }
   const city = searchState.city ? cityById(searchState.city) : null;
   const service = searchState.service ? serviceById(searchState.service) : null;
   const fns = (city && searchState.fns) ? fnsById(city.id, searchState.fns) : null;
-  const fnsOpts = city ? (FNS_BY_CITY[city.id] || []) : [];
+  const fnsOpts = city ? (getFns()[city.id] || []) : [];
 
   useEffect(() => {
     const h = (e) => { if (cardRef.current && !cardRef.current.contains(e.target)) setOpenField(null); };
@@ -124,13 +139,14 @@ function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }
   }, []);
 
   const filteredCities = useMemo(() => {
+    const all = getCities();
     const q = cityQuery.trim().toLowerCase();
-    if (!q) return CITIES;
-    return CITIES.filter(c => c.name.toLowerCase().includes(q));
-  }, [cityQuery]);
+    if (!q) return all;
+    return all.filter(c => c.name.toLowerCase().includes(q));
+  }, [cityQuery, dataV]);
 
   const pickCity = (c) => {
-    const list = FNS_BY_CITY[c.id] || [];
+    const list = getFns()[c.id] || [];
     setSearchState({ ...searchState, city: c.id, fns: list.length === 1 ? list[0].id : null });
     setCityQuery(c.name);
     setOpenField(list.length === 1 ? 'service' : 'fns');
@@ -209,7 +225,7 @@ function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }
                   <div className={`val ${!service ? 'placeholder' : ''}`}>{service?.short || 'выберите'}</div>
                   {openField === 'service' && (
                     <div className="popover">
-                      {SERVICES.map(s => (
+                      {getServices().map(s => (
                         <div key={s.id} className={`pop-item ${searchState.service===s.id?'selected':''}`}
                           onMouseDown={(e) => { e.preventDefault(); setSearchState({...searchState, service: s.id}); setOpenField(null); }}>
                           <div style={{display:'flex', flexDirection:'column', gap: 2}}>
@@ -238,14 +254,14 @@ function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }
           <div>
             <div className="xs mono dim" style={{marginBottom: 14, letterSpacing:'.08em'}}>СЕЙЧАС НА СВЯЗИ</div>
             <div className="spec-stack">
-              {SPECIALISTS.slice(0, 4).map(s => (
+              {getSpecialists().slice(0, 4).map(s => (
                 <div key={s.id} className="spec-card">
                   <Avatar init={s.init} online={s.online} seed={s.id} />
                   <div className="spec-meta">
                     <div className="spec-name">{s.first} {s.last}</div>
                     <div className="spec-desc">{s.fnsLabel}</div>
                   </div>
-                  <div className="spec-tag">{serviceById(s.services[0]).short}</div>
+                  <div className="spec-tag">{(serviceById(s.services[0]) || {short:'—'}).short}</div>
                 </div>
               ))}
               <div className="small dim mono" style={{marginTop: 4, textAlign:'right'}}>
@@ -353,16 +369,17 @@ function HowItWorks({ onCreate }) {
 
 // ---------- catalog preview ----------
 function CatalogPreview({ onCatalog, onOpenSpecialist }) {
+  const dataV = useDataVersion();
   const [cityFilter, setCityFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState(null);
 
   const filtered = useMemo(() => {
-    return SPECIALISTS.filter(s => {
+    return getSpecialists().filter(s => {
       if (cityFilter !== 'all' && s.city !== cityFilter) return false;
       if (serviceFilter && !s.services.includes(serviceFilter)) return false;
       return true;
     });
-  }, [cityFilter, serviceFilter]);
+  }, [cityFilter, serviceFilter, dataV]);
 
   return (
     <section className="section">
@@ -379,11 +396,11 @@ function CatalogPreview({ onCatalog, onOpenSpecialist }) {
 
         <div className="cat-toolbar">
           <Pill active={cityFilter==='all'} onClick={()=>setCityFilter('all')}>Все города</Pill>
-          {CITIES.slice(0, 5).map(c => (
+          {getCities().slice(0, 5).map(c => (
             <Pill key={c.id} active={cityFilter===c.id} onClick={()=>setCityFilter(c.id)}>{c.name}</Pill>
           ))}
           <div style={{width: 1, background:'var(--line)', margin:'0 6px'}}></div>
-          {SERVICES.map(s => (
+          {getServices().map(s => (
             <Pill key={s.id} active={serviceFilter===s.id} onClick={()=>setServiceFilter(serviceFilter===s.id?null:s.id)}>
               {s.short}
             </Pill>
@@ -406,6 +423,7 @@ function CatalogPreview({ onCatalog, onOpenSpecialist }) {
               <div className="cat-card-tags">
                 {s.services.map(id => {
                   const srv = serviceById(id);
+                  if (!srv) return null;
                   return <span key={id} className="spec-tag">{srv.short}</span>;
                 })}
               </div>
@@ -428,9 +446,10 @@ function CatalogPreview({ onCatalog, onOpenSpecialist }) {
 
 // ---------- coverage map ----------
 function Coverage() {
+  const dataV = useDataVersion();
   const [sel, setSel] = useState('msk');
   const selCity = cityById(sel);
-  const fns = FNS_BY_CITY[sel] || [];
+  const fns = getFns()[sel] || [];
 
   // simple positioned dots on a stylized "map" rectangle
   const positions = {
@@ -464,10 +483,10 @@ function Coverage() {
                 <line key={'h'+i} x1="0" y1={i*10} x2="100" y2={i*10} stroke="var(--line)" strokeWidth="0.15" />
               ))}
               {/* dots */}
-              {CITIES.map(c => {
+              {getCities().map(c => {
                 const p = positions[c.id];
                 if (!p) return null;
-                const r = Math.min(2.6, 0.8 + Math.sqrt(c.specialists) * 0.45);
+                const r = Math.min(2.6, 0.8 + Math.sqrt(c.specialists || 0) * 0.45);
                 return (
                   <g key={c.id}>
                     <circle cx={p.x} cy={p.y} r={r*2.2}
@@ -489,7 +508,7 @@ function Coverage() {
 
           <div>
             <div className="city-list">
-              {CITIES.map(c => (
+              {getCities().map(c => (
                 <div key={c.id} className={`city-row ${sel===c.id?'selected':''}`} onClick={()=>setSel(c.id)}>
                   <div>
                     <div>{c.name}</div>

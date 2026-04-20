@@ -1,11 +1,28 @@
 /* overlays.jsx — prototype overlays: auth, new-request, catalog, profile, chat */
 const {
-  PT_CITIES: OV_CITIES, PT_FNS: OV_FNS, PT_SERVICES: OV_SERVICES,
-  PT_SPECIALISTS: OV_SPECIALISTS, PT_SAMPLE_REQUEST: OV_REQ, PT_SAMPLE_MESSAGES: OV_MSGS,
+  PT_SAMPLE_REQUEST: OV_REQ, PT_SAMPLE_MESSAGES: OV_MSGS,
   PT_Avatar: Avatar2, PT_Pill: Pill2,
-  PT_serviceById: srvById, PT_cityById: ctyById, PT_fnsById: fnsById2,
 } = window;
+// Live getters — read from window.PT_* at call time so api.js hydration is picked up.
+const OV_getCities = () => window.PT_CITIES || [];
+const OV_getFns = () => window.PT_FNS || {};
+const OV_getServices = () => window.PT_SERVICES || [];
+const OV_getSpecialists = () => window.PT_SPECIALISTS || [];
+const srvById = (id) => OV_getServices().find(s => s.id === id);
+const ctyById = (id) => OV_getCities().find(c => c.id === id);
+const fnsById2 = (cityId, id) => (OV_getFns()[cityId] || []).find(f => f.id === id);
 const { useState: useS, useEffect: useE, useRef: useR, useMemo: useM, Fragment: Fr } = React;
+
+// hook to force re-render when api.js finishes hydrating
+function useOVDataVersion() {
+  const [v, bump] = useS(0);
+  useE(() => {
+    const h = () => bump((n) => n + 1);
+    window.addEventListener('pt:data-ready', h);
+    return () => window.removeEventListener('pt:data-ready', h);
+  }, []);
+  return v;
+}
 
 function Modal({ children, size, onClose }) {
   useE(() => {
@@ -117,7 +134,7 @@ function NewRequestModal({ onClose, onDone, initial }) {
   const set = (k, v) => setForm(prev => ({...prev, [k]: v}));
 
   const city = form.city ? ctyById(form.city) : null;
-  const fnsOpts = city ? (OV_FNS[city.id] || []) : [];
+  const fnsOpts = city ? (OV_getFns()[city.id] || []) : [];
   const singleFns = fnsOpts.length === 1;
 
   // auto-select FNS if only one exists in the picked city
@@ -138,7 +155,7 @@ function NewRequestModal({ onClose, onDone, initial }) {
 
   useE(() => { if (city) setCityQuery(city.name); }, [form.city]);
 
-  const filteredCities = OV_CITIES.filter(c => {
+  const filteredCities = OV_getCities().filter(c => {
     const q = cityQuery.trim().toLowerCase();
     return !q || c.name.toLowerCase().includes(q);
   });
@@ -249,7 +266,7 @@ function NewRequestModal({ onClose, onDone, initial }) {
             <div className="field">
               <label>Тип проверки *</label>
               <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap: 10}}>
-                {OV_SERVICES.map(s => (
+                {OV_getServices().map(s => (
                   <button key={s.id}
                     onClick={()=>set('service', s.id)}
                     style={{padding:'14px 16px', borderRadius: 10, border: '1.5px solid ' + (form.service===s.id?'var(--accent)':'var(--line)'),
@@ -463,7 +480,7 @@ function RequestSuccessModal({ onClose, onOpenChat, data }) {
                 </div>
               )}
               {incoming.map(id => {
-                const s = OV_SPECIALISTS.find(x => x.id === id);
+                const s = OV_getSpecialists().find(x => x.id === id);
                 return (
                   <div key={id} className="spec-card fade-in" style={{cursor:'pointer'}} onClick={()=>onOpenChat(id)}>
                     <Avatar2 init={s.init} online={s.online} />
@@ -534,15 +551,16 @@ function CatalogPage({ onOpen }) {
   const [city, setCity] = useS('all');
   const [svc, setSvc] = useS(null);
   const [q, setQ] = useS('');
+  const dataV = useOVDataVersion();
 
   const list = useM(() => {
-    return OV_SPECIALISTS.filter(s => {
+    return OV_getSpecialists().filter(s => {
       if (city !== 'all' && s.city !== city) return false;
       if (svc && !s.services.includes(svc)) return false;
       if (q && !(`${s.first} ${s.last} ${s.role} ${s.fnsLabel}`).toLowerCase().includes(q.toLowerCase())) return false;
       return true;
     });
-  }, [city, svc, q]);
+  }, [city, svc, q, dataV]);
 
   return (
     <PageShell crumbs={[{label:'Каталог специалистов'}]}>
@@ -558,9 +576,9 @@ function CatalogPage({ onOpen }) {
         </div>
         <div style={{padding:'12px 24px', borderBottom:'1px solid var(--line)', display:'flex', gap: 8, flexWrap:'wrap'}}>
           <Pill2 active={city==='all'} onClick={()=>setCity('all')}>Все города</Pill2>
-          {OV_CITIES.slice(0, 6).map(c => <Pill2 key={c.id} active={city===c.id} onClick={()=>setCity(c.id)}>{c.name}</Pill2>)}
+          {OV_getCities().slice(0, 6).map(c => <Pill2 key={c.id} active={city===c.id} onClick={()=>setCity(c.id)}>{c.name}</Pill2>)}
           <div style={{width: 1, background:'var(--line)', margin:'0 6px'}}></div>
-          {OV_SERVICES.map(s => (
+          {OV_getServices().map(s => (
             <Pill2 key={s.id} active={svc===s.id} onClick={()=>setSvc(svc===s.id?null:s.id)}>{s.short}</Pill2>
           ))}
         </div>
@@ -595,7 +613,7 @@ function CatalogPage({ onOpen }) {
 
 // --- Specialist profile (page) ---
 function SpecialistPage({ id, onBack, onCatalog, onMessage }) {
-  const s = OV_SPECIALISTS.find(x => x.id === id);
+  const s = OV_getSpecialists().find(x => x.id === id);
   if (!s) {
     return (
       <PageShell crumbs={[{label:'Каталог', href:'/catalog'}, {label:'Специалист не найден'}]}>
@@ -680,7 +698,7 @@ function SpecialistPage({ id, onBack, onCatalog, onMessage }) {
 
 // --- Chat (page) ---
 function ChatPage({ specialistId, onBack, onProfile }) {
-  const initial = OV_SPECIALISTS.find(x => x.id === specialistId) || OV_SPECIALISTS[0];
+  const initial = OV_getSpecialists().find(x => x.id === specialistId) || OV_getSpecialists()[0];
   const [active, setActive] = useS(initial.id);
   const [messages, setMessages] = useS({});
   const [input, setInput] = useS('');
@@ -787,8 +805,8 @@ function ChatPage({ specialistId, onBack, onProfile }) {
     setMenuOpen(false);
   };
 
-  const activeSpec = OV_SPECIALISTS.find(x => x.id === active);
-  const list = [initial, ...OV_SPECIALISTS.filter(x=>x.id!==initial.id).slice(0,3)];
+  const activeSpec = OV_getSpecialists().find(x => x.id === active) || initial;
+  const list = [initial, ...OV_getSpecialists().filter(x=>x.id!==initial.id).slice(0,3)];
 
   return (
     <PageShell crumbs={[{label:'Сообщения'}, {label: activeSpec.first + ' ' + activeSpec.last}]}>
