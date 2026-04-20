@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { View, ActivityIndicator, Animated, type DimensionValue } from "react-native";
-import { colors } from "../../lib/theme";
+import { colors, radiusValue } from "../../lib/theme";
 
 export interface LoadingStateProps {
   variant?: "spinner" | "skeleton";
@@ -40,7 +40,7 @@ function SkeletonLines({ lines }: { lines: number }) {
           style={{
             height: heights[i % heights.length],
             width: widths[i % widths.length],
-            borderRadius: 8,
+            borderRadius: radiusValue.sm,
             backgroundColor: colors.border,
             opacity,
           }}

@@ -21,7 +21,7 @@ import Input from "@/components/ui/Input";
 import { API_URL, api, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors } from "@/lib/theme";
+import { colors, radiusValue } from "@/lib/theme";
 
 
 interface FileAttachment {
@@ -441,7 +441,7 @@ export default function ChatThread() {
               onChangeText={setText}
               multiline
               style={{ flex: 1 }}
-              containerStyle={{ borderRadius: 20, minHeight: 40, maxHeight: 120 }}
+              containerStyle={{ borderRadius: radiusValue.xl, minHeight: 40, maxHeight: 120 }}
             />
 
             {/* Send button */}

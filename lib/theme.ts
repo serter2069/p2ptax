@@ -53,3 +53,11 @@ export const radius = {
   lg: 'rounded-2xl',
   full: 'rounded-full',
 } as const
+
+export const radiusValue = {
+  sm: 8,
+  md: 12,    // inputs, buttons
+  lg: 16,    // cards
+  xl: 24,
+  full: 9999, // pills, badges
+} as const

@@ -14,7 +14,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, radiusValue } from "@/lib/theme";
 
 
 type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
@@ -212,7 +212,7 @@ export default function AdminUsers() {
           accessibilityLabel="Поиск по email или имени"
           style={{
             backgroundColor: "rgba(255,255,255,0.15)",
-            borderRadius: 10,
+            borderRadius: radiusValue.md,
             height: 40,
             paddingHorizontal: 14,
             color: colors.surface,

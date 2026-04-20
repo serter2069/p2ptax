@@ -13,7 +13,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors } from "@/lib/theme";
+import { colors, radiusValue } from "@/lib/theme";
 
 interface RequestSummary {
   id: string;
@@ -210,7 +210,7 @@ export default function SpecialistConfirmWrite() {
               minHeight: 140,
               borderWidth: 1,
               borderColor: isLimitReached ? colors.border : colors.borderLight,
-              borderRadius: 12,
+              borderRadius: radiusValue.md,
               paddingHorizontal: 14,
               paddingVertical: 12,
               fontSize: 16,

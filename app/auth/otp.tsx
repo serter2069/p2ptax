@@ -16,7 +16,7 @@ import { useAuth, UserData } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
-import { colors } from "@/lib/theme";
+import { colors, radiusValue } from "@/lib/theme";
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -295,7 +295,7 @@ export default function AuthOtpScreen() {
                     style={{
                       width: 48,
                       height: 52,
-                      borderRadius: 12,
+                      borderRadius: radiusValue.md,
                       borderWidth: error ? 1.5 : 1,
                       borderColor: error
                         ? colors.error
