@@ -19,6 +19,7 @@ function SettingRow({
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
       className="flex-row items-center px-4 py-4 border-b border-slate-50 active:bg-slate-50"
@@ -60,7 +61,7 @@ export default function SettingsScreen() {
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
         {/* Header */}
         <View className="flex-row items-center px-4 pt-2 pb-3 border-b border-slate-50">
-          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
+          <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
             <FontAwesome name="arrow-left" size={18} color={colors.text} />
           </Pressable>
           <Text className="text-2xl font-bold text-slate-900">Настройки</Text>

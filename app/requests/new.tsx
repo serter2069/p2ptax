@@ -335,6 +335,7 @@ export default function NewRequest() {
                 Город <Text className="text-red-500">*</Text>
               </Text>
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Выбрать город"
                 onPress={() => {
                   if (atLimit || submitting) return;
@@ -369,6 +370,7 @@ export default function NewRequest() {
                     ) : (
                       cities.map((city) => (
                         <Pressable
+                          accessibilityRole="button"
                           key={city.id}
                           accessibilityLabel={city.name}
                           onPress={() => handleCitySelect(city)}
@@ -389,6 +391,7 @@ export default function NewRequest() {
                 Инспекция <Text className="text-red-500">*</Text>
               </Text>
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Выбрать инспекцию ФНС"
                 onPress={() => {
                   if (!selectedCityId || atLimit || submitting) return;
@@ -432,6 +435,7 @@ export default function NewRequest() {
                     ) : (
                       fnsOffices.map((fns) => (
                         <Pressable
+                          accessibilityRole="button"
                           key={fns.id}
                           accessibilityLabel={fns.name}
                           onPress={() => handleFnsSelect(fns)}
@@ -451,6 +455,7 @@ export default function NewRequest() {
             <View className="mb-4">
               <Text className="text-sm font-medium text-slate-700 mb-1.5">Тип проверки</Text>
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Выбрать тип проверки"
                 onPress={() => {
                   if (atLimit || submitting) return;
@@ -472,6 +477,7 @@ export default function NewRequest() {
                 >
                   <ScrollView nestedScrollEnabled>
                     <Pressable
+                      accessibilityRole="button"
                       accessibilityLabel="Не знаю"
                       onPress={() => {
                         setSelectedServiceId(null);
@@ -483,6 +489,7 @@ export default function NewRequest() {
                     </Pressable>
                     {services.map((svc) => (
                       <Pressable
+                        accessibilityRole="button"
                         key={svc.id}
                         accessibilityLabel={svc.name}
                         onPress={() => handleServiceSelect(svc)}
@@ -578,6 +585,7 @@ export default function NewRequest() {
                     <ActivityIndicator size="small" color={colors.placeholder} />
                   ) : (
                     <Pressable
+                      accessibilityRole="button"
                       accessibilityLabel="Удалить файл"
                       onPress={() => handleRemoveFile(index)}
                       className="w-11 h-11 items-center justify-center"
@@ -591,6 +599,7 @@ export default function NewRequest() {
               {/* Add file button */}
               {files.length < MAX_FILES && !atLimit && (
                 <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Прикрепить файл"
                   onPress={handleAddFilePress}
                   className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl active:bg-slate-50"

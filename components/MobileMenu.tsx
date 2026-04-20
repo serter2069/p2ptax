@@ -38,8 +38,8 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable accessibilityLabel="Закрыть меню" onPress={onClose} className="flex-1 flex-row bg-black/50">
-        <Pressable className="w-72 bg-white h-full" onPress={() => {}}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Закрыть меню" onPress={onClose} className="flex-1 flex-row bg-black/50">
+        <Pressable accessibilityRole="button" accessibilityLabel="Панель меню" className="w-72 bg-white h-full" onPress={() => {}}>
           {/* User info */}
           <View className="pt-14 pb-6 px-5 bg-blue-900">
             {isAuthenticated ? (
@@ -62,7 +62,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           </View>
 
           {/* Close button */}
-          <Pressable accessibilityLabel="Закрыть меню" onPress={onClose} className="absolute top-12 right-3 w-11 h-11 items-center justify-center">
+          <Pressable accessibilityRole="button" accessibilityLabel="Закрыть меню" onPress={onClose} className="absolute top-12 right-3 w-11 h-11 items-center justify-center">
             <FontAwesome name="times" size={20} color={colors.surface} />
           </Pressable>
 
@@ -70,6 +70,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           <View className="flex-1 pt-2">
             {MENU_ITEMS.map((item) => (
               <Pressable
+                accessibilityRole="button"
                 key={item.label}
                 accessibilityLabel={item.label}
                 onPress={() => handleNavigate(item.route)}
@@ -86,12 +87,13 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           {/* Bottom actions */}
           <View className="border-t border-slate-100 px-5 py-4 pb-8">
             {isAuthenticated ? (
-              <Pressable accessibilityLabel="Выйти" onPress={handleLogout} className="flex-row items-center py-3">
+              <Pressable accessibilityRole="button" accessibilityLabel="Выйти" onPress={handleLogout} className="flex-row items-center py-3">
                 <FontAwesome name="sign-out" size={18} color={colors.error} />
                 <Text className="text-base font-medium text-red-600 ml-3">Выйти</Text>
               </Pressable>
             ) : (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Войти"
                 onPress={() => handleNavigate("/auth/email")}
                 className="h-12 rounded-xl bg-blue-900 items-center justify-center"
@@ -102,7 +104,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           </View>
         </Pressable>
 
-        <Pressable onPress={onClose} className="flex-1" />
+        <Pressable accessibilityRole="button" accessibilityLabel="Закрыть меню" onPress={onClose} className="flex-1" />
       </Pressable>
     </Modal>
   );

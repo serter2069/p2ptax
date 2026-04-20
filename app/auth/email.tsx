@@ -112,6 +112,7 @@ export default function AuthEmailScreen() {
           </View>
 
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Условия использования"
             onPress={() => router.push("/legal/terms" as never)}
             className="mt-4 py-3"

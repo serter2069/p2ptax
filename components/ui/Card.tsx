@@ -48,6 +48,8 @@ export default function Card({
   if (onPress) {
     return (
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Карточка"
         onPress={onPress}
         style={({ pressed }) =>
           pressed ? { transform: [{ scale: 0.98 }] } : undefined

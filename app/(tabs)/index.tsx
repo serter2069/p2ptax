@@ -25,7 +25,7 @@ const LISTINGS = [
 
 function CategoryChip({ name, icon }: { name: string; icon: React.ComponentProps<typeof FontAwesome>["name"] }) {
   return (
-    <Pressable accessibilityLabel={name} className="mr-3 items-center">
+    <Pressable accessibilityRole="button" accessibilityLabel={name} className="mr-3 items-center">
       <View className="w-14 h-14 rounded-2xl bg-gray-100 items-center justify-center mb-1">
         <FontAwesome name={icon} size={20} color="#4b5563" />
       </View>
@@ -36,7 +36,7 @@ function CategoryChip({ name, icon }: { name: string; icon: React.ComponentProps
 
 function ListingCard({ title, price, location, color }: { title: string; price: string; location: string; color: string }) {
   return (
-    <Pressable accessibilityLabel={title} className="flex-1 m-1.5">
+    <Pressable accessibilityRole="button" accessibilityLabel={title} className="flex-1 m-1.5">
       <View className="rounded-2xl overflow-hidden bg-white" style={{ shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
         <View className="h-36 items-center justify-center" style={{ backgroundColor: color }}>
           <FontAwesome name="image" size={32} color={colors.textSecondary} />
@@ -98,7 +98,7 @@ export default function HomeScreen() {
             {/* Section Title */}
             <View className="flex-row justify-between items-center px-4 mb-2">
               <Text className="text-lg font-bold text-gray-900">Recent Listings</Text>
-              <Pressable accessibilityLabel="Показать все">
+              <Pressable accessibilityRole="button" accessibilityLabel="Показать все">
                 <Text className="text-sm text-blue-600">See all</Text>
               </Pressable>
             </View>

@@ -114,6 +114,7 @@ export default function ClientMessages() {
 
       return (
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel={`Чат с ${name}`}
           onPress={() => router.push(`/threads/${item.id}` as never)}
           className="flex-row items-center py-3 border-b border-slate-100 active:bg-slate-50"

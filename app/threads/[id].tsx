@@ -285,7 +285,7 @@ export default function ChatThread() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
+          <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
             <FontAwesome name="chevron-left" size={18} color={colors.primary} />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
@@ -301,7 +301,7 @@ export default function ChatThread() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-          <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
+          <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
             <FontAwesome name="chevron-left" size={18} color={colors.primary} />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
@@ -310,6 +310,8 @@ export default function ChatThread() {
           <FontAwesome name="exclamation-circle" size={40} color={colors.error} />
           <Text className="text-base text-red-600 text-center mt-3">{error}</Text>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Повторить"
             onPress={loadData}
             className="mt-4 px-6 py-3 bg-blue-900 rounded-xl"
             style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
@@ -326,7 +328,7 @@ export default function ChatThread() {
       <View className="flex-1" style={desktopStyle}>
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
-        <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
           <FontAwesome name="chevron-left" size={18} color={colors.primary} />
         </Pressable>
         {otherUser ? (
@@ -400,6 +402,7 @@ export default function ChatThread() {
                 </Text>
                 <Text className="text-xs text-slate-400 mr-1">{formatFileSize(f.size)}</Text>
                 <Pressable
+                  accessibilityRole="button"
                   onPress={() => handleRemovePendingFile(i)}
                   accessibilityLabel={`Удалить файл ${f.name}`}
                   style={({ pressed }) => [pressed && { opacity: 0.7 }]}
@@ -416,6 +419,7 @@ export default function ChatThread() {
           <View className="flex-row items-end border-t border-slate-200 px-3 py-2 bg-white">
             {/* Attach button */}
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Прикрепить файл (PDF, JPG, PNG — до 10 МБ, не более 3)"
               onPress={handleAttachFile}
               disabled={pendingFiles.length >= 3 || sending}
@@ -454,6 +458,7 @@ export default function ChatThread() {
 
             {/* Send button */}
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Отправить сообщение"
               onPress={handleSend}
               disabled={(!text.trim() && pendingFiles.length === 0) || sending}

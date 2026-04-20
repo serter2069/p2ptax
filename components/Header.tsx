@@ -19,7 +19,7 @@ export default function Header() {
     return (
       <>
         <View className="flex-row items-center justify-between px-4 h-14 bg-white border-b border-slate-100">
-          <Pressable accessibilityLabel="Открыть меню" onPress={() => setMenuOpen(true)} className="w-11 h-11 items-center justify-center">
+          <Pressable accessibilityRole="button" accessibilityLabel="Открыть меню" onPress={() => setMenuOpen(true)} className="w-11 h-11 items-center justify-center">
             <FontAwesome name="bars" size={20} color={colors.text} />
           </Pressable>
 
@@ -28,6 +28,7 @@ export default function Header() {
           {isAuthenticated ? (
             <View className="flex-row items-center gap-3">
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Уведомления"
                 onPress={() => router.push("/notifications" as never)}
                 className="w-11 h-11 items-center justify-center"
@@ -35,6 +36,7 @@ export default function Header() {
                 <FontAwesome name="bell-o" size={18} color={colors.text} />
               </Pressable>
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Профиль"
                 onPress={() => {
                   const settingsPath = user?.role === "SPECIALIST"
@@ -49,6 +51,7 @@ export default function Header() {
             </View>
           ) : (
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Войти"
               onPress={() => router.push("/auth/email" as never)}
               className="px-4 h-11 rounded-lg bg-blue-900 items-center justify-center"
@@ -66,13 +69,14 @@ export default function Header() {
   // Desktop header
   return (
     <View className="flex-row items-center justify-between px-6 h-16 bg-white border-b border-slate-100">
-      <Pressable accessibilityLabel="Главная" onPress={() => router.push("/" as never)}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Главная" onPress={() => router.push("/" as never)}>
         <Text className="text-xl font-bold text-blue-900">P2PTax</Text>
       </Pressable>
 
       {isAuthenticated ? (
         <View className="flex-row items-center gap-3">
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Уведомления"
             onPress={() => router.push("/notifications" as never)}
             className="w-11 h-11 rounded-lg items-center justify-center active:bg-slate-100"
@@ -80,6 +84,7 @@ export default function Header() {
             <FontAwesome name="bell-o" size={18} color={colors.text} />
           </Pressable>
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Профиль"
             onPress={() => {
               const settingsPath = user?.role === "SPECIALIST"
@@ -94,6 +99,7 @@ export default function Header() {
         </View>
       ) : (
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Войти"
           onPress={() => router.push("/auth/email" as never)}
           className="px-5 h-11 rounded-lg bg-blue-900 items-center justify-center active:bg-slate-900"

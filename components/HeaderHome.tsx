@@ -16,6 +16,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
       <Text className="text-lg font-bold text-white">P2PTax</Text>
       <View className="flex-row items-center gap-4">
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Уведомления"
           onPress={() => router.push("/notifications" as never)}
           className="w-11 h-11 items-center justify-center"
@@ -31,6 +32,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
         </Pressable>
         {onSettingsPress && (
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Настройки"
             onPress={onSettingsPress}
             className="w-11 h-11 items-center justify-center"

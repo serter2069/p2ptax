@@ -31,6 +31,7 @@ export default function TermsScreen() {
         </Text>
         <View className="flex-1 items-end">
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Закрыть"
             onPress={() => router.back()}
             className="w-11 h-11 items-center justify-center"

@@ -14,6 +14,7 @@ export default function HeaderBack({ title, rightAction }: HeaderBackProps) {
   return (
     <View className="flex-row items-center h-14 bg-white border-b border-slate-200 px-4">
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel="Назад"
         onPress={() => router.back()}
         className="w-11 h-11 items-center justify-center -ml-2"

@@ -45,6 +45,7 @@ export default function Button({
 
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled || loading}

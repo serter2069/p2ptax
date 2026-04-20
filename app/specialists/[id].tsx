@@ -255,6 +255,7 @@ export default function SpecialistPublicProfile() {
 
   const rightAction = isOwnProfile ? (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel="Редактировать профиль"
       onPress={() => router.push("/settings" as never)}
     >
@@ -400,6 +401,7 @@ export default function SpecialistPublicProfile() {
                   if (url) {
                     return (
                       <Pressable
+                        accessibilityRole="button"
                         key={contact.id}
                         accessibilityLabel={`${cfg.label} ${contact.value}`}
                         onPress={() => Linking.openURL(url)}

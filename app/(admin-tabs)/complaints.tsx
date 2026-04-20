@@ -191,6 +191,7 @@ export default function AdminComplaints() {
     return (
       <View>
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel={`Жалоба от ${userName(item.reporter)}`}
           onPress={() => setExpandedId(isExpanded ? null : item.id)}
           className="bg-white border-b border-slate-100 px-4 py-3"
@@ -248,6 +249,7 @@ export default function AdminComplaints() {
 
             {item.status === "NEW" && (
               <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Рассмотрено"
                 onPress={() => markReviewed(item)}
                 disabled={isReviewing}
@@ -279,6 +281,7 @@ export default function AdminComplaints() {
       <View className="bg-white border-b border-slate-200 px-4 py-2 flex-row gap-2">
         {FILTER_OPTIONS.map((opt) => (
           <Pressable
+            accessibilityRole="button"
             key={opt.key}
             accessibilityLabel={opt.label}
             onPress={() => setFilter(opt.key)}
@@ -317,6 +320,7 @@ export default function AdminComplaints() {
             Не удалось загрузить жалобы
           </Text>
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Повторить"
             onPress={() => fetchComplaints(filter, 1)}
             className="mt-4 px-4 py-2 rounded-lg border border-slate-300 bg-white"
