@@ -14,6 +14,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 import { API_URL, api, apiPost } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
@@ -628,31 +629,12 @@ export default function NewRequest() {
       {/* Sticky submit button */}
       <View className="border-t border-slate-200 px-4 py-3 bg-white">
         <View style={{ maxWidth: 520, width: "100%", alignSelf: "center" }}>
-          <Pressable
-            accessibilityLabel="Опубликовать заявку"
+          <Button
+            label="Опубликовать заявку"
             onPress={handleSubmit}
             disabled={submitting || atLimit}
-            className={`rounded-xl h-12 items-center justify-center ${
-              !atLimit && !submitting ? "bg-blue-900 active:bg-slate-900" : "bg-blue-900 opacity-40"
-            }`}
-            style={
-              !atLimit && !submitting
-                ? {
-                    shadowColor: colors.primary,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }
-                : undefined
-            }
-          >
-            {submitting ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text className="text-white text-base font-semibold">Опубликовать заявку</Text>
-            )}
-          </Pressable>
+            loading={submitting}
+          />
         </View>
       </View>
     </SafeAreaView>

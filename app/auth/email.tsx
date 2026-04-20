@@ -1,10 +1,11 @@
-import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -101,24 +102,14 @@ export default function AuthEmailScreen() {
             <Text className="text-xs text-red-600 mt-1">{error}</Text>
           ) : null}
 
-          <Pressable
-            accessibilityLabel="Продолжить"
-            onPress={handleContinue}
-            disabled={isLoading || !email.trim()}
-            className={`h-12 rounded-xl items-center justify-center mt-6 ${
-              isLoading || !email.trim()
-                ? "bg-blue-900 opacity-50"
-                : "bg-blue-900 active:bg-slate-900"
-            }`}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text className="text-white text-base font-semibold">
-                Продолжить
-              </Text>
-            )}
-          </Pressable>
+          <View className="mt-6">
+            <Button
+              label="Продолжить"
+              onPress={handleContinue}
+              disabled={isLoading || !email.trim()}
+              loading={isLoading}
+            />
+          </View>
 
           <Pressable
             accessibilityLabel="Условия использования"

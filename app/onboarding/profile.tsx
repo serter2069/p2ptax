@@ -16,6 +16,7 @@ import HeaderBack from "@/components/HeaderBack";
 import { API_URL, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
@@ -373,24 +374,12 @@ export default function OnboardingProfileScreen() {
               </Text>
             ) : null}
 
-            <Pressable
-              accessibilityLabel="Завершить регистрацию"
+            <Button
+              label="Завершить регистрацию"
               onPress={handleSubmit}
               disabled={isLoading || avatarUploading}
-              className={`h-12 rounded-xl items-center justify-center ${
-                isLoading || avatarUploading
-                  ? "bg-blue-900 opacity-50"
-                  : "bg-blue-900 active:bg-slate-900"
-              }`}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text className="text-white text-base font-semibold">
-                  Завершить регистрацию
-                </Text>
-              )}
-            </Pressable>
+              loading={isLoading}
+            />
 
             {/* Skip link */}
             <Pressable

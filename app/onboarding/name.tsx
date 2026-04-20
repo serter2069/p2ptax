@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -6,6 +6,7 @@ import HeaderBack from "@/components/HeaderBack";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 
 export default function OnboardingNameScreen() {
   const router = useRouter();
@@ -160,22 +161,12 @@ export default function OnboardingNameScreen() {
             </Text>
           ) : null}
 
-          <Pressable
-            accessibilityLabel="Далее"
+          <Button
+            label="Далее"
             onPress={handleNext}
             disabled={!canProceed || isLoading}
-            className={`h-12 rounded-xl items-center justify-center ${
-              !canProceed || isLoading
-                ? "bg-blue-900 opacity-50"
-                : "bg-blue-900 active:bg-slate-900"
-            }`}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text className="text-white text-base font-semibold">Далее</Text>
-            )}
-          </Pressable>
+            loading={isLoading}
+          />
         </View>
       </ResponsiveContainer>
     </SafeAreaView>

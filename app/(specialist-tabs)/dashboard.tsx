@@ -15,6 +15,7 @@ import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiGet, apiPatch } from "@/lib/api";
 
@@ -150,16 +151,16 @@ export default function SpecialistDashboard() {
           <Text className="text-sm text-slate-500 mt-2 text-center">
             Проверьте соединение с интернетом и попробуйте снова
           </Text>
-          <Pressable
-            accessibilityLabel="Повторить"
-            onPress={() => {
-              setLoading(true);
-              fetchData().finally(() => setLoading(false));
-            }}
-            className="mt-6 bg-blue-900 rounded-xl px-8 py-3"
-          >
-            <Text className="text-white font-semibold text-base">Повторить</Text>
-          </Pressable>
+          <View className="mt-6">
+            <Button
+              label="Повторить"
+              onPress={() => {
+                setLoading(true);
+                fetchData().finally(() => setLoading(false));
+              }}
+              fullWidth={false}
+            />
+          </View>
         </View>
       </SafeAreaView>
     );

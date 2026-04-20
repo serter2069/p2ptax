@@ -15,6 +15,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import SpecialistCard from "@/components/SpecialistCard";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 
@@ -225,13 +226,13 @@ export default function SpecialistPublicProfile() {
           <Text className="text-sm text-slate-500 mt-2 text-center leading-5">
             Возможно, профиль был удалён или вы перешли по неверной ссылке
           </Text>
-          <Pressable
-            accessibilityLabel="Назад к каталогу"
-            onPress={() => router.push("/specialists" as never)}
-            className="mt-6 bg-blue-900 rounded-xl px-6 py-3"
-          >
-            <Text className="text-white font-semibold">Назад к каталогу</Text>
-          </Pressable>
+          <View className="mt-6">
+            <Button
+              label="Назад к каталогу"
+              onPress={() => router.push("/specialists" as never)}
+              fullWidth={false}
+            />
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -510,25 +511,10 @@ export default function SpecialistPublicProfile() {
                   <Text className="text-sm font-semibold text-slate-500">Это вы</Text>
                 </View>
               ) : isSpecialist ? null : (
-                <Pressable
-                  accessibilityLabel={isAuthenticated ? "Написать специалисту" : "Войти и написать"}
+                <Button
+                  label={isAuthenticated ? "Написать" : "Войти и написать"}
                   onPress={handleWritePress}
-                  className="bg-blue-900 rounded-xl py-3.5 items-center"
-                  style={({ pressed }) => [
-                    {
-                      shadowColor: "#1e3a8a",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 4,
-                      elevation: 3,
-                    },
-                    pressed ? { opacity: 0.9, transform: [{ scale: 0.98 }] } : undefined,
-                  ]}
-                >
-                  <Text className="text-white text-base font-semibold">
-                    {isAuthenticated ? "Написать" : "Войти и написать"}
-                  </Text>
-                </Pressable>
+                />
               )}
             </View>
 
