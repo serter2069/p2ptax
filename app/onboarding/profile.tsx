@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   ActivityIndicator,
   ScrollView,
@@ -17,6 +16,7 @@ import { API_URL, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/lib/theme";
 
@@ -228,147 +228,79 @@ export default function OnboardingProfileScreen() {
             </View>
 
             {/* About */}
-            <Text className="text-sm text-slate-500 mb-1">О себе</Text>
-            <TextInput
-              accessibilityLabel="О себе"
-              style={{
-                height: 100,
-                borderRadius: 12,
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                fontSize: 16,
-                color: colors.text,
-                textAlignVertical: "top",
-                marginBottom: 4,
-              }}
-              placeholder="Расскажите о своём опыте: сколько лет в профессии, какие вопросы решаете, с какими инспекциями работаете"
-              placeholderTextColor={colors.placeholder}
-              value={description}
-              onChangeText={(t) => {
-                if (t.length <= 1000) setDescription(t);
-              }}
-              multiline
-              editable={!isLoading}
-            />
-            <Text className="text-xs text-slate-400 text-right mb-4">
-              {description.length}/1000
-            </Text>
+            <View className="mb-4">
+              <Input
+                label="О себе"
+                placeholder="Расскажите о своём опыте: сколько лет в профессии, какие вопросы решаете, с какими инспекциями работаете"
+                value={description}
+                onChangeText={(t) => {
+                  if (t.length <= 1000) setDescription(t);
+                }}
+                multiline
+                editable={!isLoading}
+              />
+              <Text className="text-xs text-slate-400 text-right mt-1">
+                {description.length}/1000
+              </Text>
+            </View>
 
             {/* Phone */}
-            <Text className="text-sm text-slate-500 mb-1">Телефон</Text>
-            <TextInput
-              accessibilityLabel="Телефон"
-              style={{
-                height: 48,
-                borderRadius: 12,
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: 16,
-                fontSize: 16,
-                color: colors.text,
-                marginBottom: 16,
-              }}
-              placeholder="+7 (___) ___-__-__"
-              placeholderTextColor={colors.placeholder}
-              value={phone}
-              onChangeText={(t) => setPhone(formatPhone(t))}
-              keyboardType="phone-pad"
-              editable={!isLoading}
-            />
+            <View className="mb-4">
+              <Input
+                label="Телефон"
+                placeholder="+7 (___) ___-__-__"
+                value={phone}
+                onChangeText={(t) => setPhone(formatPhone(t))}
+                keyboardType="phone-pad"
+                editable={!isLoading}
+              />
+            </View>
 
             {/* Telegram */}
-            <Text className="text-sm text-slate-500 mb-1">Telegram</Text>
-            <TextInput
-              accessibilityLabel="Telegram"
-              style={{
-                height: 48,
-                borderRadius: 12,
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: 16,
-                fontSize: 16,
-                color: colors.text,
-                marginBottom: 16,
-              }}
-              placeholder="@username"
-              placeholderTextColor={colors.placeholder}
-              value={telegram}
-              onChangeText={setTelegram}
-              autoCapitalize="none"
-              editable={!isLoading}
-            />
+            <View className="mb-4">
+              <Input
+                label="Telegram"
+                placeholder="@username"
+                value={telegram}
+                onChangeText={setTelegram}
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+            </View>
 
             {/* WhatsApp */}
-            <Text className="text-sm text-slate-500 mb-1">WhatsApp</Text>
-            <TextInput
-              accessibilityLabel="WhatsApp"
-              style={{
-                height: 48,
-                borderRadius: 12,
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: 16,
-                fontSize: 16,
-                color: colors.text,
-                marginBottom: 16,
-              }}
-              placeholder="+7 (___) ___-__-__"
-              placeholderTextColor={colors.placeholder}
-              value={whatsapp}
-              onChangeText={(t) => setWhatsapp(formatPhone(t))}
-              keyboardType="phone-pad"
-              editable={!isLoading}
-            />
+            <View className="mb-4">
+              <Input
+                label="WhatsApp"
+                placeholder="+7 (___) ___-__-__"
+                value={whatsapp}
+                onChangeText={(t) => setWhatsapp(formatPhone(t))}
+                keyboardType="phone-pad"
+                editable={!isLoading}
+              />
+            </View>
 
             {/* Office address */}
-            <Text className="text-sm text-slate-500 mb-1">Адрес офиса</Text>
-            <TextInput
-              accessibilityLabel="Адрес офиса"
-              style={{
-                height: 48,
-                borderRadius: 12,
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: 16,
-                fontSize: 16,
-                color: colors.text,
-                marginBottom: 16,
-              }}
-              placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"
-              placeholderTextColor={colors.placeholder}
-              value={officeAddress}
-              onChangeText={setOfficeAddress}
-              editable={!isLoading}
-            />
+            <View className="mb-4">
+              <Input
+                label="Адрес офиса"
+                placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"
+                value={officeAddress}
+                onChangeText={setOfficeAddress}
+                editable={!isLoading}
+              />
+            </View>
 
             {/* Working hours */}
-            <Text className="text-sm text-slate-500 mb-1">Часы работы</Text>
-            <TextInput
-              accessibilityLabel="Часы работы"
-              style={{
-                height: 48,
-                borderRadius: 12,
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: 16,
-                fontSize: 16,
-                color: colors.text,
-                marginBottom: 24,
-              }}
-              placeholder="Пн-Пт 9:00-18:00"
-              placeholderTextColor={colors.placeholder}
-              value={workingHours}
-              onChangeText={setWorkingHours}
-              editable={!isLoading}
-            />
+            <View className="mb-6">
+              <Input
+                label="Часы работы"
+                placeholder="Пн-Пт 9:00-18:00"
+                value={workingHours}
+                onChangeText={setWorkingHours}
+                editable={!isLoading}
+              />
+            </View>
 
             {error ? (
               <Text className="text-xs text-red-600 text-center mb-4">

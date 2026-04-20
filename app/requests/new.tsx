@@ -5,7 +5,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  TextInput,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,6 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { API_URL, api, apiPost } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
@@ -294,39 +294,17 @@ export default function NewRequest() {
               <Text className="text-sm font-medium text-slate-700 mb-1.5">
                 Заголовок <Text className="text-red-500">*</Text>
               </Text>
-              <TextInput
-                accessibilityLabel="Заголовок заявки"
+              <Input
+                placeholder="Кратко опишите суть проблемы"
                 value={title}
                 onChangeText={setTitle}
-                placeholder="Кратко опишите суть проблемы"
+                error={(submitted || title.length > 0) && !titleValid
+                  ? (title.trim().length < 3 ? "Минимум 3 символа" : "Максимум 100 символов")
+                  : undefined}
                 maxLength={100}
                 editable={!atLimit && !submitting}
-                placeholderTextColor={colors.textSecondary}
-                style={{
-                  height: 48,
-                  borderWidth: 1,
-                  borderColor:
-                    (submitted || title.length > 0) && !titleValid
-                      ? colors.error
-                      : colors.border,
-                  borderRadius: 12,
-                  paddingHorizontal: 16,
-                  fontSize: 16,
-                  backgroundColor: atLimit ? colors.background : colors.surface,
-                  color: colors.text,
-                  outlineWidth: 0,
-                } as any}
               />
-              <View className="flex-row justify-between mt-1">
-                {(submitted || title.length > 0) && !titleValid ? (
-                  <Text className="text-xs text-red-600">
-                    {title.trim().length < 3 ? "Минимум 3 символа" : "Максимум 100 символов"}
-                  </Text>
-                ) : (
-                  <View />
-                )}
-                <Text className="text-xs text-slate-400">{title.length}/100</Text>
-              </View>
+              <Text className="text-xs text-slate-400 text-right mt-1">{title.length}/100</Text>
             </View>
 
             {/* City select */}
@@ -508,45 +486,19 @@ export default function NewRequest() {
               <Text className="text-sm font-medium text-slate-700 mb-1.5">
                 Описание <Text className="text-red-500">*</Text>
               </Text>
-              <TextInput
-                accessibilityLabel="Описание заявки"
+              <Input
+                placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
                 value={description}
                 onChangeText={setDescription}
-                placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
                 multiline
+                error={(submitted || description.length > 0) && !descriptionValid
+                  ? (description.trim().length < 10 ? "Минимум 10 символов" : "Максимум 2000 символов")
+                  : undefined}
                 maxLength={2000}
                 editable={!atLimit && !submitting}
-                placeholderTextColor={colors.textSecondary}
-                style={{
-                  minHeight: 120,
-                  borderWidth: 1,
-                  borderColor:
-                    (submitted || description.length > 0) && !descriptionValid
-                      ? colors.error
-                      : colors.border,
-                  borderRadius: 12,
-                  paddingHorizontal: 16,
-                  paddingTop: 12,
-                  paddingBottom: 12,
-                  fontSize: 16,
-                  backgroundColor: atLimit ? colors.background : colors.surface,
-                  color: colors.text,
-                  textAlignVertical: "top",
-                  outlineWidth: 0,
-                } as any}
+                containerStyle={{ minHeight: 120 }}
               />
-              <View className="flex-row justify-between mt-1">
-                {(submitted || description.length > 0) && !descriptionValid ? (
-                  <Text className="text-xs text-red-600">
-                    {description.trim().length < 10
-                      ? "Минимум 10 символов"
-                      : "Максимум 2000 символов"}
-                  </Text>
-                ) : (
-                  <View />
-                )}
-                <Text className="text-xs text-slate-400">{description.length}/2000</Text>
-              </View>
+              <Text className="text-xs text-slate-400 text-right mt-1">{description.length}/2000</Text>
             </View>
 
             {/* File upload */}

@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
-import { colors } from "@/lib/theme";
+import Input from "@/components/ui/Input";
 
 export default function OnboardingNameScreen() {
   const router = useRouter();
@@ -74,59 +74,29 @@ export default function OnboardingNameScreen() {
             Ваше имя
           </Text>
 
-          <Text className="text-sm text-slate-500 mb-1">Имя</Text>
-          <TextInput
-            accessibilityLabel="Имя"
-            style={{
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: colors.background,
-              borderWidth: 1,
-              borderColor: firstNameError ? colors.error : colors.border,
-              paddingHorizontal: 16,
-              fontSize: 16,
-              color: colors.text,
-              marginBottom: 4,
-            }}
-            placeholder="Иван"
-            placeholderTextColor={colors.placeholder}
-            value={firstName}
-            onChangeText={setFirstName}
-            editable={!isLoading}
-            autoCapitalize="words"
-          />
-          {firstNameError ? (
-            <Text className="text-xs text-red-600 mb-3">{firstNameError}</Text>
-          ) : (
-            <View className="mb-3" />
-          )}
+          <View className="mb-3">
+            <Input
+              label="Имя"
+              placeholder="Иван"
+              value={firstName}
+              onChangeText={setFirstName}
+              error={firstNameError}
+              editable={!isLoading}
+              autoCapitalize="words"
+            />
+          </View>
 
-          <Text className="text-sm text-slate-500 mb-1">Фамилия</Text>
-          <TextInput
-            accessibilityLabel="Фамилия"
-            style={{
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: colors.background,
-              borderWidth: 1,
-              borderColor: lastNameError ? colors.error : colors.border,
-              paddingHorizontal: 16,
-              fontSize: 16,
-              color: colors.text,
-              marginBottom: 4,
-            }}
-            placeholder="Петров"
-            placeholderTextColor={colors.placeholder}
-            value={lastName}
-            onChangeText={setLastName}
-            editable={!isLoading}
-            autoCapitalize="words"
-          />
-          {lastNameError ? (
-            <Text className="text-xs text-red-600 mb-4">{lastNameError}</Text>
-          ) : (
-            <View className="mb-4" />
-          )}
+          <View className="mb-4">
+            <Input
+              label="Фамилия"
+              placeholder="Петров"
+              value={lastName}
+              onChangeText={setLastName}
+              error={lastNameError}
+              editable={!isLoading}
+              autoCapitalize="words"
+            />
+          </View>
 
           {/* Terms checkbox */}
           <Pressable
