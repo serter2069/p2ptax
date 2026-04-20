@@ -30,7 +30,12 @@ function Modal({ children, size, onClose }) {
     const h = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', h);
     document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', h); document.body.style.overflow=''; };
+    document.body.classList.add('modal-open');
+    return () => {
+      document.removeEventListener('keydown', h);
+      document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
+    };
   }, [onClose]);
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -105,6 +110,13 @@ function AuthModal({ onClose, onDone }) {
               ))}
             </div>
             {err && <div className="small" style={{color:'var(--danger)', marginBottom: 12}}>{err}</div>}
+            <button
+              className="btn btn-primary btn-block"
+              disabled={!code.every(x => x)}
+              style={{opacity: code.every(x => x) ? 1 : .4, cursor: code.every(x => x) ? 'pointer' : 'not-allowed', marginBottom: 12}}
+              onClick={()=>verify(code.join(''))}>
+              Подтвердить код
+            </button>
             <div className="flex-between">
               <button className="btn btn-subtle" onClick={()=>setStep('email')}>← Изменить email</button>
               <button className="btn btn-subtle">Отправить ещё раз</button>
@@ -519,7 +531,15 @@ function PageShell({ crumbs, title, action, children }) {
     <section className="page">
       <div className="page-bar">
         <div className="container page-bar-inner">
-          <button className="btn btn-ghost btn-sm" onClick={()=>history.length > 1 ? history.back() : (window.history.pushState(null,'','/'), window.dispatchEvent(new PopStateEvent('popstate')))}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>{
+            const internalReferrer = document.referrer && document.referrer.includes(location.host);
+            if (internalReferrer || window.history.length > 2) {
+              window.history.back();
+            } else {
+              window.history.pushState(null, '', '/');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+          }}>
             ← Назад
           </button>
           <nav className="crumbs">
@@ -686,9 +706,12 @@ function SpecialistPage({ id, onBack, onCatalog, onMessage }) {
         <div className="prof-section">
           <h5>Контакты</h5>
           <div className="prof-contacts">
-            <div className="prof-contact"><span className="k">Телефон</span><span className="mono">+7 (9**) ***-**-{s.id.charCodeAt(0)%90+10}</span></div>
-            <div className="prof-contact"><span className="k">Telegram</span><span className="mono">@{s.first.toLowerCase()}_{s.last.toLowerCase()}</span></div>
-            <div className="prof-contact"><span className="k">Офис</span><span>{ctyById(s.city).name}</span></div>
+            {s.phone && <div className="prof-contact"><span className="k">Телефон</span><span className="mono">{s.phone}</span></div>}
+            {s.telegram && <div className="prof-contact"><span className="k">Telegram</span><span className="mono">{s.telegram.startsWith('@') ? s.telegram : '@' + s.telegram}</span></div>}
+            {s.city && ctyById(s.city) && <div className="prof-contact"><span className="k">Офис</span><span>{s.officeAddress || ctyById(s.city).name}</span></div>}
+            {!s.phone && !s.telegram && (
+              <div className="prof-contact dim"><span className="k">—</span><span>Контакты появятся после первого сообщения</span></div>
+            )}
           </div>
         </div>
         </div>
