@@ -38,7 +38,7 @@ export default function SearchScreen() {
               placeholder="What are you looking for?"
               placeholderTextColor={colors.textSecondary}
             />
-            <Pressable accessibilityLabel="Фильтры" className="ml-2 w-10 h-10 rounded-lg bg-blue-600 items-center justify-center">
+            <Pressable accessibilityLabel="Фильтры" className="ml-2 w-11 h-11 rounded-lg bg-blue-600 items-center justify-center">
               <FontAwesome name="sliders" size={16} color="#ffffff" />
             </Pressable>
           </View>
