@@ -22,6 +22,7 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { API_URL, apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
 import LoadingState from "@/components/ui/LoadingState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { colors } from "@/lib/theme";
 
 interface ContactMethodItem {
   id: string;
@@ -70,12 +71,12 @@ interface SpecialistProfileData {
 const INPUT_STYLE = {
   height: 48,
   borderWidth: 1,
-  borderColor: "#e2e8f0",
+  borderColor: colors.border,
   borderRadius: 12,
   paddingHorizontal: 16,
   fontSize: 16,
-  color: "#0f172a",
-  backgroundColor: "#f8fafc",
+  color: colors.text,
+  backgroundColor: colors.background,
   marginBottom: 12,
 } as const;
 
@@ -334,7 +335,7 @@ export default function SpecialistSettings() {
                     className="rounded-full bg-slate-100 items-center justify-center"
                     style={{ width: 80, height: 80 }}
                   >
-                    <ActivityIndicator color="#1e3a8a" />
+                    <ActivityIndicator color={colors.primary} />
                   </View>
                 ) : avatarUrl ? (
                   <View>
@@ -345,14 +346,14 @@ export default function SpecialistSettings() {
                         height: 80,
                         borderRadius: 40,
                         borderWidth: 2,
-                        borderColor: "#e2e8f0",
+                        borderColor: colors.border,
                       }}
                     />
                     <View
                       className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
                       style={{ width: 24, height: 24 }}
                     >
-                      <FontAwesome name="pencil" size={12} color="#fff" />
+                      <FontAwesome name="pencil" size={12} color={colors.surface} />
                     </View>
                   </View>
                 ) : (
@@ -398,14 +399,14 @@ export default function SpecialistSettings() {
                 </Text>
               </View>
               {availabilityLoading ? (
-                <ActivityIndicator size="small" color="#1e3a8a" />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <Switch
                   accessibilityLabel="Принимаю заявки"
                   value={isAvailable}
                   onValueChange={handleToggleAvailable}
-                  trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.surface}
                 />
               )}
             </View>
@@ -421,7 +422,7 @@ export default function SpecialistSettings() {
               value={firstName}
               onChangeText={setFirstName}
               placeholder="Введите имя"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               maxLength={50}
               style={INPUT_STYLE}
             />
@@ -432,7 +433,7 @@ export default function SpecialistSettings() {
               value={lastName}
               onChangeText={setLastName}
               placeholder="Введите фамилию"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               maxLength={50}
               style={INPUT_STYLE}
             />
@@ -457,19 +458,19 @@ export default function SpecialistSettings() {
               value={description}
               onChangeText={setDescription}
               placeholder="Расскажите о своём опыте и специализации..."
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               multiline
               numberOfLines={4}
               maxLength={500}
               style={{
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
                 fontSize: 16,
-                color: "#0f172a",
-                backgroundColor: "#f8fafc",
+                color: colors.text,
+                backgroundColor: colors.background,
                 marginBottom: 4,
                 minHeight: 96,
                 textAlignVertical: "top",
@@ -514,7 +515,7 @@ export default function SpecialistSettings() {
                   onPress={() => router.push("/onboarding/work-area" as never)}
                   className="flex-row items-center justify-center py-2 mb-4"
                 >
-                  <FontAwesome name="pencil" size={12} color="#b45309" />
+                  <FontAwesome name="pencil" size={12} color={colors.accent} />
                   <Text className="text-sm text-amber-700 ml-1 font-medium">
                     Изменить рабочую зону
                   </Text>
@@ -526,7 +527,7 @@ export default function SpecialistSettings() {
                 onPress={() => router.push("/onboarding/work-area" as never)}
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
               >
-                <FontAwesome name="plus" size={14} color="#b45309" />
+                <FontAwesome name="plus" size={14} color={colors.accent} />
                 <Text className="text-sm text-amber-700 ml-2 font-medium">
                   Добавить ИФНС и услуги
                 </Text>
@@ -556,7 +557,7 @@ export default function SpecialistSettings() {
                   onPress={() => handleDeleteContact(contact.id)}
                   className="ml-2 p-2"
                 >
-                  <FontAwesome name="trash-o" size={16} color="#dc2626" />
+                  <FontAwesome name="trash-o" size={16} color={colors.error} />
                 </Pressable>
               </View>
             ))}
@@ -572,7 +573,7 @@ export default function SpecialistSettings() {
                   <Text className="text-base text-slate-900">
                     {CONTACT_TYPE_LABELS[newContactType]}
                   </Text>
-                  <FontAwesome name="chevron-down" size={12} color="#94a3b8" />
+                  <FontAwesome name="chevron-down" size={12} color={colors.placeholder} />
                 </Pressable>
                 {showTypePicker && (
                   <View className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-3">
@@ -615,7 +616,7 @@ export default function SpecialistSettings() {
                       ? "vk.com/username"
                       : "https://example.com"
                   }
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.placeholder}
                   autoCapitalize="none"
                   keyboardType={
                     newContactType === "phone" || newContactType === "whatsapp"
@@ -655,7 +656,7 @@ export default function SpecialistSettings() {
                 onPress={() => setAddingContact(true)}
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
               >
-                <FontAwesome name="plus" size={14} color="#1e3a8a" />
+                <FontAwesome name="plus" size={14} color={colors.primary} />
                 <Text className="text-sm text-blue-900 ml-2 font-medium">
                   Добавить контакт
                 </Text>
@@ -679,7 +680,7 @@ export default function SpecialistSettings() {
               value={officeAddress}
               onChangeText={setOfficeAddress}
               placeholder="Город, улица, дом"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               style={INPUT_STYLE}
             />
 
@@ -691,7 +692,7 @@ export default function SpecialistSettings() {
               value={workingHours}
               onChangeText={setWorkingHours}
               placeholder="Пн-Пт 9:00-18:00"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               style={INPUT_STYLE}
             />
 
@@ -724,8 +725,8 @@ export default function SpecialistSettings() {
                   accessibilityLabel="Push-уведомления"
                   value={pushEnabled}
                   onValueChange={setPushEnabled}
-                  trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.surface}
                 />
               </View>
               <View className="flex-row items-center px-4 py-3">
@@ -741,8 +742,8 @@ export default function SpecialistSettings() {
                   accessibilityLabel="Email-уведомления"
                   value={emailEnabled}
                   onValueChange={setEmailEnabled}
-                  trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.surface}
                 />
               </View>
             </View>
@@ -758,7 +759,7 @@ export default function SpecialistSettings() {
                 onPress={handleLogout}
                 className="flex-row items-center px-4 py-3"
               >
-                <FontAwesome name="sign-out" size={16} color="#dc2626" />
+                <FontAwesome name="sign-out" size={16} color={colors.error} />
                 <Text className="text-base text-red-600 ml-3 flex-1">
                   Выйти из аккаунта
                 </Text>

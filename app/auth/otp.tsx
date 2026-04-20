@@ -240,7 +240,7 @@ export default function AuthOtpScreen() {
               onPress={() => handleRoleChoice("SPECIALIST")}
               className="bg-blue-900 rounded-2xl p-5 active:bg-blue-800"
               style={{
-                shadowColor: "#1e3a8a",
+                shadowColor: colors.primary,
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.25,
                 shadowRadius: 4,
@@ -299,12 +299,12 @@ export default function AuthOtpScreen() {
                         ? colors.error
                         : digit
                           ? colors.primary
-                          : "#e2e8f0",
+                          : colors.border,
                       backgroundColor: error
-                        ? "#fef2f2"
+                        ? colors.errorBg
                         : digit
                           ? "#eff6ff"
-                          : "#f8fafc",
+                          : colors.background,
                       textAlign: "center",
                       fontSize: 22,
                       fontWeight: "700",

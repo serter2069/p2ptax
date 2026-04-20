@@ -12,6 +12,7 @@ import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import { colors } from "@/lib/theme";
 
 interface City {
   id: string;
@@ -177,7 +178,7 @@ export default function OnboardingWorkAreaScreen() {
                     <Text className="text-xs text-slate-400">{item.cityName}</Text>
                   </View>
                   <Pressable accessibilityLabel="Удалить отделение" onPress={() => removeFns(item.fnsId)}>
-                    <FontAwesome name="times" size={16} color="#94a3b8" />
+                    <FontAwesome name="times" size={16} color={colors.placeholder} />
                   </Pressable>
                 </View>
 
@@ -289,7 +290,7 @@ export default function OnboardingWorkAreaScreen() {
                 }}
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-6"
               >
-                <FontAwesome name="plus" size={14} color="#b45309" />
+                <FontAwesome name="plus" size={14} color={colors.accent} />
                 <Text className="text-sm text-amber-700 ml-2 font-medium">
                   Добавить город
                 </Text>

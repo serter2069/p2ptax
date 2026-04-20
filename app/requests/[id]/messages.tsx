@@ -13,6 +13,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import { api, ApiError } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface ThreadItem {
   id: string;
@@ -201,7 +202,7 @@ export default function RequestMessages() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#1e3a8a"
+              tintColor={colors.primary}
             />
           }
           ListEmptyComponent={

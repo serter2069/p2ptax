@@ -308,11 +308,11 @@ export default function NewRequest() {
                   borderColor:
                     (submitted || title.length > 0) && !titleValid
                       ? colors.error
-                      : "#e2e8f0",
+                      : colors.border,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   fontSize: 16,
-                  backgroundColor: atLimit ? "#f8fafc" : "#ffffff",
+                  backgroundColor: atLimit ? colors.background : colors.surface,
                   color: colors.text,
                   outlineWidth: 0,
                 } as any}
@@ -351,7 +351,7 @@ export default function NewRequest() {
                 <Text className={selectedCity ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
                   {selectedCity?.name || "Выберите город"}
                 </Text>
-                <FontAwesome name={cityOpen ? "chevron-up" : "chevron-down"} size={12} color="#94a3b8" />
+                <FontAwesome name={cityOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
               </Pressable>
               {submitted && !selectedCityId && (
                 <Text className="text-xs text-red-600 mt-1">Выберите город</Text>
@@ -411,9 +411,9 @@ export default function NewRequest() {
                       (selectedCityId ? "Выберите инспекцию" : "Сначала выберите город")}
                 </Text>
                 {loadingFns ? (
-                  <ActivityIndicator size="small" color="#94a3b8" />
+                  <ActivityIndicator size="small" color={colors.placeholder} />
                 ) : (
-                  <FontAwesome name={fnsOpen ? "chevron-up" : "chevron-down"} size={12} color="#94a3b8" />
+                  <FontAwesome name={fnsOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
                 )}
               </Pressable>
               {submitted && selectedCityId && !selectedFnsId && (
@@ -463,7 +463,7 @@ export default function NewRequest() {
                 <Text className={selectedService ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
                   {selectedService?.name || "Не знаю / не указывать"}
                 </Text>
-                <FontAwesome name={serviceOpen ? "chevron-up" : "chevron-down"} size={12} color="#94a3b8" />
+                <FontAwesome name={serviceOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
               </Pressable>
               {serviceOpen && (
                 <View
@@ -516,13 +516,13 @@ export default function NewRequest() {
                   borderColor:
                     (submitted || description.length > 0) && !descriptionValid
                       ? colors.error
-                      : "#e2e8f0",
+                      : colors.border,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingTop: 12,
                   paddingBottom: 12,
                   fontSize: 16,
-                  backgroundColor: atLimit ? "#f8fafc" : "#ffffff",
+                  backgroundColor: atLimit ? colors.background : colors.surface,
                   color: colors.text,
                   textAlignVertical: "top",
                   outlineWidth: 0,
@@ -575,14 +575,14 @@ export default function NewRequest() {
                     )}
                   </View>
                   {file.uploading ? (
-                    <ActivityIndicator size="small" color="#94a3b8" />
+                    <ActivityIndicator size="small" color={colors.placeholder} />
                   ) : (
                     <Pressable
                       accessibilityLabel="Удалить файл"
                       onPress={() => handleRemoveFile(index)}
                       className="w-11 h-11 items-center justify-center"
                     >
-                      <FontAwesome name="times" size={14} color="#94a3b8" />
+                      <FontAwesome name="times" size={14} color={colors.placeholder} />
                     </Pressable>
                   )}
                 </View>

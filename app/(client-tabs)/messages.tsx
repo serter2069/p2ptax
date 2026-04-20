@@ -15,6 +15,7 @@ import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import Avatar from "@/components/ui/Avatar";
 import { apiGet } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface ThreadItem {
   id: string;
@@ -183,7 +184,7 @@ export default function ClientMessages() {
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <HeaderHome />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -212,7 +213,7 @@ export default function ClientMessages() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#1e3a8a"
+              tintColor={colors.primary}
             />
           }
           ListEmptyComponent={

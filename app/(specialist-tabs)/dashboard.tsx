@@ -18,6 +18,7 @@ import EmptyState from "@/components/EmptyState";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiGet, apiPatch } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface Stats {
   threadsTotal: number;
@@ -131,7 +132,7 @@ export default function SpecialistDashboard() {
           onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -144,7 +145,7 @@ export default function SpecialistDashboard() {
           onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
         <View className="flex-1 items-center justify-center px-8">
-          <FontAwesome name="exclamation-circle" size={48} color="#94a3b8" />
+          <FontAwesome name="exclamation-circle" size={48} color={colors.placeholder} />
           <Text className="text-lg font-semibold text-slate-900 mt-4 text-center">
             Не удалось загрузить заявки
           </Text>
@@ -201,8 +202,8 @@ export default function SpecialistDashboard() {
                 value={isAvailable}
                 onValueChange={handleToggleAvailability}
                 disabled={availabilityToggling}
-                trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
-                thumbColor="#ffffff"
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.surface}
               />
             </View>
 
@@ -217,7 +218,7 @@ export default function SpecialistDashboard() {
                   <FontAwesome
                     name="exclamation-triangle"
                     size={16}
-                    color="#b45309"
+                    color={colors.accent}
                     style={{ marginTop: 2 }}
                   />
                   <View className="flex-1 ml-2">

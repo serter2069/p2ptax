@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { colors } from "@/lib/theme";
 
 interface HeaderBackProps {
   title: string;
@@ -17,7 +18,7 @@ export default function HeaderBack({ title, rightAction }: HeaderBackProps) {
         onPress={() => router.back()}
         className="w-11 h-11 items-center justify-center -ml-2"
       >
-        <FontAwesome name="arrow-left" size={18} color="#0f172a" />
+        <FontAwesome name="arrow-left" size={18} color={colors.text} />
       </Pressable>
       <Text className="flex-1 text-center text-base font-semibold text-slate-900" numberOfLines={1}>
         {title}

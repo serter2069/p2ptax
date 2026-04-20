@@ -31,15 +31,15 @@ interface NotificationsResponse {
 function iconForType(type: string): { name: React.ComponentProps<typeof FontAwesome>["name"]; color: string } {
   switch (type) {
     case "new_response":
-      return { name: "comments", color: "#1e3a8a" };
+      return { name: "comments", color: colors.primary };
     case "new_message":
-      return { name: "envelope", color: "#1e3a8a" };
+      return { name: "envelope", color: colors.primary };
     case "new_request_in_city":
-      return { name: "map-marker", color: "#059669" };
+      return { name: "map-marker", color: colors.success };
     case "promo_expiring":
-      return { name: "clock-o", color: "#b45309" };
+      return { name: "clock-o", color: colors.accent };
     default:
-      return { name: "bell", color: "#0f172a" };
+      return { name: "bell", color: colors.text };
   }
 }
 
@@ -75,7 +75,7 @@ function NotificationRow({
     >
       <View
         className="w-10 h-10 rounded-full items-center justify-center mt-0.5"
-        style={{ backgroundColor: "#f8fafc" }}
+        style={{ backgroundColor: colors.background }}
       >
         <FontAwesome name={icon.name} size={16} color={icon.color} />
       </View>
@@ -176,7 +176,7 @@ export default function NotificationsScreen() {
       <View className="flex-row items-center justify-between px-4 pt-2 pb-3 border-b border-slate-50">
         <View className="flex-row items-center">
           <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
-            <FontAwesome name="arrow-left" size={18} color="#0f172a" />
+            <FontAwesome name="arrow-left" size={18} color={colors.text} />
           </Pressable>
           <Text className="text-2xl font-bold text-slate-900">Уведомления</Text>
         </View>
@@ -221,7 +221,7 @@ export default function NotificationsScreen() {
             }
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center py-20">
-                <FontAwesome name="bell-slash-o" size={48} color="#94a3b8" />
+                <FontAwesome name="bell-slash-o" size={48} color={colors.placeholder} />
                 <Text className="text-base text-slate-400 mt-4">Нет уведомлений</Text>
                 <Text className="text-sm text-slate-300 mt-1">Здесь будут ваши уведомления</Text>
               </View>

@@ -2,14 +2,21 @@ export const colors = {
   // Brand — navy authority + amber accent
   primary: '#1e3a8a',      // blue-900 — deep navy
   accent: '#b45309',       // amber-700 — warm accent CTA
-  background: '#F8FAFC',   // slate-50 — soft warm white
-  surface: '#FFFFFF',       // pure white cards
-  text: '#0f172a',          // slate-900 — dark text
-  textSecondary: '#64748B', // slate-500 — muted secondary
+  background: '#f8fafc',   // slate-50 — soft warm white
+  surface: '#ffffff',      // pure white cards
+  text: '#0f172a',         // slate-900 — dark text
+  textSecondary: '#64748b', // slate-500 — muted secondary
+  textMuted: '#334155',    // slate-700 — dividers, subtle text
+  // Borders
+  border: '#e2e8f0',       // slate-200 — default border
+  borderLight: '#cbd5e1',  // slate-300 — lighter border
+  // Inputs
+  placeholder: '#94a3b8',  // slate-400 — placeholder text
   // Semantic
-  error: '#DC2626',         // red-600
-  success: '#059669',       // emerald-600
-  warning: '#D97706',       // amber-600
+  error: '#dc2626',        // red-600
+  errorBg: '#fef2f2',      // red-50 — error background
+  success: '#059669',      // emerald-600
+  warning: '#d97706',      // amber-600
 } as const
 
 export const tw = {

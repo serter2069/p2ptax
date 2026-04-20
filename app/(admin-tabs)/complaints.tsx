@@ -70,7 +70,7 @@ function StatusBadge({ status }: { status: "NEW" | "REVIEWED" }) {
     return (
       <View className="bg-amber-50 px-2 py-0.5 rounded-lg flex-row items-center">
         <View
-          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#b45309", marginRight: 5 }}
+          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent, marginRight: 5 }}
         />
         <Text className="text-xs font-medium text-amber-700">Новая</Text>
       </View>
@@ -222,7 +222,7 @@ export default function AdminComplaints() {
             <FontAwesome
               name={isExpanded ? "chevron-up" : "chevron-down"}
               size={11}
-              color="#94a3b8"
+              color={colors.placeholder}
             />
           </View>
         </Pressable>
@@ -256,7 +256,7 @@ export default function AdminComplaints() {
                 }`}
               >
                 {isReviewing ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color={colors.surface} />
                 ) : (
                   <Text className="text-xs text-white font-medium">Рассмотрено</Text>
                 )}
@@ -338,7 +338,7 @@ export default function AdminComplaints() {
                 className="items-center justify-center rounded-full bg-slate-100"
                 style={{ width: 72, height: 72 }}
               >
-                <FontAwesome name="flag-o" size={32} color="#94a3b8" />
+                <FontAwesome name="flag-o" size={32} color={colors.placeholder} />
               </View>
               <Text className="text-base font-semibold text-slate-900 mt-4 text-center">
                 Жалоб нет
@@ -355,7 +355,7 @@ export default function AdminComplaints() {
           ListFooterComponent={
             loadingMore ? (
               <View className="py-4 items-center">
-                <ActivityIndicator size="small" color="#1e3a8a" />
+                <ActivityIndicator size="small" color={colors.primary} />
               </View>
             ) : null
           }

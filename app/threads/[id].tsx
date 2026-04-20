@@ -21,6 +21,7 @@ import { Avatar } from "@/components/ui";
 import { API_URL, api, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { colors } from "@/lib/theme";
 
 
 interface FileAttachment {
@@ -285,12 +286,12 @@ export default function ChatThread() {
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
           <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+            <FontAwesome name="chevron-left" size={18} color={colors.primary} />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
         </View>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -301,12 +302,12 @@ export default function ChatThread() {
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
           <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+            <FontAwesome name="chevron-left" size={18} color={colors.primary} />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
         </View>
         <View className="flex-1 items-center justify-center px-4">
-          <FontAwesome name="exclamation-circle" size={40} color="#dc2626" />
+          <FontAwesome name="exclamation-circle" size={40} color={colors.error} />
           <Text className="text-base text-red-600 text-center mt-3">{error}</Text>
           <Pressable
             onPress={loadData}
@@ -325,7 +326,7 @@ export default function ChatThread() {
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
         <Pressable accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-          <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+          <FontAwesome name="chevron-left" size={18} color={colors.primary} />
         </Pressable>
         {otherUser ? (
           <Avatar
@@ -335,7 +336,7 @@ export default function ChatThread() {
           />
         ) : (
           <View className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center">
-            <FontAwesome name="user" size={16} color="#94a3b8" />
+            <FontAwesome name="user" size={16} color={colors.placeholder} />
           </View>
         )}
         <View className="ml-3 flex-1">
@@ -366,7 +367,7 @@ export default function ChatThread() {
           }}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-16">
-              <FontAwesome name="comments-o" size={48} color="#94a3b8" />
+              <FontAwesome name="comments-o" size={48} color={colors.placeholder} />
               <Text className="text-base text-slate-500 font-medium mt-4">Начните общение</Text>
               <Text className="text-sm text-slate-400 mt-1 text-center px-4">
                 Напишите сообщение, чтобы начать диалог
@@ -392,7 +393,7 @@ export default function ChatThread() {
                 key={i}
                 className="flex-row items-center bg-white border border-slate-200 rounded-lg px-2 py-1 mr-2 mb-1"
               >
-                <FontAwesome name="file-o" size={13} color="#1e3a8a" />
+                <FontAwesome name="file-o" size={13} color={colors.primary} />
                 <Text className="text-xs text-slate-700 mx-1 max-w-[90px]" numberOfLines={1}>
                   {f.name}
                 </Text>
@@ -401,7 +402,7 @@ export default function ChatThread() {
                   onPress={() => handleRemovePendingFile(i)}
                   accessibilityLabel={`Удалить файл ${f.name}`}
                 >
-                  <FontAwesome name="times" size={11} color="#94a3b8" />
+                  <FontAwesome name="times" size={11} color={colors.placeholder} />
                 </Pressable>
               </View>
             ))}
@@ -421,7 +422,7 @@ export default function ChatThread() {
               <FontAwesome
                 name="paperclip"
                 size={20}
-                color={pendingFiles.length >= 3 ? "#cbd5e1" : "#64748b"}
+                color={pendingFiles.length >= 3 ? colors.borderLight : colors.textSecondary}
               />
             </Pressable>
 
@@ -431,7 +432,7 @@ export default function ChatThread() {
               value={text}
               onChangeText={setText}
               placeholder="Введите сообщение..."
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               multiline
               style={{
                 flex: 1,
@@ -440,11 +441,11 @@ export default function ChatThread() {
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 fontSize: 16,
-                color: "#0f172a",
-                backgroundColor: "#f8fafc",
+                color: colors.text,
+                backgroundColor: colors.background,
                 borderRadius: 20,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
               }}
             />
 
@@ -456,12 +457,12 @@ export default function ChatThread() {
               className="w-11 h-11 items-center justify-center ml-2"
             >
               {sending || uploading ? (
-                <ActivityIndicator size="small" color="#1e3a8a" />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <FontAwesome
                   name="send"
                   size={20}
-                  color={(text.trim() || pendingFiles.length > 0) ? "#1e3a8a" : "#94a3b8"}
+                  color={(text.trim() || pendingFiles.length > 0) ? colors.primary : colors.placeholder}
                 />
               )}
             </Pressable>

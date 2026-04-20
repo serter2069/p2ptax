@@ -22,6 +22,7 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { API_URL, apiPatch } from "@/lib/api";
 import LoadingState from "@/components/ui/LoadingState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { colors } from "@/lib/theme";
 
 
 export default function ClientSettings() {
@@ -195,7 +196,7 @@ export default function ClientSettings() {
                     className="rounded-full bg-slate-100 items-center justify-center"
                     style={{ width: 80, height: 80 }}
                   >
-                    <ActivityIndicator color="#1e3a8a" />
+                    <ActivityIndicator color={colors.primary} />
                   </View>
                 ) : avatarUrl ? (
                   <View>
@@ -206,14 +207,14 @@ export default function ClientSettings() {
                         height: 80,
                         borderRadius: 40,
                         borderWidth: 2,
-                        borderColor: "#e2e8f0",
+                        borderColor: colors.border,
                       }}
                     />
                     <View
                       className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
                       style={{ width: 24, height: 24 }}
                     >
-                      <FontAwesome name="pencil" size={12} color="#fff" />
+                      <FontAwesome name="pencil" size={12} color={colors.surface} />
                     </View>
                   </View>
                 ) : (
@@ -256,12 +257,12 @@ export default function ClientSettings() {
               style={{
                 height: 48,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 fontSize: 16,
-                backgroundColor: "#f8fafc",
-                color: "#0f172a",
+                backgroundColor: colors.background,
+                color: colors.text,
                 marginBottom: 12,
               }}
             />
@@ -275,12 +276,12 @@ export default function ClientSettings() {
               style={{
                 height: 48,
                 borderWidth: 1,
-                borderColor: "#e2e8f0",
+                borderColor: colors.border,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 fontSize: 16,
-                backgroundColor: "#f8fafc",
-                color: "#0f172a",
+                backgroundColor: colors.background,
+                color: colors.text,
                 marginBottom: 12,
               }}
             />
@@ -321,8 +322,8 @@ export default function ClientSettings() {
                   accessibilityLabel="Новые сообщения"
                   value={newMessages}
                   onValueChange={setNewMessages}
-                  trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.surface}
                 />
               </View>
               <View className="flex-row items-center px-4 py-3">
@@ -338,8 +339,8 @@ export default function ClientSettings() {
                   accessibilityLabel="Предупреждения о закрытии"
                   value={closingWarnings}
                   onValueChange={setClosingWarnings}
-                  trackColor={{ false: "#e2e8f0", true: "#1e3a8a" }}
-                  thumbColor="#ffffff"
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.surface}
                 />
               </View>
             </View>
@@ -355,11 +356,11 @@ export default function ClientSettings() {
                 onPress={() => router.push("/legal/terms" as never)}
                 className="flex-row items-center px-4 py-3"
               >
-                <FontAwesome name="file-text-o" size={16} color="#94a3b8" />
+                <FontAwesome name="file-text-o" size={16} color={colors.placeholder} />
                 <Text className="text-base text-slate-900 ml-3 flex-1">
                   Условия использования
                 </Text>
-                <FontAwesome name="chevron-right" size={12} color="#cbd5e1" />
+                <FontAwesome name="chevron-right" size={12} color={colors.borderLight} />
               </Pressable>
             </View>
 
@@ -374,7 +375,7 @@ export default function ClientSettings() {
                 onPress={handleLogout}
                 className="flex-row items-center px-4 py-3 border-b border-slate-100"
               >
-                <FontAwesome name="sign-out" size={16} color="#dc2626" />
+                <FontAwesome name="sign-out" size={16} color={colors.error} />
                 <Text className="text-base text-red-600 ml-3 flex-1">
                   Выйти из аккаунта
                 </Text>
@@ -384,7 +385,7 @@ export default function ClientSettings() {
                 onPress={handleDeleteAccount}
                 className="flex-row items-center px-4 py-3"
               >
-                <FontAwesome name="trash-o" size={16} color="#dc2626" />
+                <FontAwesome name="trash-o" size={16} color={colors.error} />
                 <Text className="text-base text-red-600 ml-3 flex-1">
                   Удалить аккаунт
                 </Text>

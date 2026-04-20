@@ -172,7 +172,7 @@ export default function MyRequestDetail() {
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Заявка" />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -248,7 +248,7 @@ export default function MyRequestDetail() {
             <View
               className="bg-white rounded-2xl p-4 mb-4"
               style={{
-                shadowColor: "#0F172A",
+                shadowColor: colors.text,
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.05,
                 shadowRadius: 8,
@@ -268,7 +268,7 @@ export default function MyRequestDetail() {
               <View
                 className="bg-white rounded-2xl p-4 mb-4"
                 style={{
-                  shadowColor: "#0F172A",
+                  shadowColor: colors.text,
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.05,
                   shadowRadius: 8,
@@ -292,7 +292,7 @@ export default function MyRequestDetail() {
                           : "file-image-o"
                       }
                       size={20}
-                      color="#1e3a8a"
+                      color={colors.primary}
                     />
                     <View className="ml-3 flex-1">
                       <Text className="text-sm text-slate-900" numberOfLines={1}>
@@ -302,7 +302,7 @@ export default function MyRequestDetail() {
                         {(file.size / 1024).toFixed(0)} КБ
                       </Text>
                     </View>
-                    <FontAwesome name="download" size={14} color="#94a3b8" />
+                    <FontAwesome name="download" size={14} color={colors.placeholder} />
                   </Pressable>
                 ))}
               </View>
@@ -317,7 +317,7 @@ export default function MyRequestDetail() {
                 className="bg-amber-500 rounded-xl py-3 items-center mb-4"
               >
                 {extending ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Text className="text-white font-semibold text-base">
                     Продлить заявку — Продлений: {request.extensionsCount}/
@@ -342,7 +342,7 @@ export default function MyRequestDetail() {
             <View
               className="bg-white rounded-2xl p-4 mb-4"
               style={{
-                shadowColor: "#0F172A",
+                shadowColor: colors.text,
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.05,
                 shadowRadius: 8,
@@ -457,7 +457,7 @@ export default function MyRequestDetail() {
                       }
                       className="bg-white rounded-2xl p-4 mb-3"
                       style={{
-                        shadowColor: "#0F172A",
+                        shadowColor: colors.text,
                         shadowOffset: { width: 0, height: 1 },
                         shadowOpacity: 0.05,
                         shadowRadius: 8,
@@ -491,7 +491,7 @@ export default function MyRequestDetail() {
                             </Text>
                           )}
                         </View>
-                        <FontAwesome name="chevron-right" size={12} color="#94a3b8" />
+                        <FontAwesome name="chevron-right" size={12} color={colors.placeholder} />
                       </View>
                     </Pressable>
                   );
@@ -503,7 +503,7 @@ export default function MyRequestDetail() {
             <View
               className="bg-white rounded-2xl p-4 mb-6"
               style={{
-                shadowColor: "#0F172A",
+                shadowColor: colors.text,
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.05,
                 shadowRadius: 8,

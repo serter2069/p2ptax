@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { colors } from "@/lib/theme";
 
 export default function PromotionScreen() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function PromotionScreen() {
             {/* Placeholder card */}
             <View className="bg-white border border-slate-200 rounded-xl p-6 items-center">
               <View className="w-16 h-16 rounded-full bg-amber-50 items-center justify-center mb-4">
-                <FontAwesome name="rocket" size={28} color="#b45309" />
+                <FontAwesome name="rocket" size={28} color={colors.accent} />
               </View>
               <Text className="text-lg font-semibold text-slate-900 text-center mb-2">
                 Скоро будет доступно
@@ -43,7 +44,7 @@ export default function PromotionScreen() {
               className="bg-blue-900 rounded-xl p-4 mt-4 flex-row items-center"
             >
               <View className="w-10 h-10 rounded-full bg-blue-800 items-center justify-center mr-3">
-                <FontAwesome name="user" size={16} color="#ffffff" />
+                <FontAwesome name="user" size={16} color={colors.surface} />
               </View>
               <View className="flex-1">
                 <Text className="text-white font-semibold text-sm">Заполните профиль</Text>

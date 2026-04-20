@@ -18,6 +18,7 @@ import SpecialistCard from "@/components/SpecialistCard";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface FnsServiceGroup {
   fns: { id: string; name: string; code: string };
@@ -73,7 +74,7 @@ function getContactUrl(type: string, value: string): string | null {
 }
 
 const CONTACT_TYPE_CONFIG: Record<string, { label: string; icon: string; bg: string; color: string }> = {
-  phone: { label: "Телефон", icon: "phone", bg: "#eff6ff", color: "#1e3a8a" },
+  phone: { label: "Телефон", icon: "phone", bg: "#eff6ff", color: colors.primary },
   email: { label: "Email", icon: "envelope", bg: "#f0fdf4", color: "#166534" },
   telegram: { label: "Telegram", icon: "paper-plane", bg: "#f0f9ff", color: "#0284c7" },
   whatsapp: { label: "WhatsApp", icon: "whatsapp", bg: "#f0fdf4", color: "#059669" },
@@ -128,7 +129,7 @@ function SkeletonBlock({
   return (
     <Animated.View
       style={[
-        { height, borderRadius, backgroundColor: "#e2e8f0", marginBottom, width: width ?? "100%" },
+        { height, borderRadius, backgroundColor: colors.border, marginBottom, width: width ?? "100%" },
         { opacity },
       ]}
     />
@@ -219,7 +220,7 @@ export default function SpecialistPublicProfile() {
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Профиль специалиста" />
         <View className="flex-1 items-center justify-center px-6">
-          <FontAwesome name="exclamation-circle" size={48} color="#94a3b8" />
+          <FontAwesome name="exclamation-circle" size={48} color={colors.placeholder} />
           <Text className="text-xl font-semibold text-slate-900 mt-4 text-center">
             Специалист не найден
           </Text>
@@ -257,7 +258,7 @@ export default function SpecialistPublicProfile() {
       accessibilityLabel="Редактировать профиль"
       onPress={() => router.push("/settings" as never)}
     >
-      <FontAwesome name="pencil" size={16} color="#0f172a" />
+      <FontAwesome name="pencil" size={16} color={colors.text} />
     </Pressable>
   ) : undefined;
 
@@ -266,7 +267,7 @@ export default function SpecialistPublicProfile() {
       (specialist.profile.officeAddress || specialist.profile.workingHours));
 
   const cardShadow = {
-    shadowColor: "#0F172A",
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -304,7 +305,7 @@ export default function SpecialistPublicProfile() {
 
               {cities.length > 0 && (
                 <View className="flex-row items-center mt-1.5">
-                  <FontAwesome name="map-marker" size={12} color="#94a3b8" />
+                  <FontAwesome name="map-marker" size={12} color={colors.placeholder} />
                   <Text className="text-sm text-slate-500 ml-1.5">{cities.join(", ")}</Text>
                 </View>
               )}
@@ -387,8 +388,8 @@ export default function SpecialistPublicProfile() {
                   const cfg = CONTACT_TYPE_CONFIG[contact.type] || {
                     label: contact.type,
                     icon: "link",
-                    bg: "#f8fafc",
-                    color: "#64748b",
+                    bg: colors.background,
+                    color: colors.textSecondary,
                   };
                   const url = getContactUrl(contact.type, contact.value);
                   const isLast =
@@ -416,7 +417,7 @@ export default function SpecialistPublicProfile() {
                             {contact.value}
                           </Text>
                         </View>
-                        <FontAwesome name="chevron-right" size={12} color="#cbd5e1" />
+                        <FontAwesome name="chevron-right" size={12} color={colors.borderLight} />
                       </Pressable>
                     );
                   }
@@ -442,7 +443,7 @@ export default function SpecialistPublicProfile() {
                 {specialist.profile?.officeAddress && (
                   <View className={`flex-row items-start py-2.5 ${specialist.profile?.workingHours ? "border-b border-slate-100" : ""}`}>
                     <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
-                      <FontAwesome name="map-marker" size={14} color="#64748b" />
+                      <FontAwesome name="map-marker" size={14} color={colors.textSecondary} />
                     </View>
                     <View className="flex-1">
                       <Text className="text-xs text-slate-400 mb-0.5">Адрес офиса</Text>
@@ -456,7 +457,7 @@ export default function SpecialistPublicProfile() {
                 {specialist.profile?.workingHours && (
                   <View className="flex-row items-center py-2.5">
                     <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
-                      <FontAwesome name="clock-o" size={14} color="#64748b" />
+                      <FontAwesome name="clock-o" size={14} color={colors.textSecondary} />
                     </View>
                     <View className="flex-1">
                       <Text className="text-xs text-slate-400 mb-0.5">Часы работы</Text>

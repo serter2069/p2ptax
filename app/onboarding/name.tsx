@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import { colors } from "@/lib/theme";
 
 export default function OnboardingNameScreen() {
   const router = useRouter();
@@ -79,16 +80,16 @@ export default function OnboardingNameScreen() {
             style={{
               height: 48,
               borderRadius: 12,
-              backgroundColor: "#f8fafc",
+              backgroundColor: colors.background,
               borderWidth: 1,
-              borderColor: firstNameError ? "#dc2626" : "#e2e8f0",
+              borderColor: firstNameError ? colors.error : colors.border,
               paddingHorizontal: 16,
               fontSize: 16,
-              color: "#0f172a",
+              color: colors.text,
               marginBottom: 4,
             }}
             placeholder="Иван"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.placeholder}
             value={firstName}
             onChangeText={setFirstName}
             editable={!isLoading}
@@ -106,16 +107,16 @@ export default function OnboardingNameScreen() {
             style={{
               height: 48,
               borderRadius: 12,
-              backgroundColor: "#f8fafc",
+              backgroundColor: colors.background,
               borderWidth: 1,
-              borderColor: lastNameError ? "#dc2626" : "#e2e8f0",
+              borderColor: lastNameError ? colors.error : colors.border,
               paddingHorizontal: 16,
               fontSize: 16,
-              color: "#0f172a",
+              color: colors.text,
               marginBottom: 4,
             }}
             placeholder="Петров"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.placeholder}
             value={lastName}
             onChangeText={setLastName}
             editable={!isLoading}
