@@ -41,14 +41,25 @@
     };
   }
 
+  // Map API service `name` -> canonical static slug used by the prototype UI.
+  function slugForServiceName(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('камерал')) return 'desk';
+    if (n.includes('выездн')) return 'field';
+    if (n.includes('оператив') || n.includes('окк')) return 'oper';
+    return 'unknown';
+  }
+
   function mapService(s) {
+    const slug = s.slug || slugForServiceName(s.name);
+    const fallback = (window.PT_SERVICES || []).find(x => x.id === slug) || {};
     return {
-      id: s.slug || s.id,
+      id: slug,
       _id: s.id,
-      name: s.name,
-      short: s.shortName || s.short || s.name,
-      hint: s.description || s.hint || '',
-      color: s.color || 'oklch(0.65 0.02 260)',
+      name: s.name || fallback.name || '—',
+      short: s.shortName || s.short || fallback.short || s.name,
+      hint: s.description || s.hint || fallback.hint || '',
+      color: s.color || fallback.color || 'oklch(0.65 0.02 260)',
     };
   }
 
