@@ -154,8 +154,10 @@ function AuthModal({ onClose, onDone }) {
 }
 
 // --- NEW REQUEST flow (3 steps + OTP inline + success) ---
-function NewRequestModal({ onClose, onDone, initial }) {
+function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
   const [step, setStep] = useS(1);
+  const [submitting, setSubmitting] = useS(false);
+  const [submitErr, setSubmitErr] = useS(null);
   const [form, setForm] = useS({
     city: initial?.city || null,
     fns: initial?.fns || null,
@@ -165,7 +167,7 @@ function NewRequestModal({ onClose, onDone, initial }) {
     budget: '',
     visibility: 'public',
     files: [],
-    email: '',
+    email: (window.PT_AUTH && window.PT_AUTH.getUser && window.PT_AUTH.getUser()?.email) || '',
     code: '',
   });
 
@@ -435,9 +437,13 @@ function NewRequestModal({ onClose, onDone, initial }) {
         )}
       </div>
 
+      {submitErr && (
+        <div className="small" style={{color:'var(--danger)', padding:'0 24px 8px'}}>{submitErr}</div>
+      )}
+
       <div className="modal-foot">
         {step > 1 ? (
-          <button className="btn btn-ghost" onClick={()=>setStep(step-1)}>← Назад</button>
+          <button className="btn btn-ghost" onClick={()=>setStep(step-1)} disabled={submitting}>← Назад</button>
         ) : <span></span>}
         {step < 3 ? (
           <button className="btn btn-primary" disabled={!canNext()}
@@ -446,10 +452,45 @@ function NewRequestModal({ onClose, onDone, initial }) {
             Далее →
           </button>
         ) : (
-          <button className="btn btn-primary" disabled={!canNext()}
-            style={{opacity: canNext()?1:.4, cursor: canNext()?'pointer':'not-allowed'}}
-            onClick={()=>canNext() && onDone(form)}>
-            Опубликовать заявку →
+          <button className="btn btn-primary" disabled={!canNext() || submitting}
+            style={{opacity: (canNext() && !submitting)?1:.4, cursor: (canNext() && !submitting)?'pointer':'not-allowed'}}
+            onClick={async () => {
+              if (!canNext() || submitting) return;
+              setSubmitErr(null);
+              const isAuthed = window.PT_AUTH && window.PT_AUTH.isAuthenticated && window.PT_AUTH.isAuthenticated();
+              if (!isAuthed) {
+                if (requireAuth) {
+                  requireAuth(form);
+                  return;
+                }
+                setSubmitErr('Войдите в аккаунт, чтобы опубликовать заявку');
+                return;
+              }
+              setSubmitting(true);
+              try {
+                const city = form.city ? ctyById(form.city) : null;
+                const fnsEntry = (city && form.fns) ? fnsById2(city.id, form.fns) : null;
+                const cityUuid = city?._id || city?.id;
+                const fnsUuid = fnsEntry?._id || fnsEntry?.id || form.fns;
+                if (!cityUuid) { setSubmitErr('Выберите город'); setSubmitting(false); return; }
+                if (!fnsUuid) { setSubmitErr('Выберите инспекцию'); setSubmitting(false); return; }
+                if ((form.title || '').trim().length < 3) { setSubmitErr('Заголовок: минимум 3 символа'); setSubmitting(false); return; }
+                if ((form.desc || '').trim().length < 10) { setSubmitErr('Описание: минимум 10 символов'); setSubmitting(false); return; }
+                const payload = {
+                  title: form.title.trim(),
+                  cityId: cityUuid,
+                  fnsId: fnsUuid,
+                  description: form.desc.trim(),
+                };
+                const created = await window.PT_API.createRequest(payload);
+                onDone({ ...form, requestId: created.id, apiResult: created });
+              } catch (e) {
+                setSubmitErr(e.message || 'Не удалось опубликовать заявку');
+              } finally {
+                setSubmitting(false);
+              }
+            }}>
+            {submitting ? 'Публикуем…' : 'Опубликовать заявку →'}
           </button>
         )}
       </div>
@@ -460,18 +501,46 @@ function NewRequestModal({ onClose, onDone, initial }) {
 // --- Request SUCCESS state — show published request with live feeds ---
 function RequestSuccessModal({ onClose, onOpenChat, data }) {
   const [incoming, setIncoming] = useS([]);
+  const [apiDown, setApiDown] = useS(false);
 
   useE(() => {
-    const timeouts = [];
-    const toAdd = [
-      { delay: 1200, id: 'am' },
-      { delay: 2800, id: 'ik' },
-    ];
-    toAdd.forEach(({delay, id}) => {
-      timeouts.push(setTimeout(() => setIncoming(prev => [...prev, id]), delay));
-    });
-    return () => timeouts.forEach(clearTimeout);
-  }, []);
+    const requestId = data?.requestId;
+    // No real request id — fall back to the static sample so the demo still plays.
+    if (!requestId || !window.PT_API || !window.PT_API.getPublicRequest) {
+      const timeouts = [];
+      [{ delay: 1200, id: 'am' }, { delay: 2800, id: 'ik' }].forEach(({ delay, id }) => {
+        timeouts.push(setTimeout(() => setIncoming(prev => prev.includes(id) ? prev : [...prev, id]), delay));
+      });
+      return () => timeouts.forEach(clearTimeout);
+    }
+
+    // Real request — poll the public detail endpoint. Each 5s we read
+    // threadsCount and, for now, surface a simple synthetic entry per thread
+    // because the endpoint only exposes the count, not per-specialist data.
+    let alive = true;
+    let timer = null;
+    const tick = async () => {
+      try {
+        const r = await window.PT_API.getPublicRequest(requestId);
+        if (!alive) return;
+        setApiDown(false);
+        const count = r.threadsCount || 0;
+        setIncoming(prev => {
+          if (count <= prev.length) return prev;
+          // Generate synthetic keys so React list stays stable between polls.
+          const next = [...prev];
+          while (next.length < count) next.push('t' + next.length);
+          return next;
+        });
+      } catch {
+        if (alive) setApiDown(true);
+      } finally {
+        if (alive) timer = setTimeout(tick, 5000);
+      }
+    };
+    tick();
+    return () => { alive = false; if (timer) clearTimeout(timer); };
+  }, [data?.requestId]);
 
   return (
     <Modal size="lg" onClose={onClose}>
@@ -519,17 +588,35 @@ function RequestSuccessModal({ onClose, onOpenChat, data }) {
               )}
               {incoming.map(id => {
                 const s = OV_getSpecialists().find(x => x.id === id);
-                return (
-                  <div key={id} className="spec-card fade-in" style={{cursor:'pointer'}} onClick={()=>onOpenChat(id)}>
-                    <Avatar2 init={s.init} online={s.online} />
-                    <div className="spec-meta">
-                      <div className="spec-name">{s.first} {s.last}</div>
-                      <div className="spec-desc">написал только что</div>
+                if (s) {
+                  return (
+                    <div key={id} className="spec-card fade-in" style={{cursor:'pointer'}} onClick={()=>onOpenChat(id)}>
+                      <Avatar2 init={s.init} online={s.online} />
+                      <div className="spec-meta">
+                        <div className="spec-name">{s.first} {s.last}</div>
+                        <div className="spec-desc">написал только что</div>
+                      </div>
+                      <span className="xs mono" style={{color:'var(--accent)'}}>ОТКРЫТЬ →</span>
                     </div>
-                    <span className="xs mono" style={{color:'var(--accent)'}}>ОТКРЫТЬ →</span>
+                  );
+                }
+                // Real response but we don't know the specialist yet — show a placeholder
+                return (
+                  <div key={id} className="spec-card fade-in" style={{cursor:'pointer'}}>
+                    <Avatar2 init="?" online={true} />
+                    <div className="spec-meta">
+                      <div className="spec-name">Новый отклик</div>
+                      <div className="spec-desc">откройте диалог, чтобы посмотреть</div>
+                    </div>
+                    <span className="xs mono" style={{color:'var(--accent)'}}>В ЧАТ →</span>
                   </div>
                 );
               })}
+              {apiDown && incoming.length === 0 && (
+                <div style={{padding:'10px 12px', fontSize:12, color:'var(--text-mute)', background:'var(--surface-2)', borderRadius:8}}>
+                  Не удалось обновить список откликов. Проверим ещё раз через 5 секунд.
+                </div>
+              )}
             </div>
             {incoming.length > 0 && (
               <div className="xs dim" style={{marginTop: 12}}>
