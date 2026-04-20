@@ -12,6 +12,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
 import EmptyState from "@/components/ui/EmptyState";
+import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
@@ -161,8 +162,12 @@ export default function SpecialistsCatalog() {
   const renderContent = () => {
     if (loading) {
       return (
-        <View className="flex-1 items-center justify-center py-16">
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View className="py-4 px-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
+              <LoadingState variant="skeleton" lines={4} />
+            </View>
+          ))}
         </View>
       );
     }
