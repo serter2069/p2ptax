@@ -1,5 +1,5 @@
 import { Pressable, Text, ActivityIndicator } from "react-native";
-import Feather from "@expo/vector-icons/Feather";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { colors } from "../../lib/theme";
 
 export interface ButtonProps {
@@ -9,7 +9,7 @@ export interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  icon?: React.ComponentProps<typeof Feather>["name"];
+  icon?: React.ComponentProps<typeof FontAwesome>["name"];
 }
 
 const variantStyles = {
@@ -61,7 +61,7 @@ export default function Button({
       ) : (
         <>
           {icon && (
-            <Feather
+            <FontAwesome
               name={icon}
               size={18}
               color={styles.iconColor}

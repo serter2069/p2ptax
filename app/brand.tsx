@@ -121,7 +121,7 @@ export default function BrandScreen() {
             <Button label="Загрузка..." loading />
             <Button variant="secondary" label="Отмена" />
             <Button variant="destructive" label="Удалить" />
-            <Button label="Написать" icon="mail" />
+            <Button label="Написать" icon="envelope" />
           </View>
         </Section>
 

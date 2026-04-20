@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, type TextInputProps } from "react-native";
-import Feather from "@expo/vector-icons/Feather";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { colors } from "../../lib/theme";
 
 export interface InputProps {
@@ -9,7 +9,7 @@ export interface InputProps {
   value: string;
   onChangeText: (text: string) => void;
   error?: string;
-  icon?: React.ComponentProps<typeof Feather>["name"];
+  icon?: React.ComponentProps<typeof FontAwesome>["name"];
   secureTextEntry?: boolean;
   multiline?: boolean;
   keyboardType?: TextInputProps["keyboardType"];
@@ -54,7 +54,7 @@ export default function Input({
         }}
       >
         {icon && (
-          <Feather
+          <FontAwesome
             name={icon}
             size={18}
             color={colors.placeholder}
