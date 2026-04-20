@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, type TextInputProps, type ViewStyle } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { colors } from "../../lib/theme";
+import { colors, radiusValue } from "../../lib/theme";
 
 export interface InputProps {
   label?: string;
@@ -68,7 +68,7 @@ export default function Input({
           alignItems: "center",
           height: multiline ? undefined : 48,
           minHeight: multiline ? 96 : undefined,
-          borderRadius: 12,
+          borderRadius: radiusValue.md,
           borderWidth: 1,
           borderColor,
           backgroundColor: bgColor,

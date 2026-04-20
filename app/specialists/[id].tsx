@@ -18,7 +18,7 @@ import SpecialistCard from "@/components/SpecialistCard";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, radiusValue } from "@/lib/theme";
 
 interface FnsServiceGroup {
   fns: { id: string; name: string; code: string };
@@ -105,7 +105,7 @@ function formatDate(iso: string): string {
 function SkeletonBlock({
   width,
   height,
-  borderRadius = 8,
+  borderRadius = radiusValue.sm,
   marginBottom = 0,
 }: {
   width?: DimensionValue;
@@ -152,7 +152,7 @@ function ProfileSkeleton() {
               <SkeletonBlock width="70%" height={16} />
             </View>
             <View className="w-full bg-white rounded-2xl p-4">
-              <SkeletonBlock height={80} borderRadius={12} />
+              <SkeletonBlock height={80} borderRadius={radiusValue.md} />
             </View>
           </View>
         </ResponsiveContainer>
