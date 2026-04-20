@@ -1285,19 +1285,19 @@ img, svg { display: block; max-width: 100%; }
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: var(--muted);
+  color: var(--text-mute);
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
 }
 .crumbs a {
-  color: var(--muted);
+  color: var(--text-mute);
   text-decoration: none;
   transition: color .15s ease;
 }
-.crumbs a:hover { color: var(--ink); }
+.crumbs a:hover { color: var(--text); }
 .crumbs .crumb-sep { color: var(--line); font-weight: 300; }
-.crumbs .crumb-cur { color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+.crumbs .crumb-cur { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
 
 .page-title {
   margin: 8px 0 20px;
@@ -1329,7 +1329,7 @@ img, svg { display: block; max-width: 100%; }
   display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-mute);
   border-radius: 8px;
   cursor: pointer;
   font-size: 20px;
@@ -1339,7 +1339,7 @@ img, svg { display: block; max-width: 100%; }
 .kebab-btn:hover {
   background: var(--surface-2);
   border-color: var(--line);
-  color: var(--ink);
+  color: var(--text);
 }
 .kebab-menu {
   position: absolute;
@@ -1362,7 +1362,7 @@ img, svg { display: block; max-width: 100%; }
   border: 0;
   text-align: left;
   font: inherit;
-  color: var(--ink);
+  color: var(--text);
   padding: 9px 12px;
   border-radius: 8px;
   cursor: pointer;
@@ -1389,14 +1389,14 @@ img, svg { display: block; max-width: 100%; }
   border-radius: 10px;
   cursor: pointer;
   font-size: 18px;
-  color: var(--muted);
+  color: var(--text-mute);
   transition: background .15s ease, color .15s ease, border-color .15s ease;
   flex-shrink: 0;
 }
 .chat-attach:hover {
   background: var(--surface-2);
-  color: var(--ink);
-  border-color: var(--ink);
+  color: var(--text);
+  border-color: var(--text);
 }
 
 .msg-meta {
@@ -1413,7 +1413,7 @@ img, svg { display: block; max-width: 100%; }
   color: rgba(255,255,255,0.7);
   font-weight: 600;
 }
-.msg.them .msg-tick { color: var(--muted); }
+.msg.them .msg-tick { color: var(--text-mute); }
 .msg-tick.read { color: #22d3ee; }  /* cyan — clearly "seen" */
 .msg.me .msg-tick.read { color: #7dd3fc; }
 
@@ -1457,7 +1457,7 @@ img, svg { display: block; max-width: 100%; }
   font-size: 14px;
   flex-shrink: 0;
 }
-.msg.them .msg-file-dl { background: var(--surface-2); color: var(--ink); }
+.msg.them .msg-file-dl { background: var(--surface-2); color: var(--text); }
 .msg-file-dl:hover { filter: brightness(1.15); }
 
 /* typing indicator in message list */
