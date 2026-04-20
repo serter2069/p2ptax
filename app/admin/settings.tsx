@@ -2,7 +2,6 @@ import {
   View,
   Text,
   ScrollView,
-  Pressable,
   ActivityIndicator,
   TextInput,
   Platform,
@@ -12,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 
@@ -134,22 +134,14 @@ export default function AdminSettings() {
                 </View>
               ))}
 
-              <Pressable
-                accessibilityLabel="Сохранить"
-                onPress={handleSave}
-                disabled={saving}
-                className={`h-12 rounded-xl items-center justify-center mt-2 ${
-                  saving ? "bg-blue-900/50" : "bg-blue-900"
-                }`}
-              >
-                {saving ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text className="text-white font-semibold text-base">
-                    Сохранить
-                  </Text>
-                )}
-              </Pressable>
+              <View className="mt-2">
+                <Button
+                  label="Сохранить"
+                  onPress={handleSave}
+                  disabled={saving}
+                  loading={saving}
+                />
+              </View>
             </View>
           </ResponsiveContainer>
         </ScrollView>

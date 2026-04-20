@@ -1,5 +1,6 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import Button from "@/components/ui/Button";
 
 interface EmptyStateProps {
   icon?: React.ComponentProps<typeof FontAwesome>["name"];
@@ -26,13 +27,13 @@ export default function EmptyState({
         <Text className="text-sm text-slate-400 mt-2 text-center">{subtitle}</Text>
       )}
       {actionLabel && onAction && (
-        <Pressable
-          accessibilityLabel={actionLabel}
-          onPress={onAction}
-          className="mt-4 bg-blue-900 rounded-xl px-6 py-3"
-        >
-          <Text className="text-white font-semibold text-sm">{actionLabel}</Text>
-        </Pressable>
+        <View className="mt-4">
+          <Button
+            label={actionLabel}
+            onPress={onAction}
+            fullWidth={false}
+          />
+        </View>
       )}
     </View>
   );

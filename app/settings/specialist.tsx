@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { API_URL, apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
@@ -626,32 +627,26 @@ export default function SpecialistSettings() {
                   style={INPUT_STYLE}
                 />
                 <View className="flex-row gap-2">
-                  <Pressable
-                    accessibilityLabel="Отмена"
-                    onPress={() => {
-                      setAddingContact(false);
-                      setNewContactValue("");
-                      setNewContactType("phone");
-                      setShowTypePicker(false);
-                    }}
-                    className="flex-1 border border-slate-200 rounded-xl py-3 items-center"
-                  >
-                    <Text className="text-base text-slate-600">Отмена</Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityLabel="Добавить"
-                    onPress={handleAddContact}
-                    disabled={contactSaving}
-                    className={`flex-1 rounded-xl py-3 items-center ${
-                      contactSaving ? "bg-blue-900 opacity-50" : "bg-blue-900"
-                    }`}
-                  >
-                    {contactSaving ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text className="text-base font-semibold text-white">Добавить</Text>
-                    )}
-                  </Pressable>
+                  <View className="flex-1">
+                    <Button
+                      variant="secondary"
+                      label="Отмена"
+                      onPress={() => {
+                        setAddingContact(false);
+                        setNewContactValue("");
+                        setNewContactType("phone");
+                        setShowTypePicker(false);
+                      }}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Button
+                      label="Добавить"
+                      onPress={handleAddContact}
+                      disabled={contactSaving}
+                      loading={contactSaving}
+                    />
+                  </View>
                 </View>
               </View>
             ) : contacts.length < 6 ? (
@@ -701,22 +696,14 @@ export default function SpecialistSettings() {
             />
 
             {/* Save button */}
-            <Pressable
-              accessibilityLabel="Сохранить"
-              onPress={handleSave}
-              disabled={saving}
-              className={`rounded-xl py-3 items-center mt-2 mb-4 ${
-                saving ? "bg-blue-900 opacity-50" : "bg-blue-900"
-              }`}
-            >
-              {saving ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text className="text-white text-base font-semibold">
-                  Сохранить
-                </Text>
-              )}
-            </Pressable>
+            <View className="mt-2 mb-4">
+              <Button
+                label="Сохранить"
+                onPress={handleSave}
+                disabled={saving}
+                loading={saving}
+              />
+            </View>
 
             {/* Notifications */}
             <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">

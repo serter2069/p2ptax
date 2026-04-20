@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  ActivityIndicator,
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,6 +13,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import RequestCard from "@/components/RequestCard";
 import EmptyState from "@/components/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
+import Button from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -104,16 +104,14 @@ export default function ClientDashboard() {
               <Text className="text-sm text-slate-500 text-center mb-6">
                 Проверьте соединение с интернетом и попробуйте снова
               </Text>
-              <Pressable
-                accessibilityLabel="Повторить"
+              <Button
+                label="Повторить"
                 onPress={() => {
                   setLoading(true);
                   fetchData().finally(() => setLoading(false));
                 }}
-                className="bg-blue-900 rounded-xl px-6 py-3"
-              >
-                <Text className="text-white font-semibold text-sm">Повторить</Text>
-              </Pressable>
+                fullWidth={false}
+              />
             </View>
           ) : (
             <View className="pb-6">

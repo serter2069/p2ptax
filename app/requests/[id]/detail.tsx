@@ -15,6 +15,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import StatusBadge from "@/components/StatusBadge";
 import Avatar from "@/components/ui/Avatar";
+import Button from "@/components/ui/Button";
 import { api, apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
@@ -185,13 +186,13 @@ export default function MyRequestDetail() {
           <Text className="text-base text-red-600 text-center">
             {error || "Заявка не найдена"}
           </Text>
-          <Pressable
-            accessibilityLabel="Назад"
-            onPress={() => router.back()}
-            className="mt-4 bg-blue-900 rounded-xl px-6 py-3"
-          >
-            <Text className="text-white font-semibold">Назад</Text>
-          </Pressable>
+          <View className="mt-4">
+            <Button
+              label="Назад"
+              onPress={() => router.back()}
+              fullWidth={false}
+            />
+          </View>
         </View>
       </SafeAreaView>
     );

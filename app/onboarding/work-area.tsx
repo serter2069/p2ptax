@@ -2,7 +2,6 @@ import {
   View,
   Text,
   Pressable,
-  ActivityIndicator,
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,6 +11,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 
 interface City {
   id: string;
@@ -329,24 +329,12 @@ export default function OnboardingWorkAreaScreen() {
               </Text>
             ) : null}
 
-            <Pressable
-              accessibilityLabel="Далее"
+            <Button
+              label="Далее"
               onPress={handleNext}
               disabled={!canProceed || isLoading}
-              className={`h-12 rounded-xl items-center justify-center ${
-                !canProceed || isLoading
-                  ? "bg-blue-900 opacity-50"
-                  : "bg-blue-900 active:bg-slate-900"
-              }`}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text className="text-white text-base font-semibold">
-                  Далее
-                </Text>
-              )}
-            </Pressable>
+              loading={isLoading}
+            />
           </View>
         </ScrollView>
       </ResponsiveContainer>

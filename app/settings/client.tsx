@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { API_URL, apiPatch } from "@/lib/api";
@@ -294,20 +295,14 @@ export default function ClientSettings() {
             </View>
 
             {/* Save button */}
-            <Pressable
-              accessibilityLabel="Сохранить"
-              onPress={handleSave}
-              disabled={!hasChanges || saving}
-              className={`rounded-xl py-3 items-center mb-8 ${
-                hasChanges && !saving ? "bg-blue-900" : "bg-slate-300"
-              }`}
-            >
-              {saving ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text className="text-white font-semibold text-base">Сохранить</Text>
-              )}
-            </Pressable>
+            <View className="mb-8">
+              <Button
+                label="Сохранить"
+                onPress={handleSave}
+                disabled={!hasChanges || saving}
+                loading={saving}
+              />
+            </View>
 
             {/* Notifications section */}
             <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">

@@ -15,6 +15,7 @@ import HeaderBack from "@/components/HeaderBack";
 import { useAuth, UserData } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import Button from "@/components/ui/Button";
 import { colors } from "@/lib/theme";
 
 const CODE_LENGTH = 6;
@@ -331,35 +332,12 @@ export default function AuthOtpScreen() {
               )}
 
               {/* Verify button */}
-              <Pressable
-                accessibilityLabel="Подтвердить"
+              <Button
+                label="Подтвердить"
                 onPress={() => handleVerify(digits.join(""))}
                 disabled={isLoading || !isCodeFull}
-                className={`h-12 rounded-xl items-center justify-center ${
-                  isLoading || !isCodeFull
-                    ? "bg-blue-900 opacity-50"
-                    : "bg-blue-900 active:bg-blue-800"
-                }`}
-                style={
-                  isCodeFull && !isLoading
-                    ? {
-                        shadowColor: "#1e3a8a",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 4,
-                        elevation: 3,
-                      }
-                    : undefined
-                }
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text className="text-white text-base font-semibold">
-                    Подтвердить
-                  </Text>
-                )}
-              </Pressable>
+                loading={isLoading}
+              />
 
               {/* Resend link with countdown */}
               <Pressable
