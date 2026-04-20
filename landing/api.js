@@ -240,6 +240,71 @@
     };
   }
 
+  // -------- Request helpers (public / authenticated) --------
+  async function createRequest(payload) {
+    // Prefer authenticated /api/requests when we have a session — backend
+    // enforces validation (length, city/fns match) and returns richer data.
+    if (authState.accessToken) {
+      return authJson('/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    }
+    // Fallback: /requests/public. It still requires userId on the backend,
+    // so without auth this path will 401. Callers should open AuthModal first.
+    return jpost('/requests/public', payload);
+  }
+
+  async function getPublicRequest(id) {
+    return jget('/requests/' + encodeURIComponent(id) + '/public');
+  }
+
+  async function getSpecialist(id) {
+    return jget('/specialists/' + encodeURIComponent(id));
+  }
+
+  async function fetchSpecialists(params) {
+    params = params || {};
+    const qs = [];
+    if (params.q) qs.push('q=' + encodeURIComponent(params.q));
+    if (params.city_id || params.city) qs.push('city_id=' + encodeURIComponent(params.city_id || params.city));
+    if (params.fns_id || params.fns) qs.push('fns_id=' + encodeURIComponent(params.fns_id || params.fns));
+    if (params.services) qs.push('services=' + encodeURIComponent(params.services));
+    if (params.limit) qs.push('limit=' + encodeURIComponent(params.limit));
+    const path = '/specialists' + (qs.length ? ('?' + qs.join('&')) : '');
+    return jget(path);
+  }
+
+  // -------- Threads / Messages (auth required) --------
+  async function listThreads() {
+    return authJson('/threads');
+  }
+
+  async function getMessages(threadId) {
+    return authJson('/messages/' + encodeURIComponent(threadId));
+  }
+
+  async function sendMessage(threadId, text) {
+    return authJson('/messages/' + encodeURIComponent(threadId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+  }
+
+  async function startThread(requestId, firstMessage) {
+    return authJson('/threads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId, firstMessage }),
+    });
+  }
+
+  async function markThreadRead(threadId) {
+    return authJson('/messages/' + encodeURIComponent(threadId) + '/read', { method: 'PATCH' });
+  }
+
   async function loadCities() {
     const r = await jget('/cities');
     const items = (r.items || r.cities || []).map(mapCity);
@@ -291,7 +356,12 @@
   }
 
   // Kick off immediately; components can re-read from window.PT_* after 'pt:data-ready'.
-  window.PT_API = { hydrate, jget, jpost, authFetch, authJson, API_BASE };
+  window.PT_API = {
+    hydrate, jget, jpost, authFetch, authJson, API_BASE,
+    createRequest, getPublicRequest,
+    getSpecialist, fetchSpecialists,
+    listThreads, getMessages, sendMessage, startThread, markThreadRead,
+  };
 
   window.PT_AUTH = {
     requestOtp,
