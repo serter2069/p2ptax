@@ -4,7 +4,6 @@ import {
   Text,
   Pressable,
   ScrollView,
-  ActivityIndicator,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,7 +12,9 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import SpecialistCard from "@/components/SpecialistCard";
+import StatusBadge from "@/components/StatusBadge";
 import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import { colors } from "@/lib/theme";
 
 interface FeaturedSpecialist {
@@ -29,7 +30,7 @@ interface RecentRequest {
   id: string;
   title: string | null;
   description: string;
-  status: string;
+  status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
   createdAt: string;
   city: { id: string; name: string };
   fns: { id: string; name: string; code: string };
@@ -77,21 +78,6 @@ const SPECIALIST_STEPS = [
     description: "Открывайте диалог, консультируйте и получайте новых клиентов.",
   },
 ];
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "CLOSING_SOON") {
-    return (
-      <View className="bg-amber-500/10 px-2 py-0.5 rounded">
-        <Text className="text-xs text-amber-600">Скоро закрывается</Text>
-      </View>
-    );
-  }
-  return (
-    <View className="bg-emerald-600/10 px-2 py-0.5 rounded">
-      <Text className="text-xs text-emerald-600">Активна</Text>
-    </View>
-  );
-}
 
 export default function LandingScreen() {
   const router = useRouter();
@@ -163,8 +149,8 @@ export default function LandingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView className="flex-1 bg-white">
+        <LoadingState />
       </SafeAreaView>
     );
   }

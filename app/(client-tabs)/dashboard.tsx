@@ -12,8 +12,8 @@ import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import RequestCard from "@/components/RequestCard";
 import EmptyState from "@/components/ui/EmptyState";
+import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
-import Button from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -97,22 +97,13 @@ export default function ClientDashboard() {
           {loading ? (
             <LoadingState variant="skeleton" lines={5} />
           ) : error ? (
-            <View className="items-center justify-center py-16 px-8">
-              <Text className="text-lg font-semibold text-slate-900 text-center mb-2">
-                Не удалось загрузить данные
-              </Text>
-              <Text className="text-sm text-slate-500 text-center mb-6">
-                Проверьте соединение с интернетом и попробуйте снова
-              </Text>
-              <Button
-                label="Повторить"
-                onPress={() => {
-                  setLoading(true);
-                  fetchData().finally(() => setLoading(false));
-                }}
-                fullWidth={false}
-              />
-            </View>
+            <ErrorState
+              message="Не удалось загрузить данные"
+              onRetry={() => {
+                setLoading(true);
+                fetchData().finally(() => setLoading(false));
+              }}
+            />
           ) : (
             <View className="pb-6">
               {/* Stats card */}

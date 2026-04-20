@@ -7,6 +7,7 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
+import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiError } from "@/lib/api";
 
@@ -28,34 +29,6 @@ interface RequestDetail {
   threadsCount: number;
   hasExistingThread: boolean;
   existingThreadId: string | null;
-}
-
-function DetailSkeleton() {
-  return (
-    <View className="py-4 px-4">
-      <View className="h-7 bg-slate-200 rounded-lg mb-2" style={{ width: "80%" }} />
-      <View className="h-7 bg-slate-200 rounded-lg mb-4" style={{ width: "55%" }} />
-      <View className="h-6 bg-slate-200 rounded-full mb-4" style={{ width: 80 }} />
-      <View className="flex-row gap-2 mb-4">
-        <View className="h-7 bg-slate-200 rounded-lg" style={{ width: 90 }} />
-        <View className="h-7 bg-slate-200 rounded-lg" style={{ width: 130 }} />
-      </View>
-      <View className="h-4 bg-slate-200 rounded mb-2" style={{ width: "100%" }} />
-      <View className="h-4 bg-slate-200 rounded mb-2" style={{ width: "92%" }} />
-      <View className="h-4 bg-slate-200 rounded mb-2" style={{ width: "75%" }} />
-      <View className="h-4 bg-slate-200 rounded mb-6" style={{ width: "60%" }} />
-      <View className="border-t border-slate-100 pt-4 gap-3">
-        <View className="flex-row justify-between">
-          <View className="h-4 bg-slate-200 rounded" style={{ width: 60 }} />
-          <View className="h-4 bg-slate-200 rounded" style={{ width: 110 }} />
-        </View>
-        <View className="flex-row justify-between">
-          <View className="h-4 bg-slate-200 rounded" style={{ width: 80 }} />
-          <View className="h-4 bg-slate-200 rounded" style={{ width: 70 }} />
-        </View>
-      </View>
-    </View>
-  );
 }
 
 function MetaRow({
@@ -124,7 +97,7 @@ export default function PublicRequestDetail() {
       <SafeAreaView className="flex-1 bg-slate-50">
         <HeaderBack title="Заявка" />
         <ResponsiveContainer>
-          <DetailSkeleton />
+          <LoadingState variant="skeleton" lines={5} />
         </ResponsiveContainer>
       </SafeAreaView>
     );
