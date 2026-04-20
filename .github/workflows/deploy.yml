@@ -33,9 +33,6 @@ jobs:
             sleep 3
             curl -sf http://localhost:3812/api/health || echo "Health check failed"
             echo '{"version":"'$(git rev-parse --short HEAD)'","deployed":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > dist/version.json
-            cd landing
-            npm ci
-            npm run build
-            cd ..
+            # Landing is a static React prototype served directly from landing/ — no build
             cp nginx-p2ptax.conf /etc/nginx/sites-enabled/p2ptax.smartlaunchhub.com
             nginx -t && systemctl reload nginx

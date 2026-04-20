@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>P2PTax — Специалисты по вашей ФНС</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=1776710989778" />
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="data.js?v=1776710989778"></script>
+<script type="text/babel" src="components.jsx?v=1776710989778"></script>
+<script type="text/babel" src="overlays.jsx?v=1776710989778"></script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const {
+  PT_Nav, PT_Hero, PT_Situations, PT_HowItWorks, PT_CatalogPreview, PT_Coverage,
+  PT_RealityCheck, PT_Cases, PT_SpecialistsCTA, PT_FinalCTA, PT_Footer,
+  PT_AuthModal, PT_NewRequestModal, PT_RequestSuccessModal,
+  PT_CatalogPage, PT_SpecialistPage, PT_ChatPage,
+} = window;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "density": "compact",
+  "accent": "blue"
+}/*EDITMODE-END*/;
+
+const ACCENTS = {
+  blue:  { accent:'#2256c2', ink:'#ffffff' },
+  teal:  { accent:'#0f766e', ink:'#ffffff' },
+  slate: { accent:'#111827', ink:'#ffffff' },
+  violet:{ accent:'#7c3aed', ink:'#ffffff' },
+};
+
+function parseHash() {
+  const h = window.location.hash.replace(/^#/, '') || '/';
+  const parts = h.split('/').filter(Boolean);
+  if (parts.length === 0) return { name: 'home' };
+  if (parts[0] === 'catalog') return { name: 'catalog' };
+  if (parts[0] === 'specialist' && parts[1]) return { name: 'specialist', id: parts[1] };
+  if (parts[0] === 'chat' && parts[1]) return { name: 'chat', id: parts[1] };
+  if (parts[0] === 'chat') return { name: 'chats' };
+  return { name: 'home' };
+}
+
+function App() {
+  const [authOpen, setAuthOpen] = useState(false);
+  const [newReqOpen, setNewReqOpen] = useState(false);
+  const [success, setSuccess] = useState(null);
+
+  const [route, setRoute] = useState(parseHash());
+  useEffect(() => {
+    const h = () => { setRoute(parseHash()); window.scrollTo(0,0); };
+    window.addEventListener('hashchange', h);
+    return () => window.removeEventListener('hashchange', h);
+  }, []);
+
+  const nav = (path) => { window.location.hash = path; };
+
+  const [searchState, setSearchState] = useState({ city:null, fns:null, service:null });
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [tweaksOpen, setTweaksOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+
+  // edit-mode protocol
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setEditMode(true);
+      if (e.data?.type === '__deactivate_edit_mode') setEditMode(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({type:'__edit_mode_available'}, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // apply theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', tweaks.theme);
+    document.documentElement.setAttribute('data-density', tweaks.density);
+    const a = ACCENTS[tweaks.accent] || ACCENTS.blue;
+    document.documentElement.style.setProperty('--accent', a.accent);
+    document.documentElement.style.setProperty('--accent-ink', a.ink);
+  }, [tweaks]);
+
+  const updateTweak = (k, v) => {
+    const next = {...tweaks, [k]: v};
+    setTweaks(next);
+    window.parent.postMessage({type:'__edit_mode_set_keys', edits:{[k]: v}}, '*');
+  };
+
+  const openCreate = () => { setNewReqOpen(true); };
+  const onRequestDone = (data) => { setNewReqOpen(false); setSuccess(data); };
+  const openChat = (id) => { setSuccess(null); nav('/chat/'+id); };
+
+  return (
+    <>
+      <PT_Nav
+        route={route}
+        onAuth={()=>setAuthOpen(true)}
+        onCreate={openCreate}
+        onCatalog={()=>nav('/catalog')}
+        onHome={()=>nav('/')}
+      />
+
+      {route.name === 'home' && (
+        <>
+          <PT_Hero
+            searchState={searchState}
+            setSearchState={setSearchState}
+            onCreate={openCreate}
+            onCatalog={()=>nav('/catalog')}
+            onOpenSearch={()=>nav('/catalog')}
+          />
+          <PT_Situations />
+          <PT_HowItWorks onCreate={openCreate} />
+          <PT_CatalogPreview
+            onCatalog={()=>nav('/catalog')}
+            onOpenSpecialist={(id)=>nav('/specialist/'+id)}
+          />
+          <PT_Coverage />
+          <PT_RealityCheck onCreate={openCreate} />
+          <PT_Cases />
+          <PT_SpecialistsCTA onJoin={()=>setAuthOpen(true)} />
+          <PT_FinalCTA onCreate={openCreate} />
+          <PT_Footer />
+        </>
+      )}
+
+      {route.name === 'catalog' && (
+        <PT_CatalogPage onOpen={(id)=>nav('/specialist/'+id)} />
+      )}
+
+      {route.name === 'specialist' && (
+        <PT_SpecialistPage id={route.id}
+          onBack={()=>history.length > 1 ? history.back() : nav('/catalog')}
+          onCatalog={()=>nav('/catalog')}
+          onMessage={(id)=>nav('/chat/'+id)} />
+      )}
+
+      {route.name === 'chat' && (
+        <PT_ChatPage specialistId={route.id}
+          onBack={()=>history.length > 1 ? history.back() : nav('/')}
+          onProfile={(id)=>nav('/specialist/'+id)} />
+      )}
+
+      {authOpen && <PT_AuthModal onClose={()=>setAuthOpen(false)} onDone={()=>setAuthOpen(false)} />}
+      {newReqOpen && <PT_NewRequestModal
+        initial={searchState}
+        onClose={()=>setNewReqOpen(false)}
+        onDone={onRequestDone} />}
+      {success && <PT_RequestSuccessModal
+        data={success}
+        onClose={()=>setSuccess(null)}
+        onOpenChat={openChat} />}
+
+      {editMode && (
+        <>
+          <button className="tweaks-btn" onClick={()=>setTweaksOpen(v=>!v)}>
+            {tweaksOpen ? '▾ закрыть' : '▴ Tweaks'}
+          </button>
+          {tweaksOpen && (
+            <div className="tweaks-panel">
+              <div className="tweaks-panel-head">
+                <span>TWEAKS</span>
+                <span className="dim">P2PTax</span>
+              </div>
+              <div className="tweaks-row">
+                <div className="tweaks-label">Тема</div>
+                <div className="seg">
+                  {['light','paper','dark'].map(t => (
+                    <button key={t} className={tweaks.theme===t?'active':''} onClick={()=>updateTweak('theme', t)}>
+                      {t==='dark'?'Тёмная':t==='light'?'Светлая':'Газета'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="tweaks-row">
+                <div className="tweaks-label">Акцент</div>
+                <div className="seg" style={{gridTemplateColumns:'repeat(4, 1fr)'}}>
+                  {Object.keys(ACCENTS).map(a => (
+                    <button key={a} className={tweaks.accent===a?'active':''} onClick={()=>updateTweak('accent', a)}>
+                      <span style={{display:'inline-block', width:10, height:10, borderRadius:'50%', background:ACCENTS[a].accent, marginRight: 4, verticalAlign:'middle'}}></span>
+                      {a}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="tweaks-row">
+                <div className="tweaks-label">Плотность</div>
+                <div className="seg" style={{gridTemplateColumns:'1fr 1fr'}}>
+                  {['normal','compact'].map(d => (
+                    <button key={d} className={tweaks.density===d?'active':''} onClick={()=>updateTweak('density', d)}>
+                      {d==='normal'?'Просторная':'Компактная'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="tweaks-row">
+                <div className="tweaks-label">Демо-флоу</div>
+                <div style={{display:'grid', gap: 6}}>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>{ setTweaksOpen(false); openCreate(); }}>▸ Создание заявки</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>{ setTweaksOpen(false); setAuthOpen(true); }}>▸ Авторизация</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>{ setTweaksOpen(false); nav('/catalog'); }}>▸ Каталог</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>{ setTweaksOpen(false); nav('/specialist/am'); }}>▸ Профиль специалиста</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>{ setTweaksOpen(false); nav('/chat/am'); }}>▸ Чат</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
