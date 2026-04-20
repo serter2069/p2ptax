@@ -4,7 +4,7 @@ import Button from "./Button";
 import { colors } from "../../lib/theme";
 
 export interface EmptyStateProps {
-  icon: React.ComponentProps<typeof FontAwesome>["name"];
+  icon?: React.ComponentProps<typeof FontAwesome>["name"];
   title: string;
   subtitle?: string;
   actionLabel?: string;
@@ -12,7 +12,7 @@ export interface EmptyStateProps {
 }
 
 export default function EmptyState({
-  icon,
+  icon = "inbox",
   title,
   subtitle,
   actionLabel,

@@ -14,7 +14,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
-import EmptyState from "@/components/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiGet, apiPatch } from "@/lib/api";

@@ -11,7 +11,7 @@ import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import RequestCard from "@/components/RequestCard";
-import EmptyState from "@/components/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import Button from "@/components/ui/Button";
 import { api } from "@/lib/api";

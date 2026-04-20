@@ -11,7 +11,7 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
-import EmptyState from "@/components/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
