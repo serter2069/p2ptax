@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
-import EmptyState from "@/components/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import Avatar from "@/components/ui/Avatar";
 import { apiGet } from "@/lib/api";

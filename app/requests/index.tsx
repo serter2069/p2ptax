@@ -12,7 +12,7 @@ import { useRouter } from "expo-router";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import FilterBar from "@/components/FilterBar";
-import EmptyState from "@/components/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import RequestCard from "@/components/RequestCard";

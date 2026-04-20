@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import HeaderHome from "@/components/HeaderHome";
-import EmptyState from "@/components/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function AdminModeration() {
   return (

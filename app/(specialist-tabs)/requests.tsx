@@ -12,7 +12,7 @@ import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import RequestCard from "@/components/RequestCard";
 import FilterBar from "@/components/FilterBar";
-import EmptyState from "@/components/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
