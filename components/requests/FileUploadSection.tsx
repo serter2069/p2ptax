@@ -1,6 +1,6 @@
 import { useRef, useCallback } from "react";
 import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { FileImage, File, X, Plus } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -112,11 +112,10 @@ export default function FileUploadSection({
           key={`file-${index}`}
           className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 mb-2"
         >
-          <FontAwesome
-            name={file.mimeType === "application/pdf" ? "file-pdf-o" : "file-image-o"}
-            size={18}
-            color={file.error ? colors.error : colors.primary}
-          />
+          {file.mimeType === "application/pdf"
+            ? <File size={18} color={file.error ? colors.error : colors.primary} />
+            : <FileImage size={18} color={file.error ? colors.error : colors.primary} />
+          }
           <View className="flex-1 mx-2">
             <Text className="text-sm text-slate-900" numberOfLines={1}>
               {file.name}
@@ -140,7 +139,7 @@ export default function FileUploadSection({
               onPress={() => handleRemoveFile(index)}
               className="w-11 h-11 items-center justify-center"
             >
-              <FontAwesome name="times" size={14} color={colors.placeholder} />
+              <X size={14} color={colors.placeholder} />
             </Pressable>
           )}
         </View>
@@ -153,7 +152,7 @@ export default function FileUploadSection({
           onPress={handleAddFilePress}
           className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl active:bg-slate-50"
         >
-          <FontAwesome name="plus" size={13} color={colors.accent} />
+          <Plus size={13} color={colors.accent} />
           <Text className="text-sm text-amber-700 ml-2 font-medium">
             + Прикрепить файл
           </Text>

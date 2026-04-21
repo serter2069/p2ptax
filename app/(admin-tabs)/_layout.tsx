@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { BarChart2, Users, Shield, Flag } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 export default function AdminTabsLayout() {
@@ -23,36 +23,28 @@ export default function AdminTabsLayout() {
         name="dashboard"
         options={{
           title: "Dashboard",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="bar-chart" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <BarChart2 size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="users"
         options={{
           title: "Users",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="users" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="moderation"
         options={{
           title: "Moderation",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="shield" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Shield size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="complaints"
         options={{
           title: "Жалобы",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="flag" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Flag size={size} color={color} />,
         }}
       />
     </Tabs>

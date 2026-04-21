@@ -2,7 +2,6 @@ import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import ErrorState from "@/components/ui/ErrorState";

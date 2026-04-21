@@ -11,6 +11,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import { Send } from "lucide-react-native";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, radiusValue } from "@/lib/theme";
@@ -247,7 +248,7 @@ export default function SpecialistConfirmWrite() {
               onPress={handleSend}
               disabled={!canSubmit}
               loading={sending}
-              icon="send"
+              icon={Send}
             />
             <Button
               variant="secondary"

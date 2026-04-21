@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import FilterBar from "@/components/FilterBar";
+import { Inbox } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -222,7 +223,7 @@ export default function PublicRequestsFeed() {
           </View>
         ) : requests.length === 0 ? (
           <EmptyState
-            icon="inbox"
+            icon={Inbox}
             title="Заявок не найдено"
             subtitle="Попробуйте изменить фильтры или сбросить их"
             actionLabel={hasFilters ? "Сбросить фильтры" : undefined}

@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Users } from "lucide-react-native";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -293,7 +293,7 @@ export default function AdminUsers() {
             <View className="py-2">
               {users.length === 0 ? (
                 <View className="items-center py-16">
-                  <FontAwesome name="users" size={48} color={colors.placeholder} />
+                  <Users size={48} color={colors.placeholder} />
                   <Text className="text-base text-slate-400 mt-3">
                     Пользователи не найдены
                   </Text>

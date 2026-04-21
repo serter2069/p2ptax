@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, type TextInputProps, type ViewStyle } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { type LucideIcon } from "lucide-react-native";
 import { colors, radiusValue } from "../../lib/theme";
 
 export interface InputProps {
@@ -9,7 +9,7 @@ export interface InputProps {
   value: string;
   onChangeText: (text: string) => void;
   error?: string;
-  icon?: React.ComponentProps<typeof FontAwesome>["name"];
+  icon?: LucideIcon;
   secureTextEntry?: boolean;
   multiline?: boolean;
   keyboardType?: TextInputProps["keyboardType"];
@@ -32,7 +32,7 @@ export default function Input({
   value,
   onChangeText,
   error,
-  icon,
+  icon: Icon,
   secureTextEntry,
   multiline,
   keyboardType,
@@ -75,9 +75,8 @@ export default function Input({
           paddingHorizontal: 12,
         }, containerStyle]}
       >
-        {icon && (
-          <FontAwesome
-            name={icon}
+        {Icon && (
+          <Icon
             size={18}
             color={colors.placeholder}
             style={{ marginRight: 8 }}

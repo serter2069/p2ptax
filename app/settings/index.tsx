@@ -1,18 +1,22 @@
 import { View, Text, Pressable, ScrollView, Switch, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import {
+  ArrowLeft, ChevronRight, Bell, Mail, MessageCircle, List,
+  Globe, Moon, AtSign, Trash2, FileText, Info, type LucideIcon
+} from "lucide-react-native";
 import { useState } from "react";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
+import ResponsiveContainer from "@/components/ResponsiveContainer";
 
 function SettingRow({
-  icon,
+  icon: Icon,
   label,
   rightElement,
   onPress,
 }: {
-  icon: React.ComponentProps<typeof FontAwesome>["name"];
+  icon: LucideIcon;
   label: string;
   rightElement?: React.ReactNode;
   onPress?: () => void;
@@ -22,20 +26,20 @@ function SettingRow({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className="flex-row items-center px-4 py-4 border-b border-slate-50 active:bg-slate-50"
+      className="flex-row items-center py-4 border-b border-slate-50 active:bg-slate-50"
     >
       <View className="w-9 h-9 rounded-lg bg-slate-50 items-center justify-center">
-        <FontAwesome name={icon} size={16} color={colors.text} />
+        <Icon size={16} color={colors.text} />
       </View>
       <Text className="flex-1 ml-3 text-base text-slate-900">{label}</Text>
-      {rightElement || <FontAwesome name="chevron-right" size={12} color={colors.borderLight} />}
+      {rightElement || <ChevronRight size={12} color={colors.borderLight} />}
     </Pressable>
   );
 }
 
 function SectionTitle({ title }: { title: string }) {
   return (
-    <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-4 pt-6 pb-2">
+    <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide pt-6 pb-2">
       {title}
     </Text>
   );
@@ -59,64 +63,66 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
+        <ResponsiveContainer>
         {/* Header */}
-        <View className="flex-row items-center px-4 pt-2 pb-3 border-b border-slate-50">
+        <View className="flex-row items-center pt-2 pb-3 border-b border-slate-50">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
-            <FontAwesome name="arrow-left" size={18} color={colors.text} />
+            <ArrowLeft size={18} color={colors.text} />
           </Pressable>
           <Text className="text-2xl font-bold text-slate-900">Настройки</Text>
         </View>
 
         <SectionTitle title="Уведомления" />
         <SettingRow
-          icon="bell"
+          icon={Bell}
           label="Push-уведомления"
           rightElement={
             <Switch accessibilityLabel="Push-уведомления" value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor={colors.surface} />
           }
         />
         <SettingRow
-          icon="envelope"
+          icon={Mail}
           label="Email-уведомления"
           rightElement={
             <Switch accessibilityLabel="Email-уведомления" value={emailEnabled} onValueChange={setEmailEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor={colors.surface} />
           }
         />
         <SettingRow
-          icon="comments"
+          icon={MessageCircle}
           label="Уведомления о сообщениях"
           rightElement={
             <Switch accessibilityLabel="Уведомления о сообщениях" value={messageEnabled} onValueChange={setMessageEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor={colors.surface} />
           }
         />
         <SettingRow
-          icon="list"
+          icon={List}
           label="Все уведомления"
           onPress={() => router.push("/notifications" as never)}
         />
 
         <SectionTitle title="Настройки" />
-        <SettingRow icon="language" label="Язык" />
-        <SettingRow icon="moon-o" label="Тема" />
+        <SettingRow icon={Globe} label="Язык" />
+        <SettingRow icon={Moon} label="Тема" />
 
         <SectionTitle title="Аккаунт" />
-        <SettingRow icon="envelope-o" label="Сменить email" />
-        <SettingRow icon="trash-o" label="Удалить аккаунт" />
+        <SettingRow icon={AtSign} label="Сменить email" />
+        <SettingRow icon={Trash2} label="Удалить аккаунт" />
 
         <SectionTitle title="О приложении" />
         <SettingRow
-          icon="file-text-o"
+          icon={FileText}
           label="Политика конфиденциальности"
           onPress={() => router.push("/legal/privacy" as never)}
         />
         <SettingRow
-          icon="file-text-o"
+          icon={FileText}
           label="Условия использования"
           onPress={() => router.push("/legal/terms" as never)}
         />
-        <SettingRow icon="info-circle" label="Версия" rightElement={
+        <SettingRow icon={Info} label="Версия" rightElement={
           <Text className="text-sm text-slate-400">1.0.0</Text>
         } />
+        </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );

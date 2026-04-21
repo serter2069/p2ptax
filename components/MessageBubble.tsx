@@ -1,5 +1,5 @@
 import { View, Text, Pressable } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ImageIcon, File, FileText, Download } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 interface FileAttachment {
@@ -65,8 +65,7 @@ export default function MessageBubble({
             className="mb-1"
           >
             <View className="w-[200px] h-[200px] bg-slate-200 rounded-xl items-center justify-center">
-              <FontAwesome
-                name="image"
+              <ImageIcon
                 size={32}
                 color={isOwn ? colors.surface : colors.textSecondary}
               />
@@ -91,11 +90,10 @@ export default function MessageBubble({
               isOwn ? "bg-blue-800" : "bg-slate-100"
             }`}
           >
-            <FontAwesome
-              name={file.mimeType === "application/pdf" ? "file-pdf-o" : "file-o"}
-              size={18}
-              color={isOwn ? "#93c5fd" : colors.primary}
-            />
+            {file.mimeType === "application/pdf"
+              ? <FileText size={18} color={isOwn ? "#93c5fd" : colors.primary} />
+              : <File size={18} color={isOwn ? "#93c5fd" : colors.primary} />
+            }
             <View className="ml-2 flex-1">
               <Text
                 className={`text-sm ${isOwn ? "text-white" : "text-slate-900"}`}
@@ -109,11 +107,7 @@ export default function MessageBubble({
                 {formatFileSize(file.size)}
               </Text>
             </View>
-            <FontAwesome
-              name="download"
-              size={12}
-              color={isOwn ? "#93c5fd" : colors.placeholder}
-            />
+            <Download size={12} color={isOwn ? "#93c5fd" : colors.placeholder} />
           </Pressable>
         ))}
 

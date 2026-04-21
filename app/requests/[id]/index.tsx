@@ -9,6 +9,7 @@ import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
+import { MessageCircle, Send } from "lucide-react-native";
 import { api, ApiError } from "@/lib/api";
 
 interface RequestDetail {
@@ -177,7 +178,7 @@ export default function PublicRequestDetail() {
                 onPress={() =>
                   router.push(`/threads/${request.existingThreadId}` as never)
                 }
-                icon="comment"
+                icon={MessageCircle}
               />
             </ResponsiveContainer>
           </View>
@@ -189,7 +190,7 @@ export default function PublicRequestDetail() {
             <Button
               label="Написать клиенту"
               onPress={() => router.push(`/requests/${id}/write` as never)}
-              icon="send"
+              icon={Send}
             />
           </ResponsiveContainer>
         </View>

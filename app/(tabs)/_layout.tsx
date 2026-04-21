@@ -1,12 +1,8 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Home, Search, PlusSquare, MessageCircle, User } from "lucide-react-native";
 import Header from "@/components/Header";
 import { colors } from "@/lib/theme";
-
-function TabIcon({ name, color }: { name: React.ComponentProps<typeof FontAwesome>["name"]; color: string }) {
-  return <FontAwesome size={22} name={name} color={color} />;
-}
 
 export default function TabLayout() {
   const { width } = useWindowDimensions();
@@ -31,35 +27,35 @@ export default function TabLayout() {
           name="index"
           options={{
             title: "Home",
-            tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
+            tabBarIcon: ({ color }) => <Home size={22} color={color} />,
           }}
         />
         <Tabs.Screen
           name="search"
           options={{
             title: "Search",
-            tabBarIcon: ({ color }) => <TabIcon name="search" color={color} />,
+            tabBarIcon: ({ color }) => <Search size={22} color={color} />,
           }}
         />
         <Tabs.Screen
           name="create"
           options={{
             title: "Create",
-            tabBarIcon: ({ color }) => <TabIcon name="plus-square" color={color} />,
+            tabBarIcon: ({ color }) => <PlusSquare size={22} color={color} />,
           }}
         />
         <Tabs.Screen
           name="messages"
           options={{
             title: "Messages",
-            tabBarIcon: ({ color }) => <TabIcon name="comments" color={color} />,
+            tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: "Profile",
-            tabBarIcon: ({ color }) => <TabIcon name="user" color={color} />,
+            tabBarIcon: ({ color }) => <User size={22} color={color} />,
           }}
         />
       </Tabs>

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ChevronUp, ChevronDown, Flag } from "lucide-react-native";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
@@ -194,11 +194,10 @@ export default function AdminComplaints() {
 
           <View className="flex-row items-center justify-between mt-2">
             <Text className="text-xs text-slate-400">{formatDate(item.createdAt)}</Text>
-            <FontAwesome
-              name={isExpanded ? "chevron-up" : "chevron-down"}
-              size={11}
-              color={colors.placeholder}
-            />
+            {isExpanded
+              ? <ChevronUp size={11} color={colors.placeholder} />
+              : <ChevronDown size={11} color={colors.placeholder} />
+            }
           </View>
         </Pressable>
 
@@ -296,7 +295,7 @@ export default function AdminComplaints() {
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
             <EmptyState
-              icon="flag"
+              icon={Flag}
               title="Жалоб нет"
               subtitle={
                 filter === "NEW"

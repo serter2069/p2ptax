@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { User, Briefcase, MapPin, MessageCircle } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import SpecialistCard from "@/components/SpecialistCard";
@@ -284,7 +284,7 @@ export default function LandingScreen() {
             <View className="mb-8">
               <View className="flex-row items-center mb-4">
                 <View className="w-7 h-7 rounded-full bg-blue-900/10 items-center justify-center mr-2">
-                  <FontAwesome name="user" size={13} color={colors.primary} />
+                  <User size={13} color={colors.primary} />
                 </View>
                 <Text className="text-base font-semibold text-slate-900">
                   Для клиентов
@@ -317,7 +317,7 @@ export default function LandingScreen() {
             <View>
               <View className="flex-row items-center mb-4">
                 <View className="w-7 h-7 rounded-full bg-amber-700/10 items-center justify-center mr-2">
-                  <FontAwesome name="briefcase" size={13} color={colors.accent} />
+                  <Briefcase size={13} color={colors.accent} />
                 </View>
                 <Text className="text-base font-semibold text-slate-900">
                   Для специалистов
@@ -428,12 +428,12 @@ export default function LandingScreen() {
                   </Text>
                   <View className="flex-row items-center gap-3">
                     <View className="flex-row items-center gap-1">
-                      <FontAwesome name="map-marker" size={11} color={colors.placeholder} />
+                      <MapPin size={11} color={colors.placeholder} />
                       <Text className="text-xs text-slate-400">{r.city.name}</Text>
                     </View>
                     {r.threadsCount > 0 && (
                       <View className="flex-row items-center gap-1">
-                        <FontAwesome name="comments" size={11} color={colors.placeholder} />
+                        <MessageCircle size={11} color={colors.placeholder} />
                         <Text className="text-xs text-slate-400">
                           {r.threadsCount}
                         </Text>

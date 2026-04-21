@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Pencil, Plus, LogOut } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
@@ -314,7 +314,7 @@ export default function SpecialistSettings() {
                   onPress={() => router.push("/onboarding/work-area" as never)}
                   className="flex-row items-center justify-center py-2 mb-4"
                 >
-                  <FontAwesome name="pencil" size={12} color={colors.accent} />
+                  <Pencil size={12} color={colors.accent} />
                   <Text className="text-sm text-amber-700 ml-1 font-medium">
                     Изменить рабочую зону
                   </Text>
@@ -327,7 +327,7 @@ export default function SpecialistSettings() {
                 onPress={() => router.push("/onboarding/work-area" as never)}
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
               >
-                <FontAwesome name="plus" size={14} color={colors.accent} />
+                <Plus size={14} color={colors.accent} />
                 <Text className="text-sm text-amber-700 ml-2 font-medium">
                   Добавить ИФНС и услуги
                 </Text>
@@ -401,7 +401,7 @@ export default function SpecialistSettings() {
                 onPress={handleLogout}
                 className="flex-row items-center px-4 py-3"
               >
-                <FontAwesome name="sign-out" size={16} color={colors.error} />
+                <LogOut size={16} color={colors.error} />
                 <Text className="text-base text-red-600 ml-3 flex-1">
                   Выйти из аккаунта
                 </Text>

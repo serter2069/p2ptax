@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Pencil, FileText, ChevronRight, LogOut, Trash2 } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
@@ -216,7 +216,7 @@ export default function ClientSettings() {
                       className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
                       style={{ width: 24, height: 24 }}
                     >
-                      <FontAwesome name="pencil" size={12} color={colors.surface} />
+                      <Pencil size={12} color={colors.surface} />
                     </View>
                   </View>
                 ) : (
@@ -340,11 +340,11 @@ export default function ClientSettings() {
                 className="flex-row items-center px-4 py-3"
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
-                <FontAwesome name="file-text-o" size={16} color={colors.placeholder} />
+                <FileText size={16} color={colors.placeholder} />
                 <Text className="text-base text-slate-900 ml-3 flex-1">
                   Условия использования
                 </Text>
-                <FontAwesome name="chevron-right" size={12} color={colors.borderLight} />
+                <ChevronRight size={12} color={colors.borderLight} />
               </Pressable>
             </View>
 
@@ -361,7 +361,7 @@ export default function ClientSettings() {
                 className="flex-row items-center px-4 py-3 border-b border-slate-100"
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
-                <FontAwesome name="sign-out" size={16} color={colors.error} />
+                <LogOut size={16} color={colors.error} />
                 <Text className="text-base text-red-600 ml-3 flex-1">
                   Выйти из аккаунта
                 </Text>
@@ -373,7 +373,7 @@ export default function ClientSettings() {
                 className="flex-row items-center px-4 py-3"
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
-                <FontAwesome name="trash-o" size={16} color={colors.error} />
+                <Trash2 size={16} color={colors.error} />
                 <Text className="text-base text-red-600 ml-3 flex-1">
                   Удалить аккаунт
                 </Text>

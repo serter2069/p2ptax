@@ -1,6 +1,6 @@
-import { View, Text, Pressable, FlatList } from "react-native";
+import { View, Text, Pressable, FlatList, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { MessageCircle } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 const CONVERSATIONS = [
@@ -102,24 +102,32 @@ function ConversationItem({
 }
 
 export default function MessagesScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
+  const containerStyle = isDesktop
+    ? { maxWidth: 520, width: "100%" as const, alignSelf: "center" as const }
+    : undefined;
+
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View className="px-4 pt-2 pb-3 border-b border-gray-100">
-        <Text className="text-2xl font-bold text-gray-900">Messages</Text>
-      </View>
+      <View className="flex-1" style={containerStyle}>
+        {/* Header */}
+        <View className="px-4 pt-2 pb-3 border-b border-gray-100">
+          <Text className="text-2xl font-bold text-gray-900">Messages</Text>
+        </View>
 
-      <FlatList
-        data={CONVERSATIONS}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ConversationItem {...item} />}
-        ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <FontAwesome name="comments-o" size={48} color={colors.textSecondary} />
-            <Text className="text-base text-gray-400 mt-4">No messages yet</Text>
-          </View>
-        }
-      />
+        <FlatList
+          data={CONVERSATIONS}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <ConversationItem {...item} />}
+          ListEmptyComponent={
+            <View className="flex-1 items-center justify-center py-20">
+              <MessageCircle size={48} color={colors.textSecondary} />
+              <Text className="text-base text-gray-400 mt-4">No messages yet</Text>
+            </View>
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 }

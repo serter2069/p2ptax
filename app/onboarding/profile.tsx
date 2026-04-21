@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useRef } from "react";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Pencil, Camera } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { API_URL, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -209,7 +209,7 @@ export default function OnboardingProfileScreen() {
                     className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
                     style={{ width: 24, height: 24 }}
                   >
-                    <FontAwesome name="pencil" size={12} color={colors.surface} />
+                    <Pencil size={12} color={colors.surface} />
                   </View>
                 </View>
               ) : (
@@ -223,7 +223,7 @@ export default function OnboardingProfileScreen() {
                     borderStyle: "dashed",
                   }}
                 >
-                  <FontAwesome name="camera" size={24} color={colors.placeholder} />
+                  <Camera size={24} color={colors.placeholder} />
                 </View>
               )}
               <Text className="text-sm text-slate-400 mt-2">

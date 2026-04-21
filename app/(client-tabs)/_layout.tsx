@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { LayoutGrid, FileText, MessageCircle } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 export default function ClientTabsLayout() {
@@ -23,27 +23,21 @@ export default function ClientTabsLayout() {
         name="dashboard"
         options={{
           title: "Dashboard",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="th-large" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="requests"
         options={{
           title: "My Requests",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="file-text-o" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="messages"
         options={{
           title: "Messages",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="comments-o" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />
     </Tabs>

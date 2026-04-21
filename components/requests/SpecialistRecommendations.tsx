@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ChevronRight } from "lucide-react-native";
 import Avatar from "@/components/ui/Avatar";
 import { colors } from "@/lib/theme";
 
@@ -84,7 +84,7 @@ export default function SpecialistRecommendations({
                   </Text>
                 )}
               </View>
-              <FontAwesome name="chevron-right" size={12} color={colors.placeholder} />
+              <ChevronRight size={12} color={colors.placeholder} />
             </View>
           </Pressable>
         );

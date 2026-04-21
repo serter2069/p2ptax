@@ -1,5 +1,5 @@
 import { Pressable, Text, ActivityIndicator } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { type LucideIcon } from "lucide-react-native";
 import { colors } from "../../lib/theme";
 
 export interface ButtonProps {
@@ -9,7 +9,7 @@ export interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  icon?: React.ComponentProps<typeof FontAwesome>["name"];
+  icon?: LucideIcon;
 }
 
 const variantStyles = {
@@ -37,7 +37,7 @@ export default function Button({
   loading = false,
   disabled = false,
   fullWidth = true,
-  icon,
+  icon: Icon,
 }: ButtonProps) {
   const styles = variantStyles[variant];
   const widthClass = fullWidth ? "w-full" : "";
@@ -61,9 +61,8 @@ export default function Button({
         <ActivityIndicator color={styles.iconColor} />
       ) : (
         <>
-          {icon && (
-            <FontAwesome
-              name={icon}
+          {Icon && (
+            <Icon
               size={18}
               color={styles.iconColor}
               style={{ marginRight: 8 }}

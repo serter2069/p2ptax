@@ -1,5 +1,4 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 interface SelectOption {
   id: string;

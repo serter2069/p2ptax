@@ -1,5 +1,5 @@
 import { View, Text } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { AlertCircle } from "lucide-react-native";
 import Button from "./Button";
 import { colors } from "../../lib/theme";
 
@@ -18,7 +18,7 @@ export default function ErrorState({
         className="items-center justify-center rounded-full bg-red-50"
         style={{ width: 72, height: 72 }}
       >
-        <FontAwesome name="exclamation-circle" size={32} color={colors.error} />
+        <AlertCircle size={32} color={colors.error} />
       </View>
       <Text className="text-base font-medium text-slate-900 mt-4 text-center">
         {message}

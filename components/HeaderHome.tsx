@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Bell, Settings } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 interface HeaderHomeProps {
@@ -21,7 +21,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
           onPress={() => router.push("/notifications" as never)}
           className="w-11 h-11 items-center justify-center"
         >
-          <FontAwesome name="bell-o" size={18} color={colors.surface} />
+          <Bell size={18} color={colors.surface} />
           {notificationCount > 0 && (
             <View className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-amber-500 items-center justify-center px-1">
               <Text className="text-[9px] font-bold text-white">
@@ -37,7 +37,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
             onPress={onSettingsPress}
             className="w-11 h-11 items-center justify-center"
           >
-            <FontAwesome name="cog" size={18} color={colors.surface} />
+            <Settings size={18} color={colors.surface} />
           </Pressable>
         )}
       </View>

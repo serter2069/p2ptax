@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Mail, Search, FileText } from "lucide-react-native";
 import {
   Button,
   Card,
@@ -121,7 +122,7 @@ export default function BrandScreen() {
             <Button label="Загрузка..." loading />
             <Button variant="secondary" label="Отмена" />
             <Button variant="destructive" label="Удалить" />
-            <Button label="Написать" icon="envelope" />
+            <Button label="Написать" icon={Mail} />
           </View>
         </Section>
 
@@ -150,7 +151,7 @@ export default function BrandScreen() {
               placeholder="Поиск специалиста..."
               value={inputIcon}
               onChangeText={setInputIcon}
-              icon="search"
+              icon={Search}
             />
           </View>
         </Section>
@@ -211,7 +212,7 @@ export default function BrandScreen() {
         <Section title="States">
           <View className="mb-3">
             <EmptyState
-              icon="file-text"
+              icon={FileText}
               title="Нет заявок"
               subtitle="Создайте первую заявку"
               actionLabel="Создать"

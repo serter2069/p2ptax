@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { X } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 function SectionHeading({ children }: { children: string }) {
@@ -37,7 +37,7 @@ export default function TermsScreen() {
             className="w-11 h-11 items-center justify-center"
             style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           >
-            <FontAwesome name="times" size={20} color={colors.text} />
+            <X size={20} color={colors.text} />
           </Pressable>
         </View>
       </View>
