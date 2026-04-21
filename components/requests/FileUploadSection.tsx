@@ -1,0 +1,174 @@
+import { useRef, useCallback } from "react";
+import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_URL } from "@/lib/api";
+import { colors } from "@/lib/theme";
+
+export interface AttachedFile {
+  name: string;
+  mimeType: string;
+  size: number;
+  uploadedUrl?: string;
+  uploading?: boolean;
+  error?: string;
+}
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+interface FileUploadSectionProps {
+  files: AttachedFile[];
+  disabled: boolean;
+  onFilesChange: (files: AttachedFile[]) => void;
+}
+
+export default function FileUploadSection({
+  files,
+  disabled,
+  onFilesChange,
+}: FileUploadSectionProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const uploadFile = useCallback(async (file: File) => {
+    const mimeType = file.type || "application/octet-stream";
+    const fileName = file.name;
+
+    onFilesChange([
+      ...files,
+      { name: fileName, mimeType, size: file.size, uploading: true },
+    ]);
+
+    try {
+      const token = await AsyncStorage.getItem("p2ptax_access_token");
+      const formData = new FormData();
+      formData.append("files", file);
+
+      const uploadRes = await fetch(`${API_URL}/api/upload/documents`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const uploadData = (await uploadRes.json()) as { files: { url: string }[] };
+      const uploadedUrl = uploadData.files[0]?.url;
+
+      onFilesChange(
+        files
+          .concat([{ name: fileName, mimeType, size: file.size, uploading: true }])
+          .map((f, i, arr) =>
+            i === arr.length - 1 && f.name === fileName && f.uploading
+              ? { ...f, uploading: false, uploadedUrl }
+              : f
+          )
+      );
+    } catch {
+      onFilesChange(
+        files
+          .concat([{ name: fileName, mimeType, size: file.size, uploading: true }])
+          .map((f, i, arr) =>
+            i === arr.length - 1 && f.name === fileName && f.uploading
+              ? { ...f, uploading: false, error: "Ошибка загрузки" }
+              : f
+          )
+      );
+    }
+  }, [files, onFilesChange]);
+
+  const handleAddFilePress = () => {
+    if (Platform.OS === "web" && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (files.length >= MAX_FILES || file.size > MAX_FILE_SIZE) {
+      e.target.value = "";
+      return;
+    }
+    void uploadFile(file);
+    e.target.value = "";
+  };
+
+  const handleRemoveFile = (index: number) => {
+    onFilesChange(files.filter((_, i) => i !== index));
+  };
+
+  return (
+    <View className="mb-6">
+      <Text className="text-sm font-medium text-slate-700 mb-1">Документы</Text>
+      <Text className="text-xs text-slate-400 mb-3">
+        PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов
+      </Text>
+
+      {files.map((file, index) => (
+        <View
+          key={`file-${index}`}
+          className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 mb-2"
+        >
+          <FontAwesome
+            name={file.mimeType === "application/pdf" ? "file-pdf-o" : "file-image-o"}
+            size={18}
+            color={file.error ? colors.error : colors.primary}
+          />
+          <View className="flex-1 mx-2">
+            <Text className="text-sm text-slate-900" numberOfLines={1}>
+              {file.name}
+            </Text>
+            {file.uploading && (
+              <Text className="text-xs text-slate-400">Загрузка...</Text>
+            )}
+            {file.error && (
+              <Text className="text-xs text-red-600">{file.error}</Text>
+            )}
+            {file.uploadedUrl && !file.uploading && (
+              <Text className="text-xs text-emerald-600">Загружен</Text>
+            )}
+          </View>
+          {file.uploading ? (
+            <ActivityIndicator size="small" color={colors.placeholder} />
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Удалить файл"
+              onPress={() => handleRemoveFile(index)}
+              className="w-11 h-11 items-center justify-center"
+            >
+              <FontAwesome name="times" size={14} color={colors.placeholder} />
+            </Pressable>
+          )}
+        </View>
+      ))}
+
+      {files.length < MAX_FILES && !disabled && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Прикрепить файл"
+          onPress={handleAddFilePress}
+          className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl active:bg-slate-50"
+        >
+          <FontAwesome name="plus" size={13} color={colors.accent} />
+          <Text className="text-sm text-amber-700 ml-2 font-medium">
+            + Прикрепить файл
+          </Text>
+        </Pressable>
+      )}
+
+      {Platform.OS === "web" && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf,image/jpeg,image/png"
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+        />
+      )}
+    </View>
+  );
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,6 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
-  Image,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,30 +17,12 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { API_URL, apiGet, apiPatch, apiPost, apiDelete } from "@/lib/api";
+import { apiGet, apiPatch } from "@/lib/api";
 import LoadingState from "@/components/ui/LoadingState";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/lib/theme";
-
-interface ContactMethodItem {
-  id: string;
-  type: string;
-  value: string;
-  label: string | null;
-  order: number;
-}
-
-const CONTACT_TYPE_LABELS: Record<string, string> = {
-  phone: "Телефон",
-  email: "Email",
-  telegram: "Telegram",
-  whatsapp: "WhatsApp",
-  vk: "ВКонтакте",
-  website: "Сайт",
-};
-
-const CONTACT_TYPES = Object.keys(CONTACT_TYPE_LABELS);
-
+import AvatarUploader from "@/components/settings/AvatarUploader";
+import ContactMethodsList, { ContactMethodItem } from "@/components/settings/ContactMethodsList";
+import NotificationPreferences from "@/components/settings/NotificationPreferences";
 
 interface FnsServiceItem {
   fns: { id: string; name: string; code: string };
@@ -80,15 +60,11 @@ export default function SpecialistSettings() {
   // Avatar upload state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [description, setDescription] = useState("");
-  const [phone, setPhone] = useState("");
-  const [telegram, setTelegram] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
   const [officeAddress, setOfficeAddress] = useState("");
   const [workingHours, setWorkingHours] = useState("");
   const [isAvailable, setIsAvailable] = useState(false);
@@ -118,9 +94,6 @@ export default function SpecialistSettings() {
       setIsAvailable(profile.isAvailable);
       if (profile.profile) {
         setDescription(profile.profile.description || "");
-        setPhone(profile.profile.phone || "");
-        setTelegram(profile.profile.telegram || "");
-        setWhatsapp(profile.profile.whatsapp || "");
         setOfficeAddress(profile.profile.officeAddress || "");
         setWorkingHours(profile.profile.workingHours || "");
       }
@@ -136,53 +109,6 @@ export default function SpecialistSettings() {
     fetchProfile();
   }, [fetchProfile]);
 
-  // Avatar upload
-  const uploadAvatar = async (file: File) => {
-    setAvatarUploading(true);
-    try {
-      const token = await AsyncStorage.getItem("p2ptax_access_token");
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch(`${API_URL}/api/upload/avatar`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errData = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(errData.error || "Не удалось загрузить фото");
-      }
-
-      const resData = (await res.json()) as { url: string };
-      const fullUrl = resData.url.startsWith("http")
-        ? resData.url
-        : `${API_URL}${resData.url}`;
-      setAvatarUrl(fullUrl);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Ошибка загрузки фото";
-      Alert.alert("Ошибка", msg);
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
-
-  const handleAvatarPress = () => {
-    if (Platform.OS === "web" && fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      void uploadAvatar(file);
-      e.target.value = "";
-    }
-  };
-
-  // Instant availability toggle
   const handleToggleAvailable = async (value: boolean) => {
     if (availabilityLoading) return;
     setIsAvailable(value);
@@ -191,53 +117,11 @@ export default function SpecialistSettings() {
       await apiPatch("/api/specialist/profile", { isAvailable: value });
       updateUser({ isAvailable: value });
     } catch {
-      setIsAvailable(!value); // revert on error
+      setIsAvailable(!value);
       Alert.alert("Ошибка", "Не удалось изменить статус");
     } finally {
       setAvailabilityLoading(false);
     }
-  };
-
-  const handleAddContact = async () => {
-    if (!newContactValue.trim()) {
-      Alert.alert("Ошибка", "Введите значение контакта");
-      return;
-    }
-    setContactSaving(true);
-    try {
-      const created = await apiPost<ContactMethodItem>("/api/profile/contacts", {
-        type: newContactType,
-        value: newContactValue.trim(),
-        order: contacts.length,
-      });
-      setContacts((prev) => [...prev, created]);
-      setAddingContact(false);
-      setNewContactValue("");
-      setNewContactType("phone");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Не удалось добавить контакт";
-      Alert.alert("Ошибка", msg);
-    } finally {
-      setContactSaving(false);
-    }
-  };
-
-  const handleDeleteContact = (id: string) => {
-    Alert.alert("Удалить контакт?", "Это действие нельзя отменить", [
-      { text: "Отмена", style: "cancel" },
-      {
-        text: "Удалить",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await apiDelete(`/api/profile/contacts/${id}`);
-            setContacts((prev) => prev.filter((c) => c.id !== id));
-          } catch {
-            Alert.alert("Ошибка", "Не удалось удалить контакт");
-          }
-        },
-      },
-    ]);
   };
 
   const handleSave = async () => {
@@ -257,9 +141,6 @@ export default function SpecialistSettings() {
         lastName: lastName.trim(),
         avatarUrl: avatarUrl || null,
         description: description.trim() || null,
-        phone: phone.trim() || null,
-        telegram: telegram.trim() || null,
-        whatsapp: whatsapp.trim() || null,
         officeAddress: officeAddress.trim() || null,
         workingHours: workingHours.trim() || null,
       });
@@ -311,71 +192,16 @@ export default function SpecialistSettings() {
         <ResponsiveContainer>
           <View className="py-6">
 
-            {/* Avatar */}
-            <View className="items-center mb-4">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Фото профиля"
-                onPress={handleAvatarPress}
-                className="items-center"
-              >
-                {avatarUploading ? (
-                  <View
-                    className="rounded-full bg-slate-100 items-center justify-center"
-                    style={{ width: 80, height: 80 }}
-                  >
-                    <ActivityIndicator color={colors.primary} />
-                  </View>
-                ) : avatarUrl ? (
-                  <View>
-                    <Image
-                      source={{ uri: avatarUrl }}
-                      style={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: 40,
-                        borderWidth: 2,
-                        borderColor: colors.border,
-                      }}
-                    />
-                    <View
-                      className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
-                      style={{ width: 24, height: 24 }}
-                    >
-                      <FontAwesome name="pencil" size={12} color={colors.surface} />
-                    </View>
-                  </View>
-                ) : (
-                  <View
-                    className="rounded-full bg-blue-900 items-center justify-center"
-                    style={{ width: 80, height: 80 }}
-                  >
-                    <Text className="text-white text-2xl font-bold">
-                      {initials || "?"}
-                    </Text>
-                  </View>
-                )}
-                <Text className="text-xs text-slate-400 mt-2">
-                  {avatarUrl ? "Изменить фото" : "Нажмите, чтобы добавить фото"}
-                </Text>
-              </Pressable>
-              <View className="mt-2 bg-blue-50 px-3 py-1 rounded-full">
-                <Text className="text-xs font-medium text-blue-900">Специалист</Text>
-              </View>
-            </View>
+            <AvatarUploader
+              avatarUrl={avatarUrl}
+              avatarUploading={avatarUploading}
+              initials={initials}
+              onAvatarChange={setAvatarUrl}
+              onUploadStart={() => setAvatarUploading(true)}
+              onUploadEnd={() => setAvatarUploading(false)}
+            />
 
-            {/* Hidden file input (web only) */}
-            {Platform.OS === "web" && (
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
-              />
-            )}
-
-            {/* Availability toggle — top position */}
+            {/* Availability toggle */}
             <View className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 flex-row items-center justify-between">
               <View className="flex-1 mr-4">
                 <Text className="text-base font-semibold text-slate-900">
@@ -508,141 +334,20 @@ export default function SpecialistSettings() {
               </Pressable>
             )}
 
-            {/* Contacts — structured ContactMethod */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-              Контакты
-            </Text>
-
-            {contacts.map((contact) => (
-              <View
-                key={contact.id}
-                className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-2"
-              >
-                <View className="flex-1">
-                  <Text className="text-xs text-slate-400 mb-0.5">
-                    {CONTACT_TYPE_LABELS[contact.type] || contact.type}
-                  </Text>
-                  <Text className="text-sm font-medium text-slate-900">
-                    {contact.value}
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Удалить контакт"
-                  onPress={() => handleDeleteContact(contact.id)}
-                  className="ml-2 p-2"
-                >
-                  <FontAwesome name="trash-o" size={16} color={colors.error} />
-                </Pressable>
-              </View>
-            ))}
-
-            {addingContact ? (
-              <View className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-2">
-                <Text className="text-sm font-medium text-slate-900 mb-2">Тип контакта</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Выбрать тип контакта"
-                  onPress={() => setShowTypePicker(!showTypePicker)}
-                  className="flex-row items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 mb-3"
-                >
-                  <Text className="text-base text-slate-900">
-                    {CONTACT_TYPE_LABELS[newContactType]}
-                  </Text>
-                  <FontAwesome name="chevron-down" size={12} color={colors.placeholder} />
-                </Pressable>
-                {showTypePicker && (
-                  <View className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-3">
-                    {CONTACT_TYPES.map((t) => (
-                      <Pressable
-                        accessibilityRole="button"
-                        key={t}
-                        accessibilityLabel={CONTACT_TYPE_LABELS[t]}
-                        onPress={() => {
-                          setNewContactType(t);
-                          setShowTypePicker(false);
-                        }}
-                        className={`px-4 py-3 border-b border-slate-100 ${
-                          newContactType === t ? "bg-blue-50" : ""
-                        }`}
-                      >
-                        <Text
-                          className={`text-base ${
-                            newContactType === t ? "text-blue-900 font-medium" : "text-slate-700"
-                          }`}
-                        >
-                          {CONTACT_TYPE_LABELS[t]}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
-                <View className="mb-3">
-                  <Input
-                    label="Значение"
-                    value={newContactValue}
-                    onChangeText={setNewContactValue}
-                    placeholder={
-                      newContactType === "phone" || newContactType === "whatsapp"
-                        ? "+7 (___) ___-__-__"
-                        : newContactType === "telegram"
-                        ? "@username"
-                        : newContactType === "email"
-                        ? "email@example.com"
-                        : newContactType === "vk"
-                        ? "vk.com/username"
-                        : "https://example.com"
-                    }
-                    autoCapitalize="none"
-                    keyboardType={
-                      newContactType === "phone" || newContactType === "whatsapp"
-                        ? "phone-pad"
-                        : newContactType === "email"
-                        ? "email-address"
-                        : "default"
-                    }
-                  />
-                </View>
-                <View className="flex-row gap-2">
-                  <View className="flex-1">
-                    <Button
-                      variant="secondary"
-                      label="Отмена"
-                      onPress={() => {
-                        setAddingContact(false);
-                        setNewContactValue("");
-                        setNewContactType("phone");
-                        setShowTypePicker(false);
-                      }}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Button
-                      label="Добавить"
-                      onPress={handleAddContact}
-                      disabled={contactSaving}
-                      loading={contactSaving}
-                    />
-                  </View>
-                </View>
-              </View>
-            ) : contacts.length < 6 ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Добавить контакт"
-                onPress={() => setAddingContact(true)}
-                className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
-              >
-                <FontAwesome name="plus" size={14} color={colors.primary} />
-                <Text className="text-sm text-blue-900 ml-2 font-medium">
-                  Добавить контакт
-                </Text>
-              </Pressable>
-            ) : (
-              <Text className="text-xs text-slate-400 text-center mb-4">
-                Максимум 6 контактов
-              </Text>
-            )}
+            <ContactMethodsList
+              contacts={contacts}
+              addingContact={addingContact}
+              newContactType={newContactType}
+              newContactValue={newContactValue}
+              contactSaving={contactSaving}
+              showTypePicker={showTypePicker}
+              onContactsChange={setContacts}
+              onAddingContactChange={setAddingContact}
+              onNewContactTypeChange={setNewContactType}
+              onNewContactValueChange={setNewContactValue}
+              onContactSavingChange={setContactSaving}
+              onShowTypePickerChange={setShowTypePicker}
+            />
 
             {/* Office info */}
             <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 mt-2">
@@ -677,47 +382,12 @@ export default function SpecialistSettings() {
               />
             </View>
 
-            {/* Notifications */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-              Уведомления
-            </Text>
-
-            <View className="bg-white border border-slate-100 rounded-xl mb-6 overflow-hidden">
-              <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-                <View className="flex-1 mr-3">
-                  <Text className="text-base text-slate-900">
-                    Push-уведомления
-                  </Text>
-                  <Text className="text-xs text-slate-400 mt-0.5">
-                    Новые заявки и сообщения
-                  </Text>
-                </View>
-                <Switch
-                  accessibilityLabel="Push-уведомления"
-                  value={pushEnabled}
-                  onValueChange={setPushEnabled}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor={colors.surface}
-                />
-              </View>
-              <View className="flex-row items-center px-4 py-3">
-                <View className="flex-1 mr-3">
-                  <Text className="text-base text-slate-900">
-                    Email-уведомления
-                  </Text>
-                  <Text className="text-xs text-slate-400 mt-0.5">
-                    Дублировать уведомления на почту
-                  </Text>
-                </View>
-                <Switch
-                  accessibilityLabel="Email-уведомления"
-                  value={emailEnabled}
-                  onValueChange={setEmailEnabled}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor={colors.surface}
-                />
-              </View>
-            </View>
+            <NotificationPreferences
+              pushEnabled={pushEnabled}
+              emailEnabled={emailEnabled}
+              onPushChange={setPushEnabled}
+              onEmailChange={setEmailEnabled}
+            />
 
             {/* Account */}
             <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">

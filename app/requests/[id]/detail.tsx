@@ -14,10 +14,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import StatusBadge from "@/components/StatusBadge";
-import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import { api, apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
+import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
 
 interface FileItem {
   id: string;
@@ -25,27 +26,6 @@ interface FileItem {
   filename: string;
   size: number;
   mimeType: string;
-}
-
-interface ThreadSummary {
-  id: string;
-  otherUser: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    avatarUrl: string | null;
-  };
-  lastMessage: { text: string; createdAt: string } | null;
-  unreadCount: number;
-}
-
-interface SpecialistCard {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  avatarUrl: string | null;
-  description: string | null;
-  services: string[];
 }
 
 interface RequestDetailData {
@@ -62,12 +42,6 @@ interface RequestDetailData {
   files: FileItem[];
   threadsCount: number;
   unreadMessages: number;
-}
-
-function getSpecialistName(
-  user: { firstName: string | null; lastName: string | null }
-): string {
-  return [user.firstName, user.lastName].filter(Boolean).join(" ") || "Специалист";
 }
 
 export default function MyRequestDetail() {
@@ -315,7 +289,7 @@ export default function MyRequestDetail() {
               </View>
             )}
 
-            {/* Extend button (closing_soon + extensions remaining) */}
+            {/* Extend button */}
             {canExtend && (
               <Pressable
                 accessibilityRole="button"
@@ -347,174 +321,18 @@ export default function MyRequestDetail() {
                 </View>
               )}
 
-            {/* Messages / response threads */}
-            <View
-              className="bg-white rounded-2xl p-4 mb-4"
-              style={{
-                shadowColor: colors.text,
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
-              <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                  Сообщения
-                </Text>
-                {request.unreadMessages > 0 && (
-                  <View className="bg-blue-900 rounded-full px-2 py-0.5">
-                    <Text className="text-white text-xs font-bold">
-                      {request.unreadMessages}
-                    </Text>
-                  </View>
-                )}
-              </View>
+            <ThreadsList
+              threads={threads}
+              requestId={id}
+              threadsCount={request.threadsCount}
+              unreadMessages={request.unreadMessages}
+              onOpenThread={(threadId) => router.push(`/threads/${threadId}` as never)}
+            />
 
-              {threads.length === 0 ? (
-                <Text className="text-sm text-slate-400 py-2 text-center">
-                  Специалисты ещё не написали
-                </Text>
-              ) : (
-                <>
-                  <Text className="text-sm text-slate-500 mb-3">
-                    {request.threadsCount}{" "}
-                    {request.threadsCount === 1
-                      ? "специалист написал"
-                      : "специалистов написали"}{" "}
-                    вам
-                  </Text>
-                  {threads.map((thread) => {
-                    const name = getSpecialistName(thread.otherUser);
-                    return (
-                      <View
-                        key={thread.id}
-                        className="flex-row items-center py-3 border-b border-slate-100"
-                      >
-                        <Avatar
-                          name={name}
-                          imageUrl={thread.otherUser.avatarUrl ?? undefined}
-                          size="sm"
-                        />
-                        <View className="flex-1 ml-3">
-                          <Text className="text-sm font-semibold text-slate-900">
-                            {name}
-                          </Text>
-                          {thread.lastMessage && (
-                            <Text
-                              className="text-xs text-slate-400 mt-0.5"
-                              numberOfLines={1}
-                            >
-                              {thread.lastMessage.text}
-                            </Text>
-                          )}
-                        </View>
-                        <View className="flex-row items-center">
-                          {thread.unreadCount > 0 && (
-                            <View className="bg-blue-900 rounded-full w-5 h-5 items-center justify-center mr-2">
-                              <Text className="text-white text-xs font-bold">
-                                {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
-                              </Text>
-                            </View>
-                          )}
-                          <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={`Открыть чат с ${name}`}
-                            onPress={() =>
-                              router.push(`/threads/${thread.id}` as never)
-                            }
-                            className="bg-blue-900 rounded-lg px-3 py-1.5"
-                            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-                          >
-                            <Text className="text-white text-xs font-semibold">
-                              Открыть чат
-                            </Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    );
-                  })}
-
-                  {/* View all button */}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Все сообщения"
-                    onPress={() =>
-                      router.push(`/requests/${id}/messages` as never)
-                    }
-                    className="mt-3 border border-blue-900 rounded-xl py-2.5 items-center"
-                    style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
-                  >
-                    <Text className="text-blue-900 font-semibold text-sm">
-                      Все сообщения ({request.threadsCount})
-                    </Text>
-                  </Pressable>
-                </>
-              )}
-            </View>
-
-            {/* Recommended specialists */}
-            {recommendations.length > 0 && (
-              <View className="mb-4">
-                <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-                  Рекомендованные специалисты
-                </Text>
-                {recommendations.map((spec) => {
-                  const name = getSpecialistName(spec);
-                  return (
-                    <Pressable
-                      accessibilityRole="button"
-                      key={spec.id}
-                      accessibilityLabel={`Профиль специалиста ${name}`}
-                      onPress={() =>
-                        router.push(`/specialists/${spec.id}` as never)
-                      }
-                      className="bg-white rounded-2xl p-4 mb-3"
-                      style={({ pressed }) => [
-                        {
-                          shadowColor: colors.text,
-                          shadowOffset: { width: 0, height: 1 },
-                          shadowOpacity: 0.05,
-                          shadowRadius: 8,
-                          elevation: 2,
-                        },
-                        pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
-                      ]}
-                    >
-                      <View className="flex-row items-center">
-                        <Avatar
-                          name={name}
-                          imageUrl={spec.avatarUrl ?? undefined}
-                          size="md"
-                        />
-                        <View className="ml-3 flex-1">
-                          <Text className="text-base font-semibold text-slate-900">
-                            {name}
-                          </Text>
-                          {spec.services.length > 0 && (
-                            <Text
-                              className="text-xs text-slate-400 mt-0.5"
-                              numberOfLines={1}
-                            >
-                              {spec.services.join(", ")}
-                            </Text>
-                          )}
-                          {spec.description && (
-                            <Text
-                              className="text-sm text-slate-600 mt-1 leading-5"
-                              numberOfLines={2}
-                            >
-                              {spec.description}
-                            </Text>
-                          )}
-                        </View>
-                        <FontAwesome name="chevron-right" size={12} color={colors.placeholder} />
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
+            <SpecialistRecommendations
+              recommendations={recommendations}
+              onContact={(specialistId) => router.push(`/specialists/${specialistId}` as never)}
+            />
 
             {/* Meta stats */}
             <View

@@ -1,54 +1,25 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
-  Pressable,
   ActivityIndicator,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { API_URL, api, apiPost } from "@/lib/api";
+import { api, apiPost } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
-
-
-interface CityOption {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-interface FnsOption {
-  id: string;
-  name: string;
-  code: string;
-  cityId: string;
-}
-
-interface ServiceOption {
-  id: string;
-  name: string;
-}
-
-interface AttachedFile {
-  name: string;
-  mimeType: string;
-  size: number;
-  uploadedUrl?: string;
-  uploading?: boolean;
-  error?: string;
-}
-
-const MAX_FILES = 5;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+import CityFnsServicePicker, {
+  CityOption,
+  FnsOption,
+  ServiceOption,
+} from "@/components/requests/CityFnsServicePicker";
+import FileUploadSection, { AttachedFile } from "@/components/requests/FileUploadSection";
 
 export default function NewRequest() {
   const router = useRouter();
@@ -78,9 +49,6 @@ export default function NewRequest() {
   const [limitInfo, setLimitInfo] = useState({ used: 0, limit: 5 });
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
-
-  // Web-only hidden file input ref
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Load cities, services, and check limit on mount
   useEffect(() => {
@@ -138,74 +106,6 @@ export default function NewRequest() {
   const handleServiceSelect = useCallback((svc: ServiceOption) => {
     setSelectedServiceId(svc.id);
     setServiceOpen(false);
-  }, []);
-
-  const handleAddFilePress = () => {
-    if (Platform.OS === "web" && fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const uploadFile = useCallback(async (file: File) => {
-    const mimeType = file.type || "application/octet-stream";
-    const fileName = file.name;
-
-    setFiles((prev) => [
-      ...prev,
-      { name: fileName, mimeType, size: file.size, uploading: true },
-    ]);
-
-    try {
-      const token = await AsyncStorage.getItem("p2ptax_access_token");
-      const formData = new FormData();
-      formData.append("files", file);
-
-      const uploadRes = await fetch(`${API_URL}/api/upload/documents`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const uploadData = (await uploadRes.json()) as { files: { url: string }[] };
-      const uploadedUrl = uploadData.files[0]?.url;
-
-      setFiles((prev) =>
-        prev.map((f, i) =>
-          i === prev.length - 1 && f.name === fileName && f.uploading
-            ? { ...f, uploading: false, uploadedUrl }
-            : f
-        )
-      );
-    } catch {
-      setFiles((prev) =>
-        prev.map((f, i) =>
-          i === prev.length - 1 && f.name === fileName && f.uploading
-            ? { ...f, uploading: false, error: "Ошибка загрузки" }
-            : f
-        )
-      );
-    }
-  }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (files.length >= MAX_FILES || file.size > MAX_FILE_SIZE) {
-      e.target.value = "";
-      return;
-    }
-
-    void uploadFile(file);
-    e.target.value = "";
-  };
-
-  const handleRemoveFile = useCallback((index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // Validation
@@ -307,179 +207,27 @@ export default function NewRequest() {
               <Text className="text-xs text-slate-400 text-right mt-1">{title.length}/100</Text>
             </View>
 
-            {/* City select */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-1.5">
-                Город <Text className="text-red-500">*</Text>
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Выбрать город"
-                onPress={() => {
-                  if (atLimit || submitting) return;
-                  setCityOpen(!cityOpen);
-                  setFnsOpen(false);
-                  setServiceOpen(false);
-                }}
-                className={`h-12 border rounded-xl px-4 flex-row items-center justify-between ${
-                  submitted && !selectedCityId
-                    ? "border-red-400 bg-red-50"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <Text className={selectedCity ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
-                  {selectedCity?.name || "Выберите город"}
-                </Text>
-                <FontAwesome name={cityOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
-              </Pressable>
-              {submitted && !selectedCityId && (
-                <Text className="text-xs text-red-600 mt-1">Выберите город</Text>
-              )}
-              {cityOpen && (
-                <View
-                  className="border border-slate-200 rounded-xl mt-1 bg-white overflow-hidden"
-                  style={{ maxHeight: 192 }}
-                >
-                  <ScrollView nestedScrollEnabled>
-                    {cities.length === 0 ? (
-                      <View className="px-4 py-3">
-                        <Text className="text-sm text-slate-400">Загрузка...</Text>
-                      </View>
-                    ) : (
-                      cities.map((city) => (
-                        <Pressable
-                          accessibilityRole="button"
-                          key={city.id}
-                          accessibilityLabel={city.name}
-                          onPress={() => handleCitySelect(city)}
-                          className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
-                        >
-                          <Text className="text-base text-slate-900">{city.name}</Text>
-                        </Pressable>
-                      ))
-                    )}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            {/* FNS select */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-1.5">
-                Инспекция <Text className="text-red-500">*</Text>
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Выбрать инспекцию ФНС"
-                onPress={() => {
-                  if (!selectedCityId || atLimit || submitting) return;
-                  setFnsOpen(!fnsOpen);
-                  setCityOpen(false);
-                  setServiceOpen(false);
-                }}
-                className={`h-12 border rounded-xl px-4 flex-row items-center justify-between ${
-                  !selectedCityId
-                    ? "border-slate-200 bg-slate-50"
-                    : submitted && !selectedFnsId
-                    ? "border-red-400 bg-red-50"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <Text className={selectedFns ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
-                  {loadingFns
-                    ? "Загрузка..."
-                    : selectedFns?.name ||
-                      (selectedCityId ? "Выберите инспекцию" : "Сначала выберите город")}
-                </Text>
-                {loadingFns ? (
-                  <ActivityIndicator size="small" color={colors.placeholder} />
-                ) : (
-                  <FontAwesome name={fnsOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
-                )}
-              </Pressable>
-              {submitted && selectedCityId && !selectedFnsId && (
-                <Text className="text-xs text-red-600 mt-1">Выберите инспекцию</Text>
-              )}
-              {fnsOpen && (
-                <View
-                  className="border border-slate-200 rounded-xl mt-1 bg-white overflow-hidden"
-                  style={{ maxHeight: 192 }}
-                >
-                  <ScrollView nestedScrollEnabled>
-                    {fnsOffices.length === 0 ? (
-                      <View className="px-4 py-3">
-                        <Text className="text-sm text-slate-400">Нет отделений для выбранного города</Text>
-                      </View>
-                    ) : (
-                      fnsOffices.map((fns) => (
-                        <Pressable
-                          accessibilityRole="button"
-                          key={fns.id}
-                          accessibilityLabel={fns.name}
-                          onPress={() => handleFnsSelect(fns)}
-                          className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
-                        >
-                          <Text className="text-base text-slate-900">{fns.name}</Text>
-                          <Text className="text-xs text-slate-400">{fns.code}</Text>
-                        </Pressable>
-                      ))
-                    )}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            {/* Service type select (optional) */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-1.5">Тип проверки</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Выбрать тип проверки"
-                onPress={() => {
-                  if (atLimit || submitting) return;
-                  setServiceOpen(!serviceOpen);
-                  setCityOpen(false);
-                  setFnsOpen(false);
-                }}
-                className="h-12 border border-slate-200 rounded-xl bg-white px-4 flex-row items-center justify-between"
-              >
-                <Text className={selectedService ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
-                  {selectedService?.name || "Не знаю / не указывать"}
-                </Text>
-                <FontAwesome name={serviceOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
-              </Pressable>
-              {serviceOpen && (
-                <View
-                  className="border border-slate-200 rounded-xl mt-1 bg-white overflow-hidden"
-                  style={{ maxHeight: 192 }}
-                >
-                  <ScrollView nestedScrollEnabled>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Не знаю"
-                      onPress={() => {
-                        setSelectedServiceId(null);
-                        setServiceOpen(false);
-                      }}
-                      className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
-                    >
-                      <Text className="text-base text-slate-400">Не знаю / не указывать</Text>
-                    </Pressable>
-                    {services.map((svc) => (
-                      <Pressable
-                        accessibilityRole="button"
-                        key={svc.id}
-                        accessibilityLabel={svc.name}
-                        onPress={() => handleServiceSelect(svc)}
-                        className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
-                      >
-                        <Text className="text-base text-slate-900">{svc.name}</Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
+            <CityFnsServicePicker
+              cities={cities}
+              fnsOffices={fnsOffices}
+              services={services}
+              selectedCity={selectedCity}
+              selectedFns={selectedFns}
+              selectedService={selectedService}
+              cityOpen={cityOpen}
+              fnsOpen={fnsOpen}
+              serviceOpen={serviceOpen}
+              loadingFns={loadingFns}
+              submitted={submitted}
+              disabled={atLimit || submitting}
+              onCitySelect={handleCitySelect}
+              onFnsSelect={handleFnsSelect}
+              onServiceSelect={handleServiceSelect}
+              onServiceClear={() => { setSelectedServiceId(null); setServiceOpen(false); }}
+              onCityOpenChange={setCityOpen}
+              onFnsOpenChange={setFnsOpen}
+              onServiceOpenChange={setServiceOpen}
+            />
 
             {/* Description */}
             <View className="mb-4">
@@ -501,79 +249,11 @@ export default function NewRequest() {
               <Text className="text-xs text-slate-400 text-right mt-1">{description.length}/2000</Text>
             </View>
 
-            {/* File upload */}
-            <View className="mb-6">
-              <Text className="text-sm font-medium text-slate-700 mb-1">Документы</Text>
-              <Text className="text-xs text-slate-400 mb-3">
-                PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов
-              </Text>
-
-              {/* Attached files list */}
-              {files.map((file, index) => (
-                <View
-                  key={`file-${index}`}
-                  className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 mb-2"
-                >
-                  <FontAwesome
-                    name={file.mimeType === "application/pdf" ? "file-pdf-o" : "file-image-o"}
-                    size={18}
-                    color={file.error ? colors.error : colors.primary}
-                  />
-                  <View className="flex-1 mx-2">
-                    <Text className="text-sm text-slate-900" numberOfLines={1}>
-                      {file.name}
-                    </Text>
-                    {file.uploading && (
-                      <Text className="text-xs text-slate-400">Загрузка...</Text>
-                    )}
-                    {file.error && (
-                      <Text className="text-xs text-red-600">{file.error}</Text>
-                    )}
-                    {file.uploadedUrl && !file.uploading && (
-                      <Text className="text-xs text-emerald-600">Загружен</Text>
-                    )}
-                  </View>
-                  {file.uploading ? (
-                    <ActivityIndicator size="small" color={colors.placeholder} />
-                  ) : (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Удалить файл"
-                      onPress={() => handleRemoveFile(index)}
-                      className="w-11 h-11 items-center justify-center"
-                    >
-                      <FontAwesome name="times" size={14} color={colors.placeholder} />
-                    </Pressable>
-                  )}
-                </View>
-              ))}
-
-              {/* Add file button */}
-              {files.length < MAX_FILES && !atLimit && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Прикрепить файл"
-                  onPress={handleAddFilePress}
-                  className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl active:bg-slate-50"
-                >
-                  <FontAwesome name="plus" size={13} color={colors.accent} />
-                  <Text className="text-sm text-amber-700 ml-2 font-medium">
-                    + Прикрепить файл
-                  </Text>
-                </Pressable>
-              )}
-
-              {/* Hidden web file input */}
-              {Platform.OS === "web" && (
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png"
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                />
-              )}
-            </View>
+            <FileUploadSection
+              files={files}
+              disabled={atLimit || submitting}
+              onFilesChange={setFiles}
+            />
 
             {/* Submit error */}
             {submitError ? (
