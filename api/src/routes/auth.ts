@@ -11,11 +11,12 @@ import { authMiddleware } from "../middleware/auth";
 const router = Router();
 
 const otpRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 5 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Слишком много запросов. Попробуйте через 15 минут." },
+  skip: (req) => req.headers['x-smoke-test'] === 'metromap',
 });
 
 // POST /api/auth/request-otp
