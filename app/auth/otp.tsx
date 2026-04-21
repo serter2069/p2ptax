@@ -57,11 +57,17 @@ export default function AuthOtpScreen() {
     return () => clearTimeout(t);
   }, [resendTimer]);
 
+  // Guard: if no email param, redirect back to email screen
+  useEffect(() => {
+    if (!email) router.replace('/auth/email' as never);
+  }, [email, router]);
+
   // Auto-focus first input on mount
   useEffect(() => {
+    if (!email) return;
     const t = setTimeout(() => inputRefs.current[0]?.focus(), 150);
     return () => clearTimeout(t);
-  }, []);
+  }, [email]);
 
   const routeByRole = useCallback(
     (user: UserData) => {
