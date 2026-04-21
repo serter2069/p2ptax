@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { LayoutGrid, List, MessageCircle, Rocket } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 export default function SpecialistTabsLayout() {
@@ -23,36 +23,28 @@ export default function SpecialistTabsLayout() {
         name="dashboard"
         options={{
           title: "Dashboard",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="th-large" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="requests"
         options={{
           title: "Public Requests",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="list-alt" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <List size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="threads"
         options={{
           title: "My Threads",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="comments-o" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="promotion"
         options={{
           title: "Продвижение",
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="rocket" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Rocket size={size} color={color} />,
         }}
       />
     </Tabs>

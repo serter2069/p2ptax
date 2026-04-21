@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Trash2, File, FileImage, Download } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
@@ -197,7 +197,7 @@ export default function MyRequestDetail() {
             onPress={handleDelete}
             style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           >
-            <FontAwesome name="trash-o" size={18} color={colors.error} />
+            <Trash2 size={18} color={colors.error} />
           </Pressable>
         }
       />
@@ -266,15 +266,10 @@ export default function MyRequestDetail() {
                     className="flex-row items-center bg-slate-50 rounded-xl p-3 mb-2"
                     style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                   >
-                    <FontAwesome
-                      name={
-                        file.mimeType === "application/pdf"
-                          ? "file-pdf-o"
-                          : "file-image-o"
-                      }
-                      size={20}
-                      color={colors.primary}
-                    />
+                    {file.mimeType === "application/pdf"
+                      ? <File size={20} color={colors.primary} />
+                      : <FileImage size={20} color={colors.primary} />
+                    }
                     <View className="ml-3 flex-1">
                       <Text className="text-sm text-slate-900" numberOfLines={1}>
                         {file.filename}
@@ -283,7 +278,7 @@ export default function MyRequestDetail() {
                         {(file.size / 1024).toFixed(0)} КБ
                       </Text>
                     </View>
-                    <FontAwesome name="download" size={14} color={colors.placeholder} />
+                    <Download size={14} color={colors.placeholder} />
                   </Pressable>
                 ))}
               </View>

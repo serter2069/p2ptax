@@ -8,7 +8,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Pencil } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -108,7 +108,7 @@ export default function AvatarUploader({
               className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
               style={{ width: 24, height: 24 }}
             >
-              <FontAwesome name="pencil" size={12} color={colors.surface} />
+              <Pencil size={12} color={colors.surface} />
             </View>
           </View>
         ) : (

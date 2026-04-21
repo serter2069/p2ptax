@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useCallback } from "react";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { X, Plus } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
@@ -178,7 +178,7 @@ export default function OnboardingWorkAreaScreen() {
                     <Text className="text-xs text-slate-400">{item.cityName}</Text>
                   </View>
                   <Pressable accessibilityRole="button" accessibilityLabel="Удалить отделение" onPress={() => removeFns(item.fnsId)}>
-                    <FontAwesome name="times" size={16} color={colors.placeholder} />
+                    <X size={16} color={colors.placeholder} />
                   </Pressable>
                 </View>
 
@@ -294,7 +294,7 @@ export default function OnboardingWorkAreaScreen() {
                 }}
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-6"
               >
-                <FontAwesome name="plus" size={14} color={colors.accent} />
+                <Plus size={14} color={colors.accent} />
                 <Text className="text-sm text-amber-700 ml-2 font-medium">
                   Добавить город
                 </Text>

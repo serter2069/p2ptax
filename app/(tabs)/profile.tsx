@@ -1,15 +1,19 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import {
+  User, Star, ChevronRight, LogOut,
+  List, Heart, Settings, HelpCircle, Info, type LucideIcon
+} from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
+import ResponsiveContainer from "@/components/ResponsiveContainer";
 
-const MENU_ITEMS = [
-  { id: "listings", icon: "list-ul" as const, label: "My Listings", badge: "12" },
-  { id: "favorites", icon: "heart-o" as const, label: "Favorites", badge: "5" },
-  { id: "settings", icon: "cog" as const, label: "Settings", badge: null },
-  { id: "help", icon: "question-circle-o" as const, label: "Help & Support", badge: null },
-  { id: "about", icon: "info-circle" as const, label: "About", badge: null },
+const MENU_ITEMS: { id: string; Icon: LucideIcon; label: string; badge: string | null }[] = [
+  { id: "listings", Icon: List, label: "My Listings", badge: "12" },
+  { id: "favorites", Icon: Heart, label: "Favorites", badge: "5" },
+  { id: "settings", Icon: Settings, label: "Settings", badge: null },
+  { id: "help", Icon: HelpCircle, label: "Help & Support", badge: null },
+  { id: "about", Icon: Info, label: "About", badge: null },
 ];
 
 export default function ProfileScreen() {
@@ -18,10 +22,11 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
+        <ResponsiveContainer>
         {/* Profile Header */}
         <View className="items-center pt-6 pb-8 border-b border-gray-100">
           <View className="w-20 h-20 rounded-full bg-blue-100 items-center justify-center mb-3">
-            <FontAwesome name="user" size={32} color="#3b82f6" />
+            <User size={32} color="#3b82f6" />
           </View>
           <Text className="text-xl font-bold text-gray-900">John Doe</Text>
           <Text className="text-sm text-gray-500 mt-0.5">john@example.com</Text>
@@ -29,11 +34,11 @@ export default function ProfileScreen() {
           {/* Rating */}
           <View className="flex-row items-center mt-2">
             {[1, 2, 3, 4, 5].map((star) => (
-              <FontAwesome
+              <Star
                 key={star}
-                name={star <= 4 ? "star" : "star-half-empty"}
                 size={14}
                 color="#f59e0b"
+                fill={star <= 4 ? "#f59e0b" : "none"}
               />
             ))}
             <Text className="text-sm text-gray-500 ml-1.5">4.5 (23 reviews)</Text>
@@ -68,7 +73,7 @@ export default function ProfileScreen() {
               className="flex-row items-center px-4 py-4 active:bg-gray-50"
             >
               <View className="w-10 h-10 rounded-lg bg-gray-100 items-center justify-center">
-                <FontAwesome name={item.icon} size={18} color="#4b5563" />
+                <item.Icon size={18} color="#4b5563" />
               </View>
               <Text className="flex-1 ml-3 text-base text-gray-900">{item.label}</Text>
               {item.badge && (
@@ -76,23 +81,24 @@ export default function ProfileScreen() {
                   <Text className="text-xs font-medium text-blue-600">{item.badge}</Text>
                 </View>
               )}
-              <FontAwesome name="chevron-right" size={12} color={colors.textSecondary} />
+              <ChevronRight size={12} color={colors.textSecondary} />
             </Pressable>
           ))}
         </View>
 
         {/* Logout */}
-        <View className="mt-4 px-4">
+        <View className="mt-4">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Выйти"
             onPress={signOut}
             className="flex-row items-center justify-center h-12 rounded-xl border border-red-200 active:bg-red-50"
           >
-            <FontAwesome name="sign-out" size={16} color={colors.error} />
+            <LogOut size={16} color={colors.error} />
             <Text className="text-base font-medium text-red-500 ml-2">Log out</Text>
           </Pressable>
         </View>
+        </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );

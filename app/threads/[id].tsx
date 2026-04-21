@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import * as Linking from "expo-linking";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ChevronLeft, AlertCircle, User, MessageCircle, File, X, Paperclip, Send } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
 import { Avatar } from "@/components/ui";
 import Input from "@/components/ui/Input";
@@ -286,7 +286,7 @@ export default function ChatThread() {
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="chevron-left" size={18} color={colors.primary} />
+            <ChevronLeft size={18} color={colors.primary} />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
         </View>
@@ -302,12 +302,12 @@ export default function ChatThread() {
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="chevron-left" size={18} color={colors.primary} />
+            <ChevronLeft size={18} color={colors.primary} />
           </Pressable>
           <Text className="text-base font-semibold text-slate-900">Чат</Text>
         </View>
         <View className="flex-1 items-center justify-center px-4">
-          <FontAwesome name="exclamation-circle" size={40} color={colors.error} />
+          <AlertCircle size={40} color={colors.error} />
           <Text className="text-base text-red-600 text-center mt-3">{error}</Text>
           <Pressable
             accessibilityRole="button"
@@ -329,7 +329,7 @@ export default function ChatThread() {
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
         <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
-          <FontAwesome name="chevron-left" size={18} color={colors.primary} />
+          <ChevronLeft size={18} color={colors.primary} />
         </Pressable>
         {otherUser ? (
           <Avatar
@@ -339,7 +339,7 @@ export default function ChatThread() {
           />
         ) : (
           <View className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center">
-            <FontAwesome name="user" size={16} color={colors.placeholder} />
+            <User size={16} color={colors.placeholder} />
           </View>
         )}
         <View className="ml-3 flex-1">
@@ -370,7 +370,7 @@ export default function ChatThread() {
           }}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-16">
-              <FontAwesome name="comments-o" size={48} color={colors.placeholder} />
+              <MessageCircle size={48} color={colors.placeholder} />
               <Text className="text-base text-slate-500 font-medium mt-4">Начните общение</Text>
               <Text className="text-sm text-slate-400 mt-1 text-center px-4">
                 Напишите сообщение, чтобы начать диалог
@@ -396,7 +396,7 @@ export default function ChatThread() {
                 key={i}
                 className="flex-row items-center bg-white border border-slate-200 rounded-lg px-2 py-1 mr-2 mb-1"
               >
-                <FontAwesome name="file-o" size={13} color={colors.primary} />
+                <File size={13} color={colors.primary} />
                 <Text className="text-xs text-slate-700 mx-1 max-w-[90px]" numberOfLines={1}>
                   {f.name}
                 </Text>
@@ -407,7 +407,7 @@ export default function ChatThread() {
                   accessibilityLabel={`Удалить файл ${f.name}`}
                   style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                 >
-                  <FontAwesome name="times" size={11} color={colors.placeholder} />
+                  <X size={11} color={colors.placeholder} />
                 </Pressable>
               </View>
             ))}
@@ -426,8 +426,7 @@ export default function ChatThread() {
               className="w-11 h-11 items-center justify-center mr-1"
               style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
-              <FontAwesome
-                name="paperclip"
+              <Paperclip
                 size={20}
                 color={pendingFiles.length >= 3 ? colors.borderLight : colors.textSecondary}
               />
@@ -456,8 +455,7 @@ export default function ChatThread() {
               {sending || uploading ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <FontAwesome
-                  name="send"
+                <Send
                   size={20}
                   color={(text.trim() || pendingFiles.length > 0) ? colors.primary : colors.placeholder}
                 />

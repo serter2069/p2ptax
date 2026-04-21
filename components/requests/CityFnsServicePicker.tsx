@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ChevronUp, ChevronDown } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 export interface CityOption {
@@ -88,7 +88,9 @@ export default function CityFnsServicePicker({
           <Text className={selectedCity ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
             {selectedCity?.name || "Выберите город"}
           </Text>
-          <FontAwesome name={cityOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
+          {cityOpen
+            ? <ChevronUp size={12} color={colors.placeholder} />
+            : <ChevronDown size={12} color={colors.placeholder} />}
         </Pressable>
         {submitted && !selectedCity && (
           <Text className="text-xs text-red-600 mt-1">Выберите город</Text>
@@ -151,8 +153,10 @@ export default function CityFnsServicePicker({
           </Text>
           {loadingFns ? (
             <ActivityIndicator size="small" color={colors.placeholder} />
+          ) : fnsOpen ? (
+            <ChevronUp size={12} color={colors.placeholder} />
           ) : (
-            <FontAwesome name={fnsOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
+            <ChevronDown size={12} color={colors.placeholder} />
           )}
         </Pressable>
         {submitted && selectedCity && !selectedFns && (
@@ -204,7 +208,7 @@ export default function CityFnsServicePicker({
           <Text className={selectedService ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
             {selectedService?.name || "Не знаю / не указывать"}
           </Text>
-          <FontAwesome name={serviceOpen ? "chevron-up" : "chevron-down"} size={12} color={colors.placeholder} />
+          {serviceOpen ? <ChevronUp size={12} color={colors.placeholder} /> : <ChevronDown size={12} color={colors.placeholder} />}
         </Pressable>
         {serviceOpen && (
           <View

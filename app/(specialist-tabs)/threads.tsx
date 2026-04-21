@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { MessageCircle, CheckCircle } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -130,7 +131,7 @@ export default function SpecialistMyThreads() {
             <ResponsiveContainer>
               {threads.length === 0 ? (
                 <EmptyState
-                  icon="comments-o"
+                  icon={MessageCircle}
                   title="Вы ещё не написали ни одному клиенту"
                   subtitle="Откликнитесь на заявку — клиент увидит ваше сообщение и сможет ответить"
                   actionLabel="Смотреть заявки"
@@ -140,7 +141,7 @@ export default function SpecialistMyThreads() {
                 />
               ) : (
                 <EmptyState
-                  icon="check-circle-o"
+                  icon={CheckCircle}
                   title="Нет непрочитанных"
                   subtitle="Все сообщения прочитаны"
                 />

@@ -11,6 +11,7 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
+import { AlertCircle, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
@@ -175,7 +176,7 @@ export default function SpecialistsCatalog() {
     if (error) {
       return (
         <EmptyState
-          icon="exclamation-circle"
+          icon={AlertCircle}
           title="Не удалось загрузить список"
           subtitle="Проверьте соединение с интернетом и попробуйте снова"
           actionLabel="Повторить"
@@ -190,7 +191,7 @@ export default function SpecialistsCatalog() {
     if (specialists.length === 0) {
       return (
         <EmptyState
-          icon="user-times"
+          icon={UserX}
           title="Специалистов не найдено"
           subtitle="Попробуйте изменить фильтры или выбрать другой город"
           actionLabel={hasFilters ? "Сбросить фильтры" : undefined}

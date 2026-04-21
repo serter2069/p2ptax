@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
+import { FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -303,7 +304,7 @@ export default function MyRequests() {
     if (requests.length === 0) {
       return (
         <EmptyState
-          icon="file-text-o"
+          icon={FileText}
           title="Заявок пока нет"
           subtitle="Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
           actionLabel="Создать заявку"

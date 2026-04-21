@@ -1,5 +1,5 @@
 import { View, Text, Pressable, Alert } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Trash2, ChevronDown, Plus } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { apiPost, apiDelete } from "@/lib/api";
@@ -120,7 +120,7 @@ export default function ContactMethodsList({
             onPress={() => handleDeleteContact(contact.id)}
             className="ml-2 p-2"
           >
-            <FontAwesome name="trash-o" size={16} color={colors.error} />
+            <Trash2 size={16} color={colors.error} />
           </Pressable>
         </View>
       ))}
@@ -137,7 +137,7 @@ export default function ContactMethodsList({
             <Text className="text-base text-slate-900">
               {CONTACT_TYPE_LABELS[newContactType]}
             </Text>
-            <FontAwesome name="chevron-down" size={12} color={colors.placeholder} />
+            <ChevronDown size={12} color={colors.placeholder} />
           </Pressable>
           {showTypePicker && (
             <View className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-3">
@@ -221,7 +221,7 @@ export default function ContactMethodsList({
           onPress={() => onAddingContactChange(true)}
           className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
         >
-          <FontAwesome name="plus" size={14} color={colors.primary} />
+          <Plus size={14} color={colors.primary} />
           <Text className="text-sm text-blue-900 ml-2 font-medium">
             Добавить контакт
           </Text>

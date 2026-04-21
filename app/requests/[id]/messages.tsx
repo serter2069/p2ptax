@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { MessageCircle } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import { api, ApiError } from "@/lib/api";
@@ -209,7 +210,7 @@ export default function RequestMessages() {
           }
           ListEmptyComponent={
             <EmptyState
-              icon="comments-o"
+              icon={MessageCircle}
               title="Пока нет сообщений"
               subtitle="Специалисты увидят вашу заявку и напишут вам первыми"
             />

@@ -1,6 +1,6 @@
 import { View, Text, Pressable, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Menu, Bell } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import MobileMenu from "./MobileMenu";
@@ -20,7 +20,7 @@ export default function Header() {
       <>
         <View className="flex-row items-center justify-between px-4 h-14 bg-white border-b border-slate-100">
           <Pressable accessibilityRole="button" accessibilityLabel="Открыть меню" onPress={() => setMenuOpen(true)} className="w-11 h-11 items-center justify-center">
-            <FontAwesome name="bars" size={20} color={colors.text} />
+            <Menu size={20} color={colors.text} />
           </Pressable>
 
           <Text className="text-lg font-bold text-blue-900">P2PTax</Text>
@@ -33,7 +33,7 @@ export default function Header() {
                 onPress={() => router.push("/notifications" as never)}
                 className="w-11 h-11 items-center justify-center"
               >
-                <FontAwesome name="bell-o" size={18} color={colors.text} />
+                <Bell size={18} color={colors.text} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -81,7 +81,7 @@ export default function Header() {
             onPress={() => router.push("/notifications" as never)}
             className="w-11 h-11 rounded-lg items-center justify-center active:bg-slate-100"
           >
-            <FontAwesome name="bell-o" size={18} color={colors.text} />
+            <Bell size={18} color={colors.text} />
           </Pressable>
           <Pressable
             accessibilityRole="button"

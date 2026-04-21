@@ -1,10 +1,10 @@
 import { View, Text } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Inbox, type LucideIcon } from "lucide-react-native";
 import Button from "./Button";
 import { colors } from "../../lib/theme";
 
 export interface EmptyStateProps {
-  icon?: React.ComponentProps<typeof FontAwesome>["name"];
+  icon?: LucideIcon;
   title: string;
   subtitle?: string;
   actionLabel?: string;
@@ -12,7 +12,7 @@ export interface EmptyStateProps {
 }
 
 export default function EmptyState({
-  icon = "inbox",
+  icon: Icon = Inbox,
   title,
   subtitle,
   actionLabel,
@@ -24,7 +24,7 @@ export default function EmptyState({
         className="items-center justify-center rounded-full bg-slate-100"
         style={{ width: 72, height: 72 }}
       >
-        <FontAwesome name={icon} size={32} color={colors.placeholder} />
+        <Icon size={32} color={colors.placeholder} />
       </View>
       <Text className="text-base font-semibold text-slate-900 mt-4 text-center">
         {title}

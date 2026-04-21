@@ -1,14 +1,14 @@
 import { View, Text, Pressable, Modal } from "react-native";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { User, X, Home, FileText, Users, Settings, LogOut, type LucideIcon } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
 
-const MENU_ITEMS: { label: string; route: string; icon: React.ComponentProps<typeof FontAwesome>["name"] }[] = [
-  { label: "Главная", route: "/", icon: "home" },
-  { label: "Заявки", route: "/requests", icon: "file-text-o" },
-  { label: "Специалисты", route: "/specialists", icon: "users" },
-  { label: "Настройки", route: "/settings", icon: "cog" },
+const MENU_ITEMS: { label: string; route: string; Icon: LucideIcon }[] = [
+  { label: "Главная", route: "/", Icon: Home },
+  { label: "Заявки", route: "/requests", Icon: FileText },
+  { label: "Специалисты", route: "/specialists", Icon: Users },
+  { label: "Настройки", route: "/settings", Icon: Settings },
 ];
 
 interface MobileMenuProps {
@@ -53,7 +53,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
             ) : (
               <>
                 <View className="w-14 h-14 rounded-full bg-slate-50 items-center justify-center mb-3">
-                  <FontAwesome name="user" size={24} color={colors.primary} />
+                  <User size={24} color={colors.primary} />
                 </View>
                 <Text className="text-lg font-bold text-white">Гость</Text>
                 <Text className="text-sm text-slate-50 mt-0.5">Войдите для продолжения</Text>
@@ -63,7 +63,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
 
           {/* Close button */}
           <Pressable accessibilityRole="button" accessibilityLabel="Закрыть меню" onPress={onClose} className="absolute top-12 right-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="times" size={20} color={colors.surface} />
+            <X size={20} color={colors.surface} />
           </Pressable>
 
           {/* Menu items */}
@@ -77,7 +77,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
                 className="flex-row items-center px-5 py-3.5 active:bg-slate-50"
               >
                 <View className="w-8 items-center">
-                  <FontAwesome name={item.icon} size={18} color={colors.textSecondary} />
+                  <item.Icon size={18} color={colors.textSecondary} />
                 </View>
                 <Text className="text-base text-slate-800 ml-3">{item.label}</Text>
               </Pressable>
@@ -88,7 +88,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
           <View className="border-t border-slate-100 px-5 py-4 pb-8">
             {isAuthenticated ? (
               <Pressable accessibilityRole="button" accessibilityLabel="Выйти" onPress={handleLogout} className="flex-row items-center py-3">
-                <FontAwesome name="sign-out" size={18} color={colors.error} />
+                <LogOut size={18} color={colors.error} />
                 <Text className="text-base font-medium text-red-600 ml-3">Выйти</Text>
               </Pressable>
             ) : (

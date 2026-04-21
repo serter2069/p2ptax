@@ -12,6 +12,7 @@ import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import RequestCard from "@/components/RequestCard";
 import FilterBar from "@/components/FilterBar";
+import { TriangleAlert, FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
@@ -163,7 +164,7 @@ export default function SpecialistPublicRequests() {
           </View>
         ) : error ? (
           <EmptyState
-            icon="exclamation-triangle"
+            icon={TriangleAlert}
             title="Ошибка загрузки"
             subtitle={error}
             actionLabel="Повторить"
@@ -174,7 +175,7 @@ export default function SpecialistPublicRequests() {
           />
         ) : requests.length === 0 ? (
           <EmptyState
-            icon="file-text-o"
+            icon={FileText}
             title="Заявок не найдено"
             subtitle="Попробуйте изменить фильтры"
             actionLabel="Сбросить фильтры"

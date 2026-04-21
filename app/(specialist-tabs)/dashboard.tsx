@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { TriangleAlert, List } from "lucide-react-native";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import StatusBadge from "@/components/StatusBadge";
@@ -210,8 +210,7 @@ export default function SpecialistDashboard() {
                 className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-4"
               >
                 <View className="flex-row items-start">
-                  <FontAwesome
-                    name="exclamation-triangle"
+                  <TriangleAlert
                     size={16}
                     color={colors.accent}
                     style={{ marginTop: 2 }}
@@ -266,7 +265,7 @@ export default function SpecialistDashboard() {
             {/* Request list or empty */}
             {requests.length === 0 ? (
               <EmptyState
-                icon="list-alt"
+                icon={List}
                 title="Нет подходящих заявок"
                 subtitle="Расширьте рабочую область, чтобы видеть больше заявок из других городов и инспекций"
                 actionLabel="Расширить рабочую область"

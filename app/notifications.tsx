@@ -1,7 +1,7 @@
 import { View, Text, Pressable, FlatList, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ArrowLeft, BellOff, MessageCircle, Mail, MapPin, Clock, Bell, type LucideIcon } from "lucide-react-native";
 import { useState, useEffect, useCallback } from "react";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import LoadingState from "@/components/ui/LoadingState";
@@ -28,18 +28,18 @@ interface NotificationsResponse {
   limit: number;
 }
 
-function iconForType(type: string): { name: React.ComponentProps<typeof FontAwesome>["name"]; color: string } {
+function iconForType(type: string): { Icon: LucideIcon; color: string } {
   switch (type) {
     case "new_response":
-      return { name: "comments", color: colors.primary };
+      return { Icon: MessageCircle, color: colors.primary };
     case "new_message":
-      return { name: "envelope", color: colors.primary };
+      return { Icon: Mail, color: colors.primary };
     case "new_request_in_city":
-      return { name: "map-marker", color: colors.success };
+      return { Icon: MapPin, color: colors.success };
     case "promo_expiring":
-      return { name: "clock-o", color: colors.accent };
+      return { Icon: Clock, color: colors.accent };
     default:
-      return { name: "bell", color: colors.text };
+      return { Icon: Bell, color: colors.text };
   }
 }
 
@@ -64,7 +64,7 @@ function NotificationRow({
   item: NotificationItem;
   onPress: (id: string) => void;
 }) {
-  const icon = iconForType(item.type);
+  const { Icon: NotifIcon, color: notifColor } = iconForType(item.type);
   return (
     <Pressable
       accessibilityRole="button"
@@ -78,7 +78,7 @@ function NotificationRow({
         className="w-10 h-10 rounded-full items-center justify-center mt-0.5"
         style={{ backgroundColor: colors.background }}
       >
-        <FontAwesome name={icon.name} size={16} color={icon.color} />
+        <NotifIcon size={16} color={notifColor} />
       </View>
       <View className="flex-1 ml-3">
         <View className="flex-row items-center justify-between">
@@ -177,7 +177,7 @@ export default function NotificationsScreen() {
       <View className="flex-row items-center justify-between px-4 pt-2 pb-3 border-b border-slate-50">
         <View className="flex-row items-center">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
-            <FontAwesome name="arrow-left" size={18} color={colors.text} />
+            <ArrowLeft size={18} color={colors.text} />
           </Pressable>
           <Text className="text-2xl font-bold text-slate-900">Уведомления</Text>
         </View>
@@ -222,7 +222,7 @@ export default function NotificationsScreen() {
             }
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center py-20">
-                <FontAwesome name="bell-slash-o" size={48} color={colors.placeholder} />
+                <BellOff size={48} color={colors.placeholder} />
                 <Text className="text-base text-slate-400 mt-4">Нет уведомлений</Text>
                 <Text className="text-sm text-slate-300 mt-1">Здесь будут ваши уведомления</Text>
               </View>
