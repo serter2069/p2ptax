@@ -8,7 +8,6 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         {/* Public */}
         <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
 
         {/* Role-based tab groups */}
         <Stack.Screen name="(client-tabs)" />

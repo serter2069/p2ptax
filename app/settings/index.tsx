@@ -89,6 +89,11 @@ export default function SettingsScreen() {
             <Switch accessibilityLabel="Уведомления о сообщениях" value={messageEnabled} onValueChange={setMessageEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor={colors.surface} />
           }
         />
+        <SettingRow
+          icon="list"
+          label="Все уведомления"
+          onPress={() => router.push("/notifications" as never)}
+        />
 
         <SectionTitle title="Настройки" />
         <SettingRow icon="language" label="Язык" />
