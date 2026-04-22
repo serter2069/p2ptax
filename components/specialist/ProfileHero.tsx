@@ -31,7 +31,7 @@ export default function ProfileHero({
       {/* Avatar */}
       <View
         className="rounded-full items-center justify-center mr-4 flex-shrink-0"
-        style={{ width: 80, height: 80, backgroundColor: "#1e3a8a" }}
+        style={{ width: 80, height: 80, backgroundColor: "#2256c2" }}
       >
         <Text className="text-white font-bold text-2xl">{initials}</Text>
       </View>
@@ -47,7 +47,7 @@ export default function ProfileHero({
               accessibilityLabel="Написать"
               onPress={onWritePress}
               className="rounded-xl px-4 min-h-[44px] items-center justify-center flex-row"
-              style={{ backgroundColor: "#b45309" }}
+              style={{ backgroundColor: "#2256c2" }}
             >
               <Text className="text-white font-semibold text-sm">Написать →</Text>
             </Pressable>

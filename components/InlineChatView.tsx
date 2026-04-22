@@ -283,12 +283,12 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       <View className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+            <FontAwesome name="chevron-left" size={18} color="#2256c2" />
           </Pressable>
           <Text className="text-base font-semibold" style={{ color: "#0f172a" }}>Чат</Text>
         </View>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color="#2256c2" />
         </View>
       </View>
     );
@@ -299,7 +299,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       <View className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+            <FontAwesome name="chevron-left" size={18} color="#2256c2" />
           </Pressable>
           <Text className="text-base font-semibold" style={{ color: "#0f172a" }}>Чат</Text>
         </View>
@@ -311,7 +311,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
             accessibilityLabel="Повторить"
             onPress={loadData}
             className="mt-4 px-6 py-3 rounded-xl"
-            style={({ pressed }) => [{ backgroundColor: "#1e3a8a" }, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
+            style={({ pressed }) => [{ backgroundColor: "#2256c2" }, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
           >
             <Text className="text-white text-sm font-semibold">Повторить</Text>
           </Pressable>
@@ -325,7 +325,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
         <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
-          <FontAwesome name="chevron-left" size={18} color="#1e3a8a" />
+          <FontAwesome name="chevron-left" size={18} color="#2256c2" />
         </Pressable>
         {otherUser ? (
           <Avatar
@@ -378,7 +378,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         {/* Request closed banner */}
         {isClosed && (
           <View className="border-t px-4 py-3" style={{ backgroundColor: "#fffbeb", borderTopColor: "#fde68a" }}>
-            <Text className="text-sm text-center" style={{ color: "#b45309" }}>
+            <Text className="text-sm text-center" style={{ color: "#2256c2" }}>
               Заявка закрыта. Чат доступен только для чтения.
             </Text>
           </View>
@@ -392,7 +392,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
                 key={i}
                 className="flex-row items-center bg-white border border-slate-200 rounded-lg px-2 py-1 mr-2 mb-1"
               >
-                <FontAwesome name="file-o" size={13} color="#1e3a8a" />
+                <FontAwesome name="file-o" size={13} color="#2256c2" />
                 <Text className="text-xs mx-1 max-w-[90px]" style={{ color: "#334155" }} numberOfLines={1}>
                   {f.name}
                 </Text>
@@ -450,12 +450,12 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
               style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
               {sending || uploading ? (
-                <ActivityIndicator size="small" color="#1e3a8a" />
+                <ActivityIndicator size="small" color="#2256c2" />
               ) : (
                 <FontAwesome
                   name="send"
                   size={20}
-                  color={(text.trim() || pendingFiles.length > 0) ? "#1e3a8a" : "#94a3b8"}
+                  color={(text.trim() || pendingFiles.length > 0) ? "#2256c2" : "#94a3b8"}
                 />
               )}
             </Pressable>

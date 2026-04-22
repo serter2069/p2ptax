@@ -190,7 +190,7 @@ export default function SpecialistsCatalog() {
         {/* Page header */}
         <View className="bg-white px-4 pt-4 pb-2">
           <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-            <ChevronLeft size={16} color="#1e3a8a" />
+            <ChevronLeft size={16} color="#2256c2" />
           </Pressable>
           <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
         </View>
@@ -210,7 +210,7 @@ export default function SpecialistsCatalog() {
       <SafeAreaView className="flex-1 bg-white">
         <View className="bg-white px-4 pt-4 pb-2">
           <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-            <ChevronLeft size={16} color="#1e3a8a" />
+            <ChevronLeft size={16} color="#2256c2" />
           </Pressable>
           <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
         </View>
@@ -233,7 +233,7 @@ export default function SpecialistsCatalog() {
       {/* Page header */}
       <View className="bg-white px-4 pt-4 pb-2">
         <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-          <ChevronLeft size={16} color="#1e3a8a" />
+          <ChevronLeft size={16} color="#2256c2" />
         </Pressable>
         <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
         <Text className="text-sm mt-1 mb-3" style={{ color: "#64748B" }}>
@@ -315,7 +315,7 @@ export default function SpecialistsCatalog() {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             loadingMore ? (
-              <ActivityIndicator size="small" color="#1e3a8a" style={{ paddingVertical: 16 }} />
+              <ActivityIndicator size="small" color="#2256c2" style={{ paddingVertical: 16 }} />
             ) : null
           }
         />
