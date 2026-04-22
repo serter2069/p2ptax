@@ -87,6 +87,22 @@ export const AVATAR_COLORS = [
   '#8b5cf6', // violet
 ] as const
 
+// Font size scale — numeric values for inline style={{ fontSize }}
+export const fontSizeValue = {
+  xs: 10,    // micro labels, decorative bullets
+  sm: 11,    // compact chips, secondary captions
+  tabBar: 12, // tab bar labels
+  md: 15,    // search inputs, secondary body
+  base: 16,  // primary inputs, body text
+  xl: 24,    // OTP digits, display numbers
+} as const
+
+// Shadow color tokens
+export const shadowColor = {
+  dark: '#000000',   // standard card/modal shadow
+  accent: 'rgba(34,86,194,0.1)', // accent glow
+} as const
+
 // Semantic overlay tokens — for rgba on colored backgrounds
 export const overlay = {
   white10: 'rgba(255,255,255,0.1)',
@@ -98,4 +114,5 @@ export const overlay = {
   white80: 'rgba(255,255,255,0.8)',
   white20: 'rgba(255,255,255,0.2)',
   accent10: 'rgba(34,86,194,0.1)',
+  dark15: 'rgba(0,0,0,0.15)',  // image placeholder icon tint
 } as const

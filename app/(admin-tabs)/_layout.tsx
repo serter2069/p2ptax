@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import { BarChart2, Users, Shield, Flag } from "lucide-react-native";
-import { colors } from "@/lib/theme";
+import { colors, fontSizeValue } from "@/lib/theme";
 
 export default function AdminTabsLayout() {
   const { width } = useWindowDimensions();
@@ -16,7 +16,7 @@ export default function AdminTabsLayout() {
           : { display: "none" },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.placeholder,
-        tabBarLabelStyle: { fontSize: 12 },
+        tabBarLabelStyle: { fontSize: fontSizeValue.tabBar },
       }}
     >
       <Tabs.Screen

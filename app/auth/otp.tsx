@@ -18,7 +18,7 @@ import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
-import { colors, radiusValue } from "@/lib/theme";
+import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -324,7 +324,7 @@ export default function AuthOtpScreen() {
                             ? colors.accentSoft
                             : colors.surface2,
                         textAlign: "center",
-                        fontSize: 24,
+                        fontSize: fontSizeValue.xl,
                         fontWeight: "700",
                         color: error ? colors.error : colors.text,
                         outlineWidth: 0,

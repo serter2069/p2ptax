@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import { Home, Search, PlusSquare, MessageCircle, User } from "lucide-react-native";
 import Header from "@/components/Header";
-import { colors } from "@/lib/theme";
+import { colors, fontSizeValue } from "@/lib/theme";
 
 export default function TabLayout() {
   const { width } = useWindowDimensions();
@@ -24,7 +24,7 @@ export default function TabLayout() {
             paddingTop: 4,
           },
           tabBarLabelStyle: {
-            fontSize: 12,
+            fontSize: fontSizeValue.tabBar,
             fontWeight: "500",
           },
           headerShown: false,

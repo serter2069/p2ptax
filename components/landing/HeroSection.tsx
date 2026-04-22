@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { MOCK_SPECIALISTS } from "./mockData";
-import { colors } from "@/lib/theme";
+import { colors, fontSizeValue } from "@/lib/theme";
 
 interface PlatformStats {
   specialistsCount: number;
@@ -36,7 +36,7 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
               className="flex-row items-center self-start mb-6 rounded-full px-4"
               style={{ backgroundColor: colors.accentSoft, paddingVertical: 8 }}
             >
-              <Text style={{ color: colors.primary, fontSize: 10, marginRight: 6 }}>●</Text>
+              <Text style={{ color: colors.primary, fontSize: fontSizeValue.xs, marginRight: 6 }}>●</Text>
               <Text className="text-sm font-medium" style={{ color: colors.primary }}>
                 Сейчас на связи · {stats?.specialistsCount ?? 47} специалистов в {stats?.citiesCount ?? 12} городах
               </Text>

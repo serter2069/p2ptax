@@ -8,7 +8,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
-import { colors, overlay } from "@/lib/theme";
+import { colors, overlay, shadowColor } from "@/lib/theme";
 
 
 interface Stats {
@@ -35,7 +35,7 @@ function StatCard({
     <View
       className="bg-white border border-border rounded-2xl p-5 flex-1"
       style={{
-        shadowColor: "#000",
+        shadowColor: shadowColor.dark,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.09,
         shadowRadius: 8,
@@ -76,7 +76,7 @@ function RankList({
     <View
       className="bg-white border border-border rounded-2xl p-5"
       style={{
-        shadowColor: "#000",
+        shadowColor: shadowColor.dark,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.09,
         shadowRadius: 8,

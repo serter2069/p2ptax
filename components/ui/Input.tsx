@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, type TextInputProps, type ViewStyle } from "react-native";
 import { type LucideIcon } from "lucide-react-native";
-import { colors, radiusValue } from "../../lib/theme";
+import { colors, radiusValue, fontSizeValue } from "../../lib/theme";
 
 export interface InputProps {
   label?: string;
@@ -104,7 +104,7 @@ export default function Input({
           onBlur={() => setFocused(false)}
           style={{
             flex: 1,
-            fontSize: 16,
+            fontSize: fontSizeValue.base,
             color: colors.text,
             paddingVertical: multiline ? 8 : 0,
             borderWidth: 0,

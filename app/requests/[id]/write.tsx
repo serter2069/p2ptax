@@ -15,7 +15,7 @@ import Button from "@/components/ui/Button";
 import { Send } from "lucide-react-native";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors, radiusValue } from "@/lib/theme";
+import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
 
 interface RequestSummary {
   id: string;
@@ -217,7 +217,7 @@ export default function SpecialistConfirmWrite() {
               borderRadius: radiusValue.md,
               paddingHorizontal: 14,
               paddingVertical: 12,
-              fontSize: 16,
+              fontSize: fontSizeValue.base,
               color: colors.text,
               backgroundColor: isLimitReached ? colors.background : colors.surface,
               textAlignVertical: "top",
