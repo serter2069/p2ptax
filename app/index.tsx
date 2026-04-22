@@ -143,7 +143,7 @@ export default function LandingScreen() {
         onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={16}
       >
-        <HeroSection isDesktop={isDesktop} onCreateRequest={handleCreateRequest} onViewCatalog={handleViewCatalog} />
+        <HeroSection isDesktop={isDesktop} onCreateRequest={handleCreateRequest} onViewCatalog={handleViewCatalog} stats={stats} />
         {stats && <StatsStrip stats={stats} isDesktop={isDesktop} />}
         <ProblemsSection isDesktop={isDesktop} />
         <HowItWorksSection isDesktop={isDesktop} />

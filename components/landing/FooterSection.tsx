@@ -11,7 +11,7 @@ export default function FooterSection({ isDesktop, onHome, onViewCatalog, onCrea
   return (
     <View
       className="px-4"
-      style={{ backgroundColor: "#1e3a8a", paddingTop: 48, paddingBottom: 48 }}
+      style={{ backgroundColor: "#0b1424", paddingTop: 48, paddingBottom: 48 }}
     >
       <View style={{ width: "100%", alignItems: "center" }}>
         <View

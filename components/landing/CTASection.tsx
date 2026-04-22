@@ -11,7 +11,7 @@ export default function CTASection({ isDesktop, onCreateRequest, onViewCatalog }
     <View
       className="px-4"
       style={{
-        backgroundColor: "#b45309",
+        backgroundColor: "#2256c2",
         paddingTop: isDesktop ? 96 : 64,
         paddingBottom: isDesktop ? 96 : 64,
       }}
@@ -50,7 +50,7 @@ export default function CTASection({ isDesktop, onCreateRequest, onViewCatalog }
             >
               <Text
                 className="font-semibold text-base"
-                style={{ color: "#1e3a8a" }}
+                style={{ color: "#2256c2" }}
               >
                 Создать заявку →
               </Text>
