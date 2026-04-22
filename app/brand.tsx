@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Search, FileText } from "lucide-react-native";
 import {
@@ -29,6 +29,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function BrandScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const [inputDefault, setInputDefault] = useState("");
   const [inputFocused, setInputFocused] = useState("ivan@mail.ru");
   const [inputError, setInputError] = useState("not-email");
