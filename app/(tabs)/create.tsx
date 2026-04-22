@@ -26,7 +26,7 @@ export default function CreateScreen() {
               <View className="h-1.5 rounded-full bg-accent w-1/3" />
             </View>
             <View className="flex-row justify-between mt-1.5">
-              <Text className="text-xs text-accent font-medium">Фото</Text>
+              <Text className="text-xs text-accent font-semibold">Фото</Text>
               <Text className="text-xs text-text-mute">Детали</Text>
               <Text className="text-xs text-text-mute">Публикация</Text>
             </View>
@@ -61,7 +61,12 @@ export default function CreateScreen() {
                   <View
                     key={i}
                     className="w-[31%] aspect-square m-[1%] rounded-xl items-center justify-center"
-                    style={{ backgroundColor: colors.surface2 }}
+                    style={{
+                      backgroundColor: colors.surface2,
+                      borderWidth: 1,
+                      borderStyle: "dashed",
+                      borderColor: colors.border,
+                    }}
                   >
                     <ImageIcon size={20} color={colors.textMuted} />
                   </View>
@@ -76,7 +81,7 @@ export default function CreateScreen() {
               <Lightbulb size={16} color={colors.warning} />
               <Text className="text-sm font-semibold ml-2" style={{ color: colors.warning }}>Советы для хороших фото</Text>
             </View>
-            <Text className="text-sm leading-5 text-text-mute">
+            <Text className="text-sm leading-6 text-text-mute">
               Используйте естественный свет. Снимайте с разных ракурсов. Покажите детали и возможные дефекты.
             </Text>
           </View>
