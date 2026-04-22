@@ -94,10 +94,10 @@ export default function SpecialistPublicProfile() {
         <HeaderBack title="Профиль специалиста" />
         <View className="flex-1 items-center justify-center px-6">
           <AlertCircle size={48} color={colors.placeholder} />
-          <Text className="text-xl font-semibold mt-4 text-center" style={{ color: "#0f172a" }}>
+          <Text className="text-xl font-semibold mt-4 text-center" style={{ color: colors.text }}>
             Специалист не найден
           </Text>
-          <Text className="text-sm mt-2 text-center leading-5" style={{ color: "#64748B" }}>
+          <Text className="text-sm mt-2 text-center leading-5" style={{ color: colors.textSecondary }}>
             Возможно, профиль был удалён или вы перешли по неверной ссылке
           </Text>
           <View className="mt-6">
@@ -245,7 +245,7 @@ export default function SpecialistPublicProfile() {
             {/* Own profile banner */}
             {isOwnProfile && (
               <View className="mx-4 mt-2 mb-4 rounded-xl py-3.5 items-center" style={{ backgroundColor: "#f1f5f9" }}>
-                <Text className="text-sm font-semibold" style={{ color: "#64748B" }}>Это вы</Text>
+                <Text className="text-sm font-semibold" style={{ color: colors.textSecondary }}>Это вы</Text>
               </View>
             )}
 
