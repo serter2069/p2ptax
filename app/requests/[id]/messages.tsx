@@ -5,6 +5,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -62,6 +63,8 @@ function truncate(str: string, maxLen: number): string {
 export default function RequestMessages() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -215,7 +218,7 @@ export default function RequestMessages() {
               subtitle="Специалисты увидят вашу заявку и напишут вам первыми"
             />
           }
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 24 : 0 }}
         />
       </ResponsiveContainer>
     </SafeAreaView>

@@ -5,6 +5,7 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -50,6 +51,8 @@ interface RequestsResponse {
 
 export default function SpecialistPublicRequests() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -188,7 +191,7 @@ export default function SpecialistPublicRequests() {
           <FlatList
             data={requests}
             keyExtractor={(item) => item.id}
-            contentContainerClassName="pb-4 pt-2"
+            contentContainerClassName={isDesktop ? "pb-8 pt-2" : "pb-4 pt-2"}
             renderItem={({ item }) => (
               <RequestCard
                 id={item.id}

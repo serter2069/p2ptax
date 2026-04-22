@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   Pressable,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -33,6 +34,8 @@ export default function SpecialistPublicProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const [specialist, setSpecialist] = useState<SpecialistDetail | null>(null);
   const [contacts, setContacts] = useState<ContactMethodItem[]>([]);
@@ -163,7 +166,7 @@ export default function SpecialistPublicProfile() {
       <HeaderBack title="Профиль специалиста" rightAction={rightAction} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <ResponsiveContainer>
-          <View className="py-4">
+          <View className="py-4" style={{ paddingBottom: isDesktop ? 32 : 0 }}>
             <ProfileHero
               name={name}
               initials={initials}
