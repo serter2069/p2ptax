@@ -17,7 +17,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import Avatar from "@/components/ui/Avatar";
 import InlineChatView from "@/components/InlineChatView";
 import { apiGet } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface ThreadItem {
   id: string;
@@ -131,19 +131,34 @@ export default function ClientMessages() {
           className="flex-row items-center px-4 border-b border-border active:bg-surface2"
           style={({ pressed }) => [
             {
-              backgroundColor: selected ? colors.accentSoft : colors.surface,
+              backgroundColor: selected
+                ? colors.accentSoft
+                : hasUnread
+                  ? overlay.accent10
+                  : colors.surface,
               minHeight: 72,
+              borderLeftWidth: hasUnread ? 3 : 0,
+              borderLeftColor: hasUnread ? colors.primary : "transparent",
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.05,
-              shadowRadius: 2,
-              elevation: 1,
+              shadowOpacity: 0.06,
+              shadowRadius: 3,
+              elevation: 2,
             },
             pressed && { opacity: 0.75 },
           ]}
         >
           {/* Avatar with active indicator and unread badge */}
-          <View className="relative mr-3 my-3.5">
+          <View
+            className="relative mr-3 my-3.5"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
+          >
             <Avatar
               name={name}
               imageUrl={item.otherUser.avatarUrl ?? undefined}
@@ -178,7 +193,11 @@ export default function ClientMessages() {
                 {name}
               </Text>
               {item.lastMessage && (
-                <Text className="text-xs text-text-dim flex-shrink-0">
+                <Text
+                  className={`text-xs flex-shrink-0 ${
+                    hasUnread ? "text-accent font-semibold" : "text-text-dim"
+                  }`}
+                >
                   {formatTime(item.lastMessage.createdAt)}
                 </Text>
               )}
