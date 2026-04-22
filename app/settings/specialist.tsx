@@ -182,7 +182,7 @@ export default function SpecialistSettings() {
 
   if (!ready || loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
         <HeaderBack title="Настройки специалиста" />
         <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
@@ -190,23 +190,26 @@ export default function SpecialistSettings() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderBack title="Настройки специалиста" />
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         <ResponsiveContainer>
-          <View className="py-6">
+          <View className="py-4">
 
-            <AvatarUploader
-              avatarUrl={avatarUrl}
-              avatarUploading={avatarUploading}
-              initials={initials}
-              onAvatarChange={setAvatarUrl}
-              onUploadStart={() => setAvatarUploading(true)}
-              onUploadEnd={() => setAvatarUploading(false)}
-            />
+            {/* Avatar centered */}
+            <View className="items-center mb-2">
+              <AvatarUploader
+                avatarUrl={avatarUrl}
+                avatarUploading={avatarUploading}
+                initials={initials}
+                onAvatarChange={setAvatarUrl}
+                onUploadStart={() => setAvatarUploading(true)}
+                onUploadEnd={() => setAvatarUploading(false)}
+              />
+            </View>
 
             {/* Availability toggle */}
-            <View className="bg-surface2 border border-border rounded-xl px-4 py-3 mb-6 flex-row items-center justify-between">
+            <View className="bg-white border border-border rounded-2xl mx-4 px-4 py-3.5 mb-4 flex-row items-center justify-between">
               <View className="flex-1 mr-4">
                 <Text className="text-base font-semibold text-text-base">
                   Принимаю заявки
@@ -230,117 +233,121 @@ export default function SpecialistSettings() {
               )}
             </View>
 
-            {/* Name fields */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
+            {/* Personal data section */}
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-4">
               Личные данные
             </Text>
 
-            <View className="mb-3">
-              <Input
-                label="Имя"
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="Введите имя"
-                maxLength={50}
-              />
-            </View>
+            <View className="bg-white border border-border rounded-2xl mx-4 mb-4 overflow-hidden px-4 pt-3 pb-4">
+              <View className="mb-3">
+                <Input
+                  label="Имя"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Введите имя"
+                  maxLength={50}
+                />
+              </View>
 
-            <View className="mb-3">
-              <Input
-                label="Фамилия"
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Введите фамилию"
-                maxLength={50}
-              />
-            </View>
+              <View className="mb-3">
+                <Input
+                  label="Фамилия"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Введите фамилию"
+                  maxLength={50}
+                />
+              </View>
 
-            {/* Email read-only */}
-            <Text className="text-sm font-medium text-text-base mb-1">
-              Email{" "}
-              <Text className="text-text-mute font-normal">(нельзя изменить)</Text>
-            </Text>
-            <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center mb-4">
-              <Text className="text-base text-text-mute">
-                {data?.email || user?.email || ""}
+              {/* Email read-only */}
+              <Text className="text-sm font-medium text-text-base mb-1.5">
+                Email{" "}
+                <Text className="text-text-mute font-normal">(нельзя изменить)</Text>
               </Text>
+              <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center mb-3">
+                <Text className="text-base text-text-mute">
+                  {data?.email || user?.email || ""}
+                </Text>
+              </View>
+
+              {/* Description */}
+              <View>
+                <Input
+                  label="О себе"
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Расскажите о своём опыте и специализации..."
+                  multiline
+                  numberOfLines={4}
+                  maxLength={500}
+                />
+                <Text className="text-xs text-text-dim text-right mt-1">
+                  {description.length}/500
+                </Text>
+              </View>
             </View>
 
-            {/* Description */}
-            <View className="mb-4">
-              <Input
-                label="О себе"
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Расскажите о своём опыте и специализации..."
-                multiline
-                numberOfLines={4}
-                maxLength={500}
-              />
-              <Text className="text-xs text-text-mute text-right mt-1">
-                {description.length}/500
-              </Text>
-            </View>
-
-            {/* FNS & Services */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
+            {/* FNS & Services section */}
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-2">
               ИФНС и услуги
             </Text>
 
-            {data && data.fnsServices.length > 0 ? (
-              <>
-                {data.fnsServices.map((item) => (
-                  <View
-                    key={item.fns.id}
-                    className="bg-surface2 rounded-xl p-3 mb-2 border border-border"
-                  >
-                    <Text className="text-sm font-semibold text-text-base">
-                      {item.city.name} — {item.fns.name}
-                    </Text>
-                    <Text className="text-xs text-text-mute mb-1">
-                      {item.fns.code}
-                    </Text>
-                    <View className="flex-row flex-wrap gap-1 mt-1">
-                      {item.services.length === 0 ? (
-                        <EmptyState icon={Tag} title="Нет услуг" subtitle="Добавьте услуги для этой инспекции" />
-                      ) : (
-                        item.services.map((s) => (
-                          <View
-                            key={s.id}
-                            className="bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"
-                          >
-                            <Text className="text-xs text-accent">{s.name}</Text>
-                          </View>
-                        ))
-                      )}
+            <View className="bg-white border border-border rounded-2xl mx-4 mb-4 overflow-hidden px-4 pt-3 pb-4">
+              {data && data.fnsServices.length > 0 ? (
+                <>
+                  {data.fnsServices.map((item) => (
+                    <View
+                      key={item.fns.id}
+                      className="bg-surface2 rounded-xl p-3 mb-2 border border-border"
+                    >
+                      <Text className="text-sm font-semibold text-text-base">
+                        {item.city.name} — {item.fns.name}
+                      </Text>
+                      <Text className="text-xs text-text-mute mb-1">
+                        {item.fns.code}
+                      </Text>
+                      <View className="flex-row flex-wrap gap-1 mt-1">
+                        {item.services.length === 0 ? (
+                          <EmptyState icon={Tag} title="Нет услуг" subtitle="Добавьте услуги для этой инспекции" />
+                        ) : (
+                          item.services.map((s) => (
+                            <View
+                              key={s.id}
+                              className="bg-accent-soft px-2.5 py-0.5 rounded-full"
+                            >
+                              <Text className="text-xs font-medium text-accent">{s.name}</Text>
+                            </View>
+                          ))
+                        )}
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  ))}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Изменить рабочую зону"
+                    onPress={() => router.push("/onboarding/work-area" as never)}
+                    className="flex-row items-center justify-center py-2 mt-1"
+                  >
+                    <Pencil size={13} color={colors.accent} />
+                    <Text className="text-sm text-accent ml-1.5 font-medium">
+                      Изменить рабочую зону
+                    </Text>
+                  </Pressable>
+                </>
+              ) : (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Изменить рабочую зону"
+                  accessibilityLabel="Добавить рабочую зону"
                   onPress={() => router.push("/onboarding/work-area" as never)}
-                  className="flex-row items-center justify-center py-2 mb-4"
+                  className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
                 >
-                  <Pencil size={12} color={colors.accent} />
-                  <Text className="text-sm text-warning ml-1 font-medium">
-                    Изменить рабочую зону
+                  <Plus size={14} color={colors.accent} />
+                  <Text className="text-sm text-accent ml-2 font-medium">
+                    Добавить ИФНС и услуги
                   </Text>
                 </Pressable>
-              </>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Добавить рабочую зону"
-                onPress={() => router.push("/onboarding/work-area" as never)}
-                className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
-              >
-                <Plus size={14} color={colors.accent} />
-                <Text className="text-sm text-warning ml-2 font-medium">
-                  Добавить ИФНС и услуги
-                </Text>
-              </Pressable>
-            )}
+              )}
+            </View>
 
             <ContactMethodsList
               contacts={contacts}
@@ -357,31 +364,33 @@ export default function SpecialistSettings() {
               onShowTypePickerChange={setShowTypePicker}
             />
 
-            {/* Office info */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3 mt-2">
+            {/* Office section */}
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-2">
               Офис
             </Text>
 
-            <View className="mb-3">
-              <Input
-                label="Адрес офиса"
-                value={officeAddress}
-                onChangeText={setOfficeAddress}
-                placeholder="Город, улица, дом"
-              />
-            </View>
+            <View className="bg-white border border-border rounded-2xl mx-4 mb-4 overflow-hidden px-4 pt-3 pb-4">
+              <View className="mb-3">
+                <Input
+                  label="Адрес офиса"
+                  value={officeAddress}
+                  onChangeText={setOfficeAddress}
+                  placeholder="Город, улица, дом"
+                />
+              </View>
 
-            <View className="mb-3">
-              <Input
-                label="Часы работы"
-                value={workingHours}
-                onChangeText={setWorkingHours}
-                placeholder="Пн-Пт 9:00-18:00"
-              />
+              <View>
+                <Input
+                  label="Часы работы"
+                  value={workingHours}
+                  onChangeText={setWorkingHours}
+                  placeholder="Пн-Пт 9:00-18:00"
+                />
+              </View>
             </View>
 
             {/* Save button */}
-            <View className="mt-2 mb-4">
+            <View className="mx-4 mb-4">
               <Button
                 label="Сохранить"
                 onPress={handleSave}
@@ -397,26 +406,28 @@ export default function SpecialistSettings() {
               onEmailChange={setEmailEnabled}
             />
 
-            {/* Account */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
+            {/* Account section */}
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-2">
               Аккаунт
             </Text>
 
-            <View className="bg-white border border-border rounded-xl mb-8 overflow-hidden">
+            <View className="bg-white border border-border rounded-2xl mx-4 mb-8 overflow-hidden">
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Выйти из аккаунта"
                 onPress={handleLogout}
-                className="flex-row items-center px-4 py-3"
+                className="flex-row items-center px-4 py-3.5 min-h-[50px] active:bg-danger-soft"
               >
-                <LogOut size={16} color={colors.error} />
-                <Text className="text-base text-danger ml-3 flex-1">
+                <View className="w-9 h-9 rounded-xl items-center justify-center" style={{ backgroundColor: colors.dangerSoft }}>
+                  <LogOut size={17} color={colors.error} />
+                </View>
+                <Text className="text-base font-medium text-danger ml-3 flex-1">
                   Выйти из аккаунта
                 </Text>
               </Pressable>
             </View>
 
-            <Text className="text-xs text-text-mute text-center mb-4">
+            <Text className="text-xs text-text-dim text-center mb-4">
               Версия 1.0.0
             </Text>
 

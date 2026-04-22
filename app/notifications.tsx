@@ -29,18 +29,18 @@ interface NotificationsResponse {
   limit: number;
 }
 
-function iconForType(type: string): { Icon: LucideIcon; color: string } {
+function iconForType(type: string): { Icon: LucideIcon; color: string; bg: string } {
   switch (type) {
     case "new_response":
-      return { Icon: MessageCircle, color: colors.primary };
+      return { Icon: MessageCircle, color: colors.primary, bg: colors.accentSoft };
     case "new_message":
-      return { Icon: Mail, color: colors.primary };
+      return { Icon: Mail, color: colors.primary, bg: colors.accentSoft };
     case "new_request_in_city":
-      return { Icon: MapPin, color: colors.success };
+      return { Icon: MapPin, color: colors.success, bg: colors.greenSoft };
     case "promo_expiring":
-      return { Icon: Clock, color: colors.accent };
+      return { Icon: Clock, color: colors.warning, bg: colors.yellowSoft };
     default:
-      return { Icon: Bell, color: colors.text };
+      return { Icon: Bell, color: colors.textSecondary, bg: colors.surface2 };
   }
 }
 
@@ -65,34 +65,45 @@ function NotificationRow({
   item: NotificationItem;
   onPress: (id: string) => void;
 }) {
-  const { Icon: NotifIcon, color: notifColor } = iconForType(item.type);
+  const { Icon: NotifIcon, color: notifColor, bg: notifBg } = iconForType(item.type);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={item.title}
       onPress={() => onPress(item.id)}
-      className={`flex-row items-start px-4 py-3.5 border-b border-surface2 active:bg-surface2 ${
-        !item.isRead ? "bg-surface2/50" : ""
-      }`}
+      className="active:bg-surface2"
     >
       <View
-        className="w-10 h-10 rounded-full items-center justify-center mt-0.5"
-        style={{ backgroundColor: colors.background }}
+        className={`flex-row items-start px-4 py-4 bg-white border border-border rounded-xl mb-3${
+          !item.isRead ? " border-l-2" : ""
+        }`}
+        style={!item.isRead ? { borderLeftColor: colors.primary } : undefined}
       >
-        <NotifIcon size={16} color={notifColor} />
-      </View>
-      <View className="flex-1 ml-3">
-        <View className="flex-row items-center justify-between">
-          <Text className={`text-sm ${!item.isRead ? "font-bold text-text-base" : "font-medium text-text-base"}`}>
-            {item.title}
-          </Text>
-          <Text className="text-xs text-text-mute">{formatTime(item.createdAt)}</Text>
+        {/* Icon chip */}
+        <View
+          className="w-10 h-10 rounded-full items-center justify-center mt-0.5 flex-shrink-0"
+          style={{ backgroundColor: notifBg }}
+        >
+          <NotifIcon size={18} color={notifColor} />
         </View>
-        <Text className={`text-sm mt-0.5 ${!item.isRead ? "text-text-base" : "text-text-mute"}`} numberOfLines={2}>
-          {item.body}
-        </Text>
+
+        <View className="flex-1 ml-3">
+          <View className="flex-row items-start justify-between gap-2">
+            <Text
+              className="text-sm font-semibold text-text-base flex-1"
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            <Text className="text-xs text-text-dim mt-0.5 flex-shrink-0">
+              {formatTime(item.createdAt)}
+            </Text>
+          </View>
+          <Text className="text-sm text-text-mute mt-1 leading-5" numberOfLines={2}>
+            {item.body}
+          </Text>
+        </View>
       </View>
-      {!item.isRead && <View className="w-2 h-2 rounded-full bg-warning mt-2 ml-2" />}
     </Pressable>
   );
 }
@@ -135,7 +146,6 @@ export default function NotificationsScreen() {
   const handleMarkRead = useCallback(async (id: string) => {
     const item = notifications.find((n) => n.id === id);
     if (!item || item.isRead) return;
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
@@ -143,7 +153,6 @@ export default function NotificationsScreen() {
     try {
       await apiPatch(`/api/notifications/${id}/read`, {});
     } catch {
-      // Revert on failure
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: false } : n))
       );
@@ -154,13 +163,11 @@ export default function NotificationsScreen() {
   const handleMarkAllRead = useCallback(async () => {
     const prevNotifications = notifications;
     const prevUnread = unreadCount;
-    // Optimistic update
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnreadCount(0);
     try {
       await apiPatch("/api/notifications/read-all", {});
     } catch {
-      // Revert on failure
       setNotifications(prevNotifications);
       setUnreadCount(prevUnread);
     }
@@ -168,34 +175,49 @@ export default function NotificationsScreen() {
 
   if (!ready) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+      <SafeAreaView className="flex-1 bg-surface2 items-center justify-center">
         <LoadingState variant="spinner" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-surface2">
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pt-2 pb-3 border-b border-surface2">
+      <View className="flex-row items-center justify-between px-4 pt-2 pb-3 bg-white border-b border-border">
         <View className="flex-row items-center">
-          <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
-            <ArrowLeft size={18} color={colors.text} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => router.back()}
+            className="w-11 h-11 items-center justify-center -ml-2 mr-1"
+          >
+            <ArrowLeft size={20} color={colors.text} />
           </Pressable>
-          <Text className="text-2xl font-bold text-text-base">Уведомления</Text>
+          <Text className="text-xl font-bold text-text-base">Уведомления</Text>
+          {unreadCount > 0 && (
+            <View className="bg-accent rounded-full min-w-[20px] h-5 items-center justify-center px-1.5 ml-2">
+              <Text className="text-xs font-bold text-white">{unreadCount}</Text>
+            </View>
+          )}
         </View>
         {unreadCount > 0 && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Прочитать все" onPress={handleMarkAllRead} className="py-3 pl-3">
-            <Text className="text-sm text-accent font-medium">Прочитать все</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Прочитать все"
+            onPress={handleMarkAllRead}
+            className="py-2 pl-3"
+          >
+            <Text className="text-sm text-accent font-semibold">Прочитать все</Text>
           </Pressable>
         )}
       </View>
 
       <ResponsiveContainer>
         {loading ? (
-          <View className="pt-2">
+          <View className="pt-4 px-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} className="mx-4 mb-3">
+              <View key={i} className="mb-3">
                 <LoadingState variant="skeleton" lines={2} />
               </View>
             ))}
@@ -213,6 +235,7 @@ export default function NotificationsScreen() {
           <FlatList
             data={notifications}
             keyExtractor={(item) => item.id}
+            contentContainerStyle={{ padding: 16 }}
             renderItem={({ item }) => (
               <NotificationRow item={item} onPress={handleMarkRead} />
             )}
