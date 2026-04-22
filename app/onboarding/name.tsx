@@ -66,7 +66,7 @@ export default function OnboardingNameScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
       <ResponsiveContainer>
-        <View className="flex-1" style={{ paddingTop: "10%" }}>
+        <View className="flex-1 pt-10">
           <Text className="text-sm text-amber-700 text-center mb-2">
             Шаг 1 из 3
           </Text>

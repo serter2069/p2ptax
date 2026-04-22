@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import ResponsiveContainer from "@/components/ResponsiveContainer";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -58,8 +59,8 @@ export default function AuthEmailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-4 md:max-w-[520px] md:self-center md:px-0">
-        <View className="flex-1" style={{ paddingTop: "13%" }}>
+      <ResponsiveContainer maxWidth={520}>
+        <View className="flex-1 justify-center" style={{ paddingBottom: "10%" }}>
           <View className="items-center mb-8">
             <View className="w-20 h-20 rounded-2xl bg-blue-900 items-center justify-center mb-4">
               <Text className="text-2xl font-bold text-white">P2P</Text>
@@ -109,7 +110,7 @@ export default function AuthEmailScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 }

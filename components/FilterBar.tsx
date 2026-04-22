@@ -31,7 +31,7 @@ function FilterChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`px-3 py-1.5 rounded-full mr-2 mb-2 border ${
+      className={`px-3 min-h-[44px] items-center justify-center rounded-full mr-2 mb-1 border ${
         active ? "bg-blue-900 border-blue-900" : "bg-white border-slate-200"
       }`}
     >

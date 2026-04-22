@@ -49,6 +49,9 @@ export default function RootLayout() {
 
         {/* Admin detail screens */}
         <Stack.Screen name="admin/settings" />
+            <Stack.Screen name="requests/[id]" />
+            <Stack.Screen name="requests" />
+            <Stack.Screen name="specialists" />
       </Stack>
     </AuthProvider>
   );

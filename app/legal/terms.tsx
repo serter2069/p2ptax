@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { X } from "lucide-react-native";
 import { colors } from "@/lib/theme";
+import ResponsiveContainer from "@/components/ResponsiveContainer";
 
 function SectionHeading({ children }: { children: string }) {
   return (
@@ -42,10 +43,10 @@ export default function TermsScreen() {
         </View>
       </View>
 
-      <View className="flex-1 px-4 md:max-w-[520px] md:self-center md:px-0">
+      <ResponsiveContainer maxWidth={720}>
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48 }}
+          contentContainerStyle={{ paddingHorizontal: 0, paddingBottom: 48 }}
         >
           <Text className="text-sm text-slate-400 mt-4 mb-4">
             Последнее обновление: апрель 2026
@@ -113,7 +114,7 @@ export default function TermsScreen() {
             адресу: support@p2ptax.ru
           </Paragraph>
         </ScrollView>
-      </View>
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 }

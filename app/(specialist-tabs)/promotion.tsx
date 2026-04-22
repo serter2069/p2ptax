@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Rocket, User, ChevronRight } from "lucide-react-native";
@@ -7,6 +7,8 @@ import { colors } from "@/lib/theme";
 
 export default function PromotionScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
@@ -15,7 +17,8 @@ export default function PromotionScreen() {
         onSettingsPress={() => router.push("/settings/specialist" as never)}
       />
       <ScrollView className="flex-1">
-        <View className="w-full px-4 md:max-w-[520px] md:self-center md:px-0">
+        <View style={{ width: "100%", alignItems: "center" }}>
+        <View style={{ width: "100%", maxWidth: isDesktop ? 680 : undefined, paddingHorizontal: isDesktop ? 24 : 16 }}>
           <View className="py-4">
             <Text className="text-2xl font-bold text-slate-900 mb-2">Продвижение</Text>
             <Text className="text-sm text-slate-500 mb-6">
@@ -57,6 +60,7 @@ export default function PromotionScreen() {
 
             <View className="h-8" />
           </View>
+        </View>
         </View>
       </ScrollView>
     </SafeAreaView>
