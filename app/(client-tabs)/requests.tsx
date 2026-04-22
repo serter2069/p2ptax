@@ -127,11 +127,11 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
   });
 
   return (
-    <View className="mb-3 overflow-hidden rounded-xl">
+    <View className="mb-3 mx-4 overflow-hidden rounded-2xl">
       {/* Red action button revealed on swipe */}
       {isActive && (
         <View
-          className="absolute right-0 top-0 bottom-0 bg-danger items-center justify-center rounded-r-xl"
+          className="absolute right-0 top-0 bottom-0 bg-danger items-center justify-center rounded-r-2xl"
           style={{ width: ACTION_WIDTH }}
         >
           <Pressable
@@ -139,6 +139,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
             accessibilityLabel="Закрыть заявку"
             onPress={closeAndReset}
             className="flex-1 w-full items-center justify-center"
+            style={{ minHeight: 44 }}
           >
             <Text className="text-white text-xs font-semibold text-center px-2">
               Закрыть{"\n"}заявку
@@ -156,12 +157,20 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
           accessibilityRole="button"
           accessibilityLabel={item.title}
           onPress={() => onPress(item.id)}
-          className="bg-white border border-border rounded-xl p-4"
+          className="bg-white border border-border rounded-2xl p-4"
+          style={{
+            shadowColor: "#0b1424",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.07,
+            shadowRadius: 5,
+            elevation: 2,
+            minHeight: 44,
+          }}
         >
           {/* Title + status */}
           <View className="flex-row items-start justify-between mb-2 gap-2">
             <Text
-              className="text-base font-semibold text-text-base flex-1"
+              className="text-base font-semibold text-text-base flex-1 mb-1"
               numberOfLines={2}
             >
               {item.title}
@@ -170,18 +179,24 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
           </View>
 
           {/* City + FNS */}
-          <Text className="text-xs text-text-mute mb-2" numberOfLines={1}>
+          <Text className="text-sm text-text-mute mb-2" numberOfLines={1}>
             {item.city.name} · {item.fns.name}
           </Text>
 
           {/* Footer: threads + date */}
           <View className="flex-row items-center justify-between">
-            <Text className="text-xs text-text-mute">
-              {item.threadsCount}{" "}
-              {item.threadsCount === 1
-                ? "специалист откликнулся"
-                : "специалистов откликнулось"}
-            </Text>
+            {item.threadsCount > 0 ? (
+              <View className="bg-accent-soft rounded-full px-2 py-0.5 flex-row items-center">
+                <Text className="text-xs text-accent font-medium">
+                  {item.threadsCount}{" "}
+                  {item.threadsCount === 1
+                    ? "специалист"
+                    : "специалистов"}
+                </Text>
+              </View>
+            ) : (
+              <Text className="text-xs text-text-mute">Нет откликов</Text>
+            )}
             <Text className="text-xs text-text-mute">{formattedDate}</Text>
           </View>
 
@@ -318,7 +333,7 @@ export default function MyRequests() {
         data={requests}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 100, paddingTop: 4 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }

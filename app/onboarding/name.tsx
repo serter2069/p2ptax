@@ -131,7 +131,7 @@ export default function OnboardingNameScreen() {
                 <Text className="text-white text-xs font-bold">✓</Text>
               )}
             </View>
-            <Text className="flex-1 ml-3 text-sm text-text-mute leading-5">
+            <Text className="flex-1 ml-3 text-xs text-text-mute leading-5">
               Я принимаю{" "}
               <Text
                 className="text-accent font-medium underline"
@@ -143,8 +143,11 @@ export default function OnboardingNameScreen() {
           </Pressable>
 
           {error ? (
-            <View className="mb-4 px-4 py-3 rounded-xl" style={{ backgroundColor: colors.errorBg }}>
-              <Text className="text-sm text-danger text-center leading-5">
+            <View
+              className="mb-4 px-4 py-3 rounded-xl flex-row items-center"
+              style={{ backgroundColor: colors.errorBg, borderWidth: 1, borderColor: colors.danger }}
+            >
+              <Text className="text-sm text-danger leading-5 flex-1">
                 {error}
               </Text>
             </View>

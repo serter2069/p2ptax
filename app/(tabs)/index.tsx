@@ -32,38 +32,49 @@ function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={name}
-      className="mr-2 items-center"
-      style={{ minWidth: 60 }}
+      className="mr-3 items-center"
+      style={{ minWidth: 64, minHeight: 44, justifyContent: "flex-start", paddingTop: 2 }}
     >
       <View
-        className="w-14 h-14 rounded-2xl items-center justify-center mb-1"
+        className="w-14 h-14 rounded-xl items-center justify-center"
         style={{ backgroundColor: colors.accentSoft }}
       >
         <Icon size={22} color={colors.accent} />
       </View>
-      <Text className="text-xs text-text-mute text-center">{name}</Text>
+      <Text className="text-xs font-medium text-text-base mt-1.5 text-center">{name}</Text>
     </Pressable>
   );
 }
 
 function ListingCard({ title, price, location, color }: { title: string; price: string; location: string; color: string }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={title} className="flex-1 m-1.5">
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      className="flex-1 m-1.5"
+      style={{ minHeight: 44 }}
+    >
       <View
         className="rounded-2xl overflow-hidden bg-white border border-border"
-        style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 }}
+        style={{
+          shadowColor: colors.text,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.07,
+          shadowRadius: 5,
+          elevation: 2,
+        }}
       >
         <View className="h-32 items-center justify-center" style={{ backgroundColor: color }}>
           <ImageIcon size={28} color={colors.textSecondary} />
         </View>
         <View className="p-3">
-          <Text className="text-sm font-semibold text-text-base" numberOfLines={2}>
+          <Text className="text-base font-semibold text-text-base" numberOfLines={2}>
             {title}
           </Text>
-          <Text className="text-sm font-bold text-accent mt-1">{price}</Text>
+          <Text className="text-lg font-bold text-accent mt-1">{price}</Text>
           <View className="flex-row items-center mt-1">
-            <MapPin size={11} color={colors.textMuted} />
-            <Text className="text-xs text-text-dim ml-1">{location}</Text>
+            <MapPin size={12} color={colors.textMuted} />
+            <Text className="text-xs text-text-mute ml-1">{location}</Text>
           </View>
         </View>
       </View>
@@ -99,8 +110,8 @@ export default function HomeScreen() {
                 className="mx-2 mt-4 mb-4 rounded-2xl px-5 py-5"
                 style={{ backgroundColor: colors.accent }}
               >
-                <Text className="text-xl font-bold text-white mb-0.5">Найдите нужное</Text>
-                <Text className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
+                <Text className="text-2xl font-bold text-white mb-0.5">Найдите нужное</Text>
+                <Text className="text-sm" style={{ color: "rgba(255,255,255,0.80)" }}>
                   Тысячи объявлений рядом с вами
                 </Text>
               </View>
@@ -135,7 +146,7 @@ export default function HomeScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Показать все"
-                  style={{ minHeight: 44, justifyContent: "center" }}
+                  style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8 }}
                 >
                   <Text className="text-sm text-accent font-medium">Все</Text>
                 </Pressable>
