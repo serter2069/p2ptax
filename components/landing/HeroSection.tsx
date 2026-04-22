@@ -1,5 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { MOCK_SPECIALISTS } from "./mockData";
+import { colors } from "@/lib/theme";
 
 interface PlatformStats {
   specialistsCount: number;
@@ -33,10 +34,10 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
             {/* Online badge */}
             <View
               className="flex-row items-center self-start mb-6 rounded-full px-4"
-              style={{ backgroundColor: "#e8eefb", paddingVertical: 8 }}
+              style={{ backgroundColor: colors.accentSoft, paddingVertical: 8 }}
             >
-              <Text style={{ color: "#2256c2", fontSize: 10, marginRight: 6 }}>●</Text>
-              <Text className="text-sm font-medium" style={{ color: "#2256c2" }}>
+              <Text style={{ color: colors.primary, fontSize: 10, marginRight: 6 }}>●</Text>
+              <Text className="text-sm font-medium" style={{ color: colors.primary }}>
                 Сейчас на связи · {stats?.specialistsCount ?? 47} специалистов в {stats?.citiesCount ?? 12} городах
               </Text>
             </View>
@@ -44,7 +45,7 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
             <Text
               className="font-extrabold"
               style={{
-                color: "#0b1424",
+                color: colors.text,
                 fontSize: isDesktop ? 48 : 36,
                 lineHeight: isDesktop ? 56 : 42,
               }}
@@ -53,7 +54,7 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
             </Text>
             <Text
               className="text-lg mt-6"
-              style={{ color: "#525a6b", lineHeight: 28 }}
+              style={{ color: colors.textSecondary, lineHeight: 28 }}
             >
               Практики с опытом в камеральных, выездных и ОКК. Выберите сами
               или получите предложения.
@@ -72,7 +73,7 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
                 accessibilityLabel="Создать заявку"
                 onPress={onCreateRequest}
                 className="rounded-xl h-12 items-center justify-center px-7"
-                style={{ backgroundColor: "#2256c2" }}
+                style={{ backgroundColor: colors.primary }}
               >
                 <Text className="text-white font-semibold text-base">
                   Создать заявку →
@@ -83,11 +84,11 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
                 accessibilityLabel="Смотреть каталог"
                 onPress={onViewCatalog}
                 className="rounded-xl h-12 items-center justify-center px-7"
-                style={{ borderWidth: 2, borderColor: "#2256c2" }}
+                style={{ borderWidth: 2, borderColor: colors.primary }}
               >
                 <Text
                   className="font-semibold text-base"
-                  style={{ color: "#2256c2" }}
+                  style={{ color: colors.primary }}
                 >
                   Смотреть каталог
                 </Text>
@@ -103,20 +104,20 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
                   key={s.name}
                   className="flex-row items-center p-4 rounded-2xl mb-4"
                   style={{
-                    backgroundColor: "#fafbfc",
+                    backgroundColor: colors.surface2,
                     borderWidth: 1,
-                    borderColor: "#e8ebf0",
+                    borderColor: colors.border,
                     gap: 16,
                   }}
                 >
                   {/* Avatar */}
                   <View
                     className="w-12 h-12 rounded-full items-center justify-center"
-                    style={{ backgroundColor: "#e8eefb" }}
+                    style={{ backgroundColor: colors.accentSoft }}
                   >
                     <Text
                       className="font-extrabold text-base"
-                      style={{ color: "#2256c2" }}
+                      style={{ color: colors.primary }}
                     >
                       {s.name.charAt(0)}
                     </Text>
@@ -126,7 +127,7 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
                     <View className="flex-row items-center" style={{ gap: 6 }}>
                       <Text
                         className="font-semibold"
-                        style={{ color: "#0b1424" }}
+                        style={{ color: colors.text }}
                       >
                         {s.name}
                       </Text>
@@ -135,7 +136,7 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
                         style={{ backgroundColor: "#22c55e" }}
                       />
                     </View>
-                    <Text className="text-sm mt-1" style={{ color: "#525a6b" }}>
+                    <Text className="text-sm mt-1" style={{ color: colors.textSecondary }}>
                       {s.city} · {s.ifns}
                     </Text>
                   </View>
@@ -143,13 +144,13 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
                   <View
                     className="rounded-full px-3"
                     style={{
-                      backgroundColor: "#e8eefb",
+                      backgroundColor: colors.accentSoft,
                       paddingVertical: 6,
                     }}
                   >
                     <Text
                       className="text-xs font-medium"
-                      style={{ color: "#2256c2" }}
+                      style={{ color: colors.primary }}
                     >
                       {s.tag}
                     </Text>

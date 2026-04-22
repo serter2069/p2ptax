@@ -1,5 +1,6 @@
 import { View, Text } from "react-native";
 import { STEPS } from "./mockData";
+import { colors } from "@/lib/theme";
 
 interface HowItWorksSectionProps {
   isDesktop: boolean;
@@ -27,13 +28,13 @@ export default function HowItWorksSection({ isDesktop }: HowItWorksSectionProps)
           </Text>
           <Text
             className="font-extrabold text-3xl text-center"
-            style={{ color: "#0f172a" }}
+            style={{ color: colors.text }}
           >
             Большинство юристов дадут консультацию. Нужные люди — решат.
           </Text>
           <Text
             className="text-lg text-center mt-6"
-            style={{ color: "#64748B", lineHeight: 28 }}
+            style={{ color: colors.textSecondary, lineHeight: 28 }}
           >
             P2PTax — маркетплейс специалистов по налоговым проверкам.
             Практики, которые работают с конкретными ФНС в вашем городе.
@@ -53,7 +54,7 @@ export default function HowItWorksSection({ isDesktop }: HowItWorksSectionProps)
               <View key={s.num} className="items-center">
                 <View
                   className="w-12 h-12 rounded-full items-center justify-center"
-                  style={{ backgroundColor: "#1e3a8a" }}
+                  style={{ backgroundColor: colors.primary }}
                 >
                   <Text className="text-white font-bold text-base">
                     {s.num}
@@ -61,7 +62,7 @@ export default function HowItWorksSection({ isDesktop }: HowItWorksSectionProps)
                 </View>
                 <Text
                   className="font-semibold mt-3 text-center"
-                  style={{ color: "#0f172a" }}
+                  style={{ color: colors.text }}
                 >
                   {s.label}
                 </Text>

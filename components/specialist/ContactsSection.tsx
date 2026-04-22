@@ -36,7 +36,7 @@ const CONTACT_TYPE_CONFIG: Record<string, { label: string; Icon: LucideIcon; bg:
   phone: { label: "Телефон", Icon: Phone, bg: "#eff6ff", color: colors.primary },
   email: { label: "Email", Icon: Mail, bg: "#f0fdf4", color: "#166534" },
   telegram: { label: "Telegram", Icon: Send, bg: "#f0f9ff", color: "#0284c7" },
-  whatsapp: { label: "WhatsApp", Icon: MessageCircle, bg: "#f0fdf4", color: "#059669" },
+  whatsapp: { label: "WhatsApp", Icon: MessageCircle, bg: "#f0fdf4", color: colors.success },
   vk: { label: "ВКонтакте", Icon: ExternalLink, bg: "#eff6ff", color: "#2563eb" },
   website: { label: "Сайт", Icon: Globe, bg: "#fafaf9", color: "#57534e" },
 };

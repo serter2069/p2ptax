@@ -1,4 +1,5 @@
 import { View, Text } from "react-native";
+import { colors } from "@/lib/theme";
 
 export interface BadgeProps {
   variant?: "error" | "success" | "warning" | "info";
@@ -7,10 +8,10 @@ export interface BadgeProps {
 }
 
 const variantStyles = {
-  error: { bg: "bg-danger-soft", text: "text-danger", dotColor: "#b91c1c" },
-  success: { bg: "bg-success-soft", text: "text-success", dotColor: "#047857" },
-  warning: { bg: "bg-warning-soft", text: "text-warning", dotColor: "#d97706" },
-  info: { bg: "bg-sky-50", text: "text-sky-700", dotColor: "#2256c2" },
+  error: { bg: "bg-danger-soft", text: "text-danger", dotColor: colors.danger },
+  success: { bg: "bg-success-soft", text: "text-success", dotColor: colors.success },
+  warning: { bg: "bg-warning-soft", text: "text-warning", dotColor: colors.warning },
+  info: { bg: "bg-sky-50", text: "text-sky-700", dotColor: colors.primary },
 } as const;
 
 export default function Badge({

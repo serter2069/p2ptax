@@ -1,4 +1,5 @@
 import { View, Text } from "react-native";
+import { colors } from "@/lib/theme";
 import type { FnsServiceGroup } from "./types";
 
 interface WorkAreaSectionProps {
@@ -14,16 +15,16 @@ export default function WorkAreaSection({ fnsServices, cardShadow }: WorkAreaSec
       className="bg-white rounded-2xl border border-border p-4 mx-4 mt-4"
       style={cardShadow}
     >
-      <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+      <Text style={{ color: colors.textSecondary, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
         РАБОЧИЕ ИНСПЕКЦИИ
       </Text>
       {fnsServices.map((group) => (
         <View
           key={group.fns.id}
           className="border border-border rounded-xl p-3 mb-2"
-          style={{ backgroundColor: "#f8fafc" }}
+          style={{ backgroundColor: colors.surface2 }}
         >
-          <Text className="text-sm font-semibold mb-2" style={{ color: "#0f172a" }}>
+          <Text className="text-sm font-semibold mb-2" style={{ color: colors.text }}>
             {group.city.name} — {group.fns.name}
           </Text>
           <View className="flex-row flex-wrap" style={{ gap: 6 }}>
@@ -33,7 +34,7 @@ export default function WorkAreaSection({ fnsServices, cardShadow }: WorkAreaSec
                 className="px-2.5 py-1 rounded-lg"
                 style={{ backgroundColor: "rgba(34, 86, 194, 0.1)" }}
               >
-                <Text className="text-xs font-medium" style={{ color: "#2256c2" }}>{s.name}</Text>
+                <Text className="text-xs font-medium" style={{ color: colors.primary }}>{s.name}</Text>
               </View>
             ))}
           </View>

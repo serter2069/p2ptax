@@ -1,5 +1,6 @@
 import { View, Text } from "react-native";
 import { PROBLEMS } from "./mockData";
+import { colors } from "@/lib/theme";
 
 interface ProblemsSectionProps {
   isDesktop: boolean;
@@ -21,7 +22,7 @@ export default function ProblemsSection({ isDesktop }: ProblemsSectionProps) {
         >
           <Text
             className="font-extrabold text-3xl text-center mb-12"
-            style={{ color: "#0f172a" }}
+            style={{ color: colors.text }}
           >
             С чем приходят на P2PTax
           </Text>
@@ -49,11 +50,11 @@ export default function ProblemsSection({ isDesktop }: ProblemsSectionProps) {
                 <Text className="text-3xl mb-4">{p.icon}</Text>
                 <Text
                   className="text-lg font-bold mb-2"
-                  style={{ color: "#0f172a" }}
+                  style={{ color: colors.text }}
                 >
                   {p.title}
                 </Text>
-                <Text style={{ color: "#64748B", lineHeight: 24 }}>
+                <Text style={{ color: colors.textSecondary, lineHeight: 24 }}>
                   {p.text}
                 </Text>
               </View>

@@ -1,4 +1,5 @@
 import { View, Text } from "react-native";
+import { colors } from "@/lib/theme";
 
 interface PlatformStats {
   specialistsCount: number;
@@ -13,7 +14,7 @@ interface StatsStripProps {
 
 export default function StatsStrip({ stats, isDesktop }: StatsStripProps) {
   return (
-    <View style={{ backgroundColor: "#fafbfc", borderTopWidth: 1, borderBottomWidth: 1, borderColor: "#e8ebf0", paddingVertical: 20, paddingHorizontal: 16 }}>
+    <View style={{ backgroundColor: colors.surface2, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border, paddingVertical: 20, paddingHorizontal: 16 }}>
       <View style={{ width: "100%", alignItems: "center" }}>
         <View
           className="flex-row items-center justify-center flex-wrap"
@@ -24,15 +25,15 @@ export default function StatsStrip({ stats, isDesktop }: StatsStripProps) {
             gap: 8,
           }}
         >
-          <Text className="text-base font-semibold" style={{ color: "#0b1424" }}>
+          <Text className="text-base font-semibold" style={{ color: colors.text }}>
             {stats.specialistsCount} специалистов
           </Text>
-          <Text style={{ color: "#e8ebf0" }}> · </Text>
-          <Text className="text-base font-semibold" style={{ color: "#0b1424" }}>
+          <Text style={{ color: colors.border }}> · </Text>
+          <Text className="text-base font-semibold" style={{ color: colors.text }}>
             {stats.citiesCount} городов
           </Text>
-          <Text style={{ color: "#e8ebf0" }}> · </Text>
-          <Text className="text-base font-semibold" style={{ color: "#0b1424" }}>
+          <Text style={{ color: colors.border }}> · </Text>
+          <Text className="text-base font-semibold" style={{ color: colors.text }}>
             {stats.consultationsCount} консультаций
           </Text>
         </View>
