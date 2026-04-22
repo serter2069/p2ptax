@@ -33,12 +33,12 @@ function getContactUrl(type: string, value: string): string | null {
 }
 
 const CONTACT_TYPE_CONFIG: Record<string, { label: string; Icon: LucideIcon; bg: string; color: string }> = {
-  phone: { label: "Телефон", Icon: Phone, bg: "#eff6ff", color: colors.primary },
-  email: { label: "Email", Icon: Mail, bg: "#f0fdf4", color: "#166534" },
-  telegram: { label: "Telegram", Icon: Send, bg: "#f0f9ff", color: "#0284c7" },
-  whatsapp: { label: "WhatsApp", Icon: MessageCircle, bg: "#f0fdf4", color: colors.success },
-  vk: { label: "ВКонтакте", Icon: ExternalLink, bg: "#eff6ff", color: "#2563eb" },
-  website: { label: "Сайт", Icon: Globe, bg: "#fafaf9", color: "#57534e" },
+  phone: { label: "Телефон", Icon: Phone, bg: colors.accentSoft, color: colors.primary },
+  email: { label: "Email", Icon: Mail, bg: colors.limeSoft, color: colors.success },
+  telegram: { label: "Telegram", Icon: Send, bg: colors.accentSoft, color: colors.blue500 },
+  whatsapp: { label: "WhatsApp", Icon: MessageCircle, bg: colors.limeSoft, color: colors.success },
+  vk: { label: "ВКонтакте", Icon: ExternalLink, bg: colors.accentSoft, color: colors.blue500 },
+  website: { label: "Сайт", Icon: Globe, bg: colors.surface2, color: colors.textSecondary },
 };
 
 export default function ContactsSection({ contacts, officeAddress, workingHours, cardShadow }: ContactsSectionProps) {
@@ -114,7 +114,7 @@ export default function ContactsSection({ contacts, officeAddress, workingHours,
 
       {officeAddress && (
         <View className={`flex-row items-start py-2.5 ${workingHours ? "border-b border-slate-100" : ""}`}>
-          <View className="w-8 h-8 rounded-full items-center justify-center mr-3" style={{ backgroundColor: "#f1f5f9" }}>
+          <View className="w-8 h-8 rounded-full items-center justify-center mr-3" style={{ backgroundColor: colors.surface2 }}>
             <MapPin size={14} color={colors.textSecondary} />
           </View>
           <View className="flex-1">
@@ -128,7 +128,7 @@ export default function ContactsSection({ contacts, officeAddress, workingHours,
 
       {workingHours && (
         <View className="flex-row items-center py-2.5">
-          <View className="w-8 h-8 rounded-full items-center justify-center mr-3" style={{ backgroundColor: "#f1f5f9" }}>
+          <View className="w-8 h-8 rounded-full items-center justify-center mr-3" style={{ backgroundColor: colors.surface2 }}>
             <Clock size={14} color={colors.textSecondary} />
           </View>
           <View className="flex-1">

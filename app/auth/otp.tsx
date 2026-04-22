@@ -311,7 +311,7 @@ export default function AuthOtpScreen() {
                       backgroundColor: error
                         ? colors.errorBg
                         : digit
-                          ? "#eff6ff"
+                          ? colors.accentSoft
                           : colors.background,
                       textAlign: "center",
                       fontSize: 22,

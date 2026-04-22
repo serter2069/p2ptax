@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from "react-native";
+import { colors } from "@/lib/theme";
 
 interface FooterSectionProps {
   isDesktop: boolean;
@@ -11,7 +12,7 @@ export default function FooterSection({ isDesktop, onHome, onViewCatalog, onCrea
   return (
     <View
       className="px-4"
-      style={{ backgroundColor: "#0b1424", paddingTop: 48, paddingBottom: 48 }}
+      style={{ backgroundColor: colors.text, paddingTop: 48, paddingBottom: 48 }}
     >
       <View style={{ width: "100%", alignItems: "center" }}>
         <View

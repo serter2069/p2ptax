@@ -109,7 +109,7 @@ export default function LandingScreen() {
         className="flex-row items-center justify-between h-16 bg-white px-4"
         style={
           scrollY > 10
-            ? { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }
+            ? { shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }
             : undefined
         }
       >

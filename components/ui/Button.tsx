@@ -31,7 +31,7 @@ export default function Button({
       ? { backgroundColor: colors.primary }
       : variant === "secondary"
         ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }
-        : { backgroundColor: "#dc2626" };
+        : { backgroundColor: colors.danger };
 
   const textColor =
     variant === "primary" || variant === "destructive" ? "text-white" : undefined;

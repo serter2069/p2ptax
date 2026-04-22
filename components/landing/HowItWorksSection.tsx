@@ -22,7 +22,7 @@ export default function HowItWorksSection({ isDesktop }: HowItWorksSectionProps)
         >
           <Text
             className="text-sm font-semibold uppercase text-center mb-3"
-            style={{ color: "#b45309", letterSpacing: 4 }}
+            style={{ color: colors.warning, letterSpacing: 4 }}
           >
             Почему P2PTax
           </Text>

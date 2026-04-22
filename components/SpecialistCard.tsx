@@ -83,7 +83,7 @@ export default function SpecialistCard({
       {/* Avatar */}
       <View
         className="rounded-full items-center justify-center"
-        style={{ width: 56, height: 56, backgroundColor: "#2256c2" }}
+        style={{ width: 56, height: 56, backgroundColor: colors.primary }}
       >
         <Text className="text-white font-bold text-lg">{initials}</Text>
       </View>
