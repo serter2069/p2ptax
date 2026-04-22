@@ -1,5 +1,6 @@
 import { View, Text } from "react-native";
 import { FEATURES } from "./mockData";
+import { colors, overlay } from "@/lib/theme";
 
 interface FeaturesSectionProps {
   isDesktop: boolean;
@@ -10,7 +11,7 @@ export default function FeaturesSection({ isDesktop }: FeaturesSectionProps) {
     <View
       className="px-4"
       style={{
-        backgroundColor: "#2256c2",
+        backgroundColor: colors.primary,
         paddingTop: isDesktop ? 96 : 64,
         paddingBottom: isDesktop ? 96 : 64,
       }}
@@ -38,7 +39,7 @@ export default function FeaturesSection({ isDesktop }: FeaturesSectionProps) {
                 key={f.title}
                 className="rounded-2xl p-6"
                 style={[
-                  { backgroundColor: "rgba(255,255,255,0.1)" },
+                  { backgroundColor: overlay.white10 },
                   isDesktop
                     ? { flex: 1, minWidth: "45%" }
                     : {},
@@ -48,7 +49,7 @@ export default function FeaturesSection({ isDesktop }: FeaturesSectionProps) {
                 <Text className="text-white font-bold text-lg mb-2">
                   {f.title}
                 </Text>
-                <Text style={{ color: "rgba(255,255,255,0.7)" }}>
+                <Text style={{ color: overlay.white70 }}>
                   {f.text}
                 </Text>
               </View>

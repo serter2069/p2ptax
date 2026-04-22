@@ -17,7 +17,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
-import { colors, radiusValue } from "@/lib/theme";
+import { colors, overlay, radiusValue } from "@/lib/theme";
 
 
 type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
@@ -219,7 +219,7 @@ export default function AdminUsers() {
         <TextInput
           accessibilityLabel="Поиск по email или имени"
           style={{
-            backgroundColor: "rgba(255,255,255,0.15)",
+            backgroundColor: overlay.white15,
             borderRadius: radiusValue.md,
             height: 40,
             paddingHorizontal: 14,
@@ -228,7 +228,7 @@ export default function AdminUsers() {
             outlineWidth: 0,
           }}
           placeholder="Поиск по email или имени..."
-          placeholderTextColor="rgba(255,255,255,0.5)"
+          placeholderTextColor={overlay.white50}
           value={search}
           onChangeText={setSearch}
           autoCapitalize="none"

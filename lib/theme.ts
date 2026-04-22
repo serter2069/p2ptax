@@ -77,3 +77,23 @@ export const radiusValue = {
   xl: 24,
   full: 9999, // pills, badges
 } as const
+
+// Cyclic palette for generated avatars — use index % AVATAR_COLORS.length
+export const AVATAR_COLORS = [
+  '#3b82f6', // blue
+  '#ec4899', // pink
+  '#10b981', // emerald
+  '#f59e0b', // amber
+  '#8b5cf6', // violet
+] as const
+
+// Semantic overlay tokens — for rgba on colored backgrounds
+export const overlay = {
+  white10: 'rgba(255,255,255,0.1)',
+  white15: 'rgba(255,255,255,0.15)',
+  white30: 'rgba(255,255,255,0.3)',
+  white50: 'rgba(255,255,255,0.5)',
+  white70: 'rgba(255,255,255,0.7)',
+  white80: 'rgba(255,255,255,0.8)',
+  accent10: 'rgba(34,86,194,0.1)',
+} as const

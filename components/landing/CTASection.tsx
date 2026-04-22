@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from "react-native";
+import { colors, overlay } from "@/lib/theme";
 
 interface CTASectionProps {
   isDesktop: boolean;
@@ -11,7 +12,7 @@ export default function CTASection({ isDesktop, onCreateRequest, onViewCatalog }
     <View
       className="px-4"
       style={{
-        backgroundColor: "#2256c2",
+        backgroundColor: colors.primary,
         paddingTop: isDesktop ? 96 : 64,
         paddingBottom: isDesktop ? 96 : 64,
       }}
@@ -29,7 +30,7 @@ export default function CTASection({ isDesktop, onCreateRequest, onViewCatalog }
           </Text>
           <Text
             className="text-lg text-center mt-4"
-            style={{ color: "rgba(255,255,255,0.8)", lineHeight: 28 }}
+            style={{ color: overlay.white80, lineHeight: 28 }}
           >
             Создайте заявку — это займёт 3 минуты. Специалисты напишут сами.
           </Text>
@@ -50,7 +51,7 @@ export default function CTASection({ isDesktop, onCreateRequest, onViewCatalog }
             >
               <Text
                 className="font-semibold text-base"
-                style={{ color: "#2256c2" }}
+                style={{ color: colors.primary }}
               >
                 Создать заявку →
               </Text>
@@ -63,7 +64,7 @@ export default function CTASection({ isDesktop, onCreateRequest, onViewCatalog }
             >
               <Text
                 className="text-base font-semibold"
-                style={{ color: "rgba(255,255,255,0.8)" }}
+                style={{ color: overlay.white80 }}
               >
                 Смотреть специалистов
               </Text>
