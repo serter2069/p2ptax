@@ -196,7 +196,7 @@ export default function ClientSettings() {
 
   if (!ready) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-surface2">
         <HeaderBack title="Настройки" />
         <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
@@ -204,7 +204,7 @@ export default function ClientSettings() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Настройки" />
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         <ResponsiveContainer>
@@ -318,14 +318,14 @@ export default function ClientSettings() {
               Уведомления
             </Text>
 
-            <View className="bg-white border border-border rounded-xl mb-6 overflow-hidden">
+            <View className="bg-white border border-border rounded-2xl mb-6 overflow-hidden">
               {NOTIFICATION_SETTINGS.length === 0 ? (
                 <EmptyState icon={Bell} title="Нет настроек уведомлений" subtitle="Настройки уведомлений недоступны" />
               ) : (
                 NOTIFICATION_SETTINGS.map((setting, index) => (
                   <View
                     key={setting.key}
-                    className={`flex-row items-center px-4 py-3${index < NOTIFICATION_SETTINGS.length - 1 ? " border-b border-border" : ""}`}
+                    className={`flex-row items-center min-h-[50px] px-4 py-3${index < NOTIFICATION_SETTINGS.length - 1 ? " border-b border-border" : ""}`}
                   >
                     <View className="flex-1 mr-3">
                       <Text className="text-base text-text-base">{setting.label}</Text>
@@ -348,12 +348,12 @@ export default function ClientSettings() {
               Правовая информация
             </Text>
 
-            <View className="bg-white border border-border rounded-xl mb-8 overflow-hidden">
+            <View className="bg-white border border-border rounded-2xl mb-8 overflow-hidden">
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Условия использования"
                 onPress={() => router.push("/legal/terms" as never)}
-                className="flex-row items-center px-4 py-3"
+                className="flex-row items-center min-h-[50px] px-4 py-3"
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <FileText size={16} color={colors.placeholder} />
@@ -369,12 +369,12 @@ export default function ClientSettings() {
               Аккаунт
             </Text>
 
-            <View className="bg-white border border-border rounded-xl mb-8 overflow-hidden">
+            <View className="bg-white border border-border rounded-2xl mb-8 overflow-hidden">
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Выйти из аккаунта"
                 onPress={handleLogout}
-                className="flex-row items-center px-4 py-3 border-b border-border"
+                className="flex-row items-center min-h-[50px] px-4 py-3 border-b border-border"
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <LogOut size={16} color={colors.error} />
@@ -386,7 +386,7 @@ export default function ClientSettings() {
                 accessibilityRole="button"
                 accessibilityLabel="Удалить аккаунт"
                 onPress={handleDeleteAccount}
-                className="flex-row items-center px-4 py-3"
+                className="flex-row items-center min-h-[50px] px-4 py-3"
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <Trash2 size={16} color={colors.error} />

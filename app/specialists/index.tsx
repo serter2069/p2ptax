@@ -187,11 +187,11 @@ export default function SpecialistsCatalog() {
 
   if (loading && specialists.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-surface2">
         <HeaderBack title="Специалисты" />
         <View className="py-4 px-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
+            <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-border">
               <LoadingState variant="skeleton" lines={4} />
             </View>
           ))}
@@ -202,7 +202,7 @@ export default function SpecialistsCatalog() {
 
   if (error && specialists.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-surface2">
         <HeaderBack title="Специалисты" />
         <EmptyState
           icon={AlertCircle}
@@ -219,17 +219,17 @@ export default function SpecialistsCatalog() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Специалисты" />
-      <View className="bg-white px-4 pt-3 pb-2">
-        <Text className="font-extrabold text-3xl" style={{ color: colors.text }}>Каталог специалистов</Text>
-        <Text className="text-sm mt-1 mb-3" style={{ color: colors.textSecondary }}>
+      <View className="bg-white px-4 pt-3 pb-2 border-b border-border">
+        <Text className="font-extrabold text-3xl text-text-base">Каталог специалистов</Text>
+        <Text className="text-sm mt-1 mb-3 text-text-mute">
           Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.
         </Text>
       </View>
 
       {/* Search bar */}
-      <View className="flex-row items-center bg-white border border-border rounded-xl mx-4 mb-3 px-4 min-h-[48px]">
+      <View className="flex-row items-center bg-white border border-border rounded-xl mx-4 mt-3 mb-2 px-4 h-12">
         <Search size={14} color={colors.placeholder} style={{ marginRight: 8 }} />
         <TextInput
           value={search}
@@ -239,7 +239,7 @@ export default function SpecialistsCatalog() {
           style={{ flex: 1, fontSize: 15, color: colors.text, height: 48 }}
         />
         {total > 0 && (
-          <Text className="text-sm" style={{ color: colors.textSecondary }}>{total} специалистов</Text>
+          <Text className="text-sm text-text-mute">{total} специалистов</Text>
         )}
       </View>
 

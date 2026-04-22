@@ -78,11 +78,22 @@ export default function SpecialistMyThreads() {
       ? threads.filter((t) => t.unreadCount > 0)
       : threads;
 
+  const unreadTotal = threads.reduce((sum, t) => sum + t.unreadCount, 0);
+
   const FilterBar = (
     <ResponsiveContainer>
-      <Text className="text-xl font-bold text-text-base mt-4 mb-3">
-        Мои диалоги
-      </Text>
+      <View className="flex-row items-center gap-2 mt-4 mb-3">
+        <Text className="text-xl font-bold text-text-base flex-1">
+          Мои диалоги
+        </Text>
+        {unreadTotal > 0 && (
+          <View className="bg-accent rounded-full px-2 py-0.5 items-center justify-center">
+            <Text className="text-xs font-bold text-white">
+              {unreadTotal > 99 ? "99+" : unreadTotal}
+            </Text>
+          </View>
+        )}
+      </View>
       <View className="flex-row gap-2 mb-3">
         <FilterChip
           label="Все"
@@ -99,7 +110,7 @@ export default function SpecialistMyThreads() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome />
 
       {loading ? (
@@ -125,7 +136,7 @@ export default function SpecialistMyThreads() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 32 : 0 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 32 : 16, paddingHorizontal: 16 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
@@ -153,12 +164,10 @@ export default function SpecialistMyThreads() {
           }
           ListFooterComponent={<View className="h-8" />}
           renderItem={({ item }) => (
-            <ResponsiveContainer>
-              <ThreadCard
-                thread={item}
-                onPress={() => router.push(`/threads/${item.id}` as never)}
-              />
-            </ResponsiveContainer>
+            <ThreadCard
+              thread={item}
+              onPress={() => router.push(`/threads/${item.id}` as never)}
+            />
           )}
         />
       )}
@@ -234,7 +243,9 @@ function ThreadCard({
       accessibilityRole="button"
       accessibilityLabel={`Чат с ${name}`}
       onPress={onPress}
-      className="flex-row items-center py-3 border-b border-border active:bg-surface2"
+      className={`flex-row items-center bg-white border border-border rounded-xl p-4 mb-3 shadow-sm ${
+        hasUnread ? "border-l-2 border-l-accent" : ""
+      }`}
       style={({ pressed }) => [pressed && { opacity: 0.7 }]}
     >
       {/* Avatar with unread badge */}
@@ -289,7 +300,7 @@ function ThreadCard({
 
       {/* Timestamp */}
       {timeStr ? (
-        <Text className="text-xs text-text-mute self-start mt-1">{timeStr}</Text>
+        <Text className="text-xs text-text-dim self-start mt-1">{timeStr}</Text>
       ) : null}
     </Pressable>
   );
