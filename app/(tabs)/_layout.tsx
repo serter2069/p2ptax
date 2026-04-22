@@ -19,6 +19,13 @@ export default function TabLayout() {
             display: isMobile ? "flex" : "none",
             borderTopWidth: 1,
             borderTopColor: colors.border,
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 4,
+          },
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: "500",
           },
           headerShown: false,
         }}
