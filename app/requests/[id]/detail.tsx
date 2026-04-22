@@ -19,6 +19,7 @@ import { api, apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
 import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
 import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface FileItem {
   id: string;
@@ -243,21 +244,23 @@ export default function MyRequestDetail() {
             </View>
 
             {/* Files */}
-            {request.files.length > 0 && (
-              <View
-                className="bg-white rounded-2xl p-4 mb-4"
-                style={{
-                  shadowColor: colors.text,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 8,
-                  elevation: 2,
-                }}
-              >
-                <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
-                  Прикреплённые документы
-                </Text>
-                {request.files.map((file) => (
+            <View
+              className="bg-white rounded-2xl p-4 mb-4"
+              style={{
+                shadowColor: colors.text,
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
+            >
+              <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
+                Прикреплённые документы
+              </Text>
+              {request.files.length === 0 ? (
+                <EmptyState title="Нет документов" subtitle="К этой заявке не прикреплены файлы" />
+              ) : (
+                request.files.map((file) => (
                   <Pressable
                     accessibilityRole="button"
                     key={file.id}
@@ -280,9 +283,9 @@ export default function MyRequestDetail() {
                     </View>
                     <Download size={14} color={colors.placeholder} />
                   </Pressable>
-                ))}
-              </View>
-            )}
+                ))
+              )}
+            </View>
 
             {/* Extend button */}
             {canExtend && (

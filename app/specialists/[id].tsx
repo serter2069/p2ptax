@@ -23,6 +23,7 @@ import type { SpecialistDetail, ContactMethodItem, SimilarSpecialist } from "@/c
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import EmptyState from "@/components/ui/EmptyState";
 
 function getInitials(firstName: string | null, lastName: string | null): string {
   const f = firstName?.[0] || "";
@@ -208,7 +209,7 @@ export default function SpecialistPublicProfile() {
               cardShadow={cardShadow}
             />
 
-            {/* Reviews stub */}
+            {/* Reviews */}
             <View
               className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
               style={cardShadow}
@@ -216,17 +217,17 @@ export default function SpecialistPublicProfile() {
               <Text style={{ color: colors.textMuted, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
                 ОТЗЫВЫ
               </Text>
-              <Text className="text-sm italic" style={{ color: colors.textMuted }}>
-                Отзывы появятся в следующих версиях
-              </Text>
+              <EmptyState title="Пока нет отзывов" subtitle="Отзывы появятся после завершения первых заявок" />
             </View>
 
             {/* Similar specialists */}
-            {similar.length > 0 && (
-              <View className="mx-4 mt-4 mb-4">
-                <Text style={{ color: colors.textMuted, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
-                  ПОХОЖИЕ СПЕЦИАЛИСТЫ
-                </Text>
+            <View className="mx-4 mt-4 mb-4">
+              <Text style={{ color: colors.textMuted, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+                ПОХОЖИЕ СПЕЦИАЛИСТЫ
+              </Text>
+              {similar.length === 0 ? (
+                <EmptyState title="Нет похожих специалистов" subtitle="В вашем регионе пока нет других специалистов" />
+              ) : (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {similar.slice(0, 5).map((s) => (
                     <SpecialistCard
@@ -242,8 +243,8 @@ export default function SpecialistPublicProfile() {
                     />
                   ))}
                 </ScrollView>
-              </View>
-            )}
+              )}
+            </View>
 
             {/* Own profile banner */}
             {isOwnProfile && (

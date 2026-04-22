@@ -6,6 +6,7 @@ import {
 } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import EmptyState from "@/components/ui/EmptyState";
 
 const RECENT_SEARCHES = [
   "iPhone 15",
@@ -56,22 +57,28 @@ export default function SearchScreen() {
           <View className="mb-6">
             <View className="flex-row justify-between items-center mb-3">
               <Text className="text-base font-semibold text-gray-900">Recent Searches</Text>
-              <Pressable accessibilityRole="button" accessibilityLabel="Очистить историю поиска">
-                <Text className="text-sm text-blue-600">Clear</Text>
-              </Pressable>
+              {RECENT_SEARCHES.length > 0 && (
+                <Pressable accessibilityRole="button" accessibilityLabel="Очистить историю поиска">
+                  <Text className="text-sm text-blue-600">Clear</Text>
+                </Pressable>
+              )}
             </View>
-            {RECENT_SEARCHES.map((search, index) => (
-              <Pressable
-                accessibilityRole="button"
-                key={index}
-                accessibilityLabel={search}
-                className="flex-row items-center py-3 border-b border-gray-100"
-              >
-                <Clock size={16} color={colors.textSecondary} />
-                <Text className="flex-1 ml-3 text-base text-gray-700">{search}</Text>
-                <ArrowRight size={12} color={colors.textSecondary} />
-              </Pressable>
-            ))}
+            {RECENT_SEARCHES.length === 0 ? (
+              <EmptyState title="Нет недавних поисков" subtitle="Ваши поисковые запросы появятся здесь" />
+            ) : (
+              RECENT_SEARCHES.map((search, index) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={index}
+                  accessibilityLabel={search}
+                  className="flex-row items-center py-3 border-b border-gray-100"
+                >
+                  <Clock size={16} color={colors.textSecondary} />
+                  <Text className="flex-1 ml-3 text-base text-gray-700">{search}</Text>
+                  <ArrowRight size={12} color={colors.textSecondary} />
+                </Pressable>
+              ))
+            )}
           </View>
 
           {/* Popular Categories */}

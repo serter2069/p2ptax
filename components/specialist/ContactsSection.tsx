@@ -51,7 +51,7 @@ export default function ContactsSection({ contacts, officeAddress, workingHours,
       className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
       style={cardShadow}
     >
-      <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+      <Text style={{ color: colors.textSecondary, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
         КОНТАКТЫ
       </Text>
 
@@ -84,7 +84,7 @@ export default function ContactsSection({ contacts, officeAddress, workingHours,
                 <cfg.Icon size={14} color={cfg.color} />
               </View>
               <View className="flex-1">
-                <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>{cfg.label}</Text>
+                <Text className="text-xs mb-0.5" style={{ color: colors.textSecondary }}>{cfg.label}</Text>
                 <Text className="text-sm font-medium" style={{ color: cfg.color }}>
                   {contact.value}
                 </Text>
@@ -105,8 +105,8 @@ export default function ContactsSection({ contacts, officeAddress, workingHours,
               <cfg.Icon size={14} color={cfg.color} />
             </View>
             <View className="flex-1">
-              <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>{cfg.label}</Text>
-              <Text className="text-sm font-medium" style={{ color: "#334155" }}>{contact.value}</Text>
+              <Text className="text-xs mb-0.5" style={{ color: colors.textSecondary }}>{cfg.label}</Text>
+              <Text className="text-sm font-medium" style={{ color: colors.text }}>{contact.value}</Text>
             </View>
           </View>
         );
@@ -118,8 +118,8 @@ export default function ContactsSection({ contacts, officeAddress, workingHours,
             <MapPin size={14} color={colors.textSecondary} />
           </View>
           <View className="flex-1">
-            <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>Адрес офиса</Text>
-            <Text className="text-sm leading-5" style={{ color: "#334155" }}>
+            <Text className="text-xs mb-0.5" style={{ color: colors.textSecondary }}>Адрес офиса</Text>
+            <Text className="text-sm leading-5" style={{ color: colors.text }}>
               {officeAddress}
             </Text>
           </View>
@@ -132,8 +132,8 @@ export default function ContactsSection({ contacts, officeAddress, workingHours,
             <Clock size={14} color={colors.textSecondary} />
           </View>
           <View className="flex-1">
-            <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>Часы работы</Text>
-            <Text className="text-sm" style={{ color: "#334155" }}>
+            <Text className="text-xs mb-0.5" style={{ color: colors.textSecondary }}>Часы работы</Text>
+            <Text className="text-sm" style={{ color: colors.text }}>
               {workingHours}
             </Text>
           </View>
