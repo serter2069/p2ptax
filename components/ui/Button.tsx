@@ -1,4 +1,5 @@
 import { Pressable, Text, ActivityIndicator } from "react-native";
+import { useState } from "react";
 import { type LucideIcon } from "lucide-react-native";
 import { colors } from "../../lib/theme";
 
@@ -21,6 +22,8 @@ export default function Button({
   fullWidth = true,
   icon: Icon,
 }: ButtonProps) {
+  const [pressed, setPressed] = useState(false);
+
   const widthClass = fullWidth ? "w-full" : "px-6";
   const opacityClass = disabled || loading ? "opacity-40" : "";
 
@@ -33,6 +36,14 @@ export default function Button({
         ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }
         : { backgroundColor: colors.danger };
 
+  const shadowStyle = variant === "primary" && !pressed
+    ? { shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 }
+    : undefined;
+
+  const pressStyle = pressed
+    ? { opacity: 0.9, transform: [{ scale: 0.98 as const }] }
+    : undefined;
+
   const textColorValue =
     variant === "primary" || variant === "destructive" ? "#ffffff" : colors.text;
 
@@ -44,15 +55,11 @@ export default function Button({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
       disabled={disabled || loading}
       className={baseContainerClass}
-      style={({ pressed }) => [
-        variantStyle,
-        variant === "primary" && !pressed
-          ? { shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 }
-          : undefined,
-        pressed ? { opacity: 0.9, transform: [{ scale: 0.98 }] } : undefined,
-      ]}
+      style={[variantStyle, shadowStyle, pressStyle]}
     >
       {loading ? (
         <ActivityIndicator color={iconColor} />
