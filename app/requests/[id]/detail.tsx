@@ -157,7 +157,7 @@ export default function MyRequestDetail() {
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Заявка" />
         <View className="flex-1 items-center justify-center px-4">
-          <Text className="text-base text-red-600 text-center">
+          <Text className="text-base text-danger text-center">
             {error || "Заявка не найдена"}
           </Text>
           <View className="mt-4">
@@ -187,7 +187,7 @@ export default function MyRequestDetail() {
     : undefined;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack
         title={request.title}
         rightAction={
@@ -208,7 +208,7 @@ export default function MyRequestDetail() {
             {/* Status + date */}
             <View className="flex-row items-center mb-3">
               <StatusBadge status={request.status} />
-              <Text className="text-sm text-slate-400 ml-3">{createdDate}</Text>
+              <Text className="text-sm text-text-mute ml-3">{createdDate}</Text>
             </View>
 
             {/* City + FNS chips */}

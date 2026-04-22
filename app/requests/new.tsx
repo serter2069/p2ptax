@@ -182,8 +182,8 @@ export default function NewRequest() {
 
             {/* Limit banner */}
             {atLimit && (
-              <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                <Text className="text-red-600 text-sm font-medium">
+              <View className="bg-danger-soft border border-red-200 rounded-xl p-4 mb-4">
+                <Text className="text-danger text-sm font-medium">
                   Лимит заявок исчерпан ({limitInfo.used}/{limitInfo.limit}). Закройте неактуальные заявки, чтобы создать новую.
                 </Text>
               </View>
@@ -191,8 +191,8 @@ export default function NewRequest() {
 
             {/* Title */}
             <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-1.5">
-                Заголовок <Text className="text-red-500">*</Text>
+              <Text className="text-sm font-medium text-text-base mb-1.5">
+                Заголовок <Text className="text-danger">*</Text>
               </Text>
               <Input
                 placeholder="Кратко опишите суть проблемы"
@@ -204,7 +204,7 @@ export default function NewRequest() {
                 maxLength={100}
                 editable={!atLimit && !submitting}
               />
-              <Text className="text-xs text-slate-400 text-right mt-1">{title.length}/100</Text>
+              <Text className="text-xs text-text-mute text-right mt-1">{title.length}/100</Text>
             </View>
 
             <CityFnsServicePicker
@@ -231,8 +231,8 @@ export default function NewRequest() {
 
             {/* Description */}
             <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-1.5">
-                Описание <Text className="text-red-500">*</Text>
+              <Text className="text-sm font-medium text-text-base mb-1.5">
+                Описание <Text className="text-danger">*</Text>
               </Text>
               <Input
                 placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
@@ -246,7 +246,7 @@ export default function NewRequest() {
                 editable={!atLimit && !submitting}
                 containerStyle={{ minHeight: 120 }}
               />
-              <Text className="text-xs text-slate-400 text-right mt-1">{description.length}/2000</Text>
+              <Text className="text-xs text-text-mute text-right mt-1">{description.length}/2000</Text>
             </View>
 
             <FileUploadSection
@@ -257,9 +257,9 @@ export default function NewRequest() {
 
             {/* Submit error */}
             {submitError ? (
-              <View className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                <Text className="text-sm font-medium text-red-700 mb-0.5">Ошибка публикации</Text>
-                <Text className="text-sm text-red-600">{submitError}</Text>
+              <View className="bg-danger-soft border border-red-200 rounded-xl p-3 mb-4">
+                <Text className="text-sm font-medium text-danger mb-0.5">Ошибка публикации</Text>
+                <Text className="text-sm text-danger">{submitError}</Text>
               </View>
             ) : null}
 
@@ -268,7 +268,7 @@ export default function NewRequest() {
       </ScrollView>
 
       {/* Sticky submit button */}
-      <View className="border-t border-slate-200 px-4 py-3 bg-white">
+      <View className="border-t border-border px-4 py-3 bg-white">
         <View style={{ maxWidth: 520, width: "100%", alignSelf: "center" }}>
           <Button
             label="Опубликовать заявку"

@@ -50,11 +50,11 @@ export default function ThreadsList({
       }}
     >
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+        <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide">
           Сообщения
         </Text>
         {unreadMessages > 0 && (
-          <View className="bg-blue-900 rounded-full px-2 py-0.5">
+          <View className="bg-accent rounded-full px-2 py-0.5">
             <Text className="text-white text-xs font-bold">
               {unreadMessages}
             </Text>
@@ -63,12 +63,12 @@ export default function ThreadsList({
       </View>
 
       {threads.length === 0 ? (
-        <Text className="text-sm text-slate-400 py-2 text-center">
+        <Text className="text-sm text-text-mute py-2 text-center">
           Специалисты ещё не написали
         </Text>
       ) : (
         <>
-          <Text className="text-sm text-slate-500 mb-3">
+          <Text className="text-sm text-text-mute mb-3">
             {threadsCount}{" "}
             {threadsCount === 1
               ? "специалист написал"
@@ -80,7 +80,7 @@ export default function ThreadsList({
             return (
               <View
                 key={thread.id}
-                className="flex-row items-center py-3 border-b border-slate-100"
+                className="flex-row items-center py-3 border-b border-border"
               >
                 <Avatar
                   name={name}
@@ -88,12 +88,12 @@ export default function ThreadsList({
                   size="sm"
                 />
                 <View className="flex-1 ml-3">
-                  <Text className="text-sm font-semibold text-slate-900">
+                  <Text className="text-sm font-semibold text-text-base">
                     {name}
                   </Text>
                   {thread.lastMessage && (
                     <Text
-                      className="text-xs text-slate-400 mt-0.5"
+                      className="text-xs text-text-mute mt-0.5"
                       numberOfLines={1}
                     >
                       {thread.lastMessage.text}
@@ -102,7 +102,7 @@ export default function ThreadsList({
                 </View>
                 <View className="flex-row items-center">
                   {thread.unreadCount > 0 && (
-                    <View className="bg-blue-900 rounded-full w-5 h-5 items-center justify-center mr-2">
+                    <View className="bg-accent rounded-full w-5 h-5 items-center justify-center mr-2">
                       <Text className="text-white text-xs font-bold">
                         {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
                       </Text>
@@ -112,7 +112,7 @@ export default function ThreadsList({
                     accessibilityRole="button"
                     accessibilityLabel={`Открыть чат с ${name}`}
                     onPress={() => onOpenThread(thread.id)}
-                    className="bg-blue-900 rounded-lg px-3 py-1.5"
+                    className="bg-accent rounded-lg px-3 py-1.5"
                     style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                   >
                     <Text className="text-white text-xs font-semibold">
@@ -128,10 +128,10 @@ export default function ThreadsList({
             accessibilityRole="button"
             accessibilityLabel="Все сообщения"
             onPress={() => router.push(`/requests/${requestId}/messages` as never)}
-            className="mt-3 border border-blue-900 rounded-xl py-2.5 items-center"
+            className="mt-3 border border-accent rounded-xl py-2.5 items-center"
             style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
           >
-            <Text className="text-blue-900 font-semibold text-sm">
+            <Text className="text-accent font-semibold text-sm">
               Все сообщения ({threadsCount})
             </Text>
           </Pressable>

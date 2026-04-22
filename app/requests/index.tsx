@@ -181,11 +181,11 @@ export default function PublicRequestsFeed() {
   // Skeleton on initial load
   if (initLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView className="flex-1 bg-surface2">
         <HeaderBack title="Заявки" />
         <View className="flex-1 pt-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
+            <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-border">
               <LoadingState variant="skeleton" lines={4} />
             </View>
           ))}
@@ -195,11 +195,11 @@ export default function PublicRequestsFeed() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Заявки" />
 
       {/* Filter bar */}
-      <View className="bg-white border-b border-slate-100">
+      <View className="bg-white border-b border-border">
         <FilterBar
           cities={cities}
           selectedCityId={selectedCityId}
@@ -277,13 +277,13 @@ export default function PublicRequestsFeed() {
                   onPress={handleLoadMore}
                   className="py-4 items-center"
                 >
-                  <Text className="text-sm font-medium text-blue-900">
+                  <Text className="text-sm font-medium text-accent">
                     Загрузить ещё
                   </Text>
                 </Pressable>
               ) : (
                 <View className="py-4 items-center">
-                  <Text className="text-xs text-slate-400">
+                  <Text className="text-xs text-text-mute">
                     Все заявки загружены
                   </Text>
                 </View>

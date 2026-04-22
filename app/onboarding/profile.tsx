@@ -169,7 +169,7 @@ export default function OnboardingProfileScreen() {
         >
           <View className="pt-6">
             {/* Step indicator */}
-            <Text className="text-sm text-amber-700 text-center mb-2">
+            <Text className="text-sm text-warning text-center mb-2">
               Шаг 3 из 3
             </Text>
             <Text className="text-2xl font-bold text-slate-900 text-center mb-1">

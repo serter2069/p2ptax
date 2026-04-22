@@ -69,13 +69,13 @@ export default function MessageBubble({
             onPress={() => onImagePress?.(img.url)}
             className="mb-1"
           >
-            <View className="w-[200px] h-[200px] bg-slate-200 rounded-xl items-center justify-center">
+            <View className="w-[200px] h-[200px] bg-surface2 rounded-xl items-center justify-center">
               <ImageIcon
                 size={32}
                 color={isOwn ? colors.surface : colors.textSecondary}
               />
               <Text
-                className={`text-xs mt-1 ${isOwn ? "text-blue-200" : "text-slate-400"}`}
+                className={`text-xs mt-1 ${isOwn ? "text-accent-soft" : "text-text-mute"}`}
                 numberOfLines={1}
               >
                 {img.filename}
@@ -92,7 +92,7 @@ export default function MessageBubble({
             accessibilityLabel={`Файл ${file.filename}`}
             onPress={() => onFilePress?.(file)}
             className={`flex-row items-center rounded-lg p-2 mb-1 ${
-              isOwn ? "bg-blue-800" : "bg-slate-100"
+              isOwn ? "bg-accent" : "bg-surface2"
             }`}
           >
             {file.mimeType === "application/pdf"
@@ -101,13 +101,13 @@ export default function MessageBubble({
             }
             <View className="ml-2 flex-1">
               <Text
-                className={`text-sm ${isOwn ? "text-white" : "text-slate-900"}`}
+                className={`text-sm ${isOwn ? "text-white" : "text-text-base"}`}
                 numberOfLines={1}
               >
                 {file.filename}
               </Text>
               <Text
-                className={`text-xs ${isOwn ? "text-blue-200" : "text-slate-400"}`}
+                className={`text-xs ${isOwn ? "text-accent-soft" : "text-text-mute"}`}
               >
                 {formatFileSize(file.size)}
               </Text>
@@ -125,7 +125,7 @@ export default function MessageBubble({
       </View>
 
       {/* Time */}
-      <Text className="text-xs text-slate-400 mt-1 px-1">
+      <Text className="text-xs text-text-mute mt-1 px-1">
         {formatTime(createdAt)}
       </Text>
     </View>

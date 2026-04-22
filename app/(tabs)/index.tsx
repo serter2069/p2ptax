@@ -76,7 +76,7 @@ export default function HomeScreen() {
         contentContainerClassName="px-2 pb-4"
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <Text className="text-base text-slate-400">Нет объявлений</Text>
+            <Text className="text-base text-text-mute">Нет объявлений</Text>
           </View>
         }
         ListHeaderComponent={

@@ -202,12 +202,12 @@ export default function SpecialistSettings() {
             />
 
             {/* Availability toggle */}
-            <View className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 flex-row items-center justify-between">
+            <View className="bg-surface2 border border-border rounded-xl px-4 py-3 mb-6 flex-row items-center justify-between">
               <View className="flex-1 mr-4">
-                <Text className="text-base font-semibold text-slate-900">
+                <Text className="text-base font-semibold text-text-base">
                   Принимаю заявки
                 </Text>
-                <Text className="text-xs text-slate-500 mt-0.5">
+                <Text className="text-xs text-text-mute mt-0.5">
                   {isAvailable
                     ? "Вы видны клиентам и получаете заявки"
                     : "Вы скрыты от клиентов"}
@@ -227,7 +227,7 @@ export default function SpecialistSettings() {
             </View>
 
             {/* Name fields */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
               Личные данные
             </Text>
 
@@ -252,12 +252,12 @@ export default function SpecialistSettings() {
             </View>
 
             {/* Email read-only */}
-            <Text className="text-sm font-medium text-slate-900 mb-1">
+            <Text className="text-sm font-medium text-text-base mb-1">
               Email{" "}
-              <Text className="text-slate-400 font-normal">(нельзя изменить)</Text>
+              <Text className="text-text-mute font-normal">(нельзя изменить)</Text>
             </Text>
-            <View className="h-12 border border-slate-200 rounded-xl bg-slate-100 px-4 justify-center mb-4">
-              <Text className="text-base text-slate-400">
+            <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center mb-4">
+              <Text className="text-base text-text-mute">
                 {data?.email || user?.email || ""}
               </Text>
             </View>
@@ -273,13 +273,13 @@ export default function SpecialistSettings() {
                 numberOfLines={4}
                 maxLength={500}
               />
-              <Text className="text-xs text-slate-400 text-right mt-1">
+              <Text className="text-xs text-text-mute text-right mt-1">
                 {description.length}/500
               </Text>
             </View>
 
             {/* FNS & Services */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
               ИФНС и услуги
             </Text>
 
@@ -288,12 +288,12 @@ export default function SpecialistSettings() {
                 {data.fnsServices.map((item) => (
                   <View
                     key={item.fns.id}
-                    className="bg-slate-50 rounded-xl p-3 mb-2 border border-slate-200"
+                    className="bg-surface2 rounded-xl p-3 mb-2 border border-border"
                   >
-                    <Text className="text-sm font-semibold text-slate-900">
+                    <Text className="text-sm font-semibold text-text-base">
                       {item.city.name} — {item.fns.name}
                     </Text>
-                    <Text className="text-xs text-slate-400 mb-1">
+                    <Text className="text-xs text-text-mute mb-1">
                       {item.fns.code}
                     </Text>
                     <View className="flex-row flex-wrap gap-1 mt-1">
@@ -302,7 +302,7 @@ export default function SpecialistSettings() {
                           key={s.id}
                           className="bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"
                         >
-                          <Text className="text-xs text-blue-900">{s.name}</Text>
+                          <Text className="text-xs text-accent">{s.name}</Text>
                         </View>
                       ))}
                     </View>
@@ -315,7 +315,7 @@ export default function SpecialistSettings() {
                   className="flex-row items-center justify-center py-2 mb-4"
                 >
                   <Pencil size={12} color={colors.accent} />
-                  <Text className="text-sm text-amber-700 ml-1 font-medium">
+                  <Text className="text-sm text-warning ml-1 font-medium">
                     Изменить рабочую зону
                   </Text>
                 </Pressable>
@@ -328,7 +328,7 @@ export default function SpecialistSettings() {
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
               >
                 <Plus size={14} color={colors.accent} />
-                <Text className="text-sm text-amber-700 ml-2 font-medium">
+                <Text className="text-sm text-warning ml-2 font-medium">
                   Добавить ИФНС и услуги
                 </Text>
               </Pressable>
@@ -350,7 +350,7 @@ export default function SpecialistSettings() {
             />
 
             {/* Office info */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 mt-2">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3 mt-2">
               Офис
             </Text>
 

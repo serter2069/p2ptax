@@ -3,9 +3,9 @@ import { View, Text } from "react-native";
 type Status = "ACTIVE" | "CLOSING_SOON" | "CLOSED";
 
 const STATUS_CONFIG: Record<Status, { label: string; bg: string; text: string }> = {
-  ACTIVE: { label: "Активна", bg: "bg-emerald-600", text: "text-white" },
-  CLOSING_SOON: { label: "Скоро закроется", bg: "bg-amber-500", text: "text-white" },
-  CLOSED: { label: "Закрыта", bg: "bg-slate-300", text: "text-slate-900" },
+  ACTIVE: { label: "Активна", bg: "bg-success", text: "text-white" },
+  CLOSING_SOON: { label: "Скоро закроется", bg: "bg-warning", text: "text-white" },
+  CLOSED: { label: "Закрыта", bg: "bg-slate-300", text: "text-text-base" },
 };
 
 interface StatusBadgeProps {

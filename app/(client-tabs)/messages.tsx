@@ -127,7 +127,7 @@ export default function ClientMessages() {
           accessibilityRole="button"
           accessibilityLabel={`Чат с ${name}`}
           onPress={handlePress}
-          className="flex-row items-center py-3 border-b border-slate-100 active:bg-slate-50"
+          className="flex-row items-center py-3 border-b border-border active:bg-surface2"
           style={({ pressed }) => [
             { backgroundColor: selected ? "#eff6ff" : "white" },
             pressed && { opacity: 0.7 },
@@ -141,7 +141,7 @@ export default function ClientMessages() {
               size="md"
             />
             {hasUnread && (
-              <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-600 items-center justify-center px-1">
+              <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-danger items-center justify-center px-1">
                 <Text className="text-[10px] font-bold text-white">
                   {item.unreadCount > 99 ? "99+" : item.unreadCount}
                 </Text>

@@ -27,30 +27,30 @@ export default function RequestCard({
       accessibilityRole="button"
       accessibilityLabel={title}
       onPress={() => onPress(id)}
-      className="bg-white border border-slate-200 rounded-xl p-4 mb-3"
+      className="bg-white border border-border rounded-xl p-4 mb-3"
       style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
     >
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-lg font-semibold text-slate-900 flex-1 mr-2" numberOfLines={1}>
+        <Text className="text-lg font-semibold text-text-base flex-1 mr-2" numberOfLines={1}>
           {title}
         </Text>
         <StatusBadge status={status} />
       </View>
 
       <View className="flex-row flex-wrap gap-1.5 mb-2">
-        <View className="bg-slate-50 px-2 py-0.5 rounded">
-          <Text className="text-xs text-slate-400">{city.name}</Text>
+        <View className="bg-surface2 px-2 py-0.5 rounded">
+          <Text className="text-xs text-text-mute">{city.name}</Text>
         </View>
-        <View className="bg-slate-50 px-2 py-0.5 rounded">
-          <Text className="text-xs text-slate-400">{fns.name}</Text>
+        <View className="bg-surface2 px-2 py-0.5 rounded">
+          <Text className="text-xs text-text-mute">{fns.name}</Text>
         </View>
       </View>
 
-      <Text className="text-sm text-slate-400 mb-2" numberOfLines={2}>
+      <Text className="text-sm text-text-mute mb-2" numberOfLines={2}>
         {description}
       </Text>
 
-      <Text className="text-xs text-slate-400">
+      <Text className="text-xs text-text-mute">
         {threadsCount} {threadsCount === 1 ? "специалист откликнулся" : "специалистов откликнулось"}
       </Text>
     </Pressable>

@@ -281,7 +281,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   if (loading) {
     return (
       <View className="flex-1 bg-white">
-        <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
+        <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
             <FontAwesome name="chevron-left" size={18} color="#2256c2" />
           </Pressable>
@@ -297,7 +297,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   if (error && messages.length === 0) {
     return (
       <View className="flex-1 bg-white">
-        <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
+        <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
             <FontAwesome name="chevron-left" size={18} color="#2256c2" />
           </Pressable>
@@ -323,7 +323,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   return (
     <View className="flex-1 bg-white" style={desktopStyle}>
       {/* Header with avatar + other party name + request title */}
-      <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white">
+      <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
         <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
           <FontAwesome name="chevron-left" size={18} color="#2256c2" />
         </Pressable>
@@ -386,11 +386,11 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
         {/* Pending files preview strip */}
         {pendingFiles.length > 0 && (
-          <View className="flex-row flex-wrap px-3 py-2 border-t border-slate-100" style={{ backgroundColor: "#f8fafc" }}>
+          <View className="flex-row flex-wrap px-3 py-2 border-t border-border bg-surface2">
             {pendingFiles.map((f, i) => (
               <View
                 key={i}
-                className="flex-row items-center bg-white border border-slate-200 rounded-lg px-2 py-1 mr-2 mb-1"
+                className="flex-row items-center bg-white border border-border rounded-lg px-2 py-1 mr-2 mb-1"
               >
                 <FontAwesome name="file-o" size={13} color="#2256c2" />
                 <Text className="text-xs mx-1 max-w-[90px]" style={{ color: "#334155" }} numberOfLines={1}>
@@ -412,7 +412,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
         {/* Input bar */}
         {!isClosed && (
-          <View className="flex-row items-end border-t border-slate-200 px-3 py-2 bg-white">
+          <View className="flex-row items-end border-t border-border px-3 py-2 bg-white">
             {/* Attach button */}
             <Pressable
               accessibilityRole="button"

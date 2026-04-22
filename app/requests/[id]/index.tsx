@@ -44,11 +44,11 @@ function MetaRow({
   return (
     <View
       className={`flex-row justify-between items-center py-3 ${
-        !last ? "border-b border-slate-100" : ""
+        !last ? "border-b border-border" : ""
       }`}
     >
-      <Text className="text-sm text-slate-400">{label}</Text>
-      <Text className="text-sm text-slate-900 font-medium flex-1 text-right ml-4">
+      <Text className="text-sm text-text-mute">{label}</Text>
+      <Text className="text-sm text-text-base font-medium flex-1 text-right ml-4">
         {value}
       </Text>
     </View>
@@ -95,7 +95,7 @@ export default function PublicRequestDetail() {
 
   if (loading || authLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView className="flex-1 bg-surface2">
         <HeaderBack title="Заявка" />
         <ResponsiveContainer>
           <LoadingState variant="skeleton" lines={5} />
@@ -109,10 +109,10 @@ export default function PublicRequestDetail() {
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Заявка" />
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
+          <Text className="text-2xl font-bold text-text-base text-center mb-2">
             Заявка не найдена
           </Text>
-          <Text className="text-base text-slate-500 text-center mb-6">
+          <Text className="text-base text-text-mute text-center mb-6">
             Возможно, она была удалена или вы перешли по неверной ссылке
           </Text>
           <Button
@@ -130,7 +130,7 @@ export default function PublicRequestDetail() {
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Заявка" />
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-base text-red-600 text-center mb-4">
+          <Text className="text-base text-danger text-center mb-4">
             {error || "Не удалось загрузить заявку"}
           </Text>
           <Button variant="secondary" label="Повторить" onPress={load} fullWidth={false} />
@@ -158,10 +158,10 @@ export default function PublicRequestDetail() {
   const renderFooter = () => {
     if (isOwner) {
       return (
-        <View className="border-t border-slate-100 bg-white px-4 py-3">
+        <View className="border-t border-border bg-white px-4 py-3">
           <ResponsiveContainer>
-            <View className="bg-slate-50 border border-slate-200 rounded-xl py-3 items-center">
-              <Text className="text-slate-500 text-sm font-medium">Ваша заявка</Text>
+            <View className="bg-surface2 border border-border rounded-xl py-3 items-center">
+              <Text className="text-text-mute text-sm font-medium">Ваша заявка</Text>
             </View>
           </ResponsiveContainer>
         </View>
@@ -171,7 +171,7 @@ export default function PublicRequestDetail() {
     if (isAuthenticated && isSpecialist) {
       if (request.hasExistingThread && request.existingThreadId) {
         return (
-          <View className="border-t border-slate-100 bg-white px-4 py-3">
+          <View className="border-t border-border bg-white px-4 py-3">
             <ResponsiveContainer>
               <Button
                 label="Открыть чат"
@@ -213,7 +213,7 @@ export default function PublicRequestDetail() {
   const ogDescription = `Заявка на налоговую помощь в ${request.city.name}. ${request.description}`.slice(0, 160);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-surface2">
       <Head>
         <title>{request.title} | P2PTax</title>
         <meta property="og:title" content={`${request.title} | P2PTax`} />
@@ -228,27 +228,27 @@ export default function PublicRequestDetail() {
           {/* Main card: title, status, chips, description */}
           <View className="bg-white rounded-2xl mx-4 mt-4 px-4 py-5">
             <View className="flex-row items-start justify-between mb-3 gap-2">
-              <Text className="text-2xl font-bold text-slate-900 flex-1 leading-tight">
+              <Text className="text-2xl font-bold text-text-base flex-1 leading-tight">
                 {request.title}
               </Text>
               <StatusBadge status={request.status} />
             </View>
 
             <View className="flex-row flex-wrap gap-2 mb-3">
-              <View className="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg">
-                <Text className="text-sm text-slate-700">{request.city.name}</Text>
+              <View className="bg-surface2 border border-border px-3 py-1 rounded-lg">
+                <Text className="text-sm text-text-base">{request.city.name}</Text>
               </View>
-              <View className="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg">
-                <Text className="text-sm text-slate-700">{request.fns.name}</Text>
+              <View className="bg-surface2 border border-border px-3 py-1 rounded-lg">
+                <Text className="text-sm text-text-base">{request.fns.name}</Text>
               </View>
             </View>
 
-            <Text className="text-xs text-slate-400 mb-4">{responsesLabel}</Text>
+            <Text className="text-xs text-text-mute mb-4">{responsesLabel}</Text>
 
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
               Описание
             </Text>
-            <Text className="text-base text-slate-900 leading-6">
+            <Text className="text-base text-text-base leading-6">
               {request.description}
             </Text>
           </View>

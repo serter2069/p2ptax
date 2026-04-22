@@ -67,7 +67,7 @@ export default function OnboardingNameScreen() {
       <HeaderBack title="" />
       <ResponsiveContainer>
         <View className="flex-1 pt-10">
-          <Text className="text-sm text-amber-700 text-center mb-2">
+          <Text className="text-sm text-warning text-center mb-2">
             Шаг 1 из 3
           </Text>
           <Text className="text-2xl font-bold text-slate-900 text-center mb-6">
