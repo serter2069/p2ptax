@@ -216,9 +216,9 @@ export default function AuthOtpScreen() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <ResponsiveContainer>
-          <View className="flex-1 justify-center">
-            <View className="items-center mb-8">
-              <View className="w-16 h-16 rounded-2xl bg-accent items-center justify-center">
+          <View className="flex-1 justify-center px-2">
+            <View className="items-center mb-10">
+              <View className="w-16 h-16 rounded-2xl bg-accent items-center justify-center" style={{ shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 }}>
                 <Text className="text-xl font-bold text-white">P2P</Text>
               </View>
             </View>
@@ -226,7 +226,7 @@ export default function AuthOtpScreen() {
             <Text className="text-2xl font-bold text-text-base text-center mb-2">
               Кто вы?
             </Text>
-            <Text className="text-sm text-text-mute text-center mb-8">
+            <Text className="text-base text-text-mute text-center mb-8 leading-6">
               Выберите, как вы будете использовать сервис
             </Text>
 
@@ -234,12 +234,12 @@ export default function AuthOtpScreen() {
               accessibilityRole="button"
               accessibilityLabel="Мне нужна помощь с налоговой"
               onPress={() => handleRoleChoice("CLIENT")}
-              className="border-2 border-border rounded-2xl p-5 mb-4 active:bg-surface2"
+              className="border-2 border-border rounded-2xl p-5 mb-3 active:bg-surface2"
             >
               <Text className="text-base font-semibold text-text-base text-center mb-1">
                 Мне нужна помощь с налоговой
               </Text>
-              <Text className="text-sm text-text-mute text-center">
+              <Text className="text-sm text-text-mute text-center leading-5">
                 Ищу специалиста для решения налоговых вопросов
               </Text>
             </Pressable>
@@ -248,19 +248,20 @@ export default function AuthOtpScreen() {
               accessibilityRole="button"
               accessibilityLabel="Я налоговый специалист"
               onPress={() => handleRoleChoice("SPECIALIST")}
-              className="bg-accent rounded-2xl p-5 active:bg-accent"
+              className="rounded-2xl p-5 active:opacity-90"
               style={{
+                backgroundColor: colors.primary,
                 shadowColor: colors.primary,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 3,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 4,
               }}
             >
               <Text className="text-base font-semibold text-white text-center mb-1">
                 Я налоговый специалист
               </Text>
-              <Text className="text-sm text-blue-300 text-center">
+              <Text className="text-sm text-center leading-5" style={{ color: colors.accentSoft }}>
                 Помогаю клиентам с налоговыми вопросами
               </Text>
             </Pressable>
@@ -284,7 +285,11 @@ export default function AuthOtpScreen() {
         >
           <ResponsiveContainer>
             <View className="flex-1" style={{ paddingTop: 48 }}>
-              <Text className="text-base text-text-base text-center mb-1">
+              {/* Heading */}
+              <Text className="text-2xl font-bold text-text-base text-center mb-2">
+                Введите код
+              </Text>
+              <Text className="text-base text-text-mute text-center leading-6 mb-1">
                 Код отправлен на
               </Text>
               <Text className="text-base font-semibold text-text-base text-center mb-8">
@@ -292,7 +297,7 @@ export default function AuthOtpScreen() {
               </Text>
 
               {/* 6 separate digit inputs */}
-              <View className="flex-row justify-center gap-2 mb-4">
+              <View className="flex-row justify-center gap-3 mb-2">
                 {digits.length === 0 ? (
                   <EmptyState icon={Mail} title="Код недоступен" subtitle="Не удалось инициализировать поля ввода" />
                 ) : (
@@ -305,9 +310,9 @@ export default function AuthOtpScreen() {
                       }}
                       style={{
                         width: 48,
-                        height: 52,
+                        height: 56,
                         borderRadius: radiusValue.md,
-                        borderWidth: error ? 1.5 : 1,
+                        borderWidth: error ? 2 : digit ? 2 : 1.5,
                         borderColor: error
                           ? colors.error
                           : digit
@@ -317,9 +322,9 @@ export default function AuthOtpScreen() {
                           ? colors.errorBg
                           : digit
                             ? colors.accentSoft
-                            : colors.background,
+                            : colors.surface2,
                         textAlign: "center",
-                        fontSize: 22,
+                        fontSize: 24,
                         fontWeight: "700",
                         color: error ? colors.error : colors.text,
                         outlineWidth: 0,
@@ -338,12 +343,13 @@ export default function AuthOtpScreen() {
                 )}
               </View>
 
+              {/* Error / spacer */}
               {error ? (
-                <Text className="text-sm text-danger text-center mb-4">
+                <Text className="text-sm text-danger text-center mt-3 mb-4 leading-5">
                   {error}
                 </Text>
               ) : (
-                <View style={{ height: 20, marginBottom: 16 }} />
+                <View style={{ height: 28, marginBottom: 16 }} />
               )}
 
               {/* Verify button */}
@@ -364,19 +370,19 @@ export default function AuthOtpScreen() {
                 }
                 onPress={handleResend}
                 disabled={resendTimer > 0 || isResending}
-                className="mt-4 py-3 items-center"
+                className="mt-5 py-3 items-center"
               >
                 {isResending ? (
                   <ActivityIndicator color={colors.textSecondary} size="small" />
                 ) : resendTimer > 0 ? (
-                  <Text className="text-sm text-text-mute text-center">
+                  <Text className="text-sm text-text-mute text-center leading-5">
                     Отправить повторно через{" "}
-                    <Text className="font-medium text-text-mute">
+                    <Text className="font-semibold text-text-base">
                       {resendTimer} сек
                     </Text>
                   </Text>
                 ) : (
-                  <Text className="text-sm text-accent font-medium underline text-center">
+                  <Text className="text-base text-accent font-semibold text-center">
                     Отправить код повторно
                   </Text>
                 )}

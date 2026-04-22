@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { colors } from "@/lib/theme";
 
 export default function OnboardingNameScreen() {
   const router = useRouter();
@@ -68,15 +69,27 @@ export default function OnboardingNameScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
       <ResponsiveContainer>
-        <View className="flex-1 pt-10" style={{ paddingBottom: isDesktop ? 48 : 24 }}>
-          <Text className="text-sm text-warning text-center mb-2">
-            Шаг 1 из 3
-          </Text>
-          <Text className="text-2xl font-bold text-text-base text-center mb-6">
+        <View className="flex-1 pt-8" style={{ paddingBottom: isDesktop ? 48 : 24 }}>
+          {/* Progress indicator */}
+          <View className="mb-6">
+            <View className="flex-row justify-center gap-2 mb-3">
+              <View className="h-1.5 w-8 rounded-full bg-accent" />
+              <View className="h-1.5 w-8 rounded-full bg-border" />
+              <View className="h-1.5 w-8 rounded-full bg-border" />
+            </View>
+            <Text className="text-sm font-medium text-text-mute text-center">
+              Шаг 1 из 3
+            </Text>
+          </View>
+
+          <Text className="text-2xl font-bold text-text-base text-center mb-2">
             Ваше имя
           </Text>
+          <Text className="text-base text-text-mute text-center leading-6 mb-8">
+            Это имя увидят клиенты в вашем профиле
+          </Text>
 
-          <View className="mb-3">
+          <View className="mb-4">
             <Input
               label="Имя"
               placeholder="Иван"
@@ -88,7 +101,7 @@ export default function OnboardingNameScreen() {
             />
           </View>
 
-          <View className="mb-4">
+          <View className="mb-6">
             <Input
               label="Фамилия"
               placeholder="Петров"
@@ -105,13 +118,13 @@ export default function OnboardingNameScreen() {
             accessibilityRole="button"
             accessibilityLabel="Принять условия использования"
             onPress={() => setAgreed(!agreed)}
-            className="flex-row items-start mb-6"
+            className="flex-row items-start mb-8"
           >
             <View
-              className={`w-5 h-5 rounded border mt-0.5 items-center justify-center ${
+              className={`w-5 h-5 rounded border-2 mt-0.5 items-center justify-center ${
                 agreed
                   ? "bg-accent border-accent"
-                  : "border-slate-300 bg-white"
+                  : "border-border bg-white"
               }`}
             >
               {agreed && (
@@ -121,7 +134,7 @@ export default function OnboardingNameScreen() {
             <Text className="flex-1 ml-3 text-sm text-text-mute leading-5">
               Я принимаю{" "}
               <Text
-                className="text-accent underline"
+                className="text-accent font-medium underline"
                 onPress={() => router.push("/legal/terms" as never)}
               >
                 Условия использования
@@ -130,9 +143,11 @@ export default function OnboardingNameScreen() {
           </Pressable>
 
           {error ? (
-            <Text className="text-xs text-danger text-center mb-4">
-              {error}
-            </Text>
+            <View className="mb-4 px-4 py-3 rounded-xl" style={{ backgroundColor: colors.errorBg }}>
+              <Text className="text-sm text-danger text-center leading-5">
+                {error}
+              </Text>
+            </View>
           ) : null}
 
           <Button
