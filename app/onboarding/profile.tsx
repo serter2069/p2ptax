@@ -380,7 +380,8 @@ export default function OnboardingProfileScreen() {
             accessibilityLabel="Пропустить"
             onPress={handleSubmit}
             disabled={isLoading || avatarUploading}
-            className="items-center mt-3 py-2"
+            className="items-center mt-3"
+            style={{ minHeight: 44, justifyContent: "center" }}
           >
             <Text className="text-sm text-text-mute">Пропустить</Text>
           </Pressable>
