@@ -15,7 +15,7 @@ export default function SpecialistTabsLayout() {
           ? { height: 60, paddingBottom: 8, borderTopColor: colors.border }
           : { display: "none" },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.placeholder,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: { fontSize: 12 },
       }}
     >

@@ -33,11 +33,11 @@ export default function Button({
         ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }
         : { backgroundColor: colors.danger };
 
-  const textColor =
-    variant === "primary" || variant === "destructive" ? "text-white" : undefined;
+  const textColorValue =
+    variant === "primary" || variant === "destructive" ? "#ffffff" : colors.text;
 
   const iconColor =
-    variant === "primary" || variant === "destructive" ? colors.surface : colors.primary;
+    variant === "primary" || variant === "destructive" ? "#ffffff" : colors.primary;
 
   return (
     <Pressable
@@ -66,8 +66,8 @@ export default function Button({
             />
           )}
           <Text
-            className={`text-base font-semibold ${textColor ?? ""}`}
-            style={!textColor ? { color: colors.text } : undefined}
+            className="text-base font-semibold"
+            style={{ color: textColorValue }}
           >
             {label}
           </Text>
