@@ -213,11 +213,11 @@ export default function MyRequestDetail() {
 
             {/* City + FNS chips */}
             <View className="flex-row flex-wrap gap-2 mb-4">
-              <View className="bg-white border border-slate-200 px-3 py-1 rounded-lg">
-                <Text className="text-sm text-slate-700">{request.city.name}</Text>
+              <View className="bg-white border border-border px-3 py-1 rounded-lg">
+                <Text className="text-sm text-text-base">{request.city.name}</Text>
               </View>
-              <View className="bg-white border border-slate-200 px-3 py-1 rounded-lg">
-                <Text className="text-sm text-slate-700">
+              <View className="bg-white border border-border px-3 py-1 rounded-lg">
+                <Text className="text-sm text-text-base">
                   {request.fns.name} ({request.fns.code})
                 </Text>
               </View>
@@ -234,10 +234,10 @@ export default function MyRequestDetail() {
                 elevation: 2,
               }}
             >
-              <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+              <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
                 Описание
               </Text>
-              <Text className="text-base text-slate-900 leading-6">
+              <Text className="text-base text-text-base leading-6">
                 {request.description}
               </Text>
             </View>
@@ -254,7 +254,7 @@ export default function MyRequestDetail() {
                   elevation: 2,
                 }}
               >
-                <Text className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">
+                <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
                   Прикреплённые документы
                 </Text>
                 {request.files.map((file) => (
@@ -263,7 +263,7 @@ export default function MyRequestDetail() {
                     key={file.id}
                     accessibilityLabel={`Открыть файл ${file.filename}`}
                     onPress={() => handleFilePress(file)}
-                    className="flex-row items-center bg-slate-50 rounded-xl p-3 mb-2"
+                    className="flex-row items-center bg-surface2 rounded-xl p-3 mb-2"
                     style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                   >
                     {file.mimeType === "application/pdf"
@@ -271,10 +271,10 @@ export default function MyRequestDetail() {
                       : <FileImage size={20} color={colors.primary} />
                     }
                     <View className="ml-3 flex-1">
-                      <Text className="text-sm text-slate-900" numberOfLines={1}>
+                      <Text className="text-sm text-text-base" numberOfLines={1}>
                         {file.filename}
                       </Text>
-                      <Text className="text-xs text-slate-400">
+                      <Text className="text-xs text-text-mute">
                         {(file.size / 1024).toFixed(0)} КБ
                       </Text>
                     </View>
@@ -291,7 +291,7 @@ export default function MyRequestDetail() {
                 accessibilityLabel="Продлить заявку"
                 onPress={handleExtend}
                 disabled={extending}
-                className="bg-amber-500 rounded-xl py-3 items-center mb-4"
+                className="bg-warning rounded-xl py-3 items-center mb-4"
                 style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
               >
                 {extending ? (

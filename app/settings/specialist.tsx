@@ -390,11 +390,11 @@ export default function SpecialistSettings() {
             />
 
             {/* Account */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
               Аккаунт
             </Text>
 
-            <View className="bg-white border border-slate-100 rounded-xl mb-8 overflow-hidden">
+            <View className="bg-white border border-border rounded-xl mb-8 overflow-hidden">
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Выйти из аккаунта"
@@ -402,13 +402,13 @@ export default function SpecialistSettings() {
                 className="flex-row items-center px-4 py-3"
               >
                 <LogOut size={16} color={colors.error} />
-                <Text className="text-base text-red-600 ml-3 flex-1">
+                <Text className="text-base text-danger ml-3 flex-1">
                   Выйти из аккаунта
                 </Text>
               </Pressable>
             </View>
 
-            <Text className="text-xs text-slate-400 text-center mb-4">
+            <Text className="text-xs text-text-mute text-center mb-4">
               Версия 1.0.0
             </Text>
 

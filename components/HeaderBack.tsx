@@ -12,7 +12,7 @@ export default function HeaderBack({ title, rightAction }: HeaderBackProps) {
   const router = useRouter();
 
   return (
-    <View className="flex-row items-center h-14 bg-white border-b border-slate-200 px-4">
+    <View className="flex-row items-center h-14 bg-white border-b border-border px-4">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Назад"
@@ -21,7 +21,7 @@ export default function HeaderBack({ title, rightAction }: HeaderBackProps) {
       >
         <ArrowLeft size={18} color={colors.text} />
       </Pressable>
-      <Text className="flex-1 text-center text-base font-semibold text-slate-900" numberOfLines={1}>
+      <Text className="flex-1 text-center text-base font-semibold text-text-base" numberOfLines={1}>
         {title}
       </Text>
       {rightAction ? (

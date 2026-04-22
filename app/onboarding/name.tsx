@@ -70,7 +70,7 @@ export default function OnboardingNameScreen() {
           <Text className="text-sm text-warning text-center mb-2">
             Шаг 1 из 3
           </Text>
-          <Text className="text-2xl font-bold text-slate-900 text-center mb-6">
+          <Text className="text-2xl font-bold text-text-base text-center mb-6">
             Ваше имя
           </Text>
 
@@ -108,7 +108,7 @@ export default function OnboardingNameScreen() {
             <View
               className={`w-5 h-5 rounded border mt-0.5 items-center justify-center ${
                 agreed
-                  ? "bg-blue-900 border-blue-900"
+                  ? "bg-accent border-accent"
                   : "border-slate-300 bg-white"
               }`}
             >
@@ -116,10 +116,10 @@ export default function OnboardingNameScreen() {
                 <Text className="text-white text-xs font-bold">✓</Text>
               )}
             </View>
-            <Text className="flex-1 ml-3 text-sm text-slate-500 leading-5">
+            <Text className="flex-1 ml-3 text-sm text-text-mute leading-5">
               Я принимаю{" "}
               <Text
-                className="text-blue-900 underline"
+                className="text-accent underline"
                 onPress={() => router.push("/legal/terms" as never)}
               >
                 Условия использования
@@ -128,7 +128,7 @@ export default function OnboardingNameScreen() {
           </Pressable>
 
           {error ? (
-            <Text className="text-xs text-red-600 text-center mb-4">
+            <Text className="text-xs text-danger text-center mb-4">
               {error}
             </Text>
           ) : null}
