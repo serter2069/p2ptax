@@ -128,21 +128,24 @@ export default function ClientMessages() {
           accessibilityRole="button"
           accessibilityLabel={`Чат с ${name}`}
           onPress={handlePress}
-          className="flex-row items-center py-3 border-b border-border active:bg-surface2"
+          className="flex-row items-center px-4 border-b border-border active:bg-surface2"
           style={({ pressed }) => [
-            { backgroundColor: selected ? colors.accentSoft : colors.surface },
-            pressed && { opacity: 0.7 },
+            { backgroundColor: selected ? colors.accentSoft : colors.surface, minHeight: 60 },
+            pressed && { opacity: 0.75 },
           ]}
         >
           {/* Avatar with unread badge */}
-          <View className="relative mr-3">
+          <View className="relative mr-3 my-3.5">
             <Avatar
               name={name}
               imageUrl={item.otherUser.avatarUrl ?? undefined}
               size="md"
             />
             {hasUnread && (
-              <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-danger items-center justify-center px-1">
+              <View
+                className="absolute -top-1 -right-1 rounded-full bg-accent items-center justify-center px-1"
+                style={{ minWidth: 18, height: 18 }}
+              >
                 <Text className="text-[10px] font-bold text-white">
                   {item.unreadCount > 99 ? "99+" : item.unreadCount}
                 </Text>
@@ -151,40 +154,38 @@ export default function ClientMessages() {
           </View>
 
           {/* Content */}
-          <View className="flex-1 min-w-0">
+          <View className="flex-1 min-w-0 py-3.5">
             <View className="flex-row items-center justify-between gap-2">
               <Text
-                className={`text-base flex-1 flex-shrink ${
-                  hasUnread ? "font-bold" : "font-semibold"
+                className={`text-sm flex-1 flex-shrink ${
+                  hasUnread ? "font-bold text-text-base" : "font-semibold text-text-base"
                 }`}
-                style={{ color: colors.text }}
                 numberOfLines={1}
               >
                 {name}
               </Text>
               {item.lastMessage && (
-                <Text className="text-xs flex-shrink-0" style={{ color: colors.textMuted }}>
+                <Text className="text-xs text-text-dim flex-shrink-0">
                   {formatTime(item.lastMessage.createdAt)}
                 </Text>
               )}
             </View>
 
             {/* Request title */}
-            <Text className="text-xs mt-0.5" style={{ color: colors.textMuted }} numberOfLines={1}>
+            <Text className="text-xs text-text-dim mt-0.5" numberOfLines={1}>
               {item.request.title}
             </Text>
 
             {/* Last message preview */}
             {item.lastMessage ? (
               <Text
-                className={`text-sm mt-0.5 ${hasUnread ? "font-semibold" : ""}`}
-                style={{ color: hasUnread ? colors.textSecondary : colors.textMuted }}
+                className={`text-sm mt-0.5 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
                 numberOfLines={1}
               >
                 {item.lastMessage.text}
               </Text>
             ) : (
-              <Text className="text-sm mt-0.5 italic" style={{ color: colors.borderStrong }} numberOfLines={1}>
+              <Text className="text-sm mt-0.5 italic text-text-dim" numberOfLines={1}>
                 Нет сообщений
               </Text>
             )}
@@ -242,10 +243,10 @@ export default function ClientMessages() {
                   tintColor={colors.primary}
                 />
               }
-              contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 12 }}
+              contentContainerStyle={{ flexGrow: 1 }}
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-16 px-4">
-                  <Text className="text-sm text-center" style={{ color: colors.textMuted }}>Нет сообщений</Text>
+                  <Text className="text-sm text-center text-text-mute">Нет сообщений</Text>
                 </View>
               }
             />
@@ -256,7 +257,7 @@ export default function ClientMessages() {
               <InlineChatView threadId={selectedThreadId} />
             ) : (
               <View className="flex-1 items-center justify-center">
-                <Text className="text-sm" style={{ color: colors.textMuted }}>Выберите диалог</Text>
+                <Text className="text-sm text-text-mute">Выберите диалог</Text>
               </View>
             )}
           </View>
@@ -289,7 +290,7 @@ export default function ClientMessages() {
             onAction={() => router.push("/specialists" as never)}
           />
         }
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16 }}
+        contentContainerStyle={{ flexGrow: 1 }}
       />
     </SafeAreaView>
   );
