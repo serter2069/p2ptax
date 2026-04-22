@@ -21,7 +21,7 @@ export default function Button({
   fullWidth = true,
   icon: Icon,
 }: ButtonProps) {
-  const widthClass = fullWidth ? "w-full" : "";
+  const widthClass = fullWidth ? "w-full" : "px-6";
   const opacityClass = disabled || loading ? "opacity-40" : "";
 
   const baseContainerClass = `rounded-xl h-12 flex-row items-center justify-center ${widthClass} ${opacityClass}`;
