@@ -19,7 +19,7 @@ import { colors, tw, typography, spacing, radius } from "../lib/theme";
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View className="mb-10">
-      <Text className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
+      <Text className="text-sm font-semibold text-text-mute uppercase tracking-wider mb-4">
         {title}
       </Text>
       {children}
@@ -34,7 +34,7 @@ export default function BrandScreen() {
   const [inputIcon, setInputIcon] = useState("");
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Design System" />
       <ScrollView className="flex-1" contentContainerClassName="px-4 py-6 pb-20">
         <Text className={`${typography.h2} ${tw.text} mb-1`}>P2PTax</Text>
@@ -42,7 +42,7 @@ export default function BrandScreen() {
 
         {/* ====== COLORS ====== */}
         <Section title="Colors">
-          <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+          <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
             Base
           </Text>
           <View className="flex-row flex-wrap gap-3 mb-4">
@@ -56,13 +56,13 @@ export default function BrandScreen() {
             ] as const).map((c) => (
               <View key={c.name} className="w-[30%]">
                 <View className={`h-20 ${radius.sm} ${c.cls}`} />
-                <Text className="text-xs font-bold text-slate-900 mt-1">{c.name}</Text>
+                <Text className="text-xs font-bold text-text-base mt-1">{c.name}</Text>
                 <Text className={typography.small}>{c.label}</Text>
               </View>
             ))}
           </View>
 
-          <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+          <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
             Semantic
           </Text>
           <View className="flex-row gap-3">
@@ -73,7 +73,7 @@ export default function BrandScreen() {
             ] as const).map((c) => (
               <View key={c.name} className="flex-1">
                 <View className={`h-16 ${radius.sm} ${c.cls}`} />
-                <Text className="text-xs font-bold text-slate-900 mt-1">{c.name}</Text>
+                <Text className="text-xs font-bold text-text-base mt-1">{c.name}</Text>
                 <Text className={typography.small}>{c.label}</Text>
               </View>
             ))}

@@ -164,18 +164,18 @@ export default function AdminComplaints() {
           accessibilityRole="button"
           accessibilityLabel={`Жалоба от ${userName(item.reporter)}`}
           onPress={() => setExpandedId(isExpanded ? null : item.id)}
-          className="bg-white border-b border-slate-100 px-4 py-3"
+          className="bg-white border-b border-border px-4 py-3"
         >
           <View className="flex-row items-start justify-between mb-1">
             <View className="flex-1 mr-3">
-              <Text className="text-xs text-slate-500 mb-0.5">
-                От: <Text className="font-medium text-slate-900">{userName(item.reporter)}</Text>
+              <Text className="text-xs text-text-mute mb-0.5">
+                От: <Text className="font-medium text-text-base">{userName(item.reporter)}</Text>
               </Text>
-              <Text className="text-xs text-slate-500">
+              <Text className="text-xs text-text-mute">
                 На:{" "}
-                <Text className="font-medium text-slate-900">{userName(item.targetUser)}</Text>
+                <Text className="font-medium text-text-base">{userName(item.targetUser)}</Text>
                 {item.targetUser.role ? (
-                  <Text className="text-slate-400">
+                  <Text className="text-text-mute">
                     {" "}({ROLE_LABELS[item.targetUser.role] || item.targetUser.role})
                   </Text>
                 ) : null}
@@ -188,12 +188,12 @@ export default function AdminComplaints() {
             />
           </View>
 
-          <Text className="text-sm text-slate-700 mt-1" numberOfLines={isExpanded ? undefined : 2}>
+          <Text className="text-sm text-text-base mt-1" numberOfLines={isExpanded ? undefined : 2}>
             {item.text}
           </Text>
 
           <View className="flex-row items-center justify-between mt-2">
-            <Text className="text-xs text-slate-400">{formatDate(item.createdAt)}</Text>
+            <Text className="text-xs text-text-mute">{formatDate(item.createdAt)}</Text>
             {isExpanded
               ? <ChevronUp size={11} color={colors.placeholder} />
               : <ChevronDown size={11} color={colors.placeholder} />
@@ -202,23 +202,23 @@ export default function AdminComplaints() {
         </Pressable>
 
         {isExpanded && (
-          <View className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-            <Text className="text-xs text-slate-500 mb-1">
-              ID жалобы: <Text className="text-slate-700">{item.id}</Text>
+          <View className="bg-surface2 px-4 py-3 border-b border-border">
+            <Text className="text-xs text-text-mute mb-1">
+              ID жалобы: <Text className="text-text-base">{item.id}</Text>
             </Text>
-            <Text className="text-xs text-slate-500 mb-1">
-              Жалобщик: <Text className="text-slate-700">{item.reporter.email}</Text>
+            <Text className="text-xs text-text-mute mb-1">
+              Жалобщик: <Text className="text-text-base">{item.reporter.email}</Text>
             </Text>
-            <Text className="text-xs text-slate-500 mb-1">
-              На пользователя: <Text className="text-slate-700">{item.targetUser.email}</Text>
+            <Text className="text-xs text-text-mute mb-1">
+              На пользователя: <Text className="text-text-base">{item.targetUser.email}</Text>
             </Text>
             {item.reviewedAt && (
-              <Text className="text-xs text-slate-500 mb-1">
-                Рассмотрена: <Text className="text-slate-700">{formatDate(item.reviewedAt)}</Text>
+              <Text className="text-xs text-text-mute mb-1">
+                Рассмотрена: <Text className="text-text-base">{formatDate(item.reviewedAt)}</Text>
               </Text>
             )}
-            <Text className="text-xs text-slate-500 mb-3 mt-1">Текст жалобы:</Text>
-            <Text className="text-sm text-slate-800 mb-3">{item.text}</Text>
+            <Text className="text-xs text-text-mute mb-3 mt-1">Текст жалобы:</Text>
+            <Text className="text-sm text-text-base mb-3">{item.text}</Text>
 
             {item.status === "NEW" && (
               <Pressable
@@ -227,7 +227,7 @@ export default function AdminComplaints() {
                 onPress={() => markReviewed(item)}
                 disabled={isReviewing}
                 className={`px-3 py-2 rounded-lg self-start ${
-                  isReviewing ? "bg-slate-300" : "bg-emerald-600"
+                  isReviewing ? "bg-surface2" : "bg-success"
                 }`}
               >
                 {isReviewing ? (
