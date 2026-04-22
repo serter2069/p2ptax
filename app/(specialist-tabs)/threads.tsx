@@ -193,10 +193,10 @@ function FilterChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`px-4 py-2 rounded-full border ${
+      className={`px-5 rounded-full border ${
         active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
-      style={({ pressed }) => [{ minHeight: 44, justifyContent: "center" as const }, pressed && { opacity: 0.7 }]}
+      style={{ height: 44, justifyContent: "center" as const }}
     >
       <Text
         className={`text-sm font-medium ${

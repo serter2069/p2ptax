@@ -19,12 +19,12 @@ const CATEGORIES: { id: string; name: string; Icon: LucideIcon }[] = [
 ];
 
 const LISTINGS = [
-  { id: "1", title: "iPhone 15 Pro Max 256GB", price: "89 900 ₽", location: "Тбилиси", color: colors.indigoSoft },
-  { id: "2", title: "Toyota Camry 2020, малый пробег", price: "1 850 000 ₽", location: "Батуми", color: colors.pinkSoft },
-  { id: "3", title: "2-комн. квартира в центре", price: "45 000 ₽/мес", location: "Тбилиси", color: colors.greenSoft },
-  { id: "4", title: "MacBook Air M2, как новый", price: "75 000 ₽", location: "Кутаиси", color: colors.yellowSoft },
-  { id: "5", title: "Кожаная куртка винтаж", price: "12 000 ₽", location: "Тбилиси", color: colors.indigoSoft },
-  { id: "6", title: "Горный велосипед Trek X-Cal", price: "38 000 ₽", location: "Батуми", color: colors.pinkSoft },
+  { id: "1", title: "iPhone 15 Pro Max 256GB", price: "89 900 ₽", location: "Тбилиси" },
+  { id: "2", title: "Toyota Camry 2020, малый пробег", price: "1 850 000 ₽", location: "Батуми" },
+  { id: "3", title: "2-комн. квартира в центре", price: "45 000 ₽/мес", location: "Тбилиси" },
+  { id: "4", title: "MacBook Air M2, как новый", price: "75 000 ₽", location: "Кутаиси" },
+  { id: "5", title: "Кожаная куртка винтаж", price: "12 000 ₽", location: "Тбилиси" },
+  { id: "6", title: "Горный велосипед Trek X-Cal", price: "38 000 ₽", location: "Батуми" },
 ];
 
 function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
@@ -46,7 +46,7 @@ function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
   );
 }
 
-function ListingCard({ title, price, location, color }: { title: string; price: string; location: string; color: string }) {
+function ListingCard({ title, price, location }: { title: string; price: string; location: string }) {
   return (
     <Pressable className="flex-1 m-1.5" style={{ minHeight: 44 }} accessibilityRole="button" accessibilityLabel={title}>
       <View
@@ -59,7 +59,7 @@ function ListingCard({ title, price, location, color }: { title: string; price: 
           elevation: 4,
         }}
       >
-        <View className="h-36 items-center justify-center relative" style={{ backgroundColor: color }}>
+        <View className="h-36 items-center justify-center relative" style={{ backgroundColor: colors.surface2 }}>
           <ImageIcon size={32} color={overlay.dark15} />
         </View>
         <View className="p-3 pb-4">
@@ -154,7 +154,6 @@ export default function HomeScreen() {
               title={item.title}
               price={item.price}
               location={item.location}
-              color={item.color}
             />
           )}
         />
