@@ -35,6 +35,7 @@ export default function BrandScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
+      <HeaderBack title="Design System" />
       <ScrollView className="flex-1" contentContainerClassName="px-4 py-6 pb-20">
         <Text className={`${typography.h2} ${tw.text} mb-1`}>P2PTax</Text>
         <Text className={`${typography.small} mb-8`}>Design System</Text>
