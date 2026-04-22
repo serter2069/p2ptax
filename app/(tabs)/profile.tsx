@@ -41,8 +41,8 @@ export default function ProfileScreen() {
                 <Star
                   key={star}
                   size={14}
-                  color="#f59e0b"
-                  fill={star <= 4 ? "#f59e0b" : "none"}
+                  color={colors.warning}
+                  fill={star <= 4 ? colors.warning : "none"}
                 />
               ))}
               <Text className="text-sm text-text-mute ml-1.5">4.5 (23 reviews)</Text>
