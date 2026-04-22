@@ -46,6 +46,14 @@ const FILTER_OPTIONS: { key: RoleFilter; label: string }[] = [
   { key: "BANNED", label: "Заблокированные" },
 ];
 
+const cardShadow = {
+  shadowColor: colors.text,
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.06,
+  shadowRadius: 4,
+  elevation: 2,
+};
+
 function getInitials(firstName: string | null, lastName: string | null, email: string): string {
   if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
   if (firstName) return firstName[0].toUpperCase();
@@ -214,14 +222,14 @@ export default function AdminUsers() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      {/* Search header */}
+      {/* Search header — keep accent bg */}
       <View className="bg-accent px-4 pb-3 pt-2">
         <TextInput
           accessibilityLabel="Поиск по email или имени"
           style={{
             backgroundColor: overlay.white15,
             borderRadius: radiusValue.md,
-            height: 40,
+            height: 44,
             paddingHorizontal: 14,
             color: colors.surface,
             fontSize: 15,
@@ -248,18 +256,18 @@ export default function AdminUsers() {
               key={opt.key}
               accessibilityLabel={opt.label}
               onPress={() => setFilter(opt.key)}
-              className={`px-3 py-1.5 rounded-full border ${
+              className={`px-3 rounded-full border active:opacity-70 ${
                 filter === opt.key
                   ? "bg-accent border-accent"
-                  : "bg-white border-border"
+                  : "bg-surface2 border-border"
               }`}
-              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+              style={{ minHeight: 36, justifyContent: "center" }}
             >
               <Text
                 className={`text-sm ${
                   filter === opt.key
                     ? "text-white font-medium"
-                    : "text-text-base"
+                    : "text-text-mute"
                 }`}
               >
                 {opt.label}
@@ -301,20 +309,20 @@ export default function AdminUsers() {
                 />
               ) : (
                 users.map((user) => (
-                  <View key={user.id}>
+                  <View key={user.id} className="mx-4 mb-2">
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`${[user.firstName, user.lastName].filter(Boolean).join(" ") || user.email}`}
                       onPress={() =>
                         setExpandedId(expandedId === user.id ? null : user.id)
                       }
-                      className="bg-white border-b border-border px-4 py-3"
-                      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                      className="bg-white border border-border rounded-xl p-4 active:opacity-70"
+                      style={cardShadow}
                     >
                       <View className="flex-row items-center">
-                        {/* Avatar */}
-                        <View className="w-8 h-8 rounded-full bg-accent items-center justify-center mr-3">
-                          <Text className="text-xs font-bold text-white">
+                        {/* Avatar initials chip */}
+                        <View className="bg-accent-soft rounded-full w-11 h-11 items-center justify-center mr-3">
+                          <Text className="text-accent font-bold text-base">
                             {getInitials(user.firstName, user.lastName, user.email)}
                           </Text>
                         </View>
@@ -322,7 +330,7 @@ export default function AdminUsers() {
                         {/* Name + email */}
                         <View className="flex-1 mr-2">
                           <Text
-                            className="text-sm font-medium text-text-base"
+                            className="text-base font-semibold text-text-base"
                             numberOfLines={1}
                           >
                             {[user.firstName, user.lastName]
@@ -330,7 +338,7 @@ export default function AdminUsers() {
                               .join(" ") || "Без имени"}
                           </Text>
                           <Text
-                            className="text-xs text-text-mute"
+                            className="text-sm text-text-mute"
                             numberOfLines={1}
                           >
                             {user.email}
@@ -340,31 +348,26 @@ export default function AdminUsers() {
                         {/* Badges */}
                         <View className="flex-row items-center gap-2">
                           {user.role && (
-                            <View className="bg-surface2 px-2 py-0.5 rounded-full">
-                              <Text className="text-xs text-text-mute">
+                            <View className="bg-accent-soft rounded-full px-2.5 py-0.5">
+                              <Text className="text-xs font-medium text-accent">
                                 {ROLE_LABELS[user.role] || user.role}
                               </Text>
                             </View>
                           )}
                           {user.isBanned && (
-                            <View className="bg-danger px-2 py-0.5 rounded-full">
-                              <Text className="text-xs text-white font-medium">
+                            <View className="bg-danger-soft rounded-full px-2.5 py-0.5">
+                              <Text className="text-xs text-danger font-medium">
                                 Бан
                               </Text>
                             </View>
                           )}
                         </View>
-
-                        {/* Date */}
-                        <Text className="text-xs text-text-mute ml-2">
-                          {formatDate(user.createdAt)}
-                        </Text>
                       </View>
                     </Pressable>
 
                     {/* Expanded section */}
                     {expandedId === user.id && (
-                      <View className="bg-surface2 px-4 py-3 border-b border-border">
+                      <View className="bg-surface2 px-4 py-3 border border-t-0 border-border rounded-b-xl">
                         <Text className="text-xs text-text-mute mb-1">
                           ID: {user.id}
                         </Text>
@@ -383,10 +386,10 @@ export default function AdminUsers() {
                             accessibilityRole="button"
                             accessibilityLabel={user.isBanned ? "Разблокировать" : "Заблокировать"}
                             onPress={() => toggleBan(user)}
-                            className={`px-3 py-2 rounded-lg ${
+                            className={`px-3 rounded-lg active:opacity-70 ${
                               user.isBanned ? "bg-success" : "bg-danger"
                             }`}
-                            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                            style={{ minHeight: 36, justifyContent: "center" }}
                           >
                             <Text className="text-xs text-white font-medium">
                               {user.isBanned ? "Разблокировать" : "Заблокировать"}
@@ -398,8 +401,8 @@ export default function AdminUsers() {
                               accessibilityRole="button"
                               accessibilityLabel="Закрыть все заявки"
                               onPress={() => closeAllRequests(user)}
-                              className="px-3 py-2 rounded-lg bg-warning"
-                              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                              className="px-3 rounded-lg bg-warning active:opacity-70"
+                              style={{ minHeight: 36, justifyContent: "center" }}
                             >
                               <Text className="text-xs text-white font-medium">
                                 Закрыть все заявки
