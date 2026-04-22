@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera, ImageIcon, Lightbulb } from "lucide-react-native";
 import { colors } from "@/lib/theme";
@@ -8,6 +8,8 @@ import EmptyState from "@/components/ui/EmptyState";
 const PLACEHOLDER_SLOTS = [1, 2, 3, 4, 5];
 
 export default function CreateScreen() {
+  const { width } = useWindowDimensions();
+  const _isDesktop = width >= 640;
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
@@ -69,12 +71,12 @@ export default function CreateScreen() {
           </View>
 
           {/* Tips */}
-          <View className="p-4 rounded-xl border mb-8" style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a" }}>
+          <View className="p-4 rounded-xl border border-warning-soft mb-8 bg-warning-soft">
             <View className="flex-row items-center mb-2">
               <Lightbulb size={16} color={colors.warning} />
-              <Text className="text-sm font-semibold ml-2" style={{ color: "#92400e" }}>Советы для хороших фото</Text>
+              <Text className="text-sm font-semibold ml-2" style={{ color: colors.warning }}>Советы для хороших фото</Text>
             </View>
-            <Text className="text-sm leading-5" style={{ color: "#78350f" }}>
+            <Text className="text-sm leading-5 text-text-mute">
               Используйте естественный свет. Снимайте с разных ракурсов. Покажите детали и возможные дефекты.
             </Text>
           </View>

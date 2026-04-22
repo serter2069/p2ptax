@@ -34,7 +34,7 @@ export default function Avatar({ name, imageUrl, size = "md" }: AvatarProps) {
           height: wh,
           borderRadius: wh / 2,
           borderWidth: 2,
-          borderColor: '#f1f5f9',
+          borderColor: colors.border,
           backgroundColor: colors.background,
         }}
       />

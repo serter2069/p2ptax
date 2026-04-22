@@ -18,7 +18,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface DashboardStats {
   requestsUsed: number;
@@ -100,7 +100,7 @@ export default function ClientDashboard() {
             <Text className="text-lg font-bold text-white mb-0.5">
               {user?.firstName ? `Здравствуйте, ${user.firstName}!` : "Здравствуйте!"}
             </Text>
-            <Text className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
+            <Text className="text-sm" style={{ color: overlay.white75 }}>
               Ваш личный кабинет налогоплательщика
             </Text>
 
@@ -108,23 +108,23 @@ export default function ClientDashboard() {
             <View className="flex-row mt-4 gap-3">
               <View
                 className="flex-1 rounded-xl px-3 py-2.5"
-                style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+                style={{ backgroundColor: overlay.white15 }}
               >
-                <Text className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>
+                <Text className="text-xs" style={{ color: overlay.white70 }}>
                   Заявок
                 </Text>
                 <Text className="text-xl font-bold text-white">
                   {stats?.requestsUsed ?? 0}
-                  <Text className="text-sm font-normal" style={{ color: "rgba(255,255,255,0.7)" }}>
+                  <Text className="text-sm font-normal" style={{ color: overlay.white70 }}>
                     /{stats?.requestsLimit ?? 5}
                   </Text>
                 </Text>
               </View>
               <View
                 className="flex-1 rounded-xl px-3 py-2.5"
-                style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+                style={{ backgroundColor: overlay.white15 }}
               >
-                <Text className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>
+                <Text className="text-xs" style={{ color: overlay.white70 }}>
                   Сообщений
                 </Text>
                 <Text className="text-xl font-bold text-white">
@@ -134,14 +134,14 @@ export default function ClientDashboard() {
             </View>
 
             {/* Progress bar */}
-            <View className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.2)" }}>
+            <View className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: overlay.white20 }}>
               <View
                 className="h-full rounded-full bg-white"
                 style={{ width: `${progressPercent}%` }}
               />
             </View>
             {atLimit && (
-              <Text className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.8)" }}>
+              <Text className="text-xs mt-1.5" style={{ color: overlay.white80 }}>
                 Лимит заявок исчерпан
               </Text>
             )}
@@ -194,13 +194,13 @@ export default function ClientDashboard() {
                     {atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
                   </Text>
                   {!atLimit && (
-                    <Text className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>
+                    <Text className="text-sm mt-0.5" style={{ color: overlay.white75 }}>
                       Специалисты откликнутся сами
                     </Text>
                   )}
                 </View>
                 {!atLimit && (
-                  <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.2)" }}>
+                  <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: overlay.white20 }}>
                     <Plus size={18} color="#fff" />
                   </View>
                 )}

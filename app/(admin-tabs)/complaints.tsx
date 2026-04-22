@@ -161,7 +161,7 @@ export default function AdminComplaints() {
     return (
       <View
         className="bg-white border border-border rounded-xl mb-3 overflow-hidden"
-        style={{ shadowColor: '#0b1424', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }}
+        style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }}
       >
         <Pressable
           accessibilityRole="button"

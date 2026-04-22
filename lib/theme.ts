@@ -94,6 +94,8 @@ export const overlay = {
   white30: 'rgba(255,255,255,0.3)',
   white50: 'rgba(255,255,255,0.5)',
   white70: 'rgba(255,255,255,0.7)',
+  white75: 'rgba(255,255,255,0.75)',
   white80: 'rgba(255,255,255,0.8)',
+  white20: 'rgba(255,255,255,0.2)',
   accent10: 'rgba(34,86,194,0.1)',
 } as const
