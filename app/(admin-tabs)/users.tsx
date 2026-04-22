@@ -17,7 +17,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
-import { colors, overlay, radiusValue } from "@/lib/theme";
+import { colors, overlay, radiusValue, fontSizeValue } from "@/lib/theme";
 
 
 type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
@@ -234,7 +234,7 @@ export default function AdminUsers() {
             height: 44,
             paddingHorizontal: 14,
             color: colors.surface,
-            fontSize: 15,
+            fontSize: fontSizeValue.md,
             outlineWidth: 0,
           }}
           placeholder="Поиск по email или имени..."

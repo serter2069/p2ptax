@@ -60,7 +60,7 @@ function ListingCard({ title, price, location, color }: { title: string; price: 
         }}
       >
         <View className="h-36 items-center justify-center relative" style={{ backgroundColor: color }}>
-          <ImageIcon size={32} color="rgba(0,0,0,0.15)" />
+          <ImageIcon size={32} color={overlay.dark15} />
         </View>
         <View className="p-3 pb-4">
           <Text className="text-sm font-semibold text-text-base mb-1" numberOfLines={2}>{title}</Text>

@@ -18,7 +18,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors, overlay } from "@/lib/theme";
+import { colors, overlay, shadowColor } from "@/lib/theme";
 
 interface DashboardStats {
   requestsUsed: number;
@@ -201,7 +201,7 @@ export default function ClientDashboard() {
                 </View>
                 {!atLimit && (
                   <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: overlay.white20 }}>
-                    <Plus size={18} color="#fff" />
+                    <Plus size={18} color={colors.surface} />
                   </View>
                 )}
               </Pressable>
