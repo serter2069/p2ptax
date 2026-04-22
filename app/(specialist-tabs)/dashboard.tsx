@@ -153,13 +153,15 @@ export default function SpecialistDashboard() {
         <HeaderHome
           onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
-        <ErrorState
-          message="Не удалось загрузить заявки"
-          onRetry={() => {
-            setLoading(true);
-            fetchData().finally(() => setLoading(false));
-          }}
-        />
+        <View className="flex-1 items-center justify-center">
+          <ErrorState
+            message="Не удалось загрузить заявки"
+            onRetry={() => {
+              setLoading(true);
+              fetchData().finally(() => setLoading(false));
+            }}
+          />
+        </View>
       </SafeAreaView>
     );
   }
