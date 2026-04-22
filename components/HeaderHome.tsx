@@ -12,7 +12,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
   const router = useRouter();
 
   return (
-    <View className="flex-row items-center justify-between h-14 bg-blue-900 px-4">
+    <View className="flex-row items-center justify-between h-14 px-4" style={{ backgroundColor: colors.primary }}>
       <Text className="text-lg font-bold text-white">P2PTax</Text>
       <View className="flex-row items-center gap-4">
         <Pressable

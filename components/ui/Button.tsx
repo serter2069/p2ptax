@@ -12,24 +12,6 @@ export interface ButtonProps {
   icon?: LucideIcon;
 }
 
-const variantStyles = {
-  primary: {
-    container: "bg-blue-900 rounded-xl h-12 flex-row items-center justify-center",
-    text: "text-white text-base font-semibold",
-    iconColor: colors.surface,
-  },
-  secondary: {
-    container: "bg-white border border-slate-200 rounded-xl h-12 flex-row items-center justify-center",
-    text: "text-slate-900 text-base font-semibold",
-    iconColor: colors.primary,
-  },
-  destructive: {
-    container: "bg-red-600 rounded-xl h-12 flex-row items-center justify-center",
-    text: "text-white text-base font-semibold",
-    iconColor: colors.surface,
-  },
-} as const;
-
 export default function Button({
   variant = "primary",
   label,
@@ -39,9 +21,23 @@ export default function Button({
   fullWidth = true,
   icon: Icon,
 }: ButtonProps) {
-  const styles = variantStyles[variant];
   const widthClass = fullWidth ? "w-full" : "";
   const opacityClass = disabled || loading ? "opacity-40" : "";
+
+  const baseContainerClass = `rounded-xl h-12 flex-row items-center justify-center ${widthClass} ${opacityClass}`;
+
+  const variantStyle =
+    variant === "primary"
+      ? { backgroundColor: colors.primary }
+      : variant === "secondary"
+        ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }
+        : { backgroundColor: "#dc2626" };
+
+  const textColor =
+    variant === "primary" || variant === "destructive" ? "text-white" : undefined;
+
+  const iconColor =
+    variant === "primary" || variant === "destructive" ? colors.surface : colors.primary;
 
   return (
     <Pressable
@@ -49,26 +45,32 @@ export default function Button({
       accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled || loading}
-      className={`${styles.container} ${widthClass} ${opacityClass}`}
+      className={baseContainerClass}
       style={({ pressed }) => [
+        variantStyle,
         variant === "primary" && !pressed
-          ? { shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 3 }
+          ? { shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 }
           : undefined,
         pressed ? { opacity: 0.9, transform: [{ scale: 0.98 }] } : undefined,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={styles.iconColor} />
+        <ActivityIndicator color={iconColor} />
       ) : (
         <>
           {Icon && (
             <Icon
               size={18}
-              color={styles.iconColor}
+              color={iconColor}
               style={{ marginRight: 8 }}
             />
           )}
-          <Text className={styles.text}>{label}</Text>
+          <Text
+            className={`text-base font-semibold ${textColor ?? ""}`}
+            style={!textColor ? { color: colors.text } : undefined}
+          >
+            {label}
+          </Text>
         </>
       )}
     </Pressable>
