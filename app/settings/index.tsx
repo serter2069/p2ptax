@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft, ChevronRight, Bell, Mail, MessageCircle, List,
-  Globe, Moon, AtSign, Trash2, FileText, Info, type LucideIcon
+  Globe, Moon, AtSign, Trash2, FileText, Info, Palette, type LucideIcon
 } from "lucide-react-native";
 import { useState } from "react";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -122,6 +122,17 @@ export default function SettingsScreen() {
         <SettingRow icon={Info} label="Версия" rightElement={
           <Text className="text-sm text-slate-400">1.0.0</Text>
         } />
+
+        {__DEV__ && (
+          <>
+            <SectionTitle title="Разработка" />
+            <SettingRow
+              icon={Palette}
+              label="Design System"
+              onPress={() => router.push("/brand" as never)}
+            />
+          </>
+        )}
         </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
