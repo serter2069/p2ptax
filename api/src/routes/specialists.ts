@@ -230,6 +230,8 @@ router.get("/:id", async (req: Request, res: Response) => {
       }
     }
 
+    const requestsCount = await prisma.thread.count({ where: { specialistId: id } });
+
     res.json({
       id: specialist.id,
       firstName: specialist.firstName,
@@ -237,6 +239,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       avatarUrl: specialist.avatarUrl,
       isAvailable: specialist.isAvailable,
       createdAt: specialist.createdAt,
+      requestsCount,
       profile: specialist.specialistProfile
         ? {
             description: specialist.specialistProfile.description,

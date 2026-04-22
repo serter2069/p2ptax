@@ -50,10 +50,15 @@ export default function MessageBubble({
       className={`mb-2 ${isOwn ? "items-end" : "items-start"}`}
     >
       <View
-        className={`rounded-2xl px-3 py-2 ${
-          isOwn ? "bg-blue-900" : "bg-slate-50"
-        }`}
-        style={{ maxWidth: "80%" }}
+        className="px-3 py-2"
+        style={{
+          maxWidth: "80%",
+          borderRadius: 16,
+          backgroundColor: isOwn ? "#1e3a8a" : "#f1f5f9",
+          ...(isOwn
+            ? { borderBottomRightRadius: 4 }
+            : { borderBottomLeftRadius: 4 }),
+        }}
       >
         {/* Image thumbnails */}
         {imageFiles.map((img) => (
@@ -113,7 +118,7 @@ export default function MessageBubble({
 
         {/* Text */}
         {text ? (
-          <Text className={`text-base ${isOwn ? "text-white" : "text-slate-900"}`}>
+          <Text className="text-base" style={{ color: isOwn ? "#ffffff" : "#0f172a" }}>
             {text}
           </Text>
         ) : null}

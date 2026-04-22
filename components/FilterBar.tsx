@@ -108,7 +108,6 @@ export default function FilterBar({
       {/* Services filter */}
       {services && services.length > 0 && onServiceToggle && (
         <View className="px-4 mt-1">
-          <Text className="text-xs text-slate-400 mb-1">Услуги:</Text>
           <View className="flex-row flex-wrap">
             {services.map((s) => (
               <FilterChip
