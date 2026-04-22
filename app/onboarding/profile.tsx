@@ -18,7 +18,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 
 export default function OnboardingProfileScreen() {
@@ -164,14 +164,22 @@ export default function OnboardingProfileScreen() {
       <ResponsiveContainer>
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 48 }}
           keyboardShouldPersistTaps="handled"
         >
           <View className="pt-6">
-            {/* Step indicator */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider text-center mb-2">
-              Шаг 3 из 3
-            </Text>
+            {/* Progress bar */}
+            <View className="mb-5">
+              <View className="flex-row justify-center gap-2 mb-3">
+                <View className="h-2 w-10 rounded-full bg-accent" />
+                <View className="h-2 w-10 rounded-full bg-accent" />
+                <View className="h-2 w-10 rounded-full bg-accent" />
+              </View>
+              <Text className="text-sm font-medium text-text-mute text-center">
+                Шаг 3 из 3
+              </Text>
+            </View>
+
             <Text className="text-2xl font-bold text-text-base text-center mb-1">
               Профиль
             </Text>
@@ -243,8 +251,14 @@ export default function OnboardingProfileScreen() {
             )}
 
             {/* Contacts note */}
-            <View className="bg-accent-soft rounded-xl px-4 py-3 mb-4">
-              <Text className="text-xs text-accent text-center">
+            <View
+              className="bg-accent-soft rounded-xl px-4 py-3 mb-4"
+              style={{
+                borderWidth: 1,
+                borderColor: overlay.accent10,
+              }}
+            >
+              <Text className="text-xs text-accent text-center font-medium">
                 Контакты будут видны всем посетителям платформы
               </Text>
             </View>
@@ -340,9 +354,14 @@ export default function OnboardingProfileScreen() {
             </View>
 
             {error ? (
-              <Text className="text-xs text-danger text-center mb-4">
-                {error}
-              </Text>
+              <View
+                className="mb-4 px-4 py-3 rounded-xl flex-row items-center"
+                style={{ backgroundColor: colors.errorBg, borderWidth: 1, borderColor: colors.danger }}
+              >
+                <Text className="text-sm text-danger leading-5 flex-1">
+                  {error}
+                </Text>
+              </View>
             ) : null}
 
             <Button
