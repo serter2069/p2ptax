@@ -260,13 +260,13 @@ export default function AdminComplaints() {
             onPress={() => setFilter(opt.key)}
             className={`px-3 py-1.5 rounded-full border ${
               filter === opt.key
-                ? "bg-blue-900 border-blue-900"
-                : "bg-white border-slate-200"
+                ? "bg-accent border-accent"
+                : "bg-white border-border"
             }`}
           >
             <Text
               className={`text-sm ${
-                filter === opt.key ? "text-white font-medium" : "text-slate-900"
+                filter === opt.key ? "text-white font-medium" : "text-text-base"
               }`}
             >
               {opt.label}
