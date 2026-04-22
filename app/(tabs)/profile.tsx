@@ -7,6 +7,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import EmptyState from "@/components/ui/EmptyState";
 
 const MENU_ITEMS: { id: string; Icon: LucideIcon; label: string; badge: string | null }[] = [
   { id: "listings", Icon: List, label: "My Listings", badge: "12" },
@@ -67,25 +68,29 @@ export default function ProfileScreen() {
 
         {/* Menu Items */}
         <View className="mt-4">
-          {MENU_ITEMS.map((item) => (
-            <Pressable
-              accessibilityRole="button"
-              key={item.id}
-              accessibilityLabel={item.label}
-              className="flex-row items-center px-4 py-4 active:bg-gray-50"
-            >
-              <View className="w-10 h-10 rounded-lg bg-gray-100 items-center justify-center">
-                <item.Icon size={18} color={colors.textSecondary} />
-              </View>
-              <Text className="flex-1 ml-3 text-base text-gray-900">{item.label}</Text>
-              {item.badge && (
-                <View className="bg-blue-100 rounded-full px-2.5 py-0.5 mr-2">
-                  <Text className="text-xs font-medium text-blue-600">{item.badge}</Text>
+          {MENU_ITEMS.length === 0 ? (
+            <EmptyState icon={List} title="Нет разделов" subtitle="Разделы профиля недоступны" />
+          ) : (
+            MENU_ITEMS.map((item) => (
+              <Pressable
+                accessibilityRole="button"
+                key={item.id}
+                accessibilityLabel={item.label}
+                className="flex-row items-center px-4 py-4 active:bg-gray-50"
+              >
+                <View className="w-10 h-10 rounded-lg bg-gray-100 items-center justify-center">
+                  <item.Icon size={18} color={colors.textSecondary} />
                 </View>
-              )}
-              <ChevronRight size={12} color={colors.textSecondary} />
-            </Pressable>
-          ))}
+                <Text className="flex-1 ml-3 text-base text-gray-900">{item.label}</Text>
+                {item.badge && (
+                  <View className="bg-blue-100 rounded-full px-2.5 py-0.5 mr-2">
+                    <Text className="text-xs font-medium text-blue-600">{item.badge}</Text>
+                  </View>
+                )}
+                <ChevronRight size={12} color={colors.textSecondary} />
+              </Pressable>
+            ))
+          )}
         </View>
 
         {/* Logout */}

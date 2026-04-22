@@ -12,11 +12,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Pencil, FileText, ChevronRight, LogOut, Trash2 } from "lucide-react-native";
+import { Pencil, FileText, ChevronRight, LogOut, Trash2, Bell } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import EmptyState from "@/components/ui/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { API_URL, apiPatch } from "@/lib/api";
@@ -24,6 +25,25 @@ import LoadingState from "@/components/ui/LoadingState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "@/lib/theme";
 
+interface NotificationSetting {
+  key: string;
+  label: string;
+  description: string;
+}
+
+
+const NOTIFICATION_SETTINGS: NotificationSetting[] = [
+  {
+    key: "newMessages",
+    label: "Новые сообщения",
+    description: "Получать уведомления о новых сообщениях от специалистов по email",
+  },
+  {
+    key: "closingWarnings",
+    label: "Предупреждения о закрытии",
+    description: "Предупреждать, когда заявка скоро закроется",
+  },
+];
 
 export default function ClientSettings() {
   const router = useRouter();
@@ -35,6 +55,12 @@ export default function ClientSettings() {
   const [saving, setSaving] = useState(false);
   const [newMessages, setNewMessages] = useState(true);
   const [closingWarnings, setClosingWarnings] = useState(true);
+
+  const notificationValues: Record<string, boolean> = { newMessages, closingWarnings };
+  const notificationSetters: Record<string, (v: boolean) => void> = {
+    newMessages: setNewMessages,
+    closingWarnings: setClosingWarnings,
+  };
 
   // Avatar upload state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl || null);
@@ -293,38 +319,28 @@ export default function ClientSettings() {
             </Text>
 
             <View className="bg-white border border-border rounded-xl mb-6 overflow-hidden">
-              <View className="flex-row items-center px-4 py-3 border-b border-border">
-                <View className="flex-1 mr-3">
-                  <Text className="text-base text-text-base">Новые сообщения</Text>
-                  <Text className="text-xs text-text-mute mt-0.5">
-                    Получать уведомления о новых сообщениях от специалистов по email
-                  </Text>
-                </View>
-                <Switch
-                  accessibilityLabel="Новые сообщения"
-                  value={newMessages}
-                  onValueChange={setNewMessages}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor={colors.surface}
-                />
-              </View>
-              <View className="flex-row items-center px-4 py-3">
-                <View className="flex-1 mr-3">
-                  <Text className="text-base text-text-base">
-                    Предупреждения о закрытии
-                  </Text>
-                  <Text className="text-xs text-text-mute mt-0.5">
-                    Предупреждать, когда заявка скоро закроется
-                  </Text>
-                </View>
-                <Switch
-                  accessibilityLabel="Предупреждения о закрытии"
-                  value={closingWarnings}
-                  onValueChange={setClosingWarnings}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor={colors.surface}
-                />
-              </View>
+              {NOTIFICATION_SETTINGS.length === 0 ? (
+                <EmptyState icon={Bell} title="Нет настроек уведомлений" subtitle="Настройки уведомлений недоступны" />
+              ) : (
+                NOTIFICATION_SETTINGS.map((setting, index) => (
+                  <View
+                    key={setting.key}
+                    className={`flex-row items-center px-4 py-3${index < NOTIFICATION_SETTINGS.length - 1 ? " border-b border-border" : ""}`}
+                  >
+                    <View className="flex-1 mr-3">
+                      <Text className="text-base text-text-base">{setting.label}</Text>
+                      <Text className="text-xs text-text-mute mt-0.5">{setting.description}</Text>
+                    </View>
+                    <Switch
+                      accessibilityLabel={setting.label}
+                      value={notificationValues[setting.key] ?? false}
+                      onValueChange={notificationSetters[setting.key]}
+                      trackColor={{ false: colors.border, true: colors.primary }}
+                      thumbColor={colors.surface}
+                    />
+                  </View>
+                ))
+              )}
             </View>
 
             {/* Legal section */}

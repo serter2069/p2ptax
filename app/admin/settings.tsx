@@ -8,11 +8,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
+import { Settings } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ErrorState from "@/components/ui/ErrorState";
+import EmptyState from "@/components/ui/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -120,15 +122,19 @@ export default function AdminSettings() {
         <ScrollView className="flex-1">
           <ResponsiveContainer>
             <View className="py-4 gap-4">
-              {SETTINGS_FIELDS.map((field) => (
-                <Input
-                  key={field.key}
-                  label={field.label}
-                  value={getValue(field.key, field.defaultValue)}
-                  onChangeText={(val) => setValue(field.key, val)}
-                  keyboardType="numeric"
-                />
-              ))}
+              {SETTINGS_FIELDS.length === 0 ? (
+                <EmptyState icon={Settings} title="Нет настроек" subtitle="Настройки системы недоступны" />
+              ) : (
+                SETTINGS_FIELDS.map((field) => (
+                  <Input
+                    key={field.key}
+                    label={field.label}
+                    value={getValue(field.key, field.defaultValue)}
+                    onChangeText={(val) => setValue(field.key, val)}
+                    keyboardType="numeric"
+                  />
+                ))
+              )}
 
               <View className="mt-2">
                 <Button

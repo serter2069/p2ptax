@@ -3,6 +3,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera, ImageIcon, Lightbulb } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import EmptyState from "@/components/ui/EmptyState";
+
+const PLACEHOLDER_SLOTS = [1, 2, 3, 4, 5];
 
 export default function CreateScreen() {
   return (
@@ -39,14 +42,18 @@ export default function CreateScreen() {
               </Pressable>
 
               {/* Placeholder slots */}
-              {[1, 2, 3, 4, 5].map((i) => (
-                <View
-                  key={i}
-                  className="w-[31%] aspect-square m-[1%] rounded-xl bg-gray-100 items-center justify-center"
-                >
-                  <ImageIcon size={20} color={colors.textSecondary} />
-                </View>
-              ))}
+              {PLACEHOLDER_SLOTS.length === 0 ? (
+                <EmptyState icon={ImageIcon} title="Нет слотов для фото" subtitle="Добавьте фотографии товара" />
+              ) : (
+                PLACEHOLDER_SLOTS.map((i) => (
+                  <View
+                    key={i}
+                    className="w-[31%] aspect-square m-[1%] rounded-xl bg-gray-100 items-center justify-center"
+                  >
+                    <ImageIcon size={20} color={colors.textSecondary} />
+                  </View>
+                ))
+              )}
             </View>
           </View>
 

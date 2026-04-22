@@ -7,10 +7,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { MapPin } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import EmptyState from "@/components/ui/EmptyState";
 import { api, apiPost } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
@@ -45,6 +47,7 @@ export default function NewRequest() {
   const [loadingFns, setLoadingFns] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingInit, setLoadingInit] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [atLimit, setAtLimit] = useState(false);
   const [limitInfo, setLimitInfo] = useState({ used: 0, limit: 5 });
   const [submitted, setSubmitted] = useState(false);
@@ -67,6 +70,7 @@ export default function NewRequest() {
         }
       } catch (e) {
         console.error("Init error:", e);
+        setLoadError(true);
       } finally {
         setLoadingInit(false);
       }
@@ -164,6 +168,21 @@ export default function NewRequest() {
         <HeaderBack title="Новая заявка" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError && cities.length === 0 && services.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <HeaderBack title="Новая заявка" />
+        <View className="flex-1 items-center justify-center">
+          <EmptyState
+            icon={MapPin}
+            title="Не удалось загрузить данные"
+            subtitle="Проверьте соединение и попробуйте снова"
+          />
         </View>
       </SafeAreaView>
     );
