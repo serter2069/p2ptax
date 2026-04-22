@@ -102,7 +102,7 @@ export default function Header() {
             accessibilityRole="button"
             accessibilityLabel="Уведомления"
             onPress={() => router.push("/notifications" as never)}
-            className="w-11 h-11 rounded-lg items-center justify-center active:bg-slate-100"
+            className="w-11 h-11 rounded-lg items-center justify-center active:bg-surface2"
           >
             <Bell size={18} color={colors.text} />
           </Pressable>

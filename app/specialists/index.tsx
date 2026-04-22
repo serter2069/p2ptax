@@ -242,7 +242,7 @@ export default function SpecialistsCatalog() {
       </View>
 
       {/* Search bar */}
-      <View className="flex-row items-center bg-white border border-slate-200 rounded-xl mx-4 mb-3 px-4 min-h-[48px]">
+      <View className="flex-row items-center bg-white border border-border rounded-xl mx-4 mb-3 px-4 min-h-[48px]">
         <Search size={14} color="#94a3b8" style={{ marginRight: 8 }} />
         <TextInput
           value={search}
