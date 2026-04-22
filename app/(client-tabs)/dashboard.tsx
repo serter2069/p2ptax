@@ -91,7 +91,7 @@ export default function ClientDashboard() {
           {/* Welcome header */}
           <View className="pt-4 pb-2">
             <Text className="text-2xl font-bold text-slate-900">
-              Здравствуйте, {user?.firstName ?? ""}!
+              {user?.firstName ? `Здравствуйте, ${user.firstName}!` : "Здравствуйте!"}
             </Text>
           </View>
 

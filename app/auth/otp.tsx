@@ -202,8 +202,8 @@ export default function AuthOtpScreen() {
     if (role === "SPECIALIST") {
       router.replace("/onboarding/name" as never);
     } else {
-      // CLIENT — go to new request creation
-      router.replace("/requests/new" as never);
+      // CLIENT — go to dashboard
+      router.replace("/(client-tabs)/dashboard" as never);
     }
   };
 
