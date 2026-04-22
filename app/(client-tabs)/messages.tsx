@@ -17,6 +17,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import Avatar from "@/components/ui/Avatar";
 import InlineChatView from "@/components/InlineChatView";
 import { apiGet } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface ThreadItem {
   id: string;
@@ -129,7 +130,7 @@ export default function ClientMessages() {
           onPress={handlePress}
           className="flex-row items-center py-3 border-b border-border active:bg-surface2"
           style={({ pressed }) => [
-            { backgroundColor: selected ? "#eff6ff" : "white" },
+            { backgroundColor: selected ? colors.accentSoft : colors.surface },
             pressed && { opacity: 0.7 },
           ]}
         >
@@ -156,20 +157,20 @@ export default function ClientMessages() {
                 className={`text-base flex-1 flex-shrink ${
                   hasUnread ? "font-bold" : "font-semibold"
                 }`}
-                style={{ color: "#0f172a" }}
+                style={{ color: colors.text }}
                 numberOfLines={1}
               >
                 {name}
               </Text>
               {item.lastMessage && (
-                <Text className="text-xs flex-shrink-0" style={{ color: "#94a3b8" }}>
+                <Text className="text-xs flex-shrink-0" style={{ color: colors.textMuted }}>
                   {formatTime(item.lastMessage.createdAt)}
                 </Text>
               )}
             </View>
 
             {/* Request title */}
-            <Text className="text-xs mt-0.5" style={{ color: "#94a3b8" }} numberOfLines={1}>
+            <Text className="text-xs mt-0.5" style={{ color: colors.textMuted }} numberOfLines={1}>
               {item.request.title}
             </Text>
 
@@ -177,13 +178,13 @@ export default function ClientMessages() {
             {item.lastMessage ? (
               <Text
                 className={`text-sm mt-0.5 ${hasUnread ? "font-semibold" : ""}`}
-                style={{ color: hasUnread ? "#334155" : "#94a3b8" }}
+                style={{ color: hasUnread ? colors.textSecondary : colors.textMuted }}
                 numberOfLines={1}
               >
                 {item.lastMessage.text}
               </Text>
             ) : (
-              <Text className="text-sm mt-0.5 italic" style={{ color: "#cbd5e1" }} numberOfLines={1}>
+              <Text className="text-sm mt-0.5 italic" style={{ color: colors.borderStrong }} numberOfLines={1}>
                 Нет сообщений
               </Text>
             )}
@@ -199,7 +200,7 @@ export default function ClientMessages() {
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <HeaderHome />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#2256c2" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -223,7 +224,7 @@ export default function ClientMessages() {
         <HeaderHome />
         <View className="flex-1 flex-row">
           {/* Thread list panel */}
-          <View style={{ width: 300, borderRightWidth: 1, borderRightColor: "#e2e8f0" }}>
+          <View style={{ maxWidth: 300, flex: 1, borderRightWidth: 1, borderRightColor: colors.border }}>
             <FlatList
               data={sorted}
               keyExtractor={(item) => item.id}
@@ -238,13 +239,13 @@ export default function ClientMessages() {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={handleRefresh}
-                  tintColor="#2256c2"
+                  tintColor={colors.primary}
                 />
               }
               contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 12 }}
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-16 px-4">
-                  <Text className="text-sm text-center" style={{ color: "#94a3b8" }}>Нет сообщений</Text>
+                  <Text className="text-sm text-center" style={{ color: colors.textMuted }}>Нет сообщений</Text>
                 </View>
               }
             />
@@ -255,7 +256,7 @@ export default function ClientMessages() {
               <InlineChatView threadId={selectedThreadId} />
             ) : (
               <View className="flex-1 items-center justify-center">
-                <Text className="text-sm" style={{ color: "#94a3b8" }}>Выберите диалог</Text>
+                <Text className="text-sm" style={{ color: colors.textMuted }}>Выберите диалог</Text>
               </View>
             )}
           </View>
@@ -276,7 +277,7 @@ export default function ClientMessages() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#2256c2"
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={

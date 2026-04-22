@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
+import { colors } from "@/lib/theme";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import HeroSection from "@/components/landing/HeroSection";
@@ -91,7 +92,7 @@ export default function LandingScreen() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center justify-between h-16 bg-white px-4">
-          <Text className="text-lg font-extrabold" style={{ color: "#2256c2" }}>P2PTax</Text>
+          <Text className="text-lg font-extrabold" style={{ color: colors.primary }}>P2PTax</Text>
         </View>
         <ErrorState
           message="Не удалось загрузить данные. Проверьте соединение с интернетом и попробуйте снова."
@@ -123,14 +124,14 @@ export default function LandingScreen() {
               onPress={handleHome}
               className="min-h-[44px] justify-center"
             >
-              <Text className="text-xl font-extrabold" style={{ color: "#2256c2" }}>P2PTax</Text>
+              <Text className="text-xl font-extrabold" style={{ color: colors.primary }}>P2PTax</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Создать заявку"
               onPress={handleCreateRequest}
               className="rounded-lg px-4 min-h-[44px] items-center justify-center"
-              style={{ backgroundColor: "#2256c2" }}
+              style={{ backgroundColor: colors.primary }}
             >
               <Text className="text-white font-semibold text-sm">Создать заявку</Text>
             </Pressable>

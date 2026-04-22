@@ -1,8 +1,6 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { X } from "lucide-react-native";
-import { colors } from "@/lib/theme";
+import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 
 function SectionHeading({ children }: { children: string }) {
@@ -20,28 +18,9 @@ function Paragraph({ children }: { children: string }) {
 }
 
 export default function TermsScreen() {
-  const router = useRouter();
-
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header with close button */}
-      <View className="flex-row items-center h-14 bg-white border-b border-border px-4">
-        <View className="flex-1" />
-        <Text className="text-base font-semibold text-text-base">
-          Условия использования
-        </Text>
-        <View className="flex-1 items-end">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Закрыть"
-            onPress={() => router.back()}
-            className="w-11 h-11 items-center justify-center"
-            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-          >
-            <X size={20} color={colors.text} />
-          </Pressable>
-        </View>
-      </View>
+      <HeaderBack title="Пользовательское соглашение" />
 
       <ResponsiveContainer maxWidth={720}>
         <ScrollView

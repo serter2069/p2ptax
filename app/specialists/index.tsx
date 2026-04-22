@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   FlatList,
-  Pressable,
   ActivityIndicator,
   RefreshControl,
   useWindowDimensions,
@@ -13,7 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
-import { AlertCircle, UserX, ChevronLeft, Search } from "lucide-react-native";
+import HeaderBack from "@/components/HeaderBack";
+import { AlertCircle, UserX, Search } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
@@ -187,13 +187,7 @@ export default function SpecialistsCatalog() {
   if (loading && specialists.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        {/* Page header */}
-        <View className="bg-white px-4 pt-4 pb-2">
-          <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-            <ChevronLeft size={16} color="#2256c2" />
-          </Pressable>
-          <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
-        </View>
+        <HeaderBack title="Специалисты" />
         <View className="py-4 px-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
@@ -208,12 +202,7 @@ export default function SpecialistsCatalog() {
   if (error && specialists.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <View className="bg-white px-4 pt-4 pb-2">
-          <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-            <ChevronLeft size={16} color="#2256c2" />
-          </Pressable>
-          <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
-        </View>
+        <HeaderBack title="Специалисты" />
         <EmptyState
           icon={AlertCircle}
           title="Не удалось загрузить список"
@@ -230,11 +219,8 @@ export default function SpecialistsCatalog() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Page header */}
-      <View className="bg-white px-4 pt-4 pb-2">
-        <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-          <ChevronLeft size={16} color="#2256c2" />
-        </Pressable>
+      <HeaderBack title="Специалисты" />
+      <View className="bg-white px-4 pt-3 pb-2">
         <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
         <Text className="text-sm mt-1 mb-3" style={{ color: "#64748B" }}>
           Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.
