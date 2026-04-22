@@ -82,12 +82,12 @@ function NotificationRow({
       </View>
       <View className="flex-1 ml-3">
         <View className="flex-row items-center justify-between">
-          <Text className={`text-sm ${!item.isRead ? "font-bold text-slate-900" : "font-medium text-slate-900"}`}>
+          <Text className={`text-sm ${!item.isRead ? "font-bold text-text-base" : "font-medium text-text-base"}`}>
             {item.title}
           </Text>
-          <Text className="text-xs text-slate-400">{formatTime(item.createdAt)}</Text>
+          <Text className="text-xs text-text-mute">{formatTime(item.createdAt)}</Text>
         </View>
-        <Text className={`text-sm mt-0.5 ${!item.isRead ? "text-slate-900" : "text-slate-400"}`} numberOfLines={2}>
+        <Text className={`text-sm mt-0.5 ${!item.isRead ? "text-text-base" : "text-text-mute"}`} numberOfLines={2}>
           {item.body}
         </Text>
       </View>
