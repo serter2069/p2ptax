@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
+import EmptyState from "@/components/ui/EmptyState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { api, apiPatch } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -221,11 +222,11 @@ export default function NotificationsScreen() {
               />
             }
             ListEmptyComponent={
-              <View className="flex-1 items-center justify-center py-20">
-                <BellOff size={48} color={colors.placeholder} />
-                <Text className="text-base text-text-mute mt-4">Нет уведомлений</Text>
-                <Text className="text-sm text-text-mute mt-1">Здесь будут ваши уведомления</Text>
-              </View>
+              <EmptyState
+                icon={BellOff}
+                title="Нет уведомлений"
+                subtitle="Здесь будут ваши уведомления"
+              />
             }
           />
         )}

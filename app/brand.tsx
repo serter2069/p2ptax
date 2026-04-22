@@ -14,6 +14,7 @@ import {
 } from "../components/ui";
 import HeaderBack from "../components/HeaderBack";
 import HeaderHome from "../components/HeaderHome";
+import ResponsiveContainer from "../components/ResponsiveContainer";
 import { colors, tw, typography, spacing, radius } from "../lib/theme";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -36,7 +37,9 @@ export default function BrandScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Design System" />
-      <ScrollView className="flex-1" contentContainerClassName="px-4 py-6 pb-20">
+      <ScrollView className="flex-1">
+      <ResponsiveContainer>
+      <View className="py-6 pb-20">
         <Text className={`${typography.h2} ${tw.text} mb-1`}>P2PTax</Text>
         <Text className={`${typography.small} mb-8`}>Design System</Text>
 
@@ -246,6 +249,8 @@ export default function BrandScreen() {
             <HeaderHome notificationCount={2} />
           </View>
         </Section>
+      </View>
+      </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );
