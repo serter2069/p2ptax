@@ -88,11 +88,11 @@ export default function LandingScreen() {
   useEffect(() => {
     if (isAuthenticated && user?.role) {
       if (user.role === "SPECIALIST") {
-        router.replace("/specialist/dashboard" as never);
+        router.replace("/(specialist-tabs)/dashboard" as never);
       } else if (user.role === "CLIENT") {
-        router.replace("/requests" as never);
+        router.replace("/(client-tabs)/dashboard" as never);
       } else if (user.role === "ADMIN") {
-        router.replace("/admin/users" as never);
+        router.replace("/(admin-tabs)/dashboard" as never);
       }
     }
   }, [isAuthenticated, user, router]);
@@ -552,8 +552,8 @@ export default function LandingScreen() {
                     style={[
                       { backgroundColor: "rgba(255,255,255,0.1)" },
                       isDesktop
-                        ? { width: "48%" as unknown as number }
-                        : { width: "100%" as unknown as number },
+                        ? { flex: 1, minWidth: "45%" }
+                        : {},
                     ]}
                   >
                     <Text className="text-3xl mb-4">{f.icon}</Text>
