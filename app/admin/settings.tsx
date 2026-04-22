@@ -106,7 +106,7 @@ export default function AdminSettings() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderBack title="Настройки системы" />
       {loading ? (
         <View className="flex-1 items-center justify-center">

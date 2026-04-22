@@ -49,10 +49,10 @@ export default function BrandScreen() {
             {([
               { name: "primary", cls: tw.primary, label: "blue-900" },
               { name: "accent", cls: tw.accent, label: "amber-700" },
-              { name: "background", cls: `${tw.background} border border-slate-200`, label: "slate-50" },
-              { name: "surface", cls: `${tw.surface} border border-slate-100`, label: "white" },
-              { name: "text", cls: "bg-slate-900", label: "slate-900" },
-              { name: "textSecondary", cls: "bg-slate-500", label: "slate-500" },
+              { name: "background", cls: `${tw.background} border border-border`, label: "slate-50" },
+              { name: "surface", cls: `${tw.surface} border border-border`, label: "white" },
+              { name: "text", cls: "bg-text-base", label: "slate-900" },
+              { name: "textSecondary", cls: "bg-text-mute", label: "slate-500" },
             ] as const).map((c) => (
               <View key={c.name} className="w-[30%]">
                 <View className={`h-20 ${radius.sm} ${c.cls}`} />
@@ -91,7 +91,7 @@ export default function BrandScreen() {
               { key: "caption", label: "caption · 14px", example: "3 специалиста · 2 часа назад" },
               { key: "small", label: "small · 12px", example: "ИФНС №15 · Москва" },
             ] as const).map((t) => (
-              <View key={t.key} className="pb-3 border-b border-slate-100">
+              <View key={t.key} className="pb-3 border-b border-border">
                 <Text className={`text-xs ${tw.accentText} font-bold mb-1`}>{t.label}</Text>
                 <Text className={`${typography[t.key]} ${tw.text}`}>{t.example}</Text>
               </View>
@@ -104,7 +104,7 @@ export default function BrandScreen() {
           <View className="gap-2">
             {(Object.entries(spacing) as [string, number][]).map(([name, size]) => (
               <View key={name} className="flex-row items-center gap-3">
-                <Text className="text-xs text-slate-400 w-6">{name}</Text>
+                <Text className="text-xs text-text-mute w-6">{name}</Text>
                 <View
                   className={`h-4 ${radius.sm} ${tw.accent}`}
                   style={{ width: size }}
