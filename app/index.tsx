@@ -91,7 +91,7 @@ export default function LandingScreen() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-row items-center justify-between h-16 bg-white px-4">
-          <Text className="text-lg font-extrabold" style={{ color: "#1e3a8a" }}>P2PTax</Text>
+          <Text className="text-lg font-extrabold" style={{ color: "#2256c2" }}>P2PTax</Text>
         </View>
         <ErrorState
           message="Не удалось загрузить данные. Проверьте соединение с интернетом и попробуйте снова."
@@ -123,14 +123,14 @@ export default function LandingScreen() {
               onPress={handleHome}
               className="min-h-[44px] justify-center"
             >
-              <Text className="text-xl font-extrabold" style={{ color: "#1e3a8a" }}>P2PTax</Text>
+              <Text className="text-xl font-extrabold" style={{ color: "#2256c2" }}>P2PTax</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Создать заявку"
               onPress={handleCreateRequest}
               className="rounded-lg px-4 min-h-[44px] items-center justify-center"
-              style={{ backgroundColor: "#b45309" }}
+              style={{ backgroundColor: "#2256c2" }}
             >
               <Text className="text-white font-semibold text-sm">Создать заявку</Text>
             </Pressable>

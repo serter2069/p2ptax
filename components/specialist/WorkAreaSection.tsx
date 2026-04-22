@@ -31,9 +31,9 @@ export default function WorkAreaSection({ fnsServices, cardShadow }: WorkAreaSec
               <View
                 key={s.id}
                 className="px-2.5 py-1 rounded-lg"
-                style={{ backgroundColor: "rgba(180, 83, 9, 0.1)" }}
+                style={{ backgroundColor: "rgba(34, 86, 194, 0.1)" }}
               >
-                <Text className="text-xs font-medium" style={{ color: "#b45309" }}>{s.name}</Text>
+                <Text className="text-xs font-medium" style={{ color: "#2256c2" }}>{s.name}</Text>
               </View>
             ))}
           </View>

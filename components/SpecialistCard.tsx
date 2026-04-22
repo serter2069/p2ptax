@@ -45,7 +45,7 @@ export default function SpecialistCard({
         className="bg-white border border-slate-200 rounded-xl p-4 mr-3"
         style={({ pressed }) => [{ width: 200 }, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
       >
-        <View className="w-12 h-12 rounded-full items-center justify-center mb-2" style={{ backgroundColor: "#1e3a8a" }}>
+        <View className="w-12 h-12 rounded-full items-center justify-center mb-2" style={{ backgroundColor: "#2256c2" }}>
           <Text className="text-white font-bold text-base">{initials}</Text>
         </View>
         <Text className="text-base font-semibold mb-1" style={{ color: "#0f172a" }} numberOfLines={1}>
@@ -53,8 +53,8 @@ export default function SpecialistCard({
         </Text>
         <View className="flex-row flex-wrap gap-1 mb-1">
           {services.slice(0, 2).map((s) => (
-            <View key={s.id} className="px-1.5 py-0.5 rounded" style={{ backgroundColor: "rgba(180,83,9,0.1)" }}>
-              <Text className="text-[10px]" style={{ color: "#b45309" }}>{s.name}</Text>
+            <View key={s.id} className="px-1.5 py-0.5 rounded" style={{ backgroundColor: "rgba(34,86,194,0.1)" }}>
+              <Text className="text-[10px]" style={{ color: "#2256c2" }}>{s.name}</Text>
             </View>
           ))}
           {services.length > 2 && (
@@ -82,7 +82,7 @@ export default function SpecialistCard({
       {/* Avatar */}
       <View
         className="rounded-full items-center justify-center"
-        style={{ width: 56, height: 56, backgroundColor: "#1e3a8a" }}
+        style={{ width: 56, height: 56, backgroundColor: "#2256c2" }}
       >
         <Text className="text-white font-bold text-lg">{initials}</Text>
       </View>
@@ -106,9 +106,9 @@ export default function SpecialistCard({
             <View
               key={s.id}
               className="px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: "rgba(180,83,9,0.1)" }}
+              style={{ backgroundColor: "rgba(34,86,194,0.1)" }}
             >
-              <Text className="text-xs font-medium" style={{ color: "#b45309" }}>{s.name}</Text>
+              <Text className="text-xs font-medium" style={{ color: "#2256c2" }}>{s.name}</Text>
             </View>
           ))}
         </View>

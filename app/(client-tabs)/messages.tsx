@@ -199,7 +199,7 @@ export default function ClientMessages() {
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <HeaderHome />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#1e3a8a" />
+          <ActivityIndicator size="large" color="#2256c2" />
         </View>
       </SafeAreaView>
     );
@@ -238,7 +238,7 @@ export default function ClientMessages() {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={handleRefresh}
-                  tintColor="#1e3a8a"
+                  tintColor="#2256c2"
                 />
               }
               contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 12 }}
@@ -276,7 +276,7 @@ export default function ClientMessages() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#1e3a8a"
+            tintColor="#2256c2"
           />
         }
         ListEmptyComponent={

@@ -54,7 +54,7 @@ export default function MessageBubble({
         style={{
           maxWidth: "80%",
           borderRadius: 16,
-          backgroundColor: isOwn ? "#1e3a8a" : "#f1f5f9",
+          backgroundColor: isOwn ? "#2256c2" : "#f1f5f9",
           ...(isOwn
             ? { borderBottomRightRadius: 4 }
             : { borderBottomLeftRadius: 4 }),
