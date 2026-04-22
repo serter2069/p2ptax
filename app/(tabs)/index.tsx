@@ -19,12 +19,12 @@ const CATEGORIES: { id: string; name: string; Icon: LucideIcon }[] = [
 ];
 
 const LISTINGS = [
-  { id: "1", title: "iPhone 15 Pro Max 256GB", price: "$899", location: "Tbilisi", color: "#e0e7ff" },
-  { id: "2", title: "Toyota Camry 2020 Low Miles", price: "$18,500", location: "Batumi", color: "#fce7f3" },
-  { id: "3", title: "2BR Apartment City Center", price: "$450/mo", location: "Tbilisi", color: "#dcfce7" },
-  { id: "4", title: "MacBook Air M2 Like New", price: "$750", location: "Kutaisi", color: "#fef3c7" },
-  { id: "5", title: "Vintage Leather Jacket", price: "$120", location: "Tbilisi", color: "#e0e7ff" },
-  { id: "6", title: "Mountain Bike Trek X-Cal", price: "$380", location: "Batumi", color: "#fce7f3" },
+  { id: "1", title: "iPhone 15 Pro Max 256GB", price: "$899", location: "Tbilisi", color: colors.indigoSoft },
+  { id: "2", title: "Toyota Camry 2020 Low Miles", price: "$18,500", location: "Batumi", color: colors.pinkSoft },
+  { id: "3", title: "2BR Apartment City Center", price: "$450/mo", location: "Tbilisi", color: colors.greenSoft },
+  { id: "4", title: "MacBook Air M2 Like New", price: "$750", location: "Kutaisi", color: colors.yellowSoft },
+  { id: "5", title: "Vintage Leather Jacket", price: "$120", location: "Tbilisi", color: colors.indigoSoft },
+  { id: "6", title: "Mountain Bike Trek X-Cal", price: "$380", location: "Batumi", color: colors.pinkSoft },
 ];
 
 function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
@@ -41,7 +41,7 @@ function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
 function ListingCard({ title, price, location, color }: { title: string; price: string; location: string; color: string }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={title} className="flex-1 m-1.5">
-      <View className="rounded-2xl overflow-hidden bg-white" style={{ shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+      <View className="rounded-2xl overflow-hidden bg-white" style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
         <View className="h-36 items-center justify-center" style={{ backgroundColor: color }}>
           <ImageIcon size={32} color={colors.textSecondary} />
         </View>

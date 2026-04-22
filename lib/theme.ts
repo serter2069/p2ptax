@@ -22,6 +22,17 @@ export const colors = {
   errorBg: '#fef2f2',
   success: '#1f8a5e',
   warning: '#d97706',
+  dangerSoft: '#fef2f2',
+  // Soft backgrounds for status/category chips
+  indigoSoft: '#e0e7ff',
+  pinkSoft: '#fce7f3',
+  greenSoft: '#dcfce7',
+  yellowSoft: '#fef3c7',
+  cyanSoft: '#f0fdfa',
+  limeSoft: '#f0fdf4',
+  // Extended
+  blue300: '#93c5fd',
+  blue500: '#3b82f6',
 } as const
 
 export const tw = {

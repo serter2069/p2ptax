@@ -54,7 +54,7 @@ export default function MessageBubble({
         style={{
           maxWidth: "80%",
           borderRadius: 16,
-          backgroundColor: isOwn ? "#2256c2" : "#f1f5f9",
+          backgroundColor: isOwn ? colors.primary : colors.surface2,
           ...(isOwn
             ? { borderBottomRightRadius: 4 }
             : { borderBottomLeftRadius: 4 }),
@@ -96,8 +96,8 @@ export default function MessageBubble({
             }`}
           >
             {file.mimeType === "application/pdf"
-              ? <FileText size={18} color={isOwn ? "#93c5fd" : colors.primary} />
-              : <File size={18} color={isOwn ? "#93c5fd" : colors.primary} />
+              ? <FileText size={18} color={isOwn ? colors.blue300 : colors.primary} />
+              : <File size={18} color={isOwn ? colors.blue300 : colors.primary} />
             }
             <View className="ml-2 flex-1">
               <Text
@@ -112,13 +112,13 @@ export default function MessageBubble({
                 {formatFileSize(file.size)}
               </Text>
             </View>
-            <Download size={12} color={isOwn ? "#93c5fd" : colors.placeholder} />
+            <Download size={12} color={isOwn ? colors.blue300 : colors.placeholder} />
           </Pressable>
         ))}
 
         {/* Text */}
         {text ? (
-          <Text className="text-base" style={{ color: isOwn ? "#ffffff" : "#0f172a" }}>
+          <Text className="text-base" style={{ color: isOwn ? colors.surface : colors.text }}>
             {text}
           </Text>
         ) : null}

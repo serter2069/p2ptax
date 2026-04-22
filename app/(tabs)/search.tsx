@@ -16,12 +16,12 @@ const RECENT_SEARCHES = [
 ];
 
 const POPULAR_CATEGORIES: { id: string; name: string; count: string; Icon: LucideIcon; color: string }[] = [
-  { id: "1", name: "Electronics", count: "12,453 ads", Icon: Laptop, color: "#eff6ff" },
-  { id: "2", name: "Vehicles", count: "8,291 ads", Icon: Car, color: "#fef2f2" },
-  { id: "3", name: "Real Estate", count: "5,872 ads", Icon: Building2, color: "#f0fdf4" },
-  { id: "4", name: "Fashion", count: "9,104 ads", Icon: ShoppingBag, color: "#fefce8" },
-  { id: "5", name: "Sports & Outdoors", count: "3,455 ads", Icon: Home, color: "#fdf4ff" },
-  { id: "6", name: "Home & Garden", count: "6,789 ads", Icon: Home, color: "#f0fdfa" },
+  { id: "1", name: "Electronics", count: "12,453 ads", Icon: Laptop, color: colors.accentSoft },
+  { id: "2", name: "Vehicles", count: "8,291 ads", Icon: Car, color: colors.dangerSoft },
+  { id: "3", name: "Real Estate", count: "5,872 ads", Icon: Building2, color: colors.limeSoft },
+  { id: "4", name: "Fashion", count: "9,104 ads", Icon: ShoppingBag, color: colors.yellowSoft },
+  { id: "5", name: "Sports & Outdoors", count: "3,455 ads", Icon: Home, color: colors.pinkSoft },
+  { id: "6", name: "Home & Garden", count: "6,789 ads", Icon: Home, color: colors.cyanSoft },
 ];
 
 export default function SearchScreen() {

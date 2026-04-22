@@ -55,7 +55,7 @@ export default function PromotionScreen() {
                   Полный профиль повышает доверие клиентов
                 </Text>
               </View>
-              <ChevronRight size={12} color="#93c5fd" />
+              <ChevronRight size={12} color={colors.blue300} />
             </Pressable>
 
             <View className="h-8" />

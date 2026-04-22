@@ -304,8 +304,8 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           <Text className="text-base font-semibold" style={{ color: colors.text }}>Чат</Text>
         </View>
         <View className="flex-1 items-center justify-center px-4">
-          <FontAwesome name="exclamation-circle" size={40} color="#ef4444" />
-          <Text className="text-base text-center mt-3" style={{ color: "#ef4444" }}>{error}</Text>
+          <FontAwesome name="exclamation-circle" size={40} color={colors.danger} />
+          <Text className="text-base text-center mt-3" style={{ color: colors.danger }}>{error}</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Повторить"
@@ -377,7 +377,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
         {/* Request closed banner */}
         {isClosed && (
-          <View className="border-t px-4 py-3" style={{ backgroundColor: "#fffbeb", borderTopColor: "#fde68a" }}>
+          <View className="border-t px-4 py-3" style={{ backgroundColor: colors.yellowSoft, borderTopColor: colors.warning }}>
             <Text className="text-sm text-center" style={{ color: colors.primary }}>
               Заявка закрыта. Чат доступен только для чтения.
             </Text>
@@ -425,7 +425,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
               <FontAwesome
                 name="paperclip"
                 size={20}
-                color={pendingFiles.length >= 3 ? "#cbd5e1" : colors.textSecondary}
+                color={pendingFiles.length >= 3 ? colors.border : colors.textSecondary}
               />
             </Pressable>
 

@@ -34,7 +34,7 @@ export default function CreateScreen() {
             <View className="flex-row flex-wrap">
               {/* Add Photo Button */}
               <Pressable accessibilityRole="button" accessibilityLabel="Добавить фото" className="w-[31%] aspect-square m-[1%] rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 items-center justify-center">
-                <Camera size={24} color="#3b82f6" />
+                <Camera size={24} color={colors.blue500} />
                 <Text className="text-xs text-blue-600 mt-1 font-medium">Add photo</Text>
               </Pressable>
 

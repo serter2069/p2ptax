@@ -75,7 +75,7 @@ export default function ProfileScreen() {
               className="flex-row items-center px-4 py-4 active:bg-gray-50"
             >
               <View className="w-10 h-10 rounded-lg bg-gray-100 items-center justify-center">
-                <item.Icon size={18} color="#4b5563" />
+                <item.Icon size={18} color={colors.textSecondary} />
               </View>
               <Text className="flex-1 ml-3 text-base text-gray-900">{item.label}</Text>
               {item.badge && (
