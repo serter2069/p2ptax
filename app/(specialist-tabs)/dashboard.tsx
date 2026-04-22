@@ -6,6 +6,7 @@ import {
   RefreshControl,
   Pressable,
   Switch,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -54,6 +55,8 @@ interface DashboardData {
 export default function SpecialistDashboard() {
   const router = useRouter();
   const { user, updateUser } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [requests, setRequests] = useState<MatchingRequest[]>([]);

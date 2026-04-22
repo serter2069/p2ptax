@@ -1,6 +1,7 @@
 import { View, Text, Pressable, FlatList, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MessageCircle } from "lucide-react-native";
+import EmptyState from "@/components/ui/EmptyState";
 import { colors } from "@/lib/theme";
 
 const CONVERSATIONS = [
@@ -121,10 +122,11 @@ export default function MessagesScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <ConversationItem {...item} />}
           ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-20">
-              <MessageCircle size={48} color={colors.textSecondary} />
-              <Text className="text-base text-gray-400 mt-4">No messages yet</Text>
-            </View>
+            <EmptyState
+              icon={MessageCircle}
+              title="Нет сообщений"
+              subtitle="Здесь появятся ваши переписки"
+            />
           }
         />
       </View>
