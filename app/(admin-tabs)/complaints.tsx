@@ -309,10 +309,12 @@ export default function AdminComplaints() {
           <LoadingState variant="skeleton" lines={5} />
         </ResponsiveContainer>
       ) : error ? (
-        <ErrorState
-          message="Не удалось загрузить жалобы"
-          onRetry={() => fetchComplaints(filter, 1)}
-        />
+        <View className="flex-1 items-center justify-center">
+          <ErrorState
+            message="Не удалось загрузить жалобы"
+            onRetry={() => fetchComplaints(filter, 1)}
+          />
+        </View>
       ) : (
         <ResponsiveContainer>
           <FlatList
