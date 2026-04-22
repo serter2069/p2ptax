@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Users } from "lucide-react-native";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
@@ -293,12 +294,11 @@ export default function AdminUsers() {
           <ResponsiveContainer>
             <View className="py-2">
               {users.length === 0 ? (
-                <View className="items-center py-16">
-                  <Users size={48} color={colors.placeholder} />
-                  <Text className="text-base text-text-mute mt-3">
-                    Пользователи не найдены
-                  </Text>
-                </View>
+                <EmptyState
+                  icon={Users}
+                  title="Пользователи не найдены"
+                  subtitle="Попробуйте изменить фильтры или поисковый запрос"
+                />
               ) : (
                 users.map((user) => (
                   <View key={user.id}>

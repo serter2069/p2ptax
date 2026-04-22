@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
@@ -79,6 +79,8 @@ function RankList({
 export default function AdminDashboard() {
   const router = useRouter();
   const { token } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -184,17 +186,21 @@ export default function AdminDashboard() {
                 value={`${stats?.conversion ?? 0}%`}
               />
 
-              {/* Top cities */}
-              <RankList
-                title="Топ городов"
-                items={stats?.topCities ?? []}
-              />
-
-              {/* Top specialists */}
-              <RankList
-                title="Топ специалистов"
-                items={stats?.topSpecialists ?? []}
-              />
+              {/* Top lists — side by side on desktop */}
+              <View className={isDesktop ? "flex-row gap-3" : "gap-3"}>
+                <View className={isDesktop ? "flex-1" : undefined}>
+                  <RankList
+                    title="Топ городов"
+                    items={stats?.topCities ?? []}
+                  />
+                </View>
+                <View className={isDesktop ? "flex-1" : undefined}>
+                  <RankList
+                    title="Топ специалистов"
+                    items={stats?.topSpecialists ?? []}
+                  />
+                </View>
+              </View>
             </View>
           </ResponsiveContainer>
         </ScrollView>
