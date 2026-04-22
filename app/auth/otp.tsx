@@ -59,9 +59,12 @@ export default function AuthOtpScreen() {
     return () => clearTimeout(t);
   }, [resendTimer]);
 
-  // Guard: if no email param, redirect back to email screen
+  // Guard: if no email param, defer redirect so Root Layout is mounted first
   useEffect(() => {
-    if (!email) router.replace('/auth/email' as never);
+    if (!email) {
+      const t = setTimeout(() => router.replace('/auth/email' as never), 0);
+      return () => clearTimeout(t);
+    }
   }, [email, router]);
 
   // Auto-focus first input on mount

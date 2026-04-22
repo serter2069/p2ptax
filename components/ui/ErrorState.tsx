@@ -29,7 +29,7 @@ export default function ErrorState({
       {onRetry && (
         <View className="mt-4">
           <Button
-            variant="secondary"
+            variant="primary"
             label="Повторить"
             onPress={onRetry}
             fullWidth={false}
