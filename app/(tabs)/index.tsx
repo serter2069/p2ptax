@@ -4,6 +4,7 @@ import {
   Laptop, Car, Building2, ShoppingBag, Dumbbell, Dog, Home, Baby,
   ImageIcon, MapPin, Search, type LucideIcon
 } from "lucide-react-native";
+import EmptyState from "@/components/ui/EmptyState";
 import { colors } from "@/lib/theme";
 
 const CATEGORIES: { id: string; name: string; Icon: LucideIcon }[] = [
@@ -75,9 +76,10 @@ export default function HomeScreen() {
         keyExtractor={(item) => item.id}
         contentContainerClassName="px-2 pb-4"
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <Text className="text-base text-text-mute">Нет объявлений</Text>
-          </View>
+          <EmptyState
+            title="Нет объявлений"
+            subtitle="Здесь появятся доступные объявления"
+          />
         }
         ListHeaderComponent={
           <View>
