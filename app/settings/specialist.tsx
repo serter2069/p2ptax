@@ -7,6 +7,7 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -49,6 +50,8 @@ interface SpecialistProfileData {
 }
 
 export default function SpecialistSettings() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const router = useRouter();
   const { ready } = useRequireAuth();
   const { user, updateUser, signOut } = useAuth();

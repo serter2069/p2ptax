@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, Switch, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ScrollView, Switch, ActivityIndicator, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
@@ -46,6 +46,8 @@ function SectionTitle({ title }: { title: string }) {
 }
 
 export default function SettingsScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const router = useRouter();
   const { ready } = useRequireAuth();
   const [pushEnabled, setPushEnabled] = useState(true);

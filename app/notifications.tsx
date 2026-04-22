@@ -1,4 +1,4 @@
-import { View, Text, Pressable, FlatList, RefreshControl } from "react-native";
+import { View, Text, Pressable, FlatList, RefreshControl, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, BellOff, MessageCircle, Mail, MapPin, Clock, Bell, type LucideIcon } from "lucide-react-native";
@@ -98,6 +98,8 @@ function NotificationRow({
 }
 
 export default function NotificationsScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const router = useRouter();
   const { ready } = useRequireAuth();
 

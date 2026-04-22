@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
@@ -11,6 +11,8 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function AuthEmailScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
   const [email, setEmail] = useState("");

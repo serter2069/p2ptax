@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
@@ -18,6 +18,8 @@ function Paragraph({ children }: { children: string }) {
 }
 
 export default function TermsScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   return (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="Пользовательское соглашение" />
