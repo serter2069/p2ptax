@@ -62,17 +62,18 @@ export default function AuthEmailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ResponsiveContainer maxWidth={520}>
-        <View className="flex-1 justify-center" style={{ paddingBottom: "10%" }}>
-          <View className="items-center mb-8">
-            <View className="w-20 h-20 rounded-2xl bg-accent items-center justify-center mb-4">
-              <Text className="text-2xl font-bold text-white">P2P</Text>
-            </View>
+        <View className="flex-1 justify-center px-6" style={{ paddingBottom: "10%" }}>
+          {/* Logo */}
+          <View className="self-center items-center justify-center bg-accent-soft rounded-2xl mb-6"
+            style={{ width: 64, height: 64 }}
+          >
+            <Text className="text-xl font-extrabold text-accent">P2P</Text>
           </View>
 
-          <Text className="text-2xl font-bold text-text-base text-center mb-2">
+          <Text className="text-2xl font-extrabold text-text-base text-center mb-2">
             Вход
           </Text>
-          <Text className="text-sm text-text-mute text-center mb-6">
+          <Text className="text-base text-text-mute text-center mb-8" style={{ lineHeight: 24 }}>
             Введите email для продолжения
           </Text>
 
@@ -92,7 +93,7 @@ export default function AuthEmailScreen() {
             onSubmitEditing={handleContinue}
           />
 
-          <View className="mt-6">
+          <View className="mt-4">
             <Button
               label="Продолжить"
               onPress={handleContinue}

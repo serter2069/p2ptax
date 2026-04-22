@@ -169,7 +169,7 @@ export default function OnboardingProfileScreen() {
         >
           <View className="pt-6">
             {/* Step indicator */}
-            <Text className="text-sm text-warning text-center mb-2">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider text-center mb-2">
               Шаг 3 из 3
             </Text>
             <Text className="text-2xl font-bold text-text-base text-center mb-1">
@@ -188,8 +188,8 @@ export default function OnboardingProfileScreen() {
             >
               {avatarUploading ? (
                 <View
-                  className="items-center justify-center rounded-full bg-surface2"
-                  style={{ width: 80, height: 80 }}
+                  className="items-center justify-center rounded-full bg-accent-soft"
+                  style={{ width: 96, height: 96 }}
                 >
                   <ActivityIndicator color={colors.primary} />
                 </View>
@@ -198,32 +198,32 @@ export default function OnboardingProfileScreen() {
                   <Image
                     source={{ uri: avatarUrl }}
                     style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: 40,
+                      width: 96,
+                      height: 96,
+                      borderRadius: 48,
                       borderWidth: 2,
                       borderColor: colors.border,
                     }}
                   />
                   <View
                     className="absolute bottom-0 right-0 bg-accent rounded-full items-center justify-center"
-                    style={{ width: 24, height: 24 }}
+                    style={{ width: 28, height: 28 }}
                   >
-                    <Pencil size={12} color={colors.surface} />
+                    <Pencil size={14} color={colors.surface} />
                   </View>
                 </View>
               ) : (
                 <View
-                  className="rounded-full bg-surface2 items-center justify-center"
+                  className="rounded-full bg-accent-soft items-center justify-center"
                   style={{
-                    width: 80,
-                    height: 80,
+                    width: 96,
+                    height: 96,
                     borderWidth: 2,
                     borderColor: colors.borderLight,
                     borderStyle: "dashed",
                   }}
                 >
-                  <Camera size={24} color={colors.placeholder} />
+                  <Camera size={28} color={colors.primary} />
                 </View>
               )}
               <Text className="text-sm text-text-mute mt-2">
@@ -243,11 +243,16 @@ export default function OnboardingProfileScreen() {
             )}
 
             {/* Contacts note */}
-            <View className="bg-blue-50 rounded-xl px-4 py-3 mb-4">
+            <View className="bg-accent-soft rounded-xl px-4 py-3 mb-4">
               <Text className="text-xs text-accent text-center">
                 Контакты будут видны всем посетителям платформы
               </Text>
             </View>
+
+            {/* Contacts section */}
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mt-2 mb-3">
+              Контакты
+            </Text>
 
             {/* About */}
             <View className="mb-4">

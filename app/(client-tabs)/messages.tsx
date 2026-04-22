@@ -130,16 +130,29 @@ export default function ClientMessages() {
           onPress={handlePress}
           className="flex-row items-center px-4 border-b border-border active:bg-surface2"
           style={({ pressed }) => [
-            { backgroundColor: selected ? colors.accentSoft : colors.surface, minHeight: 60 },
+            {
+              backgroundColor: selected ? colors.accentSoft : colors.surface,
+              minHeight: 72,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 2,
+              elevation: 1,
+            },
             pressed && { opacity: 0.75 },
           ]}
         >
-          {/* Avatar with unread badge */}
+          {/* Avatar with active indicator and unread badge */}
           <View className="relative mr-3 my-3.5">
             <Avatar
               name={name}
               imageUrl={item.otherUser.avatarUrl ?? undefined}
               size="md"
+            />
+            {/* Online/active indicator */}
+            <View
+              className="absolute bottom-0 right-0 rounded-full bg-success"
+              style={{ width: 12, height: 12, borderWidth: 2, borderColor: "#fff" }}
             />
             {hasUnread && (
               <View
@@ -157,7 +170,7 @@ export default function ClientMessages() {
           <View className="flex-1 min-w-0 py-3.5">
             <View className="flex-row items-center justify-between gap-2">
               <Text
-                className={`text-sm flex-1 flex-shrink ${
+                className={`text-base flex-1 flex-shrink ${
                   hasUnread ? "font-bold text-text-base" : "font-semibold text-text-base"
                 }`}
                 numberOfLines={1}
@@ -179,13 +192,13 @@ export default function ClientMessages() {
             {/* Last message preview */}
             {item.lastMessage ? (
               <Text
-                className={`text-sm mt-0.5 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
-                numberOfLines={1}
+                className={`text-sm mt-1 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
+                numberOfLines={2}
               >
                 {item.lastMessage.text}
               </Text>
             ) : (
-              <Text className="text-sm mt-0.5 italic text-text-dim" numberOfLines={1}>
+              <Text className="text-sm mt-1 italic text-text-dim" numberOfLines={1}>
                 Нет сообщений
               </Text>
             )}
@@ -290,7 +303,7 @@ export default function ClientMessages() {
             onAction={() => router.push("/specialists" as never)}
           />
         }
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       />
     </SafeAreaView>
   );
