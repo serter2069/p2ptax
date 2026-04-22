@@ -24,23 +24,31 @@ const POPULAR_CATEGORIES: { id: string; name: string; count: string; Icon: Lucid
   { id: "6", name: "Дом и сад", count: "6 789 объявл.", Icon: Home, color: colors.cyanSoft },
 ];
 
+const cardShadow = {
+  shadowColor: colors.text,
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.06,
+  shadowRadius: 4,
+  elevation: 2,
+};
+
 export default function SearchScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
+      {/* Header */}
+      <View className="bg-white border-b border-border px-4 py-3">
+        <Text className="text-2xl font-bold text-text-base">Поиск</Text>
+      </View>
+
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
         <ResponsiveContainer>
-          {/* Header */}
-          <View className="pt-4 pb-3">
-            <Text className="text-2xl font-bold text-text-base">Поиск</Text>
-          </View>
-
           {/* Search Input */}
-          <View className="mb-5">
-            <View className="flex-row items-center h-12 rounded-xl bg-white border border-border px-4">
-              <Search size={16} color={colors.textSecondary} />
+          <View className="mt-4 mb-4">
+            <View className="flex-row items-center bg-white border border-border rounded-xl px-3 h-12">
+              <Search size={16} color={colors.textMuted} />
               <TextInput
                 accessibilityLabel="Поиск"
                 className="flex-1 ml-3 text-base text-text-base"
@@ -51,6 +59,7 @@ export default function SearchScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Фильтры"
                 className="ml-2 w-9 h-9 rounded-lg bg-accent items-center justify-center"
+                style={{ minHeight: 44 }}
               >
                 <SlidersHorizontal size={15} color="#fff" />
               </Pressable>
@@ -58,7 +67,7 @@ export default function SearchScreen() {
           </View>
 
           {/* Recent Searches */}
-          <View className="mb-6 bg-white border border-border rounded-xl overflow-hidden">
+          <View className="mb-6 bg-white border border-border rounded-2xl overflow-hidden" style={cardShadow}>
             <View className="flex-row justify-between items-center px-4 py-3 border-b border-border">
               <Text className="text-sm font-semibold text-text-base">Недавние поиски</Text>
               {RECENT_SEARCHES.length > 0 && (
@@ -86,7 +95,11 @@ export default function SearchScreen() {
                   key={index}
                   accessibilityLabel={search}
                   className="flex-row items-center px-4 active:bg-surface2"
-                  style={{ minHeight: 44, borderBottomWidth: index < RECENT_SEARCHES.length - 1 ? 1 : 0, borderBottomColor: colors.border }}
+                  style={{
+                    minHeight: 44,
+                    borderBottomWidth: index < RECENT_SEARCHES.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
                 >
                   <Clock size={15} color={colors.textSecondary} />
                   <Text className="flex-1 ml-3 text-sm text-text-base">{search}</Text>
@@ -98,7 +111,7 @@ export default function SearchScreen() {
 
           {/* Popular Categories */}
           <View>
-            <Text className="text-sm font-semibold text-text-base mb-3">Популярные категории</Text>
+            <Text className="text-base font-semibold text-text-base mb-3">Популярные категории</Text>
             <View className={isDesktop ? "flex-row flex-wrap gap-2" : undefined}>
               {POPULAR_CATEGORIES.map((cat) => (
                 <Pressable
@@ -106,14 +119,17 @@ export default function SearchScreen() {
                   key={cat.id}
                   accessibilityLabel={cat.name}
                   className="flex-row items-center p-3 rounded-xl mb-2 border border-border"
-                  style={[{ backgroundColor: cat.color }, isDesktop ? { width: "48%" } : undefined]}
+                  style={[
+                    { backgroundColor: cat.color, minHeight: 44 },
+                    isDesktop ? { width: "48%" } : undefined,
+                  ]}
                 >
                   <View className="w-10 h-10 rounded-xl bg-white items-center justify-center">
                     <cat.Icon size={18} color={colors.accent} />
                   </View>
                   <View className="flex-1 ml-3">
-                    <Text className="text-sm font-semibold text-text-base">{cat.name}</Text>
-                    <Text className="text-xs text-text-mute">{cat.count}</Text>
+                    <Text className="text-base font-semibold text-text-base">{cat.name}</Text>
+                    <Text className="text-sm text-text-mute">{cat.count}</Text>
                   </View>
                   <ChevronRight size={14} color={colors.textSecondary} />
                 </Pressable>

@@ -23,23 +23,28 @@ function ConversationItem({
 }: (typeof CONVERSATIONS)[0] & { index: number }) {
   const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Чат с ${name}`} className="flex-row items-center px-4 py-3 active:bg-gray-50">
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Чат с ${name}`}
+      className="flex-row items-center px-4 border-b border-border active:bg-surface2"
+      style={{ minHeight: 72, paddingVertical: 16 }}
+    >
       <View
         className="w-12 h-12 rounded-full items-center justify-center"
         style={{ backgroundColor: avatarColor }}
       >
-        <Text className="text-white text-lg font-bold">{avatar}</Text>
+        <Text className="text-lg font-bold text-white">{avatar}</Text>
       </View>
-      <View className="flex-1 ml-3 border-b border-border pb-3">
-        <View className="flex-row justify-between items-center">
-          <Text className={`text-base ${unread ? "font-bold text-text-base" : "font-medium text-text-base"}`}>
+      <View className="flex-1 ml-3">
+        <View className="flex-row justify-between items-center mb-0.5">
+          <Text className={`text-base ${unread ? "font-bold text-text-base" : "font-semibold text-text-base"}`}>
             {name}
           </Text>
-          <Text className={`text-xs ${unread ? "text-accent font-medium" : "text-text-dim"}`}>
+          <Text className={`text-xs ${unread ? "text-accent font-semibold" : "text-text-dim"}`}>
             {time}
           </Text>
         </View>
-        <View className="flex-row items-center mt-0.5">
+        <View className="flex-row items-center">
           <Text
             className={`flex-1 text-sm ${unread ? "text-text-base font-medium" : "text-text-mute"}`}
             numberOfLines={1}
@@ -65,7 +70,7 @@ export default function MessagesScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1" style={containerStyle}>
-        <View className="px-4 pt-2 pb-3 border-b border-border">
+        <View className="px-4 pt-2 pb-3 border-b border-border bg-white">
           <Text className="text-2xl font-bold text-text-base">Сообщения</Text>
         </View>
 
@@ -73,6 +78,7 @@ export default function MessagesScreen() {
           data={CONVERSATIONS}
           keyExtractor={(item) => item.id}
           renderItem={({ item, index }) => <ConversationItem {...item} index={index} />}
+          contentContainerStyle={{ paddingBottom: 20 }}
           ListEmptyComponent={
             <EmptyState
               icon={MessageCircle}
