@@ -6,7 +6,6 @@ import {
   RefreshControl,
   Pressable,
   Switch,
-  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,7 +18,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiGet, apiPatch } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface Stats {
   threadsTotal: number;
@@ -55,9 +54,6 @@ interface DashboardData {
 export default function SpecialistDashboard() {
   const router = useRouter();
   const { user, updateUser } = useAuth();
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
-
   const [stats, setStats] = useState<Stats | null>(null);
   const [requests, setRequests] = useState<MatchingRequest[]>([]);
   const [isAvailable, setIsAvailable] = useState<boolean>(
@@ -179,15 +175,26 @@ export default function SpecialistDashboard() {
       >
         <ResponsiveContainer>
           <View className="py-4">
-            {/* Welcome header */}
-            <Text className="text-2xl font-bold text-text-base mb-4">
-              Здравствуйте, {firstName}!
-            </Text>
+            {/* Hero banner */}
+            <View className="rounded-2xl px-5 py-5 mb-4" style={{ backgroundColor: colors.accent }}>
+              <Text className="text-xl font-bold text-white mb-0.5">Здравствуйте, {firstName}!</Text>
+              <Text className="text-sm" style={{ color: overlay.white75 }}>Панель специалиста по налогам</Text>
+              <View className="flex-row mt-4 gap-3">
+                <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+                  <Text className="text-xs" style={{ color: overlay.white70 }}>Диалогов</Text>
+                  <Text className="text-xl font-bold text-white">{stats?.threadsTotal ?? 0}</Text>
+                </View>
+                <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+                  <Text className="text-xs" style={{ color: overlay.white70 }}>Новых сообщений</Text>
+                  <Text className="text-xl font-bold text-white">{stats?.newMessages ?? 0}</Text>
+                </View>
+              </View>
+            </View>
 
             {/* Availability toggle */}
             <View
               className="bg-white border border-border rounded-xl p-4 mb-4 flex-row items-center justify-between"
-              style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
+              style={{ borderLeftWidth: 3, borderLeftColor: colors.primary, shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
             >
               <View className="flex-1 mr-3">
                 <Text className="text-sm font-semibold text-text-base">
@@ -236,28 +243,6 @@ export default function SpecialistDashboard() {
                 </View>
               </Pressable>
             )}
-
-            {/* Stats row */}
-            <View className="flex-row gap-3 mb-6" style={isDesktop ? { maxWidth: 400 } : undefined}>
-              <View
-                className="flex-1 bg-white border border-border rounded-xl p-4"
-                style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
-              >
-                <Text className="text-2xl font-bold text-text-base">
-                  {stats?.threadsTotal ?? 0}
-                </Text>
-                <Text className="text-xs text-text-mute mt-1">Всего диалогов</Text>
-              </View>
-              <View
-                className="flex-1 bg-white border border-border rounded-xl p-4"
-                style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
-              >
-                <Text className="text-2xl font-bold text-accent">
-                  {stats?.newMessages ?? 0}
-                </Text>
-                <Text className="text-xs text-text-mute mt-1">Новых сообщений</Text>
-              </View>
-            </View>
 
             {/* Section header */}
             <View className="flex-row items-center justify-between border-b border-border pb-2 mb-3">
