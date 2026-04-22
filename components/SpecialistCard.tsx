@@ -1,6 +1,5 @@
 import { View, Text, Pressable } from "react-native";
-import { MapPin } from "lucide-react-native";
-import { colors } from "@/lib/theme";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 interface SpecialistCardProps {
   id: string;
@@ -9,7 +8,10 @@ interface SpecialistCardProps {
   avatarUrl: string | null;
   services: { id: string; name: string }[];
   cities: { id: string; name: string }[];
+  description?: string | null;
   onPress: (id: string) => void;
+  variant?: "vertical" | "horizontal";
+  /** @deprecated Use variant="horizontal" instead */
   horizontal?: boolean;
 }
 
@@ -25,13 +27,16 @@ export default function SpecialistCard({
   lastName,
   services,
   cities,
+  description,
   onPress,
+  variant,
   horizontal = false,
 }: SpecialistCardProps) {
+  const resolvedVariant = variant ?? (horizontal ? "horizontal" : "vertical");
   const name = [firstName, lastName].filter(Boolean).join(" ") || "Специалист";
   const initials = getInitials(firstName, lastName);
 
-  if (horizontal) {
+  if (resolvedVariant === "horizontal") {
     return (
       <Pressable
         accessibilityRole="button"
@@ -40,24 +45,24 @@ export default function SpecialistCard({
         className="bg-white border border-slate-200 rounded-xl p-4 mr-3"
         style={({ pressed }) => [{ width: 200 }, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
       >
-        <View className="w-12 h-12 rounded-full bg-blue-900 items-center justify-center mb-2">
+        <View className="w-12 h-12 rounded-full items-center justify-center mb-2" style={{ backgroundColor: "#1e3a8a" }}>
           <Text className="text-white font-bold text-base">{initials}</Text>
         </View>
-        <Text className="text-base font-semibold text-slate-900 mb-1" numberOfLines={1}>
+        <Text className="text-base font-semibold mb-1" style={{ color: "#0f172a" }} numberOfLines={1}>
           {name}
         </Text>
         <View className="flex-row flex-wrap gap-1 mb-1">
           {services.slice(0, 2).map((s) => (
-            <View key={s.id} className="bg-amber-700/10 px-1.5 py-0.5 rounded">
-              <Text className="text-[10px] text-amber-700">{s.name}</Text>
+            <View key={s.id} className="px-1.5 py-0.5 rounded" style={{ backgroundColor: "rgba(180,83,9,0.1)" }}>
+              <Text className="text-[10px]" style={{ color: "#b45309" }}>{s.name}</Text>
             </View>
           ))}
           {services.length > 2 && (
-            <Text className="text-[10px] text-slate-400">+{services.length - 2}</Text>
+            <Text className="text-[10px]" style={{ color: "#94a3b8" }}>+{services.length - 2}</Text>
           )}
         </View>
         {cities.length > 0 && (
-          <Text className="text-xs text-slate-400" numberOfLines={1}>
+          <Text className="text-xs" style={{ color: "#94a3b8" }} numberOfLines={1}>
             {cities.map((c) => c.name).join(", ")}
           </Text>
         )}
@@ -65,39 +70,57 @@ export default function SpecialistCard({
     );
   }
 
+  // Vertical variant (new default for catalog grid)
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={name}
       onPress={() => onPress(id)}
-      className="bg-white border border-slate-200 rounded-xl p-4 mb-3"
+      className="bg-white border border-slate-200 rounded-2xl p-4 mb-3"
       style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
     >
-      <View className="flex-row items-center">
-        <View className="w-12 h-12 rounded-full bg-blue-900 items-center justify-center mr-3">
-          <Text className="text-white font-bold text-base">{initials}</Text>
-        </View>
-        <View className="flex-1">
-          <Text className="text-base font-semibold text-slate-900" numberOfLines={1}>
-            {name}
-          </Text>
-          {cities.length > 0 && (
-            <View className="flex-row items-center mt-0.5">
-              <MapPin size={10} color={colors.placeholder} />
-              <Text className="text-xs text-slate-400 ml-1" numberOfLines={1}>
-                {cities.map((c) => c.name).join(", ")}
-              </Text>
-            </View>
-          )}
-        </View>
+      {/* Avatar */}
+      <View
+        className="rounded-full items-center justify-center"
+        style={{ width: 56, height: 56, backgroundColor: "#1e3a8a" }}
+      >
+        <Text className="text-white font-bold text-lg">{initials}</Text>
       </View>
+
+      {/* Name */}
+      <Text className="text-base font-bold mt-3" style={{ color: "#0f172a" }} numberOfLines={1}>
+        {name}
+      </Text>
+
+      {/* Description */}
+      {description ? (
+        <Text className="text-sm mt-1" style={{ color: "#64748B" }} numberOfLines={2}>
+          {description}
+        </Text>
+      ) : null}
+
+      {/* Service pills */}
       {services.length > 0 && (
-        <View className="flex-row flex-wrap gap-1.5 mt-2">
+        <View className="flex-row flex-wrap mt-3" style={{ gap: 8 }}>
           {services.map((s) => (
-            <View key={s.id} className="bg-amber-700/10 px-2 py-0.5 rounded">
-              <Text className="text-xs text-amber-700">{s.name}</Text>
+            <View
+              key={s.id}
+              className="px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: "rgba(180,83,9,0.1)" }}
+            >
+              <Text className="text-xs font-medium" style={{ color: "#b45309" }}>{s.name}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {/* City */}
+      {cities.length > 0 && (
+        <View className="flex-row items-center mt-2">
+          <FontAwesome name="map-marker" size={10} color="#94a3b8" />
+          <Text className="text-xs ml-1" style={{ color: "#94a3b8" }} numberOfLines={1}>
+            {cities.map((c) => c.name).join(", ")}
+          </Text>
         </View>
       )}
     </Pressable>

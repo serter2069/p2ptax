@@ -9,10 +9,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Head from "expo-router/head";
-import {
-  AlertCircle, Pencil, MapPin, Clock, ChevronRight,
-  Phone, Mail, Send, MessageCircle, Globe, type LucideIcon
-} from "lucide-react-native";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import SpecialistCard from "@/components/SpecialistCard";
@@ -54,6 +51,7 @@ interface SpecialistDetail {
   createdAt: string;
   profile: SpecialistProfile | null;
   fnsServices: FnsServiceGroup[];
+  requestsCount?: number;
 }
 
 function getContactUrl(type: string, value: string): string | null {
@@ -75,13 +73,13 @@ function getContactUrl(type: string, value: string): string | null {
   }
 }
 
-const CONTACT_TYPE_CONFIG: Record<string, { label: string; Icon: LucideIcon; bg: string; color: string }> = {
-  phone: { label: "Телефон", Icon: Phone, bg: "#eff6ff", color: colors.primary },
-  email: { label: "Email", Icon: Mail, bg: "#f0fdf4", color: "#166534" },
-  telegram: { label: "Telegram", Icon: Send, bg: "#f0f9ff", color: "#0284c7" },
-  whatsapp: { label: "WhatsApp", Icon: MessageCircle, bg: "#f0fdf4", color: "#059669" },
-  vk: { label: "ВКонтакте", Icon: Globe, bg: "#eff6ff", color: "#2563eb" },
-  website: { label: "Сайт", Icon: Globe, bg: "#fafaf9", color: "#57534e" },
+const CONTACT_TYPE_CONFIG: Record<string, { label: string; icon: string; bg: string; color: string }> = {
+  phone: { label: "Телефон", icon: "phone", bg: "#eff6ff", color: colors.primary },
+  email: { label: "Email", icon: "envelope", bg: "#f0fdf4", color: "#166534" },
+  telegram: { label: "Telegram", icon: "paper-plane", bg: "#f0f9ff", color: "#0284c7" },
+  whatsapp: { label: "WhatsApp", icon: "whatsapp", bg: "#f0fdf4", color: "#059669" },
+  vk: { label: "ВКонтакте", icon: "vk", bg: "#eff6ff", color: "#2563eb" },
+  website: { label: "Сайт", icon: "globe", bg: "#fafaf9", color: "#57534e" },
 };
 
 interface SimilarSpecialist {
@@ -156,7 +154,7 @@ export default function SpecialistPublicProfile() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Профиль специалиста" />
         <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
@@ -168,11 +166,11 @@ export default function SpecialistPublicProfile() {
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Профиль специалиста" />
         <View className="flex-1 items-center justify-center px-6">
-          <AlertCircle size={48} color={colors.placeholder} />
-          <Text className="text-xl font-semibold text-slate-900 mt-4 text-center">
+          <FontAwesome name="exclamation-circle" size={48} color={colors.placeholder} />
+          <Text className="text-xl font-semibold mt-4 text-center" style={{ color: "#0f172a" }}>
             Специалист не найден
           </Text>
-          <Text className="text-sm text-slate-500 mt-2 text-center leading-5">
+          <Text className="text-sm mt-2 text-center leading-5" style={{ color: "#64748B" }}>
             Возможно, профиль был удалён или вы перешли по неверной ссылке
           </Text>
           <View className="mt-6">
@@ -201,13 +199,16 @@ export default function SpecialistPublicProfile() {
     }
   }
 
+  const fnsCount = specialist.fnsServices.length;
+  const servicesCount = new Set(specialist.fnsServices.flatMap((g) => g.services.map((s) => s.id))).size;
+
   const rightAction = isOwnProfile ? (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Редактировать профиль"
       onPress={() => router.push("/settings" as never)}
     >
-      <Pencil size={16} color={colors.text} />
+      <FontAwesome name="pencil" size={16} color={colors.text} />
     </Pressable>
   ) : undefined;
 
@@ -228,7 +229,7 @@ export default function SpecialistPublicProfile() {
     : `Специалист по налогам P2P ${cities.length > 0 ? `в ${cities[0]}` : ""}`.trim();
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-white">
       <Head>
         <title>{name} — специалист по налогам P2P | P2PTax</title>
         <meta property="og:title" content={`${name} — специалист по налогам P2P | P2PTax`} />
@@ -239,54 +240,95 @@ export default function SpecialistPublicProfile() {
       <HeaderBack title="Профиль специалиста" rightAction={rightAction} />
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <ResponsiveContainer>
-          <View className="py-6">
+          <View className="py-4">
 
-            {/* Hero: avatar + name + city + availability */}
-            <View className="items-center mb-5">
+            {/* Hero — horizontal layout */}
+            <View className="flex-row items-start p-4 pb-0">
+              {/* Avatar */}
               <View
-                className="rounded-full bg-blue-900 items-center justify-center mb-3"
-                style={{ width: 88, height: 88 }}
+                className="rounded-full items-center justify-center mr-4 flex-shrink-0"
+                style={{ width: 80, height: 80, backgroundColor: "#1e3a8a" }}
               >
                 <Text className="text-white font-bold text-2xl">{initials}</Text>
               </View>
 
-              <Text className="text-2xl font-bold text-slate-900 text-center">{name}</Text>
-
-              {cities.length > 0 && (
-                <View className="flex-row items-center mt-1.5">
-                  <MapPin size={12} color={colors.placeholder} />
-                  <Text className="text-sm text-slate-500 ml-1.5">{cities.join(", ")}</Text>
+              {/* Info column */}
+              <View className="flex-1">
+                {/* Name row with CTA */}
+                <View className="flex-row items-start justify-between">
+                  <Text className="text-2xl font-bold flex-1 mr-2" style={{ color: "#0f172a" }}>{name}</Text>
+                  {!isOwnProfile && !isSpecialist && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Написать"
+                      onPress={handleWritePress}
+                      className="rounded-xl px-4 min-h-[44px] items-center justify-center flex-row"
+                      style={{ backgroundColor: "#b45309" }}
+                    >
+                      <Text className="text-white font-semibold text-sm">Написать →</Text>
+                    </Pressable>
+                  )}
                 </View>
-              )}
 
-              <View className="flex-row items-center mt-2">
-                <View
-                  className={`w-2.5 h-2.5 rounded-full mr-1.5 ${
-                    specialist.isAvailable ? "bg-emerald-500" : "bg-slate-300"
-                  }`}
-                />
-                <Text
-                  className={`text-sm font-medium ${
-                    specialist.isAvailable ? "text-emerald-600" : "text-slate-400"
-                  }`}
-                >
-                  {specialist.isAvailable ? "Принимает заявки" : "Не принимает заявки"}
+                {/* City */}
+                {cities.length > 0 && (
+                  <Text className="text-sm mt-0.5" style={{ color: "#64748B" }}>{cities.join(", ")}</Text>
+                )}
+
+                {/* Availability */}
+                <View className="flex-row items-center mt-2 flex-wrap" style={{ gap: 8 }}>
+                  <View className="flex-row items-center">
+                    <View className={`w-2 h-2 rounded-full mr-1 ${specialist.isAvailable ? "bg-emerald-500" : "bg-slate-300"}`} />
+                    <Text
+                      className="text-xs font-semibold uppercase"
+                      style={{ letterSpacing: 1, color: specialist.isAvailable ? "#059669" : "#94a3b8" }}
+                    >
+                      {specialist.isAvailable ? "На связи" : "Недоступен"}
+                    </Text>
+                  </View>
+                  <Text className="text-xs" style={{ color: "#94a3b8" }}>
+                    · на P2PTax с {formatDate(specialist.createdAt)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Stats */}
+            <View className="flex-row mx-4 mt-4 mb-2 py-4 border-t border-b border-slate-100">
+              <View className="flex-1 items-center">
+                <Text className="text-2xl font-bold" style={{ color: "#0f172a" }}>
+                  {specialist.requestsCount ?? fnsCount}
+                </Text>
+                <Text className="text-xs mt-1" style={{ color: "#64748B", letterSpacing: 2 }}>
+                  КЕЙСОВ
                 </Text>
               </View>
-
-              <Text className="text-xs text-slate-400 mt-1.5">
-                На платформе с {formatDate(specialist.createdAt)}
-              </Text>
+              <View style={{ width: 1, backgroundColor: "#e2e8f0" }} />
+              <View className="flex-1 items-center">
+                <Text className="text-2xl font-bold" style={{ color: "#0f172a" }}>{fnsCount}</Text>
+                <Text className="text-xs mt-1 text-center" style={{ color: "#64748B", letterSpacing: 2 }}>
+                  ИФНС В РАБОТЕ
+                </Text>
+              </View>
+              <View style={{ width: 1, backgroundColor: "#e2e8f0" }} />
+              <View className="flex-1 items-center">
+                <Text className="text-2xl font-bold" style={{ color: "#0f172a" }}>{servicesCount}</Text>
+                <Text className="text-xs mt-1 text-center" style={{ color: "#64748B", letterSpacing: 2 }}>
+                  ВИДОВ ПРОВЕРОК
+                </Text>
+              </View>
             </View>
 
             {/* About */}
             {specialist.profile?.description ? (
               <View
-                className="bg-white rounded-2xl border border-slate-100 p-4 mb-4"
+                className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
                 style={cardShadow}
               >
-                <Text className="text-base font-semibold text-slate-900 mb-2">О специалисте</Text>
-                <Text className="text-base text-slate-700 leading-6">
+                <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+                  О СЕБЕ
+                </Text>
+                <Text className="text-base leading-6" style={{ color: "#334155" }}>
                   {specialist.profile.description}
                 </Text>
               </View>
@@ -295,18 +337,19 @@ export default function SpecialistPublicProfile() {
             {/* FNS + Services */}
             {specialist.fnsServices.length > 0 && (
               <View
-                className="bg-white rounded-2xl border border-slate-100 p-4 mb-4"
+                className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
                 style={cardShadow}
               >
-                <Text className="text-base font-semibold text-slate-900 mb-3">
-                  Инспекции и услуги
+                <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+                  РАБОЧИЕ ИНСПЕКЦИИ
                 </Text>
                 {specialist.fnsServices.map((group) => (
                   <View
                     key={group.fns.id}
-                    className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-2"
+                    className="border border-slate-200 rounded-xl p-3 mb-2"
+                    style={{ backgroundColor: "#f8fafc" }}
                   >
-                    <Text className="text-sm font-semibold text-slate-900 mb-2">
+                    <Text className="text-sm font-semibold mb-2" style={{ color: "#0f172a" }}>
                       {group.city.name} — {group.fns.name}
                     </Text>
                     <View className="flex-row flex-wrap" style={{ gap: 6 }}>
@@ -316,7 +359,7 @@ export default function SpecialistPublicProfile() {
                           className="px-2.5 py-1 rounded-lg"
                           style={{ backgroundColor: "rgba(180, 83, 9, 0.1)" }}
                         >
-                          <Text className="text-xs font-medium text-amber-700">{s.name}</Text>
+                          <Text className="text-xs font-medium" style={{ color: "#b45309" }}>{s.name}</Text>
                         </View>
                       ))}
                     </View>
@@ -328,15 +371,17 @@ export default function SpecialistPublicProfile() {
             {/* Contacts — PUBLIC to everyone including guests */}
             {hasContacts && (
               <View
-                className="bg-white rounded-2xl border border-slate-100 p-4 mb-4"
+                className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
                 style={cardShadow}
               >
-                <Text className="text-base font-semibold text-slate-900 mb-3">Контакты</Text>
+                <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+                  КОНТАКТЫ
+                </Text>
 
                 {contacts.map((contact, index) => {
                   const cfg = CONTACT_TYPE_CONFIG[contact.type] || {
                     label: contact.type,
-                    Icon: Globe,
+                    icon: "link",
                     bg: colors.background,
                     color: colors.textSecondary,
                   };
@@ -359,15 +404,15 @@ export default function SpecialistPublicProfile() {
                           className="w-8 h-8 rounded-full items-center justify-center mr-3"
                           style={{ backgroundColor: cfg.bg }}
                         >
-                          <cfg.Icon size={14} color={cfg.color} />
+                          <FontAwesome name={cfg.icon as never} size={14} color={cfg.color} />
                         </View>
                         <View className="flex-1">
-                          <Text className="text-xs text-slate-400 mb-0.5">{cfg.label}</Text>
+                          <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>{cfg.label}</Text>
                           <Text className="text-sm font-medium" style={{ color: cfg.color }}>
                             {contact.value}
                           </Text>
                         </View>
-                        <ChevronRight size={12} color={colors.borderLight} />
+                        <FontAwesome name="chevron-right" size={12} color={colors.borderLight} />
                       </Pressable>
                     );
                   }
@@ -380,11 +425,11 @@ export default function SpecialistPublicProfile() {
                         className="w-8 h-8 rounded-full items-center justify-center mr-3"
                         style={{ backgroundColor: cfg.bg }}
                       >
-                        <cfg.Icon size={14} color={cfg.color} />
+                        <FontAwesome name={cfg.icon as never} size={14} color={cfg.color} />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-xs text-slate-400 mb-0.5">{cfg.label}</Text>
-                        <Text className="text-sm font-medium text-slate-700">{contact.value}</Text>
+                        <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>{cfg.label}</Text>
+                        <Text className="text-sm font-medium" style={{ color: "#334155" }}>{contact.value}</Text>
                       </View>
                     </View>
                   );
@@ -392,12 +437,12 @@ export default function SpecialistPublicProfile() {
 
                 {specialist.profile?.officeAddress && (
                   <View className={`flex-row items-start py-2.5 ${specialist.profile?.workingHours ? "border-b border-slate-100" : ""}`}>
-                    <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
-                      <MapPin size={14} color={colors.textSecondary} />
+                    <View className="w-8 h-8 rounded-full items-center justify-center mr-3" style={{ backgroundColor: "#f1f5f9" }}>
+                      <FontAwesome name="map-marker" size={14} color={colors.textSecondary} />
                     </View>
                     <View className="flex-1">
-                      <Text className="text-xs text-slate-400 mb-0.5">Адрес офиса</Text>
-                      <Text className="text-sm text-slate-700 leading-5">
+                      <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>Адрес офиса</Text>
+                      <Text className="text-sm leading-5" style={{ color: "#334155" }}>
                         {specialist.profile.officeAddress}
                       </Text>
                     </View>
@@ -406,12 +451,12 @@ export default function SpecialistPublicProfile() {
 
                 {specialist.profile?.workingHours && (
                   <View className="flex-row items-center py-2.5">
-                    <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
-                      <Clock size={14} color={colors.textSecondary} />
+                    <View className="w-8 h-8 rounded-full items-center justify-center mr-3" style={{ backgroundColor: "#f1f5f9" }}>
+                      <FontAwesome name="clock-o" size={14} color={colors.textSecondary} />
                     </View>
                     <View className="flex-1">
-                      <Text className="text-xs text-slate-400 mb-0.5">Часы работы</Text>
-                      <Text className="text-sm text-slate-700">
+                      <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>Часы работы</Text>
+                      <Text className="text-sm" style={{ color: "#334155" }}>
                         {specialist.profile.workingHours}
                       </Text>
                     </View>
@@ -422,20 +467,22 @@ export default function SpecialistPublicProfile() {
 
             {/* Reviews stub */}
             <View
-              className="bg-white rounded-2xl border border-slate-100 p-4 mb-4"
+              className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
               style={cardShadow}
             >
-              <Text className="text-base font-semibold text-slate-900 mb-2">Отзывы</Text>
-              <Text className="text-sm text-slate-400 italic">
+              <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+                ОТЗЫВЫ
+              </Text>
+              <Text className="text-sm italic" style={{ color: "#94a3b8" }}>
                 Отзывы появятся в следующих версиях
               </Text>
             </View>
 
             {/* Similar specialists */}
             {similar.length > 0 && (
-              <View className="mb-4">
-                <Text className="text-base font-semibold text-slate-900 mb-3">
-                  Похожие специалисты
+              <View className="mx-4 mt-4 mb-4">
+                <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+                  ПОХОЖИЕ СПЕЦИАЛИСТЫ
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {similar.slice(0, 5).map((s) => (
@@ -448,26 +495,19 @@ export default function SpecialistPublicProfile() {
                       services={s.services}
                       cities={s.cities}
                       onPress={handleSimilarPress}
-                      horizontal
+                      variant="horizontal"
                     />
                   ))}
                 </ScrollView>
               </View>
             )}
 
-            {/* CTA button */}
-            <View className="mt-2 mb-4">
-              {isOwnProfile ? (
-                <View className="bg-slate-100 rounded-xl py-3.5 items-center">
-                  <Text className="text-sm font-semibold text-slate-500">Это вы</Text>
-                </View>
-              ) : isSpecialist ? null : (
-                <Button
-                  label={isAuthenticated ? "Написать" : "Войти и написать"}
-                  onPress={handleWritePress}
-                />
-              )}
-            </View>
+            {/* Own profile banner */}
+            {isOwnProfile && (
+              <View className="mx-4 mt-2 mb-4 rounded-xl py-3.5 items-center" style={{ backgroundColor: "#f1f5f9" }}>
+                <Text className="text-sm font-semibold" style={{ color: "#64748B" }}>Это вы</Text>
+              </View>
+            )}
 
           </View>
         </ResponsiveContainer>
