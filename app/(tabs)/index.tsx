@@ -5,7 +5,7 @@ import {
   ImageIcon, MapPin, Search, type LucideIcon
 } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 const CATEGORIES: { id: string; name: string; Icon: LucideIcon }[] = [
   { id: "1", name: "Электроника", Icon: Laptop },
@@ -48,32 +48,25 @@ function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
 
 function ListingCard({ title, price, location, color }: { title: string; price: string; location: string; color: string }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      className="flex-1 m-1.5"
-      style={{ minHeight: 44 }}
-    >
+    <Pressable className="flex-1 m-1.5" style={{ minHeight: 44 }} accessibilityRole="button" accessibilityLabel={title}>
       <View
         className="rounded-2xl overflow-hidden bg-white border border-border"
         style={{
           shadowColor: colors.text,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.07,
-          shadowRadius: 5,
-          elevation: 2,
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.10,
+          shadowRadius: 8,
+          elevation: 4,
         }}
       >
-        <View className="h-32 items-center justify-center" style={{ backgroundColor: color }}>
-          <ImageIcon size={28} color={colors.textSecondary} />
+        <View className="h-36 items-center justify-center relative" style={{ backgroundColor: color }}>
+          <ImageIcon size={32} color="rgba(0,0,0,0.15)" />
         </View>
-        <View className="p-3">
-          <Text className="text-base font-semibold text-text-base" numberOfLines={2}>
-            {title}
-          </Text>
-          <Text className="text-lg font-bold text-accent mt-1">{price}</Text>
-          <View className="flex-row items-center mt-1">
-            <MapPin size={12} color={colors.textMuted} />
+        <View className="p-3 pb-4">
+          <Text className="text-sm font-semibold text-text-base mb-1" numberOfLines={2}>{title}</Text>
+          <Text className="text-base font-bold text-accent mb-1.5">{price}</Text>
+          <View className="flex-row items-center">
+            <MapPin size={11} color={colors.textMuted} />
             <Text className="text-xs text-text-mute ml-1">{location}</Text>
           </View>
         </View>
@@ -108,11 +101,14 @@ export default function HomeScreen() {
               {/* Hero header */}
               <View
                 className="mx-2 mt-4 mb-4 rounded-2xl px-5 py-5"
-                style={{ backgroundColor: colors.accent }}
+                style={{ backgroundColor: colors.accent, minHeight: 100 }}
               >
-                <Text className="text-2xl font-bold text-white mb-0.5">Найдите нужное</Text>
-                <Text className="text-sm" style={{ color: "rgba(255,255,255,0.80)" }}>
+                <Text className="text-2xl font-bold text-white mb-1">Найдите нужное</Text>
+                <Text className="text-sm" style={{ color: overlay.white80 }}>
                   Тысячи объявлений рядом с вами
+                </Text>
+                <Text className="text-xs mt-1" style={{ color: overlay.white50 }}>
+                  Электроника, авто, жильё и многое другое
                 </Text>
               </View>
 

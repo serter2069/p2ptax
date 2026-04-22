@@ -2,7 +2,7 @@ import { View, Text, Pressable, FlatList, useWindowDimensions } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MessageCircle } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
-import { AVATAR_COLORS } from "@/lib/theme";
+import { AVATAR_COLORS, colors, overlay } from "@/lib/theme";
 
 const CONVERSATIONS = [
   { id: "1", name: "Alex K.", avatar: "A", lastMessage: "Is the iPhone still available?", time: "2m ago", unread: true },
@@ -26,18 +26,29 @@ function ConversationItem({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Чат с ${name}`}
-      className="flex-row items-center px-4 border-b border-border active:bg-surface2"
-      style={{ minHeight: 72, paddingVertical: 16 }}
+      className="flex-row items-center active:bg-surface2"
+      style={[
+        { minHeight: 72, paddingVertical: 16, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+        unread ? { borderLeftWidth: 3, borderLeftColor: colors.primary, backgroundColor: overlay.accent10 } : {},
+      ]}
     >
       <View
         className="w-12 h-12 rounded-full items-center justify-center"
-        style={{ backgroundColor: avatarColor }}
+        style={{
+          backgroundColor: avatarColor,
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          shadowColor: colors.text,
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 1 },
+        }}
       >
         <Text className="text-lg font-bold text-white">{avatar}</Text>
       </View>
       <View className="flex-1 ml-3">
         <View className="flex-row justify-between items-center mb-0.5">
-          <Text className={`text-base ${unread ? "font-bold text-text-base" : "font-semibold text-text-base"}`}>
+          <Text className={`text-base ${unread ? "font-bold text-accent" : "font-semibold text-text-base"}`}>
             {name}
           </Text>
           <Text className={`text-xs ${unread ? "text-accent font-semibold" : "text-text-dim"}`}>
@@ -70,15 +81,23 @@ export default function MessagesScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1" style={containerStyle}>
-        <View className="px-4 pt-2 pb-3 border-b border-border bg-white">
+        <View className="px-4 pt-3 pb-3 border-b border-border bg-white flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-text-base">Сообщения</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Написать новое сообщение"
+            className="bg-accent-soft rounded-full px-3 py-1.5 justify-center items-center"
+            style={{ minHeight: 44, minWidth: 44 }}
+          >
+            <Text className="text-sm font-semibold text-accent">+ Написать</Text>
+          </Pressable>
         </View>
 
         <FlatList
           data={CONVERSATIONS}
           keyExtractor={(item) => item.id}
           renderItem={({ item, index }) => <ConversationItem {...item} index={index} />}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 32 }}
           ListEmptyComponent={
             <EmptyState
               icon={MessageCircle}
