@@ -78,7 +78,7 @@ export default function Header() {
   // Desktop header
   return (
     <View className="flex-row items-center justify-between px-6 h-16 bg-white border-b" style={{ borderBottomColor: colors.border }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Главная" onPress={() => router.push("/" as never)}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Главная" onPress={() => router.push("/" as never)} className="h-11 items-center justify-center">
         <Text className="text-xl font-bold" style={{ color: colors.primary }}>P2PTax</Text>
       </Pressable>
 
@@ -90,6 +90,7 @@ export default function Header() {
             accessibilityRole="button"
             accessibilityLabel={link.label}
             onPress={() => router.push(link.href as never)}
+            className="h-11 px-2 items-center justify-center"
           >
             <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>{link.label}</Text>
           </Pressable>
