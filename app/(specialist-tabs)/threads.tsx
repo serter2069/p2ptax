@@ -16,6 +16,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
 import { apiGet } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 type FilterType = "all" | "unread";
 
@@ -83,11 +84,14 @@ export default function SpecialistMyThreads() {
   const FilterBar = (
     <ResponsiveContainer>
       <View className="flex-row items-center gap-2 mt-4 mb-3">
-        <Text className="text-xl font-bold text-text-base flex-1">
+        <Text className="text-2xl font-bold text-text-base flex-1">
           Мои диалоги
         </Text>
         {unreadTotal > 0 && (
-          <View className="bg-accent rounded-full px-2 py-0.5 items-center justify-center">
+          <View
+            className="bg-accent rounded-full items-center justify-center"
+            style={{ minWidth: 24, height: 24, paddingHorizontal: 6 }}
+          >
             <Text className="text-xs font-bold text-white">
               {unreadTotal > 99 ? "99+" : unreadTotal}
             </Text>
@@ -243,10 +247,19 @@ function ThreadCard({
       accessibilityRole="button"
       accessibilityLabel={`Чат с ${name}`}
       onPress={onPress}
-      className={`flex-row items-center bg-white border border-border rounded-xl p-4 mb-3 shadow-sm ${
-        hasUnread ? "border-l-2 border-l-accent" : ""
-      }`}
-      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+      className="flex-row items-center bg-white border border-border rounded-xl p-4 mb-3"
+      style={({ pressed }) => [
+        {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 6,
+          elevation: 3,
+          borderLeftWidth: hasUnread ? 3 : 0,
+          borderLeftColor: hasUnread ? colors.primary : "transparent",
+        },
+        pressed && { opacity: 0.7 },
+      ]}
     >
       {/* Avatar with unread badge */}
       <View className="relative mr-3">
@@ -254,7 +267,10 @@ function ThreadCard({
           <Text className="text-white text-base font-bold">{initials}</Text>
         </View>
         {hasUnread && (
-          <View className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-danger items-center justify-center px-1">
+          <View
+            className="absolute -top-0.5 -right-0.5 rounded-full bg-accent items-center justify-center"
+            style={{ minWidth: 20, height: 20, paddingHorizontal: 4 }}
+          >
             <Text className="text-[10px] font-bold text-white">
               {thread.unreadCount > 99 ? "99+" : thread.unreadCount}
             </Text>
@@ -267,32 +283,30 @@ function ThreadCard({
         <View className="flex-row items-center gap-2 mb-0.5">
           <Text
             className={`flex-1 text-base ${
-              hasUnread
-                ? "font-bold text-text-base"
-                : "font-medium text-text-base"
+              hasUnread ? "font-semibold text-text-base" : "font-semibold text-text-base"
             }`}
             numberOfLines={1}
           >
             {name}
           </Text>
           {isClosed && (
-            <View className="bg-surface2 px-2 py-0.5 rounded">
-              <Text className="text-[10px] font-medium text-text-mute">
-                Заявка закрыта
+            <View className="bg-accent-soft rounded-full px-2 py-0.5">
+              <Text className="text-[10px] font-medium text-accent">
+                Закрыта
               </Text>
             </View>
           )}
         </View>
 
-        <Text className="text-xs text-text-mute mb-0.5" numberOfLines={1}>
+        <Text className="text-xs text-text-dim mb-1" numberOfLines={1}>
           {thread.request.title}
         </Text>
 
         <Text
-          className={`text-sm ${
+          className={`text-sm mt-0.5 ${
             hasUnread ? "font-medium text-text-base" : "text-text-mute"
           }`}
-          numberOfLines={1}
+          numberOfLines={2}
         >
           {preview}
         </Text>
@@ -300,7 +314,7 @@ function ThreadCard({
 
       {/* Timestamp */}
       {timeStr ? (
-        <Text className="text-xs text-text-dim self-start mt-1">{timeStr}</Text>
+        <Text className="text-xs text-text-dim self-start mt-0.5">{timeStr}</Text>
       ) : null}
     </Pressable>
   );

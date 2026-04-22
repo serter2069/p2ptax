@@ -32,14 +32,35 @@ function StatCard({
   onPress?: () => void;
 }) {
   const content = (
-    <View className="bg-white border border-border rounded-xl p-4 shadow-sm">
-      <Text className="text-2xl font-bold text-text-base">{value}</Text>
+    <View
+      className="bg-white border border-border rounded-2xl p-5 flex-1"
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 3,
+      }}
+    >
+      <Text className="text-3xl font-extrabold text-text-base">{value}</Text>
       <Text className="text-sm text-text-mute mt-1">{label}</Text>
     </View>
   );
 
   if (onPress) {
-    return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}>{content}</Pressable>;
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onPress={onPress}
+        style={({ pressed }) => [
+          pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
+          { flex: 1 },
+        ]}
+      >
+        {content}
+      </Pressable>
+    );
   }
   return content;
 }
@@ -52,8 +73,17 @@ function RankList({
   items: { name: string; count: number }[];
 }) {
   return (
-    <View className="bg-white border border-border rounded-xl p-4 shadow-sm">
-      <Text className="text-base font-semibold text-text-base mb-3">{title}</Text>
+    <View
+      className="bg-white border border-border rounded-2xl p-5"
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 3,
+      }}
+    >
+      <Text className="text-base font-bold text-text-base mb-3">{title}</Text>
       {items.length === 0 ? (
         <Text className="text-sm text-text-mute">Нет данных</Text>
       ) : (
@@ -134,7 +164,7 @@ export default function AdminDashboard() {
         <ScrollView className="flex-1">
           <ResponsiveContainer>
             <View className="py-4 gap-3">
-              <Text className="text-lg font-bold text-text-base mb-1">
+              <Text className="text-base font-bold text-text-base mb-1">
                 Панель администратора
               </Text>
 
