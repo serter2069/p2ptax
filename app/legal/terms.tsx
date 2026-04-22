@@ -7,7 +7,7 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 
 function SectionHeading({ children }: { children: string }) {
   return (
-    <Text className="text-lg font-bold text-slate-900 mt-6 mb-2">
+    <Text className="text-lg font-bold text-text-base mt-6 mb-2">
       {children}
     </Text>
   );
@@ -15,7 +15,7 @@ function SectionHeading({ children }: { children: string }) {
 
 function Paragraph({ children }: { children: string }) {
   return (
-    <Text className="text-base text-slate-500 leading-7 mb-3">{children}</Text>
+    <Text className="text-base text-text-mute leading-7 mb-3">{children}</Text>
   );
 }
 
@@ -25,9 +25,9 @@ export default function TermsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Header with close button */}
-      <View className="flex-row items-center h-14 bg-white border-b border-slate-200 px-4">
+      <View className="flex-row items-center h-14 bg-white border-b border-border px-4">
         <View className="flex-1" />
-        <Text className="text-base font-semibold text-slate-900">
+        <Text className="text-base font-semibold text-text-base">
           Условия использования
         </Text>
         <View className="flex-1 items-end">
@@ -48,7 +48,7 @@ export default function TermsScreen() {
           className="flex-1"
           contentContainerStyle={{ paddingHorizontal: 0, paddingBottom: 48 }}
         >
-          <Text className="text-sm text-slate-400 mt-4 mb-4">
+          <Text className="text-sm text-text-mute mt-4 mb-4">
             Последнее обновление: апрель 2026
           </Text>
 
