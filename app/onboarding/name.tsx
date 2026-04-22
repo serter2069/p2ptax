@@ -132,10 +132,11 @@ export default function OnboardingNameScreen() {
               accessibilityRole="button"
               accessibilityLabel="Принять условия использования"
               onPress={() => setAgreed(!agreed)}
-              className="flex-row items-start"
+              className="flex-row items-center"
+              style={{ minHeight: 44 }}
             >
               <View
-                className={`w-5 h-5 rounded border-2 mt-0.5 items-center justify-center ${
+                className={`w-5 h-5 rounded border-2 items-center justify-center ${
                   agreed
                     ? "bg-accent border-accent"
                     : "border-border bg-white"
@@ -145,15 +146,19 @@ export default function OnboardingNameScreen() {
                   <Text className="text-white text-xs font-bold">✓</Text>
                 )}
               </View>
-              <Text className="flex-1 ml-3 text-xs text-text-mute leading-5">
-                Я принимаю{" "}
-                <Text
-                  className="text-accent font-medium underline"
+              <View className="flex-1 ml-3 flex-row flex-wrap">
+                <Text className="text-xs text-text-mute leading-5">Я принимаю </Text>
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Условия использования"
                   onPress={() => router.push("/legal/terms" as never)}
+                  style={{ minHeight: 44, justifyContent: "center" }}
                 >
-                  Условия использования
-                </Text>
-              </Text>
+                  <Text className="text-accent font-medium underline text-xs leading-5">
+                    Условия использования
+                  </Text>
+                </Pressable>
+              </View>
             </Pressable>
           </ScrollView>
 

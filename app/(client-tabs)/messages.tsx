@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
 import EmptyState from "@/components/ui/EmptyState";
-import { MessageSquare } from "lucide-react-native";
+import { MessageSquare, MessagesSquare } from "lucide-react-native";
 import ErrorState from "@/components/ui/ErrorState";
 import Avatar from "@/components/ui/Avatar";
 import InlineChatView from "@/components/InlineChatView";
@@ -277,9 +277,13 @@ export default function ClientMessages() {
               }
               contentContainerStyle={{ flexGrow: 1 }}
               ListEmptyComponent={
-                <View className="flex-1 items-center justify-center py-16 px-4">
-                  <Text className="text-sm text-center text-text-mute">Нет сообщений</Text>
-                </View>
+                <EmptyState
+                  icon={MessageSquare}
+                  title="Нет сообщений"
+                  subtitle="Когда специалисты откликнутся на ваши заявки, сообщения появятся здесь"
+                  actionLabel="Найти специалиста"
+                  onAction={() => router.push("/specialists" as never)}
+                />
               }
             />
           </View>
@@ -288,9 +292,11 @@ export default function ClientMessages() {
             {selectedThreadId ? (
               <InlineChatView threadId={selectedThreadId} />
             ) : (
-              <View className="flex-1 items-center justify-center">
-                <Text className="text-sm text-text-mute">Выберите диалог</Text>
-              </View>
+              <EmptyState
+                icon={MessagesSquare}
+                title="Выберите диалог"
+                subtitle="Нажмите на переписку слева, чтобы открыть её"
+              />
             )}
           </View>
         </View>
