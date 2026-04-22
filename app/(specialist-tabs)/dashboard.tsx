@@ -126,7 +126,7 @@ export default function SpecialistDashboard() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
         <HeaderHome
           notificationCount={0}
           onSettingsPress={() => router.push("/settings/specialist" as never)}
@@ -134,7 +134,7 @@ export default function SpecialistDashboard() {
         <ResponsiveContainer>
           <View className="py-4 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <View key={i} className="bg-white rounded-xl overflow-hidden border border-slate-200">
+              <View key={i} className="bg-white rounded-xl overflow-hidden border border-border">
                 <LoadingState variant="skeleton" lines={3} />
               </View>
             ))}
@@ -146,7 +146,7 @@ export default function SpecialistDashboard() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
         <HeaderHome
           onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
@@ -162,7 +162,7 @@ export default function SpecialistDashboard() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome
         notificationCount={stats?.newMessages ?? 0}
         onSettingsPress={() => router.push("/settings/specialist" as never)}
@@ -176,17 +176,17 @@ export default function SpecialistDashboard() {
         <ResponsiveContainer>
           <View className="py-4">
             {/* Welcome header */}
-            <Text className="text-2xl font-bold text-slate-900 mb-4">
+            <Text className="text-2xl font-bold text-text-base mb-4">
               Здравствуйте, {firstName}!
             </Text>
 
             {/* Availability toggle */}
-            <View className="bg-white border border-slate-200 rounded-xl p-4 mb-4 flex-row items-center justify-between">
+            <View className="bg-white border border-border rounded-xl p-4 mb-4 flex-row items-center justify-between">
               <View className="flex-1 mr-3">
-                <Text className="text-sm font-semibold text-slate-900">
+                <Text className="text-sm font-semibold text-text-base">
                   Принимаю заявки
                 </Text>
-                <Text className="text-xs text-slate-500 mt-0.5">
+                <Text className="text-xs text-text-mute mt-0.5">
                   {isAvailable
                     ? "Клиенты видят вас в каталоге"
                     : "Вы не принимаете новые заявки"}
@@ -216,14 +216,14 @@ export default function SpecialistDashboard() {
                     style={{ marginTop: 2 }}
                   />
                   <View className="flex-1 ml-2">
-                    <Text className="text-sm font-semibold text-amber-700">
+                    <Text className="text-sm font-semibold text-warning">
                       Вы не принимаете заявки
                     </Text>
-                    <Text className="text-xs text-amber-600 mt-0.5">
+                    <Text className="text-xs text-warning mt-0.5">
                       Клиенты не видят ваш профиль в каталоге. Включите приём заявок выше.
                     </Text>
                   </View>
-                  <Text className="text-xs text-amber-700 underline ml-2">
+                  <Text className="text-xs text-warning underline ml-2">
                     Настройки
                   </Text>
                 </View>
@@ -232,23 +232,23 @@ export default function SpecialistDashboard() {
 
             {/* Stats row */}
             <View className="flex-row gap-3 mb-6">
-              <View className="flex-1 bg-white border border-slate-200 rounded-xl p-4">
-                <Text className="text-2xl font-bold text-slate-900">
+              <View className="flex-1 bg-white border border-border rounded-xl p-4">
+                <Text className="text-2xl font-bold text-text-base">
                   {stats?.threadsTotal ?? 0}
                 </Text>
-                <Text className="text-xs text-slate-500 mt-1">Всего диалогов</Text>
+                <Text className="text-xs text-text-mute mt-1">Всего диалогов</Text>
               </View>
-              <View className="flex-1 bg-white border border-slate-200 rounded-xl p-4">
-                <Text className="text-2xl font-bold text-blue-900">
+              <View className="flex-1 bg-white border border-border rounded-xl p-4">
+                <Text className="text-2xl font-bold text-accent">
                   {stats?.newMessages ?? 0}
                 </Text>
-                <Text className="text-xs text-slate-500 mt-1">Новых сообщений</Text>
+                <Text className="text-xs text-text-mute mt-1">Новых сообщений</Text>
               </View>
             </View>
 
             {/* Section header */}
             <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-lg font-semibold text-slate-900">
+              <Text className="text-lg font-semibold text-text-base">
                 Подходящие заявки
               </Text>
               <Pressable
@@ -256,7 +256,7 @@ export default function SpecialistDashboard() {
                 accessibilityLabel="Мои обращения"
                 onPress={() => router.push("/(specialist-tabs)/threads" as never)}
               >
-                <Text className="text-sm text-blue-900 font-medium">
+                <Text className="text-sm text-accent font-medium">
                   Мои обращения
                 </Text>
               </Pressable>
@@ -312,13 +312,13 @@ function RequestCard({
       accessibilityRole="button"
       accessibilityLabel={item.title}
       onPress={onPress}
-      className="bg-white border border-slate-200 rounded-xl p-4 mb-3"
+      className="bg-white border border-border rounded-xl p-4 mb-3"
       style={({ pressed }) => pressed ? { opacity: 0.92 } : undefined}
     >
       {/* Title + status */}
       <View className="flex-row items-start justify-between mb-2">
         <Text
-          className="text-base font-semibold text-slate-900 flex-1 mr-2"
+          className="text-base font-semibold text-text-base flex-1 mr-2"
           numberOfLines={2}
         >
           {item.title}
@@ -328,11 +328,11 @@ function RequestCard({
 
       {/* Chips */}
       <View className="flex-row flex-wrap gap-1.5 mb-2">
-        <View className="bg-slate-100 px-2 py-0.5 rounded-full">
-          <Text className="text-xs text-slate-500">{item.city.name}</Text>
+        <View className="bg-surface2 px-2 py-0.5 rounded-full">
+          <Text className="text-xs text-text-mute">{item.city.name}</Text>
         </View>
-        <View className="bg-slate-100 px-2 py-0.5 rounded-full">
-          <Text className="text-xs text-slate-500">{item.fns.name}</Text>
+        <View className="bg-surface2 px-2 py-0.5 rounded-full">
+          <Text className="text-xs text-text-mute">{item.fns.name}</Text>
         </View>
         {item.service ? (
           <View className="bg-blue-50 px-2 py-0.5 rounded-full">
@@ -340,14 +340,14 @@ function RequestCard({
           </View>
         ) : null}
         {!item.isMyRegion ? (
-          <View className="bg-slate-100 px-2 py-0.5 rounded-full">
-            <Text className="text-xs text-slate-400">Не ваш регион</Text>
+          <View className="bg-surface2 px-2 py-0.5 rounded-full">
+            <Text className="text-xs text-text-mute">Не ваш регион</Text>
           </View>
         ) : null}
       </View>
 
       {/* Description */}
-      <Text className="text-sm text-slate-500 mb-3" numberOfLines={2}>
+      <Text className="text-sm text-text-mute mb-3" numberOfLines={2}>
         {item.description}
       </Text>
 
@@ -366,7 +366,7 @@ function RequestCard({
               e.stopPropagation?.();
               onOpenThread();
             }}
-            className="bg-blue-900 rounded-xl px-4 py-2"
+            className="bg-accent rounded-xl px-4 py-2"
           >
             <Text className="text-white text-sm font-semibold">Открыть чат</Text>
           </Pressable>
@@ -379,7 +379,7 @@ function RequestCard({
             e.stopPropagation?.();
             onWrite();
           }}
-          className="bg-amber-700 rounded-xl py-2.5 items-center"
+          className="bg-accent rounded-xl py-2.5 items-center"
         >
           <Text className="text-white text-sm font-semibold">Написать клиенту</Text>
         </Pressable>

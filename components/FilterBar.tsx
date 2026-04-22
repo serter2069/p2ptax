@@ -32,11 +32,11 @@ function FilterChip({
       accessibilityLabel={label}
       onPress={onPress}
       className={`px-3 min-h-[44px] items-center justify-center rounded-full mr-2 mb-1 border ${
-        active ? "bg-blue-900 border-blue-900" : "bg-white border-slate-200"
+        active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
     >
       <Text
-        className={`text-sm ${active ? "text-white font-medium" : "text-slate-900"}`}
+        className={`text-sm ${active ? "text-white font-medium" : "text-text-base"}`}
       >
         {label}
       </Text>

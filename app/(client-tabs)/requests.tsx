@@ -54,7 +54,7 @@ function Toast({ message, visible }: { message: string; visible: boolean }) {
       className="absolute bottom-24 left-0 right-0 items-center z-50 px-4"
       pointerEvents="none"
     >
-      <View className="bg-slate-900 px-4 py-2 rounded-full">
+      <View className="bg-text-base px-4 py-2 rounded-full">
         <Text className="text-white text-sm font-medium">{message}</Text>
       </View>
     </Animated.View>
@@ -131,7 +131,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
       {/* Red action button revealed on swipe */}
       {isActive && (
         <View
-          className="absolute right-0 top-0 bottom-0 bg-red-600 items-center justify-center rounded-r-xl"
+          className="absolute right-0 top-0 bottom-0 bg-danger items-center justify-center rounded-r-xl"
           style={{ width: ACTION_WIDTH }}
         >
           <Pressable
@@ -156,12 +156,12 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
           accessibilityRole="button"
           accessibilityLabel={item.title}
           onPress={() => onPress(item.id)}
-          className="bg-white border border-slate-200 rounded-xl p-4"
+          className="bg-white border border-border rounded-xl p-4"
         >
           {/* Title + status */}
           <View className="flex-row items-start justify-between mb-2 gap-2">
             <Text
-              className="text-base font-semibold text-slate-900 flex-1"
+              className="text-base font-semibold text-text-base flex-1"
               numberOfLines={2}
             >
               {item.title}
@@ -170,24 +170,24 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
           </View>
 
           {/* City + FNS */}
-          <Text className="text-xs text-slate-400 mb-2" numberOfLines={1}>
+          <Text className="text-xs text-text-mute mb-2" numberOfLines={1}>
             {item.city.name} · {item.fns.name}
           </Text>
 
           {/* Footer: threads + date */}
           <View className="flex-row items-center justify-between">
-            <Text className="text-xs text-slate-400">
+            <Text className="text-xs text-text-mute">
               {item.threadsCount}{" "}
               {item.threadsCount === 1
                 ? "специалист откликнулся"
                 : "специалистов откликнулось"}
             </Text>
-            <Text className="text-xs text-slate-400">{formattedDate}</Text>
+            <Text className="text-xs text-text-mute">{formattedDate}</Text>
           </View>
 
           {/* Swipe hint for active cards (mobile only) */}
           {isActive && Platform.OS !== "web" && (
-            <Text className="text-[10px] text-slate-300 mt-1 text-right">
+            <Text className="text-[10px] text-text-mute mt-1 text-right">
               ← смахните для закрытия
             </Text>
           )}
@@ -327,17 +327,17 @@ export default function MyRequests() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome />
       <ResponsiveContainer>
         {/* Page title + create button row */}
         <View className="flex-row items-center justify-between mt-4 mb-4">
-          <Text className="text-2xl font-bold text-slate-900">Мои заявки</Text>
+          <Text className="text-2xl font-bold text-text-base">Мои заявки</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"
             onPress={() => router.push("/requests/new" as never)}
-            className="bg-blue-900 rounded-xl px-4 py-2 flex-row items-center"
+            className="bg-accent rounded-xl px-4 py-2 flex-row items-center"
           >
             <Text className="text-white font-semibold text-sm">+ Создать</Text>
           </Pressable>

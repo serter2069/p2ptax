@@ -41,22 +41,22 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
       <Pressable accessibilityRole="button" accessibilityLabel="Закрыть меню" onPress={onClose} className="flex-1 flex-row bg-black/50">
         <Pressable accessibilityRole="button" accessibilityLabel="Панель меню" className="w-72 bg-white h-full" onPress={() => {}}>
           {/* User info */}
-          <View className="pt-14 pb-6 px-5 bg-blue-900">
+          <View className="pt-14 pb-6 px-5 bg-accent">
             {isAuthenticated ? (
               <>
-                <View className="w-14 h-14 rounded-full bg-slate-50 items-center justify-center mb-3">
-                  <Text className="text-2xl font-bold text-blue-900">{initials}</Text>
+                <View className="w-14 h-14 rounded-full bg-surface2 items-center justify-center mb-3">
+                  <Text className="text-2xl font-bold text-accent">{initials}</Text>
                 </View>
                 <Text className="text-lg font-bold text-white">{displayName}</Text>
-                <Text className="text-sm text-slate-50 mt-0.5">{user?.email}</Text>
+                <Text className="text-sm text-accent-soft mt-0.5">{user?.email}</Text>
               </>
             ) : (
               <>
-                <View className="w-14 h-14 rounded-full bg-slate-50 items-center justify-center mb-3">
+                <View className="w-14 h-14 rounded-full bg-surface2 items-center justify-center mb-3">
                   <User size={24} color={colors.primary} />
                 </View>
                 <Text className="text-lg font-bold text-white">Гость</Text>
-                <Text className="text-sm text-slate-50 mt-0.5">Войдите для продолжения</Text>
+                <Text className="text-sm text-accent-soft mt-0.5">Войдите для продолжения</Text>
               </>
             )}
           </View>
@@ -74,29 +74,29 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
                 key={item.label}
                 accessibilityLabel={item.label}
                 onPress={() => handleNavigate(item.route)}
-                className="flex-row items-center px-5 py-3.5 active:bg-slate-50"
+                className="flex-row items-center px-5 py-3.5 active:bg-surface2"
               >
                 <View className="w-8 items-center">
                   <item.Icon size={18} color={colors.textSecondary} />
                 </View>
-                <Text className="text-base text-slate-800 ml-3">{item.label}</Text>
+                <Text className="text-base text-text-base ml-3">{item.label}</Text>
               </Pressable>
             ))}
           </View>
 
           {/* Bottom actions */}
-          <View className="border-t border-slate-100 px-5 py-4 pb-8">
+          <View className="border-t border-border px-5 py-4 pb-8">
             {isAuthenticated ? (
               <Pressable accessibilityRole="button" accessibilityLabel="Выйти" onPress={handleLogout} className="flex-row items-center py-3">
                 <LogOut size={18} color={colors.error} />
-                <Text className="text-base font-medium text-red-600 ml-3">Выйти</Text>
+                <Text className="text-base font-medium text-danger ml-3">Выйти</Text>
               </Pressable>
             ) : (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Войти"
                 onPress={() => handleNavigate("/auth/email")}
-                className="h-12 rounded-xl bg-blue-900 items-center justify-center"
+                className="h-12 rounded-xl bg-accent items-center justify-center"
               >
                 <Text className="text-base font-semibold text-white">Войти</Text>
               </Pressable>

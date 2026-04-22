@@ -195,7 +195,7 @@ export default function ClientSettings() {
               >
                 {avatarUploading ? (
                   <View
-                    className="rounded-full bg-slate-100 items-center justify-center"
+                    className="rounded-full bg-surface2 items-center justify-center"
                     style={{ width: 80, height: 80 }}
                   >
                     <ActivityIndicator color={colors.primary} />
@@ -213,7 +213,7 @@ export default function ClientSettings() {
                       }}
                     />
                     <View
-                      className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
+                      className="absolute bottom-0 right-0 bg-accent rounded-full items-center justify-center"
                       style={{ width: 24, height: 24 }}
                     >
                       <Pencil size={12} color={colors.surface} />
@@ -221,7 +221,7 @@ export default function ClientSettings() {
                   </View>
                 ) : (
                   <View
-                    className="rounded-full bg-blue-900 items-center justify-center"
+                    className="rounded-full bg-accent items-center justify-center"
                     style={{ width: 80, height: 80 }}
                   >
                     <Text className="text-white text-2xl font-bold">
@@ -229,12 +229,12 @@ export default function ClientSettings() {
                     </Text>
                   </View>
                 )}
-                <Text className="text-xs text-slate-400 mt-2">
+                <Text className="text-xs text-text-mute mt-2">
                   {avatarUrl ? "Изменить фото" : "Нажмите, чтобы изменить"}
                 </Text>
               </Pressable>
-              <View className="mt-2 bg-slate-100 px-3 py-1 rounded-full">
-                <Text className="text-xs font-medium text-slate-900">Клиент</Text>
+              <View className="mt-2 bg-surface2 px-3 py-1 rounded-full">
+                <Text className="text-xs font-medium text-text-base">Клиент</Text>
               </View>
             </View>
 
@@ -269,12 +269,12 @@ export default function ClientSettings() {
             </View>
 
             {/* Email (read-only) */}
-            <Text className="text-sm font-medium text-slate-900 mb-1">
+            <Text className="text-sm font-medium text-text-base mb-1">
               Email{" "}
-              <Text className="text-slate-400 font-normal">(нельзя изменить)</Text>
+              <Text className="text-text-mute font-normal">(нельзя изменить)</Text>
             </Text>
-            <View className="h-12 border border-slate-200 rounded-xl bg-slate-100 px-4 justify-center mb-6">
-              <Text className="text-base text-slate-400">{user?.email || ""}</Text>
+            <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center mb-6">
+              <Text className="text-base text-text-mute">{user?.email || ""}</Text>
             </View>
 
             {/* Save button */}
@@ -288,15 +288,15 @@ export default function ClientSettings() {
             </View>
 
             {/* Notifications section */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
               Уведомления
             </Text>
 
-            <View className="bg-white border border-slate-100 rounded-xl mb-6 overflow-hidden">
-              <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
+            <View className="bg-white border border-border rounded-xl mb-6 overflow-hidden">
+              <View className="flex-row items-center px-4 py-3 border-b border-border">
                 <View className="flex-1 mr-3">
-                  <Text className="text-base text-slate-900">Новые сообщения</Text>
-                  <Text className="text-xs text-slate-400 mt-0.5">
+                  <Text className="text-base text-text-base">Новые сообщения</Text>
+                  <Text className="text-xs text-text-mute mt-0.5">
                     Получать уведомления о новых сообщениях от специалистов по email
                   </Text>
                 </View>
@@ -310,10 +310,10 @@ export default function ClientSettings() {
               </View>
               <View className="flex-row items-center px-4 py-3">
                 <View className="flex-1 mr-3">
-                  <Text className="text-base text-slate-900">
+                  <Text className="text-base text-text-base">
                     Предупреждения о закрытии
                   </Text>
-                  <Text className="text-xs text-slate-400 mt-0.5">
+                  <Text className="text-xs text-text-mute mt-0.5">
                     Предупреждать, когда заявка скоро закроется
                   </Text>
                 </View>
@@ -328,11 +328,11 @@ export default function ClientSettings() {
             </View>
 
             {/* Legal section */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
               Правовая информация
             </Text>
 
-            <View className="bg-white border border-slate-100 rounded-xl mb-8 overflow-hidden">
+            <View className="bg-white border border-border rounded-xl mb-8 overflow-hidden">
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Условия использования"
@@ -341,7 +341,7 @@ export default function ClientSettings() {
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <FileText size={16} color={colors.placeholder} />
-                <Text className="text-base text-slate-900 ml-3 flex-1">
+                <Text className="text-base text-text-base ml-3 flex-1">
                   Условия использования
                 </Text>
                 <ChevronRight size={12} color={colors.borderLight} />
@@ -349,20 +349,20 @@ export default function ClientSettings() {
             </View>
 
             {/* Account / Danger zone */}
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
               Аккаунт
             </Text>
 
-            <View className="bg-white border border-slate-100 rounded-xl mb-8 overflow-hidden">
+            <View className="bg-white border border-border rounded-xl mb-8 overflow-hidden">
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Выйти из аккаунта"
                 onPress={handleLogout}
-                className="flex-row items-center px-4 py-3 border-b border-slate-100"
+                className="flex-row items-center px-4 py-3 border-b border-border"
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <LogOut size={16} color={colors.error} />
-                <Text className="text-base text-red-600 ml-3 flex-1">
+                <Text className="text-base text-danger ml-3 flex-1">
                   Выйти из аккаунта
                 </Text>
               </Pressable>
@@ -374,14 +374,14 @@ export default function ClientSettings() {
                 style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <Trash2 size={16} color={colors.error} />
-                <Text className="text-base text-red-600 ml-3 flex-1">
+                <Text className="text-base text-danger ml-3 flex-1">
                   Удалить аккаунт
                 </Text>
               </Pressable>
             </View>
 
             {/* App version */}
-            <Text className="text-xs text-slate-400 text-center mb-4">
+            <Text className="text-xs text-text-mute text-center mb-4">
               Версия 1.0.0
             </Text>
 

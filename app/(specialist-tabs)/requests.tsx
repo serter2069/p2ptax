@@ -141,7 +141,7 @@ export default function SpecialistPublicRequests() {
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <HeaderHome />
       <ResponsiveContainer>
-        <Text className="text-2xl font-bold text-slate-900 mt-4 mb-2">
+        <Text className="text-2xl font-bold text-text-base mt-4 mb-2">
           Публичные заявки
         </Text>
 
@@ -157,7 +157,7 @@ export default function SpecialistPublicRequests() {
         {loading ? (
           <View className="py-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
+              <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-border">
                 <LoadingState variant="skeleton" lines={4} />
               </View>
             ))}

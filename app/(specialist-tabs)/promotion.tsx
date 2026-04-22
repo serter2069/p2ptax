@@ -11,7 +11,7 @@ export default function PromotionScreen() {
   const isDesktop = width >= 640;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome
         notificationCount={0}
         onSettingsPress={() => router.push("/settings/specialist" as never)}
@@ -20,20 +20,20 @@ export default function PromotionScreen() {
         <View style={{ width: "100%", alignItems: "center" }}>
         <View style={{ width: "100%", maxWidth: isDesktop ? 680 : undefined, paddingHorizontal: isDesktop ? 24 : 16 }}>
           <View className="py-4">
-            <Text className="text-2xl font-bold text-slate-900 mb-2">Продвижение</Text>
-            <Text className="text-sm text-slate-500 mb-6">
+            <Text className="text-2xl font-bold text-text-base mb-2">Продвижение</Text>
+            <Text className="text-sm text-text-mute mb-6">
               Инструменты для привлечения новых клиентов
             </Text>
 
             {/* Placeholder card */}
-            <View className="bg-white border border-slate-200 rounded-xl p-6 items-center">
+            <View className="bg-white border border-border rounded-xl p-6 items-center">
               <View className="w-16 h-16 rounded-full bg-amber-50 items-center justify-center mb-4">
                 <Rocket size={28} color={colors.accent} />
               </View>
-              <Text className="text-lg font-semibold text-slate-900 text-center mb-2">
+              <Text className="text-lg font-semibold text-text-base text-center mb-2">
                 Скоро будет доступно
               </Text>
-              <Text className="text-sm text-slate-500 text-center leading-5">
+              <Text className="text-sm text-text-mute text-center leading-5">
                 Здесь появятся инструменты продвижения вашего профиля: платное размещение в топе,
                 баннеры и специальные предложения для клиентов.
               </Text>
@@ -44,7 +44,7 @@ export default function PromotionScreen() {
               accessibilityRole="button"
               accessibilityLabel="Улучшить профиль"
               onPress={() => router.push("/settings/specialist" as never)}
-              className="bg-blue-900 rounded-xl p-4 mt-4 flex-row items-center"
+              className="bg-accent rounded-xl p-4 mt-4 flex-row items-center"
             >
               <View className="w-10 h-10 rounded-full bg-blue-800 items-center justify-center mr-3">
                 <User size={16} color={colors.surface} />

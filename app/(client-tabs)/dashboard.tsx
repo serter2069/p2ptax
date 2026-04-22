@@ -76,7 +76,7 @@ export default function ClientDashboard() {
     : 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome
         notificationCount={stats?.unreadMessages ?? 0}
         onSettingsPress={() => router.push("/settings/client" as never)}
@@ -90,7 +90,7 @@ export default function ClientDashboard() {
         <ResponsiveContainer>
           {/* Welcome header */}
           <View className="pt-4 pb-2">
-            <Text className="text-2xl font-bold text-slate-900">
+            <Text className="text-2xl font-bold text-text-base">
               {user?.firstName ? `Здравствуйте, ${user.firstName}!` : "Здравствуйте!"}
             </Text>
           </View>
@@ -108,21 +108,21 @@ export default function ClientDashboard() {
           ) : (
             <View className="pb-6">
               {/* Stats card */}
-              <View className="bg-white border border-slate-200 rounded-xl p-4 mb-4">
-                <Text className="text-sm text-slate-500 mb-1">
+              <View className="bg-white border border-border rounded-xl p-4 mb-4">
+                <Text className="text-sm text-text-mute mb-1">
                   Заявок использовано
                 </Text>
-                <Text className="text-xl font-bold text-slate-900 mb-3">
+                <Text className="text-xl font-bold text-text-base mb-3">
                   {stats?.requestsUsed ?? 0} из {stats?.requestsLimit ?? 5}
                 </Text>
-                <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <View className="h-2 bg-surface2 rounded-full overflow-hidden">
                   <View
-                    className={`h-full rounded-full ${atLimit ? "bg-red-600" : "bg-blue-900"}`}
+                    className={`h-full rounded-full ${atLimit ? "bg-danger" : "bg-accent"}`}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </View>
                 {atLimit && (
-                  <Text className="text-xs text-red-600 mt-2">
+                  <Text className="text-xs text-danger mt-2">
                     Лимит заявок исчерпан
                   </Text>
                 )}
@@ -136,10 +136,10 @@ export default function ClientDashboard() {
                   onPress={() => router.push("/(client-tabs)/messages" as never)}
                   className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex-row items-center justify-between"
                 >
-                  <Text className="text-sm font-medium text-amber-700">
+                  <Text className="text-sm font-medium text-warning">
                     Непрочитанных сообщений: {stats?.unreadMessages}
                   </Text>
-                  <Text className="text-xs text-amber-600">Открыть →</Text>
+                  <Text className="text-xs text-warning">Открыть →</Text>
                 </Pressable>
               )}
 
@@ -149,10 +149,10 @@ export default function ClientDashboard() {
                 accessibilityLabel={atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
                 onPress={() => !atLimit && router.push("/requests/new" as never)}
                 disabled={atLimit}
-                className={`rounded-xl p-4 mb-6 ${atLimit ? "bg-slate-100 border border-slate-200" : "bg-blue-900"}`}
+                className={`rounded-xl p-4 mb-6 ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
               >
                 <Text
-                  className={`font-semibold text-base ${atLimit ? "text-slate-400" : "text-white"}`}
+                  className={`font-semibold text-base ${atLimit ? "text-text-mute" : "text-white"}`}
                 >
                   {atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
                 </Text>
@@ -165,7 +165,7 @@ export default function ClientDashboard() {
 
               {/* My requests section */}
               <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-lg font-semibold text-slate-900">
+                <Text className="text-lg font-semibold text-text-base">
                   Мои заявки
                 </Text>
                 {requests.length > 0 && (
@@ -174,7 +174,7 @@ export default function ClientDashboard() {
                     accessibilityLabel="Смотреть все заявки"
                     onPress={() => router.push("/(client-tabs)/requests" as never)}
                   >
-                    <Text className="text-sm text-blue-900 font-medium">
+                    <Text className="text-sm text-accent font-medium">
                       Смотреть все
                     </Text>
                   </Pressable>

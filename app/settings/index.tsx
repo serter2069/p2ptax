@@ -26,12 +26,12 @@ function SettingRow({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className="flex-row items-center py-4 border-b border-slate-50 active:bg-slate-50"
+      className="flex-row items-center py-4 border-b border-border active:bg-surface2"
     >
-      <View className="w-9 h-9 rounded-lg bg-slate-50 items-center justify-center">
+      <View className="w-9 h-9 rounded-lg bg-surface2 items-center justify-center">
         <Icon size={16} color={colors.text} />
       </View>
-      <Text className="flex-1 ml-3 text-base text-slate-900">{label}</Text>
+      <Text className="flex-1 ml-3 text-base text-text-base">{label}</Text>
       {rightElement || <ChevronRight size={12} color={colors.borderLight} />}
     </Pressable>
   );
@@ -39,7 +39,7 @@ function SettingRow({
 
 function SectionTitle({ title }: { title: string }) {
   return (
-    <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide pt-6 pb-2">
+    <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide pt-6 pb-2">
       {title}
     </Text>
   );
@@ -65,11 +65,11 @@ export default function SettingsScreen() {
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
         <ResponsiveContainer>
         {/* Header */}
-        <View className="flex-row items-center pt-2 pb-3 border-b border-slate-50">
+        <View className="flex-row items-center pt-2 pb-3 border-b border-border">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
             <ArrowLeft size={18} color={colors.text} />
           </Pressable>
-          <Text className="text-2xl font-bold text-slate-900">Настройки</Text>
+          <Text className="text-2xl font-bold text-text-base">Настройки</Text>
         </View>
 
         <SectionTitle title="Уведомления" />
@@ -120,7 +120,7 @@ export default function SettingsScreen() {
           onPress={() => router.push("/legal/terms" as never)}
         />
         <SettingRow icon={Info} label="Версия" rightElement={
-          <Text className="text-sm text-slate-400">1.0.0</Text>
+          <Text className="text-sm text-text-mute">1.0.0</Text>
         } />
 
         {__DEV__ && (

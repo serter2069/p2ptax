@@ -77,7 +77,7 @@ export default function SpecialistMyThreads() {
 
   const FilterBar = (
     <ResponsiveContainer>
-      <Text className="text-xl font-bold text-slate-900 mt-4 mb-3">
+      <Text className="text-xl font-bold text-text-base mt-4 mb-3">
         Мои диалоги
       </Text>
       <View className="flex-row gap-2 mb-3">
@@ -178,13 +178,13 @@ function FilterChip({
       accessibilityLabel={label}
       onPress={onPress}
       className={`px-4 py-2 rounded-full border ${
-        active ? "bg-blue-900 border-blue-900" : "bg-white border-slate-200"
+        active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
       style={({ pressed }) => [pressed && { opacity: 0.7 }]}
     >
       <Text
         className={`text-sm font-medium ${
-          active ? "text-white" : "text-slate-900"
+          active ? "text-white" : "text-text-base"
         }`}
       >
         {label}

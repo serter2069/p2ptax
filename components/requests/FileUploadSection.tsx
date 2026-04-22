@@ -102,15 +102,15 @@ export default function FileUploadSection({
 
   return (
     <View className="mb-6">
-      <Text className="text-sm font-medium text-slate-700 mb-1">Документы</Text>
-      <Text className="text-xs text-slate-400 mb-3">
+      <Text className="text-sm font-medium text-text-base mb-1">Документы</Text>
+      <Text className="text-xs text-text-mute mb-3">
         PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов
       </Text>
 
       {files.map((file, index) => (
         <View
           key={`file-${index}`}
-          className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 mb-2"
+          className="flex-row items-center bg-surface2 border border-border rounded-xl px-3 py-2.5 mb-2"
         >
           {file.mimeType === "application/pdf"
             ? <File size={18} color={file.error ? colors.error : colors.primary} />

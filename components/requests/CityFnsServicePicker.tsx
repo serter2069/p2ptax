@@ -67,8 +67,8 @@ export default function CityFnsServicePicker({
     <View>
       {/* City select */}
       <View className="mb-4">
-        <Text className="text-sm font-medium text-slate-700 mb-1.5">
-          Город <Text className="text-red-500">*</Text>
+        <Text className="text-sm font-medium text-text-base mb-1.5">
+          Город <Text className="text-danger">*</Text>
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -81,11 +81,11 @@ export default function CityFnsServicePicker({
           }}
           className={`h-12 border rounded-xl px-4 flex-row items-center justify-between ${
             submitted && !selectedCity
-              ? "border-red-400 bg-red-50"
-              : "border-slate-200 bg-white"
+              ? "border-danger bg-danger-soft"
+              : "border-border bg-white"
           }`}
         >
-          <Text className={selectedCity ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
+          <Text className={selectedCity ? "text-text-base text-base" : "text-text-mute text-base"}>
             {selectedCity?.name || "Выберите город"}
           </Text>
           {cityOpen
@@ -93,17 +93,17 @@ export default function CityFnsServicePicker({
             : <ChevronDown size={12} color={colors.placeholder} />}
         </Pressable>
         {submitted && !selectedCity && (
-          <Text className="text-xs text-red-600 mt-1">Выберите город</Text>
+          <Text className="text-xs text-danger mt-1">Выберите город</Text>
         )}
         {cityOpen && (
           <View
-            className="border border-slate-200 rounded-xl mt-1 bg-white overflow-hidden"
+            className="border border-border rounded-xl mt-1 bg-white overflow-hidden"
             style={{ maxHeight: 192 }}
           >
             <ScrollView nestedScrollEnabled>
               {cities.length === 0 ? (
                 <View className="px-4 py-3">
-                  <Text className="text-sm text-slate-400">Загрузка...</Text>
+                  <Text className="text-sm text-text-mute">Загрузка...</Text>
                 </View>
               ) : (
                 cities.map((city) => (
@@ -112,9 +112,9 @@ export default function CityFnsServicePicker({
                     key={city.id}
                     accessibilityLabel={city.name}
                     onPress={() => onCitySelect(city)}
-                    className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
+                    className="px-4 py-3 border-b border-surface2 active:bg-surface2"
                   >
-                    <Text className="text-base text-slate-900">{city.name}</Text>
+                    <Text className="text-base text-text-base">{city.name}</Text>
                   </Pressable>
                 ))
               )}
@@ -125,8 +125,8 @@ export default function CityFnsServicePicker({
 
       {/* FNS select */}
       <View className="mb-4">
-        <Text className="text-sm font-medium text-slate-700 mb-1.5">
-          Инспекция <Text className="text-red-500">*</Text>
+        <Text className="text-sm font-medium text-text-base mb-1.5">
+          Инспекция <Text className="text-danger">*</Text>
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -139,13 +139,13 @@ export default function CityFnsServicePicker({
           }}
           className={`h-12 border rounded-xl px-4 flex-row items-center justify-between ${
             !selectedCity
-              ? "border-slate-200 bg-slate-50"
+              ? "border-border bg-surface2"
               : submitted && !selectedFns
-              ? "border-red-400 bg-red-50"
-              : "border-slate-200 bg-white"
+              ? "border-danger bg-danger-soft"
+              : "border-border bg-white"
           }`}
         >
-          <Text className={selectedFns ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
+          <Text className={selectedFns ? "text-text-base text-base" : "text-text-mute text-base"}>
             {loadingFns
               ? "Загрузка..."
               : selectedFns?.name ||
@@ -160,17 +160,17 @@ export default function CityFnsServicePicker({
           )}
         </Pressable>
         {submitted && selectedCity && !selectedFns && (
-          <Text className="text-xs text-red-600 mt-1">Выберите инспекцию</Text>
+          <Text className="text-xs text-danger mt-1">Выберите инспекцию</Text>
         )}
         {fnsOpen && (
           <View
-            className="border border-slate-200 rounded-xl mt-1 bg-white overflow-hidden"
+            className="border border-border rounded-xl mt-1 bg-white overflow-hidden"
             style={{ maxHeight: 192 }}
           >
             <ScrollView nestedScrollEnabled>
               {fnsOffices.length === 0 ? (
                 <View className="px-4 py-3">
-                  <Text className="text-sm text-slate-400">Нет отделений для выбранного города</Text>
+                  <Text className="text-sm text-text-mute">Нет отделений для выбранного города</Text>
                 </View>
               ) : (
                 fnsOffices.map((fns) => (
@@ -179,10 +179,10 @@ export default function CityFnsServicePicker({
                     key={fns.id}
                     accessibilityLabel={fns.name}
                     onPress={() => onFnsSelect(fns)}
-                    className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
+                    className="px-4 py-3 border-b border-surface2 active:bg-surface2"
                   >
-                    <Text className="text-base text-slate-900">{fns.name}</Text>
-                    <Text className="text-xs text-slate-400">{fns.code}</Text>
+                    <Text className="text-base text-text-base">{fns.name}</Text>
+                    <Text className="text-xs text-text-mute">{fns.code}</Text>
                   </Pressable>
                 ))
               )}
@@ -193,7 +193,7 @@ export default function CityFnsServicePicker({
 
       {/* Service type select (optional) */}
       <View className="mb-4">
-        <Text className="text-sm font-medium text-slate-700 mb-1.5">Тип проверки</Text>
+        <Text className="text-sm font-medium text-text-base mb-1.5">Тип проверки</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Выбрать тип проверки"
@@ -203,16 +203,16 @@ export default function CityFnsServicePicker({
             onCityOpenChange(false);
             onFnsOpenChange(false);
           }}
-          className="h-12 border border-slate-200 rounded-xl bg-white px-4 flex-row items-center justify-between"
+          className="h-12 border border-border rounded-xl bg-white px-4 flex-row items-center justify-between"
         >
-          <Text className={selectedService ? "text-slate-900 text-base" : "text-slate-400 text-base"}>
+          <Text className={selectedService ? "text-text-base text-base" : "text-text-mute text-base"}>
             {selectedService?.name || "Не знаю / не указывать"}
           </Text>
           {serviceOpen ? <ChevronUp size={12} color={colors.placeholder} /> : <ChevronDown size={12} color={colors.placeholder} />}
         </Pressable>
         {serviceOpen && (
           <View
-            className="border border-slate-200 rounded-xl mt-1 bg-white overflow-hidden"
+            className="border border-border rounded-xl mt-1 bg-white overflow-hidden"
             style={{ maxHeight: 192 }}
           >
             <ScrollView nestedScrollEnabled>
@@ -220,9 +220,9 @@ export default function CityFnsServicePicker({
                 accessibilityRole="button"
                 accessibilityLabel="Не знаю"
                 onPress={onServiceClear}
-                className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
+                className="px-4 py-3 border-b border-surface2 active:bg-surface2"
               >
-                <Text className="text-base text-slate-400">Не знаю / не указывать</Text>
+                <Text className="text-base text-text-mute">Не знаю / не указывать</Text>
               </Pressable>
               {services.map((svc) => (
                 <Pressable
@@ -230,9 +230,9 @@ export default function CityFnsServicePicker({
                   key={svc.id}
                   accessibilityLabel={svc.name}
                   onPress={() => onServiceSelect(svc)}
-                  className="px-4 py-3 border-b border-slate-50 active:bg-slate-50"
+                  className="px-4 py-3 border-b border-surface2 active:bg-surface2"
                 >
-                  <Text className="text-base text-slate-900">{svc.name}</Text>
+                  <Text className="text-base text-text-base">{svc.name}</Text>
                 </Pressable>
               ))}
             </ScrollView>

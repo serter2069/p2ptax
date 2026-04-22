@@ -63,7 +63,7 @@ export default function CreateScreen() {
 
           {/* Next Button */}
           <View className="mt-8">
-            <Pressable accessibilityRole="button" accessibilityLabel="Далее: детали" className="h-14 rounded-xl bg-blue-600 items-center justify-center active:bg-blue-700">
+            <Pressable accessibilityRole="button" accessibilityLabel="Далее: детали" className="h-14 rounded-xl bg-accent items-center justify-center active:bg-accent">
               <Text className="text-white text-base font-semibold">Next: Details</Text>
             </Pressable>
           </View>
