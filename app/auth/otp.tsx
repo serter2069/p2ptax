@@ -317,6 +317,7 @@ export default function AuthOtpScreen() {
                       fontSize: 22,
                       fontWeight: "700",
                       color: error ? colors.error : colors.text,
+                      outlineWidth: 0,
                     }}
                     value={digit}
                     onChangeText={(v) => handleDigitChange(i, v)}

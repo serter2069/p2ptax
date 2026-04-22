@@ -30,7 +30,7 @@ function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={name} className="mr-3 items-center">
       <View className="w-14 h-14 rounded-2xl bg-gray-100 items-center justify-center mb-1">
-        <Icon size={20} color="#4b5563" />
+        <Icon size={20} color={colors.textSecondary} />
       </View>
       <Text className="text-xs text-gray-600">{name}</Text>
     </Pressable>

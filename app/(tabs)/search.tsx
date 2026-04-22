@@ -44,7 +44,7 @@ export default function SearchScreen() {
                 placeholderTextColor={colors.textSecondary}
               />
               <Pressable accessibilityRole="button" accessibilityLabel="Фильтры" className="ml-2 w-11 h-11 rounded-lg bg-blue-600 items-center justify-center">
-                <SlidersHorizontal size={16} color="#ffffff" />
+                <SlidersHorizontal size={16} color={colors.surface} />
               </Pressable>
             </View>
           </View>
@@ -83,7 +83,7 @@ export default function SearchScreen() {
                 style={{ backgroundColor: cat.color }}
               >
                 <View className="w-10 h-10 rounded-lg bg-white items-center justify-center">
-                  <cat.Icon size={18} color="#4b5563" />
+                  <cat.Icon size={18} color={colors.textSecondary} />
                 </View>
                 <View className="flex-1 ml-3">
                   <Text className="text-base font-medium text-gray-900">{cat.name}</Text>

@@ -219,6 +219,7 @@ export default function SpecialistConfirmWrite() {
               backgroundColor: isLimitReached ? colors.background : colors.surface,
               textAlignVertical: "top",
               opacity: isLimitReached ? 0.5 : 1,
+              outlineWidth: 0,
             }}
           />
 

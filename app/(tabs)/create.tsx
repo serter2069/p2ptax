@@ -53,7 +53,7 @@ export default function CreateScreen() {
           {/* Tips */}
           <View className="p-4 rounded-xl bg-amber-50 border border-amber-200">
             <View className="flex-row items-center mb-2">
-              <Lightbulb size={16} color="#d97706" />
+              <Lightbulb size={16} color={colors.warning} />
               <Text className="text-sm font-semibold text-amber-800 ml-2">Tips for great photos</Text>
             </View>
             <Text className="text-sm text-amber-700 leading-5">

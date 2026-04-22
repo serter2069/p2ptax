@@ -13,12 +13,12 @@ export default function TabLayout() {
       <Header />
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#2563eb",
+          tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textSecondary,
           tabBarStyle: {
             display: isMobile ? "flex" : "none",
             borderTopWidth: 1,
-            borderTopColor: "#f3f4f6",
+            borderTopColor: colors.border,
           },
           headerShown: false,
         }}

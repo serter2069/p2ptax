@@ -224,6 +224,7 @@ export default function AdminUsers() {
             paddingHorizontal: 14,
             color: colors.surface,
             fontSize: 15,
+            outlineWidth: 0,
           }}
           placeholder="Поиск по email или имени..."
           placeholderTextColor="rgba(255,255,255,0.5)"
