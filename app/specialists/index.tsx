@@ -17,6 +17,7 @@ import { AlertCircle, UserX, Search } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -221,24 +222,24 @@ export default function SpecialistsCatalog() {
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="Специалисты" />
       <View className="bg-white px-4 pt-3 pb-2">
-        <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
-        <Text className="text-sm mt-1 mb-3" style={{ color: "#64748B" }}>
+        <Text className="font-extrabold text-3xl" style={{ color: colors.text }}>Каталог специалистов</Text>
+        <Text className="text-sm mt-1 mb-3" style={{ color: colors.textSecondary }}>
           Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.
         </Text>
       </View>
 
       {/* Search bar */}
       <View className="flex-row items-center bg-white border border-border rounded-xl mx-4 mb-3 px-4 min-h-[48px]">
-        <Search size={14} color="#94a3b8" style={{ marginRight: 8 }} />
+        <Search size={14} color={colors.placeholder} style={{ marginRight: 8 }} />
         <TextInput
           value={search}
           onChangeText={setSearch}
           placeholder="Поиск по имени, роли, ФНС..."
-          placeholderTextColor="#94a3b8"
-          style={{ flex: 1, fontSize: 15, color: "#0f172a", height: 48 }}
+          placeholderTextColor={colors.placeholder}
+          style={{ flex: 1, fontSize: 15, color: colors.text, height: 48 }}
         />
         {total > 0 && (
-          <Text className="text-sm" style={{ color: "#64748B" }}>{total} специалистов</Text>
+          <Text className="text-sm" style={{ color: colors.textSecondary }}>{total} специалистов</Text>
         )}
       </View>
 
@@ -301,7 +302,7 @@ export default function SpecialistsCatalog() {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             loadingMore ? (
-              <ActivityIndicator size="small" color="#2256c2" style={{ paddingVertical: 16 }} />
+              <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 16 }} />
             ) : null
           }
         />
