@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
 import EmptyState from "@/components/ui/EmptyState";
+import { MessageSquare } from "lucide-react-native";
 import ErrorState from "@/components/ui/ErrorState";
 import Avatar from "@/components/ui/Avatar";
 import InlineChatView from "@/components/InlineChatView";
@@ -280,7 +281,7 @@ export default function ClientMessages() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="comments-o"
+            icon={MessageSquare}
             title="Нет сообщений"
             subtitle="Когда специалисты откликнутся на ваши заявки, сообщения появятся здесь"
             actionLabel="Найти специалиста"
