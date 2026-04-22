@@ -222,8 +222,10 @@ export default function AdminUsers() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      {/* Search header — keep accent bg */}
-      <View className="bg-accent px-4 pb-3 pt-2">
+      {/* Search header — accent hero */}
+      <View className="bg-accent px-4 pt-4 pb-3">
+        <Text className="text-2xl font-bold text-white mb-1">Пользователи</Text>
+        <Text className="text-sm mb-3" style={{ color: overlay.white75 }}>Управление аккаунтами платформы</Text>
         <TextInput
           accessibilityLabel="Поиск по email или имени"
           style={{
@@ -261,7 +263,7 @@ export default function AdminUsers() {
                   ? "bg-accent border-accent"
                   : "bg-surface2 border-border"
               }`}
-              style={{ minHeight: 36, justifyContent: "center" }}
+              style={{ minHeight: 44, justifyContent: "center" }}
             >
               <Text
                 className={`text-sm ${
@@ -389,7 +391,7 @@ export default function AdminUsers() {
                             className={`px-3 rounded-lg active:opacity-70 ${
                               user.isBanned ? "bg-success" : "bg-danger"
                             }`}
-                            style={{ minHeight: 36, justifyContent: "center" }}
+                            style={{ minHeight: 44, justifyContent: "center" }}
                           >
                             <Text className="text-xs text-white font-medium">
                               {user.isBanned ? "Разблокировать" : "Заблокировать"}
