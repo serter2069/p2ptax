@@ -164,7 +164,7 @@ export default function NewRequest() {
 
   if (!ready || loadingInit) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-surface2">
         <HeaderBack title="Новая заявка" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
@@ -175,7 +175,7 @@ export default function NewRequest() {
 
   if (loadError && cities.length === 0 && services.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-surface2">
         <HeaderBack title="Новая заявка" />
         <View className="flex-1 items-center justify-center">
           <EmptyState
@@ -189,7 +189,7 @@ export default function NewRequest() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Новая заявка" />
       <ScrollView
         className="flex-1"
@@ -201,83 +201,91 @@ export default function NewRequest() {
 
             {/* Limit banner */}
             {atLimit && (
-              <View className="bg-danger-soft border border-red-200 rounded-xl p-4 mb-4">
-                <Text className="text-danger text-sm font-medium">
-                  Лимит заявок исчерпан ({limitInfo.used}/{limitInfo.limit}). Закройте неактуальные заявки, чтобы создать новую.
+              <View className="bg-danger-soft border border-danger rounded-xl p-4 mb-4 mx-4">
+                <Text className="text-danger text-sm font-semibold mb-0.5">
+                  Лимит заявок исчерпан
+                </Text>
+                <Text className="text-danger text-sm">
+                  {limitInfo.used}/{limitInfo.limit} заявок использовано. Закройте неактуальные, чтобы создать новую.
                 </Text>
               </View>
             )}
 
-            {/* Title */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-text-base mb-1.5">
-                Заголовок <Text className="text-danger">*</Text>
-              </Text>
-              <Input
-                placeholder="Кратко опишите суть проблемы"
-                value={title}
-                onChangeText={setTitle}
-                error={(submitted || title.length > 0) && !titleValid
-                  ? (title.trim().length < 3 ? "Минимум 3 символа" : "Максимум 100 символов")
-                  : undefined}
-                maxLength={100}
-                editable={!atLimit && !submitting}
+            {/* Form card */}
+            <View className="bg-white border border-border rounded-2xl mx-4 px-4 pt-4 pb-4 mb-4">
+
+              {/* Title */}
+              <View className="mb-4">
+                <Text className="text-sm font-medium text-text-base mb-1.5">
+                  Заголовок <Text className="text-danger">*</Text>
+                </Text>
+                <Input
+                  placeholder="Кратко опишите суть проблемы"
+                  value={title}
+                  onChangeText={setTitle}
+                  error={(submitted || title.length > 0) && !titleValid
+                    ? (title.trim().length < 3 ? "Минимум 3 символа" : "Максимум 100 символов")
+                    : undefined}
+                  maxLength={100}
+                  editable={!atLimit && !submitting}
+                />
+                <Text className="text-xs text-text-dim text-right mt-1">{title.length}/100</Text>
+              </View>
+
+              <CityFnsServicePicker
+                cities={cities}
+                fnsOffices={fnsOffices}
+                services={services}
+                selectedCity={selectedCity}
+                selectedFns={selectedFns}
+                selectedService={selectedService}
+                cityOpen={cityOpen}
+                fnsOpen={fnsOpen}
+                serviceOpen={serviceOpen}
+                loadingFns={loadingFns}
+                submitted={submitted}
+                disabled={atLimit || submitting}
+                onCitySelect={handleCitySelect}
+                onFnsSelect={handleFnsSelect}
+                onServiceSelect={handleServiceSelect}
+                onServiceClear={() => { setSelectedServiceId(null); setServiceOpen(false); }}
+                onCityOpenChange={setCityOpen}
+                onFnsOpenChange={setFnsOpen}
+                onServiceOpenChange={setServiceOpen}
               />
-              <Text className="text-xs text-text-mute text-right mt-1">{title.length}/100</Text>
-            </View>
 
-            <CityFnsServicePicker
-              cities={cities}
-              fnsOffices={fnsOffices}
-              services={services}
-              selectedCity={selectedCity}
-              selectedFns={selectedFns}
-              selectedService={selectedService}
-              cityOpen={cityOpen}
-              fnsOpen={fnsOpen}
-              serviceOpen={serviceOpen}
-              loadingFns={loadingFns}
-              submitted={submitted}
-              disabled={atLimit || submitting}
-              onCitySelect={handleCitySelect}
-              onFnsSelect={handleFnsSelect}
-              onServiceSelect={handleServiceSelect}
-              onServiceClear={() => { setSelectedServiceId(null); setServiceOpen(false); }}
-              onCityOpenChange={setCityOpen}
-              onFnsOpenChange={setFnsOpen}
-              onServiceOpenChange={setServiceOpen}
-            />
+              {/* Description */}
+              <View className="mb-4">
+                <Text className="text-sm font-medium text-text-base mb-1.5">
+                  Описание <Text className="text-danger">*</Text>
+                </Text>
+                <Input
+                  placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
+                  value={description}
+                  onChangeText={setDescription}
+                  multiline
+                  error={(submitted || description.length > 0) && !descriptionValid
+                    ? (description.trim().length < 10 ? "Минимум 10 символов" : "Максимум 2000 символов")
+                    : undefined}
+                  maxLength={2000}
+                  editable={!atLimit && !submitting}
+                  containerStyle={{ minHeight: 120 }}
+                />
+                <Text className="text-xs text-text-dim text-right mt-1">{description.length}/2000</Text>
+              </View>
 
-            {/* Description */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-text-base mb-1.5">
-                Описание <Text className="text-danger">*</Text>
-              </Text>
-              <Input
-                placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                error={(submitted || description.length > 0) && !descriptionValid
-                  ? (description.trim().length < 10 ? "Минимум 10 символов" : "Максимум 2000 символов")
-                  : undefined}
-                maxLength={2000}
-                editable={!atLimit && !submitting}
-                containerStyle={{ minHeight: 120 }}
+              <FileUploadSection
+                files={files}
+                disabled={atLimit || submitting}
+                onFilesChange={setFiles}
               />
-              <Text className="text-xs text-text-mute text-right mt-1">{description.length}/2000</Text>
-            </View>
 
-            <FileUploadSection
-              files={files}
-              disabled={atLimit || submitting}
-              onFilesChange={setFiles}
-            />
+            </View>
 
             {/* Submit error */}
             {submitError ? (
-              <View className="bg-danger-soft border border-red-200 rounded-xl p-3 mb-4">
-                <Text className="text-sm font-medium text-danger mb-0.5">Ошибка публикации</Text>
+              <View className="bg-danger-soft border border-danger rounded-xl p-3 mb-4 mx-4">
+                <Text className="text-sm font-semibold text-danger mb-0.5">Ошибка публикации</Text>
                 <Text className="text-sm text-danger">{submitError}</Text>
               </View>
             ) : null}
