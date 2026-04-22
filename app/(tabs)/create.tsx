@@ -13,32 +13,42 @@ export default function CreateScreen() {
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
         <ResponsiveContainer>
           {/* Header */}
-          <View className="pt-2 pb-3">
-            <Text className="text-2xl font-bold text-gray-900">Create Listing</Text>
-            <Text className="text-sm text-gray-500 mt-1">Step 1 of 3 — Photos</Text>
+          <View className="pt-4 pb-4">
+            <Text className="text-2xl font-bold text-text-base">Новое объявление</Text>
+            <Text className="text-sm text-text-mute mt-1 leading-5">Шаг 1 из 3 — Фотографии</Text>
           </View>
 
           {/* Progress Bar */}
-          <View className="mb-6">
-            <View className="h-1.5 rounded-full bg-gray-100">
-              <View className="h-1.5 rounded-full bg-blue-600 w-1/3" />
+          <View className="mb-8">
+            <View className="h-1.5 rounded-full bg-border">
+              <View className="h-1.5 rounded-full bg-accent w-1/3" />
+            </View>
+            <View className="flex-row justify-between mt-1.5">
+              <Text className="text-xs text-accent font-medium">Фото</Text>
+              <Text className="text-xs text-text-mute">Детали</Text>
+              <Text className="text-xs text-text-mute">Публикация</Text>
             </View>
           </View>
 
           {/* Photo Grid */}
-          <View className="mb-6">
-            <Text className="text-base font-semibold text-gray-900 mb-3">
-              Add photos
+          <View className="mb-8">
+            <Text className="text-base font-semibold text-text-base mb-1">
+              Добавьте фотографии
             </Text>
-            <Text className="text-sm text-gray-500 mb-4">
-              Add up to 10 photos. First photo will be the cover.
+            <Text className="text-sm text-text-mute mb-4 leading-5">
+              До 10 фотографий. Первая будет обложкой объявления.
             </Text>
 
             <View className="flex-row flex-wrap">
               {/* Add Photo Button */}
-              <Pressable accessibilityRole="button" accessibilityLabel="Добавить фото" className="w-[31%] aspect-square m-[1%] rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 items-center justify-center">
-                <Camera size={24} color={colors.blue500} />
-                <Text className="text-xs text-blue-600 mt-1 font-medium">Add photo</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Добавить фото"
+                className="w-[31%] aspect-square m-[1%] rounded-xl items-center justify-center active:opacity-80"
+                style={{ borderWidth: 2, borderStyle: "dashed", borderColor: colors.primary, backgroundColor: colors.accentSoft }}
+              >
+                <Camera size={24} color={colors.primary} />
+                <Text className="text-xs text-accent mt-1.5 font-semibold">Добавить</Text>
               </Pressable>
 
               {/* Placeholder slots */}
@@ -48,9 +58,10 @@ export default function CreateScreen() {
                 PLACEHOLDER_SLOTS.map((i) => (
                   <View
                     key={i}
-                    className="w-[31%] aspect-square m-[1%] rounded-xl bg-gray-100 items-center justify-center"
+                    className="w-[31%] aspect-square m-[1%] rounded-xl items-center justify-center"
+                    style={{ backgroundColor: colors.surface2 }}
                   >
-                    <ImageIcon size={20} color={colors.textSecondary} />
+                    <ImageIcon size={20} color={colors.textMuted} />
                   </View>
                 ))
               )}
@@ -58,22 +69,25 @@ export default function CreateScreen() {
           </View>
 
           {/* Tips */}
-          <View className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <View className="p-4 rounded-xl border mb-8" style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a" }}>
             <View className="flex-row items-center mb-2">
               <Lightbulb size={16} color={colors.warning} />
-              <Text className="text-sm font-semibold text-amber-800 ml-2">Tips for great photos</Text>
+              <Text className="text-sm font-semibold ml-2" style={{ color: "#92400e" }}>Советы для хороших фото</Text>
             </View>
-            <Text className="text-sm text-amber-700 leading-5">
-              Use natural light. Show item from multiple angles. Include close-ups of details and any defects.
+            <Text className="text-sm leading-5" style={{ color: "#78350f" }}>
+              Используйте естественный свет. Снимайте с разных ракурсов. Покажите детали и возможные дефекты.
             </Text>
           </View>
 
           {/* Next Button */}
-          <View className="mt-8">
-            <Pressable accessibilityRole="button" accessibilityLabel="Далее: детали" className="h-14 rounded-xl bg-accent items-center justify-center active:bg-accent">
-              <Text className="text-white text-base font-semibold">Next: Details</Text>
-            </Pressable>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Далее: детали"
+            className="h-12 rounded-xl items-center justify-center active:opacity-90"
+            style={{ backgroundColor: colors.primary, shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 }}
+          >
+            <Text className="text-white text-base font-semibold">Далее: Детали</Text>
+          </Pressable>
         </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>

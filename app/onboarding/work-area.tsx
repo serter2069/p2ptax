@@ -159,31 +159,54 @@ export default function OnboardingWorkAreaScreen() {
       <HeaderBack title="" />
       <ResponsiveContainer>
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isDesktop ? 64 : 40 }}>
-          <View className="pt-6">
-            <Text className="text-sm text-warning text-center mb-2">
-              Шаг 2 из 3
-            </Text>
-            <Text className="text-2xl font-bold text-text-base text-center mb-6">
+          <View className="pt-8">
+            {/* Progress indicator */}
+            <View className="mb-6">
+              <View className="flex-row justify-center gap-2 mb-3">
+                <View className="h-1.5 w-8 rounded-full bg-accent" />
+                <View className="h-1.5 w-8 rounded-full bg-accent" />
+                <View className="h-1.5 w-8 rounded-full bg-border" />
+              </View>
+              <Text className="text-sm font-medium text-text-mute text-center">
+                Шаг 2 из 3
+              </Text>
+            </View>
+
+            <Text className="text-2xl font-bold text-text-base text-center mb-2">
               Рабочая зона
+            </Text>
+            <Text className="text-base text-text-mute text-center leading-6 mb-8">
+              Укажите отделения ФНС, в которых вы работаете
             </Text>
 
             {/* Selected FNS offices with services */}
             {selectedFns.map((item) => (
               <View
                 key={item.fnsId}
-                className="border border-border rounded-xl p-3 mb-3"
+                className="border border-border rounded-xl p-4 mb-3"
+                style={{ backgroundColor: colors.surface2 }}
               >
-                <View className="flex-row items-center justify-between mb-2">
-                  <View className="flex-1 mr-2">
-                    <Text className="text-sm font-semibold text-text-base">
+                <View className="flex-row items-start justify-between mb-3">
+                  <View className="flex-1 mr-3">
+                    <Text className="text-sm font-semibold text-text-base leading-5">
                       {item.fnsName}
                     </Text>
-                    <Text className="text-xs text-text-mute">{item.cityName}</Text>
+                    <Text className="text-sm text-text-mute mt-0.5">{item.cityName}</Text>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel="Удалить отделение" onPress={() => removeFns(item.fnsId)}>
-                    <X size={16} color={colors.placeholder} />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Удалить отделение"
+                    onPress={() => removeFns(item.fnsId)}
+                    className="w-7 h-7 rounded-full items-center justify-center"
+                    style={{ backgroundColor: colors.border }}
+                  >
+                    <X size={14} color={colors.textSecondary} />
                   </Pressable>
                 </View>
+
+                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2">
+                  Услуги
+                </Text>
 
                 {/* Service checkboxes */}
                 {services.map((svc) => {
@@ -194,13 +217,13 @@ export default function OnboardingWorkAreaScreen() {
                       key={svc.id}
                       accessibilityLabel={svc.name}
                       onPress={() => toggleService(item.fnsId, svc.id)}
-                      className="flex-row items-center py-1.5"
+                      className={`flex-row items-center py-2 px-3 rounded-lg mb-1 ${isChecked ? "bg-accent-soft" : "bg-white"}`}
                     >
                       <View
-                        className={`w-5 h-5 rounded border items-center justify-center ${
+                        className={`w-5 h-5 rounded border-2 items-center justify-center ${
                           isChecked
                             ? "bg-accent border-accent"
-                            : "border-slate-300 bg-white"
+                            : "border-border bg-white"
                         }`}
                       >
                         {isChecked && (
@@ -209,7 +232,7 @@ export default function OnboardingWorkAreaScreen() {
                           </Text>
                         )}
                       </View>
-                      <Text className="ml-2 text-sm text-text-base">
+                      <Text className={`ml-2.5 text-sm leading-5 ${isChecked ? "text-accent font-medium" : "text-text-base"}`}>
                         {svc.name}
                       </Text>
                     </Pressable>
@@ -217,16 +240,21 @@ export default function OnboardingWorkAreaScreen() {
                 })}
 
                 {item.serviceIds.length === 0 && (
-                  <Text className="text-xs text-danger mt-1">
-                    Выберите хотя бы одну услугу
-                  </Text>
+                  <View className="mt-2 px-3 py-2 rounded-lg" style={{ backgroundColor: colors.errorBg }}>
+                    <Text className="text-sm text-danger">
+                      Выберите хотя бы одну услугу
+                    </Text>
+                  </View>
                 )}
               </View>
             ))}
 
             {/* City picker dropdown */}
             {showCityPicker && (
-              <View className="border border-border rounded-xl mb-3 max-h-60 overflow-hidden">
+              <View className="border border-border rounded-xl mb-3 max-h-60 overflow-hidden bg-white">
+                <View className="px-4 py-2.5 border-b border-border">
+                  <Text className="text-sm font-semibold text-text-base">Выберите город</Text>
+                </View>
                 <ScrollView nestedScrollEnabled>
                   {cities.map((city) => (
                     <Pressable
@@ -234,7 +262,7 @@ export default function OnboardingWorkAreaScreen() {
                       key={city.id}
                       accessibilityLabel={city.name}
                       onPress={() => handleCitySelect(city)}
-                      className="px-4 py-3 border-b border-border active:bg-surface2"
+                      className="px-4 py-3.5 border-b border-border active:bg-surface2"
                     >
                       <Text className="text-sm text-text-base">{city.name}</Text>
                     </Pressable>
@@ -252,7 +280,10 @@ export default function OnboardingWorkAreaScreen() {
 
             {/* FNS picker dropdown */}
             {showFnsPicker && selectedCityId && (
-              <View className="border border-border rounded-xl mb-3 max-h-60 overflow-hidden">
+              <View className="border border-border rounded-xl mb-3 max-h-60 overflow-hidden bg-white">
+                <View className="px-4 py-2.5 border-b border-border">
+                  <Text className="text-sm font-semibold text-text-base">Выберите отделение ФНС</Text>
+                </View>
                 <ScrollView nestedScrollEnabled>
                   {fnsOffices
                     .filter(
@@ -265,12 +296,12 @@ export default function OnboardingWorkAreaScreen() {
                         key={fns.id}
                         accessibilityLabel={fns.name}
                         onPress={() => handleFnsSelect(fns)}
-                        className="px-4 py-3 border-b border-border active:bg-surface2"
+                        className="px-4 py-3.5 border-b border-border active:bg-surface2"
                       >
-                        <Text className="text-sm text-text-base">
+                        <Text className="text-sm font-medium text-text-base">
                           {fns.name}
                         </Text>
-                        <Text className="text-xs text-text-mute">
+                        <Text className="text-xs text-text-mute mt-0.5">
                           {fns.code}
                         </Text>
                       </Pressable>
@@ -295,10 +326,10 @@ export default function OnboardingWorkAreaScreen() {
                   setShowCityPicker(true);
                   setShowFnsPicker(false);
                 }}
-                className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-6"
+                className="flex-row items-center justify-center py-3.5 border-2 border-dashed border-border rounded-xl mb-6 active:bg-surface2"
               >
-                <Plus size={14} color={colors.accent} />
-                <Text className="text-sm text-warning ml-2 font-medium">
+                <Plus size={16} color={colors.accent} />
+                <Text className="text-sm text-accent ml-2 font-semibold">
                   Добавить город
                 </Text>
               </Pressable>
@@ -309,7 +340,7 @@ export default function OnboardingWorkAreaScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Отмена"
                 onPress={() => setShowCityPicker(false)}
-                className="mb-4"
+                className="mb-4 py-2"
               >
                 <Text className="text-sm text-text-mute text-center">
                   Отмена
@@ -325,7 +356,7 @@ export default function OnboardingWorkAreaScreen() {
                   setShowFnsPicker(false);
                   setSelectedCityId(null);
                 }}
-                className="mb-4"
+                className="mb-4 py-2"
               >
                 <Text className="text-sm text-text-mute text-center">
                   Отмена
@@ -334,9 +365,11 @@ export default function OnboardingWorkAreaScreen() {
             )}
 
             {error ? (
-              <Text className="text-xs text-danger text-center mb-4">
-                {error}
-              </Text>
+              <View className="mb-4 px-4 py-3 rounded-xl" style={{ backgroundColor: colors.errorBg }}>
+                <Text className="text-sm text-danger text-center leading-5">
+                  {error}
+                </Text>
+              </View>
             ) : null}
 
             <Button
