@@ -8,7 +8,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 
 interface Stats {
@@ -36,14 +36,14 @@ function StatCard({
       className="bg-white border border-border rounded-2xl p-5 flex-1"
       style={{
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.09,
+        shadowRadius: 8,
+        elevation: 4,
       }}
     >
-      <Text className="text-3xl font-extrabold text-text-base">{value}</Text>
-      <Text className="text-sm text-text-mute mt-1">{label}</Text>
+      <Text className="text-4xl font-extrabold text-text-base">{value}</Text>
+      <Text className="text-sm text-text-mute mt-1.5">{label}</Text>
     </View>
   );
 
@@ -77,10 +77,10 @@ function RankList({
       className="bg-white border border-border rounded-2xl p-5"
       style={{
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.09,
+        shadowRadius: 8,
+        elevation: 4,
       }}
     >
       <Text className="text-base font-bold text-text-base mb-3">{title}</Text>
@@ -162,12 +162,23 @@ export default function AdminDashboard() {
         </View>
       ) : (
         <ScrollView className="flex-1">
-          <ResponsiveContainer>
-            <View className="py-4 gap-3">
-              <Text className="text-base font-bold text-text-base mb-1">
+          {/* Accent hero section */}
+          <View className="bg-accent px-4 pt-5 pb-6">
+            <ResponsiveContainer>
+              <Text className="text-2xl font-bold text-white">
                 Панель администратора
               </Text>
+              <Text
+                className="text-sm mt-1"
+                style={{ color: overlay.white75 }}
+              >
+                Обзор ключевых метрик платформы
+              </Text>
+            </ResponsiveContainer>
+          </View>
 
+          <ResponsiveContainer>
+            <View className="py-4 gap-3">
               {/* Stats grid */}
               <View className="flex-row flex-wrap gap-3">
                 <View className="w-full">
