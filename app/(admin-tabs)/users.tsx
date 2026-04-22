@@ -212,9 +212,9 @@ export default function AdminUsers() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       {/* Search header */}
-      <View className="bg-blue-900 px-4 pb-3 pt-2">
+      <View className="bg-accent px-4 pb-3 pt-2">
         <TextInput
           accessibilityLabel="Поиск по email или имени"
           style={{
@@ -234,7 +234,7 @@ export default function AdminUsers() {
       </View>
 
       {/* Filter chips */}
-      <View className="bg-white border-b border-slate-200 px-4 py-2">
+      <View className="bg-white border-b border-border px-4 py-2">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -248,8 +248,8 @@ export default function AdminUsers() {
               onPress={() => setFilter(opt.key)}
               className={`px-3 py-1.5 rounded-full border ${
                 filter === opt.key
-                  ? "bg-blue-900 border-blue-900"
-                  : "bg-white border-slate-200"
+                  ? "bg-accent border-accent"
+                  : "bg-white border-border"
               }`}
               style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
@@ -257,7 +257,7 @@ export default function AdminUsers() {
                 className={`text-sm ${
                   filter === opt.key
                     ? "text-white font-medium"
-                    : "text-slate-900"
+                    : "text-text-base"
                 }`}
               >
                 {opt.label}
@@ -271,7 +271,7 @@ export default function AdminUsers() {
         <ResponsiveContainer>
           <View className="py-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
+              <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-border">
                 <LoadingState variant="skeleton" lines={4} />
               </View>
             ))}
@@ -294,7 +294,7 @@ export default function AdminUsers() {
               {users.length === 0 ? (
                 <View className="items-center py-16">
                   <Users size={48} color={colors.placeholder} />
-                  <Text className="text-base text-slate-400 mt-3">
+                  <Text className="text-base text-text-mute mt-3">
                     Пользователи не найдены
                   </Text>
                 </View>
@@ -307,12 +307,12 @@ export default function AdminUsers() {
                       onPress={() =>
                         setExpandedId(expandedId === user.id ? null : user.id)
                       }
-                      className="bg-white border-b border-slate-100 px-4 py-3"
+                      className="bg-white border-b border-border px-4 py-3"
                       style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                     >
                       <View className="flex-row items-center">
                         {/* Avatar */}
-                        <View className="w-8 h-8 rounded-full bg-blue-900 items-center justify-center mr-3">
+                        <View className="w-8 h-8 rounded-full bg-accent items-center justify-center mr-3">
                           <Text className="text-xs font-bold text-white">
                             {getInitials(user.firstName, user.lastName, user.email)}
                           </Text>
@@ -321,7 +321,7 @@ export default function AdminUsers() {
                         {/* Name + email */}
                         <View className="flex-1 mr-2">
                           <Text
-                            className="text-sm font-medium text-slate-900"
+                            className="text-sm font-medium text-text-base"
                             numberOfLines={1}
                           >
                             {[user.firstName, user.lastName]
@@ -329,7 +329,7 @@ export default function AdminUsers() {
                               .join(" ") || "Без имени"}
                           </Text>
                           <Text
-                            className="text-xs text-slate-400"
+                            className="text-xs text-text-mute"
                             numberOfLines={1}
                           >
                             {user.email}
@@ -339,14 +339,14 @@ export default function AdminUsers() {
                         {/* Badges */}
                         <View className="flex-row items-center gap-2">
                           {user.role && (
-                            <View className="bg-slate-100 px-2 py-0.5 rounded-full">
-                              <Text className="text-xs text-slate-600">
+                            <View className="bg-surface2 px-2 py-0.5 rounded-full">
+                              <Text className="text-xs text-text-mute">
                                 {ROLE_LABELS[user.role] || user.role}
                               </Text>
                             </View>
                           )}
                           {user.isBanned && (
-                            <View className="bg-red-600 px-2 py-0.5 rounded-full">
+                            <View className="bg-danger px-2 py-0.5 rounded-full">
                               <Text className="text-xs text-white font-medium">
                                 Бан
                               </Text>
@@ -355,7 +355,7 @@ export default function AdminUsers() {
                         </View>
 
                         {/* Date */}
-                        <Text className="text-xs text-slate-400 ml-2">
+                        <Text className="text-xs text-text-mute ml-2">
                           {formatDate(user.createdAt)}
                         </Text>
                       </View>
@@ -363,17 +363,17 @@ export default function AdminUsers() {
 
                     {/* Expanded section */}
                     {expandedId === user.id && (
-                      <View className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                        <Text className="text-xs text-slate-500 mb-1">
+                      <View className="bg-surface2 px-4 py-3 border-b border-border">
+                        <Text className="text-xs text-text-mute mb-1">
                           ID: {user.id}
                         </Text>
-                        <Text className="text-xs text-slate-500 mb-1">
+                        <Text className="text-xs text-text-mute mb-1">
                           Email: {user.email}
                         </Text>
-                        <Text className="text-xs text-slate-500 mb-1">
+                        <Text className="text-xs text-text-mute mb-1">
                           Роль: {user.role ? ROLE_LABELS[user.role] || user.role : "Не назначена"}
                         </Text>
-                        <Text className="text-xs text-slate-500 mb-3">
+                        <Text className="text-xs text-text-mute mb-3">
                           Регистрация: {formatDate(user.createdAt)}
                         </Text>
 
@@ -383,7 +383,7 @@ export default function AdminUsers() {
                             accessibilityLabel={user.isBanned ? "Разблокировать" : "Заблокировать"}
                             onPress={() => toggleBan(user)}
                             className={`px-3 py-2 rounded-lg ${
-                              user.isBanned ? "bg-emerald-600" : "bg-red-600"
+                              user.isBanned ? "bg-success" : "bg-danger"
                             }`}
                             style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                           >
@@ -397,7 +397,7 @@ export default function AdminUsers() {
                               accessibilityRole="button"
                               accessibilityLabel="Закрыть все заявки"
                               onPress={() => closeAllRequests(user)}
-                              className="px-3 py-2 rounded-lg bg-amber-500"
+                              className="px-3 py-2 rounded-lg bg-warning"
                               style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                             >
                               <Text className="text-xs text-white font-medium">

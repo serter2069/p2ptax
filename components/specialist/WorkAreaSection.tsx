@@ -11,7 +11,7 @@ export default function WorkAreaSection({ fnsServices, cardShadow }: WorkAreaSec
 
   return (
     <View
-      className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
+      className="bg-white rounded-2xl border border-border p-4 mx-4 mt-4"
       style={cardShadow}
     >
       <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
@@ -20,7 +20,7 @@ export default function WorkAreaSection({ fnsServices, cardShadow }: WorkAreaSec
       {fnsServices.map((group) => (
         <View
           key={group.fns.id}
-          className="border border-slate-200 rounded-xl p-3 mb-2"
+          className="border border-border rounded-xl p-3 mb-2"
           style={{ backgroundColor: "#f8fafc" }}
         >
           <Text className="text-sm font-semibold mb-2" style={{ color: "#0f172a" }}>

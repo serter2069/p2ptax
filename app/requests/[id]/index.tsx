@@ -185,7 +185,7 @@ export default function PublicRequestDetail() {
         );
       }
       return (
-        <View className="border-t border-slate-100 bg-white px-4 py-3">
+        <View className="border-t border-border bg-white px-4 py-3">
           <ResponsiveContainer>
             <Button
               label="Написать клиенту"
@@ -199,7 +199,7 @@ export default function PublicRequestDetail() {
 
     // Guest or non-specialist authenticated user
     return (
-      <View className="border-t border-slate-100 bg-white px-4 py-3">
+      <View className="border-t border-border bg-white px-4 py-3">
         <ResponsiveContainer>
           <Button
             label="Войдите, чтобы откликнуться"

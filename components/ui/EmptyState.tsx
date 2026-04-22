@@ -21,16 +21,16 @@ export default function EmptyState({
   return (
     <View className="items-center justify-center py-12 px-8">
       <View
-        className="items-center justify-center rounded-full bg-slate-100"
+        className="items-center justify-center rounded-full bg-surface2"
         style={{ width: 72, height: 72 }}
       >
         <Icon size={32} color={colors.placeholder} />
       </View>
-      <Text className="text-base font-semibold text-slate-900 mt-4 text-center">
+      <Text className="text-base font-semibold text-text-base mt-4 text-center">
         {title}
       </Text>
       {subtitle && (
-        <Text className="text-sm text-slate-500 mt-2 text-center">
+        <Text className="text-sm text-text-mute mt-2 text-center">
           {subtitle}
         </Text>
       )}

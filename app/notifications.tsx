@@ -70,8 +70,8 @@ function NotificationRow({
       accessibilityRole="button"
       accessibilityLabel={item.title}
       onPress={() => onPress(item.id)}
-      className={`flex-row items-start px-4 py-3.5 border-b border-slate-50 active:bg-slate-50 ${
-        !item.isRead ? "bg-slate-50/50" : ""
+      className={`flex-row items-start px-4 py-3.5 border-b border-surface2 active:bg-surface2 ${
+        !item.isRead ? "bg-surface2/50" : ""
       }`}
     >
       <View

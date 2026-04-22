@@ -172,10 +172,10 @@ export default function OnboardingProfileScreen() {
             <Text className="text-sm text-warning text-center mb-2">
               Шаг 3 из 3
             </Text>
-            <Text className="text-2xl font-bold text-slate-900 text-center mb-1">
+            <Text className="text-2xl font-bold text-text-base text-center mb-1">
               Профиль
             </Text>
-            <Text className="text-sm text-slate-500 text-center mb-6">
+            <Text className="text-sm text-text-mute text-center mb-6">
               Всё необязательно — можно заполнить позже
             </Text>
 
@@ -188,7 +188,7 @@ export default function OnboardingProfileScreen() {
             >
               {avatarUploading ? (
                 <View
-                  className="items-center justify-center rounded-full bg-slate-100"
+                  className="items-center justify-center rounded-full bg-surface2"
                   style={{ width: 80, height: 80 }}
                 >
                   <ActivityIndicator color={colors.primary} />
@@ -206,7 +206,7 @@ export default function OnboardingProfileScreen() {
                     }}
                   />
                   <View
-                    className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
+                    className="absolute bottom-0 right-0 bg-accent rounded-full items-center justify-center"
                     style={{ width: 24, height: 24 }}
                   >
                     <Pencil size={12} color={colors.surface} />
@@ -214,7 +214,7 @@ export default function OnboardingProfileScreen() {
                 </View>
               ) : (
                 <View
-                  className="rounded-full bg-slate-100 items-center justify-center"
+                  className="rounded-full bg-surface2 items-center justify-center"
                   style={{
                     width: 80,
                     height: 80,
@@ -226,7 +226,7 @@ export default function OnboardingProfileScreen() {
                   <Camera size={24} color={colors.placeholder} />
                 </View>
               )}
-              <Text className="text-sm text-slate-400 mt-2">
+              <Text className="text-sm text-text-mute mt-2">
                 {avatarUrl ? "Изменить фото" : "Нажмите, чтобы загрузить фото"}
               </Text>
             </Pressable>
@@ -244,7 +244,7 @@ export default function OnboardingProfileScreen() {
 
             {/* Contacts note */}
             <View className="bg-blue-50 rounded-xl px-4 py-3 mb-4">
-              <Text className="text-xs text-blue-800 text-center">
+              <Text className="text-xs text-accent text-center">
                 Контакты будут видны всем посетителям платформы
               </Text>
             </View>
@@ -263,7 +263,7 @@ export default function OnboardingProfileScreen() {
                 editable={!isLoading}
                 error={fieldErrors.description}
               />
-              <Text className="text-xs text-slate-400 text-right mt-1">
+              <Text className="text-xs text-text-mute text-right mt-1">
                 {description.length}/1000
               </Text>
             </View>
@@ -335,7 +335,7 @@ export default function OnboardingProfileScreen() {
             </View>
 
             {error ? (
-              <Text className="text-xs text-red-600 text-center mb-4">
+              <Text className="text-xs text-danger text-center mb-4">
                 {error}
               </Text>
             ) : null}
@@ -355,7 +355,7 @@ export default function OnboardingProfileScreen() {
               disabled={isLoading || avatarUploading}
               className="items-center mt-4 py-2"
             >
-              <Text className="text-sm text-slate-400">Пропустить</Text>
+              <Text className="text-sm text-text-mute">Пропустить</Text>
             </Pressable>
           </View>
         </ScrollView>

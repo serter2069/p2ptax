@@ -216,15 +216,15 @@ export default function AuthOtpScreen() {
         <ResponsiveContainer>
           <View className="flex-1 justify-center">
             <View className="items-center mb-8">
-              <View className="w-16 h-16 rounded-2xl bg-blue-900 items-center justify-center">
+              <View className="w-16 h-16 rounded-2xl bg-accent items-center justify-center">
                 <Text className="text-xl font-bold text-white">P2P</Text>
               </View>
             </View>
 
-            <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
+            <Text className="text-2xl font-bold text-text-base text-center mb-2">
               Кто вы?
             </Text>
-            <Text className="text-sm text-slate-400 text-center mb-8">
+            <Text className="text-sm text-text-mute text-center mb-8">
               Выберите, как вы будете использовать сервис
             </Text>
 
@@ -232,12 +232,12 @@ export default function AuthOtpScreen() {
               accessibilityRole="button"
               accessibilityLabel="Мне нужна помощь с налоговой"
               onPress={() => handleRoleChoice("CLIENT")}
-              className="border-2 border-slate-200 rounded-2xl p-5 mb-4 active:bg-slate-50"
+              className="border-2 border-border rounded-2xl p-5 mb-4 active:bg-surface2"
             >
-              <Text className="text-base font-semibold text-slate-900 text-center mb-1">
+              <Text className="text-base font-semibold text-text-base text-center mb-1">
                 Мне нужна помощь с налоговой
               </Text>
-              <Text className="text-sm text-slate-400 text-center">
+              <Text className="text-sm text-text-mute text-center">
                 Ищу специалиста для решения налоговых вопросов
               </Text>
             </Pressable>
@@ -246,7 +246,7 @@ export default function AuthOtpScreen() {
               accessibilityRole="button"
               accessibilityLabel="Я налоговый специалист"
               onPress={() => handleRoleChoice("SPECIALIST")}
-              className="bg-blue-900 rounded-2xl p-5 active:bg-blue-800"
+              className="bg-accent rounded-2xl p-5 active:bg-accent"
               style={{
                 shadowColor: colors.primary,
                 shadowOffset: { width: 0, height: 2 },
@@ -282,10 +282,10 @@ export default function AuthOtpScreen() {
         >
           <ResponsiveContainer>
             <View className="flex-1" style={{ paddingTop: 48 }}>
-              <Text className="text-base text-slate-900 text-center mb-1">
+              <Text className="text-base text-text-base text-center mb-1">
                 Код отправлен на
               </Text>
-              <Text className="text-base font-semibold text-slate-900 text-center mb-8">
+              <Text className="text-base font-semibold text-text-base text-center mb-8">
                 {email}
               </Text>
 
@@ -332,7 +332,7 @@ export default function AuthOtpScreen() {
               </View>
 
               {error ? (
-                <Text className="text-sm text-red-600 text-center mb-4">
+                <Text className="text-sm text-danger text-center mb-4">
                   {error}
                 </Text>
               ) : (
@@ -362,14 +362,14 @@ export default function AuthOtpScreen() {
                 {isResending ? (
                   <ActivityIndicator color={colors.textSecondary} size="small" />
                 ) : resendTimer > 0 ? (
-                  <Text className="text-sm text-slate-400 text-center">
+                  <Text className="text-sm text-text-mute text-center">
                     Отправить повторно через{" "}
-                    <Text className="font-medium text-slate-500">
+                    <Text className="font-medium text-text-mute">
                       {resendTimer} сек
                     </Text>
                   </Text>
                 ) : (
-                  <Text className="text-sm text-blue-900 font-medium underline text-center">
+                  <Text className="text-sm text-accent font-medium underline text-center">
                     Отправить код повторно
                   </Text>
                 )}

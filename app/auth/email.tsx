@@ -62,15 +62,15 @@ export default function AuthEmailScreen() {
       <ResponsiveContainer maxWidth={520}>
         <View className="flex-1 justify-center" style={{ paddingBottom: "10%" }}>
           <View className="items-center mb-8">
-            <View className="w-20 h-20 rounded-2xl bg-blue-900 items-center justify-center mb-4">
+            <View className="w-20 h-20 rounded-2xl bg-accent items-center justify-center mb-4">
               <Text className="text-2xl font-bold text-white">P2P</Text>
             </View>
           </View>
 
-          <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
+          <Text className="text-2xl font-bold text-text-base text-center mb-2">
             Вход
           </Text>
-          <Text className="text-sm text-slate-400 text-center mb-6">
+          <Text className="text-sm text-text-mute text-center mb-6">
             Введите email для продолжения
           </Text>
 
@@ -105,7 +105,7 @@ export default function AuthEmailScreen() {
             onPress={() => router.push("/legal/terms" as never)}
             className="mt-4 py-3"
           >
-            <Text className="text-sm text-slate-400 text-center underline">
+            <Text className="text-sm text-text-mute text-center underline">
               Условия использования
             </Text>
           </Pressable>

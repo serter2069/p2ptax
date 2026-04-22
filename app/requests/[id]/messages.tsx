@@ -105,16 +105,16 @@ export default function RequestMessages() {
           accessibilityRole="button"
           accessibilityLabel={`Чат с ${name}`}
           onPress={() => router.push(`/threads/${item.id}` as never)}
-          className="flex-row items-center py-3 border-b border-slate-100"
+          className="flex-row items-center py-3 border-b border-border"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
           {/* Avatar */}
-          <View className="w-10 h-10 rounded-full bg-blue-900 items-center justify-center">
+          <View className="w-10 h-10 rounded-full bg-accent items-center justify-center">
             <Text className="text-white text-sm font-bold">
               {getInitials(item.otherUser)}
             </Text>
             {hasUnread && (
-              <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-600 items-center justify-center px-1">
+              <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-danger items-center justify-center px-1">
                 <Text className="text-[10px] font-bold text-white">
                   {item.unreadCount > 99 ? "99+" : item.unreadCount}
                 </Text>
@@ -125,20 +125,20 @@ export default function RequestMessages() {
           {/* Content */}
           <View className="flex-1 ml-3">
             <Text
-              className={`text-base ${hasUnread ? "font-bold" : "font-semibold"} text-slate-900`}
+              className={`text-base ${hasUnread ? "font-bold" : "font-semibold"} text-text-base`}
               numberOfLines={1}
             >
               {name}
             </Text>
             {item.lastMessage ? (
               <Text
-                className={`text-sm mt-0.5 ${hasUnread ? "font-semibold text-slate-700" : "text-slate-400"}`}
+                className={`text-sm mt-0.5 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
                 numberOfLines={1}
               >
                 {truncate(item.lastMessage.text, 60)}
               </Text>
             ) : (
-              <Text className="text-sm mt-0.5 text-slate-400" numberOfLines={1}>
+              <Text className="text-sm mt-0.5 text-text-mute" numberOfLines={1}>
                 Нет сообщений
               </Text>
             )}
@@ -146,7 +146,7 @@ export default function RequestMessages() {
 
           {/* Time */}
           {item.lastMessage && (
-            <Text className="text-xs text-slate-400 ml-2">
+            <Text className="text-xs text-text-mute ml-2">
               {formatTime(item.lastMessage.createdAt)}
             </Text>
           )}
@@ -162,13 +162,13 @@ export default function RequestMessages() {
         <HeaderBack title="Сообщения" />
         <ResponsiveContainer>
           {[0, 1, 2, 3].map((i) => (
-            <View key={i} className="flex-row items-center py-3 border-b border-slate-100">
-              <View className="w-10 h-10 rounded-full bg-slate-200" />
+            <View key={i} className="flex-row items-center py-3 border-b border-border">
+              <View className="w-10 h-10 rounded-full bg-surface2" />
               <View className="flex-1 ml-3">
-                <View className="h-4 bg-slate-200 rounded mb-2" style={{ width: "55%" }} />
-                <View className="h-3 bg-slate-200 rounded" style={{ width: "80%" }} />
+                <View className="h-4 bg-surface2 rounded mb-2" style={{ width: "55%" }} />
+                <View className="h-3 bg-surface2 rounded" style={{ width: "80%" }} />
               </View>
-              <View className="h-3 bg-slate-200 rounded ml-2" style={{ width: 32 }} />
+              <View className="h-3 bg-surface2 rounded ml-2" style={{ width: 32 }} />
             </View>
           ))}
         </ResponsiveContainer>

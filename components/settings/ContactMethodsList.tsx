@@ -97,20 +97,20 @@ export default function ContactMethodsList({
 
   return (
     <View>
-      <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+      <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
         Контакты
       </Text>
 
       {contacts.map((contact) => (
         <View
           key={contact.id}
-          className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-2"
+          className="flex-row items-center bg-surface2 border border-border rounded-xl px-4 py-3 mb-2"
         >
           <View className="flex-1">
-            <Text className="text-xs text-slate-400 mb-0.5">
+            <Text className="text-xs text-text-mute mb-0.5">
               {CONTACT_TYPE_LABELS[contact.type] || contact.type}
             </Text>
-            <Text className="text-sm font-medium text-slate-900">
+            <Text className="text-sm font-medium text-text-base">
               {contact.value}
             </Text>
           </View>
@@ -126,21 +126,21 @@ export default function ContactMethodsList({
       ))}
 
       {addingContact ? (
-        <View className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-2">
-          <Text className="text-sm font-medium text-slate-900 mb-2">Тип контакта</Text>
+        <View className="bg-surface2 border border-border rounded-xl p-4 mb-2">
+          <Text className="text-sm font-medium text-text-base mb-2">Тип контакта</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Выбрать тип контакта"
             onPress={() => onShowTypePickerChange(!showTypePicker)}
-            className="flex-row items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 mb-3"
+            className="flex-row items-center justify-between bg-white border border-border rounded-xl px-4 py-3 mb-3"
           >
-            <Text className="text-base text-slate-900">
+            <Text className="text-base text-text-base">
               {CONTACT_TYPE_LABELS[newContactType]}
             </Text>
             <ChevronDown size={12} color={colors.placeholder} />
           </Pressable>
           {showTypePicker && (
-            <View className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-3">
+            <View className="bg-white border border-border rounded-xl overflow-hidden mb-3">
               {CONTACT_TYPES.map((t) => (
                 <Pressable
                   accessibilityRole="button"
@@ -150,13 +150,13 @@ export default function ContactMethodsList({
                     onNewContactTypeChange(t);
                     onShowTypePickerChange(false);
                   }}
-                  className={`px-4 py-3 border-b border-slate-100 ${
-                    newContactType === t ? "bg-blue-50" : ""
+                  className={`px-4 py-3 border-b border-border ${
+                    newContactType === t ? "bg-surface2" : ""
                   }`}
                 >
                   <Text
                     className={`text-base ${
-                      newContactType === t ? "text-blue-900 font-medium" : "text-slate-700"
+                      newContactType === t ? "text-accent font-medium" : "text-text-base"
                     }`}
                   >
                     {CONTACT_TYPE_LABELS[t]}
@@ -219,15 +219,15 @@ export default function ContactMethodsList({
           accessibilityRole="button"
           accessibilityLabel="Добавить контакт"
           onPress={() => onAddingContactChange(true)}
-          className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-4"
+          className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl mb-4"
         >
           <Plus size={14} color={colors.primary} />
-          <Text className="text-sm text-blue-900 ml-2 font-medium">
+          <Text className="text-sm text-accent ml-2 font-medium">
             Добавить контакт
           </Text>
         </Pressable>
       ) : (
-        <Text className="text-xs text-slate-400 text-center mb-4">
+        <Text className="text-xs text-text-mute text-center mb-4">
           Максимум 6 контактов
         </Text>
       )}

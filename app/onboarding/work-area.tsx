@@ -160,7 +160,7 @@ export default function OnboardingWorkAreaScreen() {
             <Text className="text-sm text-warning text-center mb-2">
               Шаг 2 из 3
             </Text>
-            <Text className="text-2xl font-bold text-slate-900 text-center mb-6">
+            <Text className="text-2xl font-bold text-text-base text-center mb-6">
               Рабочая зона
             </Text>
 
@@ -168,14 +168,14 @@ export default function OnboardingWorkAreaScreen() {
             {selectedFns.map((item) => (
               <View
                 key={item.fnsId}
-                className="border border-slate-200 rounded-xl p-3 mb-3"
+                className="border border-border rounded-xl p-3 mb-3"
               >
                 <View className="flex-row items-center justify-between mb-2">
                   <View className="flex-1 mr-2">
-                    <Text className="text-sm font-semibold text-slate-900">
+                    <Text className="text-sm font-semibold text-text-base">
                       {item.fnsName}
                     </Text>
-                    <Text className="text-xs text-slate-400">{item.cityName}</Text>
+                    <Text className="text-xs text-text-mute">{item.cityName}</Text>
                   </View>
                   <Pressable accessibilityRole="button" accessibilityLabel="Удалить отделение" onPress={() => removeFns(item.fnsId)}>
                     <X size={16} color={colors.placeholder} />
@@ -196,7 +196,7 @@ export default function OnboardingWorkAreaScreen() {
                       <View
                         className={`w-5 h-5 rounded border items-center justify-center ${
                           isChecked
-                            ? "bg-blue-900 border-blue-900"
+                            ? "bg-accent border-accent"
                             : "border-slate-300 bg-white"
                         }`}
                       >
@@ -206,7 +206,7 @@ export default function OnboardingWorkAreaScreen() {
                           </Text>
                         )}
                       </View>
-                      <Text className="ml-2 text-sm text-slate-700">
+                      <Text className="ml-2 text-sm text-text-base">
                         {svc.name}
                       </Text>
                     </Pressable>
@@ -214,7 +214,7 @@ export default function OnboardingWorkAreaScreen() {
                 })}
 
                 {item.serviceIds.length === 0 && (
-                  <Text className="text-xs text-red-600 mt-1">
+                  <Text className="text-xs text-danger mt-1">
                     Выберите хотя бы одну услугу
                   </Text>
                 )}
@@ -223,7 +223,7 @@ export default function OnboardingWorkAreaScreen() {
 
             {/* City picker dropdown */}
             {showCityPicker && (
-              <View className="border border-slate-200 rounded-xl mb-3 max-h-60 overflow-hidden">
+              <View className="border border-border rounded-xl mb-3 max-h-60 overflow-hidden">
                 <ScrollView nestedScrollEnabled>
                   {cities.map((city) => (
                     <Pressable
@@ -231,14 +231,14 @@ export default function OnboardingWorkAreaScreen() {
                       key={city.id}
                       accessibilityLabel={city.name}
                       onPress={() => handleCitySelect(city)}
-                      className="px-4 py-3 border-b border-slate-100 active:bg-slate-50"
+                      className="px-4 py-3 border-b border-border active:bg-surface2"
                     >
-                      <Text className="text-sm text-slate-900">{city.name}</Text>
+                      <Text className="text-sm text-text-base">{city.name}</Text>
                     </Pressable>
                   ))}
                   {cities.length === 0 && (
                     <View className="px-4 py-3">
-                      <Text className="text-sm text-slate-400">
+                      <Text className="text-sm text-text-mute">
                         Загрузка городов...
                       </Text>
                     </View>
@@ -249,7 +249,7 @@ export default function OnboardingWorkAreaScreen() {
 
             {/* FNS picker dropdown */}
             {showFnsPicker && selectedCityId && (
-              <View className="border border-slate-200 rounded-xl mb-3 max-h-60 overflow-hidden">
+              <View className="border border-border rounded-xl mb-3 max-h-60 overflow-hidden">
                 <ScrollView nestedScrollEnabled>
                   {fnsOffices
                     .filter(
@@ -262,19 +262,19 @@ export default function OnboardingWorkAreaScreen() {
                         key={fns.id}
                         accessibilityLabel={fns.name}
                         onPress={() => handleFnsSelect(fns)}
-                        className="px-4 py-3 border-b border-slate-100 active:bg-slate-50"
+                        className="px-4 py-3 border-b border-border active:bg-surface2"
                       >
-                        <Text className="text-sm text-slate-900">
+                        <Text className="text-sm text-text-base">
                           {fns.name}
                         </Text>
-                        <Text className="text-xs text-slate-400">
+                        <Text className="text-xs text-text-mute">
                           {fns.code}
                         </Text>
                       </Pressable>
                     ))}
                   {fnsOffices.length === 0 && (
                     <View className="px-4 py-3">
-                      <Text className="text-sm text-slate-400">
+                      <Text className="text-sm text-text-mute">
                         Загрузка отделений...
                       </Text>
                     </View>
@@ -295,7 +295,7 @@ export default function OnboardingWorkAreaScreen() {
                 className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-6"
               >
                 <Plus size={14} color={colors.accent} />
-                <Text className="text-sm text-amber-700 ml-2 font-medium">
+                <Text className="text-sm text-warning ml-2 font-medium">
                   Добавить город
                 </Text>
               </Pressable>
@@ -308,7 +308,7 @@ export default function OnboardingWorkAreaScreen() {
                 onPress={() => setShowCityPicker(false)}
                 className="mb-4"
               >
-                <Text className="text-sm text-slate-400 text-center">
+                <Text className="text-sm text-text-mute text-center">
                   Отмена
                 </Text>
               </Pressable>
@@ -324,14 +324,14 @@ export default function OnboardingWorkAreaScreen() {
                 }}
                 className="mb-4"
               >
-                <Text className="text-sm text-slate-400 text-center">
+                <Text className="text-sm text-text-mute text-center">
                   Отмена
                 </Text>
               </Pressable>
             )}
 
             {error ? (
-              <Text className="text-xs text-red-600 text-center mb-4">
+              <Text className="text-xs text-danger text-center mb-4">
                 {error}
               </Text>
             ) : null}

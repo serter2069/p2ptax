@@ -115,7 +115,7 @@ export default function SpecialistConfirmWrite() {
 
   if (loading || authLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
         <HeaderBack title="Написать клиенту" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
@@ -125,7 +125,7 @@ export default function SpecialistConfirmWrite() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top", "bottom"]}>
       <HeaderBack title="Написать клиенту" />
 
       <ScrollView
@@ -135,7 +135,7 @@ export default function SpecialistConfirmWrite() {
       >
         <ResponsiveContainer>
           {/* Subtitle */}
-          <Text className="text-sm text-slate-500 mt-4 mb-3">
+          <Text className="text-sm text-text-mute mt-4 mb-3">
             Прочитайте заявку и напишите первое сообщение
           </Text>
 
@@ -144,13 +144,13 @@ export default function SpecialistConfirmWrite() {
             <View
               className={`rounded-xl px-4 py-3 mb-4 border ${
                 isLimitReached
-                  ? "bg-red-50 border-red-200"
-                  : "bg-slate-100 border-slate-200"
+                  ? "bg-danger-soft border-red-200"
+                  : "bg-surface2 border-border"
               }`}
             >
               <Text
                 className={`text-sm font-medium ${
-                  isLimitReached ? "text-red-600" : "text-slate-600"
+                  isLimitReached ? "text-danger" : "text-text-mute"
                 }`}
               >
                 {isLimitReached
@@ -163,7 +163,7 @@ export default function SpecialistConfirmWrite() {
           {/* Request summary card */}
           {request && (
             <View
-              className="bg-white rounded-2xl border border-slate-100 p-4 mb-4"
+              className="bg-white rounded-2xl border border-border p-4 mb-4"
               style={{
                 shadowColor: colors.text,
                 shadowOffset: { width: 0, height: 2 },
@@ -172,28 +172,28 @@ export default function SpecialistConfirmWrite() {
                 elevation: 3,
               }}
             >
-              <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
                 Заявка клиента
               </Text>
-              <Text className="text-base font-semibold text-slate-900 mb-2 leading-snug">
+              <Text className="text-base font-semibold text-text-base mb-2 leading-snug">
                 {request.title}
               </Text>
               <View className="flex-row flex-wrap gap-1.5 mb-3">
-                <View className="bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                  <Text className="text-xs text-slate-600">{request.city.name}</Text>
+                <View className="bg-surface2 border border-border px-2.5 py-1 rounded-lg">
+                  <Text className="text-xs text-text-mute">{request.city.name}</Text>
                 </View>
-                <View className="bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                  <Text className="text-xs text-slate-600">{request.fns.name}</Text>
+                <View className="bg-surface2 border border-border px-2.5 py-1 rounded-lg">
+                  <Text className="text-xs text-text-mute">{request.fns.name}</Text>
                 </View>
               </View>
-              <Text className="text-sm text-slate-500 leading-5" numberOfLines={3}>
+              <Text className="text-sm text-text-mute leading-5" numberOfLines={3}>
                 {request.description}
               </Text>
             </View>
           )}
 
           {/* Message textarea */}
-          <Text className="text-sm font-semibold text-slate-900 mb-2">
+          <Text className="text-sm font-semibold text-text-base mb-2">
             Ваше сообщение
           </Text>
           <TextInput
@@ -225,19 +225,19 @@ export default function SpecialistConfirmWrite() {
           {/* Counter + min-length hint */}
           <View className="flex-row justify-between items-center mt-1 mb-1">
             {message.length > 0 && message.length < MIN_CHARS ? (
-              <Text className="text-xs text-red-500">Минимум 10 символов</Text>
+              <Text className="text-xs text-danger">Минимум 10 символов</Text>
             ) : (
               <View />
             )}
-            <Text className="text-xs text-slate-400 ml-auto">
+            <Text className="text-xs text-text-mute ml-auto">
               {message.length}/{MAX_CHARS}
             </Text>
           </View>
 
           {/* Submit error */}
           {submitError && (
-            <View className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-3">
-              <Text className="text-sm text-red-600">{submitError}</Text>
+            <View className="bg-danger-soft border border-red-200 rounded-xl px-4 py-3 mt-3">
+              <Text className="text-sm text-danger">{submitError}</Text>
             </View>
           )}
 

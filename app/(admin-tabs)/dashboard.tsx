@@ -32,9 +32,9 @@ function StatCard({
   onPress?: () => void;
 }) {
   const content = (
-    <View className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <Text className="text-2xl font-bold text-slate-900">{value}</Text>
-      <Text className="text-sm text-slate-500 mt-1">{label}</Text>
+    <View className="bg-white border border-border rounded-xl p-4 shadow-sm">
+      <Text className="text-2xl font-bold text-text-base">{value}</Text>
+      <Text className="text-sm text-text-mute mt-1">{label}</Text>
     </View>
   );
 
@@ -52,23 +52,23 @@ function RankList({
   items: { name: string; count: number }[];
 }) {
   return (
-    <View className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <Text className="text-base font-semibold text-slate-900 mb-3">{title}</Text>
+    <View className="bg-white border border-border rounded-xl p-4 shadow-sm">
+      <Text className="text-base font-semibold text-text-base mb-3">{title}</Text>
       {items.length === 0 ? (
-        <Text className="text-sm text-slate-400">Нет данных</Text>
+        <Text className="text-sm text-text-mute">Нет данных</Text>
       ) : (
         items.map((item, i) => (
           <View
             key={`${item.name}-${i}`}
-            className="flex-row items-center justify-between py-2 border-b border-slate-100"
+            className="flex-row items-center justify-between py-2 border-b border-border"
           >
             <View className="flex-row items-center flex-1 mr-2">
-              <Text className="text-sm text-slate-400 w-6">{i + 1}.</Text>
-              <Text className="text-sm text-slate-900 flex-1" numberOfLines={1}>
+              <Text className="text-sm text-text-mute w-6">{i + 1}.</Text>
+              <Text className="text-sm text-text-base flex-1" numberOfLines={1}>
                 {item.name}
               </Text>
             </View>
-            <Text className="text-sm font-semibold text-blue-900">{item.count}</Text>
+            <Text className="text-sm font-semibold text-accent">{item.count}</Text>
           </View>
         ))
       )}
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
   }, [fetchStats]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome
         onSettingsPress={() => router.push("/admin/settings" as never)}
       />
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
           <ResponsiveContainer>
             <View className="py-4 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <View key={i} className="bg-white rounded-xl overflow-hidden border border-slate-200">
+                <View key={i} className="bg-white rounded-xl overflow-hidden border border-border">
                   <LoadingState variant="skeleton" lines={3} />
                 </View>
               ))}
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
         <ScrollView className="flex-1">
           <ResponsiveContainer>
             <View className="py-4 gap-3">
-              <Text className="text-lg font-bold text-slate-900 mb-1">
+              <Text className="text-lg font-bold text-text-base mb-1">
                 Панель администратора
               </Text>
 
