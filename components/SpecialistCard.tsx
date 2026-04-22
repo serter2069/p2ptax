@@ -54,7 +54,7 @@ export default function SpecialistCard({
         </Text>
         <View className="flex-row flex-wrap gap-1 mb-1">
           {services.slice(0, 2).map((s) => (
-            <View key={s.id} className="px-1.5 py-0.5 rounded" style={{ backgroundColor: "rgba(34,86,194,0.1)" }}>
+            <View key={s.id} className="px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.accentSoft }}>
               <Text className="text-[10px]" style={{ color: colors.primary }}>{s.name}</Text>
             </View>
           ))}
@@ -107,7 +107,7 @@ export default function SpecialistCard({
             <View
               key={s.id}
               className="px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: "rgba(34,86,194,0.1)" }}
+              style={{ backgroundColor: colors.accentSoft }}
             >
               <Text className="text-xs font-medium" style={{ color: colors.primary }}>{s.name}</Text>
             </View>
@@ -118,7 +118,7 @@ export default function SpecialistCard({
       {/* City */}
       {cities.length > 0 && (
         <View className="flex-row items-center mt-2">
-          <FontAwesome name="map-marker" size={10} color="#94a3b8" />
+          <FontAwesome name="map-marker" size={10} color={colors.textMuted} />
           <Text className="text-xs ml-1" style={{ color: colors.textMuted }} numberOfLines={1}>
             {cities.map((c) => c.name).join(", ")}
           </Text>
