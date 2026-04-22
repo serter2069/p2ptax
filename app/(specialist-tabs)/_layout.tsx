@@ -16,7 +16,7 @@ export default function SpecialistTabsLayout() {
           : { display: "none" },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: 12 },
+        tabBarLabelStyle: { fontSize: 12, minHeight: 14 },
       }}
     >
       <Tabs.Screen
