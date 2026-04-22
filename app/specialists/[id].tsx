@@ -187,10 +187,10 @@ export default function SpecialistPublicProfile() {
                 className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
                 style={cardShadow}
               >
-                <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
                   О СЕБЕ
                 </Text>
-                <Text className="text-base leading-6" style={{ color: "#334155" }}>
+                <Text className="text-base leading-6" style={{ color: colors.textSecondary }}>
                   {specialist.profile.description}
                 </Text>
               </View>
@@ -210,10 +210,10 @@ export default function SpecialistPublicProfile() {
               className="bg-white rounded-2xl border border-slate-100 p-4 mx-4 mt-4"
               style={cardShadow}
             >
-              <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
                 ОТЗЫВЫ
               </Text>
-              <Text className="text-sm italic" style={{ color: "#94a3b8" }}>
+              <Text className="text-sm italic" style={{ color: colors.textMuted }}>
                 Отзывы появятся в следующих версиях
               </Text>
             </View>
@@ -221,7 +221,7 @@ export default function SpecialistPublicProfile() {
             {/* Similar specialists */}
             {similar.length > 0 && (
               <View className="mx-4 mt-4 mb-4">
-                <Text style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
                   ПОХОЖИЕ СПЕЦИАЛИСТЫ
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -244,7 +244,7 @@ export default function SpecialistPublicProfile() {
 
             {/* Own profile banner */}
             {isOwnProfile && (
-              <View className="mx-4 mt-2 mb-4 rounded-xl py-3.5 items-center" style={{ backgroundColor: "#f1f5f9" }}>
+              <View className="mx-4 mt-2 mb-4 rounded-xl py-3.5 items-center" style={{ backgroundColor: colors.surface2 }}>
                 <Text className="text-sm font-semibold" style={{ color: colors.textSecondary }}>Это вы</Text>
               </View>
             )}
