@@ -23,7 +23,11 @@ module.exports = {
         border: '#e8ebf0',
         'border-strong': '#c7ccd4',
         danger: '#c6365a',
+        'danger-soft': '#fff0f3',
         success: '#1f8a5e',
+        'success-soft': '#ecfdf5',
+        warning: '#d97706',
+        'warning-soft': '#fef3c7',
       },
       borderRadius: {
         sm: '6px',
