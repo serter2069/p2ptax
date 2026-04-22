@@ -2,73 +2,26 @@ import { View, Text, Pressable, FlatList, useWindowDimensions } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MessageCircle } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
-import { colors } from "@/lib/theme";
+import { AVATAR_COLORS } from "@/lib/theme";
 
 const CONVERSATIONS = [
-  {
-    id: "1",
-    name: "Alex K.",
-    avatar: "A",
-    avatarColor: "#3b82f6",
-    lastMessage: "Is the iPhone still available?",
-    time: "2m ago",
-    unread: true,
-  },
-  {
-    id: "2",
-    name: "Maria S.",
-    avatar: "M",
-    avatarColor: "#ec4899",
-    lastMessage: "Great, I can pick it up tomorrow",
-    time: "1h ago",
-    unread: true,
-  },
-  {
-    id: "3",
-    name: "David R.",
-    avatar: "D",
-    avatarColor: "#10b981",
-    lastMessage: "Can you do $700?",
-    time: "3h ago",
-    unread: false,
-  },
-  {
-    id: "4",
-    name: "Sophie L.",
-    avatar: "S",
-    avatarColor: "#f59e0b",
-    lastMessage: "Thanks for the quick response!",
-    time: "Yesterday",
-    unread: false,
-  },
-  {
-    id: "5",
-    name: "James P.",
-    avatar: "J",
-    avatarColor: "#8b5cf6",
-    lastMessage: "What's the lowest you'd go?",
-    time: "Yesterday",
-    unread: false,
-  },
-  {
-    id: "6",
-    name: "Elena T.",
-    avatar: "E",
-    avatarColor: colors.error,
-    lastMessage: "Sent you the location pin",
-    time: "2 days ago",
-    unread: false,
-  },
+  { id: "1", name: "Alex K.", avatar: "A", lastMessage: "Is the iPhone still available?", time: "2m ago", unread: true },
+  { id: "2", name: "Maria S.", avatar: "M", lastMessage: "Great, I can pick it up tomorrow", time: "1h ago", unread: true },
+  { id: "3", name: "David R.", avatar: "D", lastMessage: "Can you do $700?", time: "3h ago", unread: false },
+  { id: "4", name: "Sophie L.", avatar: "S", lastMessage: "Thanks for the quick response!", time: "Yesterday", unread: false },
+  { id: "5", name: "James P.", avatar: "J", lastMessage: "What's the lowest you'd go?", time: "Yesterday", unread: false },
+  { id: "6", name: "Elena T.", avatar: "E", lastMessage: "Sent you the location pin", time: "2 days ago", unread: false },
 ];
 
 function ConversationItem({
   name,
   avatar,
-  avatarColor,
   lastMessage,
   time,
   unread,
-}: (typeof CONVERSATIONS)[0]) {
+  index,
+}: (typeof CONVERSATIONS)[0] & { index: number }) {
+  const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`Чат с ${name}`} className="flex-row items-center px-4 py-3 active:bg-gray-50">
       <View
@@ -77,24 +30,24 @@ function ConversationItem({
       >
         <Text className="text-white text-lg font-bold">{avatar}</Text>
       </View>
-      <View className="flex-1 ml-3 border-b border-gray-100 pb-3">
+      <View className="flex-1 ml-3 border-b border-border pb-3">
         <View className="flex-row justify-between items-center">
-          <Text className={`text-base ${unread ? "font-bold text-gray-900" : "font-medium text-gray-900"}`}>
+          <Text className={`text-base ${unread ? "font-bold text-text-base" : "font-medium text-text-base"}`}>
             {name}
           </Text>
-          <Text className={`text-xs ${unread ? "text-blue-600 font-medium" : "text-gray-400"}`}>
+          <Text className={`text-xs ${unread ? "text-accent font-medium" : "text-text-dim"}`}>
             {time}
           </Text>
         </View>
         <View className="flex-row items-center mt-0.5">
           <Text
-            className={`flex-1 text-sm ${unread ? "text-gray-900 font-medium" : "text-gray-500"}`}
+            className={`flex-1 text-sm ${unread ? "text-text-base font-medium" : "text-text-mute"}`}
             numberOfLines={1}
           >
             {lastMessage}
           </Text>
           {unread && (
-            <View className="w-2.5 h-2.5 rounded-full bg-blue-600 ml-2" />
+            <View className="w-2.5 h-2.5 rounded-full bg-accent ml-2" />
           )}
         </View>
       </View>
@@ -112,15 +65,14 @@ export default function MessagesScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1" style={containerStyle}>
-        {/* Header */}
-        <View className="px-4 pt-2 pb-3 border-b border-gray-100">
-          <Text className="text-2xl font-bold text-gray-900">Messages</Text>
+        <View className="px-4 pt-2 pb-3 border-b border-border">
+          <Text className="text-2xl font-bold text-text-base">Сообщения</Text>
         </View>
 
         <FlatList
           data={CONVERSATIONS}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ConversationItem {...item} />}
+          renderItem={({ item, index }) => <ConversationItem {...item} index={index} />}
           ListEmptyComponent={
             <EmptyState
               icon={MessageCircle}

@@ -1,5 +1,5 @@
 import { View, Text } from "react-native";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 import type { FnsServiceGroup } from "./types";
 
 interface WorkAreaSectionProps {
@@ -32,7 +32,7 @@ export default function WorkAreaSection({ fnsServices, cardShadow }: WorkAreaSec
               <View
                 key={s.id}
                 className="px-2.5 py-1 rounded-lg"
-                style={{ backgroundColor: "rgba(34, 86, 194, 0.1)" }}
+                style={{ backgroundColor: overlay.accent10 }}
               >
                 <Text className="text-xs font-medium" style={{ color: colors.primary }}>{s.name}</Text>
               </View>

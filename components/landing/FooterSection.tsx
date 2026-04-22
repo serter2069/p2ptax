@@ -1,5 +1,5 @@
 import { View, Text, Pressable } from "react-native";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface FooterSectionProps {
   isDesktop: boolean;
@@ -43,7 +43,7 @@ export default function FooterSection({ isDesktop, onHome, onViewCatalog, onCrea
                 onPress={onHome}
                 className="min-h-[44px] justify-center"
               >
-                <Text style={{ color: "rgba(255,255,255,0.7)" }}>
+                <Text style={{ color: overlay.white70 }}>
                   О сервисе
                 </Text>
               </Pressable>
@@ -53,7 +53,7 @@ export default function FooterSection({ isDesktop, onHome, onViewCatalog, onCrea
                 onPress={onViewCatalog}
                 className="min-h-[44px] justify-center"
               >
-                <Text style={{ color: "rgba(255,255,255,0.7)" }}>
+                <Text style={{ color: overlay.white70 }}>
                   Специалисты
                 </Text>
               </Pressable>
@@ -63,7 +63,7 @@ export default function FooterSection({ isDesktop, onHome, onViewCatalog, onCrea
                 onPress={onCreateRequest}
                 className="min-h-[44px] justify-center"
               >
-                <Text style={{ color: "rgba(255,255,255,0.7)" }}>
+                <Text style={{ color: overlay.white70 }}>
                   Создать заявку
                 </Text>
               </Pressable>
@@ -75,19 +75,19 @@ export default function FooterSection({ isDesktop, onHome, onViewCatalog, onCrea
             className="mt-8"
             style={{
               borderTopWidth: 1,
-              borderTopColor: "rgba(255,255,255,0.1)",
+              borderTopColor: overlay.white10,
               paddingTop: 24,
             }}
           >
             <Text
               className="text-sm text-center"
-              style={{ color: "rgba(255,255,255,0.5)" }}
+              style={{ color: overlay.white50 }}
             >
               © 2026 P2PTax
             </Text>
             <Text
               className="text-xs text-center mt-2"
-              style={{ color: "rgba(255,255,255,0.3)" }}
+              style={{ color: overlay.white30 }}
             >
               Сервис не оказывает юридических услуг.
             </Text>
