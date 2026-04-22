@@ -210,12 +210,12 @@ export default function SpecialistDashboard() {
                 accessibilityRole="button"
                 accessibilityLabel="Перейти в настройки"
                 onPress={() => router.push("/settings/specialist" as never)}
-                className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-4"
+                className="bg-warning-soft border border-warning rounded-xl p-4 mb-4 min-h-[44px]"
               >
                 <View className="flex-row items-start">
                   <TriangleAlert
                     size={16}
-                    color={colors.accent}
+                    color={colors.warning}
                     style={{ marginTop: 2 }}
                   />
                   <View className="flex-1 ml-2">
@@ -235,13 +235,19 @@ export default function SpecialistDashboard() {
 
             {/* Stats row */}
             <View className="flex-row gap-3 mb-6" style={isDesktop ? { maxWidth: 400 } : undefined}>
-              <View className="flex-1 bg-white border border-border rounded-xl p-4">
+              <View
+                className="flex-1 bg-white border border-border rounded-xl p-4"
+                style={{ shadowColor: '#0b1424', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }}
+              >
                 <Text className="text-2xl font-bold text-text-base">
                   {stats?.threadsTotal ?? 0}
                 </Text>
                 <Text className="text-xs text-text-mute mt-1">Всего диалогов</Text>
               </View>
-              <View className="flex-1 bg-white border border-border rounded-xl p-4">
+              <View
+                className="flex-1 bg-white border border-border rounded-xl p-4"
+                style={{ shadowColor: '#0b1424', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }}
+              >
                 <Text className="text-2xl font-bold text-accent">
                   {stats?.newMessages ?? 0}
                 </Text>
@@ -251,13 +257,14 @@ export default function SpecialistDashboard() {
 
             {/* Section header */}
             <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-lg font-semibold text-text-base">
+              <Text className="text-sm font-semibold text-text-mute uppercase tracking-wider">
                 Подходящие заявки
               </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Мои обращения"
                 onPress={() => router.push("/(specialist-tabs)/threads" as never)}
+                className="min-h-[44px] justify-center px-1"
               >
                 <Text className="text-sm text-accent font-medium">
                   Мои обращения
@@ -315,8 +322,14 @@ function RequestCard({
       accessibilityRole="button"
       accessibilityLabel={item.title}
       onPress={onPress}
-      className="bg-white border border-border rounded-xl p-4 mb-3"
-      style={({ pressed }) => pressed ? { opacity: 0.92 } : undefined}
+      className="bg-white border border-border rounded-xl p-4 mb-3 min-h-[44px]"
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.92 : 1,
+        shadowColor: '#0b1424',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 3,
+      })}
     >
       {/* Title + status */}
       <View className="flex-row items-start justify-between mb-2">
@@ -338,8 +351,8 @@ function RequestCard({
           <Text className="text-xs text-text-mute">{item.fns.name}</Text>
         </View>
         {item.service ? (
-          <View className="bg-blue-50 px-2 py-0.5 rounded-full">
-            <Text className="text-xs text-blue-700">{item.service}</Text>
+          <View className="bg-accent-soft px-2 py-0.5 rounded-full">
+            <Text className="text-xs text-accent">{item.service}</Text>
           </View>
         ) : null}
         {!item.isMyRegion ? (
@@ -357,8 +370,8 @@ function RequestCard({
       {/* Action */}
       {hasThread ? (
         <View className="flex-row items-center justify-between">
-          <View className="bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-            <Text className="text-xs text-emerald-700 font-medium">
+          <View className="bg-success-soft border border-success px-3 py-1 rounded-full">
+            <Text className="text-xs text-success font-medium">
               Вы уже откликнулись
             </Text>
           </View>

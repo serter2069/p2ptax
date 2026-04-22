@@ -159,12 +159,15 @@ export default function AdminComplaints() {
     const isReviewing = reviewingId === item.id;
 
     return (
-      <View>
+      <View
+        className="bg-white border border-border rounded-xl mb-3 overflow-hidden"
+        style={{ shadowColor: '#0b1424', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Жалоба от ${userName(item.reporter)}`}
           onPress={() => setExpandedId(isExpanded ? null : item.id)}
-          className="bg-white border-b border-border px-4 py-3"
+          className="bg-white px-4 py-3 min-h-[44px]"
         >
           <View className="flex-row items-start justify-between mb-1">
             <View className="flex-1 mr-3">
@@ -202,7 +205,7 @@ export default function AdminComplaints() {
         </Pressable>
 
         {isExpanded && (
-          <View className="bg-surface2 px-4 py-3 border-b border-border">
+          <View className="bg-surface2 px-4 py-3 border-t border-border">
             <Text className="text-xs text-text-mute mb-1">
               ID жалобы: <Text className="text-text-base">{item.id}</Text>
             </Text>
@@ -226,14 +229,14 @@ export default function AdminComplaints() {
                 accessibilityLabel="Рассмотрено"
                 onPress={() => markReviewed(item)}
                 disabled={isReviewing}
-                className={`px-3 py-2 rounded-lg self-start ${
+                className={`px-4 rounded-lg self-start min-h-[44px] justify-center items-center ${
                   isReviewing ? "bg-surface2" : "bg-success"
                 }`}
               >
                 {isReviewing ? (
                   <ActivityIndicator size="small" color={colors.surface} />
                 ) : (
-                  <Text className="text-xs text-white font-medium">Рассмотрено</Text>
+                  <Text className="text-sm text-white font-medium">Рассмотрено</Text>
                 )}
               </Pressable>
             )}
@@ -251,22 +254,22 @@ export default function AdminComplaints() {
       </View>
 
       {/* Filter tabs */}
-      <View className="bg-white border-b border-border px-4 py-2 flex-row gap-2">
+      <View className="bg-white border-b border-border px-4 py-2.5 flex-row gap-2">
         {FILTER_OPTIONS.map((opt) => (
           <Pressable
             accessibilityRole="button"
             key={opt.key}
             accessibilityLabel={opt.label}
             onPress={() => setFilter(opt.key)}
-            className={`px-3 py-1.5 rounded-full border ${
+            className={`px-3 py-1.5 rounded-full border min-h-[44px] justify-center ${
               filter === opt.key
                 ? "bg-accent border-accent"
-                : "bg-white border-border"
+                : "bg-surface2 border-border"
             }`}
           >
             <Text
               className={`text-sm ${
-                filter === opt.key ? "text-white font-medium" : "text-text-base"
+                filter === opt.key ? "text-white font-medium" : "text-text-mute"
               }`}
             >
               {opt.label}
@@ -291,7 +294,7 @@ export default function AdminComplaints() {
             data={complaints}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
-            contentContainerStyle={{ flexGrow: 1 }}
+            contentContainerStyle={{ flexGrow: 1, padding: 16, paddingTop: 12 }}
             onEndReached={loadMore}
             onEndReachedThreshold={0.3}
             ListEmptyComponent={
