@@ -3,6 +3,7 @@ import {
   Text,
   Pressable,
   ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -40,6 +41,8 @@ interface SelectedFns {
 
 export default function OnboardingWorkAreaScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const [cities, setCities] = useState<City[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
@@ -155,7 +158,7 @@ export default function OnboardingWorkAreaScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
       <ResponsiveContainer>
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isDesktop ? 64 : 40 }}>
           <View className="pt-6">
             <Text className="text-sm text-warning text-center mb-2">
               Шаг 2 из 3

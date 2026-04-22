@@ -5,6 +5,7 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -39,6 +40,8 @@ export default function SpecialistConfirmWrite() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const [request, setRequest] = useState<RequestSummary | null>(null);
   const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);
@@ -131,7 +134,7 @@ export default function SpecialistConfirmWrite() {
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: isDesktop ? 48 : 24 }}
       >
         <ResponsiveContainer>
           {/* Subtitle */}

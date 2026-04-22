@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -12,6 +12,8 @@ import Input from "@/components/ui/Input";
 export default function OnboardingNameScreen() {
   const router = useRouter();
   const { updateUser } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -66,7 +68,7 @@ export default function OnboardingNameScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
       <ResponsiveContainer>
-        <View className="flex-1 pt-10">
+        <View className="flex-1 pt-10" style={{ paddingBottom: isDesktop ? 48 : 24 }}>
           <Text className="text-sm text-warning text-center mb-2">
             Шаг 1 из 3
           </Text>

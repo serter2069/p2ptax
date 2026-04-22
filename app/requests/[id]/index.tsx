@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Head from "expo-router/head";
@@ -59,6 +59,8 @@ export default function PublicRequestDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -223,7 +225,7 @@ export default function PublicRequestDetail() {
       </Head>
       <HeaderBack title="Заявка" />
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 16 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isDesktop ? 32 : 16 }}>
         <ResponsiveContainer>
           {/* Main card: title, status, chips, description */}
           <View className="bg-white rounded-2xl mt-4 px-4 py-5 sm:mx-0">

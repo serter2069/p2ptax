@@ -5,6 +5,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -34,6 +35,8 @@ interface ThreadItem {
 
 export default function SpecialistMyThreads() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
   const [loading, setLoading] = useState(true);
@@ -122,7 +125,7 @@ export default function SpecialistMyThreads() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 32 : 0 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
