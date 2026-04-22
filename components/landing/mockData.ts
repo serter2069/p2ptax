@@ -1,7 +1,7 @@
 export const MOCK_SPECIALISTS = [
-  { name: "Алексей М.", rating: 4.9, tag: "Выездная проверка" },
-  { name: "Ирина К.", rating: 4.8, tag: "Камеральная проверка" },
-  { name: "Дмитрий С.", rating: 5.0, tag: "ОКК" },
+  { name: "Алексей М.", rating: 4.9, tag: "Выездная проверка", city: "Москва", ifns: "ИФНС №25" },
+  { name: "Ирина К.", rating: 4.8, tag: "Камеральная проверка", city: "Санкт-Петербург", ifns: "ИФНС №16" },
+  { name: "Дмитрий С.", rating: 5.0, tag: "ОКК", city: "Краснодар", ifns: "ИФНС №4" },
 ];
 
 export const PROBLEMS = [

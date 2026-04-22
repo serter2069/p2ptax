@@ -1,13 +1,20 @@
 import { View, Text, Pressable } from "react-native";
 import { MOCK_SPECIALISTS } from "./mockData";
 
+interface PlatformStats {
+  specialistsCount: number;
+  citiesCount: number;
+  consultationsCount: number;
+}
+
 interface HeroSectionProps {
   isDesktop: boolean;
   onCreateRequest: () => void;
   onViewCatalog: () => void;
+  stats?: PlatformStats | null;
 }
 
-export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog }: HeroSectionProps) {
+export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog, stats }: HeroSectionProps) {
   return (
     <View className="bg-white px-4" style={{ paddingTop: isDesktop ? 128 : 96, paddingBottom: isDesktop ? 96 : 64 }}>
       <View style={{ width: "100%", alignItems: "center" }}>
@@ -23,19 +30,30 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog 
         >
           {/* Text column */}
           <View style={isDesktop ? { flex: 1 } : undefined}>
+            {/* Online badge */}
+            <View
+              className="flex-row items-center self-start mb-6 rounded-full px-4"
+              style={{ backgroundColor: "#e8eefb", paddingVertical: 8 }}
+            >
+              <Text style={{ color: "#2256c2", fontSize: 10, marginRight: 6 }}>●</Text>
+              <Text className="text-sm font-medium" style={{ color: "#2256c2" }}>
+                Сейчас на связи · {stats?.specialistsCount ?? 47} специалистов в {stats?.citiesCount ?? 12} городах
+              </Text>
+            </View>
+
             <Text
               className="font-extrabold"
               style={{
-                color: "#1e3a8a",
+                color: "#0b1424",
                 fontSize: isDesktop ? 48 : 36,
                 lineHeight: isDesktop ? 56 : 42,
               }}
             >
-              Специалисты по вашей ФНС — не юристы из интернета
+              {"Специалисты по вашей ФНС.\nНе юристы из интернета."}
             </Text>
             <Text
               className="text-lg mt-6"
-              style={{ color: "#64748B", lineHeight: 28 }}
+              style={{ color: "#525a6b", lineHeight: 28 }}
             >
               Практики с опытом в камеральных, выездных и ОКК. Выберите сами
               или получите предложения.
@@ -51,13 +69,13 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog 
             >
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Создать заявку бесплатно"
+                accessibilityLabel="Создать заявку"
                 onPress={onCreateRequest}
                 className="rounded-xl h-12 items-center justify-center px-7"
-                style={{ backgroundColor: "#b45309" }}
+                style={{ backgroundColor: "#2256c2" }}
               >
                 <Text className="text-white font-semibold text-base">
-                  Создать заявку бесплатно →
+                  Создать заявку →
                 </Text>
               </Pressable>
               <Pressable
@@ -65,11 +83,11 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog 
                 accessibilityLabel="Смотреть каталог"
                 onPress={onViewCatalog}
                 className="rounded-xl h-12 items-center justify-center px-7"
-                style={{ borderWidth: 2, borderColor: "#1e3a8a" }}
+                style={{ borderWidth: 2, borderColor: "#2256c2" }}
               >
                 <Text
                   className="font-semibold text-base"
-                  style={{ color: "#1e3a8a" }}
+                  style={{ color: "#2256c2" }}
                 >
                   Смотреть каталог
                 </Text>
@@ -85,55 +103,53 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog 
                   key={s.name}
                   className="flex-row items-center p-4 rounded-2xl mb-4"
                   style={{
-                    backgroundColor: "#F8FAFC",
+                    backgroundColor: "#fafbfc",
                     borderWidth: 1,
-                    borderColor: "#e2e8f0",
+                    borderColor: "#e8ebf0",
                     gap: 16,
                   }}
                 >
                   {/* Avatar */}
                   <View
                     className="w-12 h-12 rounded-full items-center justify-center"
-                    style={{ backgroundColor: "rgba(30,58,138,0.1)" }}
+                    style={{ backgroundColor: "#e8eefb" }}
                   >
                     <Text
                       className="font-extrabold text-base"
-                      style={{ color: "#1e3a8a" }}
+                      style={{ color: "#2256c2" }}
                     >
                       {s.name.charAt(0)}
                     </Text>
                   </View>
                   {/* Info */}
                   <View style={{ flex: 1 }}>
-                    <Text
-                      className="font-semibold"
-                      style={{ color: "#0f172a" }}
-                    >
-                      {s.name}
-                    </Text>
-                    <View className="flex-row items-center mt-1" style={{ gap: 4 }}>
-                      <Text style={{ color: "#d97706" }}>
-                        {"\u2605"}
-                      </Text>
+                    <View className="flex-row items-center" style={{ gap: 6 }}>
                       <Text
-                        className="text-sm"
-                        style={{ color: "#64748B" }}
+                        className="font-semibold"
+                        style={{ color: "#0b1424" }}
                       >
-                        {s.rating}
+                        {s.name}
                       </Text>
+                      <View
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: "#22c55e" }}
+                      />
                     </View>
+                    <Text className="text-sm mt-1" style={{ color: "#525a6b" }}>
+                      {s.city} · {s.ifns}
+                    </Text>
                   </View>
                   {/* Tag */}
                   <View
                     className="rounded-full px-3"
                     style={{
-                      backgroundColor: "rgba(30,58,138,0.1)",
+                      backgroundColor: "#e8eefb",
                       paddingVertical: 6,
                     }}
                   >
                     <Text
                       className="text-xs font-medium"
-                      style={{ color: "#1e3a8a" }}
+                      style={{ color: "#2256c2" }}
                     >
                       {s.tag}
                     </Text>

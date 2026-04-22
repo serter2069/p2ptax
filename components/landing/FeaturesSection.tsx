@@ -10,7 +10,7 @@ export default function FeaturesSection({ isDesktop }: FeaturesSectionProps) {
     <View
       className="px-4"
       style={{
-        backgroundColor: "#1e3a8a",
+        backgroundColor: "#2256c2",
         paddingTop: isDesktop ? 96 : 64,
         paddingBottom: isDesktop ? 96 : 64,
       }}

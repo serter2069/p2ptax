@@ -1,5 +1,4 @@
 import { View, Text } from "react-native";
-import { colors } from "@/lib/theme";
 
 interface PlatformStats {
   specialistsCount: number;
@@ -14,54 +13,28 @@ interface StatsStripProps {
 
 export default function StatsStrip({ stats, isDesktop }: StatsStripProps) {
   return (
-    <View className="bg-slate-900 py-8 px-4">
+    <View style={{ backgroundColor: "#fafbfc", borderTopWidth: 1, borderBottomWidth: 1, borderColor: "#e8ebf0", paddingVertical: 20, paddingHorizontal: 16 }}>
       <View style={{ width: "100%", alignItems: "center" }}>
         <View
-          className="flex-row justify-around"
+          className="flex-row items-center justify-center flex-wrap"
           style={{
             width: "100%",
             maxWidth: 900,
             paddingHorizontal: isDesktop ? 24 : 0,
+            gap: 8,
           }}
         >
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-white">
-              {stats.specialistsCount}+
-            </Text>
-            <Text className="text-xs text-slate-400 mt-1 text-center">
-              специалистов
-            </Text>
-          </View>
-          <View
-            style={{
-              width: 1,
-              backgroundColor: colors.textMuted,
-              marginHorizontal: 8,
-            }}
-          />
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-white">
-              {stats.citiesCount}
-            </Text>
-            <Text className="text-xs text-slate-400 mt-1 text-center">
-              городов
-            </Text>
-          </View>
-          <View
-            style={{
-              width: 1,
-              backgroundColor: colors.textMuted,
-              marginHorizontal: 8,
-            }}
-          />
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-white">
-              {stats.consultationsCount}+
-            </Text>
-            <Text className="text-xs text-slate-400 mt-1 text-center">
-              консультаций
-            </Text>
-          </View>
+          <Text className="text-base font-semibold" style={{ color: "#0b1424" }}>
+            {stats.specialistsCount} специалистов
+          </Text>
+          <Text style={{ color: "#e8ebf0" }}> · </Text>
+          <Text className="text-base font-semibold" style={{ color: "#0b1424" }}>
+            {stats.citiesCount} городов
+          </Text>
+          <Text style={{ color: "#e8ebf0" }}> · </Text>
+          <Text className="text-base font-semibold" style={{ color: "#0b1424" }}>
+            {stats.consultationsCount} консультаций
+          </Text>
         </View>
       </View>
     </View>
