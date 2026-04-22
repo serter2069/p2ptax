@@ -21,22 +21,22 @@ export default function EmptyState({
   return (
     <View className="items-center justify-center py-12 px-8">
       <View
-        className="items-center justify-center rounded-full bg-surface2"
-        style={{ width: 72, height: 72 }}
+        className="items-center justify-center rounded-full"
+        style={{ width: 72, height: 72, backgroundColor: colors.accentSoft }}
       >
-        <Icon size={32} color={colors.placeholder} />
+        <Icon size={32} color={colors.accent} />
       </View>
       <Text className="text-base font-semibold text-text-base mt-4 text-center">
         {title}
       </Text>
       {subtitle && (
-        <Text className="text-sm text-text-mute mt-2 text-center">
+        <Text className="text-sm text-text-mute mt-2 text-center leading-5">
           {subtitle}
         </Text>
       )}
       {actionLabel && onAction && (
-        <View className="mt-4">
-          <Button variant="secondary" label={actionLabel} onPress={onAction} fullWidth={false} />
+        <View className="mt-5">
+          <Button variant="primary" label={actionLabel} onPress={onAction} fullWidth={false} />
         </View>
       )}
     </View>
