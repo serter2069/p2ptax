@@ -12,12 +12,13 @@ import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import RequestCard from "@/components/RequestCard";
-import { FileText } from "lucide-react-native";
+import { FileText, MessageSquare, Plus } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { colors } from "@/lib/theme";
 
 interface DashboardStats {
   requestsUsed: number;
@@ -91,11 +92,59 @@ export default function ClientDashboard() {
         }
       >
         <ResponsiveContainer>
-          {/* Welcome header */}
-          <View className="pt-4 pb-2">
-            <Text className="text-2xl font-bold text-text-base">
+          {/* Hero greeting — accent banner */}
+          <View
+            className="rounded-2xl px-5 py-5 mb-4 mt-4"
+            style={{ backgroundColor: colors.accent }}
+          >
+            <Text className="text-lg font-bold text-white mb-0.5">
               {user?.firstName ? `Здравствуйте, ${user.firstName}!` : "Здравствуйте!"}
             </Text>
+            <Text className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
+              Ваш личный кабинет налогоплательщика
+            </Text>
+
+            {/* Stats row */}
+            <View className="flex-row mt-4 gap-3">
+              <View
+                className="flex-1 rounded-xl px-3 py-2.5"
+                style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+              >
+                <Text className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>
+                  Заявок
+                </Text>
+                <Text className="text-xl font-bold text-white">
+                  {stats?.requestsUsed ?? 0}
+                  <Text className="text-sm font-normal" style={{ color: "rgba(255,255,255,0.7)" }}>
+                    /{stats?.requestsLimit ?? 5}
+                  </Text>
+                </Text>
+              </View>
+              <View
+                className="flex-1 rounded-xl px-3 py-2.5"
+                style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+              >
+                <Text className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>
+                  Сообщений
+                </Text>
+                <Text className="text-xl font-bold text-white">
+                  {stats?.unreadMessages ?? 0}
+                </Text>
+              </View>
+            </View>
+
+            {/* Progress bar */}
+            <View className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.2)" }}>
+              <View
+                className="h-full rounded-full bg-white"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </View>
+            {atLimit && (
+              <Text className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.8)" }}>
+                Лимит заявок исчерпан
+              </Text>
+            )}
           </View>
 
           {loading ? (
@@ -110,39 +159,22 @@ export default function ClientDashboard() {
             />
           ) : (
             <View className="pb-6">
-              {/* Stats card */}
-              <View className="bg-white border border-border rounded-xl p-4 mb-4">
-                <Text className="text-sm text-text-mute mb-1">
-                  Заявок использовано
-                </Text>
-                <Text className="text-xl font-bold text-text-base mb-3">
-                  {stats?.requestsUsed ?? 0} из {stats?.requestsLimit ?? 5}
-                </Text>
-                <View className="h-2 bg-surface2 rounded-full overflow-hidden">
-                  <View
-                    className={`h-full rounded-full ${atLimit ? "bg-danger" : "bg-accent"}`}
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </View>
-                {atLimit && (
-                  <Text className="text-xs text-danger mt-2">
-                    Лимит заявок исчерпан
-                  </Text>
-                )}
-              </View>
-
-              {/* Unread messages badge */}
+              {/* Unread messages alert */}
               {(stats?.unreadMessages ?? 0) > 0 && (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Непрочитанные сообщения"
                   onPress={() => router.push("/(client-tabs)/messages" as never)}
-                  className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex-row items-center justify-between"
+                  className="bg-warning-soft border border-warning rounded-xl px-4 mb-4 flex-row items-center justify-between"
+                  style={{ minHeight: 52 }}
                 >
-                  <Text className="text-sm font-medium text-warning">
-                    Непрочитанных сообщений: {stats?.unreadMessages}
-                  </Text>
-                  <Text className="text-xs text-warning">Открыть →</Text>
+                  <View className="flex-row items-center gap-2 flex-1">
+                    <MessageSquare size={16} color={colors.warning} />
+                    <Text className="text-sm font-medium text-warning flex-1">
+                      Непрочитанных: {stats?.unreadMessages}
+                    </Text>
+                  </View>
+                  <Text className="text-xs text-warning font-semibold">Открыть →</Text>
                 </Pressable>
               )}
 
@@ -152,17 +184,25 @@ export default function ClientDashboard() {
                 accessibilityLabel={atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
                 onPress={() => !atLimit && router.push("/requests/new" as never)}
                 disabled={atLimit}
-                className={`rounded-xl p-4 mb-6 ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
+                className={`rounded-2xl px-4 mb-6 flex-row items-center justify-between ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
+                style={{ minHeight: 56 }}
               >
-                <Text
-                  className={`font-semibold text-base ${atLimit ? "text-text-mute" : "text-white"}`}
-                >
-                  {atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
-                </Text>
-                {!atLimit && (
-                  <Text className="text-sm text-blue-200 mt-0.5">
-                    Опишите проблему — специалисты откликнутся сами
+                <View className="flex-1">
+                  <Text
+                    className={`font-semibold text-base ${atLimit ? "text-text-mute" : "text-white"}`}
+                  >
+                    {atLimit ? "Лимит заявок исчерпан" : "Создать заявку"}
                   </Text>
+                  {!atLimit && (
+                    <Text className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>
+                      Специалисты откликнутся сами
+                    </Text>
+                  )}
+                </View>
+                {!atLimit && (
+                  <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.2)" }}>
+                    <Plus size={18} color="#fff" />
+                  </View>
                 )}
               </Pressable>
 
@@ -176,6 +216,7 @@ export default function ClientDashboard() {
                     accessibilityRole="button"
                     accessibilityLabel="Смотреть все заявки"
                     onPress={() => router.push("/(client-tabs)/requests" as never)}
+                    style={{ minHeight: 44, justifyContent: "center" }}
                   >
                     <Text className="text-sm text-accent font-medium">
                       Смотреть все
