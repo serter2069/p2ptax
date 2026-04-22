@@ -172,6 +172,7 @@ export default function SpecialistDashboard() {
       />
       <ScrollView
         className="flex-1"
+        contentContainerStyle={{ paddingBottom: 24 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
@@ -184,7 +185,10 @@ export default function SpecialistDashboard() {
             </Text>
 
             {/* Availability toggle */}
-            <View className="bg-white border border-border rounded-xl p-4 mb-4 flex-row items-center justify-between">
+            <View
+              className="bg-white border border-border rounded-xl p-4 mb-4 flex-row items-center justify-between"
+              style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
+            >
               <View className="flex-1 mr-3">
                 <Text className="text-sm font-semibold text-text-base">
                   Принимаю заявки
@@ -237,7 +241,7 @@ export default function SpecialistDashboard() {
             <View className="flex-row gap-3 mb-6" style={isDesktop ? { maxWidth: 400 } : undefined}>
               <View
                 className="flex-1 bg-white border border-border rounded-xl p-4"
-                style={{ shadowColor: '#0b1424', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }}
+                style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
               >
                 <Text className="text-2xl font-bold text-text-base">
                   {stats?.threadsTotal ?? 0}
@@ -246,7 +250,7 @@ export default function SpecialistDashboard() {
               </View>
               <View
                 className="flex-1 bg-white border border-border rounded-xl p-4"
-                style={{ shadowColor: '#0b1424', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }}
+                style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
               >
                 <Text className="text-2xl font-bold text-accent">
                   {stats?.newMessages ?? 0}
@@ -256,8 +260,8 @@ export default function SpecialistDashboard() {
             </View>
 
             {/* Section header */}
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-sm font-semibold text-text-mute uppercase tracking-wider">
+            <View className="flex-row items-center justify-between border-b border-border pb-2 mb-3">
+              <Text className="text-base font-semibold text-text-base">
                 Подходящие заявки
               </Text>
               <Pressable
@@ -326,9 +330,10 @@ function RequestCard({
       style={({ pressed }) => ({
         opacity: pressed ? 0.92 : 1,
         shadowColor: '#0b1424',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 3,
       })}
     >
       {/* Title + status */}

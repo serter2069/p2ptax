@@ -161,7 +161,7 @@ export default function AdminComplaints() {
     return (
       <View
         className="bg-white border border-border rounded-xl mb-3 overflow-hidden"
-        style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }}
+        style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
       >
         <Pressable
           accessibilityRole="button"
@@ -205,40 +205,44 @@ export default function AdminComplaints() {
         </Pressable>
 
         {isExpanded && (
-          <View className="bg-surface2 px-4 py-3 border-t border-border">
-            <Text className="text-xs text-text-mute mb-1">
-              ID жалобы: <Text className="text-text-base">{item.id}</Text>
-            </Text>
-            <Text className="text-xs text-text-mute mb-1">
-              Жалобщик: <Text className="text-text-base">{item.reporter.email}</Text>
-            </Text>
-            <Text className="text-xs text-text-mute mb-1">
-              На пользователя: <Text className="text-text-base">{item.targetUser.email}</Text>
-            </Text>
-            {item.reviewedAt && (
+          <View className="border-t border-border">
+            <View className="bg-surface2 mx-3 mb-3 mt-3 p-3 rounded-xl">
               <Text className="text-xs text-text-mute mb-1">
-                Рассмотрена: <Text className="text-text-base">{formatDate(item.reviewedAt)}</Text>
+                ID жалобы: <Text className="text-text-base">{item.id}</Text>
               </Text>
-            )}
-            <Text className="text-xs text-text-mute mb-3 mt-1">Текст жалобы:</Text>
-            <Text className="text-sm text-text-base mb-3">{item.text}</Text>
+              <Text className="text-xs text-text-mute mb-1">
+                Жалобщик: <Text className="text-text-base">{item.reporter.email}</Text>
+              </Text>
+              <Text className="text-xs text-text-mute mb-1">
+                На пользователя: <Text className="text-text-base">{item.targetUser.email}</Text>
+              </Text>
+              {item.reviewedAt && (
+                <Text className="text-xs text-text-mute mb-1">
+                  Рассмотрена: <Text className="text-text-base">{formatDate(item.reviewedAt)}</Text>
+                </Text>
+              )}
+              <Text className="text-xs text-text-mute mb-2 mt-1">Текст жалобы:</Text>
+              <Text className="text-sm text-text-base">{item.text}</Text>
+            </View>
 
             {item.status === "NEW" && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Рассмотрено"
-                onPress={() => markReviewed(item)}
-                disabled={isReviewing}
-                className={`px-4 rounded-lg self-start min-h-[44px] justify-center items-center ${
-                  isReviewing ? "bg-surface2" : "bg-success"
-                }`}
-              >
-                {isReviewing ? (
-                  <ActivityIndicator size="small" color={colors.surface} />
-                ) : (
-                  <Text className="text-sm text-white font-medium">Рассмотрено</Text>
-                )}
-              </Pressable>
+              <View className="px-3 mb-3">
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Рассмотрено"
+                  onPress={() => markReviewed(item)}
+                  disabled={isReviewing}
+                  className={`rounded-xl h-11 items-center justify-center ${
+                    isReviewing ? "bg-surface2" : "bg-success"
+                  }`}
+                >
+                  {isReviewing ? (
+                    <ActivityIndicator size="small" color={colors.surface} />
+                  ) : (
+                    <Text className="text-sm text-white font-semibold">Рассмотрено</Text>
+                  )}
+                </Pressable>
+              </View>
             )}
           </View>
         )}
@@ -249,8 +253,8 @@ export default function AdminComplaints() {
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       {/* Header */}
-      <View className="bg-accent px-4 h-14 flex-row items-center justify-between">
-        <Text className="text-lg font-bold text-white">Жалобы</Text>
+      <View className="bg-white px-4 h-14 flex-row items-center justify-between border-b border-border">
+        <Text className="text-2xl font-bold text-text-base">Жалобы</Text>
       </View>
 
       {/* Filter tabs */}
