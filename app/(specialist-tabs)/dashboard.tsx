@@ -234,7 +234,7 @@ export default function SpecialistDashboard() {
             )}
 
             {/* Stats row */}
-            <View className="flex-row gap-3 mb-6">
+            <View className="flex-row gap-3 mb-6" style={isDesktop ? { maxWidth: 400 } : undefined}>
               <View className="flex-1 bg-white border border-border rounded-xl p-4">
                 <Text className="text-2xl font-bold text-text-base">
                   {stats?.threadsTotal ?? 0}

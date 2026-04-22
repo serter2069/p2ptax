@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   User, Star, ChevronRight, LogOut,
@@ -18,6 +18,8 @@ const MENU_ITEMS: { id: string; Icon: LucideIcon; label: string; badge: string |
 
 export default function ProfileScreen() {
   const { signOut } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -45,7 +47,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Stats */}
-          <View className="flex-row mt-4">
+          <View className={`flex-row mt-4${isDesktop ? " border border-border rounded-xl px-4 py-2 bg-white" : ""}`}>
             <View className="items-center px-6">
               <Text className="text-lg font-bold text-gray-900">12</Text>
               <Text className="text-xs text-gray-500">Listings</Text>

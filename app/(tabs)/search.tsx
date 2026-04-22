@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Pressable, ScrollView } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Search, SlidersHorizontal, Clock, ArrowRight, ChevronRight,
@@ -24,6 +24,9 @@ const POPULAR_CATEGORIES: { id: string; name: string; count: string; Icon: Lucid
 ];
 
 export default function SearchScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
@@ -74,24 +77,26 @@ export default function SearchScreen() {
           {/* Popular Categories */}
           <View>
             <Text className="text-base font-semibold text-gray-900 mb-3">Popular Categories</Text>
-            {POPULAR_CATEGORIES.map((cat) => (
-              <Pressable
-                accessibilityRole="button"
-                key={cat.id}
-                accessibilityLabel={cat.name}
-                className="flex-row items-center p-3 rounded-xl mb-2"
-                style={{ backgroundColor: cat.color }}
-              >
-                <View className="w-10 h-10 rounded-lg bg-white items-center justify-center">
-                  <cat.Icon size={18} color={colors.textSecondary} />
-                </View>
-                <View className="flex-1 ml-3">
-                  <Text className="text-base font-medium text-gray-900">{cat.name}</Text>
-                  <Text className="text-xs text-gray-500">{cat.count}</Text>
-                </View>
-                <ChevronRight size={12} color={colors.textSecondary} />
-              </Pressable>
-            ))}
+            <View className={isDesktop ? "flex-row flex-wrap gap-2" : undefined}>
+              {POPULAR_CATEGORIES.map((cat) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={cat.id}
+                  accessibilityLabel={cat.name}
+                  className="flex-row items-center p-3 rounded-xl mb-2"
+                  style={[{ backgroundColor: cat.color }, isDesktop ? { width: "48%" } : undefined]}
+                >
+                  <View className="w-10 h-10 rounded-lg bg-white items-center justify-center">
+                    <cat.Icon size={18} color={colors.textSecondary} />
+                  </View>
+                  <View className="flex-1 ml-3">
+                    <Text className="text-base font-medium text-gray-900">{cat.name}</Text>
+                    <Text className="text-xs text-gray-500">{cat.count}</Text>
+                  </View>
+                  <ChevronRight size={12} color={colors.textSecondary} />
+                </Pressable>
+              ))}
+            </View>
           </View>
         </ResponsiveContainer>
       </ScrollView>
