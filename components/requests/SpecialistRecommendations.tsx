@@ -77,7 +77,7 @@ export default function SpecialistRecommendations({
                 )}
                 {spec.description && (
                   <Text
-                    className="text-sm text-slate-600 mt-1 leading-5"
+                    className="text-sm text-text-mute mt-1 leading-5"
                     numberOfLines={2}
                   >
                     {spec.description}

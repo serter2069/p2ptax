@@ -262,21 +262,21 @@ function ThreadCard({
             {name}
           </Text>
           {isClosed && (
-            <View className="bg-slate-100 px-2 py-0.5 rounded">
-              <Text className="text-[10px] font-medium text-slate-400">
+            <View className="bg-surface2 px-2 py-0.5 rounded">
+              <Text className="text-[10px] font-medium text-text-mute">
                 Заявка закрыта
               </Text>
             </View>
           )}
         </View>
 
-        <Text className="text-xs text-slate-400 mb-0.5" numberOfLines={1}>
+        <Text className="text-xs text-text-mute mb-0.5" numberOfLines={1}>
           {thread.request.title}
         </Text>
 
         <Text
           className={`text-sm ${
-            hasUnread ? "font-medium text-slate-700" : "text-slate-400"
+            hasUnread ? "font-medium text-text-base" : "text-text-mute"
           }`}
           numberOfLines={1}
         >
@@ -286,7 +286,7 @@ function ThreadCard({
 
       {/* Timestamp */}
       {timeStr ? (
-        <Text className="text-xs text-slate-400 self-start mt-1">{timeStr}</Text>
+        <Text className="text-xs text-text-mute self-start mt-1">{timeStr}</Text>
       ) : null}
     </Pressable>
   );

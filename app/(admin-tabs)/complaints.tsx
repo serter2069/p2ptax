@@ -244,14 +244,14 @@ export default function AdminComplaints() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       {/* Header */}
-      <View className="bg-blue-900 px-4 h-14 flex-row items-center justify-between">
+      <View className="bg-accent px-4 h-14 flex-row items-center justify-between">
         <Text className="text-lg font-bold text-white">Жалобы</Text>
       </View>
 
       {/* Filter tabs */}
-      <View className="bg-white border-b border-slate-200 px-4 py-2 flex-row gap-2">
+      <View className="bg-white border-b border-border px-4 py-2 flex-row gap-2">
         {FILTER_OPTIONS.map((opt) => (
           <Pressable
             accessibilityRole="button"

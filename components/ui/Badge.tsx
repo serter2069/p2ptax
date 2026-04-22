@@ -7,9 +7,9 @@ export interface BadgeProps {
 }
 
 const variantStyles = {
-  error: { bg: "bg-red-50", text: "text-red-700", dotColor: "#b91c1c" },
-  success: { bg: "bg-emerald-50", text: "text-emerald-700", dotColor: "#047857" },
-  warning: { bg: "bg-amber-50", text: "text-amber-700", dotColor: "#d97706" },
+  error: { bg: "bg-danger-soft", text: "text-danger", dotColor: "#b91c1c" },
+  success: { bg: "bg-success-soft", text: "text-success", dotColor: "#047857" },
+  warning: { bg: "bg-warning-soft", text: "text-warning", dotColor: "#d97706" },
   info: { bg: "bg-sky-50", text: "text-sky-700", dotColor: "#2256c2" },
 } as const;
 

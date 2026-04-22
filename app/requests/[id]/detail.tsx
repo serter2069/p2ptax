@@ -308,8 +308,8 @@ export default function MyRequestDetail() {
             {/* Extend limit banner */}
             {request.status === "CLOSING_SOON" &&
               request.extensionsCount >= request.maxExtensions && (
-                <View className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-                  <Text className="text-sm text-amber-700 text-center font-medium">
+                <View className="bg-warning-soft border border-amber-200 rounded-xl px-4 py-3 mb-4">
+                  <Text className="text-sm text-warning text-center font-medium">
                     Продление использовано ({request.extensionsCount}/
                     {request.maxExtensions})
                   </Text>
@@ -341,20 +341,20 @@ export default function MyRequestDetail() {
               }}
             >
               <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-slate-400">Откликов</Text>
-                <Text className="text-sm text-slate-900">
+                <Text className="text-sm text-text-mute">Откликов</Text>
+                <Text className="text-sm text-text-base">
                   {request.threadsCount}
                 </Text>
               </View>
               <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-slate-400">Продлений</Text>
-                <Text className="text-sm text-slate-900">
+                <Text className="text-sm text-text-mute">Продлений</Text>
+                <Text className="text-sm text-text-base">
                   {request.extensionsCount}/{request.maxExtensions}
                 </Text>
               </View>
               <View className="flex-row justify-between">
-                <Text className="text-sm text-slate-400">Город</Text>
-                <Text className="text-sm text-slate-900">{request.city.name}</Text>
+                <Text className="text-sm text-text-mute">Город</Text>
+                <Text className="text-sm text-text-base">{request.city.name}</Text>
               </View>
             </View>
 

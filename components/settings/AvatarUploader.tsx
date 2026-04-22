@@ -87,7 +87,7 @@ export default function AvatarUploader({
       >
         {avatarUploading ? (
           <View
-            className="rounded-full bg-slate-100 items-center justify-center"
+            className="rounded-full bg-surface2 items-center justify-center"
             style={{ width: 80, height: 80 }}
           >
             <ActivityIndicator color={colors.primary} />
@@ -105,7 +105,7 @@ export default function AvatarUploader({
               }}
             />
             <View
-              className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
+              className="absolute bottom-0 right-0 bg-accent rounded-full items-center justify-center"
               style={{ width: 24, height: 24 }}
             >
               <Pencil size={12} color={colors.surface} />
@@ -113,7 +113,7 @@ export default function AvatarUploader({
           </View>
         ) : (
           <View
-            className="rounded-full bg-blue-900 items-center justify-center"
+            className="rounded-full bg-accent items-center justify-center"
             style={{ width: 80, height: 80 }}
           >
             <Text className="text-white text-2xl font-bold">
@@ -121,12 +121,12 @@ export default function AvatarUploader({
             </Text>
           </View>
         )}
-        <Text className="text-xs text-slate-400 mt-2">
+        <Text className="text-xs text-text-mute mt-2">
           {avatarUrl ? "Изменить фото" : "Нажмите, чтобы добавить фото"}
         </Text>
       </Pressable>
-      <View className="mt-2 bg-blue-50 px-3 py-1 rounded-full">
-        <Text className="text-xs font-medium text-blue-900">Специалист</Text>
+      <View className="mt-2 bg-surface2 px-3 py-1 rounded-full">
+        <Text className="text-xs font-medium text-accent">Специалист</Text>
       </View>
 
       {Platform.OS === "web" && (

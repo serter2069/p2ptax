@@ -16,14 +16,14 @@ export default function NotificationPreferences({
 }: NotificationPreferencesProps) {
   return (
     <View>
-      <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+      <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
         Уведомления
       </Text>
-      <View className="bg-white border border-slate-100 rounded-xl mb-6 overflow-hidden">
-        <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
+      <View className="bg-white border border-border rounded-xl mb-6 overflow-hidden">
+        <View className="flex-row items-center px-4 py-3 border-b border-border">
           <View className="flex-1 mr-3">
-            <Text className="text-base text-slate-900">Push-уведомления</Text>
-            <Text className="text-xs text-slate-400 mt-0.5">
+            <Text className="text-base text-text-base">Push-уведомления</Text>
+            <Text className="text-xs text-text-mute mt-0.5">
               Новые заявки и сообщения
             </Text>
           </View>
@@ -37,8 +37,8 @@ export default function NotificationPreferences({
         </View>
         <View className="flex-row items-center px-4 py-3">
           <View className="flex-1 mr-3">
-            <Text className="text-base text-slate-900">Email-уведомления</Text>
-            <Text className="text-xs text-slate-400 mt-0.5">
+            <Text className="text-base text-text-base">Email-уведомления</Text>
+            <Text className="text-xs text-text-mute mt-0.5">
               Дублировать уведомления на почту
             </Text>
           </View>

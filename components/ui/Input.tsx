@@ -60,7 +60,7 @@ export default function Input({
   return (
     <View style={style}>
       {label && (
-        <Text className="text-sm font-medium text-slate-700 mb-1.5">{label}</Text>
+        <Text className="text-sm font-medium text-text-base mb-1.5">{label}</Text>
       )}
       <View
         style={[{
@@ -115,7 +115,7 @@ export default function Input({
         />
       </View>
       {error && (
-        <Text className="text-xs text-red-600 mt-1">{error}</Text>
+        <Text className="text-xs text-danger mt-1">{error}</Text>
       )}
     </View>
   );

@@ -62,7 +62,7 @@ export default function ProfileHero({
         {/* Availability */}
         <View className="flex-row items-center mt-2 flex-wrap" style={{ gap: 8 }}>
           <View className="flex-row items-center">
-            <View className={`w-2 h-2 rounded-full mr-1 ${isAvailable ? "bg-emerald-500" : "bg-slate-300"}`} />
+            <View className={`w-2 h-2 rounded-full mr-1 ${isAvailable ? "bg-success" : "bg-surface2"}`} />
             <Text
               className="text-xs font-semibold uppercase"
               style={{ letterSpacing: 1, color: isAvailable ? "#059669" : "#94a3b8" }}
