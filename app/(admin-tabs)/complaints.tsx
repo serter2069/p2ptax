@@ -13,7 +13,7 @@ import { ChevronUp, ChevronDown, Flag } from "lucide-react-native";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 import { API_URL } from "@/lib/api";
 
 
@@ -161,7 +161,15 @@ export default function AdminComplaints() {
     return (
       <View
         className="bg-white border border-border rounded-xl mb-3 overflow-hidden"
-        style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
+        style={{
+          borderLeftWidth: 3,
+          borderLeftColor: item.status === "NEW" ? colors.warning : colors.success,
+          shadowColor: colors.text,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 6,
+          elevation: 3,
+        }}
       >
         <Pressable
           accessibilityRole="button"
@@ -252,9 +260,10 @@ export default function AdminComplaints() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      {/* Header */}
-      <View className="bg-white px-4 h-14 flex-row items-center justify-between border-b border-border">
-        <Text className="text-2xl font-bold text-text-base">Жалобы</Text>
+      {/* Header with accent background */}
+      <View className="bg-accent px-4 pt-4 pb-4">
+        <Text className="text-2xl font-bold text-white">Жалобы</Text>
+        <Text className="text-sm mt-1" style={{ color: overlay.white75 }}>Управление жалобами пользователей</Text>
       </View>
 
       {/* Filter tabs */}
