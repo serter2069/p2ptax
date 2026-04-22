@@ -226,7 +226,7 @@ export default function PublicRequestDetail() {
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 16 }}>
         <ResponsiveContainer>
           {/* Main card: title, status, chips, description */}
-          <View className="bg-white rounded-2xl mx-4 mt-4 px-4 py-5">
+          <View className="bg-white rounded-2xl mt-4 px-4 py-5 sm:mx-0">
             <View className="flex-row items-start justify-between mb-3 gap-2">
               <Text className="text-2xl font-bold text-text-base flex-1 leading-tight">
                 {request.title}
@@ -254,7 +254,7 @@ export default function PublicRequestDetail() {
           </View>
 
           {/* Meta card */}
-          <View className="bg-white rounded-2xl mx-4 mt-3 px-4 py-1">
+          <View className="bg-white rounded-2xl mt-3 px-4 py-1 sm:mx-0">
             <MetaRow label="Город" value={request.city.name} />
             <MetaRow label="Инспекция" value={request.fns.name} />
             <MetaRow label="Создана" value={createdDate} last />
