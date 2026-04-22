@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,34 +8,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { User, Briefcase, MapPin, MessageCircle } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import SpecialistCard from "@/components/SpecialistCard";
-import StatusBadge from "@/components/StatusBadge";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { colors } from "@/lib/theme";
-
-interface FeaturedSpecialist {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  avatarUrl: string | null;
-  services: { id: string; name: string }[];
-  cities: { id: string; name: string }[];
-}
-
-interface RecentRequest {
-  id: string;
-  title: string | null;
-  description: string;
-  status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  createdAt: string;
-  city: { id: string; name: string };
-  fns: { id: string; name: string; code: string };
-  threadsCount: number;
-}
 
 interface PlatformStats {
   specialistsCount: number;
@@ -43,40 +20,57 @@ interface PlatformStats {
   consultationsCount: number;
 }
 
-const CLIENT_STEPS = [
+const MOCK_SPECIALISTS = [
+  { name: "Алексей М.", rating: 4.9, tag: "Выездная проверка" },
+  { name: "Ирина К.", rating: 4.8, tag: "Камеральная проверка" },
+  { name: "Дмитрий С.", rating: 5.0, tag: "ОКК" },
+];
+
+const PROBLEMS = [
   {
-    number: "1",
-    title: "Создайте заявку",
-    description: "Укажите город, инспекцию и тип проверки. Опишите ситуацию.",
+    icon: "\u26A0\uFE0F",
+    title: "Не знаете, насколько серьёзно",
+    text: "Штраф? Доначисления? Блокировка счёта? Без опыта сложно оценить масштаб проблемы и последствия.",
   },
   {
-    number: "2",
-    title: "Получите отклики",
-    description: "Специалисты из вашего города увидят заявку и напишут первыми.",
+    icon: "\uD83D\uDCCB",
+    title: "Не знаете что делать",
+    text: "Куда идти, какие документы готовить, как отвечать на требования инспекции — непонятно с чего начать.",
   },
   {
-    number: "3",
-    title: "Выберите специалиста",
-    description: "Общайтесь в чате, сравнивайте подходы, доверяйте тому, кто подошёл.",
+    icon: "\uD83D\uDD0D",
+    title: "Не можете найти нужного",
+    text: "Обычные бухгалтеры не разбираются в P2P. А те, кто разбирается — их ещё нужно найти в вашем городе.",
   },
 ];
 
-const SPECIALIST_STEPS = [
+const FEATURES = [
   {
-    number: "1",
-    title: "Зарегистрируйтесь",
-    description: "Укажите специализацию, опыт и города, в которых работаете.",
+    icon: "\uD83D\uDDFA\uFE0F",
+    title: "Фильтр по городу и ФНС",
+    text: "Только специалисты, которые работают с вашей инспекцией.",
   },
   {
-    number: "2",
-    title: "Получайте заявки",
-    description: "Система подбирает заявки клиентов под ваш профиль и регион.",
+    icon: "\u2709\uFE0F",
+    title: "Специалисты пишут первыми",
+    text: "Не нужно обзванивать всех. Они изучают и приходят к вам.",
   },
   {
-    number: "3",
-    title: "Помогайте клиентам",
-    description: "Открывайте диалог, консультируйте и получайте новых клиентов.",
+    icon: "\uD83D\uDCB0",
+    title: "Бесплатно для клиента",
+    text: "Создать заявку и получить предложения ничего не стоит.",
   },
+  {
+    icon: "\uD83D\uDD00",
+    title: "Два пути входа",
+    text: "Создать заявку или найти специалиста в каталоге и написать напрямую.",
+  },
+];
+
+const STEPS = [
+  { num: "1", label: "Создайте заявку" },
+  { num: "2", label: "Специалисты напишут сами" },
+  { num: "3", label: "Выберите и решите вопрос" },
 ];
 
 export default function LandingScreen() {
@@ -84,13 +78,11 @@ export default function LandingScreen() {
   const { isAuthenticated, user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
-  const scrollViewRef = useRef<ScrollView>(null);
 
-  const [featured, setFeatured] = useState<FeaturedSpecialist[]>([]);
-  const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
 
   // Redirect authenticated users to their dashboard
   useEffect(() => {
@@ -109,17 +101,9 @@ export default function LandingScreen() {
     setLoading(true);
     setError(false);
     try {
-      const [featuredRes, requestsRes, statsRes] = await Promise.all([
-        api<{ items: FeaturedSpecialist[] }>("/api/specialists/featured", {
-          noAuth: true,
-        }),
-        api<{ items: RecentRequest[] }>("/api/requests/public?limit=3", {
-          noAuth: true,
-        }),
-        api<PlatformStats>("/api/stats", { noAuth: true }),
-      ]);
-      setFeatured(featuredRes.items.slice(0, 3));
-      setRecentRequests(requestsRes.items.slice(0, 3));
+      const statsRes = await api<PlatformStats>("/api/stats", {
+        noAuth: true,
+      });
       setStats(statsRes);
     } catch {
       setError(true);
@@ -132,21 +116,6 @@ export default function LandingScreen() {
     loadData();
   }, [loadData]);
 
-  const handleSpecialistPress = useCallback(
-    (id: string) => {
-      router.push(`/specialists/${id}` as never);
-    },
-    [router]
-  );
-
-  const containerStyle = isDesktop
-    ? { maxWidth: 520, width: "100%" as const, alignSelf: "center" as const }
-    : undefined;
-
-  const wideContainerStyle = isDesktop
-    ? { maxWidth: 900, width: "100%" as const, alignSelf: "center" as const }
-    : undefined;
-
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
@@ -158,8 +127,13 @@ export default function LandingScreen() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-row items-center justify-between h-14 bg-blue-900 px-4">
-          <Text className="text-lg font-bold text-white">P2PTax</Text>
+        <View className="flex-row items-center justify-between h-16 bg-white px-4">
+          <Text
+            className="text-lg font-extrabold"
+            style={{ color: "#1e3a8a" }}
+          >
+            P2PTax
+          </Text>
         </View>
         <ErrorState
           message="Не удалось загрузить данные. Проверьте соединение с интернетом и попробуйте снова."
@@ -172,306 +146,582 @@ export default function LandingScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row items-center justify-between h-14 bg-blue-900 px-4">
-        <Text className="text-lg font-bold text-white">P2PTax</Text>
-        <View className="flex-row items-center gap-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Войти"
-            onPress={() => router.push("/auth/email" as never)}
-            className="bg-white/20 rounded-lg px-4 min-h-[44px] items-center justify-center"
+      <View
+        className="flex-row items-center justify-between h-16 bg-white px-4"
+        style={
+          scrollY > 10
+            ? {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }
+            : undefined
+        }
+      >
+        <View style={{ width: "100%", alignItems: "center" }}>
+          <View
+            className="flex-row items-center justify-between"
+            style={{
+              width: "100%",
+              maxWidth: 1152,
+              paddingHorizontal: isDesktop ? 24 : 0,
+            }}
           >
-            <Text className="text-white font-medium text-sm">Войти</Text>
-          </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="P2PTax Home"
+              onPress={() => router.push("/" as never)}
+              className="min-h-[44px] justify-center"
+            >
+              <Text
+                className="text-xl font-extrabold"
+                style={{ color: "#1e3a8a" }}
+              >
+                P2PTax
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Создать заявку"
+              onPress={() => router.push("/auth/email" as never)}
+              className="rounded-lg px-4 min-h-[44px] items-center justify-center"
+              style={{ backgroundColor: "#b45309" }}
+            >
+              <Text className="text-white font-semibold text-sm">
+                Создать заявку
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
-      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={16}
+      >
         {/* ─── HERO ─── */}
-        <View className="bg-blue-900 pt-12 pb-14 px-4">
-          <View style={containerStyle}>
-            <Text className="text-2xl font-bold text-white text-center leading-8">
-              Налоговая помощь рядом
-            </Text>
-            <Text className="text-sm text-blue-200 text-center mt-3 leading-5">
-              Найдите специалиста по P2P и криптовалютным операциям в вашем городе
-            </Text>
-
-            {/* Two CTAs */}
+        <View className="bg-white px-4" style={{ paddingTop: isDesktop ? 128 : 96, paddingBottom: isDesktop ? 96 : 64 }}>
+          <View style={{ width: "100%", alignItems: "center" }}>
             <View
-              className="mt-8 gap-3"
-              style={isDesktop ? { flexDirection: "row", justifyContent: "center" } : undefined}
+              style={{
+                width: "100%",
+                maxWidth: 1152,
+                paddingHorizontal: isDesktop ? 24 : 0,
+                flexDirection: isDesktop ? "row" : "column",
+                alignItems: isDesktop ? "flex-start" : "stretch",
+                gap: isDesktop ? 48 : 0,
+              }}
             >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Найти специалиста"
-                onPress={() => router.push("/specialists" as never)}
-                className="bg-amber-700 rounded-xl h-12 items-center justify-center"
-                style={isDesktop ? { width: 200 } : undefined}
-              >
-                <Text className="text-white font-semibold text-base">
-                  Найти специалиста
+              {/* Text column */}
+              <View style={isDesktop ? { flex: 1 } : undefined}>
+                <Text
+                  className="font-extrabold"
+                  style={{
+                    color: "#1e3a8a",
+                    fontSize: isDesktop ? 48 : 36,
+                    lineHeight: isDesktop ? 56 : 42,
+                  }}
+                >
+                  Специалисты по вашей ФНС — не юристы из интернета
                 </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Я специалист"
-                onPress={() => router.push("/auth/email" as never)}
-                className="border border-white/30 rounded-xl h-12 items-center justify-center"
-                style={[
-                  { backgroundColor: "rgba(255,255,255,0.12)" },
-                  isDesktop ? { width: 200 } : undefined,
-                ]}
-              >
-                <Text className="text-white font-semibold text-base">
-                  Я специалист
+                <Text
+                  className="text-lg mt-6"
+                  style={{ color: "#64748B", lineHeight: 28 }}
+                >
+                  Практики с опытом в камеральных, выездных и ОКК. Выберите сами
+                  или получите предложения.
                 </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
 
-        {/* ─── STATS ─── */}
-        {stats && (
-          <View className="bg-slate-900 py-8 px-4">
-            <View
-              style={wideContainerStyle}
-              className="flex-row justify-around"
-            >
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-white">
-                  {stats.specialistsCount}+
-                </Text>
-                <Text className="text-xs text-slate-400 mt-1 text-center">
-                  специалистов
-                </Text>
-              </View>
-              <View
-                style={{ width: 1, backgroundColor: colors.textMuted, marginHorizontal: 8 }}
-              />
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-white">
-                  {stats.citiesCount}
-                </Text>
-                <Text className="text-xs text-slate-400 mt-1 text-center">
-                  городов
-                </Text>
-              </View>
-              <View
-                style={{ width: 1, backgroundColor: colors.textMuted, marginHorizontal: 8 }}
-              />
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-white">
-                  {stats.consultationsCount}+
-                </Text>
-                <Text className="text-xs text-slate-400 mt-1 text-center">
-                  консультаций
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* ─── HOW IT WORKS ─── */}
-        <View className="py-10 px-4 bg-white">
-          <View style={containerStyle}>
-            <Text className="text-xl font-semibold text-slate-900 text-center mb-8">
-              Как это работает
-            </Text>
-
-            {/* For clients */}
-            <View className="mb-8">
-              <View className="flex-row items-center mb-4">
-                <View className="w-7 h-7 rounded-full bg-blue-900/10 items-center justify-center mr-2">
-                  <User size={13} color={colors.primary} />
-                </View>
-                <Text className="text-base font-semibold text-slate-900">
-                  Для клиентов
-                </Text>
-              </View>
-              <View className={isDesktop ? "flex-row gap-4" : ""}>
-                {CLIENT_STEPS.map((s) => (
-                  <View
-                    key={s.number}
-                    className={`items-center ${isDesktop ? "flex-1" : "mb-5"}`}
+                {/* CTAs */}
+                <View
+                  className="mt-8"
+                  style={{
+                    flexDirection: isDesktop ? "row" : "column",
+                    gap: 16,
+                  }}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Создать заявку бесплатно"
+                    onPress={() => router.push("/auth/email" as never)}
+                    className="rounded-xl h-12 items-center justify-center px-7"
+                    style={{ backgroundColor: "#b45309" }}
                   >
-                    <View className="w-10 h-10 rounded-full bg-blue-900 items-center justify-center mb-3">
-                      <Text className="text-white font-bold text-base">{s.number}</Text>
-                    </View>
-                    <Text className="text-sm font-semibold text-slate-900 text-center mb-1">
-                      {s.title}
+                    <Text className="text-white font-semibold text-base">
+                      Создать заявку бесплатно →
                     </Text>
-                    <Text className="text-sm text-slate-500 text-center leading-5">
-                      {s.description}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* Divider */}
-            <View className="border-t border-slate-100 mb-8" />
-
-            {/* For specialists */}
-            <View>
-              <View className="flex-row items-center mb-4">
-                <View className="w-7 h-7 rounded-full bg-amber-700/10 items-center justify-center mr-2">
-                  <Briefcase size={13} color={colors.accent} />
-                </View>
-                <Text className="text-base font-semibold text-slate-900">
-                  Для специалистов
-                </Text>
-              </View>
-              <View className={isDesktop ? "flex-row gap-4" : ""}>
-                {SPECIALIST_STEPS.map((s) => (
-                  <View
-                    key={s.number}
-                    className={`items-center ${isDesktop ? "flex-1" : "mb-5"}`}
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Смотреть каталог"
+                    onPress={() => router.push("/specialists" as never)}
+                    className="rounded-xl h-12 items-center justify-center px-7"
+                    style={{ borderWidth: 2, borderColor: "#1e3a8a" }}
                   >
-                    <View className="w-10 h-10 rounded-full bg-amber-700 items-center justify-center mb-3">
-                      <Text className="text-white font-bold text-base">{s.number}</Text>
-                    </View>
-                    <Text className="text-sm font-semibold text-slate-900 text-center mb-1">
-                      {s.title}
-                    </Text>
-                    <Text className="text-sm text-slate-500 text-center leading-5">
-                      {s.description}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* ─── FEATURED SPECIALISTS ─── */}
-        {featured.length > 0 && (
-          <View className="py-10 px-4 bg-slate-50">
-            <View style={containerStyle}>
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-xl font-semibold text-slate-900">
-                  Специалисты
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Все специалисты"
-                  onPress={() => router.push("/specialists" as never)}
-                >
-                  <Text className="text-sm font-medium text-blue-900">
-                    Все →
-                  </Text>
-                </Pressable>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {featured.map((s) => (
-                  <SpecialistCard
-                    key={s.id}
-                    id={s.id}
-                    firstName={s.firstName}
-                    lastName={s.lastName}
-                    avatarUrl={s.avatarUrl}
-                    services={s.services}
-                    cities={s.cities}
-                    onPress={handleSpecialistPress}
-                    horizontal
-                  />
-                ))}
-              </ScrollView>
-            </View>
-          </View>
-        )}
-
-        {/* ─── RECENT REQUESTS ─── */}
-        {recentRequests.length > 0 && (
-          <View className="py-10 px-4 bg-white">
-            <View style={containerStyle}>
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-xl font-semibold text-slate-900">
-                  Свежие заявки
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Все заявки"
-                  onPress={() => router.push("/requests" as never)}
-                >
-                  <Text className="text-sm font-medium text-blue-900">
-                    Все →
-                  </Text>
-                </Pressable>
-              </View>
-              {recentRequests.map((r) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={r.id}
-                  accessibilityLabel={r.title || "Заявка"}
-                  onPress={() => router.push(`/requests/${r.id}` as never)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-3"
-                  style={({ pressed }) =>
-                    pressed ? { opacity: 0.85 } : undefined
-                  }
-                >
-                  <View className="flex-row items-start justify-between mb-2">
                     <Text
-                      className="text-base font-semibold text-slate-900 flex-1 mr-2"
-                      numberOfLines={1}
+                      className="font-semibold text-base"
+                      style={{ color: "#1e3a8a" }}
                     >
-                      {r.title || r.city.name}
+                      Смотреть каталог
                     </Text>
-                    <StatusBadge status={r.status} />
-                  </View>
-                  <Text
-                    className="text-sm text-slate-500 leading-5 mb-2"
-                    numberOfLines={2}
-                  >
-                    {r.description}
-                  </Text>
-                  <View className="flex-row items-center gap-3">
-                    <View className="flex-row items-center gap-1">
-                      <MapPin size={11} color={colors.placeholder} />
-                      <Text className="text-xs text-slate-400">{r.city.name}</Text>
-                    </View>
-                    {r.threadsCount > 0 && (
-                      <View className="flex-row items-center gap-1">
-                        <MessageCircle size={11} color={colors.placeholder} />
-                        <Text className="text-xs text-slate-400">
-                          {r.threadsCount}
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Mock specialist cards (desktop only) */}
+              {isDesktop && (
+                <View style={{ flex: 1, maxWidth: 400 }}>
+                  {MOCK_SPECIALISTS.map((s) => (
+                    <View
+                      key={s.name}
+                      className="flex-row items-center p-4 rounded-2xl mb-4"
+                      style={{
+                        backgroundColor: "#F8FAFC",
+                        borderWidth: 1,
+                        borderColor: "#e2e8f0",
+                        gap: 16,
+                      }}
+                    >
+                      {/* Avatar */}
+                      <View
+                        className="w-12 h-12 rounded-full items-center justify-center"
+                        style={{ backgroundColor: "rgba(30,58,138,0.1)" }}
+                      >
+                        <Text
+                          className="font-extrabold text-base"
+                          style={{ color: "#1e3a8a" }}
+                        >
+                          {s.name.charAt(0)}
                         </Text>
                       </View>
-                    )}
-                  </View>
-                </Pressable>
-              ))}
+                      {/* Info */}
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          className="font-semibold"
+                          style={{ color: "#0f172a" }}
+                        >
+                          {s.name}
+                        </Text>
+                        <View className="flex-row items-center mt-1" style={{ gap: 4 }}>
+                          <Text style={{ color: "#d97706" }}>
+                            {"\u2605"}
+                          </Text>
+                          <Text
+                            className="text-sm"
+                            style={{ color: "#64748B" }}
+                          >
+                            {s.rating}
+                          </Text>
+                        </View>
+                      </View>
+                      {/* Tag */}
+                      <View
+                        className="rounded-full px-3"
+                        style={{
+                          backgroundColor: "rgba(30,58,138,0.1)",
+                          paddingVertical: 6,
+                        }}
+                      >
+                        <Text
+                          className="text-xs font-medium"
+                          style={{ color: "#1e3a8a" }}
+                        >
+                          {s.tag}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* ─── STATS STRIP ─── */}
+        {stats && (
+          <View className="bg-slate-900 py-8 px-4">
+            <View style={{ width: "100%", alignItems: "center" }}>
+              <View
+                className="flex-row justify-around"
+                style={{
+                  width: "100%",
+                  maxWidth: 900,
+                  paddingHorizontal: isDesktop ? 24 : 0,
+                }}
+              >
+                <View className="items-center">
+                  <Text className="text-2xl font-bold text-white">
+                    {stats.specialistsCount}+
+                  </Text>
+                  <Text className="text-xs text-slate-400 mt-1 text-center">
+                    специалистов
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    width: 1,
+                    backgroundColor: colors.textMuted,
+                    marginHorizontal: 8,
+                  }}
+                />
+                <View className="items-center">
+                  <Text className="text-2xl font-bold text-white">
+                    {stats.citiesCount}
+                  </Text>
+                  <Text className="text-xs text-slate-400 mt-1 text-center">
+                    городов
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    width: 1,
+                    backgroundColor: colors.textMuted,
+                    marginHorizontal: 8,
+                  }}
+                />
+                <View className="items-center">
+                  <Text className="text-2xl font-bold text-white">
+                    {stats.consultationsCount}+
+                  </Text>
+                  <Text className="text-xs text-slate-400 mt-1 text-center">
+                    консультаций
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
         )}
 
-        {/* ─── CTA SECTION ─── */}
-        <View className="py-12 px-4 bg-blue-900">
-          <View style={containerStyle}>
-            <Text className="text-xl font-bold text-white text-center mb-2">
-              Готовы начать?
-            </Text>
-            <Text className="text-sm text-blue-200 text-center mb-6 leading-5">
-              Разместите заявку бесплатно и получите отклики от специалистов
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Разместить заявку бесплатно"
-              onPress={() => router.push("/auth/email" as never)}
-              className="bg-amber-700 rounded-xl h-12 items-center justify-center"
-              style={isDesktop ? { maxWidth: 280, alignSelf: "center" } : undefined}
+        {/* ─── PROBLEM SECTION ─── */}
+        <View
+          className="bg-slate-100 px-4"
+          style={{ paddingTop: isDesktop ? 96 : 64, paddingBottom: isDesktop ? 96 : 64 }}
+        >
+          <View style={{ width: "100%", alignItems: "center" }}>
+            <View
+              style={{
+                width: "100%",
+                maxWidth: 1152,
+                paddingHorizontal: isDesktop ? 24 : 0,
+              }}
             >
-              <Text className="text-white font-semibold text-base">
-                Разместить заявку бесплатно
+              <Text
+                className="font-extrabold text-3xl text-center mb-12"
+                style={{ color: "#0f172a" }}
+              >
+                С чем приходят на P2PTax
               </Text>
-            </Pressable>
-            <Text className="text-xs text-blue-200/70 text-center mt-4 leading-4">
-              Сервис бесплатный. Без комиссий и скрытых платежей.
-            </Text>
+              <View
+                style={{
+                  flexDirection: isDesktop ? "row" : "column",
+                  gap: isDesktop ? 24 : 0,
+                }}
+              >
+                {PROBLEMS.map((p) => (
+                  <View
+                    key={p.title}
+                    className="bg-white rounded-2xl p-6"
+                    style={[
+                      {
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      },
+                      isDesktop ? { flex: 1 } : { marginBottom: 16 },
+                    ]}
+                  >
+                    <Text className="text-3xl mb-4">{p.icon}</Text>
+                    <Text
+                      className="text-lg font-bold mb-2"
+                      style={{ color: "#0f172a" }}
+                    >
+                      {p.title}
+                    </Text>
+                    <Text style={{ color: "#64748B", lineHeight: 24 }}>
+                      {p.text}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
           </View>
         </View>
 
+        {/* ─── SOLUTION SECTION ─── */}
+        <View
+          className="bg-white px-4"
+          style={{ paddingTop: isDesktop ? 96 : 64, paddingBottom: isDesktop ? 96 : 64 }}
+        >
+          <View style={{ width: "100%", alignItems: "center" }}>
+            <View
+              style={{
+                width: "100%",
+                maxWidth: 672,
+                paddingHorizontal: isDesktop ? 24 : 0,
+              }}
+            >
+              <Text
+                className="text-sm font-semibold uppercase text-center mb-3"
+                style={{ color: "#b45309", letterSpacing: 4 }}
+              >
+                Почему P2PTax
+              </Text>
+              <Text
+                className="font-extrabold text-3xl text-center"
+                style={{ color: "#0f172a" }}
+              >
+                Большинство юристов дадут консультацию. Нужные люди — решат.
+              </Text>
+              <Text
+                className="text-lg text-center mt-6"
+                style={{ color: "#64748B", lineHeight: 28 }}
+              >
+                P2PTax — маркетплейс специалистов по налоговым проверкам.
+                Практики, которые работают с конкретными ФНС в вашем городе.
+              </Text>
+
+              {/* Steps */}
+              <View
+                className="mt-12"
+                style={{
+                  flexDirection: isDesktop ? "row" : "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: isDesktop ? 48 : 32,
+                }}
+              >
+                {STEPS.map((s) => (
+                  <View key={s.num} className="items-center">
+                    <View
+                      className="w-12 h-12 rounded-full items-center justify-center"
+                      style={{ backgroundColor: "#1e3a8a" }}
+                    >
+                      <Text className="text-white font-bold text-base">
+                        {s.num}
+                      </Text>
+                    </View>
+                    <Text
+                      className="font-semibold mt-3 text-center"
+                      style={{ color: "#0f172a" }}
+                    >
+                      {s.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ─── FEATURES SECTION ─── */}
+        <View
+          className="px-4"
+          style={{
+            backgroundColor: "#1e3a8a",
+            paddingTop: isDesktop ? 96 : 64,
+            paddingBottom: isDesktop ? 96 : 64,
+          }}
+        >
+          <View style={{ width: "100%", alignItems: "center" }}>
+            <View
+              style={{
+                width: "100%",
+                maxWidth: 1152,
+                paddingHorizontal: isDesktop ? 24 : 0,
+              }}
+            >
+              <Text className="text-white font-extrabold text-3xl text-center mb-12">
+                Как это работает
+              </Text>
+              <View
+                style={{
+                  flexDirection: isDesktop ? "row" : "column",
+                  flexWrap: "wrap",
+                  gap: isDesktop ? 24 : 16,
+                }}
+              >
+                {FEATURES.map((f) => (
+                  <View
+                    key={f.title}
+                    className="rounded-2xl p-6"
+                    style={[
+                      { backgroundColor: "rgba(255,255,255,0.1)" },
+                      isDesktop
+                        ? { width: "48%" as unknown as number }
+                        : { width: "100%" as unknown as number },
+                    ]}
+                  >
+                    <Text className="text-3xl mb-4">{f.icon}</Text>
+                    <Text className="text-white font-bold text-lg mb-2">
+                      {f.title}
+                    </Text>
+                    <Text style={{ color: "rgba(255,255,255,0.7)" }}>
+                      {f.text}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ─── CTA SECTION ─── */}
+        <View
+          className="px-4"
+          style={{
+            backgroundColor: "#b45309",
+            paddingTop: isDesktop ? 96 : 64,
+            paddingBottom: isDesktop ? 96 : 64,
+          }}
+        >
+          <View style={{ width: "100%", alignItems: "center" }}>
+            <View
+              style={{
+                width: "100%",
+                maxWidth: 672,
+                paddingHorizontal: isDesktop ? 24 : 0,
+              }}
+            >
+              <Text className="text-white font-extrabold text-3xl text-center">
+                Уже пришло уведомление?
+              </Text>
+              <Text
+                className="text-lg text-center mt-4"
+                style={{ color: "rgba(255,255,255,0.8)", lineHeight: 28 }}
+              >
+                Создайте заявку — это займёт 3 минуты. Специалисты напишут сами.
+              </Text>
+              <View
+                className="mt-8"
+                style={{
+                  flexDirection: isDesktop ? "row" : "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 16,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Создать заявку"
+                  onPress={() => router.push("/auth/email" as never)}
+                  className="bg-white rounded-xl h-12 items-center justify-center px-7"
+                >
+                  <Text
+                    className="font-semibold text-base"
+                    style={{ color: "#1e3a8a" }}
+                  >
+                    Создать заявку →
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Смотреть специалистов"
+                  onPress={() => router.push("/specialists" as never)}
+                  className="h-12 items-center justify-center"
+                >
+                  <Text
+                    className="text-base font-semibold"
+                    style={{ color: "rgba(255,255,255,0.8)" }}
+                  >
+                    Смотреть специалистов
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ─── FOOTER ─── */}
+        <View
+          className="px-4"
+          style={{ backgroundColor: "#1e3a8a", paddingTop: 48, paddingBottom: 48 }}
+        >
+          <View style={{ width: "100%", alignItems: "center" }}>
+            <View
+              style={{
+                width: "100%",
+                maxWidth: 1152,
+                paddingHorizontal: isDesktop ? 24 : 0,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: isDesktop ? "row" : "column",
+                  justifyContent: isDesktop ? "space-between" : "center",
+                  alignItems: "center",
+                  gap: isDesktop ? 0 : 24,
+                }}
+              >
+                <Text className="text-white font-extrabold text-lg">
+                  P2PTax
+                </Text>
+                <View
+                  className="flex-row items-center"
+                  style={{ gap: 24 }}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="О сервисе"
+                    onPress={() => router.push("/" as never)}
+                    className="min-h-[44px] justify-center"
+                  >
+                    <Text style={{ color: "rgba(255,255,255,0.7)" }}>
+                      О сервисе
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Специалисты"
+                    onPress={() => router.push("/specialists" as never)}
+                    className="min-h-[44px] justify-center"
+                  >
+                    <Text style={{ color: "rgba(255,255,255,0.7)" }}>
+                      Специалисты
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Создать заявку"
+                    onPress={() => router.push("/auth/email" as never)}
+                    className="min-h-[44px] justify-center"
+                  >
+                    <Text style={{ color: "rgba(255,255,255,0.7)" }}>
+                      Создать заявку
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Divider */}
+              <View
+                className="mt-8"
+                style={{
+                  borderTopWidth: 1,
+                  borderTopColor: "rgba(255,255,255,0.1)",
+                  paddingTop: 24,
+                }}
+              >
+                <Text
+                  className="text-sm text-center"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  © 2026 P2PTax
+                </Text>
+                <Text
+                  className="text-xs text-center mt-2"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                >
+                  Сервис не оказывает юридических услуг.
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
