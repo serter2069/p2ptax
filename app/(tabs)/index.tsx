@@ -74,6 +74,11 @@ export default function HomeScreen() {
         numColumns={2}
         keyExtractor={(item) => item.id}
         contentContainerClassName="px-2 pb-4"
+        ListEmptyComponent={
+          <View className="flex-1 items-center justify-center py-20">
+            <Text className="text-base text-slate-400">Нет объявлений</Text>
+          </View>
+        }
         ListHeaderComponent={
           <View>
             {/* Header */}

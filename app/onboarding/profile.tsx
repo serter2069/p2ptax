@@ -167,7 +167,7 @@ export default function OnboardingProfileScreen() {
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ paddingTop: "6%" }}>
+          <View className="pt-6">
             {/* Step indicator */}
             <Text className="text-sm text-amber-700 text-center mb-2">
               Шаг 3 из 3

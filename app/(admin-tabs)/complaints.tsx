@@ -286,34 +286,36 @@ export default function AdminComplaints() {
           onRetry={() => fetchComplaints(filter, 1)}
         />
       ) : (
-        <FlatList
-          data={complaints}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ flexGrow: 1 }}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.3}
-          ListEmptyComponent={
-            <EmptyState
-              icon={Flag}
-              title="Жалоб нет"
-              subtitle={
-                filter === "NEW"
-                  ? "Нет новых жалоб"
-                  : filter === "REVIEWED"
-                  ? "Нет рассмотренных жалоб"
-                  : "Жалобы пользователей появятся здесь"
-              }
-            />
-          }
-          ListFooterComponent={
-            loadingMore ? (
-              <View className="py-4 items-center">
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : null
-          }
-        />
+        <ResponsiveContainer>
+          <FlatList
+            data={complaints}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={{ flexGrow: 1 }}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.3}
+            ListEmptyComponent={
+              <EmptyState
+                icon={Flag}
+                title="Жалоб нет"
+                subtitle={
+                  filter === "NEW"
+                    ? "Нет новых жалоб"
+                    : filter === "REVIEWED"
+                    ? "Нет рассмотренных жалоб"
+                    : "Жалобы пользователей появятся здесь"
+                }
+              />
+            }
+            ListFooterComponent={
+              loadingMore ? (
+                <View className="py-4 items-center">
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : null
+            }
+          />
+        </ResponsiveContainer>
       )}
     </SafeAreaView>
   );

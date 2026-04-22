@@ -281,7 +281,7 @@ export default function AuthOtpScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <ResponsiveContainer>
-            <View className="flex-1" style={{ paddingTop: "12%" }}>
+            <View className="flex-1" style={{ paddingTop: 48 }}>
               <Text className="text-base text-slate-900 text-center mb-1">
                 Код отправлен на
               </Text>

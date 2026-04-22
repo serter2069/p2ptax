@@ -11,10 +11,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
-import { AlertCircle, UserX } from "lucide-react-native";
+import { AlertCircle, UserX, ChevronLeft, Search } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
@@ -191,7 +190,7 @@ export default function SpecialistsCatalog() {
         {/* Page header */}
         <View className="bg-white px-4 pt-4 pb-2">
           <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-            <FontAwesome name="chevron-left" size={16} color="#1e3a8a" />
+            <ChevronLeft size={16} color="#1e3a8a" />
           </Pressable>
           <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
         </View>
@@ -211,7 +210,7 @@ export default function SpecialistsCatalog() {
       <SafeAreaView className="flex-1 bg-white">
         <View className="bg-white px-4 pt-4 pb-2">
           <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-            <FontAwesome name="chevron-left" size={16} color="#1e3a8a" />
+            <ChevronLeft size={16} color="#1e3a8a" />
           </Pressable>
           <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
         </View>
@@ -234,7 +233,7 @@ export default function SpecialistsCatalog() {
       {/* Page header */}
       <View className="bg-white px-4 pt-4 pb-2">
         <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-          <FontAwesome name="chevron-left" size={16} color="#1e3a8a" />
+          <ChevronLeft size={16} color="#1e3a8a" />
         </Pressable>
         <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
         <Text className="text-sm mt-1 mb-3" style={{ color: "#64748B" }}>
@@ -244,7 +243,7 @@ export default function SpecialistsCatalog() {
 
       {/* Search bar */}
       <View className="flex-row items-center bg-white border border-slate-200 rounded-xl mx-4 mb-3 px-4 min-h-[48px]">
-        <FontAwesome name="search" size={14} color="#94a3b8" style={{ marginRight: 8 }} />
+        <Search size={14} color="#94a3b8" style={{ marginRight: 8 }} />
         <TextInput
           value={search}
           onChangeText={setSearch}

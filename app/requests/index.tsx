@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Pressable,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -54,6 +55,8 @@ const LIMIT = 20;
 
 export default function PublicRequestsFeed() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -233,7 +236,14 @@ export default function PublicRequestsFeed() {
           <FlatList
             data={requests}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 }}
+            contentContainerStyle={{
+              paddingHorizontal: isDesktop ? 24 : 16,
+              paddingTop: 12,
+              paddingBottom: 24,
+              maxWidth: isDesktop ? 720 : undefined,
+              alignSelf: isDesktop ? "center" as const : undefined,
+              width: "100%" as const,
+            }}
             renderItem={({ item }) => (
               <RequestCard
                 id={item.id}

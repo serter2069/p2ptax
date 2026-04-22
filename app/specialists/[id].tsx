@@ -9,7 +9,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Head from "expo-router/head";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import {
+  AlertCircle, Pencil, Phone, Mail, Send, MessageCircle,
+  ExternalLink, Globe, ChevronRight, MapPin, Clock, type LucideIcon,
+} from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import SpecialistCard from "@/components/SpecialistCard";
@@ -73,13 +76,13 @@ function getContactUrl(type: string, value: string): string | null {
   }
 }
 
-const CONTACT_TYPE_CONFIG: Record<string, { label: string; icon: string; bg: string; color: string }> = {
-  phone: { label: "Телефон", icon: "phone", bg: "#eff6ff", color: colors.primary },
-  email: { label: "Email", icon: "envelope", bg: "#f0fdf4", color: "#166534" },
-  telegram: { label: "Telegram", icon: "paper-plane", bg: "#f0f9ff", color: "#0284c7" },
-  whatsapp: { label: "WhatsApp", icon: "whatsapp", bg: "#f0fdf4", color: "#059669" },
-  vk: { label: "ВКонтакте", icon: "vk", bg: "#eff6ff", color: "#2563eb" },
-  website: { label: "Сайт", icon: "globe", bg: "#fafaf9", color: "#57534e" },
+const CONTACT_TYPE_CONFIG: Record<string, { label: string; Icon: LucideIcon; bg: string; color: string }> = {
+  phone: { label: "Телефон", Icon: Phone, bg: "#eff6ff", color: colors.primary },
+  email: { label: "Email", Icon: Mail, bg: "#f0fdf4", color: "#166534" },
+  telegram: { label: "Telegram", Icon: Send, bg: "#f0f9ff", color: "#0284c7" },
+  whatsapp: { label: "WhatsApp", Icon: MessageCircle, bg: "#f0fdf4", color: "#059669" },
+  vk: { label: "ВКонтакте", Icon: ExternalLink, bg: "#eff6ff", color: "#2563eb" },
+  website: { label: "Сайт", Icon: Globe, bg: "#fafaf9", color: "#57534e" },
 };
 
 interface SimilarSpecialist {
@@ -166,7 +169,7 @@ export default function SpecialistPublicProfile() {
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Профиль специалиста" />
         <View className="flex-1 items-center justify-center px-6">
-          <FontAwesome name="exclamation-circle" size={48} color={colors.placeholder} />
+          <AlertCircle size={48} color={colors.placeholder} />
           <Text className="text-xl font-semibold mt-4 text-center" style={{ color: "#0f172a" }}>
             Специалист не найден
           </Text>
@@ -208,7 +211,7 @@ export default function SpecialistPublicProfile() {
       accessibilityLabel="Редактировать профиль"
       onPress={() => router.push("/settings" as never)}
     >
-      <FontAwesome name="pencil" size={16} color={colors.text} />
+      <Pencil size={16} color={colors.text} />
     </Pressable>
   ) : undefined;
 
@@ -381,7 +384,7 @@ export default function SpecialistPublicProfile() {
                 {contacts.map((contact, index) => {
                   const cfg = CONTACT_TYPE_CONFIG[contact.type] || {
                     label: contact.type,
-                    icon: "link",
+                    Icon: ExternalLink,
                     bg: colors.background,
                     color: colors.textSecondary,
                   };
@@ -404,7 +407,7 @@ export default function SpecialistPublicProfile() {
                           className="w-8 h-8 rounded-full items-center justify-center mr-3"
                           style={{ backgroundColor: cfg.bg }}
                         >
-                          <FontAwesome name={cfg.icon as never} size={14} color={cfg.color} />
+                          <cfg.Icon size={14} color={cfg.color} />
                         </View>
                         <View className="flex-1">
                           <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>{cfg.label}</Text>
@@ -412,7 +415,7 @@ export default function SpecialistPublicProfile() {
                             {contact.value}
                           </Text>
                         </View>
-                        <FontAwesome name="chevron-right" size={12} color={colors.borderLight} />
+                        <ChevronRight size={12} color={colors.borderLight} />
                       </Pressable>
                     );
                   }
@@ -425,7 +428,7 @@ export default function SpecialistPublicProfile() {
                         className="w-8 h-8 rounded-full items-center justify-center mr-3"
                         style={{ backgroundColor: cfg.bg }}
                       >
-                        <FontAwesome name={cfg.icon as never} size={14} color={cfg.color} />
+                        <cfg.Icon size={14} color={cfg.color} />
                       </View>
                       <View className="flex-1">
                         <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>{cfg.label}</Text>
@@ -438,7 +441,7 @@ export default function SpecialistPublicProfile() {
                 {specialist.profile?.officeAddress && (
                   <View className={`flex-row items-start py-2.5 ${specialist.profile?.workingHours ? "border-b border-slate-100" : ""}`}>
                     <View className="w-8 h-8 rounded-full items-center justify-center mr-3" style={{ backgroundColor: "#f1f5f9" }}>
-                      <FontAwesome name="map-marker" size={14} color={colors.textSecondary} />
+                      <MapPin size={14} color={colors.textSecondary} />
                     </View>
                     <View className="flex-1">
                       <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>Адрес офиса</Text>
@@ -452,7 +455,7 @@ export default function SpecialistPublicProfile() {
                 {specialist.profile?.workingHours && (
                   <View className="flex-row items-center py-2.5">
                     <View className="w-8 h-8 rounded-full items-center justify-center mr-3" style={{ backgroundColor: "#f1f5f9" }}>
-                      <FontAwesome name="clock-o" size={14} color={colors.textSecondary} />
+                      <Clock size={14} color={colors.textSecondary} />
                     </View>
                     <View className="flex-1">
                       <Text className="text-xs mb-0.5" style={{ color: "#94a3b8" }}>Часы работы</Text>
