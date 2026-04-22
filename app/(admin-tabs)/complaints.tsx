@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -68,6 +69,8 @@ function formatDate(dateStr: string): string {
 
 export default function AdminComplaints() {
   const { token } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -267,28 +270,37 @@ export default function AdminComplaints() {
       </View>
 
       {/* Filter tabs */}
-      <View className="bg-white border-b border-border px-4 py-2.5 flex-row gap-2">
-        {FILTER_OPTIONS.map((opt) => (
-          <Pressable
-            accessibilityRole="button"
-            key={opt.key}
-            accessibilityLabel={opt.label}
-            onPress={() => setFilter(opt.key)}
-            className={`px-3 py-1.5 rounded-full border min-h-[44px] justify-center ${
-              filter === opt.key
-                ? "bg-accent border-accent"
-                : "bg-surface2 border-border"
-            }`}
-          >
-            <Text
-              className={`text-sm ${
-                filter === opt.key ? "text-white font-medium" : "text-text-mute"
+      <View className="bg-white border-b border-border py-2.5">
+        <View style={{
+          maxWidth: isDesktop ? 680 : undefined,
+          alignSelf: 'center',
+          width: '100%',
+          paddingHorizontal: isDesktop ? 24 : 16,
+          flexDirection: 'row',
+          gap: 8,
+        }}>
+          {FILTER_OPTIONS.map((opt) => (
+            <Pressable
+              accessibilityRole="button"
+              key={opt.key}
+              accessibilityLabel={opt.label}
+              onPress={() => setFilter(opt.key)}
+              className={`px-3 py-1.5 rounded-full border min-h-[44px] justify-center ${
+                filter === opt.key
+                  ? "bg-accent border-accent"
+                  : "bg-surface2 border-border"
               }`}
             >
-              {opt.label}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                className={`text-sm ${
+                  filter === opt.key ? "text-white font-medium" : "text-text-mute"
+                }`}
+              >
+                {opt.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       {loading ? (

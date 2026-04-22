@@ -6,6 +6,7 @@ import {
   RefreshControl,
   Pressable,
   Switch,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -120,6 +121,9 @@ export default function SpecialistDashboard() {
     },
     [updateUser]
   );
+
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   const firstName = user?.firstName ?? "специалист";
 
@@ -271,18 +275,21 @@ export default function SpecialistDashboard() {
                 onAction={() => router.push("/settings/specialist" as never)}
               />
             ) : (
-              requests.map((item) => (
-                <RequestCard
-                  key={item.id}
-                  item={item}
-                  onWrite={() => router.push(`/requests/${item.id}/write` as never)}
-                  onOpenThread={() => {
-                    const tid = item.threadId ?? item.existingThreadId ?? null;
-                    if (tid) router.push(`/threads/${tid}` as never);
-                  }}
-                  onPress={() => router.push(`/requests/${item.id}` as never)}
-                />
-              ))
+              <View style={isDesktop ? { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginHorizontal: -6 } : undefined}>
+                {requests.map((item) => (
+                  <View key={item.id} style={isDesktop ? { width: '47%', marginHorizontal: 6 } : undefined}>
+                    <RequestCard
+                      item={item}
+                      onWrite={() => router.push(`/requests/${item.id}/write` as never)}
+                      onOpenThread={() => {
+                        const tid = item.threadId ?? item.existingThreadId ?? null;
+                        if (tid) router.push(`/threads/${tid}` as never);
+                      }}
+                      onPress={() => router.push(`/requests/${item.id}` as never)}
+                    />
+                  </View>
+                ))}
+              </View>
             )}
 
             <View className="h-8" />
@@ -314,7 +321,7 @@ function RequestCard({
       className="bg-white border border-border rounded-xl p-4 mb-3 min-h-[44px]"
       style={({ pressed }) => ({
         opacity: pressed ? 0.92 : 1,
-        shadowColor: '#0b1424',
+        shadowColor: colors.text,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 6,
