@@ -42,7 +42,7 @@ export default function SpecialistCard({
         accessibilityRole="button"
         accessibilityLabel={name}
         onPress={() => onPress(id)}
-        className="bg-white border border-slate-200 rounded-xl p-4 mr-3"
+        className="bg-white border border-border rounded-xl p-4 mr-3"
         style={({ pressed }) => [{ width: 200 }, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
       >
         <View className="w-12 h-12 rounded-full items-center justify-center mb-2" style={{ backgroundColor: "#2256c2" }}>
@@ -76,7 +76,7 @@ export default function SpecialistCard({
       accessibilityRole="button"
       accessibilityLabel={name}
       onPress={() => onPress(id)}
-      className="bg-white border border-slate-200 rounded-2xl p-4 mb-3"
+      className="bg-white border border-border rounded-2xl p-4 mb-3"
       style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
     >
       {/* Avatar */}

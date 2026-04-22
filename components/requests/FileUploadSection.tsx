@@ -117,17 +117,17 @@ export default function FileUploadSection({
             : <FileImage size={18} color={file.error ? colors.error : colors.primary} />
           }
           <View className="flex-1 mx-2">
-            <Text className="text-sm text-slate-900" numberOfLines={1}>
+            <Text className="text-sm text-text-base" numberOfLines={1}>
               {file.name}
             </Text>
             {file.uploading && (
-              <Text className="text-xs text-slate-400">Загрузка...</Text>
+              <Text className="text-xs text-text-mute">Загрузка...</Text>
             )}
             {file.error && (
-              <Text className="text-xs text-red-600">{file.error}</Text>
+              <Text className="text-xs text-danger">{file.error}</Text>
             )}
             {file.uploadedUrl && !file.uploading && (
-              <Text className="text-xs text-emerald-600">Загружен</Text>
+              <Text className="text-xs text-success">Загружен</Text>
             )}
           </View>
           {file.uploading ? (
@@ -150,10 +150,10 @@ export default function FileUploadSection({
           accessibilityRole="button"
           accessibilityLabel="Прикрепить файл"
           onPress={handleAddFilePress}
-          className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl active:bg-slate-50"
+          className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl active:bg-surface2"
         >
           <Plus size={13} color={colors.accent} />
-          <Text className="text-sm text-amber-700 ml-2 font-medium">
+          <Text className="text-sm text-warning ml-2 font-medium">
             + Прикрепить файл
           </Text>
         </Pressable>

@@ -231,16 +231,16 @@ function ThreadCard({
       accessibilityRole="button"
       accessibilityLabel={`Чат с ${name}`}
       onPress={onPress}
-      className="flex-row items-center py-3 border-b border-slate-100 active:bg-slate-50"
+      className="flex-row items-center py-3 border-b border-border active:bg-surface2"
       style={({ pressed }) => [pressed && { opacity: 0.7 }]}
     >
       {/* Avatar with unread badge */}
       <View className="relative mr-3">
-        <View className="w-12 h-12 rounded-full bg-blue-900 items-center justify-center">
+        <View className="w-12 h-12 rounded-full bg-accent items-center justify-center">
           <Text className="text-white text-base font-bold">{initials}</Text>
         </View>
         {hasUnread && (
-          <View className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-red-600 items-center justify-center px-1">
+          <View className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-danger items-center justify-center px-1">
             <Text className="text-[10px] font-bold text-white">
               {thread.unreadCount > 99 ? "99+" : thread.unreadCount}
             </Text>
@@ -254,8 +254,8 @@ function ThreadCard({
           <Text
             className={`flex-1 text-base ${
               hasUnread
-                ? "font-bold text-slate-900"
-                : "font-medium text-slate-900"
+                ? "font-bold text-text-base"
+                : "font-medium text-text-base"
             }`}
             numberOfLines={1}
           >

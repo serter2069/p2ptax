@@ -34,7 +34,7 @@ export default function SpecialistRecommendations({
 
   return (
     <View className="mb-4">
-      <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+      <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
         Рекомендованные специалисты
       </Text>
       {recommendations.map((spec) => {
@@ -64,12 +64,12 @@ export default function SpecialistRecommendations({
                 size="md"
               />
               <View className="ml-3 flex-1">
-                <Text className="text-base font-semibold text-slate-900">
+                <Text className="text-base font-semibold text-text-base">
                   {name}
                 </Text>
                 {spec.services.length > 0 && (
                   <Text
-                    className="text-xs text-slate-400 mt-0.5"
+                    className="text-xs text-text-mute mt-0.5"
                     numberOfLines={1}
                   >
                     {spec.services.join(", ")}
