@@ -91,7 +91,7 @@ function NotificationRow({
           {item.body}
         </Text>
       </View>
-      {!item.isRead && <View className="w-2 h-2 rounded-full bg-amber-700 mt-2 ml-2" />}
+      {!item.isRead && <View className="w-2 h-2 rounded-full bg-warning mt-2 ml-2" />}
     </Pressable>
   );
 }
@@ -174,16 +174,16 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pt-2 pb-3 border-b border-slate-50">
+      <View className="flex-row items-center justify-between px-4 pt-2 pb-3 border-b border-surface2">
         <View className="flex-row items-center">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
             <ArrowLeft size={18} color={colors.text} />
           </Pressable>
-          <Text className="text-2xl font-bold text-slate-900">Уведомления</Text>
+          <Text className="text-2xl font-bold text-text-base">Уведомления</Text>
         </View>
         {unreadCount > 0 && (
           <Pressable accessibilityRole="button" accessibilityLabel="Прочитать все" onPress={handleMarkAllRead} className="py-3 pl-3">
-            <Text className="text-sm text-blue-900 font-medium">Прочитать все</Text>
+            <Text className="text-sm text-accent font-medium">Прочитать все</Text>
           </Pressable>
         )}
       </View>
@@ -223,8 +223,8 @@ export default function NotificationsScreen() {
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center py-20">
                 <BellOff size={48} color={colors.placeholder} />
-                <Text className="text-base text-slate-400 mt-4">Нет уведомлений</Text>
-                <Text className="text-sm text-slate-300 mt-1">Здесь будут ваши уведомления</Text>
+                <Text className="text-base text-text-mute mt-4">Нет уведомлений</Text>
+                <Text className="text-sm text-text-mute mt-1">Здесь будут ваши уведомления</Text>
               </View>
             }
           />
