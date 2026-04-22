@@ -140,7 +140,7 @@ export default function SpecialistMyThreads() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 32 : 16, paddingHorizontal: 16 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 48 : 32, paddingHorizontal: 16 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
@@ -196,7 +196,7 @@ function FilterChip({
       className={`px-4 py-2 rounded-full border ${
         active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
-      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [{ minHeight: 44, justifyContent: "center" as const }, pressed && { opacity: 0.7 }]}
     >
       <Text
         className={`text-sm font-medium ${
@@ -250,10 +250,10 @@ function ThreadCard({
       className="flex-row items-center bg-white border border-border rounded-xl p-4 mb-3"
       style={({ pressed }) => [
         {
-          shadowColor: "#000",
+          shadowColor: colors.text,
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 6,
+          shadowOpacity: 0.09,
+          shadowRadius: 8,
           elevation: 3,
           borderLeftWidth: hasUnread ? 3 : 0,
           borderLeftColor: hasUnread ? colors.primary : "transparent",
@@ -271,7 +271,7 @@ function ThreadCard({
             className="absolute -top-0.5 -right-0.5 rounded-full bg-accent items-center justify-center"
             style={{ minWidth: 20, height: 20, paddingHorizontal: 4 }}
           >
-            <Text className="text-[10px] font-bold text-white">
+            <Text className="text-xs font-bold text-white">
               {thread.unreadCount > 99 ? "99+" : thread.unreadCount}
             </Text>
           </View>
@@ -291,7 +291,7 @@ function ThreadCard({
           </Text>
           {isClosed && (
             <View className="bg-accent-soft rounded-full px-2 py-0.5">
-              <Text className="text-[10px] font-medium text-accent">
+              <Text className="text-xs font-medium text-accent">
                 Закрыта
               </Text>
             </View>

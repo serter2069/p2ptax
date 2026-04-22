@@ -2,13 +2,14 @@ import { View, Text, Pressable, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { User } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 export default function OnboardingNameScreen() {
   const router = useRouter();
@@ -70,12 +71,22 @@ export default function OnboardingNameScreen() {
       <HeaderBack title="" />
       <ResponsiveContainer>
         <View className="flex-1 pt-8" style={{ paddingBottom: isDesktop ? 48 : 24 }}>
-          {/* Progress indicator */}
+          {/* Icon */}
+          <View className="items-center mb-5">
+            <View
+              className="rounded-full items-center justify-center"
+              style={{ width: 56, height: 56, backgroundColor: overlay.accent10 }}
+            >
+              <User size={28} color={colors.accent} />
+            </View>
+          </View>
+
+          {/* Progress bar */}
           <View className="mb-6">
             <View className="flex-row justify-center gap-2 mb-3">
-              <View className="h-1.5 w-8 rounded-full bg-accent" />
-              <View className="h-1.5 w-8 rounded-full bg-border" />
-              <View className="h-1.5 w-8 rounded-full bg-border" />
+              <View className="h-2 w-10 rounded-full bg-accent" />
+              <View className="h-2 w-10 rounded-full bg-border" />
+              <View className="h-2 w-10 rounded-full bg-border" />
             </View>
             <Text className="text-sm font-medium text-text-mute text-center">
               Шаг 1 из 3

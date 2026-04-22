@@ -20,6 +20,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
 import { api, apiPatch } from "@/lib/api";
+import { colors, overlay } from "@/lib/theme";
 
 interface RequestItem {
   id: string;
@@ -159,11 +160,11 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
           onPress={() => onPress(item.id)}
           className="bg-white border border-border rounded-2xl p-4"
           style={{
-            shadowColor: "#0b1424",
+            shadowColor: colors.text,
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.07,
-            shadowRadius: 5,
-            elevation: 2,
+            shadowOpacity: 0.09,
+            shadowRadius: 7,
+            elevation: 3,
             minHeight: 44,
           }}
         >
@@ -202,7 +203,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
 
           {/* Swipe hint for active cards (mobile only) */}
           {isActive && Platform.OS !== "web" && (
-            <Text className="text-[10px] text-text-mute mt-1 text-right">
+            <Text className="text-xs text-text-mute mt-1 text-right">
               ← смахните для закрытия
             </Text>
           )}
@@ -345,16 +346,18 @@ export default function MyRequests() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome />
       <ResponsiveContainer>
-        {/* Page title + create button row */}
-        <View className="flex-row items-center justify-between mt-4 mb-4">
-          <Text className="text-2xl font-bold text-text-base">Мои заявки</Text>
+        {/* Accent hero */}
+        <View className="rounded-2xl px-5 py-5 mb-5 mt-2" style={{ backgroundColor: colors.accent }}>
+          <Text className="text-xl font-bold text-white mb-0.5">Мои заявки</Text>
+          <Text className="text-sm mb-4" style={{ color: overlay.white75 }}>Управляйте своими обращениями к специалистам</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"
             onPress={() => router.push("/requests/new" as never)}
-            className="bg-accent rounded-xl px-4 py-2 flex-row items-center"
+            className="rounded-xl px-4 flex-row items-center self-start"
+            style={{ backgroundColor: overlay.white20, minHeight: 44, justifyContent: "center" }}
           >
-            <Text className="text-white font-semibold text-sm">+ Создать</Text>
+            <Text className="text-white font-semibold text-sm">+ Создать заявку</Text>
           </Pressable>
         </View>
 
