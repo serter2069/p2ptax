@@ -27,7 +27,16 @@ export default function ProfileScreen() {
       <ScrollView className="flex-1" contentContainerClassName="pb-10">
         <ResponsiveContainer>
           {/* Profile Header Card */}
-          <View className="bg-white mx-4 mt-6 rounded-2xl border border-border px-6 py-8 items-center mb-4">
+          <View
+            className="bg-white mx-4 mt-6 rounded-2xl border border-border px-6 py-8 items-center mb-4"
+            style={{
+              shadowColor: colors.text,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              elevation: 3,
+            }}
+          >
             {/* Avatar */}
             <View className="w-20 h-20 rounded-full bg-accent-soft items-center justify-center mb-3">
               <User size={32} color={colors.accent} />
@@ -36,11 +45,12 @@ export default function ProfileScreen() {
             <Text className="text-sm text-text-mute mt-1">john@example.com</Text>
 
             {/* Rating */}
-            <View className="flex-row items-center mt-2.5">
+            <Text className="text-sm font-medium text-text-mute mt-3 mb-1.5">Ваш рейтинг</Text>
+            <View className="flex-row items-center">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  size={14}
+                  size={16}
                   color={colors.warning}
                   fill={star <= 4 ? colors.warning : "none"}
                 />
@@ -70,7 +80,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Section label */}
-          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-2">
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-1 mt-4">
             Menu
           </Text>
 
@@ -84,17 +94,17 @@ export default function ProfileScreen() {
                   accessibilityRole="button"
                   key={item.id}
                   accessibilityLabel={item.label}
-                  className={`flex-row items-center px-4 py-3.5 min-h-[50px] active:bg-surface2${
+                  className={`flex-row items-center px-4 min-h-[52px] bg-white active:bg-surface2${
                     index < MENU_ITEMS.length - 1 ? " border-b border-border" : ""
                   }`}
                 >
-                  <View className="w-9 h-9 rounded-xl bg-accent-soft items-center justify-center">
+                  <View className="w-9 h-9 rounded-xl bg-accent-soft items-center justify-center mr-3">
                     <item.Icon size={17} color={colors.accent} />
                   </View>
-                  <Text className="flex-1 ml-3 text-base font-medium text-text-base">{item.label}</Text>
+                  <Text className="text-base font-medium text-text-base flex-1">{item.label}</Text>
                   {item.badge && (
-                    <View className="bg-accent-soft rounded-full px-2.5 py-0.5 mr-2">
-                      <Text className="text-xs font-semibold text-accent">{item.badge}</Text>
+                    <View className="bg-accent rounded-full px-2 py-0.5 mr-2">
+                      <Text className="text-xs text-white font-semibold">{item.badge}</Text>
                     </View>
                   )}
                   <ChevronRight size={16} color={colors.textMuted} />
@@ -104,22 +114,22 @@ export default function ProfileScreen() {
           </View>
 
           {/* Account section */}
-          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2">
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-1 mt-4">
             Account
           </Text>
 
           {/* Logout Card */}
-          <View className="bg-white mx-4 rounded-2xl border border-border overflow-hidden mb-4">
+          <View className="bg-white mx-4 rounded-2xl border-t border-border overflow-hidden mb-4">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Выйти"
               onPress={signOut}
-              className="flex-row items-center px-4 py-3.5 min-h-[50px] active:bg-danger-soft"
+              className="flex-row items-center px-4 min-h-[52px] active:bg-danger-soft"
             >
-              <View className="w-9 h-9 rounded-xl items-center justify-center" style={{ backgroundColor: colors.dangerSoft }}>
+              <View className="w-9 h-9 rounded-xl items-center justify-center mr-3 bg-danger-soft">
                 <LogOut size={17} color={colors.danger} />
               </View>
-              <Text className="flex-1 ml-3 text-base font-medium text-danger">Log out</Text>
+              <Text className="flex-1 text-base font-medium text-danger">Log out</Text>
             </Pressable>
           </View>
 
