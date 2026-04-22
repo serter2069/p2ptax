@@ -11,11 +11,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Pencil, Plus, LogOut } from "lucide-react-native";
+import { Pencil, Plus, LogOut, Tag } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import EmptyState from "@/components/ui/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiGet, apiPatch } from "@/lib/api";
@@ -300,14 +301,18 @@ export default function SpecialistSettings() {
                       {item.fns.code}
                     </Text>
                     <View className="flex-row flex-wrap gap-1 mt-1">
-                      {item.services.map((s) => (
-                        <View
-                          key={s.id}
-                          className="bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"
-                        >
-                          <Text className="text-xs text-accent">{s.name}</Text>
-                        </View>
-                      ))}
+                      {item.services.length === 0 ? (
+                        <EmptyState icon={Tag} title="Нет услуг" subtitle="Добавьте услуги для этой инспекции" />
+                      ) : (
+                        item.services.map((s) => (
+                          <View
+                            key={s.id}
+                            className="bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"
+                          >
+                            <Text className="text-xs text-accent">{s.name}</Text>
+                          </View>
+                        ))
+                      )}
                     </View>
                   </View>
                 ))}

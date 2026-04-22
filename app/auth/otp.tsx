@@ -11,11 +11,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Mail } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth, UserData } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 import { colors, radiusValue } from "@/lib/theme";
 
 const CODE_LENGTH = 6;
@@ -291,45 +293,49 @@ export default function AuthOtpScreen() {
 
               {/* 6 separate digit inputs */}
               <View className="flex-row justify-center gap-2 mb-4">
-                {digits.map((digit, i) => (
-                  <TextInput
-                    key={i}
-                    accessibilityLabel={`Цифра ${i + 1} кода подтверждения`}
-                    ref={(ref) => {
-                      inputRefs.current[i] = ref;
-                    }}
-                    style={{
-                      width: 48,
-                      height: 52,
-                      borderRadius: radiusValue.md,
-                      borderWidth: error ? 1.5 : 1,
-                      borderColor: error
-                        ? colors.error
-                        : digit
-                          ? colors.primary
-                          : colors.border,
-                      backgroundColor: error
-                        ? colors.errorBg
-                        : digit
-                          ? colors.accentSoft
-                          : colors.background,
-                      textAlign: "center",
-                      fontSize: 22,
-                      fontWeight: "700",
-                      color: error ? colors.error : colors.text,
-                      outlineWidth: 0,
-                    }}
-                    value={digit}
-                    onChangeText={(v) => handleDigitChange(i, v)}
-                    onKeyPress={({ nativeEvent }) =>
-                      handleKeyPress(i, nativeEvent.key)
-                    }
-                    keyboardType="number-pad"
-                    maxLength={CODE_LENGTH}
-                    editable={!isLoading}
-                    selectTextOnFocus
-                  />
-                ))}
+                {digits.length === 0 ? (
+                  <EmptyState icon={Mail} title="Код недоступен" subtitle="Не удалось инициализировать поля ввода" />
+                ) : (
+                  digits.map((digit, i) => (
+                    <TextInput
+                      key={i}
+                      accessibilityLabel={`Цифра ${i + 1} кода подтверждения`}
+                      ref={(ref) => {
+                        inputRefs.current[i] = ref;
+                      }}
+                      style={{
+                        width: 48,
+                        height: 52,
+                        borderRadius: radiusValue.md,
+                        borderWidth: error ? 1.5 : 1,
+                        borderColor: error
+                          ? colors.error
+                          : digit
+                            ? colors.primary
+                            : colors.border,
+                        backgroundColor: error
+                          ? colors.errorBg
+                          : digit
+                            ? colors.accentSoft
+                            : colors.background,
+                        textAlign: "center",
+                        fontSize: 22,
+                        fontWeight: "700",
+                        color: error ? colors.error : colors.text,
+                        outlineWidth: 0,
+                      }}
+                      value={digit}
+                      onChangeText={(v) => handleDigitChange(i, v)}
+                      onKeyPress={({ nativeEvent }) =>
+                        handleKeyPress(i, nativeEvent.key)
+                      }
+                      keyboardType="number-pad"
+                      maxLength={CODE_LENGTH}
+                      editable={!isLoading}
+                      selectTextOnFocus
+                    />
+                  ))
+                )}
               </View>
 
               {error ? (
