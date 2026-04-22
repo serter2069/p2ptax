@@ -1,4 +1,4 @@
-import { View, Text, Pressable, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -14,8 +14,6 @@ import { colors, overlay } from "@/lib/theme";
 export default function OnboardingNameScreen() {
   const router = useRouter();
   const { updateUser } = useAuth();
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -70,106 +68,114 @@ export default function OnboardingNameScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
       <ResponsiveContainer>
-        <View className="flex-1 pt-8" style={{ paddingBottom: isDesktop ? 48 : 24 }}>
-          {/* Icon */}
-          <View className="items-center mb-5">
-            <View
-              className="rounded-full items-center justify-center"
-              style={{ width: 56, height: 56, backgroundColor: overlay.accent10 }}
-            >
-              <User size={28} color={colors.accent} />
-            </View>
-          </View>
-
-          {/* Progress bar */}
-          <View className="mb-6">
-            <View className="flex-row justify-center gap-2 mb-3">
-              <View className="h-2 w-10 rounded-full bg-accent" />
-              <View className="h-2 w-10 rounded-full bg-border" />
-              <View className="h-2 w-10 rounded-full bg-border" />
-            </View>
-            <Text className="text-sm font-medium text-text-mute text-center">
-              Шаг 1 из 3
-            </Text>
-          </View>
-
-          <Text className="text-2xl font-bold text-text-base text-center mb-2">
-            Ваше имя
-          </Text>
-          <Text className="text-base text-text-mute text-center leading-6 mb-8">
-            Это имя увидят клиенты в вашем профиле
-          </Text>
-
-          <View className="mb-4">
-            <Input
-              label="Имя"
-              placeholder="Иван"
-              value={firstName}
-              onChangeText={setFirstName}
-              error={firstNameError}
-              editable={!isLoading}
-              autoCapitalize="words"
-            />
-          </View>
-
-          <View className="mb-6">
-            <Input
-              label="Фамилия"
-              placeholder="Петров"
-              value={lastName}
-              onChangeText={setLastName}
-              error={lastNameError}
-              editable={!isLoading}
-              autoCapitalize="words"
-            />
-          </View>
-
-          {/* Terms checkbox */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Принять условия использования"
-            onPress={() => setAgreed(!agreed)}
-            className="flex-row items-start mb-8"
+        <View className="flex-1">
+          <ScrollView
+            className="flex-1"
+            contentContainerStyle={{ paddingTop: 32, paddingBottom: 16 }}
+            keyboardShouldPersistTaps="handled"
           >
-            <View
-              className={`w-5 h-5 rounded border-2 mt-0.5 items-center justify-center ${
-                agreed
-                  ? "bg-accent border-accent"
-                  : "border-border bg-white"
-              }`}
-            >
-              {agreed && (
-                <Text className="text-white text-xs font-bold">✓</Text>
-              )}
-            </View>
-            <Text className="flex-1 ml-3 text-xs text-text-mute leading-5">
-              Я принимаю{" "}
-              <Text
-                className="text-accent font-medium underline"
-                onPress={() => router.push("/legal/terms" as never)}
+            {/* Icon */}
+            <View className="items-center mb-5">
+              <View
+                className="rounded-full items-center justify-center"
+                style={{ width: 56, height: 56, backgroundColor: overlay.accent10 }}
               >
-                Условия использования
-              </Text>
-            </Text>
-          </Pressable>
+                <User size={28} color={colors.accent} />
+              </View>
+            </View>
 
-          {error ? (
-            <View
-              className="mb-4 px-4 py-3 rounded-xl flex-row items-center"
-              style={{ backgroundColor: colors.errorBg, borderWidth: 1, borderColor: colors.danger }}
-            >
-              <Text className="text-sm text-danger leading-5 flex-1">
-                {error}
+            {/* Progress bar */}
+            <View className="mb-6">
+              <View className="flex-row justify-center gap-2 mb-3">
+                <View className="h-2 w-10 rounded-full bg-accent" />
+                <View className="h-2 w-10 rounded-full bg-border" />
+                <View className="h-2 w-10 rounded-full bg-border" />
+              </View>
+              <Text className="text-sm font-medium text-text-mute text-center">
+                Шаг 1 из 3
               </Text>
             </View>
-          ) : null}
 
-          <Button
-            label="Далее"
-            onPress={handleNext}
-            disabled={!canProceed || isLoading}
-            loading={isLoading}
-          />
+            <Text className="text-2xl font-bold text-text-base text-center mb-2">
+              Ваше имя
+            </Text>
+            <Text className="text-base text-text-mute text-center leading-6 mb-8">
+              Это имя увидят клиенты в вашем профиле
+            </Text>
+
+            <View className="mb-4">
+              <Input
+                label="Имя"
+                placeholder="Иван"
+                value={firstName}
+                onChangeText={setFirstName}
+                error={firstNameError}
+                editable={!isLoading}
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View className="mb-6">
+              <Input
+                label="Фамилия"
+                placeholder="Петров"
+                value={lastName}
+                onChangeText={setLastName}
+                error={lastNameError}
+                editable={!isLoading}
+                autoCapitalize="words"
+              />
+            </View>
+
+            {/* Terms checkbox */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Принять условия использования"
+              onPress={() => setAgreed(!agreed)}
+              className="flex-row items-start"
+            >
+              <View
+                className={`w-5 h-5 rounded border-2 mt-0.5 items-center justify-center ${
+                  agreed
+                    ? "bg-accent border-accent"
+                    : "border-border bg-white"
+                }`}
+              >
+                {agreed && (
+                  <Text className="text-white text-xs font-bold">✓</Text>
+                )}
+              </View>
+              <Text className="flex-1 ml-3 text-xs text-text-mute leading-5">
+                Я принимаю{" "}
+                <Text
+                  className="text-accent font-medium underline"
+                  onPress={() => router.push("/legal/terms" as never)}
+                >
+                  Условия использования
+                </Text>
+              </Text>
+            </Pressable>
+          </ScrollView>
+
+          {/* Sticky bottom button */}
+          <View className="border-t border-border bg-white pt-3 pb-6 px-0">
+            {error ? (
+              <View
+                className="mb-3 px-4 py-3 rounded-xl flex-row items-center"
+                style={{ backgroundColor: colors.errorBg, borderWidth: 1, borderColor: colors.danger }}
+              >
+                <Text className="text-sm text-danger leading-5 flex-1">
+                  {error}
+                </Text>
+              </View>
+            ) : null}
+            <Button
+              label="Далее"
+              onPress={handleNext}
+              disabled={!canProceed || isLoading}
+              loading={isLoading}
+            />
+          </View>
         </View>
       </ResponsiveContainer>
     </SafeAreaView>

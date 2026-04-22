@@ -162,9 +162,10 @@ export default function OnboardingProfileScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
       <ResponsiveContainer>
+        <View className="flex-1">
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 48 }}
+          contentContainerStyle={{ paddingBottom: 16 }}
           keyboardShouldPersistTaps="handled"
         >
           <View className="pt-6">
@@ -353,36 +354,38 @@ export default function OnboardingProfileScreen() {
               />
             </View>
 
-            {error ? (
-              <View
-                className="mb-4 px-4 py-3 rounded-xl flex-row items-center"
-                style={{ backgroundColor: colors.errorBg, borderWidth: 1, borderColor: colors.danger }}
-              >
-                <Text className="text-sm text-danger leading-5 flex-1">
-                  {error}
-                </Text>
-              </View>
-            ) : null}
-
-            <Button
-              label="Завершить регистрацию"
-              onPress={handleSubmit}
-              disabled={isLoading || avatarUploading}
-              loading={isLoading}
-            />
-
-            {/* Skip link */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Пропустить"
-              onPress={handleSubmit}
-              disabled={isLoading || avatarUploading}
-              className="items-center mt-4 py-2"
-            >
-              <Text className="text-sm text-text-mute">Пропустить</Text>
-            </Pressable>
           </View>
         </ScrollView>
+
+        {/* Sticky bottom button */}
+        <View className="border-t border-border bg-white pt-3 pb-6">
+          {error ? (
+            <View
+              className="mb-3 px-4 py-3 rounded-xl flex-row items-center"
+              style={{ backgroundColor: colors.errorBg, borderWidth: 1, borderColor: colors.danger }}
+            >
+              <Text className="text-sm text-danger leading-5 flex-1">
+                {error}
+              </Text>
+            </View>
+          ) : null}
+          <Button
+            label="Завершить регистрацию"
+            onPress={handleSubmit}
+            disabled={isLoading || avatarUploading}
+            loading={isLoading}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Пропустить"
+            onPress={handleSubmit}
+            disabled={isLoading || avatarUploading}
+            className="items-center mt-3 py-2"
+          >
+            <Text className="text-sm text-text-mute">Пропустить</Text>
+          </Pressable>
+        </View>
+        </View>
       </ResponsiveContainer>
     </SafeAreaView>
   );
