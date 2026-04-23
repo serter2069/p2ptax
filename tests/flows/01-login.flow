@@ -1,13 +1,11 @@
 # P2PTax — login flow (OTP, dev code 000000)
-# selectors avoid whitespace because vizor's fill parser splits on whitespace
-# Role is not persisted to DB (client-side only), so role choice appears on every login
+# test.client@p2ptax-seed.ru has CLIENT role in DB, goes straight to dashboard after OTP
+# type fires key events that React handles one-by-one; useEffect auto-submits when all 6 filled
 goto http://localhost:8081/auth/email
 wait-for [aria-label="Email адрес"]
 fill [placeholder="your@email.com"] test.client@p2ptax-seed.ru
 click [aria-label="Продолжить"]
 wait-for input[maxlength="6"]
-fill input[maxlength="6"] 000000
-wait-for [aria-label="Мне нужна помощь с налоговой"]
-click [aria-label="Мне нужна помощь с налоговой"]
-wait 2000
+type input[maxlength="6"] 000000
+wait 4000
 assert-url /dashboard
