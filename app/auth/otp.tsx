@@ -361,6 +361,7 @@ export default function AuthOtpScreen() {
                 onPress={() => handleVerify(digits.join(""))}
                 disabled={isLoading || !isCodeFull}
                 loading={isLoading}
+                testID="verify-otp"
               />
 
               {/* Resend link with countdown */}
