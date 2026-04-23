@@ -1,10 +1,12 @@
 import "../global.css";
 import { Stack } from "expo-router";
 import { AuthProvider } from "@/contexts/AuthContext";
+import AppShell from "@/components/layout/AppShell";
 
 export default function RootLayout() {
   return (
     <AuthProvider>
+      <AppShell>
       <Stack screenOptions={{ headerShown: false }}>
         {/* Public */}
         <Stack.Screen name="index" />
@@ -53,6 +55,7 @@ export default function RootLayout() {
             <Stack.Screen name="requests" />
             <Stack.Screen name="specialists" />
       </Stack>
+      </AppShell>
     </AuthProvider>
   );
 }

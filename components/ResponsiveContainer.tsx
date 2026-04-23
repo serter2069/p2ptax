@@ -1,4 +1,5 @@
 import { View, useWindowDimensions } from "react-native";
+import { spacing } from "@/lib/theme";
 
 interface ResponsiveContainerProps {
   children: React.ReactNode;
@@ -12,7 +13,7 @@ export default function ResponsiveContainer({ children, maxWidth = 680 }: Respon
   if (isDesktop) {
     return (
       <View style={{ width: "100%", alignItems: "center", flex: 1 }}>
-        <View style={{ width: "100%", maxWidth, flex: 1, paddingHorizontal: 24 }}>
+        <View style={{ width: "100%", maxWidth, flex: 1, paddingHorizontal: spacing.lg }}>
           {children}
         </View>
       </View>

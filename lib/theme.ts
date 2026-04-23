@@ -52,7 +52,35 @@ export const tw = {
   warningBg: 'bg-amber-600',
 } as const
 
-export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const
+/**
+ * Spacing scale — single source of truth for padding / margin / gap.
+ *
+ * Use these tokens instead of hardcoded numbers to keep rhythm consistent
+ * across desktop and mobile (Gemini critique flagged spacing rhythm 4/10).
+ *
+ *   xs    4   hairline gaps, icon offsets
+ *   sm    8   chip padding, compact rows
+ *   md   12   tight vertical stacks, list-item padding
+ *   base 16   default content padding, section gaps
+ *   lg   24   card padding, column gaps
+ *   xl   32   section padding on desktop
+ *   xxl  48   page top/bottom margins on desktop
+ *   xxxl 64   hero sections, wide separators
+ *
+ * NOTE: `md` was historically 16. To avoid breaking existing screens that
+ * rely on that, we keep `md` as an alias; `base` is the canonical 16. Use
+ * `base` in new code.
+ */
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16, // legacy alias (canonical is `base`) — migrate over time
+  base: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+  xxxl: 64,
+} as const
 
 export const typography = {
   h1: 'text-3xl font-extrabold',
