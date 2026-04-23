@@ -142,7 +142,7 @@ export default function HomeScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Показать все"
-                  style={{ height: 44, justifyContent: "center", paddingHorizontal: 8 }}
+                  style={{ height: 44, justifyContent: "center", paddingHorizontal: 12 }}
                 >
                   <Text className="text-sm text-accent font-medium">Все</Text>
                 </Pressable>
