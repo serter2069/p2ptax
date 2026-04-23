@@ -27,7 +27,10 @@ export default function PromotionScreen() {
 
             {/* Placeholder card */}
             <View className="bg-white border border-border rounded-xl p-6 items-center">
-              <View className="w-16 h-16 rounded-full bg-amber-50 items-center justify-center mb-4">
+              <View
+                className="w-16 h-16 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: colors.accentSoft }}
+              >
                 <Rocket size={28} color={colors.accent} />
               </View>
               <Text className="text-lg font-semibold text-text-base text-center mb-2">
@@ -46,12 +49,15 @@ export default function PromotionScreen() {
               onPress={() => router.push("/settings/specialist" as never)}
               className="bg-accent rounded-xl p-4 mt-4 flex-row items-center"
             >
-              <View className="w-10 h-10 rounded-full bg-blue-800 items-center justify-center mr-3">
-                <User size={16} color={colors.surface} />
+              <View
+                className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+              >
+                <User size={16} color="#ffffff" />
               </View>
               <View className="flex-1">
                 <Text className="text-white font-semibold text-sm">Заполните профиль</Text>
-                <Text className="text-blue-200 text-xs mt-0.5">
+                <Text className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.7)" }}>
                   Полный профиль повышает доверие клиентов
                 </Text>
               </View>
