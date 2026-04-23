@@ -74,6 +74,14 @@ export default function AuthOtpScreen() {
     return () => clearTimeout(t);
   }, [email]);
 
+  // Auto-submit when all digits filled (handles rapid batched input from Playwright/paste)
+  useEffect(() => {
+    if (digits.every(d => d !== "") && !isLoading) {
+      handleVerify(digits.join(""));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [digits]);
+
   const routeByRole = useCallback(
     (user: UserData) => {
       if (user.role === "CLIENT") {
@@ -153,21 +161,15 @@ export default function AuthOtpScreen() {
 
     if (!/^\d*$/.test(value)) return;
 
-    const newDigits = [...digits];
-    newDigits[index] = value.slice(-1);
-    setDigits(newDigits);
+    setDigits(prev => {
+      const newDigits = [...prev];
+      newDigits[index] = value.slice(-1);
+      return newDigits;
+    });
     setError("");
 
     if (value && index < CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-submit when 6th digit entered
-    if (index === CODE_LENGTH - 1 && value) {
-      const code = newDigits.join("");
-      if (code.length === CODE_LENGTH) {
-        handleVerify(code);
-      }
     }
   };
 
