@@ -33,7 +33,7 @@ function SkeletonLines({ lines }: { lines: number }) {
   const heights = [20, 16, 16, 16, 16];
 
   return (
-    <View style={{ padding: 16, gap: 4 }}>
+    <View testID="skeleton" style={{ padding: 16, gap: 4 }}>
       {Array.from({ length: lines }).map((_, i) => (
         <Animated.View
           key={i}
