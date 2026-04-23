@@ -19,7 +19,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import RequestCard from "@/components/RequestCard";
 import { api } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -197,6 +197,12 @@ export default function PublicRequestsFeed() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Заявки" />
+
+      {/* Accent hero */}
+      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }}>
+        <Text className="text-xl font-bold text-white mb-0.5">Открытые заявки</Text>
+        <Text className="text-sm" style={{ color: overlay.white75 }}>Задайте вопрос — получите предложения от специалистов</Text>
+      </View>
 
       {/* Filter bar */}
       <View className="bg-white border-b border-border">
