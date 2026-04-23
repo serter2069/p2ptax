@@ -26,7 +26,8 @@ export default function PromotionScreen() {
             </Text>
 
             {/* Placeholder card */}
-            <View className="bg-white border border-border rounded-xl p-6 items-center">
+            <View className="bg-white border border-border rounded-xl p-6 items-center"
+              style={{ shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 }}>
               <View
                 className="w-16 h-16 rounded-full items-center justify-center mb-4"
                 style={{ backgroundColor: colors.accentSoft }}
