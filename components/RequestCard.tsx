@@ -28,7 +28,10 @@ export default function RequestCard({
       accessibilityLabel={title}
       onPress={() => onPress(id)}
       className="bg-white border border-border rounded-xl p-4 mb-3"
-      style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
+      style={({ pressed }) => [
+        { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+        pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
+      ]}
     >
       <View className="flex-row items-center justify-between mb-2">
         <Text className="text-lg font-semibold text-text-base flex-1 mr-2" numberOfLines={1}>
