@@ -31,7 +31,7 @@ function FilterChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`px-3 min-h-[44px] items-center justify-center rounded-full mr-2 mb-1 border ${
+      className={`px-3 h-11 items-center justify-center rounded-full mr-2 mb-1 border ${
         active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
     >
@@ -107,18 +107,20 @@ export default function FilterBar({
 
       {/* Services filter */}
       {services && services.length > 0 && onServiceToggle && (
-        <View className="px-4 mt-1">
-          <View className="flex-row flex-wrap">
-            {services.map((s) => (
-              <FilterChip
-                key={s.id}
-                label={s.name}
-                active={selectedServiceIds.includes(s.id)}
-                onPress={() => onServiceToggle(s.id)}
-              />
-            ))}
-          </View>
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="px-4 mt-1"
+        >
+          {services.map((s) => (
+            <FilterChip
+              key={s.id}
+              label={s.name}
+              active={selectedServiceIds.includes(s.id)}
+              onPress={() => onServiceToggle(s.id)}
+            />
+          ))}
+        </ScrollView>
       )}
     </View>
   );
