@@ -235,7 +235,7 @@ export default function NotificationsScreen() {
           <FlatList
             data={notifications}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={notifications.length === 0 ? { flexGrow: 1, justifyContent: "center" } : { padding: 16 }}
             renderItem={({ item }) => (
               <NotificationRow item={item} onPress={handleMarkRead} />
             )}
