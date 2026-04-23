@@ -221,11 +221,13 @@ export default function SpecialistsCatalog() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Специалисты" />
-      <View className="bg-white px-4 pt-3 pb-2 border-b border-border">
-        <Text className="font-extrabold text-3xl text-text-base">Каталог специалистов</Text>
-        <Text className="text-sm mt-1 mb-3 text-text-mute">
-          Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.
-        </Text>
+      <View className="bg-white border-b border-border" style={{ alignItems: isDesktop ? "center" : undefined }}>
+        <View style={{ width: "100%", maxWidth: isDesktop ? 900 : undefined, paddingHorizontal: isDesktop ? 24 : 16, paddingTop: 12, paddingBottom: 8 }}>
+          <Text className="font-extrabold text-3xl text-text-base">Каталог специалистов</Text>
+          <Text className="text-sm mt-1 mb-3 text-text-mute">
+            Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.
+          </Text>
+        </View>
       </View>
 
       {/* Search bar */}
