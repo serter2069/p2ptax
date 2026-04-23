@@ -1,10 +1,8 @@
-# P2PTax — login flow (OTP)
 goto http://localhost:8081/auth/email
-wait-for input[type=email]
-fill input[type=email] serter2069@gmail.com
-click [data-testid=send-otp]
-wait 2000
-fill input[type=text] 000000
-click [data-testid=verify-otp]
-wait 2000
+wait-for [aria-label="Email адрес"]
+fill [aria-label="Email адрес"] serter2069@gmail.com
+click [aria-label="Продолжить"]
+wait 3000
+fill [aria-label="Цифра 1 кода подтверждения"] 000000
+wait 3000
 assert-url /dashboard
