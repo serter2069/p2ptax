@@ -99,6 +99,7 @@ export default function AuthEmailScreen() {
               onPress={handleContinue}
               disabled={isLoading || !email.trim()}
               loading={isLoading}
+              testID="send-otp"
             />
           </View>
 
