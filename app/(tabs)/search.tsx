@@ -58,8 +58,7 @@ export default function SearchScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Фильтры"
-                className="ml-2 w-9 h-9 rounded-lg bg-accent items-center justify-center"
-                style={{ minHeight: 44 }}
+                className="ml-2 w-11 h-11 rounded-lg bg-accent items-center justify-center"
               >
                 <SlidersHorizontal size={15} color="#fff" />
               </Pressable>
@@ -74,7 +73,7 @@ export default function SearchScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Очистить историю поиска"
-                  style={{ minHeight: 44, justifyContent: "center" }}
+                  style={{ height: 44, justifyContent: "center" }}
                 >
                   <Text className="text-sm text-accent">Очистить</Text>
                 </Pressable>
@@ -96,7 +95,7 @@ export default function SearchScreen() {
                   accessibilityLabel={search}
                   className="flex-row items-center px-4 active:bg-surface2"
                   style={{
-                    minHeight: 44,
+                    height: 44,
                     borderBottomWidth: index < RECENT_SEARCHES.length - 1 ? 1 : 0,
                     borderBottomColor: colors.border,
                   }}
@@ -120,7 +119,7 @@ export default function SearchScreen() {
                   accessibilityLabel={cat.name}
                   className="flex-row items-center p-3 rounded-xl mb-2 border border-border"
                   style={[
-                    { backgroundColor: cat.color, minHeight: 44 },
+                    { backgroundColor: cat.color, minHeight: 56 },
                     isDesktop ? { width: "48%" } : undefined,
                   ]}
                 >

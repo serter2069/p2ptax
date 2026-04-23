@@ -22,21 +22,21 @@ export default function SpecialistTabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Dashboard",
+          title: "Дашборд",
           tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="requests"
         options={{
-          title: "Public Requests",
+          title: "Заявки",
           tabBarIcon: ({ color, size }) => <List size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="threads"
         options={{
-          title: "My Threads",
+          title: "Переписки",
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />

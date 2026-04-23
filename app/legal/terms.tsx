@@ -2,12 +2,12 @@ import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
-
 function SectionHeading({ children }: { children: string }) {
   return (
-    <Text className="text-lg font-semibold text-text-base mt-6 mb-3">
-      {children}
-    </Text>
+    <View className="mt-5 mb-2">
+      <View className="border-t border-border mb-4" />
+      <Text className="text-base font-semibold text-text-base">{children}</Text>
+    </View>
   );
 }
 
