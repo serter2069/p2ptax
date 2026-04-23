@@ -133,7 +133,7 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
                       </Text>
                       <View
                         className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: colors.success }}
+                        style={{ backgroundColor: colors.primary }}
                       />
                     </View>
                     <Text className="text-sm mt-1" style={{ color: colors.textSecondary }}>

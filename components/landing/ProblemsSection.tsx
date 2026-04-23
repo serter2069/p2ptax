@@ -9,7 +9,7 @@ interface ProblemsSectionProps {
 export default function ProblemsSection({ isDesktop }: ProblemsSectionProps) {
   return (
     <View
-      className="bg-slate-100 px-4"
+      className="bg-surface2 px-4"
       style={{ paddingTop: isDesktop ? 96 : 64, paddingBottom: isDesktop ? 96 : 64 }}
     >
       <View style={{ width: "100%", alignItems: "center" }}>
