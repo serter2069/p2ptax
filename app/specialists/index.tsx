@@ -17,7 +17,7 @@ import { AlertCircle, UserX, Search } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -221,13 +221,9 @@ export default function SpecialistsCatalog() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Специалисты" />
-      <View className="bg-white border-b border-border" style={{ alignItems: isDesktop ? "center" : undefined }}>
-        <View style={{ width: "100%", maxWidth: isDesktop ? 900 : undefined, paddingHorizontal: isDesktop ? 24 : 16, paddingTop: 12, paddingBottom: 8 }}>
-          <Text className="font-extrabold text-3xl text-text-base">Каталог специалистов</Text>
-          <Text className="text-sm mt-1 mb-3 text-text-mute">
-            Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.
-          </Text>
-        </View>
+      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }}>
+        <Text className="text-xl font-bold text-white mb-0.5">Каталог специалистов</Text>
+        <Text className="text-sm" style={{ color: overlay.white75 }}>Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.</Text>
       </View>
 
       {/* Search bar */}
