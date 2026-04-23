@@ -70,6 +70,7 @@ export default function PublicRequestsFeed() {
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
 
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
@@ -91,6 +92,7 @@ export default function PublicRequestsFeed() {
           setRequests(res.items);
         }
         setHasMore(res.hasMore);
+        setTotal(res.total);
         setPage(pageNum);
         setError(null);
       } catch {
@@ -199,9 +201,19 @@ export default function PublicRequestsFeed() {
       <HeaderBack title="Заявки" />
 
       {/* Accent hero */}
-      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }}>
+      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
         <Text className="text-xl font-bold text-white mb-0.5">Открытые заявки</Text>
         <Text className="text-sm" style={{ color: overlay.white75 }}>Задайте вопрос — получите предложения от специалистов</Text>
+        <View className="flex-row mt-4 gap-3">
+          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+            <Text className="text-xs" style={{ color: overlay.white70 }}>Заявок</Text>
+            <Text className="text-xl font-bold text-white">{total}</Text>
+          </View>
+          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+            <Text className="text-xs" style={{ color: overlay.white70 }}>Статус</Text>
+            <Text className="text-xl font-bold text-white">Открыты</Text>
+          </View>
+        </View>
       </View>
 
       {/* Filter bar */}
