@@ -118,7 +118,7 @@ export default function RequestMessages() {
             </Text>
             {hasUnread && (
               <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-danger items-center justify-center px-1">
-                <Text className="text-[10px] font-bold text-white">
+                <Text className="text-xs font-bold text-white">
                   {item.unreadCount > 99 ? "99+" : item.unreadCount}
                 </Text>
               </View>

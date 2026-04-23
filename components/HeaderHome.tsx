@@ -24,7 +24,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
           <Bell size={18} color={colors.surface} />
           {notificationCount > 0 && (
             <View className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-warning items-center justify-center px-1">
-              <Text className="text-[9px] font-bold text-white">
+              <Text className="text-[10px] font-bold text-white">
                 {notificationCount > 99 ? "99+" : notificationCount}
               </Text>
             </View>
