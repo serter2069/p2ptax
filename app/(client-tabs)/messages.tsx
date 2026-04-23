@@ -174,7 +174,7 @@ export default function ClientMessages() {
                 className="absolute -top-1 -right-1 rounded-full bg-accent items-center justify-center px-1"
                 style={{ minWidth: 18, height: 18 }}
               >
-                <Text className="text-[10px] font-bold text-white">
+                <Text className="text-xs font-bold text-white">
                   {item.unreadCount > 99 ? "99+" : item.unreadCount}
                 </Text>
               </View>
