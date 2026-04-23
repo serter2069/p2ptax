@@ -221,9 +221,19 @@ export default function SpecialistsCatalog() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Специалисты" />
-      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }}>
+      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
         <Text className="text-xl font-bold text-white mb-0.5">Каталог специалистов</Text>
         <Text className="text-sm" style={{ color: overlay.white75 }}>Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.</Text>
+        <View className="flex-row mt-4 gap-3">
+          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+            <Text className="text-xs" style={{ color: overlay.white70 }}>Специалистов</Text>
+            <Text className="text-xl font-bold text-white">{total > 0 ? total : "..."}</Text>
+          </View>
+          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+            <Text className="text-xs" style={{ color: overlay.white70 }}>Готовы помочь</Text>
+            <Text className="text-xl font-bold text-white">Сейчас</Text>
+          </View>
+        </View>
       </View>
 
       {/* Search bar */}

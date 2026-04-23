@@ -63,6 +63,7 @@ export default function SpecialistPublicRequests() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
 
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
@@ -82,6 +83,7 @@ export default function SpecialistPublicRequests() {
           setRequests(res.items);
         }
         setHasMore(res.hasMore);
+        setTotal(res.total);
         setPage(pageNum);
         setError(null);
       } catch (e) {
@@ -148,6 +150,16 @@ export default function SpecialistPublicRequests() {
         <View className="rounded-2xl px-5 py-5 mb-4 mt-2" style={{ backgroundColor: colors.accent }}>
           <Text className="text-xl font-bold text-white mb-0.5">Публичные заявки</Text>
           <Text className="text-sm" style={{ color: overlay.white75 }}>Находите клиентов по своей специализации</Text>
+          <View className="flex-row mt-4 gap-3">
+            <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+              <Text className="text-xs" style={{ color: overlay.white70 }}>Заявок</Text>
+              <Text className="text-xl font-bold text-white">{total}</Text>
+            </View>
+            <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+              <Text className="text-xs" style={{ color: overlay.white70 }}>Доступны</Text>
+              <Text className="text-xl font-bold text-white">Сейчас</Text>
+            </View>
+          </View>
         </View>
 
         <FilterBar

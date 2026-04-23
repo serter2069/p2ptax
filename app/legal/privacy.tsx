@@ -2,6 +2,7 @@ import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { colors, overlay } from "@/lib/theme";
 
 function SectionHeading({ children }: { children: string }) {
   return (
@@ -22,6 +23,10 @@ export default function PrivacyPolicyScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Политика конфиденциальности" />
+      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
+        <Text className="text-xl font-bold text-white mb-0.5">Политика конфиденциальности</Text>
+        <Text className="text-sm" style={{ color: overlay.white75 }}>Как P2PTax собирает, хранит и защищает ваши данные</Text>
+      </View>
 
       <ResponsiveContainer maxWidth={720}>
         <ScrollView

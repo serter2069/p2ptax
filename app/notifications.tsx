@@ -9,7 +9,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { api, apiPatch } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface NotificationItem {
   id: string;
@@ -195,11 +195,6 @@ export default function NotificationsScreen() {
             <ArrowLeft size={20} color={colors.text} />
           </Pressable>
           <Text className="text-xl font-bold text-text-base">Уведомления</Text>
-          {unreadCount > 0 && (
-            <View className="bg-accent rounded-full min-w-[20px] h-5 items-center justify-center px-1.5 ml-2">
-              <Text className="text-xs font-bold text-white">{unreadCount}</Text>
-            </View>
-          )}
         </View>
         {unreadCount > 0 && (
           <Pressable
@@ -211,6 +206,22 @@ export default function NotificationsScreen() {
             <Text className="text-sm text-accent font-semibold">Прочитать все</Text>
           </Pressable>
         )}
+      </View>
+
+      {/* Accent hero */}
+      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
+        <Text className="text-xl font-bold text-white mb-0.5">Ваши уведомления</Text>
+        <Text className="text-sm" style={{ color: overlay.white75 }}>Сообщения о новых ответах, заявках и обновлениях</Text>
+        <View className="flex-row mt-4 gap-3">
+          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+            <Text className="text-xs" style={{ color: overlay.white70 }}>Непрочитано</Text>
+            <Text className="text-xl font-bold text-white">{unreadCount}</Text>
+          </View>
+          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+            <Text className="text-xs" style={{ color: overlay.white70 }}>Всего</Text>
+            <Text className="text-xl font-bold text-white">{notifications.length}</Text>
+          </View>
+        </View>
       </View>
 
       <ResponsiveContainer>

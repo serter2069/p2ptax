@@ -2,6 +2,7 @@ import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { colors, overlay } from "@/lib/theme";
 function SectionHeading({ children }: { children: string }) {
   return (
     <View className="mt-5 mb-2">
@@ -21,6 +22,10 @@ export default function TermsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Пользовательское соглашение" />
+      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
+        <Text className="text-xl font-bold text-white mb-0.5">Пользовательское соглашение</Text>
+        <Text className="text-sm" style={{ color: overlay.white75 }}>Условия использования платформы P2PTax</Text>
+      </View>
 
       <ResponsiveContainer maxWidth={720}>
         <ScrollView
