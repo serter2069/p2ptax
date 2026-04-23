@@ -1,8 +1,13 @@
+# P2PTax — login flow (OTP, dev code 000000)
+# selectors avoid whitespace because vizor's fill parser splits on whitespace
+# Role is not persisted to DB (client-side only), so role choice appears on every login
 goto http://localhost:8081/auth/email
 wait-for [aria-label="Email адрес"]
-fill [aria-label="Email адрес"] serter2069@gmail.com
+fill [placeholder="your@email.com"] test.client@p2ptax-seed.ru
 click [aria-label="Продолжить"]
-wait 3000
-fill [aria-label="Цифра 1 кода подтверждения"] 000000
-wait 3000
+wait-for input[maxlength="6"]
+fill input[maxlength="6"] 000000
+wait-for [aria-label="Мне нужна помощь с налоговой"]
+click [aria-label="Мне нужна помощь с налоговой"]
+wait 2000
 assert-url /dashboard
