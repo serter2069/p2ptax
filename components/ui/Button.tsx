@@ -11,6 +11,7 @@ export interface ButtonProps {
   disabled?: boolean;
   fullWidth?: boolean;
   icon?: LucideIcon;
+  testID?: string;
 }
 
 export default function Button({
@@ -21,6 +22,7 @@ export default function Button({
   disabled = false,
   fullWidth = true,
   icon: Icon,
+  testID,
 }: ButtonProps) {
   const [pressed, setPressed] = useState(false);
 
@@ -54,6 +56,7 @@ export default function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      testID={testID}
       onPress={onPress}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
