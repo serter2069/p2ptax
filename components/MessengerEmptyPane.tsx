@@ -135,9 +135,9 @@ export default function MessengerEmptyPane({
                 style={{ paddingHorizontal: 16, paddingVertical: 10 }}
               >
                 {primary.icon === "plus" ? (
-                  <Plus size={14} color="#fff" />
+                  <Plus size={14} color={colors.white} />
                 ) : (
-                  <Sparkles size={14} color="#fff" />
+                  <Sparkles size={14} color={colors.white} />
                 )}
                 <Text
                   className="text-white font-semibold"

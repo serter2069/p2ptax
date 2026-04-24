@@ -33,7 +33,7 @@ export default function SpecialistCTASection({
           maxWidth: 1152,
           marginHorizontal: "auto",
           padding: isDesktop ? 56 : 32,
-          backgroundColor: "#0b1424",
+          backgroundColor: colors.text,
           flexDirection: isDesktop ? "row" : "column",
           gap: isDesktop ? 48 : 32,
           alignItems: isDesktop ? "center" : "flex-start",
@@ -54,7 +54,7 @@ export default function SpecialistCTASection({
           </Text>
           <Text
             style={{
-              color: "#ffffff",
+              color: colors.white,
               fontSize: isDesktop ? 36 : 28,
               lineHeight: isDesktop ? 44 : 36,
               fontWeight: "800",
@@ -87,9 +87,9 @@ export default function SpecialistCTASection({
                     backgroundColor: overlay.white10,
                   }}
                 >
-                  <Text style={{ color: "#ffffff", fontSize: 12, fontWeight: "700" }}>✓</Text>
+                  <Text style={{ color: colors.white, fontSize: 12, fontWeight: "700" }}>✓</Text>
                 </View>
-                <Text style={{ color: "#ffffff", fontSize: 14, lineHeight: 20 }}>{b}</Text>
+                <Text style={{ color: colors.white, fontSize: 14, lineHeight: 20 }}>{b}</Text>
               </View>
             ))}
           </View>
@@ -105,7 +105,7 @@ export default function SpecialistCTASection({
             gap: 16,
           }}
         >
-          <Text style={{ color: "#ffffff", fontSize: 18, fontWeight: "700" }}>
+          <Text style={{ color: colors.white, fontSize: 18, fontWeight: "700" }}>
             Станьте специалистом
           </Text>
           <Text style={{ color: overlay.white70, fontSize: 14, lineHeight: 20 }}>
@@ -119,7 +119,7 @@ export default function SpecialistCTASection({
             className="rounded-xl items-center justify-center"
             style={{
               height: 52,
-              backgroundColor: "#ffffff",
+              backgroundColor: colors.white,
             }}
           >
             <Text style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>

@@ -36,7 +36,7 @@ export default function TrustStrip({
   return (
     <View
       style={{
-        backgroundColor: "#0b1424",
+        backgroundColor: colors.text,
         paddingVertical: isDesktop ? 48 : 40,
         paddingHorizontal: isDesktop ? 32 : 20,
       }}
@@ -63,7 +63,7 @@ export default function TrustStrip({
           >
             <Text
               style={{
-                color: "#ffffff",
+                color: colors.white,
                 fontSize: isDesktop ? 56 : 44,
                 lineHeight: isDesktop ? 60 : 48,
                 fontWeight: "800",

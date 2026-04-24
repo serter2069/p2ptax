@@ -53,7 +53,7 @@ export default function Avatar({
   const wh = resolveSize(size);
   const textClass = textClassFor(wh);
   const bg = tint ?? colors.primary;
-  const ink = inkColor ?? "#ffffff";
+  const ink = inkColor ?? colors.white;
 
   if (imageUrl) {
     return (

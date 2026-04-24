@@ -22,7 +22,7 @@ const TONE_COLOR: Record<NonNullable<TextProps["tone"]>, string> = {
   accent: colors.primary,
   danger: colors.danger,
   success: colors.success,
-  white: "#ffffff",
+  white: colors.white,
 };
 
 /**

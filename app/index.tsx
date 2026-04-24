@@ -17,6 +17,7 @@ import FearTimeline from "@/components/landing/FearTimeline";
 import SpecialistCTASection from "@/components/landing/SpecialistCTASection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import FooterSection from "@/components/landing/FooterSection";
+import { colors } from "@/lib/theme";
 
 interface LandingCounts {
   specialistsCount: number;
@@ -202,7 +203,7 @@ export default function LandingScreen() {
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ backgroundColor: "#ffffff" }}
+        contentContainerStyle={{ backgroundColor: colors.white }}
       >
         <LandingHeader
           isDesktop={isDesktop}

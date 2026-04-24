@@ -39,7 +39,7 @@ function StageNode({ stage }: { stage: TimelineStage }) {
   if (stage.status === "done") {
     return (
       <View style={[baseStyle, { backgroundColor: colors.success }]}>
-        <Check size={16} color="#ffffff" />
+        <Check size={16} color={colors.white} />
       </View>
     );
   }
@@ -60,7 +60,7 @@ function StageNode({ stage }: { stage: TimelineStage }) {
             width: 8,
             height: 8,
             borderRadius: 4,
-            backgroundColor: "#ffffff",
+            backgroundColor: colors.white,
           }}
         />
       </View>
@@ -366,7 +366,7 @@ export default function CaseTimeline({
             >
               <Text
                 style={{
-                  color: "#ffffff",
+                  color: colors.white,
                   fontWeight: "600",
                   fontSize: 14,
                 }}

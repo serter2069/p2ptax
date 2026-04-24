@@ -217,7 +217,7 @@ export default function PublicRequestsFeed() {
 
       {/* Accent hero */}
       <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
-        <Text style={{ ...textStyle.h3, color: "#ffffff", marginBottom: 2 }}>Открытые заявки</Text>
+        <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>Открытые заявки</Text>
         <Text style={{ ...textStyle.small, color: overlay.white75 }}>Задайте вопрос — получите предложения от специалистов</Text>
         {total > 0 && (
           <Text className="text-sm font-semibold text-white mt-2">{total} активных заявок</Text>

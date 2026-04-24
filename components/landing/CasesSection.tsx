@@ -15,7 +15,7 @@ export default function CasesSection({ isDesktop, cases, onCreateRequest }: Case
       style={{
         paddingVertical: isDesktop ? 96 : 64,
         paddingHorizontal: isDesktop ? 32 : 20,
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
       }}
     >
       <View

@@ -228,7 +228,7 @@ export default function SpecialistsCatalog() {
       <HeaderBack title="Специалисты" />
       <View style={{ backgroundColor: colors.accent, width: "100%", alignItems: "center" }}>
         <View style={{ width: "100%", maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined, paddingHorizontal: isWide ? 32 : 16, paddingTop: 20, paddingBottom: 20 }}>
-        <Text style={{ ...(isWide ? textStyle.h1 : textStyle.h3), color: "#ffffff", marginBottom: 4 }}>Каталог специалистов</Text>
+        <Text style={{ ...(isWide ? textStyle.h1 : textStyle.h3), color: colors.white, marginBottom: 4 }}>Каталог специалистов</Text>
         <Text style={{ ...textStyle.small, color: overlay.white75 }}>Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.</Text>
         <View className="flex-row mt-4 gap-3">
           <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>

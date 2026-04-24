@@ -1,5 +1,5 @@
 import { View, Text, Pressable } from "react-native";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface LandingHeaderProps {
   isDesktop: boolean;
@@ -27,7 +27,7 @@ export default function LandingHeader({
     <View
       className="w-full"
       style={{
-        backgroundColor: transparent ? "rgba(255,255,255,0.85)" : colors.background,
+        backgroundColor: transparent ? overlay.white85 : colors.background,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
       }}

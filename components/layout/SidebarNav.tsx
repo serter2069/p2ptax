@@ -32,7 +32,7 @@ import RoleBadge from "./RoleBadge";
  *   - Role-tinted background (blue client / emerald specialist / amber admin).
  *   - 3 zones: brand + role badge · primary nav · bottom identity/settings.
  *   - Active item: tint bg + left 2px accent border + bold label.
- *   - All nav items from issue #1285/#1289 spec + expanded to cover
+ *   - All nav items from issue GH-1285/GH-1289 spec + expanded to cover
  *     secondary destinations (Каталог специалистов, Публичные заявки,
  *     Уведомления) that were buried in AppHeader dropdown.
  *
@@ -482,7 +482,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
               borderWidth: 1,
               borderColor: colors.border,
               padding: spacing.xs,
-              shadowColor: "#000",
+              shadowColor: colors.black,
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.08,
               shadowRadius: 16,

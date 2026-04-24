@@ -1,7 +1,7 @@
 /**
  * Unified primary blue — #2256c2 (landing tone).
  *
- * Issue #1288: historically the app drifted between multiple shades of
+ * Issue GH-1288: historically the app drifted between multiple shades of
  * blue (#2e5bff, #2256c2, #3b5bdb, #1e40af). The landing marketing site
  * is already in market with #2256c2, so it's the single source of truth.
  * NEVER hardcode a different blue hex in app/ or components/ — always
@@ -15,8 +15,15 @@ export const colors = {
   accent: PRIMARY_BLUE,      // accent (same as primary)
   accentSoft: '#e8eefb',     // accent-soft
   accentSoftInk: '#1b3d8a',  // accent-soft-ink
-  background: '#ffffff',     // bg
-  surface: '#ffffff',        // pure white cards
+  // Landing hero tints (iter12 phase-b) — pale brand washes
+  accentTintBg: '#f6f9ff',     // hero section background (near-white blue tint)
+  accentTintShape: '#dce6fa',  // decorative shape on hero (slightly stronger blue tint)
+  // Raw neutrals (iter12 phase-b) — kept explicit so shared components stop
+  // minting fresh #fff / #000 literals; use these instead.
+  white: '#ffffff',
+  black: '#000000',
+  background: '#ffffff',     // bg (alias of white)
+  surface: '#ffffff',        // pure white cards (alias of white)
   surface2: '#fafbfc',       // surface-2
   text: '#0b1424',           // text
   textSecondary: '#525a6b',  // text-mute
@@ -34,6 +41,15 @@ export const colors = {
   success: '#1f8a5e',
   warning: '#d97706',
   dangerSoft: '#fef2f2',
+  // Semantic "ink" tones — saturated text on soft-tinted chips
+  warningInk: '#b45309',        // amber-700 on yellowSoft chip
+  warningInkStrong: '#92400e',  // amber-800 on yellowSoft (higher emphasis)
+  dangerInk: '#b91c1c',         // red-700 on dangerSoftAlt chip
+  // Extra soft backgrounds (iter12 phase-b consolidation)
+  dangerSoftAlt: '#fee2e2',   // red-100 (FearTimeline "red" step)
+  warningTintBg: '#fffbf2',   // warm amber section bg (FearTimeline wrapper)
+  successSoft: '#d1fae5',     // green-100 (same hue as roleAccent.specialist.soft)
+  successBgTint: '#ecfdf5',   // emerald-50 (inline "онлайн" chip bg)
   // Soft backgrounds for status/category chips
   indigoSoft: '#e0e7ff',
   pinkSoft: '#fce7f3',
@@ -48,7 +64,7 @@ export const colors = {
 
 /**
  * Gray scale — Tailwind-compatible neutrals used for disabled states,
- * muted chrome, separators. Issue #1290: disabled buttons must use
+ * muted chrome, separators. Issue GH-1290: disabled buttons must use
  * `gray.200` bg + `gray.400` text for sufficient contrast against the
  * active primary (so the eye can still tell "can press" vs "can't").
  */
@@ -66,7 +82,7 @@ export const gray = {
 } as const
 
 /**
- * Role-signalling accents (issue #1289). Every authenticated user belongs
+ * Role-signalling accents (issue GH-1289). Every authenticated user belongs
  * to exactly one role tier; the header + key chrome tinted accordingly so
  * three portals stop looking like a single template with swapped H1.
  *
@@ -214,6 +230,7 @@ export const fontSizeValue = {
 export const shadowColor = {
   dark: '#000000',   // standard card/modal shadow
   accent: 'rgba(34,86,194,0.1)', // accent glow
+  heroDeep: '#1a2b4a', // deep navy — landing hero card lift shadow
 } as const
 
 // Semantic overlay tokens — for rgba on colored backgrounds
@@ -225,7 +242,9 @@ export const overlay = {
   white70: 'rgba(255,255,255,0.7)',
   white75: 'rgba(255,255,255,0.75)',
   white80: 'rgba(255,255,255,0.8)',
+  white85: 'rgba(255,255,255,0.85)',
   white20: 'rgba(255,255,255,0.2)',
   accent10: 'rgba(34,86,194,0.1)',
+  accent20: 'rgba(34,86,194,0.2)',  // focus-ring tint (web)
   dark15: 'rgba(0,0,0,0.15)',  // image placeholder icon tint
 } as const

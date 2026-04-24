@@ -32,7 +32,7 @@ export default function Button({
 
   const isInactive = disabled || loading;
 
-  // Issue #1290 — disabled must be a clearly different fill (gray[200] /
+  // Issue GH-1290 — disabled must be a clearly different fill (gray[200] /
   // gray[400]) so users don't tap a bleached-primary that looks active.
   // Loading keeps the variant fill and shows a spinner instead.
   const variantStyle = isInactive && disabled && !loading
@@ -55,14 +55,14 @@ export default function Button({
     disabled && !loading
       ? gray[400]
       : variant === "primary" || variant === "destructive"
-        ? "#ffffff"
+        ? colors.white
         : colors.text;
 
   const iconColor =
     disabled && !loading
       ? gray[400]
       : variant === "primary" || variant === "destructive"
-        ? "#ffffff"
+        ? colors.white
         : colors.primary;
 
   return (

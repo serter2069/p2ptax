@@ -35,8 +35,8 @@ const STEPS = [
 
 const TONE_COLORS = {
   slate: { bg: gray[100], text: gray[700] },
-  amber: { bg: "#fef3c7", text: "#92400e" },
-  red: { bg: "#fee2e2", text: "#b91c1c" },
+  amber: { bg: colors.yellowSoft, text: colors.warningInkStrong },
+  red: { bg: colors.dangerSoftAlt, text: colors.dangerInk },
 } as const;
 
 export default function FearTimeline({ isDesktop }: FearTimelineProps) {
@@ -45,7 +45,7 @@ export default function FearTimeline({ isDesktop }: FearTimelineProps) {
       style={{
         paddingVertical: isDesktop ? 96 : 64,
         paddingHorizontal: isDesktop ? 32 : 20,
-        backgroundColor: "#fffbf2",
+        backgroundColor: colors.warningTintBg,
       }}
     >
       <View
@@ -56,7 +56,7 @@ export default function FearTimeline({ isDesktop }: FearTimelineProps) {
         }}
       >
         <View className="flex-row items-center" style={{ gap: 12, marginBottom: 16 }}>
-          <DuotoneIcon name="clock" size={28} color={colors.warning} softColor="#fef3c7" />
+          <DuotoneIcon name="clock" size={28} color={colors.warning} softColor={colors.yellowSoft} />
           <Text
             style={{
               color: colors.textMuted,
@@ -91,7 +91,7 @@ export default function FearTimeline({ isDesktop }: FearTimelineProps) {
                 className="rounded-2xl"
                 style={{
                   padding: 20,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: colors.white,
                   borderWidth: 1,
                   borderColor: colors.border,
                   flexDirection: isDesktop ? "row" : "column",
@@ -147,7 +147,7 @@ export default function FearTimeline({ isDesktop }: FearTimelineProps) {
         >
           <Text
             style={{
-              color: "#ffffff",
+              color: colors.white,
               fontSize: 16,
               fontWeight: "600",
               textAlign: "center",

@@ -135,7 +135,7 @@ function FooterLink({ label, onPress }: { label: string; onPress: () => void }) 
       onPress={onPress}
       className="min-h-[36px] justify-center"
     >
-      <Text style={{ color: "#ffffff", fontSize: 14 }}>{label}</Text>
+      <Text style={{ color: colors.white, fontSize: 14 }}>{label}</Text>
     </Pressable>
   );
 }

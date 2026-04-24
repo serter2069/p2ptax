@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { View, useWindowDimensions, Platform } from "react-native";
 import { usePathname, useSegments } from "expo-router";
-import { colors } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 import SidebarNav, { detectSidebarGroup, SIDEBAR_WIDTH } from "./SidebarNav";
 
 /**
@@ -30,10 +30,11 @@ function installFocusRingCSS() {
   if (document.getElementById(FOCUS_RING_STYLE_ID)) return;
   const style = document.createElement("style");
   style.id = FOCUS_RING_STYLE_ID;
+  // overlay.accent20 expanded inline (browser CSS string, not RN style).
   style.textContent = `
     input:focus, textarea:focus {
       outline: none;
-      box-shadow: 0 0 0 3px rgba(34, 86, 194, 0.2);
+      box-shadow: 0 0 0 3px ${overlay.accent20};
       border-radius: 10px;
     }
   `;

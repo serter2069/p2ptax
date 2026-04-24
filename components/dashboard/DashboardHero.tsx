@@ -24,7 +24,7 @@ export interface DashboardHeroProps {
 }
 
 function valueColorFor(tone: "accent" | "surface", color?: StatColor): string {
-  if (tone === "accent") return "#ffffff";
+  if (tone === "accent") return colors.white;
   if (color === "success") return colors.success;
   if (color === "warning") return colors.warning;
   if (color === "muted") return colors.textSecondary;
@@ -54,7 +54,7 @@ export default function DashboardHero({
   const isDesktop = width >= 1024;
   const isTablet = width >= 640;
   const bg = tone === "accent" ? colors.accent : colors.surface;
-  const greetingColor = tone === "accent" ? "#ffffff" : colors.text;
+  const greetingColor = tone === "accent" ? colors.white : colors.text;
   const subtitleColor = tone === "accent" ? overlay.white80 : colors.textSecondary;
   const tileBg = tone === "accent" ? overlay.white15 : colors.surface2;
 

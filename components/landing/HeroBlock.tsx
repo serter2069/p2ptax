@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { View, Text, Pressable } from "react-native";
-import { colors, gray, AVATAR_COLORS } from "@/lib/theme";
+import { colors, gray, AVATAR_COLORS, shadowColor } from "@/lib/theme";
 
 export interface HeroSpecialistPreview {
   id: string;
@@ -44,7 +44,7 @@ export default function HeroBlock({
         paddingTop: isDesktop ? 80 : 48,
         paddingBottom: isDesktop ? 64 : 48,
         paddingHorizontal: isDesktop ? 32 : 20,
-        backgroundColor: "#f6f9ff",
+        backgroundColor: colors.accentTintBg,
       }}
     >
       {/* Soft gradient overlay via layered background pads. */}
@@ -69,7 +69,7 @@ export default function HeroBlock({
           width: 360,
           height: 360,
           borderRadius: 360,
-          backgroundColor: "#dce6fa",
+          backgroundColor: colors.accentTintShape,
           opacity: 0.55,
         }}
       />
@@ -91,7 +91,7 @@ export default function HeroBlock({
             style={{
               paddingHorizontal: 12,
               paddingVertical: 6,
-              backgroundColor: "#ffffff",
+              backgroundColor: colors.white,
               borderWidth: 1,
               borderColor: colors.border,
               marginBottom: 24,
@@ -179,7 +179,7 @@ export default function HeroBlock({
                 paddingHorizontal: 32,
                 borderWidth: 2,
                 borderColor: gray[300],
-                backgroundColor: "#ffffff",
+                backgroundColor: colors.white,
               }}
             >
               <Text className="font-semibold" style={{ fontSize: 16, color: colors.text }}>
@@ -234,7 +234,7 @@ function SpecialistCard({
     <View
       className="rounded-2xl"
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
         borderWidth: 1,
         borderColor: colors.border,
         padding: 20,
@@ -242,7 +242,7 @@ function SpecialistCard({
         gap: 16,
         // eslint-disable-next-line react-native/no-inline-styles
         transform: [{ rotate: rotation }],
-        shadowColor: "#1a2b4a",
+        shadowColor: shadowColor.heroDeep,
         shadowOpacity: 0.06,
         shadowRadius: 16,
         shadowOffset: { width: 0, height: 8 },
@@ -277,7 +277,7 @@ function SpecialistCard({
               style={{
                 paddingHorizontal: 8,
                 paddingVertical: 3,
-                backgroundColor: "#ecfdf5",
+                backgroundColor: colors.successBgTint,
               }}
             >
               <View
@@ -317,7 +317,7 @@ function SpecialistSkeleton({ index, loading }: { index: number; loading: boolea
     <View
       className="rounded-2xl"
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
         borderWidth: 1,
         borderColor: colors.border,
         padding: 20,
