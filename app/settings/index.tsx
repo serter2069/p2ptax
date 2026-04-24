@@ -34,6 +34,7 @@ import ContactMethodsList, {
   ContactMethodItem,
 } from "@/components/settings/ContactMethodsList";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
+import RoleBadge from "@/components/layout/RoleBadge";
 
 /**
  * Unified Settings page — iter11 UI layer (PR 2/3).
@@ -312,9 +313,6 @@ export default function UnifiedSettings() {
     );
   }
 
-  const accentKey = isSpecialistUser ? "specialist" : "client";
-  const accent = roleAccent[accentKey];
-
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Настройки" />
@@ -347,16 +345,14 @@ export default function UnifiedSettings() {
                 onUploadStart={() => setAvatarUploading(true)}
                 onUploadEnd={() => setAvatarUploading(false)}
               />
-              <View
-                className="mt-2 px-3 py-1 rounded-full"
-                style={{ backgroundColor: accent.soft }}
-              >
-                <Text
-                  className="text-xs font-medium"
-                  style={{ color: accent.strong }}
-                >
-                  {isSpecialistUser ? "Специалист" : "Клиент"}
-                </Text>
+              {/* Iter11-b — single RoleBadge replaces legacy duplicate labels.
+                  Unified with the badge in Sidebar/Header via RoleBadge. */}
+              <View className="mt-2">
+                <RoleBadge
+                  role={user?.role ?? null}
+                  isSpecialist={isSpecialistUser}
+                  size="md"
+                />
               </View>
             </View>
 

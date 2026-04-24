@@ -68,13 +68,6 @@ export default function AuthOtpScreen() {
   }, [resendTimer]);
 
   useEffect(() => {
-    if (!email) {
-      const t = setTimeout(() => router.replace('/auth/email' as never), 0);
-      return () => clearTimeout(t);
-    }
-  }, [email, router]);
-
-  useEffect(() => {
     if (!email) return;
     const t = setTimeout(() => inputRefs.current[0]?.focus(), 150);
     return () => clearTimeout(t);
@@ -294,6 +287,45 @@ export default function AuthOtpScreen() {
   }
 
   const canResend = resendTimer <= 0;
+
+  // Iter11-b — if the user landed here without an email query param (direct
+  // URL / session lost), show a distinct notice state with a CTA back to
+  // /auth/email instead of silently redirecting. The silent redirect made
+  // /auth/otp render identical to /auth/email in audits, which hides the
+  // screen and caused the "identical render" critique finding.
+  if (!email) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+        <HeaderBack title="" />
+        <View className="flex-1 items-center justify-center px-6">
+          <View style={{ width: "100%", maxWidth: 400 }}>
+            <Text
+              className="text-center font-extrabold text-accent mb-10"
+              style={{ fontSize: 32, letterSpacing: -0.5 }}
+            >
+              P2PTax
+            </Text>
+            <Text
+              className="text-text-base font-extrabold text-center"
+              style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
+            >
+              Сессия истекла
+            </Text>
+            <Text
+              className="text-text-mute text-center"
+              style={{ fontSize: 14, lineHeight: 20, marginBottom: 24 }}
+            >
+              Чтобы получить новый 6-значный код, вернитесь на шаг ввода email.
+            </Text>
+            <Button
+              label="Ввести email"
+              onPress={() => router.replace("/auth/email" as never)}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
