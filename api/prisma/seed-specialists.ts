@@ -17,6 +17,25 @@ const prisma = new PrismaClient();
 
 // ─── SPECIALISTS (18 total) ─────────────────────────────────────────
 
+type CaseSeed = {
+  title: string;
+  category: string;
+  amount: number | null;
+  resolvedAmount: number | null;
+  days: number | null;
+  status: "resolved" | "in_progress";
+  description: string;
+  year: number | null;
+};
+
+type ReviewSeed = {
+  authorName: string;
+  rating: number;
+  daysAgo: number; // offset from now
+  text: string;
+  categoryChips: string[];
+};
+
 const SPECIALISTS: Array<{
   email: string;
   firstName: string;
@@ -28,6 +47,14 @@ const SPECIALISTS: Array<{
   telegram?: string;
   officeAddress?: string;
   workingHours?: string;
+  // Iteration 5 — credibility stack
+  exFnsStartYear?: number;
+  exFnsEndYear?: number;
+  yearsOfExperience?: number;
+  specializations?: string[];
+  certifications?: string[];
+  cases?: CaseSeed[];
+  reviews?: ReviewSeed[];
 }> = [
   {
     email: "aleksey.voronov@p2ptax-seed.ru",
@@ -40,6 +67,9 @@ const SPECIALISTS: Array<{
     telegram: "@voronov_tax",
     officeAddress: "Москва, Хохловский пер., 9, офис 312",
     workingHours: "Пн-Пт, 10:00-19:00",
+    yearsOfExperience: 8,
+    specializations: ["Камеральные проверки по крипте", "P2P-операции Binance/Bybit", "Ответы на требования ИФНС"],
+    certifications: ["Сертификат ИПБ", "Член Палаты налоговых консультантов", "3 публикации в «Налоговед»"],
   },
   {
     email: "marina.sokolova@p2ptax-seed.ru",
@@ -63,6 +93,11 @@ const SPECIALISTS: Array<{
     telegram: "@petrov_spb",
     officeAddress: "Санкт-Петербург, Красного Текстильщика ул., 10-12",
     workingHours: "Пн-Сб, 10:00-20:00",
+    exFnsStartYear: 2013,
+    exFnsEndYear: 2023,
+    yearsOfExperience: 11,
+    specializations: ["Выездные проверки ИП", "Камеральные проверки", "Сопровождение на допросах в ИФНС"],
+    certifications: ["Советник государственной гражданской службы 2 класса", "Диплом СПбГЭУ", "5 публикаций"],
   },
   {
     email: "elena.kuznetsova@p2ptax-seed.ru",
@@ -120,6 +155,11 @@ const SPECIALISTS: Array<{
     phone: "+7 (812) 240-80-80",
     telegram: "@stepanova_spb",
     workingHours: "Пн-Пт, 9:00-19:00",
+    exFnsStartYear: 2015,
+    exFnsEndYear: 2023,
+    yearsOfExperience: 8,
+    specializations: ["Камеральные проверки", "Выездные проверки ИП", "115-ФЗ блокировки"],
+    certifications: ["Диплом ВАК", "3 публикации в «Налоговая политика»", "Налоговый монитор"],
   },
   // Iteration 4 — additional 10 specialists for richer catalog
   {
@@ -239,6 +279,171 @@ const SPECIALISTS: Array<{
     workingHours: "Пн-Пт, 10:00-19:00",
   },
 ];
+
+// ─── Helpers for generating realistic cases + reviews ──────────────
+
+const FIRST_NAMES_M = ["Андрей", "Михаил", "Дмитрий", "Сергей", "Алексей", "Игорь", "Николай", "Владимир", "Пётр", "Артём"];
+const FIRST_NAMES_F = ["Екатерина", "Марина", "Ольга", "Наталья", "Анастасия", "Татьяна", "Светлана", "Ирина", "Елена"];
+const LAST_INITIAL = ["Н.", "К.", "П.", "С.", "М.", "Т.", "Б.", "В.", "Л.", "Р."];
+
+const REVIEW_TEXTS: Record<string, string[]> = {
+  "Выездная проверка": [
+    "помог(ла) с выездной проверкой ИФНС. Оспорили {amount} доначислений. Грамотно, быстро, без лишней воды. Рекомендую.",
+    "Вели выездную проверку, было очень нервно. {name} всё разложил(а) по полочкам, подготовили документы, результат превзошёл ожидания.",
+    "Отличный специалист. За {days} дней закрыли выездную проверку по УСН. Доначисления снизили с {amount}. Ответственно и по делу.",
+  ],
+  "Камеральная проверка": [
+    "Получил акт камеральной проверки — 1.8 млн доначислений. {name} подготовил(а) возражения, вышли на {amount}. Спасибо огромное.",
+    "Камеральная по 3-НДФЛ, операции с криптой. {name} составил(а) грамотный ответ, ФНС приняла позицию. По срокам — уложились.",
+    "Профессионал. За консультацию по камеральной проверке взял(а) адекватные деньги, помог(ла) разобраться с требованием. Советую.",
+  ],
+  "Отдел оперативного контроля": [
+    "Решение ОКК на 450 тыс штрафа. {name} написал(а) жалобу — отменили полностью. Быстро и по делу.",
+    "Пришёл запрос от ОКК по ККТ. {name} объяснил(а) стратегию, помог(ла) с ответом. Вопрос закрыли без штрафа.",
+    "Помог(ла) с проверкой от ОКК. Чёткая постановка задачи, понятные сроки, адекватная цена.",
+  ],
+  default: [
+    "Отличный налоговый консультант. Всё грамотно, чётко, по делу. Рекомендую.",
+    "Обращался по сложной ситуации с ФНС. {name} разобрал(а) кейс, предложил(а) стратегию — сработало.",
+    "Ответственный специалист, глубокое понимание налогового права. Решили вопрос быстро.",
+  ],
+};
+
+function pickReviewName(seed: number): string {
+  const pool = seed % 2 === 0 ? FIRST_NAMES_M : FIRST_NAMES_F;
+  const fn = pool[seed % pool.length];
+  const ln = LAST_INITIAL[(seed * 3) % LAST_INITIAL.length];
+  return `${fn} ${ln}`;
+}
+
+function generateCasesForSpecialist(
+  firstName: string,
+  cities: string[],
+  fnsCodes: string[],
+  serviceNames: string[],
+  seedIdx: number,
+): CaseSeed[] {
+  // 3-5 cases per specialist, realistic amounts and outcomes based on category
+  const city = cities[0] ?? "Москва";
+  const fnsCode = fnsCodes[0] ?? "7716";
+  const baseYear = 2024;
+
+  const templates: Record<string, CaseSeed[]> = {
+    "Выездная проверка": [
+      {
+        title: `Выездная проверка ИП на УСН в ${city}`,
+        category: "Выездная проверка",
+        amount: 3_200_000 + (seedIdx % 5) * 400_000,
+        resolvedAmount: 2_800_000 + (seedIdx % 5) * 300_000,
+        days: 45 + (seedIdx % 10),
+        status: "resolved",
+        description: `Выездная налоговая проверка по УСН «Доходы» за 2021-2023. Доначислено ${(3_200_000 + (seedIdx % 5) * 400_000).toLocaleString("ru-RU")} ₽. Подготовлены возражения, доказана реальность хозяйственных операций с подрядчиками. В УФНС отменено 87% доначислений.`,
+        year: baseYear,
+      },
+      {
+        title: `Выездная проверка ООО — ИФНС №${fnsCode}`,
+        category: "Выездная проверка",
+        amount: 5_400_000 + (seedIdx % 3) * 800_000,
+        resolvedAmount: 4_100_000 + (seedIdx % 3) * 500_000,
+        days: 62,
+        status: "resolved",
+        description: "Доначисления по НДС и налогу на прибыль из-за операций с «техническими» контрагентами. Подготовили пакет первичных документов, показания свидетелей, техническое обоснование. В арбитраже отстояли 76%.",
+        year: baseYear - 1,
+      },
+    ],
+    "Камеральная проверка": [
+      {
+        title: `Оспаривание камеральной проверки ИФНС №${fnsCode}`,
+        category: "Камеральная проверка",
+        amount: 2_400_000 + (seedIdx % 4) * 200_000,
+        resolvedAmount: 2_100_000 + (seedIdx % 4) * 180_000,
+        days: 23 + (seedIdx % 7),
+        status: "resolved",
+        description: "Клиент-ИП получил акт камеральной проверки по декларации 3-НДФЛ за 2023 год. Доначислено 2.4 млн ₽ по операциям с криптовалютой. Подготовили возражения с подтверждением расходной части (скриншоты из Bybit + банковские выписки), ФНС сняла 87% суммы.",
+        year: baseYear,
+      },
+      {
+        title: "Камеральная по 3-НДФЛ — зарубежный брокер",
+        category: "Камеральная проверка",
+        amount: 780_000,
+        resolvedAmount: 780_000,
+        days: 18,
+        status: "resolved",
+        description: "Клиент декларировал доходы от Interactive Brokers, ФНС запросила пояснения и документы. Подготовили расчёт курсовых разниц по каждой сделке, переводы договоров. Акт пересмотрен — доначислений нет.",
+        year: baseYear,
+      },
+    ],
+    "Отдел оперативного контроля": [
+      {
+        title: "Оспаривание решения ОКК — штраф за ККТ",
+        category: "Отдел оперативного контроля",
+        amount: 450_000,
+        resolvedAmount: 450_000,
+        days: 28,
+        status: "resolved",
+        description: "Сетевой магазин получил решение ОКК о применении ККТ с нарушениями — штраф 450 тыс ₽. Составили жалобу в вышестоящий налоговый орган, указали на процессуальные нарушения. Решение отменено полностью.",
+        year: baseYear,
+      },
+    ],
+  };
+
+  const cases: CaseSeed[] = [];
+  for (const svc of serviceNames) {
+    const pool = templates[svc];
+    if (pool) cases.push(...pool);
+  }
+
+  // Add a "в работе" case
+  if (cases.length >= 2) {
+    cases.push({
+      title: `Сопровождение камеральной проверки — ${city}`,
+      category: "Камеральная проверка",
+      amount: 1_200_000,
+      resolvedAmount: null,
+      days: null,
+      status: "in_progress",
+      description: "Клиент получил требование о пояснениях в рамках камеральной проверки 3-НДФЛ. Готовим ответ, собираем первичные документы. Ожидается завершение в следующем месяце.",
+      year: baseYear,
+    });
+  }
+
+  return cases.slice(0, 4); // cap at 4 per specialist
+}
+
+function generateReviewsForSpecialist(
+  firstName: string,
+  serviceNames: string[],
+  seedIdx: number,
+): ReviewSeed[] {
+  const reviews: ReviewSeed[] = [];
+  const serviceCount = Math.min(serviceNames.length, 3);
+  const reviewCount = 3 + (seedIdx % 3); // 3-5 reviews
+
+  for (let i = 0; i < reviewCount; i++) {
+    const svc = serviceNames[i % Math.max(serviceCount, 1)] ?? "Камеральная проверка";
+    const pool = REVIEW_TEXTS[svc] ?? REVIEW_TEXTS.default;
+    const template = pool[(seedIdx + i) % pool.length];
+
+    const amount = [[ "2.1 млн", "1.8 млн", "950 тыс", "3.4 млн" ][i % 4]][0];
+    const days = 14 + (i + seedIdx) * 3;
+
+    const text = template
+      .replace(/\{name\}/g, firstName)
+      .replace(/\{amount\}/g, amount)
+      .replace(/\{days\}/g, String(days));
+
+    const rating = i === 0 ? 5 : i === 1 ? 5 : 4 + (seedIdx + i) % 2;
+
+    reviews.push({
+      authorName: pickReviewName(seedIdx * 11 + i),
+      rating: Math.min(5, rating),
+      daysAgo: 30 + i * 40 + (seedIdx % 20),
+      text,
+      categoryChips: [svc],
+    });
+  }
+  return reviews;
+}
 
 // ─── REQUESTS (15 total) ────────────────────────────────────────────
 
@@ -516,6 +721,11 @@ async function main() {
         telegram: spec.telegram,
         officeAddress: spec.officeAddress,
         workingHours: spec.workingHours,
+        exFnsStartYear: spec.exFnsStartYear ?? null,
+        exFnsEndYear: spec.exFnsEndYear ?? null,
+        yearsOfExperience: spec.yearsOfExperience ?? null,
+        specializations: spec.specializations ?? undefined,
+        certifications: spec.certifications ?? undefined,
       },
       create: {
         userId: user.id,
@@ -524,6 +734,11 @@ async function main() {
         telegram: spec.telegram,
         officeAddress: spec.officeAddress,
         workingHours: spec.workingHours,
+        exFnsStartYear: spec.exFnsStartYear ?? null,
+        exFnsEndYear: spec.exFnsEndYear ?? null,
+        yearsOfExperience: spec.yearsOfExperience ?? null,
+        specializations: spec.specializations ?? undefined,
+        certifications: spec.certifications ?? undefined,
       },
     });
 
@@ -564,6 +779,83 @@ async function main() {
     specialistCount++;
   }
   console.log(`\n  Specialists: ${specialistCount}`);
+
+  // ─── Specialist Cases + Reviews (Iteration 5) ────────────────────
+  // Wipe + regenerate deterministically per run.
+  await prisma.specialistCase.deleteMany({});
+  await prisma.specialistReview.deleteMany({});
+
+  let caseCount = 0;
+  let reviewCount = 0;
+
+  for (let sIdx = 0; sIdx < SPECIALISTS.length; sIdx++) {
+    const spec = SPECIALISTS[sIdx];
+    const user = specialistUsers[sIdx];
+    if (!user) continue;
+
+    // Derive cities + fnsCodes for this specialist from the seed entry
+    const cities = new Set<string>();
+    for (const code of spec.fnsCodes) {
+      const f = fnsMap[code];
+      if (!f) continue;
+      // cityId → city name via a secondary lookup (skipped — use explicit officeAddress city if available)
+    }
+    const cityHint =
+      spec.officeAddress?.split(",")[0]?.trim() ??
+      null;
+    const cityList = cityHint ? [cityHint] : [];
+
+    // Explicit cases (hand-authored for the spec) or generated
+    const cases =
+      spec.cases ??
+      generateCasesForSpecialist(
+        spec.firstName,
+        cityList,
+        spec.fnsCodes,
+        spec.serviceNames,
+        sIdx,
+      );
+
+    for (let i = 0; i < cases.length; i++) {
+      const c = cases[i];
+      await prisma.specialistCase.create({
+        data: {
+          specialistId: user.id,
+          title: c.title,
+          category: c.category,
+          amount: c.amount,
+          resolvedAmount: c.resolvedAmount,
+          days: c.days,
+          status: c.status,
+          description: c.description,
+          year: c.year,
+          order: i,
+        },
+      });
+      caseCount++;
+    }
+
+    const reviews =
+      spec.reviews ??
+      generateReviewsForSpecialist(spec.firstName, spec.serviceNames, sIdx);
+
+    for (const r of reviews) {
+      const date = new Date(Date.now() - r.daysAgo * 24 * 60 * 60 * 1000);
+      await prisma.specialistReview.create({
+        data: {
+          specialistId: user.id,
+          authorName: r.authorName,
+          rating: r.rating,
+          date,
+          text: r.text,
+          categoryChips: r.categoryChips,
+        },
+      });
+      reviewCount++;
+    }
+  }
+  console.log(`  Cases:       ${caseCount}`);
+  console.log(`  Reviews:     ${reviewCount}`);
 
   // ─── Client pool (5 extra clients beyond Сергей) ─────────────────
   const EXTRA_CLIENTS = [

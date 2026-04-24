@@ -11,6 +11,33 @@ export interface SpecialistProfile {
   whatsapp: string | null;
   officeAddress: string | null;
   workingHours: string | null;
+  // Iteration 5 — credibility fields
+  exFnsStartYear?: number | null;
+  exFnsEndYear?: number | null;
+  yearsOfExperience?: number | null;
+  specializations?: string[] | null;
+  certifications?: string[] | null;
+}
+
+export interface SpecialistCaseItem {
+  id: string;
+  title: string;
+  category: string;
+  amount: number | null;
+  resolvedAmount: number | null;
+  days: number | null;
+  status: string;
+  description: string;
+  year: number | null;
+}
+
+export interface SpecialistReviewItem {
+  id: string;
+  authorName: string;
+  rating: number;
+  date: string;
+  text: string;
+  categoryChips: string[];
 }
 
 export interface ContactMethodItem {
@@ -31,6 +58,11 @@ export interface SpecialistDetail {
   profile: SpecialistProfile | null;
   fnsServices: FnsServiceGroup[];
   requestsCount?: number;
+  // Iteration 5
+  cases?: SpecialistCaseItem[];
+  reviews?: SpecialistReviewItem[];
+  averageRating?: number | null;
+  reviewCount?: number;
 }
 
 export interface SimilarSpecialist {
