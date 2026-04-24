@@ -18,7 +18,7 @@ import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
-import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
+import { colors, radiusValue, fontSizeValue, textStyle } from "@/lib/theme";
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -228,10 +228,10 @@ export default function AuthOtpScreen() {
               </View>
             </View>
 
-            <Text className="text-2xl font-bold text-text-base text-center mb-2">
+            <Text style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}>
               Кто вы?
             </Text>
-            <Text className="text-base text-text-mute text-center mb-8 leading-6">
+            <Text style={{ ...textStyle.body, color: colors.textSecondary, textAlign: "center", marginBottom: 32 }}>
               Выберите, как вы будете использовать сервис
             </Text>
 
@@ -291,10 +291,10 @@ export default function AuthOtpScreen() {
           <ResponsiveContainer>
             <View className="flex-1" style={{ paddingTop: 48 }}>
               {/* Heading */}
-              <Text className="text-2xl font-bold text-text-base text-center mb-2">
+              <Text style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}>
                 Введите код
               </Text>
-              <Text className="text-base text-text-mute text-center leading-6 mb-1">
+              <Text style={{ ...textStyle.body, color: colors.textSecondary, textAlign: "center", marginBottom: 4 }}>
                 Код отправлен на
               </Text>
               <Text className="text-base font-semibold text-text-base text-center mb-8">

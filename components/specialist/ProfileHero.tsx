@@ -1,5 +1,5 @@
 import { View, Text, Pressable } from "react-native";
-import { colors } from "@/lib/theme";
+import { colors, textStyle } from "@/lib/theme";
 
 interface ProfileHeroProps {
   name: string;
@@ -41,7 +41,7 @@ export default function ProfileHero({
       <View className="flex-1">
         {/* Name row with CTA */}
         <View className="flex-row items-start justify-between">
-          <Text className="text-2xl font-bold flex-1 mr-2" style={{ color: colors.text }}>{name}</Text>
+          <Text style={{ ...textStyle.h2, color: colors.text, flex: 1, marginRight: 8 }}>{name}</Text>
           {!isOwnProfile && !isSpecialist && (
             <Pressable
               accessibilityRole="button"
