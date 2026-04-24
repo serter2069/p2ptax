@@ -46,10 +46,8 @@ export default function Header() {
                 accessibilityRole="button"
                 accessibilityLabel="Профиль"
                 onPress={() => {
-                  const settingsPath = user?.role === "SPECIALIST"
-                    ? "/settings/specialist"
-                    : "/settings/client";
-                  router.push(settingsPath as never);
+                  // Iter11 — unified /settings for non-admin users.
+                  router.push("/settings" as never);
                 }}
                 className="w-11 h-11 rounded-full items-center justify-center"
                 style={{ backgroundColor: colors.accentSoft }}
@@ -112,10 +110,8 @@ export default function Header() {
             accessibilityRole="button"
             accessibilityLabel="Профиль"
             onPress={() => {
-              const settingsPath = user?.role === "SPECIALIST"
-                ? "/settings/specialist"
-                : "/settings/client";
-              router.push(settingsPath as never);
+              // Iter11 — unified /settings for non-admin users.
+              router.push("/settings" as never);
             }}
             className="w-11 h-11 rounded-full items-center justify-center"
             style={{ backgroundColor: colors.accentSoft }}

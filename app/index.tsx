@@ -80,14 +80,14 @@ export default function LandingScreen() {
   const [error, setError] = useState(false);
 
   // Redirect authenticated users to their role-specific dashboard.
+  // Iter11 — unified (tabs) carries both USER sub-modes (isSpecialist on/off);
+  // admin still has its own group.
   useEffect(() => {
     if (isAuthenticated && user?.role) {
-      if (user.role === "SPECIALIST") {
-        router.replace("/(specialist-tabs)/dashboard" as never);
-      } else if (user.role === "CLIENT") {
-        router.replace("/(client-tabs)/dashboard" as never);
-      } else if (user.role === "ADMIN") {
+      if (user.role === "ADMIN") {
         router.replace("/(admin-tabs)/dashboard" as never);
+      } else {
+        router.replace("/(tabs)" as never);
       }
     }
   }, [isAuthenticated, user, router]);

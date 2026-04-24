@@ -1,52 +1,10 @@
-import { Tabs } from "expo-router";
-import { useWindowDimensions } from "react-native";
-import { LayoutGrid, List, MessageCircle, Rocket } from "lucide-react-native";
-import { colors } from "@/lib/theme";
+import { Stack } from "expo-router";
 
+/**
+ * Iter11 PR 2 — (specialist-tabs) is deprecated. Files inside this group
+ * are thin Redirect stubs pointing to the unified (tabs) group. Directory
+ * will be fully removed in PR 3 (cleanup).
+ */
 export default function SpecialistTabsLayout() {
-  const { width } = useWindowDimensions();
-  const isMobile = width < 640;
-
-  return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: isMobile
-          ? { height: 60, paddingBottom: 8, borderTopColor: colors.border }
-          : { display: "none" },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: 12, minHeight: 14 },
-      }}
-    >
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: "Дашборд",
-          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="requests"
-        options={{
-          title: "Заявки",
-          tabBarIcon: ({ color, size }) => <List size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="threads"
-        options={{
-          title: "Переписки",
-          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="promotion"
-        options={{
-          title: "Продвижение",
-          tabBarIcon: ({ color, size }) => <Rocket size={size} color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }

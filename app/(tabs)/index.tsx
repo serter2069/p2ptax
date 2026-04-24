@@ -1,193 +1,701 @@
-import { useEffect, useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, FlatList, useWindowDimensions } from "react-native";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  RefreshControl,
+  Switch,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
-  FileSearch, ShieldCheck, Briefcase,
-  MapPin, Search, type LucideIcon
+  MessageSquare,
+  FileText,
+  Inbox,
+  Plus,
+  Lightbulb,
+  ClipboardList,
+  CalendarDays,
+  List,
+  Sparkles,
+  TrendingUp,
+  Clock,
 } from "lucide-react-native";
-import EmptyState from "@/components/ui/EmptyState";
-import { colors, overlay } from "@/lib/theme";
-import { api } from "@/lib/api";
+import HeaderHome from "@/components/HeaderHome";
+import DesktopScreen from "@/components/layout/DesktopScreen";
+import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
+import StatusBadge from "@/components/StatusBadge";
+import {
+  DashboardGrid,
+  KpiCard,
+  DashboardWidget,
+  FeedList,
+  type FeedItem,
+} from "@/components/dashboard";
+import { api, apiGet, apiPatch } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/lib/useRequireAuth";
+import { colors, spacing } from "@/lib/theme";
 
-// SA: ровно 3 услуги — Выездная / Камеральная / Оперативный контроль.
-// Иконка выбирается эвристикой по названию, чтобы не хардкодить id.
-function pickIcon(name: string): LucideIcon {
-  if (/камеральн/i.test(name)) return FileSearch;
-  if (/выездн/i.test(name)) return Briefcase;
-  return ShieldCheck;
+/**
+ * Unified User Dashboard — iter11 UI layer (PR 2/3).
+ *
+ * Merges the legacy (client-tabs)/dashboard and (specialist-tabs)/dashboard
+ * into a single screen. Always shows: MyRequests widget, unread messages,
+ * primary CTA (create request) and tips. When {@link useAuth} reports
+ * `isSpecialistUser=true` we additionally render: thread-limit gauge,
+ * public-requests feed widget, availability toggle, and specialist KPIs.
+ *
+ * ADMIN users are handled separately by (admin-tabs) and never reach here.
+ */
+
+interface DashboardStats {
+  requestsUsed: number;
+  requestsLimit: number;
+  unreadMessages: number;
 }
 
-interface ServiceItem { id: string; name: string }
-interface FeaturedItem { id: string; title: string; location: string }
-
-function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      className="mr-3 items-center"
-      style={{ minWidth: 72, minHeight: 44, justifyContent: "flex-start", paddingTop: 2 }}
-    >
-      <View
-        className="w-14 h-14 rounded-xl items-center justify-center"
-        style={{ backgroundColor: colors.accentSoft }}
-      >
-        <Icon size={22} color={colors.accent} />
-      </View>
-      <Text className="text-xs font-medium text-text-base mt-1.5 text-center" numberOfLines={2}>{name}</Text>
-    </Pressable>
-  );
+interface ClientDashboardExtra {
+  activeRequests: number;
+  threadsToday: number;
+  awaitingReplies: number;
+  specialistsWorkingWithYou: number;
+  weeklyNewRequests: number;
 }
 
-function ServiceCard({ title, location }: { title: string; location: string }) {
-  return (
-    <Pressable className="flex-1 m-1.5" style={{ minHeight: 44 }} accessibilityRole="button" accessibilityLabel={title}>
-      <View
-        className="rounded-2xl overflow-hidden bg-white border border-border"
-        style={{
-          shadowColor: colors.text,
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.10,
-          shadowRadius: 8,
-          elevation: 4,
-        }}
-      >
-        <View className="h-28 items-center justify-center relative" style={{ backgroundColor: colors.accentSoft }}>
-          <ShieldCheck size={32} color={colors.accent} />
-        </View>
-        <View className="p-3 pb-4">
-          <Text className="text-sm font-semibold text-text-base mb-1" numberOfLines={2}>{title}</Text>
-          <View className="flex-row items-center">
-            <MapPin size={11} color={colors.textMuted} />
-            <Text className="text-xs text-text-mute ml-1">{location}</Text>
-          </View>
-        </View>
-      </View>
-    </Pressable>
-  );
+interface SpecialistExtra {
+  newRequestsWeek: number;
+  awaitingMyReply: number;
+  activeThreads: number;
+  disputedAmountMonth: number;
 }
 
-// Featured example card titles for 3 canonical services
-const FEATURED_TEMPLATES: Record<string, { title: string; location: string }> = {
-  "Камеральная проверка": { title: "Защита при камеральной проверке", location: "Москва" },
-  "Выездная проверка": { title: "Сопровождение выездной проверки", location: "Санкт-Петербург" },
-  "Отдел оперативного контроля": { title: "Сопровождение оперативного контроля", location: "Екатеринбург" },
-};
+interface RequestItem {
+  id: string;
+  title: string;
+  description: string;
+  status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
+  createdAt: string;
+  city: { id: string; name: string };
+  fns: { id: string; name: string; code: string };
+  threadsCount: number;
+}
 
-export default function HomeScreen() {
-  const { width } = useWindowDimensions();
+interface MatchingRequest {
+  id: string;
+  title: string;
+  description: string;
+  status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
+  createdAt: string;
+  city: { id: string; name: string };
+  fns: { id: string; name: string; code: string };
+  service?: string;
+  isMyRegion: boolean;
+  hasThread?: boolean;
+  threadId?: string | null;
+  existingThreadId?: string | null;
+}
+
+interface SpecialistDashboardData {
+  isAvailable: boolean;
+  activeThreads: number;
+  matchingRequests: MatchingRequest[];
+  stats: { threadsTotal: number; newMessages: number };
+}
+
+const THREAD_LIMIT_PER_DAY = 20;
+
+const TIPS: { title: string; text: string }[] = [
+  {
+    title: "Укажите ФНС",
+    text: "Специалисты ищут заявки по своим инспекциям — без ФНС вас не увидят.",
+  },
+  {
+    title: "Опишите ситуацию",
+    text: "Чем точнее суть, тем быстрее вам напишут профильные эксперты.",
+  },
+  {
+    title: "Будьте на связи",
+    text: "Первые сообщения приходят в течение 24 часов — отвечайте быстро.",
+  },
+];
+
+export default function UserDashboard() {
   const router = useRouter();
-  const isDesktop = width >= 640;
-  const containerStyle = isDesktop
-    ? { maxWidth: 1200, width: "100%" as const, alignSelf: "center" as const, paddingHorizontal: 16 }
-    : undefined;
+  const { ready } = useRequireAuth();
+  const { user, isSpecialistUser, updateUser } = useAuth();
 
-  const [services, setServices] = useState<ServiceItem[]>([]);
+  // Shared (client side of dashboard) state
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [clientExtra, setClientExtra] = useState<ClientDashboardExtra | null>(null);
+  const [requests, setRequests] = useState<RequestItem[]>([]);
 
-  useEffect(() => {
-    api<{ items: ServiceItem[] }>("/api/services", { noAuth: true })
-      .then((res) => setServices(res.items ?? []))
-      .catch(() => setServices([]));
+  // Specialist-only state
+  const [specialistExtra, setSpecialistExtra] = useState<SpecialistExtra | null>(
+    null
+  );
+  const [matchingRequests, setMatchingRequests] = useState<MatchingRequest[]>(
+    []
+  );
+  const [threadsToday, setThreadsToday] = useState(0);
+  const [isAvailable, setIsAvailable] = useState<boolean>(
+    user?.isAvailable ?? true
+  );
+  const [availabilityToggling, setAvailabilityToggling] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
+
+  const fetchClientData = useCallback(async () => {
+    const [statsRes, requestsRes] = await Promise.all([
+      api<DashboardStats>("/api/dashboard/stats"),
+      api<{ items: RequestItem[] }>("/api/requests/my?limit=8"),
+    ]);
+    setStats(statsRes);
+    setRequests(requestsRes.items);
+
+    try {
+      const ex = await api<ClientDashboardExtra>("/api/stats/client-dashboard");
+      setClientExtra(ex);
+    } catch {
+      setClientExtra(null);
+    }
   }, []);
 
-  // Fallback: если API недоступен — показываем 3 канонические услуги (SA).
-  const displayServices: ServiceItem[] = services.length > 0
-    ? services
-    : [
-        { id: "s1", name: "Камеральная проверка" },
-        { id: "s2", name: "Выездная проверка" },
-        { id: "s3", name: "Отдел оперативного контроля" },
-      ];
+  const fetchSpecialistData = useCallback(async () => {
+    try {
+      const dashData = await apiGet<SpecialistDashboardData>(
+        "/api/specialists/dashboard"
+      );
+      setIsAvailable(dashData.isAvailable);
+      setMatchingRequests(dashData.matchingRequests ?? []);
+      updateUser({ isAvailable: dashData.isAvailable });
+    } catch {
+      // Specialist endpoint may 403 if profile not complete — ignore.
+    }
 
-  const featured: FeaturedItem[] = displayServices.map((s) => {
-    const tpl = FEATURED_TEMPLATES[s.name] ?? { title: s.name, location: "Россия" };
-    return { id: s.id, title: tpl.title, location: tpl.location };
+    try {
+      const ex = await apiGet<SpecialistExtra>(
+        "/api/stats/specialist-dashboard"
+      );
+      setSpecialistExtra(ex);
+    } catch {
+      setSpecialistExtra(null);
+    }
+
+    try {
+      const today = await apiGet<{ count: number }>(
+        "/api/specialist/threads-today"
+      );
+      setThreadsToday(today.count);
+    } catch {
+      setThreadsToday(0);
+    }
+  }, [updateUser]);
+
+  const fetchData = useCallback(async () => {
+    setError(false);
+    try {
+      await fetchClientData();
+      if (isSpecialistUser) {
+        await fetchSpecialistData();
+      }
+    } catch (e) {
+      console.error("Dashboard fetch error:", e);
+      setError(true);
+    }
+  }, [fetchClientData, fetchSpecialistData, isSpecialistUser]);
+
+  useEffect(() => {
+    if (!ready) return;
+    setLoading(true);
+    fetchData().finally(() => setLoading(false));
+  }, [ready, fetchData]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }, [fetchData]);
+
+  const handleToggleAvailability = useCallback(
+    async (val: boolean) => {
+      setIsAvailable(val);
+      setAvailabilityToggling(true);
+      try {
+        await apiPatch("/api/specialists/availability", { isAvailable: val });
+        updateUser({ isAvailable: val });
+      } catch {
+        setIsAvailable(!val);
+      } finally {
+        setAvailabilityToggling(false);
+      }
+    },
+    [updateUser]
+  );
+
+  const atLimit = stats ? stats.requestsUsed >= stats.requestsLimit : false;
+  const firstName = user?.firstName ?? "";
+  const activeRequests = requests.filter(
+    (r) => r.status === "ACTIVE" || r.status === "CLOSING_SOON"
+  );
+
+  const clientFeedItems: FeedItem[] = useMemo(
+    () =>
+      requests.map((r) => ({
+        id: r.id,
+        title: r.title,
+        meta: `${r.city.name} · ${r.fns.name}`,
+        rightValue:
+          r.threadsCount > 0
+            ? `${r.threadsCount} ${
+                r.threadsCount === 1
+                  ? "диалог"
+                  : r.threadsCount < 5
+                    ? "диалога"
+                    : "диалогов"
+              }`
+            : undefined,
+        icon: FileText,
+        iconTone:
+          r.status === "CLOSING_SOON"
+            ? "warning"
+            : r.status === "CLOSED"
+              ? "muted"
+              : "primary",
+        onPress: () => router.push(`/requests/${r.id}/detail` as never),
+      })),
+    [requests, router]
+  );
+
+  const matched = matchingRequests.filter((r) => r.status !== "CLOSED");
+  const newLeads = matched.filter((r) => !r.hasThread);
+  const matchedToday = matched.filter((r) => {
+    const dt = new Date(r.createdAt);
+    const now = new Date();
+    return dt.toDateString() === now.toDateString();
   });
 
+  const activeThreads =
+    specialistExtra?.activeThreads ?? stats?.unreadMessages ?? 0;
+  const weekCount = specialistExtra?.newRequestsWeek ?? 0;
+  const threadsLeft = Math.max(0, THREAD_LIMIT_PER_DAY - threadsToday);
+  const progressPct = Math.min(
+    100,
+    Math.round((threadsToday / THREAD_LIMIT_PER_DAY) * 100)
+  );
+
+  const specialistFeedItems: FeedItem[] = useMemo(
+    () =>
+      matched.slice(0, 6).map((r) => ({
+        id: r.id,
+        title: r.title,
+        meta: `${r.city.name} · ${r.fns.name}${r.service ? ` · ${r.service}` : ""}`,
+        rightValue: r.isMyRegion ? "Моя зона" : undefined,
+        icon: r.status === "CLOSING_SOON" ? Clock : Inbox,
+        iconTone:
+          r.status === "CLOSING_SOON"
+            ? "warning"
+            : r.isMyRegion
+              ? "primary"
+              : "muted",
+        onPress: () => {
+          const existing = r.existingThreadId ?? r.threadId;
+          if (r.hasThread && existing) {
+            router.push(`/threads/${existing}` as never);
+          } else {
+            router.push(`/requests/${r.id}/write` as never);
+          }
+        },
+      })),
+    [matched, router]
+  );
+
+  const subtitle = isSpecialistUser
+    ? isAvailable
+      ? newLeads.length > 0
+        ? `${newLeads.length} новых подходящих заявок`
+        : "Ваш рабочий стол: заявки, диалоги, лиды"
+      : "Вы скрыты из каталога — включите приём заявок"
+    : "Ваш рабочий стол: заявки, диалоги, сообщения";
+
   return (
-    <SafeAreaView className="flex-1 bg-surface2">
-      <View className="flex-1" style={containerStyle}>
-        <FlatList
-          data={featured}
-          numColumns={2}
-          keyExtractor={(item) => item.id}
-          contentContainerClassName="px-2 pb-6"
-          ListEmptyComponent={
-            <EmptyState
-              title="Нет активных услуг"
-              subtitle="Здесь появятся налоговые услуги специалистов платформы"
-            />
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
+      <HeaderHome
+        notificationCount={stats?.unreadMessages ?? 0}
+        onSettingsPress={() => router.push("/settings" as never)}
+      />
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        <DesktopScreen
+          title={firstName ? `Здравствуйте, ${firstName}!` : "Главная"}
+          subtitle={subtitle}
+          headerActions={
+            isSpecialistUser ? (
+              <View className="flex-row items-center gap-2 bg-white border border-border rounded-full px-3 py-2">
+                <Text className="text-text-mute text-xs">Принимаю заявки</Text>
+                <Switch
+                  value={isAvailable}
+                  onValueChange={handleToggleAvailability}
+                  disabled={availabilityToggling}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.surface}
+                />
+              </View>
+            ) : undefined
           }
-          ListHeaderComponent={
-            <View>
-              {/* Hero header */}
-              <View
-                className="mx-2 mt-4 mb-4 rounded-2xl px-5 py-5"
-                style={{ backgroundColor: colors.accent, minHeight: 100 }}
-              >
-                <Text className="text-2xl font-bold text-white mb-1">Налоговая защита</Text>
-                <Text className="text-sm" style={{ color: overlay.white80 }}>
-                  Проверенные специалисты по налогам по всей России
-                </Text>
-                <Text className="text-xs mt-1" style={{ color: overlay.white50 }}>
-                  Камеральные и выездные проверки, оперативный контроль
-                </Text>
-              </View>
-
-              {/* Search Bar */}
-              <View className="px-2 mb-4">
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Поиск специалистов и услуг"
-                  onPress={() => router.push("/(tabs)/search" as never)}
-                  className="flex-row items-center h-12 rounded-xl bg-white border border-border px-4"
-                >
-                  <Search size={16} color={colors.textSecondary} />
-                  <TextInput
-                    accessibilityLabel="Поиск специалистов и услуг"
-                    className="flex-1 ml-3 text-base text-text-base"
-                    placeholder="Поиск специалистов или услуг..."
-                    placeholderTextColor={colors.placeholder}
-                    editable={false}
-                    pointerEvents="none"
-                  />
-                </Pressable>
-              </View>
-
-              {/* Categories */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerClassName="px-2 pb-3"
-              >
-                {displayServices.map((s) => (
-                  <CategoryChip key={s.id} name={s.name} Icon={pickIcon(s.name)} />
-                ))}
-              </ScrollView>
-
-              {/* Section Title */}
-              <View className="flex-row justify-between items-center px-2 mb-2">
-                <Text className="text-base font-bold text-text-base">Популярные услуги</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Смотреть всех специалистов"
-                  onPress={() => router.push("/specialists" as never)}
-                  style={{ height: 44, justifyContent: "center", paddingHorizontal: 12 }}
-                >
-                  <Text className="text-sm text-accent font-medium">Все</Text>
-                </Pressable>
-              </View>
+        >
+          {loading ? (
+            <View style={{ paddingVertical: spacing.lg, gap: spacing.md }}>
+              <LoadingState variant="skeleton" lines={5} />
             </View>
-          }
-          renderItem={({ item }) => (
-            <ServiceCard
-              title={item.title}
-              location={item.location}
+          ) : error ? (
+            <ErrorState
+              message="Не удалось загрузить данные"
+              onRetry={() => {
+                setLoading(true);
+                fetchData().finally(() => setLoading(false));
+              }}
             />
+          ) : (
+            <View style={{ gap: 24 }}>
+              {/* KPI row — specialist gets 4 KPIs, client gets 3 */}
+              {isSpecialistUser ? (
+                <DashboardGrid>
+                  <DashboardGrid.Col span={3} tabletSpan={1}>
+                    <KpiCard
+                      label="Matched сегодня"
+                      value={matchedToday.length}
+                      icon={Sparkles}
+                      tone="primary"
+                    />
+                  </DashboardGrid.Col>
+                  <DashboardGrid.Col span={3} tabletSpan={1}>
+                    <KpiCard
+                      label="Активных диалогов"
+                      value={activeThreads}
+                      icon={MessageSquare}
+                      tone={activeThreads > 0 ? "success" : "muted"}
+                    />
+                  </DashboardGrid.Col>
+                  <DashboardGrid.Col span={3} tabletSpan={1}>
+                    <KpiCard
+                      label="Thread-лимит"
+                      value={`${threadsToday}/${THREAD_LIMIT_PER_DAY}`}
+                      hint={
+                        threadsLeft > 0 ? `осталось ${threadsLeft}` : "исчерпан"
+                      }
+                      icon={CalendarDays}
+                      tone={
+                        threadsLeft === 0
+                          ? "danger"
+                          : threadsLeft <= 3
+                            ? "warning"
+                            : "muted"
+                      }
+                    />
+                  </DashboardGrid.Col>
+                  <DashboardGrid.Col span={3} tabletSpan={1}>
+                    <KpiCard
+                      label="Новых за неделю"
+                      value={weekCount}
+                      icon={TrendingUp}
+                      tone={weekCount > 0 ? "success" : "muted"}
+                      trend={weekCount > 0 ? "up" : "flat"}
+                    />
+                  </DashboardGrid.Col>
+                </DashboardGrid>
+              ) : (
+                <DashboardGrid>
+                  <DashboardGrid.Col span={4} tabletSpan={1}>
+                    <KpiCard
+                      label="Активных заявок"
+                      value={
+                        clientExtra?.activeRequests ?? activeRequests.length
+                      }
+                      hint={`из ${stats?.requestsLimit ?? 5} доступных`}
+                      icon={FileText}
+                      tone="primary"
+                      onPress={() => router.push("/(tabs)/requests" as never)}
+                    />
+                  </DashboardGrid.Col>
+                  <DashboardGrid.Col span={4} tabletSpan={1}>
+                    <KpiCard
+                      label="Непрочитанных сообщений"
+                      value={stats?.unreadMessages ?? 0}
+                      icon={MessageSquare}
+                      tone={
+                        (stats?.unreadMessages ?? 0) > 0 ? "warning" : "muted"
+                      }
+                      onPress={() => router.push("/(tabs)/messages" as never)}
+                    />
+                  </DashboardGrid.Col>
+                  <DashboardGrid.Col span={4} tabletSpan={2}>
+                    <KpiCard
+                      label="Новых диалогов сегодня"
+                      value={clientExtra?.threadsToday ?? 0}
+                      icon={Inbox}
+                      tone={
+                        (clientExtra?.threadsToday ?? 0) > 0
+                          ? "success"
+                          : "muted"
+                      }
+                      trend={
+                        (clientExtra?.threadsToday ?? 0) > 0 ? "up" : "flat"
+                      }
+                    />
+                  </DashboardGrid.Col>
+                </DashboardGrid>
+              )}
+
+              {/* Main + sidebar: 8 / 4 */}
+              <DashboardGrid>
+                <DashboardGrid.Col span={8} tabletSpan={2}>
+                  <View style={{ gap: 16 }}>
+                    {/* Always show "My requests" widget */}
+                    <DashboardWidget
+                      title="Мои заявки"
+                      subtitle={
+                        clientFeedItems.length > 0
+                          ? `Всего ${clientFeedItems.length}`
+                          : "Пусто"
+                      }
+                      icon={ClipboardList}
+                      actionLabel="Все →"
+                      onActionPress={() =>
+                        router.push("/(tabs)/requests" as never)
+                      }
+                      flush
+                    >
+                      <FeedList
+                        items={clientFeedItems}
+                        limit={6}
+                        emptyText="У вас пока нет заявок. Создайте первую."
+                      />
+                      {activeRequests.length > 0 ? (
+                        <View
+                          className="flex-row flex-wrap items-center gap-2"
+                          style={{
+                            paddingHorizontal: 16,
+                            paddingVertical: 12,
+                            borderTopWidth: 1,
+                            borderTopColor: colors.border,
+                          }}
+                        >
+                          {activeRequests.slice(0, 3).map((r) => (
+                            <StatusBadge key={r.id} status={r.status} />
+                          ))}
+                          <Text
+                            className="text-text-dim"
+                            style={{ fontSize: 12 }}
+                          >
+                            {activeRequests.length} активных
+                          </Text>
+                        </View>
+                      ) : null}
+                    </DashboardWidget>
+
+                    {/* Specialist-only: public-requests feed */}
+                    {isSpecialistUser ? (
+                      <DashboardWidget
+                        title="Подходящие публичные заявки"
+                        subtitle={`Всего ${matched.length}`}
+                        icon={Inbox}
+                        actionLabel="Все →"
+                        onActionPress={() =>
+                          router.push("/(tabs)/public-requests" as never)
+                        }
+                        flush
+                      >
+                        <FeedList
+                          items={specialistFeedItems}
+                          limit={6}
+                          emptyText="Подходящих заявок пока нет. Расширьте рабочую область."
+                        />
+                      </DashboardWidget>
+                    ) : null}
+                  </View>
+                </DashboardGrid.Col>
+
+                <DashboardGrid.Col span={4} tabletSpan={2}>
+                  <View style={{ gap: 16 }}>
+                    {/* Primary CTA — create request (always) */}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Создать заявку"
+                      onPress={() => router.push("/requests/new" as never)}
+                      disabled={atLimit}
+                      className={`rounded-2xl p-5 ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
+                    >
+                      <View className="flex-row items-center gap-3">
+                        <View
+                          className={`rounded-xl items-center justify-center ${atLimit ? "bg-white" : "bg-white/20"}`}
+                          style={{ width: 44, height: 44 }}
+                        >
+                          <Plus
+                            size={22}
+                            color={atLimit ? colors.textMuted : "#fff"}
+                          />
+                        </View>
+                        <View className="flex-1 min-w-0">
+                          <Text
+                            className={`font-extrabold ${atLimit ? "text-text-mute" : "text-white"}`}
+                            style={{ fontSize: 16 }}
+                          >
+                            {atLimit ? "Лимит исчерпан" : "Создать заявку"}
+                          </Text>
+                          <Text
+                            className={
+                              atLimit ? "text-text-dim" : "text-white/80"
+                            }
+                            style={{ fontSize: 12, marginTop: 2 }}
+                          >
+                            {atLimit
+                              ? "Закройте одну, чтобы создать новую"
+                              : "Первые сообщения в течение 24 часов"}
+                          </Text>
+                        </View>
+                      </View>
+                    </Pressable>
+
+                    {/* Specialist-only: thread-limit gauge */}
+                    {isSpecialistUser ? (
+                      <DashboardWidget
+                        title="Thread-лимит сегодня"
+                        icon={CalendarDays}
+                        accentBar={
+                          threadsLeft === 0
+                            ? "danger"
+                            : threadsLeft <= 3
+                              ? "warning"
+                              : "success"
+                        }
+                      >
+                        <View style={{ gap: 12 }}>
+                          <View className="flex-row items-baseline justify-between">
+                            <Text
+                              className="font-extrabold text-text-base"
+                              style={{ fontSize: 28 }}
+                            >
+                              {threadsToday}
+                              <Text
+                                className="text-text-dim font-normal"
+                                style={{ fontSize: 16 }}
+                              >
+                                {` / ${THREAD_LIMIT_PER_DAY}`}
+                              </Text>
+                            </Text>
+                            <Text
+                              className="text-text-mute"
+                              style={{ fontSize: 12 }}
+                            >
+                              {threadsLeft > 0
+                                ? `${threadsLeft} осталось`
+                                : "исчерпан"}
+                            </Text>
+                          </View>
+                          <View
+                            className="w-full rounded-full overflow-hidden"
+                            style={{
+                              height: 8,
+                              backgroundColor: colors.surface2,
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: `${progressPct}%`,
+                                height: "100%",
+                                backgroundColor:
+                                  threadsLeft === 0
+                                    ? colors.danger
+                                    : threadsLeft <= 3
+                                      ? colors.warning
+                                      : colors.success,
+                              }}
+                            />
+                          </View>
+                          <Text
+                            className="text-text-mute"
+                            style={{ fontSize: 12 }}
+                          >
+                            Лимит обновляется каждые сутки в 00:00.
+                          </Text>
+                        </View>
+                      </DashboardWidget>
+                    ) : null}
+
+                    {/* Specialist-only: secondary CTA to full public catalog */}
+                    {isSpecialistUser ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Все публичные заявки"
+                        onPress={() =>
+                          router.push("/(tabs)/public-requests" as never)
+                        }
+                        className="rounded-2xl bg-accent p-5"
+                      >
+                        <View className="flex-row items-center gap-3">
+                          <View
+                            className="rounded-xl items-center justify-center bg-white/20"
+                            style={{ width: 44, height: 44 }}
+                          >
+                            <List size={22} color="#fff" />
+                          </View>
+                          <View className="flex-1 min-w-0">
+                            <Text
+                              className="font-extrabold text-white"
+                              style={{ fontSize: 16 }}
+                            >
+                              Публичные заявки
+                            </Text>
+                            <Text
+                              className="text-white/80 mt-0.5"
+                              style={{ fontSize: 12 }}
+                            >
+                              Полный каталог с фильтрами
+                            </Text>
+                          </View>
+                        </View>
+                      </Pressable>
+                    ) : null}
+
+                    {/* Client-only: tips widget */}
+                    {!isSpecialistUser ? (
+                      <DashboardWidget title="Советы" icon={Lightbulb}>
+                        <View style={{ gap: 12 }}>
+                          {TIPS.map((t) => (
+                            <View key={t.title}>
+                              <Text
+                                className="text-text-base font-semibold"
+                                style={{ fontSize: 13 }}
+                              >
+                                {t.title}
+                              </Text>
+                              <Text
+                                className="text-text-mute mt-0.5"
+                                style={{ fontSize: 12, lineHeight: 16 }}
+                              >
+                                {t.text}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </DashboardWidget>
+                    ) : null}
+                  </View>
+                </DashboardGrid.Col>
+              </DashboardGrid>
+            </View>
           )}
-        />
-      </View>
+        </DesktopScreen>
+      </ScrollView>
     </SafeAreaView>
   );
 }

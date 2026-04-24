@@ -20,12 +20,11 @@ export default function AuthEmailScreen() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === "CLIENT") {
-        router.replace("/(client-tabs)/dashboard" as never);
-      } else if (user.role === "SPECIALIST") {
-        router.replace("/(specialist-tabs)/dashboard" as never);
-      } else if (user.role === "ADMIN") {
+      // Iter11 — unified (tabs) replaces split client/specialist groups.
+      if (user.role === "ADMIN") {
         router.replace("/(admin-tabs)/dashboard" as never);
+      } else {
+        router.replace("/(tabs)" as never);
       }
     }
   }, [isAuthenticated, user, router]);
