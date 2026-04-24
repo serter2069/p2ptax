@@ -1,7 +1,7 @@
 import { Pressable, Text, ActivityIndicator } from "react-native";
 import { useState } from "react";
 import { type LucideIcon } from "lucide-react-native";
-import { colors } from "../../lib/theme";
+import { colors, gray } from "../../lib/theme";
 
 export interface ButtonProps {
   variant?: "primary" | "secondary" | "destructive";
@@ -27,18 +27,23 @@ export default function Button({
   const [pressed, setPressed] = useState(false);
 
   const widthClass = fullWidth ? "w-full" : "px-6";
-  const opacityClass = disabled || loading ? "opacity-40" : "";
 
-  const baseContainerClass = `rounded-xl h-12 flex-row items-center justify-center ${widthClass} ${opacityClass}`;
+  const baseContainerClass = `rounded-xl h-12 flex-row items-center justify-center ${widthClass}`;
 
-  const variantStyle =
-    variant === "primary"
+  const isInactive = disabled || loading;
+
+  // Issue #1290 — disabled must be a clearly different fill (gray[200] /
+  // gray[400]) so users don't tap a bleached-primary that looks active.
+  // Loading keeps the variant fill and shows a spinner instead.
+  const variantStyle = isInactive && disabled && !loading
+    ? { backgroundColor: gray[200], borderWidth: 0 }
+    : variant === "primary"
       ? { backgroundColor: colors.primary }
       : variant === "secondary"
         ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }
         : { backgroundColor: colors.danger };
 
-  const shadowStyle = variant === "primary" && !pressed
+  const shadowStyle = variant === "primary" && !pressed && !isInactive
     ? { shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 }
     : undefined;
 
@@ -47,20 +52,29 @@ export default function Button({
     : undefined;
 
   const textColorValue =
-    variant === "primary" || variant === "destructive" ? "#ffffff" : colors.text;
+    disabled && !loading
+      ? gray[400]
+      : variant === "primary" || variant === "destructive"
+        ? "#ffffff"
+        : colors.text;
 
   const iconColor =
-    variant === "primary" || variant === "destructive" ? "#ffffff" : colors.primary;
+    disabled && !loading
+      ? gray[400]
+      : variant === "primary" || variant === "destructive"
+        ? "#ffffff"
+        : colors.primary;
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: isInactive, busy: loading }}
       testID={testID}
       onPress={onPress}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
-      disabled={disabled || loading}
+      disabled={isInactive}
       className={baseContainerClass}
       style={[variantStyle, shadowStyle, pressStyle]}
     >

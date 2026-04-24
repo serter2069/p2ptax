@@ -1,7 +1,18 @@
+/**
+ * Unified primary blue — #2256c2 (landing tone).
+ *
+ * Issue #1288: historically the app drifted between multiple shades of
+ * blue (#2e5bff, #2256c2, #3b5bdb, #1e40af). The landing marketing site
+ * is already in market with #2256c2, so it's the single source of truth.
+ * NEVER hardcode a different blue hex in app/ or components/ — always
+ * import `colors.primary` (or the Tailwind `accent` token) from here.
+ */
+const PRIMARY_BLUE = '#2256c2' as const
+
 export const colors = {
   // Brand — staging palette
-  primary: '#2256c2',        // accent/primary
-  accent: '#2256c2',         // accent (same as primary)
+  primary: PRIMARY_BLUE,     // accent/primary (single source of truth)
+  accent: PRIMARY_BLUE,      // accent (same as primary)
   accentSoft: '#e8eefb',     // accent-soft
   accentSoftInk: '#1b3d8a',  // accent-soft-ink
   background: '#ffffff',     // bg
@@ -34,6 +45,42 @@ export const colors = {
   blue300: '#93c5fd',
   blue500: '#3b82f6',
 } as const
+
+/**
+ * Gray scale — Tailwind-compatible neutrals used for disabled states,
+ * muted chrome, separators. Issue #1290: disabled buttons must use
+ * `gray.200` bg + `gray.400` text for sufficient contrast against the
+ * active primary (so the eye can still tell "can press" vs "can't").
+ */
+export const gray = {
+  50:  '#f9fafb',
+  100: '#f3f4f6',
+  200: '#e5e7eb',
+  300: '#d1d5db',
+  400: '#9ca3af',
+  500: '#6b7280',
+  600: '#4b5563',
+  700: '#374151',
+  800: '#1f2937',
+  900: '#111827',
+} as const
+
+/**
+ * Role-signalling accents (issue #1289). Every authenticated user belongs
+ * to exactly one role tier; the header + key chrome tinted accordingly so
+ * three portals stop looking like a single template with swapped H1.
+ *
+ *   client      blue (inherits primary) — default, safest choice
+ *   specialist  emerald — "active professional" signal
+ *   admin       amber — "internal ops, handle with care"
+ */
+export const roleAccent = {
+  client:     { strong: PRIMARY_BLUE, soft: '#e8eefb', ink: '#ffffff', label: 'Клиент' },
+  specialist: { strong: '#059669',    soft: '#d1fae5', ink: '#ffffff', label: 'Специалист' },
+  admin:      { strong: '#d97706',    soft: '#fef3c7', ink: '#ffffff', label: 'Админ' },
+} as const
+
+export type RoleAccentKey = keyof typeof roleAccent
 
 export const tw = {
   primary: 'bg-accent',
