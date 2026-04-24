@@ -25,7 +25,7 @@ import FileUploadSection, { AttachedFile } from "@/components/requests/FileUploa
 
 export default function NewRequest() {
   const router = useRouter();
-  const { ready } = useRequireAuth();
+  const { ready, isLoading, isAuthenticated } = useRequireAuth();
 
   // Form fields
   const [title, setTitle] = useState("");
@@ -53,8 +53,12 @@ export default function NewRequest() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Load cities, services, and check limit on mount
+  // Load cities, services, and check limit on mount.
+  // Wait until auth is resolved — an unauthenticated call to /api/dashboard/stats
+  // would 401 and set `loadError=true`, trapping the user on the error screen
+  // instead of letting `useRequireAuth` redirect them to /auth/email.
   useEffect(() => {
+    if (isLoading || !isAuthenticated) return;
     async function init() {
       try {
         const [citiesRes, servicesRes, statsRes] = await Promise.all([
@@ -76,7 +80,7 @@ export default function NewRequest() {
       }
     }
     init();
-  }, []);
+  }, [isLoading, isAuthenticated]);
 
   // Load FNS offices when city changes
   const loadFnsForCity = useCallback(async (citySlug: string) => {
@@ -162,7 +166,11 @@ export default function NewRequest() {
   const selectedFns = fnsOffices.find((f) => f.id === selectedFnsId);
   const selectedService = services.find((s) => s.id === selectedServiceId);
 
-  if (!ready || loadingInit) {
+  // Auth resolution in progress OR initial data still loading — show spinner.
+  // Once auth is known to be `unauthenticated`, `useRequireAuth` will redirect;
+  // we render nothing in that window to avoid the infinite-spinner regression
+  // mosaic caught on /requests/new (iter8 baseline).
+  if (isLoading || (ready && loadingInit)) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
         <HeaderBack title="Новая заявка" />
@@ -171,6 +179,12 @@ export default function NewRequest() {
         </View>
       </SafeAreaView>
     );
+  }
+
+  if (!isAuthenticated) {
+    // `useRequireAuth` is redirecting to /auth/email — render nothing to avoid
+    // flashing a stale spinner while navigation completes.
+    return null;
   }
 
   if (loadError && cities.length === 0 && services.length === 0) {
