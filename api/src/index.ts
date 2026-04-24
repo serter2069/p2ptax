@@ -17,6 +17,7 @@ import threadsRoutes from "./routes/threads";
 import adminRoutes from "./routes/admin";
 import notificationsRoutes from "./routes/notifications";
 import contactsRoutes from "./routes/contacts";
+import statsRoutes from "./routes/stats";
 import { startNotificationWorker } from "./notifications/notification.processor";
 import { runRequestLifecycleCron } from "./cron/requestLifecycle";
 
@@ -46,6 +47,7 @@ app.use("/api/threads", threadsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api", contactsRoutes);
+app.use("/api/stats", statsRoutes);
 
 app.listen(PORT, () => {
   // Start BullMQ worker (graceful degradation if Valkey unavailable)
