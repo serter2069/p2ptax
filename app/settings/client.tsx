@@ -12,9 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Pencil, FileText, ChevronRight, LogOut, Trash2, Bell, User as UserIcon, Mail } from "lucide-react-native";
+import { Pencil, FileText, ChevronRight, LogOut, Trash2, Bell } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -30,7 +29,6 @@ interface NotificationSetting {
   label: string;
   description: string;
 }
-
 
 const NOTIFICATION_SETTINGS: NotificationSetting[] = [
   {
@@ -62,7 +60,6 @@ export default function ClientSettings() {
     closingWarnings: setClosingWarnings,
   };
 
-  // Avatar upload state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl || null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -85,7 +82,6 @@ export default function ClientSettings() {
     .filter(Boolean)
     .join("");
 
-  // Avatar upload
   const uploadAvatar = async (file: File) => {
     setAvatarUploading(true);
     try {
@@ -203,43 +199,29 @@ export default function ClientSettings() {
     );
   }
 
-  const leftPane = (
-    <View style={{ gap: 24 }}>
-      <View
-        className="rounded-2xl items-center justify-center bg-white self-start"
-        style={{ width: 56, height: 56 }}
-      >
-        <UserIcon size={26} color={colors.accent} />
-      </View>
-      <View style={{ gap: 12 }}>
-        <Text className="font-extrabold text-text-base" style={{ fontSize: 24, lineHeight: 30 }}>
-          Ваш аккаунт
-        </Text>
-        <Text className="text-text-mute" style={{ fontSize: 14, lineHeight: 20 }}>
-          Текущее состояние профиля. Обновляется сразу после сохранения.
-        </Text>
-      </View>
-      <View className="bg-white rounded-2xl border border-border" style={{ padding: 16, gap: 12 }}>
-        <SummaryRow icon={UserIcon} label="Имя" value={user ? [user.firstName, user.lastName].filter(Boolean).join(" ") || "не указано" : "—"} />
-        <SummaryRow icon={Mail} label="Email" value={user?.email ?? "—"} />
-        <SummaryRow
-          icon={Bell}
-          label="Уведомления"
-          value={[newMessages, closingWarnings].filter(Boolean).length + " / 2 включено"}
-        />
-      </View>
-    </View>
-  );
-
-  const rightForm = (
+  return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Настройки" />
-      <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-        <View className="px-4">
-          <View className="py-6">
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: hasChanges ? 96 : 32 }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            alignSelf: "center",
+            paddingHorizontal: 16,
+            paddingTop: 16,
+          }}
+        >
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-4">
+              Профиль
+            </Text>
 
-            {/* Avatar */}
-            <View className="items-center mb-6">
+            <View className="items-center mb-4">
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Фото профиля"
@@ -292,7 +274,6 @@ export default function ClientSettings() {
               </View>
             </View>
 
-            {/* Hidden file input (web only) */}
             {Platform.OS === "web" && (
               <input
                 ref={fileInputRef}
@@ -303,7 +284,6 @@ export default function ClientSettings() {
               />
             )}
 
-            {/* Name fields */}
             <View className="mb-3">
               <Input
                 label="Имя"
@@ -322,147 +302,134 @@ export default function ClientSettings() {
               />
             </View>
 
-            {/* Email (read-only) */}
             <Text className="text-sm font-medium text-text-base mb-1">
               Email{" "}
               <Text className="text-text-mute font-normal">(нельзя изменить)</Text>
             </Text>
-            <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center mb-6">
+            <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center">
               <Text className="text-base text-text-mute">{user?.email || ""}</Text>
             </View>
+          </View>
 
-            {/* Save button */}
-            <View className="mb-8">
-              <Button
-                label="Сохранить"
-                onPress={handleSave}
-                disabled={!hasChanges || saving}
-                loading={saving}
-              />
-            </View>
-
-            {/* Notifications section */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
               Уведомления
             </Text>
 
-            <View className="bg-white border border-border rounded-2xl mb-6 overflow-hidden">
-              {NOTIFICATION_SETTINGS.length === 0 ? (
-                <EmptyState icon={Bell} title="Нет настроек уведомлений" subtitle="Настройки уведомлений недоступны" />
-              ) : (
-                NOTIFICATION_SETTINGS.map((setting, index) => (
-                  <View
-                    key={setting.key}
-                    className={`flex-row items-center min-h-[50px] px-4 py-3${index < NOTIFICATION_SETTINGS.length - 1 ? " border-b border-border" : ""}`}
-                  >
-                    <View className="flex-1 mr-3">
-                      <Text className="text-base text-text-base">{setting.label}</Text>
-                      <Text className="text-xs text-text-mute mt-0.5">{setting.description}</Text>
-                    </View>
-                    <Switch
-                      accessibilityLabel={setting.label}
-                      value={notificationValues[setting.key] ?? false}
-                      onValueChange={notificationSetters[setting.key]}
-                      trackColor={{ false: colors.border, true: colors.primary }}
-                      thumbColor={colors.surface}
-                    />
+            {NOTIFICATION_SETTINGS.length === 0 ? (
+              <EmptyState
+                icon={Bell}
+                title="Нет настроек уведомлений"
+                subtitle="Настройки уведомлений недоступны"
+              />
+            ) : (
+              NOTIFICATION_SETTINGS.map((setting, index) => (
+                <View
+                  key={setting.key}
+                  className={`flex-row items-center min-h-[50px] py-3${index < NOTIFICATION_SETTINGS.length - 1 ? " border-b border-border" : ""}`}
+                >
+                  <View className="flex-1 mr-3">
+                    <Text className="text-base text-text-base">
+                      {setting.label}
+                    </Text>
+                    <Text className="text-xs text-text-mute mt-0.5">
+                      {setting.description}
+                    </Text>
                   </View>
-                ))
-              )}
-            </View>
+                  <Switch
+                    accessibilityLabel={setting.label}
+                    value={notificationValues[setting.key] ?? false}
+                    onValueChange={notificationSetters[setting.key]}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    thumbColor={colors.surface}
+                  />
+                </View>
+              ))
+            )}
+          </View>
 
-            {/* Legal section */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
+          <View className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 overflow-hidden">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
               Правовая информация
             </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Условия использования"
+              onPress={() => router.push("/legal/terms" as never)}
+              className="flex-row items-center min-h-[44px]"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            >
+              <FileText size={16} color={colors.placeholder} />
+              <Text className="text-base text-text-base ml-3 flex-1">
+                Условия использования
+              </Text>
+              <ChevronRight size={12} color={colors.borderLight} />
+            </Pressable>
+          </View>
 
-            <View className="bg-white border border-border rounded-2xl mb-8 overflow-hidden">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Условия использования"
-                onPress={() => router.push("/legal/terms" as never)}
-                className="flex-row items-center min-h-[50px] px-4 py-3"
-                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-              >
-                <FileText size={16} color={colors.placeholder} />
-                <Text className="text-base text-text-base ml-3 flex-1">
-                  Условия использования
-                </Text>
-                <ChevronRight size={12} color={colors.borderLight} />
-              </Pressable>
-            </View>
-
-            {/* Account / Danger zone */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
+          <View className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 overflow-hidden">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
               Аккаунт
             </Text>
-
-            <View className="bg-white border border-border rounded-2xl mb-8 overflow-hidden">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Выйти из аккаунта"
-                onPress={handleLogout}
-                className="flex-row items-center min-h-[50px] px-4 py-3 border-b border-border"
-                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-              >
-                <LogOut size={16} color={colors.error} />
-                <Text className="text-base text-danger ml-3 flex-1">
-                  Выйти из аккаунта
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Удалить аккаунт"
-                onPress={handleDeleteAccount}
-                className="flex-row items-center min-h-[50px] px-4 py-3"
-                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-              >
-                <Trash2 size={16} color={colors.error} />
-                <Text className="text-base text-danger ml-3 flex-1">
-                  Удалить аккаунт
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* App version */}
-            <Text className="text-xs text-text-mute text-center mb-4">
-              Версия 1.0.0
-            </Text>
-
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Выйти из аккаунта"
+              onPress={handleLogout}
+              className="flex-row items-center min-h-[44px] border-b border-border"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            >
+              <LogOut size={16} color={colors.error} />
+              <Text className="text-base text-danger ml-3 flex-1">
+                Выйти из аккаунта
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Удалить аккаунт"
+              onPress={handleDeleteAccount}
+              className="flex-row items-center min-h-[44px]"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            >
+              <Trash2 size={16} color={colors.error} />
+              <Text className="text-base text-danger ml-3 flex-1">
+                Удалить аккаунт
+              </Text>
+            </Pressable>
           </View>
+
+          <Text className="text-xs text-text-mute text-center mb-4">
+            Версия 1.0.0
+          </Text>
         </View>
       </ScrollView>
+
+      {hasChanges && (
+        <View
+          className="border-t border-border bg-white px-6 py-3 flex-row justify-end items-center"
+          style={{
+            position: Platform.OS === "web" ? ("sticky" as any) : undefined,
+            bottom: 0,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 720,
+              flexDirection: "row",
+              justifyContent: "flex-end",
+            }}
+          >
+            <View style={{ minWidth: 180 }}>
+              <Button
+                label="Сохранить"
+                onPress={handleSave}
+                disabled={saving}
+                loading={saving}
+              />
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
-  );
-
-  return <TwoColumnForm left={leftPane} right={rightForm} />;
-}
-
-function SummaryRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof UserIcon;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View className="flex-row items-start gap-3">
-      <View
-        className="rounded-lg items-center justify-center bg-accent-soft"
-        style={{ width: 32, height: 32 }}
-      >
-        <Icon size={14} color={colors.accent} />
-      </View>
-      <View className="flex-1 min-w-0">
-        <Text className="text-text-dim" style={{ fontSize: 11, letterSpacing: 0.5 }}>
-          {label.toUpperCase()}
-        </Text>
-        <Text className="text-text-base font-semibold mt-0.5" style={{ fontSize: 14 }} numberOfLines={1}>
-          {value}
-        </Text>
-      </View>
-    </View>
   );
 }

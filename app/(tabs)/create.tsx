@@ -1,17 +1,18 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   FileText,
-  Lightbulb,
   CheckCircle2,
   MapPin,
   Clock,
   Target,
   ScrollText,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react-native";
 import { colors, textStyle } from "@/lib/theme";
-import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 
 const TIPS: { icon: typeof Target; title: string; text: string }[] = [
@@ -44,72 +45,43 @@ const TIPS: { icon: typeof Target; title: string; text: string }[] = [
 
 export default function CreateScreen() {
   const router = useRouter();
+  const [tipsOpen, setTipsOpen] = useState(false);
 
-  const leftPane = (
-    <View style={{ gap: 24 }}>
-      <View
-        className="rounded-2xl items-center justify-center bg-white self-start"
-        style={{ width: 56, height: 56 }}
-      >
-        <Lightbulb size={26} color={colors.accent} />
-      </View>
-      <View style={{ gap: 12 }}>
-        <Text
-          style={{ ...textStyle.h1, color: colors.text, fontSize: 28, lineHeight: 34 }}
-        >
-          Что указать в заявке
-        </Text>
-        <Text
-          style={{ ...textStyle.body, color: colors.textSecondary, fontSize: 15, lineHeight: 22 }}
-        >
-          Чем точнее описание, тем быстрее и дешевле будет решение. Ниже 5 пунктов, которые
-          помогут специалисту ответить осмысленно.
-        </Text>
-      </View>
-      <View style={{ gap: 12 }}>
-        {TIPS.map((t) => {
-          const Icon = t.icon;
-          return (
-            <View key={t.title} className="flex-row items-start gap-3">
-              <View
-                className="rounded-xl items-center justify-center bg-white"
-                style={{ width: 36, height: 36 }}
-              >
-                <Icon size={16} color={colors.accent} />
-              </View>
-              <View className="flex-1 min-w-0">
-                <Text
-                  className="text-text-base font-bold"
-                  style={{ fontSize: 14 }}
-                >
-                  {t.title}
-                </Text>
-                <Text
-                  className="text-text-mute mt-0.5"
-                  style={{ fontSize: 13, lineHeight: 19 }}
-                >
-                  {t.text}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
-
-  const rightForm = (
+  return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView className="flex-1" contentContainerClassName="pb-8">
-        <View className="px-4">
-          <View className="pt-4 pb-4">
-            <Text className="text-2xl font-bold text-text-base">
-              Новая заявка специалисту
-            </Text>
-            <Text className="text-sm text-text-mute mt-1 leading-5">
-              Опишите ситуацию — специалисты из вашего региона увидят заявку и сами предложат помощь.
-            </Text>
-          </View>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 32 }}>
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            alignSelf: "center",
+            paddingHorizontal: 24,
+            paddingTop: 24,
+          }}
+        >
+          <Text
+            style={{
+              ...textStyle.h1,
+              color: colors.text,
+              fontSize: 28,
+              lineHeight: 34,
+              marginBottom: 10,
+            }}
+          >
+            Новая заявка специалисту
+          </Text>
+          <Text
+            style={{
+              ...textStyle.body,
+              color: colors.textSecondary,
+              fontSize: 15,
+              lineHeight: 22,
+              marginBottom: 24,
+            }}
+          >
+            Опишите ситуацию — специалисты из вашего региона увидят заявку и
+            сами предложат помощь.
+          </Text>
 
           <View
             className="rounded-2xl border border-border bg-accent-soft p-5 mb-6"
@@ -131,9 +103,9 @@ export default function CreateScreen() {
               className="text-sm leading-6"
               style={{ color: colors.textSecondary }}
             >
-              Вы бесплатно публикуете заявку с описанием вопроса: вид проверки, регион ФНС,
-              сроки. Специалисты пишут вам в чат — вы сравниваете предложения и выбираете
-              подходящего.
+              Вы бесплатно публикуете заявку с описанием вопроса: вид проверки,
+              регион ФНС, сроки. Специалисты пишут вам в чат — вы сравниваете
+              предложения и выбираете подходящего.
             </Text>
           </View>
 
@@ -141,10 +113,62 @@ export default function CreateScreen() {
             label="Создать заявку"
             onPress={() => router.push("/requests/new" as never)}
           />
+
+          {/* Collapsible tips */}
+          <View className="mt-8 border border-border rounded-2xl overflow-hidden">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tipsOpen ? "Скрыть советы" : "Показать советы"}
+              onPress={() => setTipsOpen((v) => !v)}
+              className="flex-row items-center justify-between px-4 py-3 active:bg-surface2"
+            >
+              <Text className="text-sm font-semibold text-text-base">
+                Советы: что указать в заявке
+              </Text>
+              {tipsOpen ? (
+                <ChevronUp size={16} color={colors.textMuted} />
+              ) : (
+                <ChevronDown size={16} color={colors.textMuted} />
+              )}
+            </Pressable>
+
+            {tipsOpen && (
+              <View className="px-4 py-4 border-t border-border" style={{ gap: 14 }}>
+                {TIPS.map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <View
+                      key={t.title}
+                      className="flex-row items-start gap-3"
+                    >
+                      <View
+                        className="rounded-xl items-center justify-center bg-accent-soft"
+                        style={{ width: 32, height: 32 }}
+                      >
+                        <Icon size={14} color={colors.accent} />
+                      </View>
+                      <View className="flex-1 min-w-0">
+                        <Text
+                          className="text-text-base font-bold"
+                          style={{ fontSize: 13 }}
+                        >
+                          {t.title}
+                        </Text>
+                        <Text
+                          className="text-text-mute mt-0.5"
+                          style={{ fontSize: 13, lineHeight: 19 }}
+                        >
+                          {t.text}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
-
-  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }
