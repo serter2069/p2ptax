@@ -3,13 +3,13 @@ import {
   View,
   Text,
   ScrollView,
+  Pressable,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { MapPin, Users, Eye, CheckCircle2 } from "lucide-react-native";
+import { MapPin, ChevronDown, ChevronUp } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -27,7 +27,6 @@ export default function NewRequest() {
   const router = useRouter();
   const { ready, isLoading, isAuthenticated } = useRequireAuth();
 
-  // Form fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
@@ -35,12 +34,10 @@ export default function NewRequest() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [files, setFiles] = useState<AttachedFile[]>([]);
 
-  // Data
   const [cities, setCities] = useState<CityOption[]>([]);
   const [fnsOffices, setFnsOffices] = useState<FnsOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
 
-  // UI state
   const [cityOpen, setCityOpen] = useState(false);
   const [fnsOpen, setFnsOpen] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
@@ -52,11 +49,8 @@ export default function NewRequest() {
   const [limitInfo, setLimitInfo] = useState({ used: 0, limit: 5 });
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [tipsOpen, setTipsOpen] = useState(false);
 
-  // Load cities, services, and check limit on mount.
-  // Wait until auth is resolved — an unauthenticated call to /api/dashboard/stats
-  // would 401 and set `loadError=true`, trapping the user on the error screen
-  // instead of letting `useRequireAuth` redirect them to /auth/email.
   useEffect(() => {
     if (isLoading || !isAuthenticated) return;
     async function init() {
@@ -82,7 +76,6 @@ export default function NewRequest() {
     init();
   }, [isLoading, isAuthenticated]);
 
-  // Load FNS offices when city changes
   const loadFnsForCity = useCallback(async (citySlug: string) => {
     setLoadingFns(true);
     setFnsOffices([]);
@@ -93,7 +86,7 @@ export default function NewRequest() {
       );
       setFnsOffices(data.items);
     } catch {
-      // silent — user can retry by reselecting city
+      /* silent */
     } finally {
       setLoadingFns(false);
     }
@@ -116,7 +109,6 @@ export default function NewRequest() {
     setServiceOpen(false);
   }, []);
 
-  // Validation
   const titleValid = title.trim().length >= 3 && title.trim().length <= 100;
   const descriptionValid = description.trim().length >= 10 && description.trim().length <= 2000;
   const filesReady = files.every((f) => !f.uploading && !f.error);
@@ -166,10 +158,6 @@ export default function NewRequest() {
   const selectedFns = fnsOffices.find((f) => f.id === selectedFnsId);
   const selectedService = services.find((s) => s.id === selectedServiceId);
 
-  // Auth resolution in progress OR initial data still loading — show spinner.
-  // Once auth is known to be `unauthenticated`, `useRequireAuth` will redirect;
-  // we render nothing in that window to avoid the infinite-spinner regression
-  // mosaic caught on /requests/new (iter8 baseline).
   if (isLoading || (ready && loadingInit)) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
@@ -182,8 +170,6 @@ export default function NewRequest() {
   }
 
   if (!isAuthenticated) {
-    // `useRequireAuth` is redirecting to /auth/email — render nothing to avoid
-    // flashing a stale spinner while navigation completes.
     return null;
   }
 
@@ -202,211 +188,183 @@ export default function NewRequest() {
     );
   }
 
-  const leftPane = (
-    <View style={{ gap: 24 }}>
-      <View
-        className="rounded-2xl items-center justify-center bg-white self-start"
-        style={{ width: 56, height: 56 }}
-      >
-        <Users size={26} color={colors.accent} />
-      </View>
-      <View style={{ gap: 12 }}>
-        <Text
-          className="font-extrabold text-text-base"
-          style={{ fontSize: 28, lineHeight: 34 }}
-        >
-          Как специалисты ищут ваши заявки
-        </Text>
-        <Text
-          className="text-text-mute"
-          style={{ fontSize: 15, lineHeight: 22 }}
-        >
-          Ваша заявка появится в публичной ленте. Специалисты фильтруют по городу, ФНС и виду
-          услуги, и пишут в чат — бесплатно, без комиссий.
-        </Text>
-      </View>
-      {/* Example card preview */}
-      <View
-        className="bg-white rounded-2xl p-4 border border-border"
-        style={{
-          shadowColor: colors.accent,
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.12,
-          shadowRadius: 24,
-          elevation: 6,
-        }}
-      >
-        <View className="flex-row items-center gap-2 mb-2">
-          <View
-            className="rounded-lg bg-accent-soft items-center justify-center"
-            style={{ width: 28, height: 28 }}
-          >
-            <Eye size={14} color={colors.accent} />
-          </View>
-          <Text
-            className="text-accent font-bold"
-            style={{ fontSize: 12, letterSpacing: 0.5 }}
-          >
-            ПРИМЕР КАРТОЧКИ
-          </Text>
-        </View>
-        <Text
-          className="text-text-base font-bold"
-          style={{ fontSize: 15, marginBottom: 4 }}
-        >
-          Камеральная проверка ИП, требование о пояснениях
-        </Text>
-        <Text
-          className="text-text-mute"
-          style={{ fontSize: 13, marginBottom: 8 }}
-        >
-          Москва · ФНС № 15 · камеральная
-        </Text>
-        <View className="flex-row items-center gap-2">
-          <View className="flex-row items-center gap-1 bg-accent-soft rounded-full px-2 py-1">
-            <Users size={11} color={colors.accent} />
-            <Text className="text-accent font-semibold" style={{ fontSize: 11 }}>
-              3 специалиста уже написали
-            </Text>
-          </View>
-        </View>
-      </View>
-      <View style={{ gap: 8 }}>
-        <Benefit text="Заявка бесплатна, ограничений по числу специалистов нет" />
-        <Benefit text="Контакты видны только в чате — никаких спам-звонков" />
-        <Benefit text="Закрывается автоматически через 30 дней без активности" />
-      </View>
-    </View>
-  );
-
-  const rightForm = (
+  return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Новая заявка" />
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
-        <View className="px-4">
-          <View className="py-4">
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            alignSelf: "center",
+            paddingHorizontal: 16,
+            paddingTop: 16,
+          }}
+        >
+          {atLimit && (
+            <View className="bg-danger-soft border border-danger rounded-xl p-4 mb-4">
+              <Text className="text-danger text-sm font-semibold mb-0.5">
+                Лимит заявок исчерпан
+              </Text>
+              <Text className="text-danger text-sm">
+                {limitInfo.used}/{limitInfo.limit} заявок использовано. Закройте
+                неактуальные, чтобы создать новую.
+              </Text>
+            </View>
+          )}
 
-            {/* Limit banner */}
-            {atLimit && (
-              <View className="bg-danger-soft border border-danger rounded-xl p-4 mb-4 mx-4">
-                <Text className="text-danger text-sm font-semibold mb-0.5">
-                  Лимит заявок исчерпан
-                </Text>
-                <Text className="text-danger text-sm">
-                  {limitInfo.used}/{limitInfo.limit} заявок использовано. Закройте неактуальные, чтобы создать новую.
-                </Text>
-              </View>
-            )}
+          <View className="bg-white border border-border rounded-2xl px-4 pt-4 pb-4 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+              Описание заявки
+            </Text>
 
-            {/* Form card */}
-            <View className="bg-white border border-border rounded-2xl mx-4 px-4 pt-4 pb-4 mb-4">
-
-              {/* Title */}
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-text-base mb-1.5">
-                  Заголовок <Text className="text-danger">*</Text>
-                </Text>
-                <Input
-                  placeholder="Кратко опишите суть проблемы"
-                  value={title}
-                  onChangeText={setTitle}
-                  error={(submitted || title.length > 0) && !titleValid
-                    ? (title.trim().length < 3 ? "Минимум 3 символа" : "Максимум 100 символов")
-                    : undefined}
-                  maxLength={100}
-                  editable={!atLimit && !submitting}
-                />
-                <Text className="text-xs text-text-dim text-right mt-1">{title.length}/100</Text>
-              </View>
-
-              <CityFnsServicePicker
-                cities={cities}
-                fnsOffices={fnsOffices}
-                services={services}
-                selectedCity={selectedCity}
-                selectedFns={selectedFns}
-                selectedService={selectedService}
-                cityOpen={cityOpen}
-                fnsOpen={fnsOpen}
-                serviceOpen={serviceOpen}
-                loadingFns={loadingFns}
-                submitted={submitted}
-                disabled={atLimit || submitting}
-                onCitySelect={handleCitySelect}
-                onFnsSelect={handleFnsSelect}
-                onServiceSelect={handleServiceSelect}
-                onServiceClear={() => { setSelectedServiceId(null); setServiceOpen(false); }}
-                onCityOpenChange={setCityOpen}
-                onFnsOpenChange={setFnsOpen}
-                onServiceOpenChange={setServiceOpen}
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-text-base mb-1.5">
+                Заголовок <Text className="text-danger">*</Text>
+              </Text>
+              <Input
+                placeholder="Кратко опишите суть проблемы"
+                value={title}
+                onChangeText={setTitle}
+                error={
+                  (submitted || title.length > 0) && !titleValid
+                    ? title.trim().length < 3
+                      ? "Минимум 3 символа"
+                      : "Максимум 100 символов"
+                    : undefined
+                }
+                maxLength={100}
+                editable={!atLimit && !submitting}
               />
-
-              {/* Description */}
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-text-base mb-1.5">
-                  Описание <Text className="text-danger">*</Text>
-                </Text>
-                <Input
-                  placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  error={(submitted || description.length > 0) && !descriptionValid
-                    ? (description.trim().length < 10 ? "Минимум 10 символов" : "Максимум 2000 символов")
-                    : undefined}
-                  maxLength={2000}
-                  editable={!atLimit && !submitting}
-                  containerStyle={{ minHeight: 120 }}
-                />
-                <Text className="text-xs text-text-dim text-right mt-1">{description.length}/2000</Text>
-              </View>
-
-              <FileUploadSection
-                files={files}
-                disabled={atLimit || submitting}
-                onFilesChange={setFiles}
-              />
-
+              <Text className="text-xs text-text-dim text-right mt-1">
+                {title.length}/100
+              </Text>
             </View>
 
-            {/* Submit error */}
-            {submitError ? (
-              <View className="bg-danger-soft border border-danger rounded-xl p-3 mb-4 mx-4">
-                <Text className="text-sm font-semibold text-danger mb-0.5">Ошибка публикации</Text>
-                <Text className="text-sm text-danger">{submitError}</Text>
-              </View>
-            ) : null}
+            <CityFnsServicePicker
+              cities={cities}
+              fnsOffices={fnsOffices}
+              services={services}
+              selectedCity={selectedCity}
+              selectedFns={selectedFns}
+              selectedService={selectedService}
+              cityOpen={cityOpen}
+              fnsOpen={fnsOpen}
+              serviceOpen={serviceOpen}
+              loadingFns={loadingFns}
+              submitted={submitted}
+              disabled={atLimit || submitting}
+              onCitySelect={handleCitySelect}
+              onFnsSelect={handleFnsSelect}
+              onServiceSelect={handleServiceSelect}
+              onServiceClear={() => {
+                setSelectedServiceId(null);
+                setServiceOpen(false);
+              }}
+              onCityOpenChange={setCityOpen}
+              onFnsOpenChange={setFnsOpen}
+              onServiceOpenChange={setServiceOpen}
+            />
 
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-text-base mb-1.5">
+                Описание <Text className="text-danger">*</Text>
+              </Text>
+              <Input
+                placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                error={
+                  (submitted || description.length > 0) && !descriptionValid
+                    ? description.trim().length < 10
+                      ? "Минимум 10 символов"
+                      : "Максимум 2000 символов"
+                    : undefined
+                }
+                maxLength={2000}
+                editable={!atLimit && !submitting}
+                containerStyle={{ minHeight: 120 }}
+              />
+              <Text className="text-xs text-text-dim text-right mt-1">
+                {description.length}/2000
+              </Text>
+            </View>
+
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3 mt-2">
+              Файлы
+            </Text>
+            <FileUploadSection
+              files={files}
+              disabled={atLimit || submitting}
+              onFilesChange={setFiles}
+            />
           </View>
-        </View>
-      </ScrollView>
 
-      {/* Sticky submit button */}
-      <View className="border-t border-border px-4 py-3 bg-white">
-        <View style={{ maxWidth: 520, width: "100%", alignSelf: "center" }}>
+          {submitError ? (
+            <View className="bg-danger-soft border border-danger rounded-xl p-3 mb-4">
+              <Text className="text-sm font-semibold text-danger mb-0.5">
+                Ошибка публикации
+              </Text>
+              <Text className="text-sm text-danger">{submitError}</Text>
+            </View>
+          ) : null}
+
           <Button
             label="Опубликовать заявку"
             onPress={handleSubmit}
             disabled={submitting || atLimit}
             loading={submitting}
           />
+
+          {/* Collapsible tips */}
+          <View className="mt-6 border border-border rounded-2xl overflow-hidden bg-white">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tipsOpen ? "Скрыть советы" : "Показать советы"}
+              onPress={() => setTipsOpen((v) => !v)}
+              className="flex-row items-center justify-between px-4 py-3 active:bg-surface2"
+            >
+              <Text className="text-sm font-semibold text-text-base">
+                Советы: что указать в заявке
+              </Text>
+              {tipsOpen ? (
+                <ChevronUp size={16} color={colors.textMuted} />
+              ) : (
+                <ChevronDown size={16} color={colors.textMuted} />
+              )}
+            </Pressable>
+
+            {tipsOpen && (
+              <View className="px-4 py-3 border-t border-border" style={{ gap: 10 }}>
+                <Tip title="Вид проверки" text="Камеральная, выездная или оперативный контроль — специалисты фильтруют по этому полю." />
+                <Tip title="Регион ФНС" text="Инспекция и город определяют, кому покажут заявку в первую очередь." />
+                <Tip title="Текущий этап" text="Требование получено, назначен выезд, решение вручено — это сужает круг экспертов." />
+                <Tip title="Сроки и бюджет" text="Опишите рамки — так специалисты сразу напишут, берутся или нет." />
+                <Tip title="Контакт" text="Телефон не обязателен: вся связь идёт через чат внутри сервиса." />
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
-
-  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }
 
-function Benefit({ text }: { text: string }) {
+function Tip({ title, text }: { title: string; text: string }) {
   return (
-    <View className="flex-row items-start gap-2">
-      <CheckCircle2 size={16} color={colors.accent} style={{ marginTop: 2 }} />
-      <Text className="text-text-base flex-1" style={{ fontSize: 13, lineHeight: 19 }}>
+    <View>
+      <Text className="text-text-base font-semibold" style={{ fontSize: 13 }}>
+        {title}
+      </Text>
+      <Text
+        className="text-text-mute"
+        style={{ fontSize: 13, lineHeight: 19, marginTop: 2 }}
+      >
         {text}
       </Text>
     </View>

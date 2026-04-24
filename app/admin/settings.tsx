@@ -8,17 +8,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
-import { Settings, AlertTriangle, Users, FileCheck2 } from "lucide-react-native";
+import { AlertTriangle, Settings } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL, api } from "@/lib/api";
-import { colors } from "@/lib/theme";
-
+import { colors, textStyle } from "@/lib/theme";
 
 interface SettingField {
   key: string;
@@ -116,82 +114,20 @@ export default function AdminSettings() {
     }
   };
 
-  const getValue = (key: string, defaultValue: string): string => {
-    return values[key] ?? defaultValue;
-  };
+  const getValue = (key: string, defaultValue: string): string =>
+    values[key] ?? defaultValue;
 
   const setValue = (key: string, val: string) => {
     setValues((prev) => ({ ...prev, [key]: val }));
   };
 
-  const totalUsers = (stats?.totalClients ?? 0) + (stats?.totalSpecialists ?? 0);
+  const totalUsers =
+    (stats?.totalClients ?? 0) + (stats?.totalSpecialists ?? 0);
 
-  const leftPane = (
-    <View style={{ gap: 24 }}>
-      <View
-        className="rounded-2xl items-center justify-center bg-white self-start"
-        style={{ width: 56, height: 56 }}
-      >
-        <Settings size={26} color={colors.accent} />
-      </View>
-      <View style={{ gap: 12 }}>
-        <Text
-          className="font-extrabold text-text-base"
-          style={{ fontSize: 24, lineHeight: 30 }}
-        >
-          Глобальные настройки
-        </Text>
-        <Text className="text-text-mute" style={{ fontSize: 14, lineHeight: 20 }}>
-          Изменения применяются ко всей платформе и вступают в силу сразу.
-        </Text>
-      </View>
-
-      {/* Warning */}
-      <View
-        className="rounded-2xl border bg-white"
-        style={{
-          padding: 14,
-          borderColor: colors.warning,
-          borderLeftWidth: 4,
-          gap: 8,
-        }}
-      >
-        <View className="flex-row items-center gap-2">
-          <AlertTriangle size={16} color={colors.warning} />
-          <Text
-            className="font-extrabold"
-            style={{ fontSize: 13, color: colors.warning }}
-          >
-            Влияет на пользователей
-          </Text>
-        </View>
-        <Text className="text-text-base" style={{ fontSize: 13, lineHeight: 19 }}>
-          Эти настройки затрагивают {totalUsers || "всех"} пользователей платформы. Проверяйте
-          дважды перед сохранением.
-        </Text>
-      </View>
-
-      <View
-        className="bg-white rounded-2xl border border-border"
-        style={{ padding: 16, gap: 12 }}
-      >
-        <StatRow
-          icon={Users}
-          label="Пользователей"
-          value={totalUsers ? String(totalUsers) : "—"}
-        />
-        <StatRow
-          icon={FileCheck2}
-          label="Активных заявок"
-          value={stats?.activeRequests ? String(stats.activeRequests) : "—"}
-        />
-      </View>
-    </View>
-  );
-
-  const rightForm = (
+  return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderBack title="Настройки системы" />
+
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
@@ -204,9 +140,65 @@ export default function AdminSettings() {
           />
         </View>
       ) : (
-        <ScrollView className="flex-1">
-          <View className="px-4">
-            <View className="py-4 gap-4">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 32 }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 720,
+              alignSelf: "center",
+              paddingHorizontal: 16,
+              paddingTop: 16,
+            }}
+          >
+            <Text
+              style={{
+                ...textStyle.h1,
+                color: colors.text,
+                fontSize: 24,
+                lineHeight: 30,
+                marginBottom: 6,
+              }}
+            >
+              Глобальные настройки
+            </Text>
+            <Text className="text-text-mute mb-4" style={{ fontSize: 14, lineHeight: 20 }}>
+              Изменения применяются ко всей платформе и вступают в силу сразу.
+            </Text>
+
+            <View
+              className="rounded-2xl border bg-white mb-4"
+              style={{
+                padding: 14,
+                borderColor: colors.warning,
+                borderLeftWidth: 4,
+              }}
+            >
+              <View className="flex-row items-center gap-2 mb-1">
+                <AlertTriangle size={16} color={colors.warning} />
+                <Text
+                  className="font-extrabold"
+                  style={{ fontSize: 13, color: colors.warning }}
+                >
+                  Влияет на пользователей
+                </Text>
+              </View>
+              <Text
+                className="text-text-base"
+                style={{ fontSize: 13, lineHeight: 19 }}
+              >
+                Эти настройки затрагивают {totalUsers || "всех"} пользователей
+                платформы. Проверяйте дважды перед сохранением.
+              </Text>
+            </View>
+
+            <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+              <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                Лимиты
+              </Text>
+
               {SETTINGS_FIELDS.length === 0 ? (
                 <EmptyState
                   icon={Settings}
@@ -214,18 +206,20 @@ export default function AdminSettings() {
                   subtitle="Настройки системы недоступны"
                 />
               ) : (
-                SETTINGS_FIELDS.map((field) => (
-                  <Input
-                    key={field.key}
-                    label={field.label}
-                    value={getValue(field.key, field.defaultValue)}
-                    onChangeText={(val) => setValue(field.key, val)}
-                    keyboardType="numeric"
-                  />
-                ))
+                <View style={{ gap: 12 }}>
+                  {SETTINGS_FIELDS.map((field) => (
+                    <Input
+                      key={field.key}
+                      label={field.label}
+                      value={getValue(field.key, field.defaultValue)}
+                      onChangeText={(val) => setValue(field.key, val)}
+                      keyboardType="numeric"
+                    />
+                  ))}
+                </View>
               )}
 
-              <View className="mt-2">
+              <View className="mt-4">
                 <Button
                   label="Сохранить"
                   onPress={handleSave}
@@ -238,37 +232,5 @@ export default function AdminSettings() {
         </ScrollView>
       )}
     </SafeAreaView>
-  );
-
-  return <TwoColumnForm left={leftPane} right={rightForm} />;
-}
-
-function StatRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Users;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View className="flex-row items-center gap-3">
-      <View
-        className="rounded-lg items-center justify-center bg-accent-soft"
-        style={{ width: 32, height: 32 }}
-      >
-        <Icon size={14} color={colors.accent} />
-      </View>
-      <Text className="text-text-mute flex-1" style={{ fontSize: 13 }}>
-        {label}
-      </Text>
-      <Text
-        className="text-text-base font-extrabold"
-        style={{ fontSize: 14 }}
-      >
-        {value}
-      </Text>
-    </View>
   );
 }

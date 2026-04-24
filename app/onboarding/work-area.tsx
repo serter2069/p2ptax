@@ -1,20 +1,12 @@
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  useWindowDimensions,
-} from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useMemo } from "react";
-import { MapPin } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
-import TwoColumnForm from "@/components/layout/TwoColumnForm";
-import OnboardingLeft from "@/components/onboarding/OnboardingLeft";
+import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
-import { colors } from "@/lib/theme";
+import { colors, textStyle } from "@/lib/theme";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
 
 interface ServiceItem {
@@ -32,16 +24,14 @@ interface FnsOffice {
 
 export default function OnboardingWorkAreaScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
 
   const [services, setServices] = useState<ServiceItem[]>([]);
 
-  // Cascade state — list of city ids + list of FNS ids, shared across this screen
+  // Cascade state — list of city ids + list of FNS ids
   const [cityIds, setCityIds] = useState<string[]>([]);
   const [fnsIds, setFnsIds] = useState<string[]>([]);
 
-  // Details of selected FNS offices (so we can show name + city per block)
+  // Details of selected FNS offices
   const [fnsCatalog, setFnsCatalog] = useState<Map<string, FnsOffice>>(
     new Map()
   );
@@ -69,7 +59,7 @@ export default function OnboardingWorkAreaScreen() {
     })();
   }, []);
 
-  // Whenever selected city list changes, refresh FNS catalog for those cities
+  // Refresh FNS catalog whenever city list changes
   useEffect(() => {
     if (cityIds.length === 0) {
       setFnsCatalog(new Map());
@@ -83,7 +73,13 @@ export default function OnboardingWorkAreaScreen() {
             ? `/api/fns?city_id=${cityIds[0]}`
             : `/api/fns?city_ids=${cityIds.join(",")}`;
         const res = await api<{
-          offices: { id: string; name: string; code: string; cityId: string; city?: { name: string } }[];
+          offices: {
+            id: string;
+            name: string;
+            code: string;
+            cityId: string;
+            city?: { name: string };
+          }[];
         }>(path, { noAuth: true });
         if (cancelled) return;
         const map = new Map<string, FnsOffice>();
@@ -152,7 +148,6 @@ export default function OnboardingWorkAreaScreen() {
         fnsId,
         serviceIds: servicesByFns[fnsId] || [],
       }));
-      // Also send full cascade payload for future endpoint evolution
       await api("/api/onboarding/work-area", {
         method: "PUT",
         body: {
@@ -173,50 +168,56 @@ export default function OnboardingWorkAreaScreen() {
     }
   };
 
-  const leftPane = (
-    <OnboardingLeft
-      step={2}
-      icon={MapPin}
-      title="Ваша рабочая зона"
-      description="Выберите города, ФНС-инспекции и типы проверок, которыми вы занимаетесь."
-      bullets={[
-        "Города: где вы принимаете клиентов",
-        "ФНС: в каких инспекциях вы работаете",
-        `Выбрано ФНС: ${fnsIds.length}`,
-      ]}
-    />
-  );
-
-  const rightForm = (
-    <SafeAreaView className="flex-1 bg-white">
+  return (
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <HeaderBack title="" />
-      <View className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: isDesktop ? 64 : 40 }}
-        >
-          <View className="pt-8 px-4">
-            {/* Progress indicator */}
-            <View className="mb-6">
-              <View className="flex-row justify-center gap-2 mb-3">
-                <View className="h-1.5 w-8 rounded-full bg-accent" />
-                <View className="h-1.5 w-8 rounded-full bg-accent" />
-                <View className="h-1.5 w-8 rounded-full bg-border" />
-              </View>
-              <Text className="text-sm font-medium text-text-mute text-center">
-                Шаг 2 из 3
-              </Text>
-            </View>
 
-            <Text className="text-2xl font-bold text-text-base text-center mb-2">
-              Рабочая зона
+      <View className="px-6 pb-4">
+        <OnboardingProgress step={2} />
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 32 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 640,
+            alignSelf: "center",
+            paddingHorizontal: 0,
+          }}
+        >
+          {/* Heading */}
+          <View style={{ paddingHorizontal: 24 }}>
+            <Text
+              style={{
+                ...textStyle.h1,
+                color: colors.text,
+                fontSize: 32,
+                lineHeight: 38,
+                marginTop: 16,
+                marginBottom: 12,
+              }}
+            >
+              Где вы работаете?
             </Text>
-            <Text className="text-base text-text-mute text-center leading-6 mb-8">
-              Укажите города, ФНС и услуги по каждой инспекции
+            <Text
+              style={{
+                ...textStyle.body,
+                color: colors.textSecondary,
+                fontSize: 16,
+                lineHeight: 24,
+                marginBottom: 24,
+              }}
+            >
+              Выберите города, ФНС-инспекции и услуги по каждой. По этим данным
+              клиенты найдут вас.
             </Text>
           </View>
 
-          {/* Cascade lives outside px-4 because it has internal padding */}
+          {/* Cascade — has its own internal padding */}
           <CityFnsCascade
             mode="multi"
             value={{ cities: cityIds, fns: fnsIds }}
@@ -229,8 +230,8 @@ export default function OnboardingWorkAreaScreen() {
             showCounts
           />
 
-          <View className="px-4 mt-4">
-            {/* Per-FNS service matrix */}
+          {/* Per-FNS service matrix */}
+          <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
             {selectedFnsList.length > 0 && (
               <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2">
                 Услуги по каждой инспекции
@@ -315,10 +316,8 @@ export default function OnboardingWorkAreaScreen() {
               loading={isLoading}
             />
           </View>
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
-
-  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }

@@ -10,17 +10,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useRef } from "react";
-import { Pencil, Camera, Sparkles } from "lucide-react-native";
+import { Pencil, Camera } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { API_URL, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import TwoColumnForm from "@/components/layout/TwoColumnForm";
-import OnboardingLeft from "@/components/onboarding/OnboardingLeft";
+import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors, overlay } from "@/lib/theme";
-
+import { colors, overlay, textStyle } from "@/lib/theme";
 
 export default function OnboardingProfileScreen() {
   const router = useRouter();
@@ -42,7 +40,6 @@ export default function OnboardingProfileScreen() {
     description?: string;
   }>({});
 
-  // Web-only hidden file input ref
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const formatPhone = (text: string) => {
@@ -81,7 +78,6 @@ export default function OnboardingProfileScreen() {
       }
 
       const data = (await res.json()) as { url: string; key: string };
-      // Build full URL from relative path returned by server
       const fullUrl = data.url.startsWith("http")
         ? data.url
         : `${API_URL}${data.url}`;
@@ -98,14 +94,12 @@ export default function OnboardingProfileScreen() {
     if (Platform.OS === "web" && fileInputRef.current) {
       fileInputRef.current.click();
     }
-    // Native: expo-image-picker not installed — web-only upload for now
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       void uploadAvatar(file);
-      // Reset so the same file can be re-selected
       e.target.value = "";
     }
   };
@@ -159,253 +153,241 @@ export default function OnboardingProfileScreen() {
     }
   };
 
-  const leftPane = (
-    <OnboardingLeft
-      step={3}
-      icon={Sparkles}
-      title="Ваш профиль в каталоге"
-      description="Опишите себя: чем больше деталей — тем проще клиенту выбрать именно вас."
-      bullets={[
-        "Аватар помогает клиенту быстрее выбрать именно вас",
-        "Укажите опыт и специализацию",
-        "Контакты клиенты увидят только в переписке",
-        "Профиль можно поменять в любой момент",
-      ]}
-    />
-  );
-
-  const rightForm = (
-    <SafeAreaView className="flex-1 bg-white">
+  return (
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <HeaderBack title="" />
-      <View className="flex-1 px-4">
-        <View className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 16 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View className="pt-6">
-            {/* Progress bar */}
-            <View className="mb-5">
-              <View className="flex-row justify-center gap-2 mb-3">
-                <View className="h-2 w-10 rounded-full bg-accent" />
-                <View className="h-2 w-10 rounded-full bg-accent" />
-                <View className="h-2 w-10 rounded-full bg-accent" />
+
+      <View className="px-6 pb-4">
+        <OnboardingProgress step={3} />
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={{ width: "100%", maxWidth: 640, alignSelf: "center" }}>
+          <Text
+            style={{
+              ...textStyle.h1,
+              color: colors.text,
+              fontSize: 32,
+              lineHeight: 38,
+              marginTop: 16,
+              marginBottom: 12,
+            }}
+          >
+            Заполните профиль
+          </Text>
+          <Text
+            style={{
+              ...textStyle.body,
+              color: colors.textSecondary,
+              fontSize: 16,
+              lineHeight: 24,
+              marginBottom: 24,
+            }}
+          >
+            Всё необязательно — можно заполнить позже. Аватар помогает клиенту
+            быстрее выбрать именно вас.
+          </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Добавить фото"
+            onPress={handleAvatarPress}
+            className="items-center mb-6"
+          >
+            {avatarUploading ? (
+              <View
+                className="items-center justify-center rounded-full bg-accent-soft"
+                style={{ width: 96, height: 96 }}
+              >
+                <ActivityIndicator color={colors.primary} />
               </View>
-              <Text className="text-sm font-medium text-text-mute text-center">
-                Шаг 3 из 3
-              </Text>
-            </View>
-
-            <Text className="text-2xl font-bold text-text-base text-center mb-1">
-              Профиль
-            </Text>
-            <Text className="text-sm text-text-mute text-center mb-6">
-              Всё необязательно — можно заполнить позже
-            </Text>
-
-            {/* Avatar upload */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Добавить фото"
-              onPress={handleAvatarPress}
-              className="items-center mb-6"
-            >
-              {avatarUploading ? (
-                <View
-                  className="items-center justify-center rounded-full bg-accent-soft"
-                  style={{ width: 96, height: 96 }}
-                >
-                  <ActivityIndicator color={colors.primary} />
-                </View>
-              ) : avatarUrl ? (
-                <View>
-                  <Image
-                    source={{ uri: avatarUrl }}
-                    style={{
-                      width: 96,
-                      height: 96,
-                      borderRadius: 48,
-                      borderWidth: 2,
-                      borderColor: colors.border,
-                    }}
-                  />
-                  <View
-                    className="absolute bottom-0 right-0 bg-accent rounded-full items-center justify-center"
-                    style={{ width: 28, height: 28 }}
-                  >
-                    <Pencil size={14} color={colors.surface} />
-                  </View>
-                </View>
-              ) : (
-                <View
-                  className="rounded-full bg-accent-soft items-center justify-center"
+            ) : avatarUrl ? (
+              <View>
+                <Image
+                  source={{ uri: avatarUrl }}
                   style={{
                     width: 96,
                     height: 96,
+                    borderRadius: 48,
                     borderWidth: 2,
-                    borderColor: colors.borderLight,
-                    borderStyle: "dashed",
+                    borderColor: colors.border,
                   }}
+                />
+                <View
+                  className="absolute bottom-0 right-0 bg-accent rounded-full items-center justify-center"
+                  style={{ width: 28, height: 28 }}
                 >
-                  <Camera size={28} color={colors.primary} />
+                  <Pencil size={14} color={colors.surface} />
                 </View>
-              )}
-              <Text className="text-sm text-text-mute mt-2">
-                {avatarUrl ? "Изменить фото" : "Нажмите, чтобы загрузить фото"}
-              </Text>
-            </Pressable>
-
-            {/* Hidden web file input */}
-            {Platform.OS === "web" && (
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
-              />
+              </View>
+            ) : (
+              <View
+                className="rounded-full bg-accent-soft items-center justify-center"
+                style={{
+                  width: 96,
+                  height: 96,
+                  borderWidth: 2,
+                  borderColor: colors.borderLight,
+                  borderStyle: "dashed",
+                }}
+              >
+                <Camera size={28} color={colors.primary} />
+              </View>
             )}
-
-            {/* Contacts note */}
-            <View
-              className="bg-accent-soft rounded-xl px-4 py-3 mb-4"
-              style={{
-                borderWidth: 1,
-                borderColor: overlay.accent10,
-              }}
-            >
-              <Text className="text-xs text-accent text-center font-medium">
-                Контакты будут видны всем посетителям платформы
-              </Text>
-            </View>
-
-            {/* Contacts section */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mt-2 mb-3">
-              Контакты
+            <Text className="text-sm text-text-mute mt-2">
+              {avatarUrl ? "Изменить фото" : "Нажмите, чтобы загрузить фото"}
             </Text>
+          </Pressable>
 
-            {/* About */}
-            <View className="mb-4">
-              <Input
-                label="О себе"
-                placeholder="Расскажите о своём опыте: сколько лет в профессии, какие вопросы решаете, с какими инспекциями работаете"
-                value={description}
-                onChangeText={(t) => {
-                  if (t.length <= 1000) setDescription(t);
-                  if (fieldErrors.description) setFieldErrors((e) => ({ ...e, description: undefined }));
-                }}
-                multiline
-                editable={!isLoading}
-                error={fieldErrors.description}
-              />
-              <Text className="text-xs text-text-mute text-right mt-1">
-                {description.length}/1000
-              </Text>
-            </View>
+          {Platform.OS === "web" && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+            />
+          )}
 
-            {/* Phone */}
-            <View className="mb-4">
-              <Input
-                label="Телефон"
-                placeholder="+7 (___) ___-__-__"
-                value={phone}
-                onChangeText={(t) => {
-                  setPhone(formatPhone(t));
-                  if (fieldErrors.phone) setFieldErrors((e) => ({ ...e, phone: undefined }));
-                }}
-                keyboardType="phone-pad"
-                editable={!isLoading}
-                error={fieldErrors.phone}
-              />
-            </View>
-
-            {/* Telegram */}
-            <View className="mb-4">
-              <Input
-                label="Telegram"
-                placeholder="@username"
-                value={telegram}
-                onChangeText={(t) => {
-                  setTelegram(t);
-                  if (fieldErrors.telegram) setFieldErrors((e) => ({ ...e, telegram: undefined }));
-                }}
-                autoCapitalize="none"
-                editable={!isLoading}
-                error={fieldErrors.telegram}
-              />
-            </View>
-
-            {/* WhatsApp */}
-            <View className="mb-4">
-              <Input
-                label="WhatsApp"
-                placeholder="+7 (___) ___-__-__"
-                value={whatsapp}
-                onChangeText={(t) => setWhatsapp(formatPhone(t))}
-                keyboardType="phone-pad"
-                editable={!isLoading}
-              />
-            </View>
-
-            {/* Office address */}
-            <View className="mb-4">
-              <Input
-                label="Адрес офиса"
-                placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"
-                value={officeAddress}
-                onChangeText={setOfficeAddress}
-                editable={!isLoading}
-              />
-            </View>
-
-            {/* Working hours */}
-            <View className="mb-6">
-              <Input
-                label="Часы работы"
-                placeholder="Пн-Пт 9:00-18:00"
-                value={workingHours}
-                onChangeText={setWorkingHours}
-                editable={!isLoading}
-              />
-            </View>
-
+          <View
+            className="bg-accent-soft rounded-xl px-4 py-3 mb-4"
+            style={{ borderWidth: 1, borderColor: overlay.accent10 }}
+          >
+            <Text className="text-xs text-accent text-center font-medium">
+              Контакты будут видны всем посетителям платформы
+            </Text>
           </View>
-        </ScrollView>
 
-        {/* Sticky bottom button */}
-        <View className="border-t border-border bg-white pt-3 pb-6">
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+            О себе
+          </Text>
+
+          <View className="mb-4">
+            <Input
+              label="О себе"
+              placeholder="Расскажите о своём опыте: сколько лет в профессии, какие вопросы решаете, с какими инспекциями работаете"
+              value={description}
+              onChangeText={(t) => {
+                if (t.length <= 1000) setDescription(t);
+                if (fieldErrors.description)
+                  setFieldErrors((e) => ({ ...e, description: undefined }));
+              }}
+              multiline
+              editable={!isLoading}
+              error={fieldErrors.description}
+            />
+            <Text className="text-xs text-text-mute text-right mt-1">
+              {description.length}/1000
+            </Text>
+          </View>
+
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3 mt-2">
+            Контакты
+          </Text>
+
+          <View className="mb-4">
+            <Input
+              label="Телефон"
+              placeholder="+7 (___) ___-__-__"
+              value={phone}
+              onChangeText={(t) => {
+                setPhone(formatPhone(t));
+                if (fieldErrors.phone)
+                  setFieldErrors((e) => ({ ...e, phone: undefined }));
+              }}
+              keyboardType="phone-pad"
+              editable={!isLoading}
+              error={fieldErrors.phone}
+            />
+          </View>
+
+          <View className="mb-4">
+            <Input
+              label="Telegram"
+              placeholder="@username"
+              value={telegram}
+              onChangeText={(t) => {
+                setTelegram(t);
+                if (fieldErrors.telegram)
+                  setFieldErrors((e) => ({ ...e, telegram: undefined }));
+              }}
+              autoCapitalize="none"
+              editable={!isLoading}
+              error={fieldErrors.telegram}
+            />
+          </View>
+
+          <View className="mb-4">
+            <Input
+              label="WhatsApp"
+              placeholder="+7 (___) ___-__-__"
+              value={whatsapp}
+              onChangeText={(t) => setWhatsapp(formatPhone(t))}
+              keyboardType="phone-pad"
+              editable={!isLoading}
+            />
+          </View>
+
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3 mt-2">
+            Офис
+          </Text>
+
+          <View className="mb-4">
+            <Input
+              label="Адрес офиса"
+              placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"
+              value={officeAddress}
+              onChangeText={setOfficeAddress}
+              editable={!isLoading}
+            />
+          </View>
+
+          <View className="mb-6">
+            <Input
+              label="Часы работы"
+              placeholder="Пн-Пт 9:00-18:00"
+              value={workingHours}
+              onChangeText={setWorkingHours}
+              editable={!isLoading}
+            />
+          </View>
+
           {error ? (
             <View
-              className="mb-3 px-4 py-3 rounded-xl flex-row items-center"
-              style={{ backgroundColor: colors.errorBg, borderWidth: 1, borderColor: colors.danger }}
+              className="mb-3 px-4 py-3 rounded-xl"
+              style={{
+                backgroundColor: colors.errorBg,
+                borderWidth: 1,
+                borderColor: colors.danger,
+              }}
             >
-              <Text className="text-sm text-danger leading-5 flex-1">
-                {error}
-              </Text>
+              <Text className="text-sm text-danger leading-5">{error}</Text>
             </View>
           ) : null}
+
           <Button
             label="Завершить регистрацию"
             onPress={handleSubmit}
             disabled={isLoading || avatarUploading}
             loading={isLoading}
           />
+
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Пропустить"
             onPress={handleSubmit}
             disabled={isLoading || avatarUploading}
-            className="items-center mt-3"
+            className="items-center mt-4"
             style={{ minHeight: 44, justifyContent: "center" }}
           >
             <Text className="text-sm text-text-mute">Пропустить</Text>
           </Pressable>
         </View>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
-
-  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }

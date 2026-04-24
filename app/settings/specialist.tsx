@@ -7,13 +7,12 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
-  useWindowDimensions,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Pencil, Plus, LogOut, Tag, Eye, Clock } from "lucide-react-native";
+import { Pencil, Plus, LogOut, Tag } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -51,8 +50,6 @@ interface SpecialistProfileData {
 }
 
 export default function SpecialistSettings() {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
   const router = useRouter();
   const { ready } = useRequireAuth();
   const { user, updateUser, signOut } = useAuth();
@@ -61,11 +58,9 @@ export default function SpecialistSettings() {
   const [saving, setSaving] = useState(false);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
-  // Avatar upload state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
-  // Form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [description, setDescription] = useState("");
@@ -73,11 +68,9 @@ export default function SpecialistSettings() {
   const [workingHours, setWorkingHours] = useState("");
   const [isAvailable, setIsAvailable] = useState(false);
 
-  // Notification toggles (local state)
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
 
-  // ContactMethod state
   const [contacts, setContacts] = useState<ContactMethodItem[]>([]);
   const [addingContact, setAddingContact] = useState(false);
   const [newContactType, setNewContactType] = useState("phone");
@@ -112,6 +105,16 @@ export default function SpecialistSettings() {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  const initialProfile = data;
+  const hasChanges = !!initialProfile && (
+    firstName !== (initialProfile.firstName || "") ||
+    lastName !== (initialProfile.lastName || "") ||
+    avatarUrl !== (initialProfile.avatarUrl || null) ||
+    description !== (initialProfile.profile?.description || "") ||
+    officeAddress !== (initialProfile.profile?.officeAddress || "") ||
+    workingHours !== (initialProfile.profile?.workingHours || "")
+  );
 
   const handleToggleAvailable = async (value: boolean) => {
     if (availabilityLoading) return;
@@ -153,6 +156,7 @@ export default function SpecialistSettings() {
         lastName: lastName.trim(),
         avatarUrl: avatarUrl || null,
       });
+      await fetchProfile();
       Alert.alert("Сохранено", "Профиль обновлён");
     } catch {
       Alert.alert("Ошибка", "Не удалось сохранить");
@@ -189,74 +193,28 @@ export default function SpecialistSettings() {
     );
   }
 
-  const leftPane = (
-    <View style={{ gap: 24 }}>
-      <View
-        className="rounded-2xl items-center justify-center bg-white self-start"
-        style={{ width: 56, height: 56 }}
-      >
-        <Eye size={26} color={colors.accent} />
-      </View>
-      <View style={{ gap: 12 }}>
-        <Text className="font-extrabold text-text-base" style={{ fontSize: 24, lineHeight: 30 }}>
-          Ваш профиль в каталоге
-        </Text>
-        <Text className="text-text-mute" style={{ fontSize: 14, lineHeight: 20 }}>
-          Так вас видят клиенты, когда ищут специалиста по ФНС. Изменения применяются сразу
-          после сохранения.
-        </Text>
-      </View>
-      <View
-        className="bg-white rounded-2xl border border-border"
-        style={{ padding: 16, gap: 12 }}
-      >
-        <View>
-          <Text className="text-text-dim" style={{ fontSize: 11, letterSpacing: 0.5 }}>
-            ИМЯ
-          </Text>
-          <Text className="text-text-base font-bold mt-0.5" style={{ fontSize: 16 }}>
-            {[firstName, lastName].filter(Boolean).join(" ") || "не заполнено"}
-          </Text>
-        </View>
-        <View>
-          <Text className="text-text-dim" style={{ fontSize: 11, letterSpacing: 0.5 }}>
-            СТАТУС
-          </Text>
-          <Text
-            className={`font-bold mt-0.5 ${isAvailable ? "text-success" : "text-warning"}`}
-            style={{ fontSize: 14 }}
-          >
-            {isAvailable ? "В каталоге — принимаю заявки" : "Скрыт из каталога"}
-          </Text>
-        </View>
-        <View>
-          <Text className="text-text-dim" style={{ fontSize: 11, letterSpacing: 0.5 }}>
-            ФНС / ГОРОДА
-          </Text>
-          <Text className="text-text-base font-semibold mt-0.5" style={{ fontSize: 14 }}>
-            {data?.fnsServices?.length
-              ? `${data.fnsServices.length} инспекций`
-              : "не заполнено"}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-2 pt-2 border-t border-border">
-          <Clock size={12} color={colors.textMuted} />
-          <Text className="text-text-dim" style={{ fontSize: 11 }}>
-            Last updated: только что
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  const rightForm = (
+  return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderBack title="Настройки специалиста" />
-      <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-        <View className="px-4">
-          <View className="py-4">
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: hasChanges ? 96 : 32 }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            alignSelf: "center",
+            paddingHorizontal: 16,
+            paddingTop: 16,
+          }}
+        >
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-4">
+              Профиль
+            </Text>
 
-            {/* Avatar centered */}
             <View className="items-center mb-2">
               <AvatarUploader
                 avatarUrl={avatarUrl}
@@ -268,8 +226,7 @@ export default function SpecialistSettings() {
               />
             </View>
 
-            {/* Availability toggle */}
-            <View className="bg-white border border-border rounded-2xl mx-4 px-4 py-3.5 mb-4 flex-row items-center justify-between">
+            <View className="flex-row items-center justify-between mt-4 py-2">
               <View className="flex-1 mr-4">
                 <Text className="text-base font-semibold text-text-base">
                   Принимаю заявки
@@ -292,123 +249,130 @@ export default function SpecialistSettings() {
                 />
               )}
             </View>
+          </View>
 
-            {/* Personal data section */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-4">
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
               Личные данные
             </Text>
 
-            <View className="bg-white border border-border rounded-2xl mx-4 mb-4 overflow-hidden px-4 pt-3 pb-4">
-              <View className="mb-3">
-                <Input
-                  label="Имя"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  placeholder="Введите имя"
-                  maxLength={50}
-                />
-              </View>
-
-              <View className="mb-3">
-                <Input
-                  label="Фамилия"
-                  value={lastName}
-                  onChangeText={setLastName}
-                  placeholder="Введите фамилию"
-                  maxLength={50}
-                />
-              </View>
-
-              {/* Email read-only */}
-              <Text className="text-sm font-medium text-text-base mb-1.5">
-                Email{" "}
-                <Text className="text-text-mute font-normal">(нельзя изменить)</Text>
-              </Text>
-              <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center mb-3">
-                <Text className="text-base text-text-mute">
-                  {data?.email || user?.email || ""}
-                </Text>
-              </View>
-
-              {/* Description */}
-              <View>
-                <Input
-                  label="О себе"
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder="Расскажите о своём опыте и специализации..."
-                  multiline
-                  numberOfLines={4}
-                  maxLength={500}
-                />
-                <Text className="text-xs text-text-dim text-right mt-1">
-                  {description.length}/500
-                </Text>
-              </View>
+            <View className="mb-3">
+              <Input
+                label="Имя"
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="Введите имя"
+                maxLength={50}
+              />
             </View>
 
-            {/* FNS & Services section */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-2">
+            <View className="mb-3">
+              <Input
+                label="Фамилия"
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Введите фамилию"
+                maxLength={50}
+              />
+            </View>
+
+            <Text className="text-sm font-medium text-text-base mb-1.5">
+              Email{" "}
+              <Text className="text-text-mute font-normal">(нельзя изменить)</Text>
+            </Text>
+            <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center mb-3">
+              <Text className="text-base text-text-mute">
+                {data?.email || user?.email || ""}
+              </Text>
+            </View>
+
+            <View>
+              <Input
+                label="О себе"
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Расскажите о своём опыте и специализации..."
+                multiline
+                numberOfLines={4}
+                maxLength={500}
+              />
+              <Text className="text-xs text-text-dim text-right mt-1">
+                {description.length}/500
+              </Text>
+            </View>
+          </View>
+
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
               ИФНС и услуги
             </Text>
 
-            <View className="bg-white border border-border rounded-2xl mx-4 mb-4 overflow-hidden px-4 pt-3 pb-4">
-              {data && data.fnsServices.length > 0 ? (
-                <>
-                  {data.fnsServices.map((item) => (
-                    <View
-                      key={item.fns.id}
-                      className="bg-surface2 rounded-xl p-3 mb-2 border border-border"
-                    >
-                      <Text className="text-sm font-semibold text-text-base">
-                        {item.city.name} — {item.fns.name}
-                      </Text>
-                      <Text className="text-xs text-text-mute mb-1">
-                        {item.fns.code}
-                      </Text>
-                      <View className="flex-row flex-wrap gap-1 mt-1">
-                        {item.services.length === 0 ? (
-                          <EmptyState icon={Tag} title="Нет услуг" subtitle="Добавьте услуги для этой инспекции" />
-                        ) : (
-                          item.services.map((s) => (
-                            <View
-                              key={s.id}
-                              className="bg-accent-soft px-2.5 py-0.5 rounded-full"
-                            >
-                              <Text className="text-xs font-medium text-accent">{s.name}</Text>
-                            </View>
-                          ))
-                        )}
-                      </View>
-                    </View>
-                  ))}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Изменить рабочую зону"
-                    onPress={() => router.push("/onboarding/work-area" as never)}
-                    className="flex-row items-center justify-center py-2 mt-1"
+            {data && data.fnsServices.length > 0 ? (
+              <>
+                {data.fnsServices.map((item) => (
+                  <View
+                    key={item.fns.id}
+                    className="bg-surface2 rounded-xl p-3 mb-2 border border-border"
                   >
-                    <Pencil size={13} color={colors.accent} />
-                    <Text className="text-sm text-accent ml-1.5 font-medium">
-                      Изменить рабочую зону
+                    <Text className="text-sm font-semibold text-text-base">
+                      {item.city.name} — {item.fns.name}
                     </Text>
-                  </Pressable>
-                </>
-              ) : (
+                    <Text className="text-xs text-text-mute mb-1">
+                      {item.fns.code}
+                    </Text>
+                    <View className="flex-row flex-wrap gap-1 mt-1">
+                      {item.services.length === 0 ? (
+                        <EmptyState
+                          icon={Tag}
+                          title="Нет услуг"
+                          subtitle="Добавьте услуги для этой инспекции"
+                        />
+                      ) : (
+                        item.services.map((s) => (
+                          <View
+                            key={s.id}
+                            className="bg-accent-soft px-2.5 py-0.5 rounded-full"
+                          >
+                            <Text className="text-xs font-medium text-accent">
+                              {s.name}
+                            </Text>
+                          </View>
+                        ))
+                      )}
+                    </View>
+                  </View>
+                ))}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Добавить рабочую зону"
+                  accessibilityLabel="Изменить рабочую зону"
                   onPress={() => router.push("/onboarding/work-area" as never)}
-                  className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
+                  className="flex-row items-center justify-center py-2 mt-1"
                 >
-                  <Plus size={14} color={colors.accent} />
-                  <Text className="text-sm text-accent ml-2 font-medium">
-                    Добавить ИФНС и услуги
+                  <Pencil size={13} color={colors.accent} />
+                  <Text className="text-sm text-accent ml-1.5 font-medium">
+                    Изменить рабочую зону
                   </Text>
                 </Pressable>
-              )}
-            </View>
+              </>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Добавить рабочую зону"
+                onPress={() => router.push("/onboarding/work-area" as never)}
+                className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
+              >
+                <Plus size={14} color={colors.accent} />
+                <Text className="text-sm text-accent ml-2 font-medium">
+                  Добавить ИФНС и услуги
+                </Text>
+              </Pressable>
+            )}
+          </View>
 
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+              Контакты
+            </Text>
             <ContactMethodsList
               contacts={contacts}
               addingContact={addingContact}
@@ -423,34 +387,89 @@ export default function SpecialistSettings() {
               onContactSavingChange={setContactSaving}
               onShowTypePickerChange={setShowTypePicker}
             />
+          </View>
 
-            {/* Office section */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-2">
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
               Офис
             </Text>
 
-            <View className="bg-white border border-border rounded-2xl mx-4 mb-4 overflow-hidden px-4 pt-3 pb-4">
-              <View className="mb-3">
-                <Input
-                  label="Адрес офиса"
-                  value={officeAddress}
-                  onChangeText={setOfficeAddress}
-                  placeholder="Город, улица, дом"
-                />
-              </View>
-
-              <View>
-                <Input
-                  label="Часы работы"
-                  value={workingHours}
-                  onChangeText={setWorkingHours}
-                  placeholder="Пн-Пт 9:00-18:00"
-                />
-              </View>
+            <View className="mb-3">
+              <Input
+                label="Адрес офиса"
+                value={officeAddress}
+                onChangeText={setOfficeAddress}
+                placeholder="Город, улица, дом"
+              />
             </View>
 
-            {/* Save button */}
-            <View className="mx-4 mb-4">
+            <View>
+              <Input
+                label="Часы работы"
+                value={workingHours}
+                onChangeText={setWorkingHours}
+                placeholder="Пн-Пт 9:00-18:00"
+              />
+            </View>
+          </View>
+
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+              Уведомления
+            </Text>
+            <NotificationPreferences
+              pushEnabled={pushEnabled}
+              emailEnabled={emailEnabled}
+              onPushChange={setPushEnabled}
+              onEmailChange={setEmailEnabled}
+            />
+          </View>
+
+          <View className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 overflow-hidden">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
+              Аккаунт
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Выйти из аккаунта"
+              onPress={handleLogout}
+              className="flex-row items-center py-3 active:bg-danger-soft"
+            >
+              <View
+                className="w-9 h-9 rounded-xl items-center justify-center"
+                style={{ backgroundColor: colors.dangerSoft }}
+              >
+                <LogOut size={17} color={colors.error} />
+              </View>
+              <Text className="text-base font-medium text-danger ml-3 flex-1">
+                Выйти из аккаунта
+              </Text>
+            </Pressable>
+          </View>
+
+          <Text className="text-xs text-text-dim text-center mb-4">
+            Версия 1.0.0
+          </Text>
+        </View>
+      </ScrollView>
+
+      {hasChanges && (
+        <View
+          className="border-t border-border bg-white px-6 py-3 flex-row justify-end items-center"
+          style={{
+            position: Platform.OS === "web" ? ("sticky" as any) : undefined,
+            bottom: 0,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 720,
+              flexDirection: "row",
+              justifyContent: "flex-end",
+            }}
+          >
+            <View style={{ minWidth: 180 }}>
               <Button
                 label="Сохранить"
                 onPress={handleSave}
@@ -458,44 +477,9 @@ export default function SpecialistSettings() {
                 loading={saving}
               />
             </View>
-
-            <NotificationPreferences
-              pushEnabled={pushEnabled}
-              emailEnabled={emailEnabled}
-              onPushChange={setPushEnabled}
-              onEmailChange={setEmailEnabled}
-            />
-
-            {/* Account section */}
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-2 mt-2">
-              Аккаунт
-            </Text>
-
-            <View className="bg-white border border-border rounded-2xl mx-4 mb-8 overflow-hidden">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Выйти из аккаунта"
-                onPress={handleLogout}
-                className="flex-row items-center px-4 py-3.5 min-h-[50px] active:bg-danger-soft"
-              >
-                <View className="w-9 h-9 rounded-xl items-center justify-center" style={{ backgroundColor: colors.dangerSoft }}>
-                  <LogOut size={17} color={colors.error} />
-                </View>
-                <Text className="text-base font-medium text-danger ml-3 flex-1">
-                  Выйти из аккаунта
-                </Text>
-              </Pressable>
-            </View>
-
-            <Text className="text-xs text-text-dim text-center mb-4">
-              Версия 1.0.0
-            </Text>
-
           </View>
         </View>
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
-
-  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }
