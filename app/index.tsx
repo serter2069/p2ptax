@@ -1,47 +1,85 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  useWindowDimensions,
-} from "react-native";
+import { View, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { colors } from "@/lib/theme";
-import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
-import HeroSection from "@/components/landing/HeroSection";
-import StatsStrip from "@/components/landing/StatsStrip";
-import ProblemsSection from "@/components/landing/ProblemsSection";
-import HowItWorksSection from "@/components/landing/HowItWorksSection";
-import FeaturesSection from "@/components/landing/FeaturesSection";
-import CTASection from "@/components/landing/CTASection";
+import ErrorState from "@/components/ui/ErrorState";
+import LandingHeader from "@/components/landing/LandingHeader";
+import HeroBlock, { type HeroSpecialistPreview } from "@/components/landing/HeroBlock";
+import TrustStrip from "@/components/landing/TrustStrip";
+import ServicesSection from "@/components/landing/ServicesSection";
+import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
+import CasesSection from "@/components/landing/CasesSection";
+import type { CaseCardData } from "@/components/landing/CaseCard";
+import FearTimeline from "@/components/landing/FearTimeline";
+import SpecialistCTASection from "@/components/landing/SpecialistCTASection";
+import FinalCTA from "@/components/landing/FinalCTA";
 import FooterSection from "@/components/landing/FooterSection";
-import RecentWinsStrip, { type RecentWin } from "@/components/dashboard/RecentWinsStrip";
-import { spacing } from "@/lib/theme";
 
-interface PlatformStats {
+interface LandingCounts {
   specialistsCount: number;
   citiesCount: number;
   consultationsCount: number;
+  resolvedCases?: number;
 }
 
+interface FeaturedSpecialistsResponse {
+  items: Array<{
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    avatarUrl?: string | null;
+    cities: Array<{ id: string; name: string }>;
+    services: Array<{ id: string; name: string }>;
+  }>;
+}
+
+interface RecentWinsResponse {
+  items: Array<{
+    id: string;
+    specialistName: string;
+    amount: number | null;
+    savedAmount: number | null;
+    days: number | null;
+    ifnsLabel: string | null;
+    city: string | null;
+    category: string;
+    date: string | null;
+  }>;
+}
+
+/**
+ * Public landing (/). The only route any unauthenticated user sees by
+ * default. Authenticated users are redirected to their role dashboard.
+ *
+ * Layout (top → bottom):
+ *   Header → Hero (copy + 3 specialist cards) → Trust strip (3 counters)
+ *   → Services (3 cards) → How It Works (3 steps) → Cases (credibility)
+ *   → Fear timeline (ждать дорого) → Specialist CTA (audience #2) →
+ *   Final CTA → Footer.
+ *
+ * Data sources:
+ *   /api/stats/landing-counts  — counters (public)
+ *   /api/specialists/featured  — live specialist feed (public)
+ *   /api/stats/recent-wins     — credibility cases (public)
+ *
+ * No mock data. Empty states handled per-section.
+ */
 export default function LandingScreen() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= 768;
 
-  const [stats, setStats] = useState<PlatformStats | null>(null);
-  const [wins, setWins] = useState<RecentWin[]>([]);
+  const [counts, setCounts] = useState<LandingCounts | null>(null);
+  const [specialists, setSpecialists] = useState<HeroSpecialistPreview[]>([]);
+  const [cases, setCases] = useState<CaseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
 
-  // Redirect authenticated users to their dashboard
+  // Redirect authenticated users to their role-specific dashboard.
   useEffect(() => {
     if (isAuthenticated && user?.role) {
       if (user.role === "SPECIALIST") {
@@ -58,18 +96,50 @@ export default function LandingScreen() {
     setLoading(true);
     setError(false);
     try {
-      const statsRes = await api<PlatformStats>("/api/stats", { noAuth: true });
-      setStats(statsRes);
+      // Counters are critical — failure here is a real error state.
+      const countsRes = await api<LandingCounts>("/api/stats/landing-counts", { noAuth: true });
+      setCounts(countsRes);
 
-      // Non-blocking: recent wins (public)
+      // Specialists + wins are non-blocking. Missing data just collapses
+      // a card or swaps to an empty-state — never a full-screen error.
       try {
-        const w = await api<{ items: RecentWin[] }>(
-          "/api/stats/recent-wins?limit=6",
+        const sp = await api<FeaturedSpecialistsResponse>(
+          "/api/specialists/featured",
           { noAuth: true }
         );
-        setWins(w.items ?? []);
+        const mapped: HeroSpecialistPreview[] = (sp.items ?? []).slice(0, 3).map((s) => ({
+          id: s.id,
+          firstName: s.firstName,
+          lastName: s.lastName,
+          avatarUrl: s.avatarUrl,
+          cities: s.cities,
+          services: s.services,
+          fnsName: null,
+          isOnline: true,
+        }));
+        setSpecialists(mapped);
       } catch {
-        setWins([]);
+        setSpecialists([]);
+      }
+
+      try {
+        const winsRes = await api<RecentWinsResponse>(
+          "/api/stats/recent-wins?limit=3",
+          { noAuth: true }
+        );
+        const mapped: CaseCardData[] = (winsRes.items ?? []).slice(0, 3).map((w) => ({
+          id: w.id,
+          specialistName: w.specialistName,
+          category: w.category,
+          ifnsLabel: w.ifnsLabel,
+          city: w.city,
+          days: w.days,
+          savedAmount: w.savedAmount,
+          amount: w.amount,
+        }));
+        setCases(mapped);
+      } catch {
+        setCases([]);
       }
     } catch {
       setError(true);
@@ -82,17 +152,32 @@ export default function LandingScreen() {
     loadData();
   }, [loadData]);
 
-  const handleCreateRequest = useCallback(() => {
+  const goCreateRequest = useCallback(() => {
     router.push("/auth/email" as never);
   }, [router]);
 
-  const handleViewCatalog = useCallback(() => {
+  const goCatalog = useCallback(() => {
     router.push("/specialists" as never);
   }, [router]);
 
-  const handleHome = useCallback(() => {
+  const goHome = useCallback(() => {
     router.push("/" as never);
   }, [router]);
+
+  const goLogin = useCallback(() => {
+    router.push("/auth/email" as never);
+  }, [router]);
+
+  const goBecomeSpecialist = useCallback(() => {
+    router.push("/auth/email" as never);
+  }, [router]);
+
+  const goLegal = useCallback(
+    (target: "terms" | "privacy") => {
+      router.push((target === "terms" ? "/legal/terms" : "/legal/privacy") as never);
+    },
+    [router]
+  );
 
   if (loading) {
     return (
@@ -105,11 +190,8 @@ export default function LandingScreen() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-row items-center justify-between h-16 bg-white px-4">
-          <Text className="text-lg font-extrabold" style={{ color: colors.primary }}>P2PTax</Text>
-        </View>
         <ErrorState
-          message="Не удалось загрузить данные. Проверьте соединение с интернетом и попробуйте снова."
+          message="Не удалось загрузить данные. Проверьте соединение и попробуйте снова."
           onRetry={loadData}
         />
       </SafeAreaView>
@@ -117,71 +199,68 @@ export default function LandingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between h-16 bg-white px-4"
-        style={
-          scrollY > 10
-            ? { shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }
-            : undefined
-        }
-      >
-        <View style={{ width: "100%", alignItems: "center" }}>
-          <View
-            className="flex-row items-center justify-between"
-            style={{ width: "100%", maxWidth: 1152, paddingHorizontal: isDesktop ? 24 : 0 }}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="P2PTax Home"
-              onPress={handleHome}
-              className="min-h-[44px] justify-center"
-            >
-              <Text className="text-xl font-extrabold" style={{ color: colors.primary }}>P2PTax</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Создать заявку"
-              onPress={handleCreateRequest}
-              className="rounded-lg px-4 min-h-[44px] items-center justify-center"
-              style={{ backgroundColor: colors.primary }}
-            >
-              <Text className="text-white font-semibold text-sm">Создать заявку</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
-        scrollEventThrottle={16}
+        contentContainerStyle={{ backgroundColor: "#ffffff" }}
       >
-        <HeroSection isDesktop={isDesktop} onCreateRequest={handleCreateRequest} onViewCatalog={handleViewCatalog} stats={stats} />
-        {stats && <StatsStrip stats={stats} isDesktop={isDesktop} />}
-        {wins.length > 0 && (
-          <View
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: spacing.xl,
-              width: "100%",
-              alignSelf: "center",
-              maxWidth: 1152,
-            }}
-          >
-            <RecentWinsStrip
-              title="Недавние победы"
-              subtitle="Реальные дела, где специалисты оспорили доначисления"
-              items={wins}
-            />
-          </View>
-        )}
-        <ProblemsSection isDesktop={isDesktop} />
-        <HowItWorksSection isDesktop={isDesktop} />
-        <FeaturesSection isDesktop={isDesktop} />
-        <CTASection isDesktop={isDesktop} onCreateRequest={handleCreateRequest} onViewCatalog={handleViewCatalog} />
-        <FooterSection isDesktop={isDesktop} onHome={handleHome} onViewCatalog={handleViewCatalog} onCreateRequest={handleCreateRequest} />
+        <LandingHeader
+          isDesktop={isDesktop}
+          onHome={goHome}
+          onCatalog={goCatalog}
+          onLogin={goLogin}
+          onCreateRequest={goCreateRequest}
+        />
+
+        <HeroBlock
+          isDesktop={isDesktop}
+          specialists={specialists}
+          loading={loading}
+          onPrimaryCta={goCreateRequest}
+          onSecondaryCta={goCatalog}
+        />
+
+        <TrustStrip
+          isDesktop={isDesktop}
+          specialistsCount={counts?.specialistsCount ?? 0}
+          citiesCount={counts?.citiesCount ?? 0}
+          resolvedCases={counts?.resolvedCases ?? counts?.consultationsCount ?? 0}
+        />
+
+        <ServicesSection isDesktop={isDesktop} />
+
+        <HowItWorksFlow isDesktop={isDesktop} />
+
+        <CasesSection
+          isDesktop={isDesktop}
+          cases={cases}
+          onCreateRequest={goCreateRequest}
+        />
+
+        <FearTimeline isDesktop={isDesktop} />
+
+        <SpecialistCTASection
+          isDesktop={isDesktop}
+          onBecomeSpecialist={goBecomeSpecialist}
+          specialistsCount={counts?.specialistsCount ?? 0}
+        />
+
+        <FinalCTA
+          isDesktop={isDesktop}
+          onCreateRequest={goCreateRequest}
+          onViewCatalog={goCatalog}
+        />
+
+        <FooterSection
+          isDesktop={isDesktop}
+          onHome={goHome}
+          onViewCatalog={goCatalog}
+          onCreateRequest={goCreateRequest}
+          onBecomeSpecialist={goBecomeSpecialist}
+          onLegal={goLegal}
+        />
+
+        <View style={{ height: 1 }} />
       </ScrollView>
     </SafeAreaView>
   );
