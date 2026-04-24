@@ -165,7 +165,7 @@ export default function SpecialistMyThreads() {
                     <EmptyState
                       icon={MessageCircle}
                       title="Нет диалогов"
-                      subtitle="Откликнитесь на публичную заявку — переписка появится здесь"
+                      subtitle="Напишите по публичной заявке — переписка появится здесь"
                       actionLabel="Смотреть заявки"
                       onAction={() =>
                         router.push("/(specialist-tabs)/requests" as never)
@@ -198,7 +198,7 @@ export default function SpecialistMyThreads() {
                   hint={
                     threads.length > 0
                       ? `У вас ${threads.length} ${threads.length === 1 ? "диалог" : threads.length < 5 ? "диалога" : "диалогов"}. Нажмите любой, чтобы открыть переписку.`
-                      : "Откликнитесь на публичную заявку, чтобы начать переписку с клиентом."
+                      : "Напишите по публичной заявке, чтобы начать переписку с клиентом."
                   }
                   leftHint="Список диалогов"
                   primary={{
@@ -294,7 +294,7 @@ export default function SpecialistMyThreads() {
                 <EmptyState
                   icon={MessageCircle}
                   title="Вы ещё не написали ни одному клиенту"
-                  subtitle="Откликнитесь на заявку — клиент увидит ваше сообщение и сможет ответить"
+                  subtitle="Напишите по заявке — клиент увидит ваше сообщение и сможет ответить"
                   actionLabel="Смотреть заявки"
                   onAction={() =>
                     router.push("/(specialist-tabs)/requests" as never)

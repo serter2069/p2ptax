@@ -5,7 +5,7 @@ import { authMiddleware } from "../middleware/auth";
 const router = Router();
 
 const VALID_EVENT_TYPES = [
-  "new_response",
+  "new_message_from_specialist",
   "new_message",
   "new_request_in_city",
   "promo_expiring",

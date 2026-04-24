@@ -1,35 +1,25 @@
+import { useEffect, useState } from "react";
 import { View, Text, TextInput, ScrollView, Pressable, FlatList, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
-  FileSearch, AlertTriangle, ShieldCheck, Briefcase, Globe2, Landmark,
-  Users, Gavel, MapPin, Search, type LucideIcon
+  FileSearch, ShieldCheck, Briefcase,
+  MapPin, Search, type LucideIcon
 } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import { colors, overlay } from "@/lib/theme";
+import { api } from "@/lib/api";
 
-// Tax-domain categories (NOT marketplace). Covers primary service verticals
-// that clients encounter on p2ptax.
-const CATEGORIES: { id: string; name: string; Icon: LucideIcon }[] = [
-  { id: "1", name: "Камеральная", Icon: FileSearch },
-  { id: "2", name: "Выездная", Icon: Briefcase },
-  { id: "3", name: "Опер. контроль", Icon: ShieldCheck },
-  { id: "4", name: "Споры с ИФНС", Icon: Gavel },
-  { id: "5", name: "Счёт 115-ФЗ", Icon: AlertTriangle },
-  { id: "6", name: "Зарубежные счета", Icon: Globe2 },
-  { id: "7", name: "Самозанятые", Icon: Users },
-  { id: "8", name: "Регионы ФНС", Icon: Landmark },
-];
+// SA: ровно 3 услуги — Выездная / Камеральная / Оперативный контроль.
+// Иконка выбирается эвристикой по названию, чтобы не хардкодить id.
+function pickIcon(name: string): LucideIcon {
+  if (/камеральн/i.test(name)) return FileSearch;
+  if (/выездн/i.test(name)) return Briefcase;
+  return ShieldCheck;
+}
 
-// Featured specialists / services (NOT listings/objявлений).
-const FEATURED = [
-  { id: "1", title: "Защита при камеральной проверке", price: "от 15 000 ₽", location: "Москва" },
-  { id: "2", title: "Сопровождение выездной проверки", price: "от 60 000 ₽", location: "Санкт-Петербург" },
-  { id: "3", title: "Разблокировка счёта по 115-ФЗ", price: "от 25 000 ₽", location: "Екатеринбург" },
-  { id: "4", title: "Оспаривание решения ИФНС", price: "от 35 000 ₽", location: "Казань" },
-  { id: "5", title: "Отчёты по зарубежным счетам", price: "от 12 000 ₽", location: "Новосибирск" },
-  { id: "6", title: "Консультация по самозанятым", price: "от 3 500 ₽", location: "Краснодар" },
-];
+interface ServiceItem { id: string; name: string }
+interface FeaturedItem { id: string; title: string; location: string }
 
 function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
   return (
@@ -50,7 +40,7 @@ function CategoryChip({ name, Icon }: { name: string; Icon: LucideIcon }) {
   );
 }
 
-function ServiceCard({ title, price, location }: { title: string; price: string; location: string }) {
+function ServiceCard({ title, location }: { title: string; location: string }) {
   return (
     <Pressable className="flex-1 m-1.5" style={{ minHeight: 44 }} accessibilityRole="button" accessibilityLabel={title}>
       <View
@@ -68,7 +58,6 @@ function ServiceCard({ title, price, location }: { title: string; price: string;
         </View>
         <View className="p-3 pb-4">
           <Text className="text-sm font-semibold text-text-base mb-1" numberOfLines={2}>{title}</Text>
-          <Text className="text-base font-bold text-accent mb-1.5">{price}</Text>
           <View className="flex-row items-center">
             <MapPin size={11} color={colors.textMuted} />
             <Text className="text-xs text-text-mute ml-1">{location}</Text>
@@ -79,6 +68,13 @@ function ServiceCard({ title, price, location }: { title: string; price: string;
   );
 }
 
+// Featured example card titles for 3 canonical services
+const FEATURED_TEMPLATES: Record<string, { title: string; location: string }> = {
+  "Камеральная проверка": { title: "Защита при камеральной проверке", location: "Москва" },
+  "Выездная проверка": { title: "Сопровождение выездной проверки", location: "Санкт-Петербург" },
+  "Отдел оперативного контроля": { title: "Сопровождение оперативного контроля", location: "Екатеринбург" },
+};
+
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const router = useRouter();
@@ -87,11 +83,33 @@ export default function HomeScreen() {
     ? { maxWidth: 1200, width: "100%" as const, alignSelf: "center" as const, paddingHorizontal: 16 }
     : undefined;
 
+  const [services, setServices] = useState<ServiceItem[]>([]);
+
+  useEffect(() => {
+    api<{ items: ServiceItem[] }>("/api/services", { noAuth: true })
+      .then((res) => setServices(res.items ?? []))
+      .catch(() => setServices([]));
+  }, []);
+
+  // Fallback: если API недоступен — показываем 3 канонические услуги (SA).
+  const displayServices: ServiceItem[] = services.length > 0
+    ? services
+    : [
+        { id: "s1", name: "Камеральная проверка" },
+        { id: "s2", name: "Выездная проверка" },
+        { id: "s3", name: "Отдел оперативного контроля" },
+      ];
+
+  const featured: FeaturedItem[] = displayServices.map((s) => {
+    const tpl = FEATURED_TEMPLATES[s.name] ?? { title: s.name, location: "Россия" };
+    return { id: s.id, title: tpl.title, location: tpl.location };
+  });
+
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <View className="flex-1" style={containerStyle}>
         <FlatList
-          data={FEATURED}
+          data={featured}
           numColumns={2}
           keyExtractor={(item) => item.id}
           contentContainerClassName="px-2 pb-6"
@@ -113,7 +131,7 @@ export default function HomeScreen() {
                   Проверенные специалисты по налогам по всей России
                 </Text>
                 <Text className="text-xs mt-1" style={{ color: overlay.white50 }}>
-                  Камеральные и выездные проверки, споры с ИФНС, 115-ФЗ
+                  Камеральные и выездные проверки, оперативный контроль
                 </Text>
               </View>
 
@@ -143,8 +161,8 @@ export default function HomeScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerClassName="px-2 pb-3"
               >
-                {CATEGORIES.map((cat) => (
-                  <CategoryChip key={cat.id} name={cat.name} Icon={cat.Icon} />
+                {displayServices.map((s) => (
+                  <CategoryChip key={s.id} name={s.name} Icon={pickIcon(s.name)} />
                 ))}
               </ScrollView>
 
@@ -165,7 +183,6 @@ export default function HomeScreen() {
           renderItem={({ item }) => (
             <ServiceCard
               title={item.title}
-              price={item.price}
               location={item.location}
             />
           )}

@@ -31,7 +31,7 @@ interface NotificationsResponse {
 
 function iconForType(type: string): { Icon: LucideIcon; color: string; bg: string } {
   switch (type) {
-    case "new_response":
+    case "new_message_from_specialist":
       return { Icon: MessageCircle, color: colors.primary, bg: colors.accentSoft };
     case "new_message":
       return { Icon: Mail, color: colors.primary, bg: colors.accentSoft };

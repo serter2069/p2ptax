@@ -196,7 +196,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
                 </Text>
               </View>
             ) : (
-              <Text className="text-xs text-text-mute">Нет откликов</Text>
+              <Text className="text-xs text-text-mute">Нет диалогов</Text>
             )}
             <Text className="text-xs text-text-mute">{formattedDate}</Text>
           </View>

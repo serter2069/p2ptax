@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,21 +17,18 @@ import {
   Target,
   ScrollText,
   Bookmark,
+  Lock,
 } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import Avatar from "@/components/ui/Avatar";
-import RatingStars from "@/components/ui/RatingStars";
 import MetricCard from "@/components/ui/MetricCard";
-import CaseCard from "@/components/specialist/CaseCard";
-import ReviewCard from "@/components/specialist/ReviewCard";
 import ContactsSection from "@/components/specialist/ContactsSection";
 import WorkAreaSection from "@/components/specialist/WorkAreaSection";
 import type {
   SpecialistDetail,
   ContactMethodItem,
-  SpecialistCaseItem,
 } from "@/components/specialist/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
@@ -46,13 +43,6 @@ function getInitials(
   return (f + l).toUpperCase() || "?";
 }
 
-const CASE_FILTERS: Array<{ label: string; match: (c: SpecialistCaseItem) => boolean }> = [
-  { label: "Все", match: () => true },
-  { label: "Выездные", match: (c) => /выездн/i.test(c.category) },
-  { label: "Камеральные", match: (c) => /камеральн/i.test(c.category) },
-  { label: "115-ФЗ", match: (c) => /115|блокировк/i.test(c.category) },
-];
-
 export default function SpecialistPublicProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -65,9 +55,6 @@ export default function SpecialistPublicProfile() {
   const [contacts, setContacts] = useState<ContactMethodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [caseFilter, setCaseFilter] = useState(0);
-  const [casesExpanded, setCasesExpanded] = useState(false);
 
   const isOwnProfile = !!user && user.id === id;
   const isSpecialist = user?.role === "SPECIALIST";
@@ -112,14 +99,6 @@ export default function SpecialistPublicProfile() {
     }
     // Future: POST /api/bookmarks
   }, [isAuthenticated, router, id]);
-
-  // Filter cases
-  const filteredCases = useMemo(() => {
-    const all = specialist?.cases ?? [];
-    return all.filter(CASE_FILTERS[caseFilter].match);
-  }, [specialist?.cases, caseFilter]);
-
-  const visibleCases = casesExpanded ? filteredCases : filteredCases.slice(0, 3);
 
   if (loading) {
     return (
@@ -188,10 +167,6 @@ export default function SpecialistPublicProfile() {
   }
 
   const profile = specialist.profile;
-  const cases = specialist.cases ?? [];
-  const reviews = specialist.reviews ?? [];
-  const reviewCount = specialist.reviewCount ?? reviews.length;
-  const averageRating = specialist.averageRating ?? null;
 
   const yearsExp =
     profile?.yearsOfExperience ?? Math.max(1, 2024 - new Date(specialist.createdAt).getFullYear());
@@ -242,66 +217,8 @@ export default function SpecialistPublicProfile() {
           {rolePrimary} · {cityLabel}
         </Text>
 
-        {fnsCodes.length > 0 && (
-          <View
-            className="flex-row flex-wrap mt-3"
-            style={{ gap: 6 }}
-          >
-            {fnsCodes.slice(0, 4).map((code) => (
-              <View
-                key={code}
-                className="px-2 py-1 rounded-md"
-                style={{ backgroundColor: colors.surface2 }}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontFamily: "monospace",
-                    color: colors.textSecondary,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  ИФНС №{code}
-                </Text>
-              </View>
-            ))}
-            {fnsCodes.length > 4 && (
-              <View
-                className="px-2 py-1 rounded-md"
-                style={{ backgroundColor: colors.surface2 }}
-              >
-                <Text
-                  style={{ fontSize: 12, color: colors.textMuted }}
-                >
-                  +{fnsCodes.length - 4}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        <View
-          className="flex-row items-center flex-wrap mt-3"
-          style={{ gap: 10 }}
-        >
-          <RatingStars
-            rating={averageRating ?? 0}
-            size={14}
-            showNumber
-            reviewCount={reviewCount}
-          />
-          {cases.length > 0 && (
-            <>
-              <Text style={{ color: colors.textMuted }}>·</Text>
-              <Text
-                className="text-sm font-semibold"
-                style={{ color: colors.text }}
-              >
-                {cases.length} {cases.length === 1 ? "дело" : cases.length < 5 ? "дела" : "дел"}
-              </Text>
-            </>
-          )}
-        </View>
+        {/* ИФНС chips удалены — дубль секции «Работает в ФНС» (SA). */}
+        {/* Rating/cases counter удалены — MVP stub only (SA). */}
 
         {isExFns && (
           <View
@@ -318,26 +235,7 @@ export default function SpecialistPublicProfile() {
           </View>
         )}
 
-        <View
-          className={`${isTablet ? "flex-row" : "flex-col"} mt-4`}
-          style={{ gap: 8 }}
-        >
-          {!isOwnProfile && !isSpecialist && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Написать"
-              onPress={handleWritePress}
-              className="rounded-xl px-6 h-11 items-center justify-center flex-row"
-              style={{
-                backgroundColor: colors.primary,
-                alignSelf: isTablet ? "flex-start" : "stretch",
-              }}
-            >
-              <Text className="text-white font-semibold text-sm">Написать</Text>
-              <Text className="text-white text-sm ml-2">· бесплатно</Text>
-            </Pressable>
-          )}
-        </View>
+        {/* Duplicate hero CTA удалён — используем sticky sidebar CTA (SA). */}
       </View>
     </View>
   );
@@ -395,140 +293,16 @@ export default function SpecialistPublicProfile() {
     </View>
   );
 
-  // Cases section
-  const casesBlock = (
-    <View className="mt-8">
-      <View
-        className="flex-row items-center justify-between mb-4"
-        style={{ gap: 8 }}
+  // MVP: cases & reviews sections removed per SA (stub only).
+  // Small subtle placeholder after "about" replaces large sections.
+  const reviewsStub = (
+    <View className="mt-6">
+      <Text
+        className="text-xs"
+        style={{ color: colors.textMuted, fontStyle: "italic" }}
       >
-        <Text style={{ ...textStyle.h2, color: colors.text }}>
-          Избранные дела ({cases.length})
-        </Text>
-      </View>
-
-      {cases.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-4"
-        >
-          <View className="flex-row" style={{ gap: 6 }}>
-            {CASE_FILTERS.map((f, i) => {
-              const active = caseFilter === i;
-              return (
-                <Pressable
-                  key={f.label}
-                  onPress={() => setCaseFilter(i)}
-                  accessibilityRole="button"
-                  className="px-3 py-1.5 rounded-full border"
-                  style={{
-                    borderColor: active ? colors.primary : colors.border,
-                    backgroundColor: active ? colors.primary : colors.surface,
-                  }}
-                >
-                  <Text
-                    className="text-xs font-semibold"
-                    style={{
-                      color: active ? "#fff" : colors.textSecondary,
-                    }}
-                  >
-                    {f.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </ScrollView>
-      )}
-
-      {cases.length === 0 ? (
-        <View
-          className="rounded-2xl border border-border p-6 items-center"
-          style={{ backgroundColor: colors.surface2 }}
-        >
-          <Text
-            className="text-sm"
-            style={{ color: colors.textSecondary }}
-          >
-            Пока нет опубликованных дел
-          </Text>
-        </View>
-      ) : filteredCases.length === 0 ? (
-        <View
-          className="rounded-2xl border border-border p-6 items-center"
-          style={{ backgroundColor: colors.surface2 }}
-        >
-          <Text
-            className="text-sm"
-            style={{ color: colors.textSecondary }}
-          >
-            Нет дел по выбранному фильтру
-          </Text>
-        </View>
-      ) : (
-        <>
-          {visibleCases.map((c) => (
-            <CaseCard key={c.id} case={c} />
-          ))}
-          {filteredCases.length > 3 && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setCasesExpanded((v) => !v)}
-              className="items-center justify-center py-3 rounded-xl border border-border"
-              style={{ backgroundColor: colors.surface }}
-            >
-              <Text
-                className="text-sm font-semibold"
-                style={{ color: colors.primary }}
-              >
-                {casesExpanded
-                  ? "Свернуть"
-                  : `Показать ещё ${filteredCases.length - 3}`}
-              </Text>
-            </Pressable>
-          )}
-        </>
-      )}
-    </View>
-  );
-
-  // Reviews section
-  const reviewsBlock = (
-    <View className="mt-8">
-      <View
-        className="flex-row items-end justify-between mb-4"
-        style={{ gap: 8 }}
-      >
-        <Text style={{ ...textStyle.h2, color: colors.text }}>
-          Отзывы клиентов ({reviewCount})
-        </Text>
-        {averageRating !== null && (
-          <View className="items-end">
-            <Text
-              style={{ ...textStyle.h1, color: colors.text, fontSize: 28 }}
-            >
-              {averageRating.toFixed(1)}
-            </Text>
-            <RatingStars rating={averageRating} size={14} />
-          </View>
-        )}
-      </View>
-      {reviews.length === 0 ? (
-        <View
-          className="rounded-2xl border border-border p-6 items-center"
-          style={{ backgroundColor: colors.surface2 }}
-        >
-          <Text
-            className="text-sm"
-            style={{ color: colors.textSecondary }}
-          >
-            Пока нет отзывов
-          </Text>
-        </View>
-      ) : (
-        reviews.slice(0, 3).map((r) => <ReviewCard key={r.id} review={r} />)
-      )}
+        Раздел отзывов появится после MVP
+      </Text>
     </View>
   );
 
@@ -711,25 +485,72 @@ export default function SpecialistPublicProfile() {
     elevation: 1,
   };
 
+  // Guest-gated contacts section (SA): неавторизованный не видит контакты.
+  const guestLockedContacts = !isAuthenticated ? (
+    <View className="mt-8">
+      <View
+        className="rounded-2xl border border-border p-6 items-center relative overflow-hidden"
+        style={{ backgroundColor: colors.surface2, ...legacyShadow }}
+      >
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: colors.surface,
+            opacity: 0.6,
+          }}
+        />
+        <Lock size={28} color={colors.textSecondary} />
+        <Text
+          className="text-base font-semibold mt-3"
+          style={{ color: colors.text }}
+        >
+          Войдите, чтобы увидеть контакты
+        </Text>
+        <Text
+          className="text-sm mt-1 text-center"
+          style={{ color: colors.textSecondary }}
+        >
+          Телефон, Telegram и WhatsApp доступны только авторизованным пользователям
+        </Text>
+        <View className="mt-4">
+          <Button
+            label="Войти"
+            onPress={() =>
+              router.push(`/auth/email?returnTo=/specialists/${id}` as never)
+            }
+            fullWidth={false}
+          />
+        </View>
+      </View>
+    </View>
+  ) : null;
+
   const mainContent = (
     <View>
       {hero}
       {aboutBlock}
+      {reviewsStub}
       {credentialsBlock}
-      {casesBlock}
-      {reviewsBlock}
       {servicesCitiesBlock}
       <View className="mt-8">
         <WorkAreaSection
           fnsServices={specialist.fnsServices}
           cardShadow={legacyShadow}
         />
-        <ContactsSection
-          contacts={contacts}
-          officeAddress={profile?.officeAddress ?? null}
-          workingHours={profile?.workingHours ?? null}
-          cardShadow={legacyShadow}
-        />
+        {isAuthenticated ? (
+          <ContactsSection
+            contacts={contacts}
+            officeAddress={profile?.officeAddress ?? null}
+            workingHours={profile?.workingHours ?? null}
+            cardShadow={legacyShadow}
+          />
+        ) : (
+          guestLockedContacts
+        )}
       </View>
     </View>
   );
