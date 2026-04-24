@@ -46,7 +46,6 @@ interface Stats {
 interface AdminExtra {
   activeRequests: number;
   openComplaints: number;
-  satisfaction: number;
   onlineSpecialists: number;
   totalClients: number;
   totalSpecialists: number;
@@ -55,7 +54,7 @@ interface AdminExtra {
   threadsMonth: number;
   threadsWeek: number;
   resolvedCases: number;
-  slaResponseHours: number;
+  slaReplyHours: number;
   newMessagesDay: number;
 }
 
@@ -349,11 +348,11 @@ export default function AdminDashboard() {
                         />
                         <Row
                           label="SLA ответа (ч)"
-                          value={extra?.slaResponseHours ?? 0}
+                          value={extra?.slaReplyHours ?? 0}
                           tone={
-                            (extra?.slaResponseHours ?? 0) > 12
+                            (extra?.slaReplyHours ?? 0) > 12
                               ? "danger"
-                              : (extra?.slaResponseHours ?? 0) > 4
+                              : (extra?.slaReplyHours ?? 0) > 4
                                 ? "warning"
                                 : "success"
                           }

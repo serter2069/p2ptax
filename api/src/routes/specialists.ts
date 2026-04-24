@@ -182,14 +182,6 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/specialists/:id/reviews — public reviews for a specialist
-// Security note: only name (first name) and avatarUrl are returned — never email (#179)
-router.get("/:id/reviews", async (_req: Request, res: Response) => {
-  // Reviews feature is not yet implemented (DB model pending).
-  // Endpoint exists to enforce the email-safe contract from day one.
-  res.json({ items: [], total: 0 });
-});
-
 // GET /api/specialists/:id — full profile
 router.get("/:id", async (req: Request, res: Response) => {
   try {
@@ -250,22 +242,13 @@ router.get("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    const [requestsCount, cases, reviews] = await Promise.all([
+    const [requestsCount, cases] = await Promise.all([
       prisma.thread.count({ where: { specialistId: id } }),
       prisma.specialistCase.findMany({
         where: { specialistId: id },
         orderBy: [{ order: "asc" }, { createdAt: "desc" }],
       }),
-      prisma.specialistReview.findMany({
-        where: { specialistId: id },
-        orderBy: { date: "desc" },
-      }),
     ]);
-
-    const averageRating =
-      reviews.length > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-        : null;
 
     const profile = specialist.specialistProfile;
 
@@ -304,16 +287,6 @@ router.get("/:id", async (req: Request, res: Response) => {
         description: c.description,
         year: c.year,
       })),
-      reviews: reviews.map((r) => ({
-        id: r.id,
-        authorName: r.authorName,
-        rating: r.rating,
-        date: r.date,
-        text: r.text,
-        categoryChips: (r.categoryChips as string[] | null) ?? [],
-      })),
-      averageRating,
-      reviewCount: reviews.length,
     });
   } catch (error) {
     console.error("specialist detail error:", error);

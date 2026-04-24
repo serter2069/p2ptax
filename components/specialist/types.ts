@@ -31,15 +31,6 @@ export interface SpecialistCaseItem {
   year: number | null;
 }
 
-export interface SpecialistReviewItem {
-  id: string;
-  authorName: string;
-  rating: number;
-  date: string;
-  text: string;
-  categoryChips: string[];
-}
-
 export interface ContactMethodItem {
   id: string;
   type: string;
@@ -60,9 +51,6 @@ export interface SpecialistDetail {
   requestsCount?: number;
   // Iteration 5
   cases?: SpecialistCaseItem[];
-  reviews?: SpecialistReviewItem[];
-  averageRating?: number | null;
-  reviewCount?: number;
 }
 
 export interface SimilarSpecialist {

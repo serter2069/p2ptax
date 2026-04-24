@@ -28,14 +28,6 @@ type CaseSeed = {
   year: number | null;
 };
 
-type ReviewSeed = {
-  authorName: string;
-  rating: number;
-  daysAgo: number; // offset from now
-  text: string;
-  categoryChips: string[];
-};
-
 const SPECIALISTS: Array<{
   email: string;
   firstName: string;
@@ -54,7 +46,6 @@ const SPECIALISTS: Array<{
   specializations?: string[];
   certifications?: string[];
   cases?: CaseSeed[];
-  reviews?: ReviewSeed[];
 }> = [
   {
     email: "aleksey.voronov@p2ptax-seed.ru",
@@ -280,41 +271,7 @@ const SPECIALISTS: Array<{
   },
 ];
 
-// ─── Helpers for generating realistic cases + reviews ──────────────
-
-const FIRST_NAMES_M = ["Андрей", "Михаил", "Дмитрий", "Сергей", "Алексей", "Игорь", "Николай", "Владимир", "Пётр", "Артём"];
-const FIRST_NAMES_F = ["Екатерина", "Марина", "Ольга", "Наталья", "Анастасия", "Татьяна", "Светлана", "Ирина", "Елена"];
-const LAST_INITIAL = ["Н.", "К.", "П.", "С.", "М.", "Т.", "Б.", "В.", "Л.", "Р."];
-
-const REVIEW_TEXTS: Record<string, string[]> = {
-  "Выездная проверка": [
-    "помог(ла) с выездной проверкой ИФНС. Оспорили {amount} доначислений. Грамотно, быстро, без лишней воды. Рекомендую.",
-    "Вели выездную проверку, было очень нервно. {name} всё разложил(а) по полочкам, подготовили документы, результат превзошёл ожидания.",
-    "Отличный специалист. За {days} дней закрыли выездную проверку по УСН. Доначисления снизили с {amount}. Ответственно и по делу.",
-  ],
-  "Камеральная проверка": [
-    "Получил акт камеральной проверки — 1.8 млн доначислений. {name} подготовил(а) возражения, вышли на {amount}. Спасибо огромное.",
-    "Камеральная по 3-НДФЛ, операции с криптой. {name} составил(а) грамотный ответ, ФНС приняла позицию. По срокам — уложились.",
-    "Профессионал. За консультацию по камеральной проверке взял(а) адекватные деньги, помог(ла) разобраться с требованием. Советую.",
-  ],
-  "Отдел оперативного контроля": [
-    "Решение ОКК на 450 тыс штрафа. {name} написал(а) жалобу — отменили полностью. Быстро и по делу.",
-    "Пришёл запрос от ОКК по ККТ. {name} объяснил(а) стратегию, помог(ла) с ответом. Вопрос закрыли без штрафа.",
-    "Помог(ла) с проверкой от ОКК. Чёткая постановка задачи, понятные сроки, адекватная цена.",
-  ],
-  default: [
-    "Отличный налоговый консультант. Всё грамотно, чётко, по делу. Рекомендую.",
-    "Обращался по сложной ситуации с ФНС. {name} разобрал(а) кейс, предложил(а) стратегию — сработало.",
-    "Ответственный специалист, глубокое понимание налогового права. Решили вопрос быстро.",
-  ],
-};
-
-function pickReviewName(seed: number): string {
-  const pool = seed % 2 === 0 ? FIRST_NAMES_M : FIRST_NAMES_F;
-  const fn = pool[seed % pool.length];
-  const ln = LAST_INITIAL[(seed * 3) % LAST_INITIAL.length];
-  return `${fn} ${ln}`;
-}
+// ─── Helpers for generating realistic cases ──────────────
 
 function generateCasesForSpecialist(
   firstName: string,
@@ -410,41 +367,6 @@ function generateCasesForSpecialist(
   return cases.slice(0, 4); // cap at 4 per specialist
 }
 
-function generateReviewsForSpecialist(
-  firstName: string,
-  serviceNames: string[],
-  seedIdx: number,
-): ReviewSeed[] {
-  const reviews: ReviewSeed[] = [];
-  const serviceCount = Math.min(serviceNames.length, 3);
-  const reviewCount = 3 + (seedIdx % 3); // 3-5 reviews
-
-  for (let i = 0; i < reviewCount; i++) {
-    const svc = serviceNames[i % Math.max(serviceCount, 1)] ?? "Камеральная проверка";
-    const pool = REVIEW_TEXTS[svc] ?? REVIEW_TEXTS.default;
-    const template = pool[(seedIdx + i) % pool.length];
-
-    const amount = [[ "2.1 млн", "1.8 млн", "950 тыс", "3.4 млн" ][i % 4]][0];
-    const days = 14 + (i + seedIdx) * 3;
-
-    const text = template
-      .replace(/\{name\}/g, firstName)
-      .replace(/\{amount\}/g, amount)
-      .replace(/\{days\}/g, String(days));
-
-    const rating = i === 0 ? 5 : i === 1 ? 5 : 4 + (seedIdx + i) % 2;
-
-    reviews.push({
-      authorName: pickReviewName(seedIdx * 11 + i),
-      rating: Math.min(5, rating),
-      daysAgo: 30 + i * 40 + (seedIdx % 20),
-      text,
-      categoryChips: [svc],
-    });
-  }
-  return reviews;
-}
-
 // ─── REQUESTS (15 total) ────────────────────────────────────────────
 
 const REQUEST_SCENARIOS: Array<{
@@ -520,7 +442,7 @@ const REQUEST_SCENARIOS: Array<{
     threadCount: 2,
   },
   {
-    title: "Отзыв решения по ОКК — сетевой магазин",
+    title: "Обжалование решения по ОКК — сетевой магазин",
     description: "Получили решение от отдела оперативного контроля о применении ККТ с нарушениями (штраф 450 000 руб.). Не согласны с доводами. Нужен юрист для составления жалобы в вышестоящий налоговый орган.",
     fnsCode: "6601",
     status: "ACTIVE",
@@ -642,9 +564,9 @@ const COMPLAINT_SAMPLES = [
 
 const NOTIFICATION_SAMPLES = [
   {
-    type: "new_response",
-    title: "Новый отклик на вашу заявку",
-    body: "Налоговый консультант откликнулся на вашу заявку о разблокировке счёта",
+    type: "new_message",
+    title: "Новое сообщение по вашей заявке",
+    body: "Налоговый консультант написал по вашей заявке о разблокировке счёта",
   },
   {
     type: "new_message",
@@ -780,13 +702,12 @@ async function main() {
   }
   console.log(`\n  Specialists: ${specialistCount}`);
 
-  // ─── Specialist Cases + Reviews (Iteration 5) ────────────────────
+  // ─── Specialist Cases (Iteration 5) ──────────────────────────────
   // Wipe + regenerate deterministically per run.
+  // Social-proof table is cleared in this seed (UI was removed in the SA cleanup).
   await prisma.specialistCase.deleteMany({});
-  await prisma.specialistReview.deleteMany({});
 
   let caseCount = 0;
-  let reviewCount = 0;
 
   for (let sIdx = 0; sIdx < SPECIALISTS.length; sIdx++) {
     const spec = SPECIALISTS[sIdx];
@@ -834,28 +755,8 @@ async function main() {
       });
       caseCount++;
     }
-
-    const reviews =
-      spec.reviews ??
-      generateReviewsForSpecialist(spec.firstName, spec.serviceNames, sIdx);
-
-    for (const r of reviews) {
-      const date = new Date(Date.now() - r.daysAgo * 24 * 60 * 60 * 1000);
-      await prisma.specialistReview.create({
-        data: {
-          specialistId: user.id,
-          authorName: r.authorName,
-          rating: r.rating,
-          date,
-          text: r.text,
-          categoryChips: r.categoryChips,
-        },
-      });
-      reviewCount++;
-    }
   }
   console.log(`  Cases:       ${caseCount}`);
-  console.log(`  Reviews:     ${reviewCount}`);
 
   // ─── Client pool (5 extra clients beyond Сергей) ─────────────────
   const EXTRA_CLIENTS = [

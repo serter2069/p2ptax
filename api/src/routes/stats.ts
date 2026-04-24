@@ -99,7 +99,7 @@ router.get("/landing-counts", async (_req: Request, res: Response) => {
 
 /**
  * GET /api/stats/client-dashboard
- * Auth. Client-only dashboard stats — aggregates requests, threads, responses.
+ * Auth. Client-only dashboard stats — aggregates requests and threads.
  */
 router.get(
   "/client-dashboard",
@@ -135,9 +135,9 @@ router.get(
         }),
       ]);
 
-      // Responses in last 24h (new threads created on any of user's requests)
+      // New threads created on any of user's requests in last 24h
       const requestIds = requests.map((r) => r.id);
-      const responsesToday =
+      const threadsToday =
         requestIds.length > 0
           ? await prisma.thread.count({
               where: {
@@ -160,12 +160,9 @@ router.get(
         if (last && last.senderId === userId) awaitingReplies += 1;
       }
 
-      // Recent activity in last week for "trend"
-      const trendNewResponses = specialistIds.size > 0 ? 0 : 0;
-
       res.json({
         activeRequests,
-        responsesToday,
+        threadsToday,
         awaitingReplies,
         specialistsWorkingWithYou: specialistIds.size,
         weeklyNewRequests: requests.filter((r) => r.createdAt >= weekAgo).length,
@@ -322,17 +319,7 @@ router.get(
         }),
       ]);
 
-      // Satisfaction = % of reviews with rating>=4 (if any reviews)
-      const totalReviews = await prisma.specialistReview.count();
-      const positiveReviews = await prisma.specialistReview.count({
-        where: { rating: { gte: 4 } },
-      });
-      const satisfaction =
-        totalReviews > 0
-          ? Math.round((positiveReviews / totalReviews) * 100)
-          : 0;
-
-      // SLA response time (h) — rough: average time between request creation
+      // SLA reply time (h) — rough: average time between request creation
       // and first thread creation for requests with threads.
       const requestsWithThreads = await prisma.request.findMany({
         where: { threads: { some: {} }, createdAt: { gte: weekAgo } },
@@ -358,7 +345,7 @@ router.get(
           slaCount += 1;
         }
       }
-      const slaResponseHours = slaCount > 0 ? +(slaSum / slaCount).toFixed(1) : 0;
+      const slaReplyHours = slaCount > 0 ? +(slaSum / slaCount).toFixed(1) : 0;
 
       const newMessagesDay = await prisma.message.count({
         where: { createdAt: { gte: dayAgo } },
@@ -367,7 +354,6 @@ router.get(
       res.json({
         activeRequests,
         openComplaints,
-        satisfaction,
         onlineSpecialists,
         totalClients,
         totalSpecialists,
@@ -376,7 +362,7 @@ router.get(
         threadsMonth,
         threadsWeek,
         resolvedCases,
-        slaResponseHours,
+        slaReplyHours,
         newMessagesDay,
       });
     } catch (error) {

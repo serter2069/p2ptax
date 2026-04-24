@@ -5,6 +5,20 @@ import { sendNotification } from "../notifications/notification.service";
 
 const router = Router();
 
+// GET /api/threads/sample — dev helper: first thread ID for metromap URL resolver
+router.get("/sample", async (_req: Request, res: Response) => {
+  try {
+    const first = await prisma.thread.findFirst({
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    res.json({ items: first ? [{ id: first.id }] : [] });
+  } catch (error) {
+    console.error("threads/sample error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.use(authMiddleware);
 
 // GET /api/threads/rate-limit — today's write count for specialist

@@ -727,8 +727,8 @@ router.get("/complaints", async (req: Request, res: Response) => {
   }
 });
 
-// PATCH /api/admin/complaints/:id/review — mark complaint as reviewed
-router.patch("/complaints/:id/review", async (req: Request, res: Response) => {
+// PATCH /api/admin/complaints/:id/resolve — mark complaint as resolved by moderator
+router.patch("/complaints/:id/resolve", async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const complaint = await prisma.complaint.update({
@@ -750,7 +750,7 @@ router.patch("/complaints/:id/review", async (req: Request, res: Response) => {
       res.status(404).json({ error: "Complaint not found" });
       return;
     }
-    console.error("admin/complaints/:id/review PATCH error:", error);
+    console.error("admin/complaints/:id/resolve PATCH error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

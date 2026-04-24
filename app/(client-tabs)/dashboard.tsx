@@ -40,7 +40,7 @@ interface DashboardStats {
 
 interface ClientDashboardExtra {
   activeRequests: number;
-  responsesToday: number;
+  threadsToday: number;
   awaitingReplies: number;
   specialistsWorkingWithYou: number;
   weeklyNewRequests: number;
@@ -199,11 +199,11 @@ export default function ClientDashboard() {
                 <DashboardGrid.Col span={4} tabletSpan={2}>
                   <KpiCard
                     label="Новых диалогов сегодня"
-                    value={extra?.responsesToday ?? 0}
+                    value={extra?.threadsToday ?? 0}
                     icon={Inbox}
-                    tone={(extra?.responsesToday ?? 0) > 0 ? "success" : "muted"}
+                    tone={(extra?.threadsToday ?? 0) > 0 ? "success" : "muted"}
                     trend={
-                      (extra?.responsesToday ?? 0) > 0 ? "up" : "flat"
+                      (extra?.threadsToday ?? 0) > 0 ? "up" : "flat"
                     }
                   />
                 </DashboardGrid.Col>

@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  User, Star, ChevronRight, LogOut,
+  User, ChevronRight, LogOut,
   FileText, Heart, Settings, HelpCircle, Info, type LucideIcon
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,24 +51,6 @@ export default function ProfileScreen() {
             {displayEmail ? (
               <Text style={{ ...textStyle.small, color: colors.textSecondary, marginTop: 4 }}>{displayEmail}</Text>
             ) : null}
-
-            {/* Rating — only for SPECIALIST role. SA: клиент не получает отзывы (MVP stub only). */}
-            {user?.role === "SPECIALIST" && (
-              <>
-                <Text className="text-sm font-medium text-text-mute mt-3 mb-1.5">Ваш рейтинг</Text>
-                <View className="flex-row items-center">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      size={16}
-                      color={colors.warning}
-                      fill={star <= 4 ? colors.warning : "none"}
-                    />
-                  ))}
-                  <Text className="text-sm text-text-mute ml-1.5">4.5 (23 отзыва)</Text>
-                </View>
-              </>
-            )}
 
             {/* Stats */}
             <View
