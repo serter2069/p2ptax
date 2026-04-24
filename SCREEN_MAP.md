@@ -172,20 +172,26 @@ Font family: system default
 
 ### TabBar
 
-Client tabs: Dashboard | My Requests | Messages
-Specialist tabs: Dashboard | Public Requests | My Threads
+User tabs (unified, iter11): Dashboard | My Requests | Messages | Public Requests* | Profile
+  *"Public Requests" tab visible only when `isSpecialistUser=true` (specialist opt-in).
 Admin tabs: Dashboard | Users | Moderation
 Active: blue-900, inactive: slate-400, height 60 + safe area
+Desktop (>=640px): tab bar hidden, navigation via SidebarNav.
 
 ---
 
 ## Roles & Access
 
+iter11 (commit 25deb4a) consolidated CLIENT and SPECIALIST into a single
+USER role. Specialist capabilities are gated by `isSpecialistUser` — true
+when the user has completed the 3-step onboarding and toggled "Принимаю
+заявки" on. UI and routes are shared; specialist-only widgets/tabs render
+conditionally.
+
 | Role | Description | Assigned |
 |------|-------------|----------|
 | guest | Not logged in | Default |
-| client | Creates requests, receives messages from specialists | First login without specialist onboarding |
-| specialist | Browses requests, writes to clients | After completing 3-step onboarding |
+| user | Creates requests; can also browse public requests + write to clients when `isSpecialistUser=true` | All authenticated users |
 | admin | Full control, stats, moderation | Manually via DB |
 
 ---
@@ -910,16 +916,24 @@ Dependencies: OnboardingWorkArea
 
 ---
 
-### CLIENT TABS
+### USER TABS (UNIFIED — iter11)
+
+Single set of authenticated tabs (`app/(tabs)/`). Specialist-only widgets
+and the "Публичные заявки" tab render only when `isSpecialistUser=true`.
+Legacy `(client-tabs)` and `(specialist-tabs)` groups removed in iter11
+(commits 25deb4a, 7f5e0b9, 1059e6d).
 
 ---
-**Screen: ClientDashboard**
+**Screen: UserDashboard**
 Status: DONE
 Type: showcase
-Route: /(client-tabs)/dashboard
-Access: auth required, role: client
+Route: /(tabs)/index
+Access: auth required, role: user
 
-Description: Client home — stats + recent requests
+Description: Unified home (was ClientDashboard + SpecialistDashboard,
+merged in iter11). Stats + recent requests for everyone, plus
+specialist-only widgets (thread-limit gauge, public-requests feed,
+availability toggle, specialist KPIs) when `isSpecialistUser=true`.
 
 Content:
   welcome_message: "Здравствуйте, {firstName}!"
@@ -977,10 +991,10 @@ Dependencies: none
 **Screen: MyRequests**
 Status: DONE
 Type: list
-Route: /(client-tabs)/requests
-Access: auth required, role: client
+Route: /(tabs)/requests
+Access: auth required, role: user
 
-Description: All client's requests
+Description: All user's own requests
 
 Content:
   page_title: "Мои заявки"
@@ -1253,13 +1267,15 @@ Response: [{threadId, specialist: {id, name, avatar}, lastMessage, unreadCount, 
 Dependencies: MyRequestDetail
 
 ---
-**Screen: ClientMessages**
+**Screen: UserMessages**
 Status: DONE
 Type: chat
-Route: /(client-tabs)/messages
-Access: auth required, role: client
+Route: /(tabs)/messages
+Access: auth required, role: user
 
-Description: All client's threads (across all requests)
+Description: All user's threads — was ClientMessages + SpecialistMyThreads,
+merged in iter11. Both as a client (specialists wrote to my requests) and
+as a specialist (threads I started with clients) — unified single view.
 
 Content:
   page_title: "Сообщения"
@@ -1311,13 +1327,19 @@ Business rules:
 Dependencies: none
 
 ---
-**Screen: ClientSettings**
+**Screen: Settings**
 Status: DONE
 Type: settings
-Route: /settings/client
-Access: auth required, role: client
+Route: /settings
+Access: auth required, role: user
 
-Description: Client profile settings
+Description: Unified profile settings — was ClientSettings + SpecialistSettings,
+merged in iter11 (commit 1059e6d, file `app/settings/index.tsx`).
+Progressive disclosure — base profile fields for everyone;
+specialist-only sections (FNS multiselect, services, contact details,
+working hours, "Приём заявок" toggle) render only when
+`isSpecialistUser=true` or after the user opts into specialist
+onboarding from this screen.
 
 Content:
   page_title: "Настройки"
@@ -1397,16 +1419,23 @@ Dependencies: ClientDashboard
 
 ---
 
-### SPECIALIST TABS
+### SPECIALIST FEATURES (merged into unified user routes — iter11)
+
+The legacy `(specialist-tabs)` group was removed in iter11 (commits
+25deb4a + 7f5e0b9). The screens below describe the specialist-only
+behaviour now folded into the unified routes. Every "Route:" pointer
+in this section reflects where that behaviour now lives.
 
 ---
-**Screen: SpecialistDashboard**
-Status: DONE
+**Screen: SpecialistDashboard widgets**
+Status: DONE (merged into UserDashboard)
 Type: showcase
-Route: /(specialist-tabs)/dashboard
-Access: auth required, role: specialist
+Route: /(tabs)/index (specialist-only widgets — gated by `isSpecialistUser`)
+Access: auth required, `isSpecialistUser=true`
 
-Description: Specialist home — matching requests feed
+Description: Specialist-only blocks rendered on UserDashboard —
+matching requests feed, thread-limit gauge, availability toggle,
+specialist KPIs.
 
 Content:
   welcome_message: "{firstName}, вот заявки для вас"
@@ -1471,10 +1500,10 @@ Dependencies: none
 **Screen: SpecialistConfirmWrite**
 Status: DONE
 Type: form
-Route: /requests/[id]/write (modal)
-Access: auth required, role: specialist
+Route: /requests/[id]/write
+Access: auth required, `isSpecialistUser=true`
 
-Description: Confirm modal before starting a thread with client
+Description: Confirm screen before starting a thread with client
 
 Content:
   page_title: "Написать клиенту"
@@ -1540,13 +1569,16 @@ Business rules:
 Dependencies: SpecialistDashboard, PublicRequestsFeed
 
 ---
-**Screen: SpecialistMyThreads**
-Status: DONE
+**Screen: SpecialistMyThreads view**
+Status: DONE (merged into UserMessages)
 Type: list
-Route: /(specialist-tabs)/threads
-Access: auth required, role: specialist
+Route: /(tabs)/messages (unified — both client and specialist threads)
+Access: auth required, `isSpecialistUser=true` (for specialist-side threads)
 
-Description: All specialist's threads
+Description: Threads where the user wrote first (specialist side).
+In the unified UserMessages list these appear alongside threads
+where specialists wrote to the user's own requests. Filter chips
+let users narrow to one side.
 
 Content:
   page_title: "Мои диалоги"
@@ -1609,13 +1641,16 @@ Business rules:
 Dependencies: none
 
 ---
-**Screen: SpecialistSettings**
-Status: DONE
+**Screen: SpecialistSettings sections**
+Status: DONE (merged into Settings)
 Type: settings
-Route: /settings/specialist
-Access: auth required, role: specialist
+Route: /settings (specialist-only sections — gated by `isSpecialistUser`)
+Access: auth required, `isSpecialistUser=true`
 
-Description: Specialist profile editing
+Description: Specialist-only sections rendered inside the unified
+`/settings` screen — FNS multiselect, services per FNS, contact
+fields (phone/Telegram/WhatsApp/office address/working hours), the
+"Приём заявок" instant toggle.
 
 Content:
   page_title: "Настройки"
@@ -1790,10 +1825,11 @@ Dependencies: ClientMessages, MessagesGrouped, SpecialistMyThreads
 **Screen: TermsScreen**
 Status: DONE
 Type: detail
-Route: /terms (modal)
+Route: /legal/terms
 Access: public
 
-Description: Terms of use (static content)
+Description: Terms of use (static content). Sibling: `/legal/privacy`
+for privacy policy. Rendered as a regular Stack screen, not a modal.
 
 Content:
   page_title: "Условия использования"
