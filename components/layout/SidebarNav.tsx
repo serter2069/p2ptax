@@ -1,5 +1,6 @@
-import { View, Text, Pressable } from "react-native";
-import { useRouter, usePathname } from "expo-router";
+import { useState } from "react";
+import { View, Text, Pressable, Modal, Platform } from "react-native";
+import { useRouter, usePathname, useSegments } from "expo-router";
 import {
   LayoutGrid,
   FileText,
@@ -10,16 +11,37 @@ import {
   Users,
   Shield,
   Flag,
-  Home,
-  Search,
-  PlusSquare,
-  User,
-  Settings,
   Bell,
+  Settings,
+  LogOut,
+  UserRound,
+  Compass,
+  Inbox,
   type LucideIcon,
 } from "lucide-react-native";
-import { colors, spacing, typography } from "@/lib/theme";
-import { useAuth } from "@/contexts/AuthContext";
+import { colors, spacing, roleAccent, type RoleAccentKey } from "@/lib/theme";
+import { useAuth, type UserRole } from "@/contexts/AuthContext";
+import RoleBadge from "./RoleBadge";
+
+/**
+ * SidebarNav — persistent left-rail navigation for authenticated routes.
+ *
+ * Triggered by multi-model critique (2026-04-24, 4/4 consensus P0):
+ *   "Implement a persistent left sidebar navigation (240px) for all
+ *    authenticated routes, push content to max-width 960px container."
+ *
+ * Design:
+ *   - 240px wide, full-height, sticky to left edge.
+ *   - Role-tinted background (blue client / emerald specialist / amber admin).
+ *   - 3 zones: brand + role badge · primary nav · bottom identity/settings.
+ *   - Active item: tint bg + left 2px accent border + bold label.
+ *   - All nav items from issue #1285/#1289 spec + expanded to cover
+ *     secondary destinations (Каталог специалистов, Публичные заявки,
+ *     Уведомления) that were buried in AppHeader dropdown.
+ *
+ * Mobile (<768px): component is NOT rendered. AppShell bypasses on mobile
+ * and falls back to the existing bottom-tab + burger pattern.
+ */
 
 export type SidebarGroup =
   | "client"
@@ -28,31 +50,88 @@ export type SidebarGroup =
   | "main"
   | null;
 
+interface MatchContext {
+  /** Browser path (groups stripped), e.g. `/dashboard` for `/(client-tabs)/dashboard`. */
+  path: string;
+  /** Raw Expo-Router segments including groups, e.g. `["(client-tabs)", "dashboard"]`. */
+  segments: readonly string[];
+}
+
 interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
-  match: (path: string) => boolean;
+  match: (ctx: MatchContext) => boolean;
 }
+
+// ─────────────────────────────────────────── per-role navigation maps
+
+/**
+ * Match helpers.
+ *
+ * usePathname() strips group-parens, so `/(client-tabs)/dashboard` reports
+ * as `/dashboard`. We use segments to know which group the user is in —
+ * that disambiguates colliding paths like `/requests` that exist both as
+ * `/(client-tabs)/requests.tsx` and `/requests/index.tsx`.
+ */
+const groupMatch = (
+  ctx: MatchContext,
+  group: "(client-tabs)" | "(specialist-tabs)" | "(admin-tabs)",
+  leaf: string
+): boolean => {
+  if (ctx.segments[0] === group && ctx.segments[1] === leaf) return true;
+  // Safety net when segments are empty (route transitions).
+  return (
+    ctx.path.includes(`${group}/${leaf}`) ||
+    ctx.path.includes(`${group.replace(/[()]/g, "")}/${leaf}`)
+  );
+};
+
+const topLevelMatch = (ctx: MatchContext, prefix: string): boolean => {
+  // Active for `/prefix` or `/prefix/*` only when NOT inside a role-tab group
+  // (e.g. client's `/requests` screen shares URL with public `/requests`).
+  const first = ctx.segments[0] ?? "";
+  const inGroup = first.startsWith("(") && first.endsWith(")") && first !== "(tabs)";
+  if (inGroup) return false;
+  return ctx.path === prefix || ctx.path.startsWith(`${prefix}/`);
+};
 
 const CLIENT_ITEMS: NavItem[] = [
   {
-    label: "Обзор",
+    label: "Дашборд",
     href: "/(client-tabs)/dashboard",
     icon: LayoutGrid,
-    match: (p) => p === "/dashboard" || p.endsWith("/client-tabs/dashboard") || p === "/(client-tabs)/dashboard",
+    match: (ctx) => groupMatch(ctx, "(client-tabs)", "dashboard"),
   },
   {
     label: "Мои заявки",
     href: "/(client-tabs)/requests",
     icon: FileText,
-    match: (p) => p.includes("/client-tabs/requests") || p === "/(client-tabs)/requests",
+    match: (ctx) => groupMatch(ctx, "(client-tabs)", "requests"),
   },
   {
     label: "Сообщения",
     href: "/(client-tabs)/messages",
     icon: MessageCircle,
-    match: (p) => p.includes("/client-tabs/messages") || p === "/(client-tabs)/messages",
+    match: (ctx) => groupMatch(ctx, "(client-tabs)", "messages"),
+  },
+  {
+    label: "Каталог специалистов",
+    href: "/specialists",
+    icon: Compass,
+    match: (ctx) => topLevelMatch(ctx, "/specialists"),
+  },
+  {
+    label: "Публичные заявки",
+    href: "/requests",
+    icon: Inbox,
+    match: (ctx) => topLevelMatch(ctx, "/requests"),
+  },
+  {
+    label: "Уведомления",
+    href: "/notifications",
+    icon: Bell,
+    match: (ctx) => topLevelMatch(ctx, "/notifications"),
   },
 ];
 
@@ -61,104 +140,192 @@ const SPECIALIST_ITEMS: NavItem[] = [
     label: "Дашборд",
     href: "/(specialist-tabs)/dashboard",
     icon: LayoutGrid,
-    match: (p) => p.includes("/specialist-tabs/dashboard"),
+    match: (ctx) => groupMatch(ctx, "(specialist-tabs)", "dashboard"),
   },
   {
-    label: "Заявки",
+    label: "Публичные заявки",
     href: "/(specialist-tabs)/requests",
     icon: List,
-    match: (p) => p.includes("/specialist-tabs/requests"),
+    match: (ctx) =>
+      groupMatch(ctx, "(specialist-tabs)", "requests") ||
+      topLevelMatch(ctx, "/requests"),
   },
   {
-    label: "Переписки",
+    label: "Диалоги",
     href: "/(specialist-tabs)/threads",
     icon: MessageCircle,
-    match: (p) => p.includes("/specialist-tabs/threads"),
+    match: (ctx) =>
+      groupMatch(ctx, "(specialist-tabs)", "threads") ||
+      topLevelMatch(ctx, "/threads"),
+  },
+  {
+    label: "Профиль",
+    href: "/settings/specialist",
+    icon: UserRound,
+    match: (ctx) => ctx.path.startsWith("/settings/specialist"),
   },
   {
     label: "Продвижение",
     href: "/(specialist-tabs)/promotion",
     icon: Rocket,
-    match: (p) => p.includes("/specialist-tabs/promotion"),
+    match: (ctx) => groupMatch(ctx, "(specialist-tabs)", "promotion"),
+  },
+  {
+    label: "Уведомления",
+    href: "/notifications",
+    icon: Bell,
+    match: (ctx) => topLevelMatch(ctx, "/notifications"),
   },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
   {
-    label: "Dashboard",
+    label: "Дашборд",
     href: "/(admin-tabs)/dashboard",
     icon: BarChart2,
-    match: (p) => p.includes("/admin-tabs/dashboard"),
+    match: (ctx) => groupMatch(ctx, "(admin-tabs)", "dashboard"),
   },
   {
     label: "Пользователи",
     href: "/(admin-tabs)/users",
     icon: Users,
-    match: (p) => p.includes("/admin-tabs/users"),
+    match: (ctx) => groupMatch(ctx, "(admin-tabs)", "users"),
   },
   {
     label: "Модерация",
     href: "/(admin-tabs)/moderation",
     icon: Shield,
-    match: (p) => p.includes("/admin-tabs/moderation"),
+    match: (ctx) => groupMatch(ctx, "(admin-tabs)", "moderation"),
   },
   {
     label: "Жалобы",
     href: "/(admin-tabs)/complaints",
     icon: Flag,
-    match: (p) => p.includes("/admin-tabs/complaints"),
+    match: (ctx) => groupMatch(ctx, "(admin-tabs)", "complaints"),
+  },
+  {
+    label: "Настройки системы",
+    href: "/admin/settings",
+    icon: Settings,
+    match: (ctx) => ctx.path.startsWith("/admin/settings"),
   },
 ];
 
+// "main" fallback — used for top-level authenticated screens (`/requests`,
+// `/specialists`, `/notifications`, `/threads`, `/settings`) that don't
+// live in a role-based tab group. When the user has a role we prefer that
+// role's full nav set; when role is unknown we surface the shared
+// public-ish destinations so the sidebar is never empty.
 const MAIN_ITEMS: NavItem[] = [
   {
-    label: "Главная",
-    href: "/(tabs)",
-    icon: Home,
-    match: (p) => p === "/" || p === "/(tabs)" || p.endsWith("/tabs/index") || p === "/(tabs)/index",
+    label: "Каталог специалистов",
+    href: "/specialists",
+    icon: Compass,
+    match: (ctx) => topLevelMatch(ctx, "/specialists"),
   },
   {
-    label: "Поиск",
-    href: "/(tabs)/search",
-    icon: Search,
-    match: (p) => p.includes("/tabs/search"),
+    label: "Публичные заявки",
+    href: "/requests",
+    icon: Inbox,
+    match: (ctx) => topLevelMatch(ctx, "/requests"),
   },
   {
-    label: "Создать",
-    href: "/(tabs)/create",
-    icon: PlusSquare,
-    match: (p) => p.includes("/tabs/create"),
-  },
-  {
-    label: "Сообщения",
-    href: "/(tabs)/messages",
-    icon: MessageCircle,
-    match: (p) => p.includes("/tabs/messages") && !p.includes("client-tabs") && !p.includes("specialist-tabs"),
-  },
-  {
-    label: "Профиль",
-    href: "/(tabs)/profile",
-    icon: User,
-    match: (p) => p.includes("/tabs/profile"),
+    label: "Уведомления",
+    href: "/notifications",
+    icon: Bell,
+    match: (ctx) => topLevelMatch(ctx, "/notifications"),
   },
 ];
 
+// ─────────────────────────────────────────── classification helpers
+
+function toAccentKey(role: UserRole): RoleAccentKey {
+  switch (role) {
+    case "SPECIALIST":
+      return "specialist";
+    case "ADMIN":
+      return "admin";
+    case "CLIENT":
+    default:
+      return "client";
+  }
+}
+
 /**
- * Classify current Expo-Router pathname to a tab group. Returns null when the
- * current screen is outside any role-based group (auth, onboarding, landing, ...).
+ * Classify current Expo-Router location to a tab group. Returns null for
+ * public chrome (auth, onboarding, landing, legal) so AppShell can fall
+ * back to its no-sidebar layout.
+ *
+ * Why both `pathname` AND `segments`?
+ *   - `usePathname()` strips group parens, so `/(client-tabs)/dashboard`
+ *     reports as `/dashboard` — we can't recover the group from it.
+ *   - `useSegments()` keeps raw segments including `(client-tabs)` —
+ *     that's the authoritative source of group membership.
+ *
+ * We use `segments` to detect the tab group and fall back to `pathname`
+ * for top-level screens (`/requests`, `/specialists`, `/notifications`,
+ * `/threads`, `/settings`) that don't live in any group.
  */
-export function detectSidebarGroup(pathname: string): SidebarGroup {
+export function detectSidebarGroup(
+  pathname: string,
+  segments: readonly string[] = []
+): SidebarGroup {
   if (!pathname) return null;
-  if (pathname.includes("(client-tabs)") || pathname.includes("/client-tabs/")) return "client";
-  if (pathname.includes("(specialist-tabs)") || pathname.includes("/specialist-tabs/")) return "specialist";
-  if (pathname.includes("(admin-tabs)") || pathname.includes("/admin-tabs/")) return "admin";
-  // Generic "tabs" group — but only when we're actually inside it. We rely on
-  // the path literal to disambiguate (landing "/" is NOT in the tabs group).
-  if (pathname.includes("(tabs)") || pathname.includes("/tabs/")) return "main";
+
+  // Public-chrome screens own their own layout.
+  if (pathname === "/") return null;
+  if (pathname.startsWith("/auth")) return null;
+  if (pathname.startsWith("/legal")) return null;
+  if (pathname.startsWith("/onboarding")) return null;
+  if (pathname === "/brand") return null;
+
+  // Group detection via segments (authoritative).
+  const first = segments[0] ?? "";
+  if (first === "(client-tabs)") return "client";
+  if (first === "(specialist-tabs)") return "specialist";
+  if (first === "(admin-tabs)") return "admin";
+  // Legacy (tabs) marketplace group keeps its own `<Header>` — out of
+  // Phase 3a scope, no sidebar there (to avoid double chrome).
+  if (first === "(tabs)") return null;
+
+  // Fallback: pathname-based match, for safety when segments are empty
+  // (happens during route transitions or in some preview environments).
+  if (pathname.includes("/client-tabs/") || pathname.includes("(client-tabs)")) return "client";
+  if (pathname.includes("/specialist-tabs/") || pathname.includes("(specialist-tabs)")) return "specialist";
+  if (pathname.includes("/admin-tabs/") || pathname.includes("(admin-tabs)")) return "admin";
+
+  const LEGACY_TABS_ROUTES = new Set([
+    "/",
+    "/search",
+    "/create",
+    "/messages",
+    "/profile",
+  ]);
+  if (LEGACY_TABS_ROUTES.has(pathname)) return null;
+
+  // Top-level authenticated screens reachable from sidebar (requests,
+  // specialists, notifications, threads, settings): show a generic "main"
+  // sidebar scoped to the user's role.
+  if (
+    pathname.startsWith("/specialists") ||
+    pathname.startsWith("/requests") ||
+    pathname.startsWith("/notifications") ||
+    pathname.startsWith("/threads") ||
+    pathname.startsWith("/settings")
+  ) {
+    return "main";
+  }
+
   return null;
 }
 
-function itemsForGroup(group: SidebarGroup): NavItem[] {
+function itemsForGroup(group: SidebarGroup, role: UserRole): NavItem[] {
+  // When the group is "main" but user has a known role, prefer that role's
+  // nav set so /specialists or /requests still shows Client/Specialist links.
+  if (group === "main" && role === "CLIENT") return CLIENT_ITEMS;
+  if (group === "main" && role === "SPECIALIST") return SPECIALIST_ITEMS;
+  if (group === "main" && role === "ADMIN") return ADMIN_ITEMS;
+
   switch (group) {
     case "client":
       return CLIENT_ITEMS;
@@ -173,7 +340,7 @@ function itemsForGroup(group: SidebarGroup): NavItem[] {
   }
 }
 
-const SIDEBAR_WIDTH = 240;
+export const SIDEBAR_WIDTH = 240;
 
 interface SidebarNavProps {
   group: SidebarGroup;
@@ -182,13 +349,36 @@ interface SidebarNavProps {
 export default function SidebarNav({ group }: SidebarNavProps) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
-  const { user } = useAuth();
+  const segments = useSegments();
+  const { user, signOut } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const items = itemsForGroup(group);
+  const matchCtx: MatchContext = {
+    path: pathname,
+    segments: segments as readonly string[],
+  };
+
+  const accentKey = toAccentKey(user?.role ?? "CLIENT");
+  const accent = roleAccent[accentKey];
+  const items = itemsForGroup(group, user?.role ?? "CLIENT");
   if (items.length === 0) return null;
 
+  const displayName = user?.firstName
+    ? `${user.firstName} ${user.lastName || ""}`.trim()
+    : user?.email || "Пользователь";
+  const initials =
+    user?.firstName?.[0]?.toUpperCase() ||
+    user?.email?.[0]?.toUpperCase() ||
+    "U";
+
+  const handleLogout = async () => {
+    setDropdownOpen(false);
+    await signOut();
+    router.replace("/auth/email" as never);
+  };
+
   const settingsPath =
-    group === "admin"
+    user?.role === "ADMIN"
       ? "/admin/settings"
       : user?.role === "SPECIALIST"
       ? "/settings/specialist"
@@ -196,22 +386,32 @@ export default function SidebarNav({ group }: SidebarNavProps) {
 
   return (
     <View
+      accessibilityRole="menubar"
       style={{
         width: SIDEBAR_WIDTH,
-        paddingRight: spacing.lg,
+        flexShrink: 0,
+        backgroundColor: accent.soft,
+        borderRightWidth: 1,
+        borderRightColor: colors.border,
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.md,
+        ...(Platform.OS === "web"
+          ? ({ position: "sticky", top: 0, height: "100vh" } as object)
+          : {}),
       }}
     >
-      {/* Brand mark */}
+      {/* Brand + role badge */}
       <Pressable
-        accessibilityRole="button"
+        accessibilityRole="link"
         accessibilityLabel="P2PTax — главная"
         onPress={() => router.push("/" as never)}
         style={{
-          height: 44,
-          paddingHorizontal: spacing.base,
+          height: 48,
+          paddingHorizontal: spacing.sm,
           flexDirection: "row",
           alignItems: "center",
-          marginBottom: spacing.lg,
+          marginBottom: spacing.sm,
         }}
       >
         <View
@@ -219,20 +419,31 @@ export default function SidebarNav({ group }: SidebarNavProps) {
             width: 28,
             height: 28,
             borderRadius: 6,
-            backgroundColor: colors.primary,
+            backgroundColor: accent.strong,
             marginRight: spacing.sm,
           }}
         />
-        <Text className={typography.h3} style={{ color: colors.text }}>
-          P2P<Text style={{ color: colors.primary }}>Tax</Text>
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "800",
+            color: colors.text,
+          }}
+        >
+          P2P
+          <Text style={{ color: accent.strong }}>Tax</Text>
         </Text>
       </Pressable>
 
+      <View style={{ paddingHorizontal: spacing.sm, marginBottom: spacing.md }}>
+        <RoleBadge role={user?.role ?? null} size="sm" />
+      </View>
+
       {/* Primary nav */}
-      <View style={{ gap: 4 }}>
+      <View style={{ gap: 2, flex: 1 }}>
         {items.map((item) => {
           const Icon = item.icon;
-          const active = item.match(pathname);
+          const active = item.match(matchCtx);
           return (
             <Pressable
               key={item.href}
@@ -242,23 +453,26 @@ export default function SidebarNav({ group }: SidebarNavProps) {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                paddingVertical: spacing.sm,
-                paddingHorizontal: spacing.md,
+                height: 40,
+                paddingLeft: spacing.md,
+                paddingRight: spacing.sm,
                 borderRadius: 8,
-                backgroundColor: active ? colors.accentSoft : "transparent",
-                minHeight: 40,
+                backgroundColor: active ? accent.strong : "transparent",
+                borderLeftWidth: 2,
+                borderLeftColor: active ? accent.strong : "transparent",
               }}
             >
               <Icon
                 size={18}
-                color={active ? colors.primary : colors.textSecondary}
+                color={active ? accent.ink : colors.textSecondary}
               />
               <Text
+                numberOfLines={1}
                 style={{
-                  marginLeft: spacing.md,
-                  color: active ? colors.primary : colors.text,
+                  marginLeft: spacing.sm + 4,
                   fontSize: 14,
-                  fontWeight: active ? "600" : "500",
+                  fontWeight: active ? "700" : "500",
+                  color: active ? accent.ink : colors.text,
                 }}
               >
                 {item.label}
@@ -268,69 +482,167 @@ export default function SidebarNav({ group }: SidebarNavProps) {
         })}
       </View>
 
-      {/* Divider + utility links */}
+      {/* Bottom identity cluster */}
       <View
         style={{
-          height: 1,
-          backgroundColor: colors.border,
-          marginVertical: spacing.lg,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          paddingTop: spacing.sm,
+          marginTop: spacing.sm,
         }}
-      />
-
-      <View style={{ gap: 4 }}>
+      >
         <Pressable
-          accessibilityRole="link"
-          accessibilityLabel="Уведомления"
-          onPress={() => router.push("/notifications" as never)}
+          accessibilityRole="button"
+          accessibilityLabel="Открыть меню профиля"
+          onPress={() => setDropdownOpen(true)}
           style={{
             flexDirection: "row",
             alignItems: "center",
-            paddingVertical: spacing.sm,
-            paddingHorizontal: spacing.md,
-            borderRadius: 8,
-            minHeight: 40,
+            padding: spacing.sm,
+            borderRadius: 10,
           }}
         >
-          <Bell size={18} color={colors.textSecondary} />
-          <Text
+          <View
             style={{
-              marginLeft: spacing.md,
-              color: colors.text,
-              fontSize: 14,
-              fontWeight: "500",
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: accent.strong,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: spacing.sm,
             }}
           >
-            Уведомления
-          </Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel="Настройки"
-          onPress={() => router.push(settingsPath as never)}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            paddingVertical: spacing.sm,
-            paddingHorizontal: spacing.md,
-            borderRadius: 8,
-            minHeight: 40,
-          }}
-        >
-          <Settings size={18} color={colors.textSecondary} />
-          <Text
-            style={{
-              marginLeft: spacing.md,
-              color: colors.text,
-              fontSize: 14,
-              fontWeight: "500",
-            }}
-          >
-            Настройки
-          </Text>
+            <Text style={{ color: accent.ink, fontSize: 13, fontWeight: "700" }}>
+              {initials}
+            </Text>
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: 13, fontWeight: "600", color: colors.text }}
+            >
+              {displayName}
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: 11, color: colors.textSecondary }}
+            >
+              {user?.email ?? ""}
+            </Text>
+          </View>
         </Pressable>
       </View>
+
+      {/* Dropdown modal */}
+      <Modal
+        visible={dropdownOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDropdownOpen(false)}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Закрыть меню"
+          onPress={() => setDropdownOpen(false)}
+          style={{ flex: 1 }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              bottom: 72,
+              left: spacing.md,
+              width: SIDEBAR_WIDTH - spacing.md * 2,
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.xs,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.08,
+              shadowRadius: 16,
+              elevation: 6,
+            }}
+          >
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Настройки"
+              onPress={() => {
+                setDropdownOpen(false);
+                router.push(settingsPath as never);
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.sm,
+                borderRadius: 8,
+              }}
+            >
+              <Settings size={16} color={colors.textSecondary} />
+              <Text
+                style={{
+                  marginLeft: spacing.sm,
+                  fontSize: 14,
+                  color: colors.text,
+                }}
+              >
+                Настройки
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Уведомления"
+              onPress={() => {
+                setDropdownOpen(false);
+                router.push("/notifications" as never);
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.sm,
+                borderRadius: 8,
+              }}
+            >
+              <Bell size={16} color={colors.textSecondary} />
+              <Text
+                style={{
+                  marginLeft: spacing.sm,
+                  fontSize: 14,
+                  color: colors.text,
+                }}
+              >
+                Уведомления
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Выйти"
+              onPress={handleLogout}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.sm,
+                borderRadius: 8,
+              }}
+            >
+              <LogOut size={16} color={colors.danger} />
+              <Text
+                style={{
+                  marginLeft: spacing.sm,
+                  fontSize: 14,
+                  color: colors.danger,
+                }}
+              >
+                Выйти
+              </Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
-
-export { SIDEBAR_WIDTH };

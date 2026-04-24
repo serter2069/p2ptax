@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -14,7 +13,7 @@ import { ChevronUp, ChevronDown, Flag } from "lucide-react-native";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors, overlay } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { API_URL } from "@/lib/api";
 
 
@@ -69,8 +68,6 @@ function formatDate(dateStr: string): string {
 
 export default function AdminComplaints() {
   const { token } = useAuth();
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -261,67 +258,65 @@ export default function AdminComplaints() {
     );
   };
 
+  const filterBar = (
+    <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+      {FILTER_OPTIONS.map((opt) => (
+        <Pressable
+          accessibilityRole="button"
+          key={opt.key}
+          accessibilityLabel={opt.label}
+          onPress={() => setFilter(opt.key)}
+          className={`px-3 py-1.5 rounded-full border min-h-[36px] justify-center ${
+            filter === opt.key
+              ? "bg-accent border-accent"
+              : "bg-surface2 border-border"
+          }`}
+        >
+          <Text
+            className={`text-sm ${
+              filter === opt.key ? "text-white font-medium" : "text-text-mute"
+            }`}
+          >
+            {opt.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      {/* Header with accent background */}
-      <View className="bg-accent px-4 pt-4 pb-4">
-        <Text className="text-2xl font-bold text-white">Жалобы</Text>
-        <Text className="text-sm mt-1" style={{ color: overlay.white75 }}>Управление жалобами пользователей</Text>
-      </View>
-
-      {/* Filter tabs */}
-      <View className="bg-white border-b border-border py-2.5">
-        <View style={{
-          maxWidth: isDesktop ? 680 : undefined,
-          alignSelf: 'center',
-          width: '100%',
-          paddingHorizontal: isDesktop ? 24 : 16,
-          flexDirection: 'row',
-          gap: 8,
-        }}>
-          {FILTER_OPTIONS.map((opt) => (
-            <Pressable
-              accessibilityRole="button"
-              key={opt.key}
-              accessibilityLabel={opt.label}
-              onPress={() => setFilter(opt.key)}
-              className={`px-3 py-1.5 rounded-full border min-h-[44px] justify-center ${
-                filter === opt.key
-                  ? "bg-accent border-accent"
-                  : "bg-surface2 border-border"
-              }`}
-            >
-              <Text
-                className={`text-sm ${
-                  filter === opt.key ? "text-white font-medium" : "text-text-mute"
-                }`}
-              >
-                {opt.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
       {loading ? (
-        <DesktopScreen>
+        <DesktopScreen
+          title="Жалобы"
+          subtitle="Управление жалобами пользователей"
+          filters={filterBar}
+        >
           <LoadingState variant="skeleton" lines={5} />
           <LoadingState variant="skeleton" lines={5} />
         </DesktopScreen>
       ) : error ? (
-        <View className="flex-1 items-center justify-center">
+        <DesktopScreen
+          title="Жалобы"
+          subtitle="Управление жалобами пользователей"
+          filters={filterBar}
+        >
           <ErrorState
             message="Не удалось загрузить жалобы"
             onRetry={() => fetchComplaints(filter, 1)}
           />
-        </View>
+        </DesktopScreen>
       ) : (
-        <DesktopScreen>
+        <DesktopScreen
+          title="Жалобы"
+          subtitle="Управление жалобами пользователей"
+          filters={filterBar}
+        >
           <FlatList
             data={complaints}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
-            contentContainerStyle={{ flexGrow: 1, padding: 16, paddingTop: 12 }}
+            contentContainerStyle={{ flexGrow: 1, paddingVertical: 8 }}
             onEndReached={loadMore}
             onEndReachedThreshold={0.3}
             ListEmptyComponent={
