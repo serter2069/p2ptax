@@ -11,11 +11,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Mail } from "lucide-react-native";
+import { Mail, ShieldCheck, Clock, Key } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth, UserData } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import { colors, radiusValue, fontSizeValue, textStyle } from "@/lib/theme";
@@ -277,23 +278,56 @@ export default function AuthOtpScreen() {
   }
 
   // ── OTP entry screen ──
-  return (
-    <SafeAreaView className="flex-1 bg-white">
-      <HeaderBack title="Подтверждение" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
+  const leftPane = (
+    <View style={{ gap: 24 }}>
+      <View
+        className="rounded-2xl items-center justify-center bg-white"
+        style={{ width: 56, height: 56 }}
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ResponsiveContainer>
-            <View className="flex-1" style={{ paddingTop: 48 }}>
-              {/* Heading */}
-              <Text style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}>
-                Введите код
-              </Text>
+        <Key size={26} color={colors.accent} />
+      </View>
+      <View style={{ gap: 12 }}>
+        <Text style={{ ...textStyle.h1, color: colors.text, fontSize: 30, lineHeight: 36 }}>
+          Проверка почты
+        </Text>
+        <Text style={{ ...textStyle.body, color: colors.textSecondary, fontSize: 15, lineHeight: 22 }}>
+          Мы отправили 6-значный код на {email || "ваш email"}. Он действует 10 минут.
+        </Text>
+      </View>
+      <View style={{ gap: 12 }}>
+        <InfoRow
+          icon={Mail}
+          title="Проверьте папку «Спам»"
+          text="Письма от P2PTax иногда попадают туда в первый раз."
+        />
+        <InfoRow
+          icon={Clock}
+          title="Можно запросить повторно"
+          text="Через 60 секунд вы сможете запросить новый код."
+        />
+        <InfoRow
+          icon={ShieldCheck}
+          title="Безопасно"
+          text="Пароли не нужны. Код даёт вход только на этом устройстве."
+        />
+      </View>
+    </View>
+  );
+
+  const otpForm = (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      className="flex-1"
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ResponsiveContainer>
+          <View className="flex-1" style={{ paddingTop: 48 }}>
+            <Text style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}>
+              Введите код
+            </Text>
               <Text style={{ ...textStyle.body, color: colors.textSecondary, textAlign: "center", marginBottom: 4 }}>
                 Код отправлен на
               </Text>
@@ -397,6 +431,41 @@ export default function AuthOtpScreen() {
           </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
+  );
+
+  return (
+    <SafeAreaView className="flex-1 bg-white">
+      <HeaderBack title="Подтверждение" />
+      <TwoColumnForm left={leftPane} right={otpForm} />
     </SafeAreaView>
+  );
+}
+
+function InfoRow({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: typeof Mail;
+  title: string;
+  text: string;
+}) {
+  return (
+    <View className="flex-row items-start gap-3">
+      <View
+        className="rounded-xl items-center justify-center bg-white"
+        style={{ width: 36, height: 36 }}
+      >
+        <Icon size={16} color={colors.accent} />
+      </View>
+      <View className="flex-1 min-w-0">
+        <Text className="text-text-base font-bold" style={{ fontSize: 14 }}>
+          {title}
+        </Text>
+        <Text className="text-text-mute mt-0.5" style={{ fontSize: 13 }}>
+          {text}
+        </Text>
+      </View>
+    </View>
   );
 }

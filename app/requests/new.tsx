@@ -7,9 +7,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { MapPin } from "lucide-react-native";
+import { MapPin, Users, Eye, CheckCircle2 } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import DesktopScreen from "@/components/layout/DesktopScreen";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -188,7 +188,84 @@ export default function NewRequest() {
     );
   }
 
-  return (
+  const leftPane = (
+    <View style={{ gap: 24 }}>
+      <View
+        className="rounded-2xl items-center justify-center bg-white self-start"
+        style={{ width: 56, height: 56 }}
+      >
+        <Users size={26} color={colors.accent} />
+      </View>
+      <View style={{ gap: 12 }}>
+        <Text
+          className="font-extrabold text-text-base"
+          style={{ fontSize: 28, lineHeight: 34 }}
+        >
+          Как специалисты ищут ваши заявки
+        </Text>
+        <Text
+          className="text-text-mute"
+          style={{ fontSize: 15, lineHeight: 22 }}
+        >
+          Ваша заявка появится в публичной ленте. Специалисты фильтруют по городу, ФНС и виду
+          услуги, и пишут в чат — бесплатно, без комиссий.
+        </Text>
+      </View>
+      {/* Example card preview */}
+      <View
+        className="bg-white rounded-2xl p-4 border border-border"
+        style={{
+          shadowColor: colors.accent,
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.12,
+          shadowRadius: 24,
+          elevation: 6,
+        }}
+      >
+        <View className="flex-row items-center gap-2 mb-2">
+          <View
+            className="rounded-lg bg-accent-soft items-center justify-center"
+            style={{ width: 28, height: 28 }}
+          >
+            <Eye size={14} color={colors.accent} />
+          </View>
+          <Text
+            className="text-accent font-bold"
+            style={{ fontSize: 12, letterSpacing: 0.5 }}
+          >
+            ПРИМЕР КАРТОЧКИ
+          </Text>
+        </View>
+        <Text
+          className="text-text-base font-bold"
+          style={{ fontSize: 15, marginBottom: 4 }}
+        >
+          Камеральная проверка ИП, требование о пояснениях
+        </Text>
+        <Text
+          className="text-text-mute"
+          style={{ fontSize: 13, marginBottom: 8 }}
+        >
+          Москва · ФНС № 15 · камеральная
+        </Text>
+        <View className="flex-row items-center gap-2">
+          <View className="flex-row items-center gap-1 bg-accent-soft rounded-full px-2 py-1">
+            <Users size={11} color={colors.accent} />
+            <Text className="text-accent font-semibold" style={{ fontSize: 11 }}>
+              3 специалиста уже написали
+            </Text>
+          </View>
+        </View>
+      </View>
+      <View style={{ gap: 8 }}>
+        <Benefit text="Заявка бесплатна, ограничений по числу специалистов нет" />
+        <Benefit text="Контакты видны только в чате — никаких спам-звонков" />
+        <Benefit text="Закрывается автоматически через 30 дней без активности" />
+      </View>
+    </View>
+  );
+
+  const rightForm = (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Новая заявка" />
       <ScrollView
@@ -196,7 +273,7 @@ export default function NewRequest() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 24 }}
       >
-        <DesktopScreen maxWidth={720}>
+        <View className="px-4">
           <View className="py-4">
 
             {/* Limit banner */}
@@ -291,7 +368,7 @@ export default function NewRequest() {
             ) : null}
 
           </View>
-        </DesktopScreen>
+        </View>
       </ScrollView>
 
       {/* Sticky submit button */}
@@ -306,5 +383,18 @@ export default function NewRequest() {
         </View>
       </View>
     </SafeAreaView>
+  );
+
+  return <TwoColumnForm left={leftPane} right={rightForm} />;
+}
+
+function Benefit({ text }: { text: string }) {
+  return (
+    <View className="flex-row items-start gap-2">
+      <CheckCircle2 size={16} color={colors.accent} style={{ marginTop: 2 }} />
+      <Text className="text-text-base flex-1" style={{ fontSize: 13, lineHeight: 19 }}>
+        {text}
+      </Text>
+    </View>
   );
 }

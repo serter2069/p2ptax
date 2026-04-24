@@ -1,26 +1,24 @@
-import { View, Text, Pressable, useWindowDimensions } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
+import { Landmark, MapPin, Shield } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import { colors, textStyle } from "@/lib/theme";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function AuthEmailScreen() {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Already authenticated — redirect to dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === "CLIENT") {
@@ -35,12 +33,10 @@ export default function AuthEmailScreen() {
 
   const handleContinue = async () => {
     setError("");
-
     if (!EMAIL_REGEX.test(email.trim())) {
       setError("Некорректный email");
       return;
     }
-
     setIsLoading(true);
     try {
       await api("/api/auth/request-otp", {
@@ -60,76 +56,113 @@ export default function AuthEmailScreen() {
     }
   };
 
+  const leftPane = (
+    <View style={{ gap: 24 }}>
+      <View
+        className="items-center justify-center bg-accent rounded-3xl self-start"
+        style={{ width: 64, height: 64 }}
+      >
+        <Text className="text-xl font-extrabold text-white">P2P</Text>
+      </View>
+      <View style={{ gap: 12 }}>
+        <Text
+          style={{ ...textStyle.h1, color: colors.text, fontSize: 32, lineHeight: 38 }}
+        >
+          Специалисты по вашей ФНС
+        </Text>
+        <Text
+          style={{ ...textStyle.body, color: colors.textSecondary, fontSize: 16, lineHeight: 24 }}
+        >
+          Проверенные эксперты по выездной, камеральной проверке и оперативному контролю. Отклики
+          в течение 24 часов.
+        </Text>
+      </View>
+      <View style={{ gap: 12 }}>
+        <Feature icon={Landmark} title="Все ФНС России" text="Выездная · камеральная · оперативный контроль" />
+        <Feature icon={MapPin} title="В вашем городе" text="Специалисты знают местную инспекцию" />
+        <Feature icon={Shield} title="Без комиссий и оплаты" text="MVP — полностью бесплатно и для клиентов, и для специалистов" />
+      </View>
+    </View>
+  );
+
+  const rightPane = (
+    <View style={{ gap: 24 }}>
+      <View style={{ gap: 4 }}>
+        <Text style={{ ...textStyle.h2, color: colors.text }}>Вход</Text>
+        <Text style={{ ...textStyle.body, color: colors.textSecondary }}>
+          Введите email — отправим код подтверждения
+        </Text>
+      </View>
+
+      <Input
+        accessibilityLabel="Email адрес"
+        placeholder="your@email.com"
+        value={email}
+        onChangeText={(t) => {
+          setEmail(t);
+          if (error) setError("");
+        }}
+        error={error}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        editable={!isLoading}
+        onSubmitEditing={handleContinue}
+      />
+
+      <Button
+        label="Продолжить"
+        onPress={handleContinue}
+        disabled={isLoading || !email.trim()}
+        loading={isLoading}
+        testID="send-otp"
+      />
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Условия использования"
+        onPress={() => router.push("/legal/terms" as never)}
+        className="py-3"
+      >
+        <Text className="text-sm text-text-mute text-center underline">
+          Условия использования
+        </Text>
+      </Pressable>
+    </View>
+  );
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <ResponsiveContainer maxWidth={520}>
-        <View className="flex-1 justify-center px-6" style={{ paddingBottom: "10%" }}>
-          {/* Logo */}
-          <View className="self-center items-center justify-center bg-accent-soft rounded-2xl mb-6"
-            style={{ width: 64, height: 64 }}
-          >
-            <Text className="text-xl font-extrabold text-accent">P2P</Text>
-          </View>
-
-          <Text
-            style={{
-              ...textStyle.h2,
-              color: colors.text,
-              textAlign: "center",
-              marginBottom: 8,
-            }}
-          >
-            Вход
-          </Text>
-          <Text
-            style={{
-              ...textStyle.body,
-              color: colors.textSecondary,
-              textAlign: "center",
-              marginBottom: 32,
-            }}
-          >
-            Введите email для продолжения
-          </Text>
-
-          <Input
-            accessibilityLabel="Email адрес"
-            placeholder="your@email.com"
-            value={email}
-            onChangeText={(t) => {
-              setEmail(t);
-              if (error) setError("");
-            }}
-            error={error}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            editable={!isLoading}
-            onSubmitEditing={handleContinue}
-          />
-
-          <View className="mt-4">
-            <Button
-              label="Продолжить"
-              onPress={handleContinue}
-              disabled={isLoading || !email.trim()}
-              loading={isLoading}
-              testID="send-otp"
-            />
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Условия использования"
-            onPress={() => router.push("/legal/terms" as never)}
-            className="mt-4 py-3"
-          >
-            <Text className="text-sm text-text-mute text-center underline">
-              Условия использования
-            </Text>
-          </Pressable>
-        </View>
-      </ResponsiveContainer>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <TwoColumnForm left={leftPane} right={rightPane} />
     </SafeAreaView>
+  );
+}
+
+function Feature({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: typeof Landmark;
+  title: string;
+  text: string;
+}) {
+  return (
+    <View className="flex-row items-start gap-3">
+      <View
+        className="rounded-xl items-center justify-center bg-white"
+        style={{ width: 40, height: 40 }}
+      >
+        <Icon size={18} color={colors.accent} />
+      </View>
+      <View className="flex-1 min-w-0">
+        <Text className="text-text-base font-bold" style={{ fontSize: 14 }}>
+          {title}
+        </Text>
+        <Text className="text-text-mute mt-0.5" style={{ fontSize: 13 }}>
+          {text}
+        </Text>
+      </View>
+    </View>
   );
 }

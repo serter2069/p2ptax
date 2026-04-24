@@ -12,7 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
 import EmptyState from "@/components/ui/EmptyState";
-import { MessageSquare, MessagesSquare } from "lucide-react-native";
+import { MessageSquare } from "lucide-react-native";
+import MessengerEmptyPane from "@/components/MessengerEmptyPane";
 import ErrorState from "@/components/ui/ErrorState";
 import Avatar from "@/components/ui/Avatar";
 import InlineChatView from "@/components/InlineChatView";
@@ -261,7 +262,7 @@ export default function ClientMessages() {
             className="flex-1 flex-row w-full"
             style={{ maxWidth: isWide ? 1200 : "100%", borderWidth: isWide ? 1 : 0, borderColor: colors.border, borderRadius: isWide ? 12 : 0, overflow: "hidden", marginTop: isWide ? 24 : 0, marginBottom: isWide ? 24 : 0 }}
           >
-          {/* Thread list panel */}
+          {/* Thread list panel — scrollable left pane */}
           <View style={{ maxWidth: 320, flex: 1, borderRightWidth: 1, borderRightColor: colors.border }}>
             <FlatList
               data={sorted}
@@ -292,15 +293,29 @@ export default function ClientMessages() {
               }
             />
           </View>
-          {/* Chat panel */}
+          {/* Chat panel — sticky right pane (no scroll when empty) */}
           <View className="flex-1">
             {selectedThreadId ? (
               <InlineChatView threadId={selectedThreadId} />
             ) : (
-              <EmptyState
-                icon={MessagesSquare}
-                title="Выберите диалог"
-                subtitle="Нажмите на переписку слева, чтобы открыть её"
+              <MessengerEmptyPane
+                title="Выберите диалог слева"
+                hint={
+                  sorted.length > 0
+                    ? `У вас ${sorted.length} ${sorted.length === 1 ? "диалог" : sorted.length < 5 ? "диалога" : "диалогов"}. Нажмите любой, чтобы открыть переписку.`
+                    : "Когда специалисты откликнутся на заявки, переписки появятся слева."
+                }
+                leftHint="Список диалогов"
+                primary={{
+                  label: "Создать новую заявку",
+                  onPress: () => router.push("/requests/new" as never),
+                  icon: "plus",
+                }}
+                secondary={{
+                  label: "Найти специалиста",
+                  onPress: () => router.push("/specialists" as never),
+                  icon: "sparkles",
+                }}
               />
             )}
           </View>

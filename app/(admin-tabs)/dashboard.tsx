@@ -1,36 +1,36 @@
-import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  RefreshControl,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   AlertOctagon,
-  UserCheck,
-  Clock,
   Users,
-  TrendingUp,
+  FileCheck2,
   MessageCircle,
+  Shield,
+  Gauge,
+  UserCheck,
   UserPlus,
-  ShieldCheck,
-  Activity,
-  Award,
 } from "lucide-react-native";
 import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import {
-  DashboardHero,
-  StatsGrid,
-  PriorityFeed,
-  RecentWinsStrip,
-  type HeroStat,
-  type GridStat,
-  type PriorityItem,
-  type RecentWin,
+  DashboardGrid,
+  KpiCard,
+  DashboardWidget,
+  FeedList,
+  type FeedItem,
 } from "@/components/dashboard";
-import { useAuth } from "@/contexts/AuthContext";
-import { API_URL, api } from "@/lib/api";
-import { colors, spacing, textStyle } from "@/lib/theme";
+import { api } from "@/lib/api";
+import { colors } from "@/lib/theme";
 
 interface Stats {
   activeRequests: number;
@@ -59,28 +59,65 @@ interface AdminExtra {
   newMessagesDay: number;
 }
 
+interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+  createdAt: string;
+  isBanned: boolean;
+}
+
+interface ComplaintReporter {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
+interface ComplaintItem {
+  id: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+  reporter: ComplaintReporter;
+  target: ComplaintReporter;
+}
+
+function formatUserName(u: {
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+}): string {
+  const parts = [u.firstName, u.lastName].filter(Boolean);
+  return parts.length > 0 ? parts.join(" ") : u.email;
+}
+
+function formatDateShort(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  } catch {
+    return "";
+  }
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
-  const { token } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [extra, setExtra] = useState<AdminExtra | null>(null);
-  const [wins, setWins] = useState<RecentWin[]>([]);
+  const [recentUsers, setRecentUsers] = useState<AdminUser[]>([]);
+  const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
 
   const fetchStats = useCallback(async () => {
-    if (!token) return;
     setError(false);
     try {
-      const res = await fetch(`${API_URL}/api/admin/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        setError(true);
-        return;
-      }
-      setStats(await res.json());
+      const statsRes = await api<Stats>("/api/admin/stats");
+      setStats(statsRes);
 
       try {
         const ex = await api<AdminExtra>("/api/stats/admin-dashboard");
@@ -90,17 +127,26 @@ export default function AdminDashboard() {
       }
 
       try {
-        const w = await api<{ items: RecentWin[] }>(
-          "/api/stats/recent-wins?limit=6"
+        const recents = await api<{ items: AdminUser[] }>(
+          "/api/admin/users?limit=5"
         );
-        setWins(w.items ?? []);
+        setRecentUsers(recents.items ?? []);
       } catch {
-        setWins([]);
+        setRecentUsers([]);
+      }
+
+      try {
+        const c = await api<{ items: ComplaintItem[]; total: number }>(
+          "/api/admin/complaints?status=PENDING&limit=5"
+        );
+        setComplaints(c.items ?? []);
+      } catch {
+        setComplaints([]);
       }
     } catch {
       setError(true);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -113,344 +159,278 @@ export default function AdminDashboard() {
     setRefreshing(false);
   }, [fetchStats]);
 
-  const heroStats: HeroStat[] = useMemo(
-    () => [
-      {
-        label: "Активных дел",
-        value: extra?.activeRequests ?? stats?.activeRequests ?? 0,
-        color: "primary",
-      },
-      {
-        label: "Open жалоб",
-        value: extra?.openComplaints ?? 0,
-        color: (extra?.openComplaints ?? 0) > 0 ? "warning" : "muted",
-      },
-      {
-        label: "Satisfaction",
-        value: `${extra?.satisfaction ?? 0}%`,
-        color: "success",
-      },
-      {
-        label: "Специалистов online",
-        value: extra?.onlineSpecialists ?? 0,
-      },
-    ],
-    [extra, stats]
-  );
+  const totalUsers =
+    (extra?.totalClients ?? 0) + (extra?.totalSpecialists ?? 0);
 
-  const gridStats: GridStat[] = useMemo(
-    () => [
-      {
-        label: "Клиентов всего",
-        value: extra?.totalClients ?? 0,
-        icon: Users,
-        color: "primary",
-      },
-      {
-        label: "Специалистов всего",
-        value: extra?.totalSpecialists ?? 0,
-        icon: Award,
-        color: "primary",
-      },
-      {
-        label: "Новых (неделя)",
-        value: extra?.newUsersWeek ?? stats?.newUsersWeek ?? 0,
+  const recentUsersItems: FeedItem[] = useMemo(
+    () =>
+      recentUsers.map((u) => ({
+        id: u.id,
+        title: formatUserName(u),
+        meta: `${u.role} · ${formatDateShort(u.createdAt)}`,
+        rightValue: u.isBanned ? "BANNED" : undefined,
         icon: UserPlus,
-        trend: "up",
-        trendValue: "7 дней",
-      },
-      {
-        label: "Ждут верификации",
-        value: extra?.pendingVerifications ?? 0,
-        icon: ShieldCheck,
-        color: (extra?.pendingVerifications ?? 0) > 0 ? "warning" : "muted",
-      },
-      {
-        label: "Диалогов (месяц)",
-        value: extra?.threadsMonth ?? stats?.threadsMonth ?? 0,
-        icon: MessageCircle,
-      },
-      {
-        label: "Диалогов (неделя)",
-        value: extra?.threadsWeek ?? stats?.threadsWeek ?? 0,
-        icon: Activity,
-        trend: "up",
-      },
-      {
-        label: "Решённых дел",
-        value: extra?.resolvedCases ?? 0,
-        icon: TrendingUp,
-        color: "success",
-      },
-      {
-        label: "SLA ответа (ч)",
-        value: extra?.slaResponseHours ?? 0,
-        icon: Clock,
-        color:
-          (extra?.slaResponseHours ?? 0) > 4
-            ? "warning"
-            : (extra?.slaResponseHours ?? 0) > 12
-              ? "danger"
-              : "success",
-      },
-    ],
-    [extra, stats]
+        iconTone: u.isBanned ? "danger" : u.role === "SPECIALIST" ? "success" : "primary",
+        onPress: () => router.push("/(admin-tabs)/users" as never),
+      })),
+    [recentUsers, router]
   );
 
-  const priorityItems: PriorityItem[] = useMemo(() => {
-    const items: PriorityItem[] = [];
-    if ((extra?.openComplaints ?? 0) > 0) {
-      items.push({
-        id: "complaints",
+  const complaintsItems: FeedItem[] = useMemo(
+    () =>
+      complaints.map((c) => ({
+        id: c.id,
+        title: c.reason.length > 60 ? `${c.reason.slice(0, 60)}…` : c.reason,
+        meta: `от ${formatUserName(c.reporter)} · ${formatDateShort(c.createdAt)}`,
         icon: AlertOctagon,
-        title: `${extra?.openComplaints} жалоб на модерации`,
-        meta: "Требует реакции администратора",
-        urgency: "high",
-        action: {
-          label: "Открыть",
-          onPress: () =>
-            router.push("/(admin-tabs)/complaints" as never),
-        },
-      });
-    }
-    if ((extra?.pendingVerifications ?? 0) > 0) {
-      items.push({
-        id: "verify",
-        icon: UserCheck,
-        title: `${extra?.pendingVerifications} специалистов ждут верификации`,
-        meta: "Проверьте профили и активируйте",
-        urgency: "medium",
-        action: {
-          label: "Проверить",
-          onPress: () => router.push("/(admin-tabs)/moderation" as never),
-        },
-      });
-    }
-    if (extra?.slaResponseHours !== undefined && extra.slaResponseHours > 4) {
-      items.push({
-        id: "sla",
-        icon: Clock,
-        title: `SLA response time: ${extra.slaResponseHours}h`,
-        meta: "Время ответа специалистов выше целевого",
-        urgency: extra.slaResponseHours > 12 ? "high" : "medium",
-      });
-    }
-    if ((extra?.newMessagesDay ?? 0) > 0) {
-      items.push({
-        id: "activity",
-        icon: Activity,
-        title: `${extra?.newMessagesDay} новых сообщений сегодня`,
-        meta: "Платформа активна",
-        urgency: "low",
-      });
-    }
-    if (items.length === 0) {
-      items.push({
-        id: "all-good",
-        icon: ShieldCheck,
-        title: "Всё в порядке",
-        meta: "Жалоб нет, верификаций нет, SLA в норме",
-        urgency: "low",
-      });
-    }
-    return items;
-  }, [extra, router]);
+        iconTone: "danger",
+        onPress: () => router.push("/(admin-tabs)/complaints" as never),
+      })),
+    [complaints, router]
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome
         onSettingsPress={() => router.push("/admin/settings" as never)}
       />
-      {loading ? (
-        <ScrollView className="flex-1">
-          <DesktopScreen>
-            <View style={{ paddingVertical: spacing.lg, gap: spacing.md }}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <View
-                  key={i}
-                  className="bg-white rounded-xl overflow-hidden border border-border"
-                >
-                  <LoadingState variant="skeleton" lines={3} />
-                </View>
-              ))}
-            </View>
-          </DesktopScreen>
-        </ScrollView>
-      ) : error ? (
-        <View className="flex-1 items-center justify-center">
-          <ErrorState
-            message="Не удалось загрузить статистику"
-            onRetry={fetchStats}
-          />
-        </View>
-      ) : (
-        <ScrollView
-          className="flex-1"
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-            />
-          }
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        <DesktopScreen
+          title="Панель администратора"
+          subtitle="Ключевые метрики и события в реальном времени"
         >
-          <DesktopScreen>
-            <View style={{ paddingVertical: spacing.lg, gap: spacing.lg }}>
-              <DashboardHero
-                greeting="Обзор платформы"
-                subtitle="Ключевые метрики и события в режиме реального времени"
-                primaryStats={heroStats}
-              />
-
-              <StatsGrid title="Детальная статистика" stats={gridStats} />
-
-              <PriorityFeed
-                title="Требует внимания"
-                items={priorityItems}
-                emptyMessage="Нет задач"
-              />
-
-              {wins.length > 0 ? (
-                <RecentWinsStrip
-                  title="Последние победы специалистов"
-                  subtitle="Социальное доказательство для лендинга"
-                  items={wins}
-                />
-              ) : null}
-
-              {/* Top cities + specialists side-by-side */}
-              {stats && (stats.topCities.length > 0 || stats.topSpecialists.length > 0) ? (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    gap: spacing.md,
-                  }}
-                >
-                  <View style={{ flexBasis: "48%", flexGrow: 1, minWidth: 280 }}>
-                    <RankList
-                      title="Топ городов"
-                      items={stats.topCities}
-                    />
-                  </View>
-                  <View style={{ flexBasis: "48%", flexGrow: 1, minWidth: 280 }}>
-                    <RankList
-                      title="Топ специалистов"
-                      items={stats.topSpecialists}
-                    />
-                  </View>
-                </View>
-              ) : null}
-
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Управление пользователями"
-                onPress={() => router.push("/(admin-tabs)/users" as never)}
-                style={{
-                  backgroundColor: colors.accentSoft,
-                  borderRadius: 14,
-                  padding: spacing.md,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text
-                  style={{
-                    ...textStyle.bodyBold,
-                    color: colors.accentSoftInk,
-                  }}
-                >
-                  Управление пользователями
-                </Text>
-                <Text style={{ color: colors.accent, fontWeight: "600" }}>
-                  Открыть →
-                </Text>
-              </Pressable>
+          {loading ? (
+            <View style={{ gap: 16 }}>
+              <LoadingState variant="skeleton" lines={4} />
+              <LoadingState variant="skeleton" lines={4} />
             </View>
-          </DesktopScreen>
-        </ScrollView>
-      )}
+          ) : error ? (
+            <ErrorState
+              message="Не удалось загрузить статистику"
+              onRetry={() => {
+                setLoading(true);
+                fetchStats().finally(() => setLoading(false));
+              }}
+            />
+          ) : (
+            <View style={{ gap: 24 }}>
+              {/* Top KPIs: 4 */}
+              <DashboardGrid>
+                <DashboardGrid.Col span={3} tabletSpan={1}>
+                  <KpiCard
+                    label="Пользователей"
+                    value={totalUsers}
+                    hint={`клиентов ${extra?.totalClients ?? 0} · специалистов ${extra?.totalSpecialists ?? 0}`}
+                    icon={Users}
+                    tone="primary"
+                    onPress={() => router.push("/(admin-tabs)/users" as never)}
+                  />
+                </DashboardGrid.Col>
+                <DashboardGrid.Col span={3} tabletSpan={1}>
+                  <KpiCard
+                    label="Активных заявок"
+                    value={extra?.activeRequests ?? stats?.activeRequests ?? 0}
+                    icon={FileCheck2}
+                    tone="success"
+                  />
+                </DashboardGrid.Col>
+                <DashboardGrid.Col span={3} tabletSpan={1}>
+                  <KpiCard
+                    label="Жалоб на модерации"
+                    value={extra?.openComplaints ?? 0}
+                    icon={AlertOctagon}
+                    tone={(extra?.openComplaints ?? 0) > 0 ? "danger" : "muted"}
+                    onPress={() =>
+                      router.push("/(admin-tabs)/complaints" as never)
+                    }
+                  />
+                </DashboardGrid.Col>
+                <DashboardGrid.Col span={3} tabletSpan={1}>
+                  <KpiCard
+                    label="Превышений лимита"
+                    value={extra?.pendingVerifications ?? 0}
+                    hint="20 thread/день exceeds"
+                    icon={Gauge}
+                    tone={(extra?.pendingVerifications ?? 0) > 0 ? "warning" : "muted"}
+                  />
+                </DashboardGrid.Col>
+              </DashboardGrid>
+
+              {/* Main: recent signups (8) + sidebar alerts (4) */}
+              <DashboardGrid>
+                <DashboardGrid.Col span={8} tabletSpan={2}>
+                  <DashboardWidget
+                    title="Recent signups"
+                    subtitle={`${recentUsers.length} последних`}
+                    icon={UserCheck}
+                    actionLabel="Все →"
+                    onActionPress={() =>
+                      router.push("/(admin-tabs)/users" as never)
+                    }
+                    flush
+                  >
+                    {/* Pretty table with header row */}
+                    <View
+                      className="flex-row items-center"
+                      style={{
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        backgroundColor: colors.surface2,
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border,
+                      }}
+                    >
+                      <Text
+                        className="text-text-dim uppercase"
+                        style={{ fontSize: 11, flex: 3, fontWeight: "700" }}
+                      >
+                        Пользователь
+                      </Text>
+                      <Text
+                        className="text-text-dim uppercase"
+                        style={{ fontSize: 11, flex: 1, fontWeight: "700" }}
+                      >
+                        Роль
+                      </Text>
+                      <Text
+                        className="text-text-dim uppercase"
+                        style={{ fontSize: 11, flex: 1, fontWeight: "700" }}
+                      >
+                        Дата
+                      </Text>
+                    </View>
+                    <FeedList
+                      items={recentUsersItems}
+                      emptyText="Нет новых регистраций"
+                    />
+                  </DashboardWidget>
+                </DashboardGrid.Col>
+
+                <DashboardGrid.Col span={4} tabletSpan={2}>
+                  <View style={{ gap: 16 }}>
+                    <DashboardWidget
+                      title="Требуют реакции"
+                      subtitle="Топ жалоб для модерации"
+                      icon={AlertOctagon}
+                      accentBar={complaints.length > 0 ? "danger" : "success"}
+                      actionLabel="Все →"
+                      onActionPress={() =>
+                        router.push("/(admin-tabs)/complaints" as never)
+                      }
+                      flush
+                    >
+                      <FeedList
+                        items={complaintsItems}
+                        emptyText="Жалоб нет. Всё спокойно."
+                      />
+                    </DashboardWidget>
+
+                    <DashboardWidget
+                      title="Активность"
+                      icon={MessageCircle}
+                    >
+                      <View style={{ gap: 10 }}>
+                        <Row
+                          label="Диалогов (неделя)"
+                          value={extra?.threadsWeek ?? stats?.threadsWeek ?? 0}
+                        />
+                        <Row
+                          label="Диалогов (месяц)"
+                          value={extra?.threadsMonth ?? stats?.threadsMonth ?? 0}
+                        />
+                        <Row
+                          label="Новых юзеров (неделя)"
+                          value={extra?.newUsersWeek ?? stats?.newUsersWeek ?? 0}
+                        />
+                        <Row
+                          label="SLA ответа (ч)"
+                          value={extra?.slaResponseHours ?? 0}
+                          tone={
+                            (extra?.slaResponseHours ?? 0) > 12
+                              ? "danger"
+                              : (extra?.slaResponseHours ?? 0) > 4
+                                ? "warning"
+                                : "success"
+                          }
+                        />
+                      </View>
+                    </DashboardWidget>
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Модерация"
+                      onPress={() =>
+                        router.push("/(admin-tabs)/moderation" as never)
+                      }
+                      className="rounded-2xl bg-accent p-5"
+                    >
+                      <View className="flex-row items-center gap-3">
+                        <View
+                          className="rounded-xl items-center justify-center bg-white/20"
+                          style={{ width: 44, height: 44 }}
+                        >
+                          <Shield size={22} color="#fff" />
+                        </View>
+                        <View className="flex-1 min-w-0">
+                          <Text
+                            className="font-extrabold text-white"
+                            style={{ fontSize: 16 }}
+                          >
+                            Модерация
+                          </Text>
+                          <Text
+                            className="text-white/80 mt-0.5"
+                            style={{ fontSize: 12 }}
+                          >
+                            Открыть очередь модерации
+                          </Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  </View>
+                </DashboardGrid.Col>
+              </DashboardGrid>
+            </View>
+          )}
+        </DesktopScreen>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-function RankList({
-  title,
-  items,
+function Row({
+  label,
+  value,
+  tone,
 }: {
-  title: string;
-  items: { name: string; count: number }[];
+  label: string;
+  value: string | number;
+  tone?: "danger" | "warning" | "success";
 }) {
+  const color =
+    tone === "danger"
+      ? colors.danger
+      : tone === "warning"
+        ? colors.warning
+        : tone === "success"
+          ? colors.success
+          : colors.text;
   return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.border,
-        padding: spacing.md,
-        shadowColor: colors.text,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 1,
-      }}
-    >
-      <Text style={{ ...textStyle.h4, color: colors.text, marginBottom: spacing.md }}>
-        {title}
+    <View className="flex-row items-center justify-between">
+      <Text className="text-text-mute" style={{ fontSize: 13 }}>
+        {label}
       </Text>
-      {items.length === 0 ? (
-        <Text style={{ ...textStyle.small, color: colors.textSecondary }}>
-          Нет данных
-        </Text>
-      ) : (
-        items.map((item, i) => (
-          <View
-            key={`${item.name}-${i}`}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingVertical: 8,
-              borderBottomWidth: i === items.length - 1 ? 0 : 1,
-              borderBottomColor: colors.border,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                flex: 1,
-                gap: 8,
-              }}
-            >
-              <Text
-                style={{
-                  ...textStyle.small,
-                  color: colors.textMuted,
-                  width: 20,
-                }}
-              >
-                {i + 1}.
-              </Text>
-              <Text
-                style={{ ...textStyle.body, color: colors.text, flex: 1 }}
-                numberOfLines={1}
-              >
-                {item.name}
-              </Text>
-            </View>
-            <Text
-              style={{
-                ...textStyle.bodyBold,
-                color: colors.accent,
-              }}
-            >
-              {item.count}
-            </Text>
-          </View>
-        ))
-      )}
+      <Text
+        className="font-bold"
+        style={{ fontSize: 14, color }}
+      >
+        {value}
+      </Text>
     </View>
   );
 }

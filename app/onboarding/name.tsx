@@ -6,7 +6,8 @@ import { User } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import DesktopScreen from "@/components/layout/DesktopScreen";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
+import OnboardingLeft from "@/components/onboarding/OnboardingLeft";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { colors, overlay, textStyle } from "@/lib/theme";
@@ -64,18 +65,32 @@ export default function OnboardingNameScreen() {
     }
   };
 
-  return (
+  const leftPane = (
+    <OnboardingLeft
+      step={1}
+      icon={User}
+      title="Как вас представить?"
+      description="Это имя увидят клиенты в карточке специалиста и в переписке."
+      bullets={[
+        "Пишите реальное имя — доверие растёт",
+        "Без званий и регалий — они будут в профиле",
+        "Всего 3 шага: имя → рабочая зона → профиль",
+      ]}
+    />
+  );
+
+  const rightForm = (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
-      <DesktopScreen maxWidth={720}>
+      <View className="flex-1 px-4">
         <View className="flex-1">
           <ScrollView
             className="flex-1"
             contentContainerStyle={{ paddingTop: 32, paddingBottom: 16 }}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Icon */}
-            <View className="items-center mb-5">
+            {/* Icon — hidden on desktop (left pane has it) */}
+            <View className="items-center mb-5 sm:hidden">
               <View
                 className="rounded-full items-center justify-center"
                 style={{ width: 56, height: 56, backgroundColor: overlay.accent10 }}
@@ -84,8 +99,8 @@ export default function OnboardingNameScreen() {
               </View>
             </View>
 
-            {/* Progress bar */}
-            <View className="mb-6">
+            {/* Mobile progress */}
+            <View className="mb-6 sm:hidden">
               <View className="flex-row justify-center gap-2 mb-3">
                 <View className="h-2 w-10 rounded-full bg-accent" />
                 <View className="h-2 w-10 rounded-full bg-border" />
@@ -96,10 +111,10 @@ export default function OnboardingNameScreen() {
               </Text>
             </View>
 
-            <Text style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}>
+            <Text style={{ ...textStyle.h2, color: colors.text, textAlign: "left", marginBottom: 8 }}>
               Ваше имя
             </Text>
-            <Text style={{ ...textStyle.body, color: colors.textSecondary, textAlign: "center", marginBottom: 32 }}>
+            <Text style={{ ...textStyle.body, color: colors.textSecondary, textAlign: "left", marginBottom: 32 }}>
               Это имя увидят клиенты в вашем профиле
             </Text>
 
@@ -182,7 +197,9 @@ export default function OnboardingNameScreen() {
             />
           </View>
         </View>
-      </DesktopScreen>
+      </View>
     </SafeAreaView>
   );
+
+  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }

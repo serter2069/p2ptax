@@ -12,18 +12,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Pencil, FileText, ChevronRight, LogOut, Trash2, Bell } from "lucide-react-native";
+import { Pencil, FileText, ChevronRight, LogOut, Trash2, Bell, User as UserIcon, Mail } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import DesktopScreen from "@/components/layout/DesktopScreen";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
+import { colors } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { API_URL, apiPatch } from "@/lib/api";
 import LoadingState from "@/components/ui/LoadingState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors } from "@/lib/theme";
 
 interface NotificationSetting {
   key: string;
@@ -203,11 +203,39 @@ export default function ClientSettings() {
     );
   }
 
-  return (
+  const leftPane = (
+    <View style={{ gap: 24 }}>
+      <View
+        className="rounded-2xl items-center justify-center bg-white self-start"
+        style={{ width: 56, height: 56 }}
+      >
+        <UserIcon size={26} color={colors.accent} />
+      </View>
+      <View style={{ gap: 12 }}>
+        <Text className="font-extrabold text-text-base" style={{ fontSize: 24, lineHeight: 30 }}>
+          Ваш аккаунт
+        </Text>
+        <Text className="text-text-mute" style={{ fontSize: 14, lineHeight: 20 }}>
+          Текущее состояние профиля. Обновляется сразу после сохранения.
+        </Text>
+      </View>
+      <View className="bg-white rounded-2xl border border-border" style={{ padding: 16, gap: 12 }}>
+        <SummaryRow icon={UserIcon} label="Имя" value={user ? [user.firstName, user.lastName].filter(Boolean).join(" ") || "не указано" : "—"} />
+        <SummaryRow icon={Mail} label="Email" value={user?.email ?? "—"} />
+        <SummaryRow
+          icon={Bell}
+          label="Уведомления"
+          value={[newMessages, closingWarnings].filter(Boolean).length + " / 2 включено"}
+        />
+      </View>
+    </View>
+  );
+
+  const rightForm = (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Настройки" />
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-        <DesktopScreen maxWidth={860}>
+        <View className="px-4">
           <View className="py-6">
 
             {/* Avatar */}
@@ -402,8 +430,39 @@ export default function ClientSettings() {
             </Text>
 
           </View>
-        </DesktopScreen>
+        </View>
       </ScrollView>
     </SafeAreaView>
+  );
+
+  return <TwoColumnForm left={leftPane} right={rightForm} />;
+}
+
+function SummaryRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof UserIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View className="flex-row items-start gap-3">
+      <View
+        className="rounded-lg items-center justify-center bg-accent-soft"
+        style={{ width: 32, height: 32 }}
+      >
+        <Icon size={14} color={colors.accent} />
+      </View>
+      <View className="flex-1 min-w-0">
+        <Text className="text-text-dim" style={{ fontSize: 11, letterSpacing: 0.5 }}>
+          {label.toUpperCase()}
+        </Text>
+        <Text className="text-text-base font-semibold mt-0.5" style={{ fontSize: 14 }} numberOfLines={1}>
+          {value}
+        </Text>
+      </View>
+    </View>
   );
 }

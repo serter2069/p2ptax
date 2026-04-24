@@ -10,11 +10,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useRef } from "react";
-import { Pencil, Camera } from "lucide-react-native";
+import { Pencil, Camera, Sparkles } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { API_URL, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import DesktopScreen from "@/components/layout/DesktopScreen";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
+import OnboardingLeft from "@/components/onboarding/OnboardingLeft";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -158,10 +159,25 @@ export default function OnboardingProfileScreen() {
     }
   };
 
-  return (
+  const leftPane = (
+    <OnboardingLeft
+      step={3}
+      icon={Sparkles}
+      title="Ваш профиль в каталоге"
+      description="Опишите себя: чем больше деталей — тем проще клиенту выбрать именно вас."
+      bullets={[
+        "Аватар увеличивает отклики в 2 раза",
+        "Укажите опыт и специализацию",
+        "Контакты клиенты увидят только в переписке",
+        "Профиль можно поменять в любой момент",
+      ]}
+    />
+  );
+
+  const rightForm = (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
-      <DesktopScreen maxWidth={720}>
+      <View className="flex-1 px-4">
         <View className="flex-1">
         <ScrollView
           className="flex-1"
@@ -387,7 +403,9 @@ export default function OnboardingProfileScreen() {
           </Pressable>
         </View>
         </View>
-      </DesktopScreen>
+      </View>
     </SafeAreaView>
   );
+
+  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }
