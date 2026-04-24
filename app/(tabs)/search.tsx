@@ -6,7 +6,7 @@ import {
   FileSearch, Briefcase, ShieldCheck, Gavel, Globe2, Users, type LucideIcon
 } from "lucide-react-native";
 import { colors } from "@/lib/theme";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import EmptyState from "@/components/ui/EmptyState";
 
 // Recent searches — tax-domain, not marketplace.
@@ -48,7 +48,7 @@ export default function SearchScreen() {
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
-        <ResponsiveContainer>
+        <DesktopScreen>
           {/* Search Input */}
           <View className="mt-4 mb-4">
             <View className="flex-row items-center bg-white border border-border rounded-xl px-3 h-12">
@@ -153,7 +153,7 @@ export default function SearchScreen() {
               ))}
             </View>
           </View>
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
   );

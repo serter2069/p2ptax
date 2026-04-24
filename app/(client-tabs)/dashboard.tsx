@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import RequestCard from "@/components/RequestCard";
 import { FileText, MessageSquare, Plus } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
@@ -91,7 +91,7 @@ export default function ClientDashboard() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        <ResponsiveContainer>
+        <DesktopScreen>
           {/* Hero greeting — accent banner */}
           <View
             className="rounded-2xl px-5 py-5 mb-4 mt-4"
@@ -252,7 +252,7 @@ export default function ClientDashboard() {
               )}
             </View>
           )}
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
   );

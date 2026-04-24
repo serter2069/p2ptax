@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback } from "react";
 import { X, Plus } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import Button from "@/components/ui/Button";
 import { colors } from "@/lib/theme";
 
@@ -157,7 +157,7 @@ export default function OnboardingWorkAreaScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
-      <ResponsiveContainer>
+      <DesktopScreen maxWidth={720}>
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isDesktop ? 64 : 40 }}>
           <View className="pt-8">
             {/* Progress indicator */}
@@ -380,7 +380,7 @@ export default function OnboardingWorkAreaScreen() {
             />
           </View>
         </ScrollView>
-      </ResponsiveContainer>
+      </DesktopScreen>
     </SafeAreaView>
   );
 }

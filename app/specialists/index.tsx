@@ -52,6 +52,8 @@ export default function SpecialistsCatalog() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
+  const isWide = width >= 1024;
+  const gridCols = isWide ? 3 : isDesktop ? 2 : 1;
 
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -221,8 +223,9 @@ export default function SpecialistsCatalog() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Специалисты" />
-      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
-        <Text style={{ ...textStyle.h3, color: "#ffffff", marginBottom: 2 }}>Каталог специалистов</Text>
+      <View style={{ backgroundColor: colors.accent, width: "100%", alignItems: "center" }}>
+        <View style={{ width: "100%", maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined, paddingHorizontal: isWide ? 32 : 16, paddingTop: 20, paddingBottom: 20 }}>
+        <Text style={{ ...(isWide ? textStyle.h1 : textStyle.h3), color: "#ffffff", marginBottom: 4 }}>Каталог специалистов</Text>
         <Text style={{ ...textStyle.small, color: overlay.white75 }}>Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.</Text>
         <View className="flex-row mt-4 gap-3">
           <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
@@ -233,6 +236,7 @@ export default function SpecialistsCatalog() {
             <Text className="text-xs" style={{ color: overlay.white70 }}>Готовы помочь</Text>
             <Text className="text-xl font-bold text-white">Сейчас</Text>
           </View>
+        </View>
         </View>
       </View>
 
@@ -275,21 +279,21 @@ export default function SpecialistsCatalog() {
         />
       ) : (
         <FlatList
-          key={isDesktop ? "grid-2" : "grid-1"}
+          key={`grid-${gridCols}`}
           data={specialists}
           keyExtractor={(item) => item.id}
-          numColumns={isDesktop ? 2 : 1}
-          columnWrapperStyle={isDesktop ? { gap: 12, paddingHorizontal: 16 } : undefined}
+          numColumns={gridCols}
+          columnWrapperStyle={gridCols > 1 ? { gap: 16, paddingHorizontal: isWide ? 32 : 16 } : undefined}
           contentContainerStyle={{
-            paddingHorizontal: isDesktop ? 0 : 16,
-            paddingBottom: 32,
-            paddingTop: 8,
-            maxWidth: isDesktop ? 900 : undefined,
+            paddingHorizontal: gridCols > 1 ? 0 : 16,
+            paddingBottom: 48,
+            paddingTop: 16,
+            maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined,
             alignSelf: isDesktop ? ("center" as const) : undefined,
             width: "100%" as const,
           }}
           renderItem={({ item }) => (
-            <View style={isDesktop ? { flex: 1 } : undefined}>
+            <View style={gridCols > 1 ? { flex: 1 } : undefined}>
               <SpecialistCard
                 id={item.id}
                 firstName={item.firstName}

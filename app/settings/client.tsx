@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Pencil, FileText, ChevronRight, LogOut, Trash2, Bell } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -207,7 +207,7 @@ export default function ClientSettings() {
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Настройки" />
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-        <ResponsiveContainer>
+        <DesktopScreen maxWidth={860}>
           <View className="py-6">
 
             {/* Avatar */}
@@ -402,7 +402,7 @@ export default function ClientSettings() {
             </Text>
 
           </View>
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
   );

@@ -8,7 +8,7 @@ import {
 import { useState } from "react";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 
 function SettingRow({
   icon: Icon,
@@ -65,7 +65,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
-        <ResponsiveContainer>
+        <DesktopScreen maxWidth={860}>
         {/* Header */}
         <View className="flex-row items-center pt-2 pb-3 border-b border-border">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
@@ -135,7 +135,7 @@ export default function SettingsScreen() {
             />
           </>
         )}
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
   );

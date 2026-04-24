@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderBack from "@/components/HeaderBack";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import FilterBar from "@/components/FilterBar";
 import { Inbox } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";

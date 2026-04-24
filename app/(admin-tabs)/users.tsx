@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Users } from "lucide-react-native";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -280,7 +280,7 @@ export default function AdminUsers() {
       </View>
 
       {loading ? (
-        <ResponsiveContainer>
+        <DesktopScreen>
           <View className="py-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-border">
@@ -288,7 +288,7 @@ export default function AdminUsers() {
               </View>
             ))}
           </View>
-        </ResponsiveContainer>
+        </DesktopScreen>
       ) : error ? (
         <View className="flex-1 items-center justify-center">
           <ErrorState message="Не удалось загрузить пользователей" onRetry={() => fetchUsers(search, filter, 1)} />
@@ -301,7 +301,7 @@ export default function AdminUsers() {
           }}
           scrollEventThrottle={400}
         >
-          <ResponsiveContainer>
+          <DesktopScreen>
             <View className="py-2">
               {users.length === 0 ? (
                 <EmptyState
@@ -424,7 +424,7 @@ export default function AdminUsers() {
                 </View>
               )}
             </View>
-          </ResponsiveContainer>
+          </DesktopScreen>
         </ScrollView>
       )}
     </SafeAreaView>

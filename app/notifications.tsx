@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, BellOff, MessageCircle, Mail, MapPin, Clock, Bell, type LucideIcon } from "lucide-react-native";
 import { useState, useEffect, useCallback } from "react";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
@@ -224,7 +224,7 @@ export default function NotificationsScreen() {
         </View>
       </View>
 
-      <ResponsiveContainer>
+      <DesktopScreen>
         {loading ? (
           <View className="pt-4 px-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -266,7 +266,7 @@ export default function NotificationsScreen() {
             }
           />
         )}
-      </ResponsiveContainer>
+      </DesktopScreen>
     </SafeAreaView>
   );
 }

@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import { MessageCircle, CheckCircle } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -82,7 +82,7 @@ export default function SpecialistMyThreads() {
   const unreadTotal = threads.reduce((sum, t) => sum + t.unreadCount, 0);
 
   const FilterBar = (
-    <ResponsiveContainer>
+    <DesktopScreen>
       <View className="flex-row items-center gap-2 mt-4 mb-3">
         <Text className="text-2xl font-bold text-text-base flex-1">
           Мои диалоги
@@ -110,7 +110,7 @@ export default function SpecialistMyThreads() {
           onPress={() => setFilter("unread")}
         />
       </View>
-    </ResponsiveContainer>
+    </DesktopScreen>
   );
 
   return (
@@ -120,21 +120,21 @@ export default function SpecialistMyThreads() {
       {loading ? (
         <View className="flex-1">
           {FilterBar}
-          <ResponsiveContainer>
+          <DesktopScreen>
             <LoadingState variant="skeleton" lines={5} />
             <LoadingState variant="skeleton" lines={5} />
             <LoadingState variant="skeleton" lines={5} />
-          </ResponsiveContainer>
+          </DesktopScreen>
         </View>
       ) : error ? (
         <View className="flex-1">
           {FilterBar}
-          <ResponsiveContainer>
+          <DesktopScreen>
             <ErrorState
               message="Не удалось загрузить диалоги"
               onRetry={handleRetry}
             />
-          </ResponsiveContainer>
+          </DesktopScreen>
         </View>
       ) : (
         <FlatList
@@ -146,7 +146,7 @@ export default function SpecialistMyThreads() {
           }
           ListHeaderComponent={<>{FilterBar}</>}
           ListEmptyComponent={
-            <ResponsiveContainer>
+            <DesktopScreen>
               {threads.length === 0 ? (
                 <EmptyState
                   icon={MessageCircle}
@@ -164,7 +164,7 @@ export default function SpecialistMyThreads() {
                   subtitle="Все сообщения прочитаны"
                 />
               )}
-            </ResponsiveContainer>
+            </DesktopScreen>
           }
           ListFooterComponent={<View className="h-8" />}
           renderItem={({ item }) => (

@@ -9,7 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MapPin } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -196,7 +196,7 @@ export default function NewRequest() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 24 }}
       >
-        <ResponsiveContainer>
+        <DesktopScreen maxWidth={720}>
           <View className="py-4">
 
             {/* Limit banner */}
@@ -291,7 +291,7 @@ export default function NewRequest() {
             ) : null}
 
           </View>
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
 
       {/* Sticky submit button */}
