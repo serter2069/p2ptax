@@ -245,7 +245,7 @@ Visual Structure:
           title: "Проверенные специалисты"
           description: "Консультанты с реальным опытом работы в налоговых инспекциях вашего города"
         - icon: "clock"
-          title: "Быстрый отклик"
+          title: "Быстрый ответ"
           description: "Специалисты отвечают в течение нескольких часов, а не дней"
         - icon: "banknotes-off"
           title: "Полностью бесплатно"
@@ -259,7 +259,7 @@ Visual Structure:
           title: "Опишите проблему"
           description: "Укажите город, инспекцию и тип проверки. Добавьте описание ситуации."
         - number: "2"
-          title: "Получите отклики"
+          title: "Получите сообщения"
           description: "Специалисты из вашего города увидят заявку и напишут вам первыми."
         - number: "3"
           title: "Выберите специалиста"
@@ -337,7 +337,7 @@ Content:
     chips: "{city.name} · {fns.name}"
     service_chip: "{service.name}"
     description: "{request.description} (2 строки)"
-    counter: "{count} специалистов откликнулись"
+    counter: "{count} специалистов написали"
   sort_options: ["Сначала новые", "Сначала старые"]
   empty_title: "Заявок не найдено"
   empty_description: "Попробуйте изменить фильтры или сбросить их"
@@ -353,7 +353,7 @@ Layout:
 
 UI elements:
   - Filter bar: city (select), service (select — one of 3)
-  - Request card: title (h3), city+FNS (chips caption), service (chip), description truncated (body 2 lines), counter "X specialists responded" (caption)
+  - Request card: title (h3), city+FNS (chips caption), service (chip), description truncated (body 2 lines), counter "X specialists wrote" (caption)
   - Card tap → PublicRequestDetail
   - Infinite scroll (20 per page)
   - Empty state (no results): "No requests found" + reset filters link
@@ -398,13 +398,13 @@ Content:
     service: "Тип проверки"
     status: "Статус"
     created: "Создана"
-    responses: "{count} специалистов откликнулись"
+    responses: "{count} специалистов написали"
   status_labels:
     active: "Активна"
     closing_soon: "Скоро закроется"
     closed: "Закрыта"
   action_buttons:
-    guest: "Войдите, чтобы откликнуться"
+    guest: "Войдите, чтобы написать"
     specialist_write: "Написать клиенту"
     specialist_open_chat: "Открыть чат"
   badge_not_your_region: "Не ваш регион"
@@ -415,7 +415,7 @@ Content:
 Layout:
   - Header: Header-Back, title "Request"
   - Body: scroll
-  - Footer: sticky Button "Write to Client" (specialist) / "Sign in to respond" (guest)
+  - Footer: sticky Button "Write to Client" (specialist) / "Sign in to write" (guest)
 
 UI elements:
   - Title (h1)
@@ -431,7 +431,7 @@ UI elements:
 
 Acceptance Criteria:
   - [ ] User opens /requests/[id] → full request details (title, city, FNS, service, description, status badge) visible
-  - [ ] Guest sees "Sign in to respond" footer button → tap navigates to /auth/email
+  - [ ] Guest sees "Sign in to write" footer button → tap navigates to /auth/email
   - [ ] Specialist sees "Write to Client" button → tap navigates to /requests/[id]/write
   - [ ] Specialist with existing thread sees "Open Chat" → tap navigates to /threads/[threadId]
   - [ ] Request status badge matches: active=green, closing_soon=amber, closed=gray
@@ -929,7 +929,7 @@ Content:
     unread_messages: "Непрочитанных сообщений"
   action_cards:
     create_request: "Создать заявку"
-    create_request_subtitle: "Опишите проблему — специалисты откликнутся сами"
+    create_request_subtitle: "Опишите проблему — специалисты напишут сами"
     limit_reached: "Лимит заявок исчерпан"
   section_titles:
     my_requests: "Мои заявки"
@@ -1270,7 +1270,7 @@ Content:
     timestamp: "{time_ago}"
     unread_badge: "{unreadCount}"
   empty_title: "Нет сообщений"
-  empty_description: "Когда специалисты откликнутся на ваши заявки, сообщения появятся здесь"
+  empty_description: "Когда специалисты напишут по вашим заявкам, сообщения появятся здесь"
   empty_cta: "Посмотреть специалистов"
   error_title: "Не удалось загрузить сообщения"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
@@ -1420,7 +1420,7 @@ Content:
   action_cards:
     write: "Написать клиенту"
     open_chat: "Открыть чат"
-  badge_already_wrote: "Вы уже откликнулись"
+  badge_already_wrote: "Вы уже написали"
   badge_not_your_region: "Не ваш регион"
   link_my_threads: "Мои диалоги"
   empty_title: "Нет подходящих заявок"
@@ -1488,9 +1488,9 @@ Content:
     message_error_min: "Минимум 10 символов"
   button_submit: "Отправить сообщение"
   button_cancel: "Отмена"
-  error_request_closed: "Заявка закрыта — отклик невозможен"
+  error_request_closed: "Заявка закрыта — написать невозможно"
   error_thread_exists: "Вы уже писали по этой заявке"
-  error_rate_limit: "Лимит откликов на сегодня исчерпан (20 в день). Попробуйте завтра."
+  error_rate_limit: "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
   error_title: "Ошибка отправки"
   error_description: "Не удалось отправить сообщение. Попробуйте ещё раз."
   error_button: "Повторить"
@@ -2030,7 +2030,7 @@ Content:
       label: "Макс. заявок на клиента"
       hint: "Лимит заявок за всё время для каждого клиента"
     max_threads_per_request:
-      label: "Макс. откликов на заявку"
+      label: "Макс. диалогов на заявку"
       hint: "Сколько специалистов могут написать по одной заявке"
     auto_close_days:
       label: "Автозакрытие (дни)"
@@ -2766,7 +2766,7 @@ Example messages:
 | sender_role | text (example) |
 |-------------|----------------|
 | specialist | Здравствуйте! Я специалист по камеральным проверкам с опытом 8 лет. Могу помочь с вашей ситуацией. Расскажите подробнее, какие документы запросила инспекция? |
-| client | Добрый день! Спасибо за отклик. Инспекция запросила книгу продаж и счета-фактуры за 3 квартал 2025 года. |
+| client | Добрый день! Спасибо за сообщение. Инспекция запросила книгу продаж и счета-фактуры за 3 квартал 2025 года. |
 | specialist | Понял. Это стандартный запрос при камеральной проверке НДС. Вам нужно подготовить ответ в течение 10 рабочих дней. Давайте я помогу составить пояснение. |
 | client | Да, было бы отлично. Сколько времени это займёт? |
 | specialist | Обычно на подготовку ответа уходит 2-3 дня. Пришлите мне сканы запроса и имеющихся документов, я посмотрю. |
