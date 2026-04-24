@@ -81,6 +81,18 @@ router.get("/", async (req: Request, res: Response) => {
     const q = ((req.query.q as string) || "").trim().slice(0, 100);
     const cityId = (req.query.city_id as string) || undefined;
     const fnsId = (req.query.fns_id as string) || undefined;
+    const cityIdsParam = (req.query.city_ids as string) || "";
+    const fnsIdsParam = (req.query.fns_ids as string) || "";
+    const cityIdsList = cityIdsParam
+      ? cityIdsParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : cityId
+      ? [cityId]
+      : [];
+    const fnsIdsList = fnsIdsParam
+      ? fnsIdsParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : fnsId
+      ? [fnsId]
+      : [];
     const servicesParam = (req.query.services as string) || undefined;
     const serviceIds = servicesParam
       ? servicesParam.split(",").filter(Boolean)
@@ -94,19 +106,23 @@ router.get("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Validate city_id and fns_id are UUID format to prevent DB crashes
+    // Validate every city/fns id is UUID to prevent DB crashes
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (cityId && !uuidRegex.test(cityId)) {
-      res.status(400).json({
-        error: "Invalid city_id format: must be a valid UUID",
-      });
-      return;
+    for (const id of cityIdsList) {
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({
+          error: "Invalid city_id format: must be a valid UUID",
+        });
+        return;
+      }
     }
-    if (fnsId && !uuidRegex.test(fnsId)) {
-      res.status(400).json({
-        error: "Invalid fns_id format: must be a valid UUID",
-      });
-      return;
+    for (const id of fnsIdsList) {
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({
+          error: "Invalid fns_id format: must be a valid UUID",
+        });
+        return;
+      }
     }
 
     const where: Prisma.UserWhereInput = {
@@ -123,11 +139,15 @@ router.get("/", async (req: Request, res: Response) => {
       ];
     }
 
-    if (cityId || fnsId) {
+    if (cityIdsList.length > 0 || fnsIdsList.length > 0) {
       where.specialistFns = {
         some: {
-          ...(cityId ? { fns: { cityId } } : {}),
-          ...(fnsId ? { fnsId } : {}),
+          ...(cityIdsList.length > 0
+            ? { fns: { cityId: { in: cityIdsList } } }
+            : {}),
+          ...(fnsIdsList.length > 0
+            ? { fnsId: { in: fnsIdsList } }
+            : {}),
         },
       };
     }

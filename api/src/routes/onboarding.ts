@@ -63,12 +63,47 @@ router.put("/name", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // PUT /api/onboarding/work-area
+// Accepts two payload shapes for forward/back compat:
+//   A) { fnsServices: [{ fnsId, serviceIds: [...] }, ...] }  (legacy/client)
+//   B) { cities: [...], fns: [...], specialist_services: [{ fns_id, service_id }, ...] }
+//      — new shape used by the CityFnsCascade-based onboarding UI.
 router.put("/work-area", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { fnsServices } = req.body;
+    const { fnsServices, specialist_services: specialistServicesRaw } = req.body as {
+      fnsServices?: { fnsId?: string; serviceIds?: string[] }[];
+      cities?: string[];
+      fns?: string[];
+      specialist_services?: { fns_id?: string; service_id?: string }[];
+    };
 
-    if (!Array.isArray(fnsServices) || fnsServices.length === 0) {
-      res.status(400).json({ error: "At least one FNS office with services is required" });
+    // Normalise to the internal shape: Array<{ fnsId, serviceIds }>
+    let normalized: { fnsId: string; serviceIds: string[] }[] = [];
+
+    if (Array.isArray(fnsServices) && fnsServices.length > 0) {
+      normalized = fnsServices
+        .filter((x) => x && typeof x.fnsId === "string")
+        .map((x) => ({
+          fnsId: x.fnsId as string,
+          serviceIds: Array.isArray(x.serviceIds) ? x.serviceIds : [],
+        }));
+    } else if (Array.isArray(specialistServicesRaw) && specialistServicesRaw.length > 0) {
+      const grouped = new Map<string, string[]>();
+      for (const item of specialistServicesRaw) {
+        if (!item?.fns_id || !item?.service_id) continue;
+        const arr = grouped.get(item.fns_id) || [];
+        if (!arr.includes(item.service_id)) arr.push(item.service_id);
+        grouped.set(item.fns_id, arr);
+      }
+      normalized = [...grouped.entries()].map(([fnsId, serviceIds]) => ({
+        fnsId,
+        serviceIds,
+      }));
+    }
+
+    if (normalized.length === 0) {
+      res.status(400).json({
+        error: "At least one FNS office with services is required",
+      });
       return;
     }
 
@@ -85,10 +120,11 @@ router.put("/work-area", authMiddleware, async (req: Request, res: Response) => 
       return;
     }
 
-    // Validate all fnsIds and serviceIds exist
-    for (const item of fnsServices) {
-      if (!item.fnsId || !Array.isArray(item.serviceIds) || item.serviceIds.length === 0) {
-        res.status(400).json({ error: "Each FNS must have at least one service" });
+    for (const item of normalized) {
+      if (!item.fnsId || item.serviceIds.length === 0) {
+        res
+          .status(400)
+          .json({ error: "Each FNS must have at least one service" });
         return;
       }
     }
@@ -98,7 +134,7 @@ router.put("/work-area", authMiddleware, async (req: Request, res: Response) => 
       await tx.specialistService.deleteMany({ where: { specialistId: userId } });
       await tx.specialistFns.deleteMany({ where: { specialistId: userId } });
 
-      for (const item of fnsServices) {
+      for (const item of normalized) {
         const specialistFns = await tx.specialistFns.create({
           data: {
             specialistId: userId,

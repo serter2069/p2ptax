@@ -130,21 +130,44 @@ router.get("/ifns/search", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/fns?city_id=X — legacy endpoint, kept for compatibility
+// GET /api/fns?city_id=X or ?city_ids=X,Y — offices for one or many cities
 router.get("/fns", async (req: Request, res: Response) => {
   try {
-    const cityId = req.query.city_id as string;
+    const cityId = (req.query.city_id as string) || "";
+    const cityIdsParam = (req.query.city_ids as string) || "";
 
-    if (!cityId) {
-      res.status(400).json({ error: "city_id is required" });
+    const ids = cityIdsParam
+      ? cityIdsParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : cityId
+      ? [cityId]
+      : [];
+
+    if (ids.length === 0) {
+      res.status(400).json({ error: "city_id or city_ids is required" });
       return;
     }
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    for (const id of ids) {
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({ error: "Invalid city id format: must be a valid UUID" });
+        return;
+      }
+    }
+
     const offices = await prisma.fnsOffice.findMany({
-      where: { cityId },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, code: true, cityId: true, address: true },
+      where: { cityId: { in: ids } },
+      orderBy: [{ city: { name: "asc" } }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        cityId: true,
+        address: true,
+        city: { select: { id: true, name: true } },
+      },
     });
+
     res.json({ offices });
   } catch (error) {
     console.error("fns error:", error);

@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
+import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import HeaderBack from "@/components/HeaderBack";
 import { AlertCircle, UserX, Search } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
@@ -67,23 +68,20 @@ export default function SpecialistsCatalog() {
 
   const [search, setSearch] = useState("");
   const [total, setTotal] = useState(0);
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
+  const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+  const [selectedFnsIds, setSelectedFnsIds] = useState<string[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hasFilters =
-    selectedCityId !== null ||
-    selectedFnsId !== null ||
+    selectedCityIds.length > 0 ||
+    selectedFnsIds.length > 0 ||
     selectedServiceIds.length > 0;
 
-  const selectedCity = cities.find((c) => c.id === selectedCityId);
-  const fnsOffices = selectedCity?.fnsOffices || [];
-
   const resetFilters = useCallback(() => {
-    setSelectedCityId(null);
-    setSelectedFnsId(null);
+    setSelectedCityIds([]);
+    setSelectedFnsIds([]);
     setSelectedServiceIds([]);
   }, []);
 
@@ -92,8 +90,10 @@ export default function SpecialistsCatalog() {
       try {
         const searchQ = q ?? search;
         let path = `/api/specialists?page=${pageNum}&limit=20`;
-        if (selectedCityId) path += `&city_id=${selectedCityId}`;
-        if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
+        if (selectedCityIds.length > 0)
+          path += `&city_ids=${selectedCityIds.join(",")}`;
+        if (selectedFnsIds.length > 0)
+          path += `&fns_ids=${selectedFnsIds.join(",")}`;
         if (selectedServiceIds.length > 0)
           path += `&services=${selectedServiceIds.join(",")}`;
         if (searchQ.trim()) path += `&q=${encodeURIComponent(searchQ.trim())}`;
@@ -114,7 +114,7 @@ export default function SpecialistsCatalog() {
         setError("Не удалось загрузить список");
       }
     },
-    [selectedCityId, selectedFnsId, selectedServiceIds, search]
+    [selectedCityIds, selectedFnsIds, selectedServiceIds, search]
   );
 
   useEffect(() => {
@@ -141,7 +141,7 @@ export default function SpecialistsCatalog() {
   useEffect(() => {
     setLoading(true);
     fetchSpecialists(1).finally(() => setLoading(false));
-  }, [selectedCityId, selectedFnsId, selectedServiceIds, fetchSpecialists]);
+  }, [selectedCityIds, selectedFnsIds, selectedServiceIds, fetchSpecialists]);
 
   // Debounced search
   useEffect(() => {
@@ -156,10 +156,13 @@ export default function SpecialistsCatalog() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  const handleCityChange = useCallback((id: string | null) => {
-    setSelectedCityId(id);
-    setSelectedFnsId(null);
-  }, []);
+  const handleCascadeChange = useCallback(
+    (v: { cities: string[]; fns: string[] }) => {
+      setSelectedCityIds(v.cities);
+      setSelectedFnsIds(v.fns);
+    },
+    []
+  );
 
   const handleServiceToggle = useCallback((id: string) => {
     setSelectedServiceIds((prev) =>
@@ -255,18 +258,23 @@ export default function SpecialistsCatalog() {
         )}
       </View>
 
-      {/* FilterBar */}
-      <FilterBar
-        cities={cities}
-        selectedCityId={selectedCityId}
-        onCityChange={handleCityChange}
-        services={services}
-        selectedServiceIds={selectedServiceIds}
-        onServiceToggle={handleServiceToggle}
-        fnsOffices={fnsOffices.map((f) => ({ id: f.id, name: f.name }))}
-        selectedFnsId={selectedFnsId}
-        onFnsChange={setSelectedFnsId}
-      />
+      {/* City → FNS cascade + services chips */}
+      <View className="bg-white border-b border-border py-2">
+        <CityFnsCascade
+          mode="multi"
+          value={{ cities: selectedCityIds, fns: selectedFnsIds }}
+          onChange={handleCascadeChange}
+          citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
+        />
+        <FilterBar
+          cities={[]}
+          selectedCityId={null}
+          onCityChange={() => {}}
+          services={services}
+          selectedServiceIds={selectedServiceIds}
+          onServiceToggle={handleServiceToggle}
+        />
+      </View>
 
       {/* Specialist list */}
       {specialists.length === 0 && !loading ? (
