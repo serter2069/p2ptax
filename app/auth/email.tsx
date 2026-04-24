@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
+import { colors, textStyle } from "@/lib/theme";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
@@ -70,10 +71,24 @@ export default function AuthEmailScreen() {
             <Text className="text-xl font-extrabold text-accent">P2P</Text>
           </View>
 
-          <Text className="text-2xl font-extrabold text-text-base text-center mb-2">
+          <Text
+            style={{
+              ...textStyle.h2,
+              color: colors.text,
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
             Вход
           </Text>
-          <Text className="text-base text-text-mute text-center mb-8" style={{ lineHeight: 24 }}>
+          <Text
+            style={{
+              ...textStyle.body,
+              color: colors.textSecondary,
+              textAlign: "center",
+              marginBottom: 32,
+            }}
+          >
             Введите email для продолжения
           </Text>
 

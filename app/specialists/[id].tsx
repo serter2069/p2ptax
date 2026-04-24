@@ -22,7 +22,7 @@ import ContactsSection from "@/components/specialist/ContactsSection";
 import type { SpecialistDetail, ContactMethodItem, SimilarSpecialist } from "@/components/specialist/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, textStyle } from "@/lib/theme";
 import EmptyState from "@/components/ui/EmptyState";
 
 function getInitials(firstName: string | null, lastName: string | null): string {
@@ -98,10 +98,10 @@ export default function SpecialistPublicProfile() {
         <HeaderBack title="Профиль специалиста" />
         <View className="flex-1 items-center justify-center px-6">
           <AlertCircle size={48} color={colors.placeholder} />
-          <Text className="text-xl font-semibold mt-4 text-center" style={{ color: colors.text }}>
+          <Text style={{ ...textStyle.h3, color: colors.text, marginTop: 16, textAlign: "center" }}>
             Специалист не найден
           </Text>
-          <Text className="text-sm mt-2 text-center leading-5" style={{ color: colors.textSecondary }}>
+          <Text style={{ ...textStyle.small, color: colors.textSecondary, marginTop: 8, textAlign: "center" }}>
             Возможно, профиль был удалён или вы перешли по неверной ссылке
           </Text>
           <View className="mt-6">

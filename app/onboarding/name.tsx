@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { colors, overlay } from "@/lib/theme";
+import { colors, overlay, textStyle } from "@/lib/theme";
 
 export default function OnboardingNameScreen() {
   const router = useRouter();
@@ -96,10 +96,10 @@ export default function OnboardingNameScreen() {
               </Text>
             </View>
 
-            <Text className="text-2xl font-bold text-text-base text-center mb-2">
+            <Text style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}>
               Ваше имя
             </Text>
-            <Text className="text-base text-text-mute text-center leading-6 mb-8">
+            <Text style={{ ...textStyle.body, color: colors.textSecondary, textAlign: "center", marginBottom: 32 }}>
               Это имя увидят клиенты в вашем профиле
             </Text>
 

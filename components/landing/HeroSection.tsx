@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { MOCK_SPECIALISTS } from "./mockData";
-import { colors, fontSizeValue } from "@/lib/theme";
+import { colors, fontSizeValue, textStyle } from "@/lib/theme";
 
 interface PlatformStats {
   specialistsCount: number;
@@ -43,18 +43,24 @@ export default function HeroSection({ isDesktop, onCreateRequest, onViewCatalog,
             </View>
 
             <Text
-              className="font-extrabold"
               style={{
                 color: colors.text,
-                fontSize: isDesktop ? 48 : 36,
-                lineHeight: isDesktop ? 56 : 42,
+                // Desktop: oversized hero; mobile: h1 scale token.
+                fontSize: isDesktop ? 48 : textStyle.h1.fontSize,
+                lineHeight: isDesktop ? 56 : textStyle.h1.lineHeight,
+                fontWeight: "800",
+                letterSpacing: textStyle.h1.letterSpacing,
               }}
             >
               {"Специалисты по вашей ФНС.\nНе юристы из интернета."}
             </Text>
             <Text
-              className="text-lg mt-6"
-              style={{ color: colors.textSecondary, lineHeight: 28 }}
+              className="mt-6"
+              style={{
+                ...textStyle.h4,
+                fontWeight: "400",
+                color: colors.textSecondary,
+              }}
             >
               Практики с опытом в камеральных, выездных и ОКК. Выберите сами
               или получите предложения.

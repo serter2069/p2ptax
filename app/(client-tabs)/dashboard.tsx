@@ -18,7 +18,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors, overlay, shadowColor } from "@/lib/theme";
+import { colors, overlay, shadowColor, textStyle } from "@/lib/theme";
 
 interface DashboardStats {
   requestsUsed: number;
@@ -97,10 +97,10 @@ export default function ClientDashboard() {
             className="rounded-2xl px-5 py-5 mb-4 mt-4"
             style={{ backgroundColor: colors.accent }}
           >
-            <Text className="text-lg font-bold text-white mb-0.5">
+            <Text style={{ ...textStyle.h3, color: "#ffffff", marginBottom: 2 }}>
               {user?.firstName ? `Здравствуйте, ${user.firstName}!` : "Здравствуйте!"}
             </Text>
-            <Text className="text-sm" style={{ color: overlay.white75 }}>
+            <Text style={{ ...textStyle.small, color: overlay.white75 }}>
               Ваш личный кабинет налогоплательщика
             </Text>
 
@@ -208,7 +208,7 @@ export default function ClientDashboard() {
 
               {/* My requests section */}
               <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-lg font-semibold text-text-base">
+                <Text style={{ ...textStyle.h4, color: colors.text }}>
                   Мои заявки
                 </Text>
                 {requests.length > 0 && (

@@ -91,6 +91,44 @@ export const typography = {
   small: 'text-xs text-text-dim',
 } as const
 
+/**
+ * Numeric typography scale — single source of truth for font-size /
+ * line-height / weight / letter-spacing.
+ *
+ * Pro Flash critique 20260423 flagged "typography scale 2/10". This
+ * formalises h1..caption so headings stop drifting between screens.
+ *
+ * Usage (inline):
+ *   import { textStyle } from "@/lib/theme"
+ *   <Text style={textStyle.h1}>Заголовок</Text>
+ *
+ * Usage (shared Text component):
+ *   import { Text } from "@/components/ui"
+ *   <Text variant="h1">Заголовок</Text>
+ */
+export const textStyle = {
+  h1: {
+    fontSize: 36,
+    lineHeight: 44,
+    fontWeight: '700' as const,
+    letterSpacing: -0.5,
+  },
+  h2: {
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: '700' as const,
+    letterSpacing: -0.25,
+  },
+  h3: { fontSize: 22, lineHeight: 30, fontWeight: '600' as const },
+  h4: { fontSize: 18, lineHeight: 26, fontWeight: '600' as const },
+  body: { fontSize: 16, lineHeight: 24, fontWeight: '400' as const },
+  bodyBold: { fontSize: 16, lineHeight: 24, fontWeight: '600' as const },
+  small: { fontSize: 14, lineHeight: 20, fontWeight: '400' as const },
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const },
+} as const
+
+export type TextVariant = keyof typeof textStyle
+
 export const radius = {
   sm: 'rounded',
   md: 'rounded-lg',

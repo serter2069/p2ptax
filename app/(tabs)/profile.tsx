@@ -5,7 +5,7 @@ import {
   FileText, Heart, Settings, HelpCircle, Info, type LucideIcon
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors } from "@/lib/theme";
+import { colors, textStyle } from "@/lib/theme";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -47,9 +47,9 @@ export default function ProfileScreen() {
             <View className="w-20 h-20 rounded-full bg-accent-soft items-center justify-center mb-3">
               <User size={32} color={colors.accent} />
             </View>
-            <Text className="text-xl font-bold text-text-base mt-1">{displayName}</Text>
+            <Text style={{ ...textStyle.h3, color: colors.text, marginTop: 4 }}>{displayName}</Text>
             {displayEmail ? (
-              <Text className="text-sm text-text-mute mt-1">{displayEmail}</Text>
+              <Text style={{ ...textStyle.small, color: colors.textSecondary, marginTop: 4 }}>{displayEmail}</Text>
             ) : null}
 
             {/* Rating */}
