@@ -39,17 +39,23 @@ router.put("/name", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
+    // Iter11 — /onboarding/name is part of the specialist signup flow.
+    // After unification everyone is role=USER; specialist identity is opt-in
+    // via isSpecialist=true. Profile completion timestamp is set only once
+    // the specialist has filled out their full profile (see /profile route).
     const user = await prisma.user.update({
       where: { id: req.user!.userId },
       data: {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        role: "SPECIALIST",
+        role: "USER",
+        isSpecialist: true,
       },
       select: {
         id: true,
         email: true,
         role: true,
+        isSpecialist: true,
         firstName: true,
         lastName: true,
       },
@@ -109,13 +115,13 @@ router.put("/work-area", authMiddleware, async (req: Request, res: Response) => 
 
     const userId = req.user!.userId;
 
-    // Verify user is specialist
+    // Verify user has specialist features enabled (Iter11 — flag-based).
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { isSpecialist: true },
     });
 
-    if (!user || user.role !== "SPECIALIST") {
+    if (!user || !user.isSpecialist) {
       res.status(403).json({ error: "Only specialists can set work area" });
       return;
     }
@@ -169,13 +175,13 @@ router.put("/profile", authMiddleware, async (req: Request, res: Response) => {
     const { description, phone, telegram, whatsapp, officeAddress, workingHours, avatarUrl } =
       req.body;
 
-    // Verify user is specialist
+    // Verify user has specialist features enabled (Iter11 — flag-based).
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { isSpecialist: true },
     });
 
-    if (!user || user.role !== "SPECIALIST") {
+    if (!user || !user.isSpecialist) {
       res.status(403).json({ error: "Only specialists can set profile" });
       return;
     }
@@ -202,18 +208,21 @@ router.put("/profile", authMiddleware, async (req: Request, res: Response) => {
       },
     });
 
-    // Update avatar on user if provided
+    // Iter11: mark profile complete once the specialist finishes onboarding —
+    // specialistProfileCompletedAt is the gate for canWriteThreads() + appearing
+    // in the catalog. We set it on the first /profile call and never revert it.
+    const nowCompletion = new Date();
+    const userPatch: Record<string, unknown> = {
+      isAvailable: true,
+      specialistProfileCompletedAt: nowCompletion,
+    };
     if (avatarUrl !== undefined) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { avatarUrl: avatarUrl || null, isAvailable: true },
-      });
-    } else {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { isAvailable: true },
-      });
+      userPatch.avatarUrl = avatarUrl || null;
     }
+    await prisma.user.update({
+      where: { id: userId },
+      data: userPatch,
+    });
 
     res.json({ success: true });
   } catch (error) {

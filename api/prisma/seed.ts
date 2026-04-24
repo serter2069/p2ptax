@@ -823,20 +823,29 @@ async function main() {
     },
   });
 
-  // Realistic demo users: 8 CLIENT + 3 SPECIALIST + 1 ADMIN = 12.
+  // Iter11: realistic demo users. After role unification everyone non-admin is
+  // role=USER; specialist identity is opt-in via `isSpecialist=true`.
+  //   - 9 USER non-specialist (former CLIENT)
+  //   - 3 USER specialist (former SPECIALIST, with completed profile)
+  //   - 1 ADMIN (replaces previous 8C/3S/1A split = 12 total).
   // Deterministic via faker.seed(42) so re-runs produce same 12 users.
   faker.seed(42);
 
-  const demoUsers = Array.from({ length: 12 }, (_, i) => {
+  const now = new Date();
+  const demoUsers = Array.from({ length: 13 }, (_, i) => {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    const role: Role = i < 8 ? "CLIENT" : i < 11 ? "SPECIALIST" : "ADMIN";
+    const isAdmin = i === 12;
+    const isSpecialistSeed = i >= 9 && i < 12;
+    const role: Role = isAdmin ? "ADMIN" : "USER";
     const email = faker.internet.email({ firstName, lastName }).toLowerCase();
     return {
       email,
       firstName,
       lastName,
       role,
+      isSpecialist: isSpecialistSeed,
+      specialistProfileCompletedAt: isSpecialistSeed ? now : null,
       avatarUrl: `https://i.pravatar.cc/200?u=${faker.string.uuid()}`,
       createdAt: faker.date.recent({ days: 90 }),
     };
@@ -845,7 +854,13 @@ async function main() {
   for (const u of demoUsers) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: {},
+      update: {
+        firstName: u.firstName,
+        lastName: u.lastName,
+        role: u.role,
+        isSpecialist: u.isSpecialist,
+        specialistProfileCompletedAt: u.specialistProfileCompletedAt,
+      },
       create: u,
     });
   }

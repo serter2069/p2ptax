@@ -193,7 +193,8 @@ router.get("/services", async (_req: Request, res: Response) => {
 router.get("/stats", async (_req: Request, res: Response) => {
   try {
     const [specialistsCount, citiesCount, consultationsCount] = await Promise.all([
-      prisma.user.count({ where: { role: "SPECIALIST", isBanned: false } }),
+      // Iter11: specialists counted by flag, not retired role value.
+      prisma.user.count({ where: { isSpecialist: true, isBanned: false } }),
       prisma.city.count(),
       prisma.thread.count(),
     ]);

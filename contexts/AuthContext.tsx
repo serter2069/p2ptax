@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useMemo,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -12,12 +13,31 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 const TOKEN_KEY = "p2ptax_access_token";
 const REFRESH_KEY = "p2ptax_refresh_token";
 
-export type UserRole = "CLIENT" | "SPECIALIST" | "ADMIN" | null;
+/**
+ * Iter11 — role unification. The DB enum is now GUEST | USER | ADMIN (CLIENT
+ * and SPECIALIST were collapsed into USER + `isSpecialist` flag). For
+ * backwards-compatibility during the 3-PR rollout we keep the legacy
+ * "CLIENT" / "SPECIALIST" strings in this union: PR 1 ships the data layer
+ * only, PR 2 rewrites the UI, PR 3 deletes the legacy directories. Callers
+ * should prefer `isSpecialistUser` / `isClientUser` getters over `.role ===`
+ * comparisons so the UI keeps working across both states.
+ */
+export type UserRole =
+  | "GUEST"
+  | "USER"
+  | "CLIENT"
+  | "SPECIALIST"
+  | "ADMIN"
+  | null;
 
 export interface UserData {
   id: string;
   email: string;
   role: UserRole;
+  /** Iter11 — specialist opt-in flag. Source of truth for specialist features. */
+  isSpecialist?: boolean;
+  /** Iter11 — set when specialist onboarding finishes. Null until completed. */
+  specialistProfileCompletedAt?: string | null;
   firstName: string | null;
   lastName: string | null;
   avatarUrl?: string | null;
@@ -29,6 +49,22 @@ interface AuthContextType {
   user: UserData | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** True when user has specialist features enabled. Prefer over `user.role === "SPECIALIST"`. */
+  isSpecialistUser: boolean;
+  /**
+   * True for any non-admin authenticated user. Replaces `user.role === "CLIENT"`
+   * after Iter11 (every USER, specialist or not, is a "client" as far as creating
+   * their own tax-help requests goes).
+   */
+  isClientUser: boolean;
+  /** True for ADMIN role holders. */
+  isAdminUser: boolean;
+  /** Can the user write new threads on public requests? (Requires completed specialist profile.) */
+  canWriteThreads: boolean;
+  /** Can the user create their own tax-help requests? (All USERs — even specialists — in Iter11.) */
+  canCreateRequests: boolean;
+  /** Can the user see the public feed of leads? (Specialists only.) */
+  canSeePublicFeed: boolean;
   signIn: (accessToken: string, refreshToken: string, user: UserData) => Promise<void>;
   signOut: () => Promise<void>;
   refreshAuth: () => Promise<boolean>;
@@ -40,6 +76,12 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  isSpecialistUser: false,
+  isClientUser: false,
+  isAdminUser: false,
+  canWriteThreads: false,
+  canCreateRequests: false,
+  canSeePublicFeed: false,
   signIn: async () => {},
   signOut: async () => {},
   refreshAuth: async () => false,
@@ -54,6 +96,17 @@ async function storeTokens(accessToken: string, refreshToken: string) {
 async function clearTokens() {
   await AsyncStorage.removeItem(TOKEN_KEY);
   await AsyncStorage.removeItem(REFRESH_KEY);
+}
+
+/**
+ * Iter11 — derive the specialist flag. Prefer the explicit `isSpecialist`
+ * field from the API; fall back to the legacy `role === "SPECIALIST"` so UI
+ * shipped before the API update keeps working for the PR 1 window.
+ */
+function deriveIsSpecialist(user: UserData | null): boolean {
+  if (!user) return false;
+  if (typeof user.isSpecialist === "boolean") return user.isSpecialist;
+  return user.role === "SPECIALIST";
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -166,6 +219,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser((prev) => (prev ? { ...prev, ...data } : null));
   }, []);
 
+  const derived = useMemo(() => {
+    const isSpec = deriveIsSpecialist(user);
+    const isAdmin = user?.role === "ADMIN";
+    // Any authenticated non-admin user can create requests (Iter11 widens the
+    // previous CLIENT-only rule — specialists can now file their own too).
+    const isClient = !!user && !isAdmin;
+    const profileCompleted = !!user?.specialistProfileCompletedAt;
+    return {
+      isSpecialistUser: isSpec,
+      isClientUser: isClient,
+      isAdminUser: isAdmin,
+      canWriteThreads: isSpec && profileCompleted,
+      canCreateRequests: isClient,
+      canSeePublicFeed: isSpec,
+    };
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -173,6 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthenticated: !!token,
         isLoading,
+        ...derived,
         signIn,
         signOut,
         refreshAuth,

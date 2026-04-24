@@ -1,11 +1,13 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import { authMiddleware, roleGuard } from "../middleware/auth";
+import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
 
 const router = Router();
 
-// All routes require auth + SPECIALIST role
-router.use(authMiddleware, roleGuard("SPECIALIST"));
+// Iter11: specialist-only routes now gated by `isSpecialist` flag instead of
+// the retired SPECIALIST role value. requireSpecialistFeatures wraps the same
+// isBanned + existence checks roleGuard used to perform.
+router.use(authMiddleware, requireSpecialistFeatures);
 
 // GET /api/specialist/stats
 router.get("/stats", async (req: Request, res: Response) => {

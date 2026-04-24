@@ -1,8 +1,20 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
+import { verifyAccessToken } from "../lib/jwt";
 
 const router = Router();
+
+/** Optional auth — returns the caller's userId if a valid Bearer token is present. */
+function resolveCallerId(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  try {
+    return verifyAccessToken(authHeader.slice(7)).userId;
+  } catch {
+    return null;
+  }
+}
 
 const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
   id: true,
@@ -51,7 +63,11 @@ router.get("/featured", async (_req: Request, res: Response) => {
   try {
     const specialists = await prisma.user.findMany({
       where: {
-        role: "SPECIALIST",
+        // Iter11: specialist catalog is driven by the flag, not the legacy
+        // role enum. Require completed profile so we never surface half-seeded
+        // users who are still onboarding.
+        isSpecialist: true,
+        specialistProfileCompletedAt: { not: null },
         isAvailable: true,
         isBanned: false,
       },
@@ -125,10 +141,17 @@ router.get("/", async (req: Request, res: Response) => {
       }
     }
 
+    // Iter11: catalog is gated by isSpecialist flag + completed onboarding,
+    // not by the retired SPECIALIST role value. Also exclude the caller from
+    // their own catalog view — showing yourself as a specialist you could
+    // contact is a bug, not a feature.
+    const callerId = resolveCallerId(req);
     const where: Prisma.UserWhereInput = {
-      role: "SPECIALIST",
+      isSpecialist: true,
+      specialistProfileCompletedAt: { not: null },
       isAvailable: true,
       isBanned: false,
+      ...(callerId ? { id: { not: callerId } } : {}),
     };
 
     // Name search — uses Prisma `contains` (parameterized ILIKE under the hood)
@@ -189,7 +212,8 @@ router.get("/:id", async (req: Request, res: Response) => {
     const specialist = await prisma.user.findFirst({
       where: {
         id,
-        role: "SPECIALIST",
+        // Iter11: specialist detail checks the flag, not the legacy role.
+        isSpecialist: true,
         isBanned: false,
       },
       include: {

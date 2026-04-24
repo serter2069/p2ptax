@@ -133,6 +133,7 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         role: user.role,
+        isSpecialist: user.isSpecialist,
         firstName: user.firstName,
         lastName: user.lastName,
       },
@@ -190,6 +191,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
         id: storedToken.user.id,
         email: storedToken.user.email,
         role: storedToken.user.role,
+        isSpecialist: storedToken.user.isSpecialist,
         firstName: storedToken.user.firstName,
         lastName: storedToken.user.lastName,
       },
@@ -227,6 +229,8 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
         id: true,
         email: true,
         role: true,
+        isSpecialist: true,
+        specialistProfileCompletedAt: true,
         firstName: true,
         lastName: true,
         avatarUrl: true,
@@ -248,13 +252,22 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/set-role — set role for new users (auth required, one-time only)
+//
+// Iter11 — role unification. After merge of CLIENT + SPECIALIST -> USER, this
+// endpoint continues to accept legacy role strings from existing UI clients
+// for backwards compatibility during the 3-PR rollout:
+//   - "CLIENT"      -> role=USER, isSpecialist=false
+//   - "SPECIALIST"  -> role=USER, isSpecialist=true  (profile still needs completion)
+//   - "USER"        -> role=USER, isSpecialist=false (new clients)
+// UI merge in PR 2 will replace this with a cleaner `/set-user-type` that only
+// accepts `{ isSpecialist: boolean }`.
 router.post("/set-role", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const { role } = req.body;
 
-    if (role !== "CLIENT" && role !== "SPECIALIST") {
-      res.status(400).json({ error: "Role must be CLIENT or SPECIALIST" });
+    if (role !== "CLIENT" && role !== "SPECIALIST" && role !== "USER") {
+      res.status(400).json({ error: "Role must be USER, CLIENT, or SPECIALIST" });
       return;
     }
 
@@ -274,13 +287,19 @@ router.post("/set-role", authMiddleware, async (req: Request, res: Response) => 
       return;
     }
 
+    const wantsSpecialist = role === "SPECIALIST";
+
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { role },
+      data: {
+        role: "USER",
+        isSpecialist: wantsSpecialist,
+      },
       select: {
         id: true,
         email: true,
         role: true,
+        isSpecialist: true,
         firstName: true,
         lastName: true,
       },

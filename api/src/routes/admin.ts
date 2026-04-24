@@ -129,7 +129,19 @@ router.get("/users", async (req: Request, res: Response) => {
       ];
     }
 
-    if (role === "CLIENT" || role === "SPECIALIST" || role === "ADMIN") {
+    // Iter11: role filter accepts the new enum (USER/ADMIN) plus legacy labels
+    // that UI may still send during the 3-PR migration window.
+    //   CLIENT     -> USER role AND isSpecialist=false
+    //   SPECIALIST -> isSpecialist=true  (role is always USER for specialists)
+    //   USER       -> role=USER (any client-side filter)
+    //   ADMIN      -> role=ADMIN
+    //   BANNED     -> pseudo-filter, maps to isBanned=true
+    if (role === "CLIENT") {
+      where.role = "USER";
+      where.isSpecialist = false;
+    } else if (role === "SPECIALIST") {
+      where.isSpecialist = true;
+    } else if (role === "USER" || role === "ADMIN") {
       where.role = role;
     } else if (role === "BANNED") {
       where.isBanned = true;
@@ -144,6 +156,8 @@ router.get("/users", async (req: Request, res: Response) => {
           firstName: true,
           lastName: true,
           role: true,
+          isSpecialist: true,
+          specialistProfileCompletedAt: true,
           isBanned: true,
           createdAt: true,
           avatarUrl: true,
@@ -200,7 +214,15 @@ router.patch("/users/:id", async (req: Request, res: Response) => {
     if (typeof isBanned === "boolean") data.isBanned = isBanned;
     if (typeof firstName === "string") data.firstName = firstName;
     if (typeof lastName === "string") data.lastName = lastName;
-    if (role === "CLIENT" || role === "SPECIALIST" || role === "ADMIN") {
+    // Iter11: admin PATCH accepts new (USER/ADMIN) and legacy (CLIENT/SPECIALIST)
+    // role strings for backwards compat. Legacy values remap onto the new schema.
+    if (role === "CLIENT") {
+      data.role = "USER";
+      data.isSpecialist = false;
+    } else if (role === "SPECIALIST") {
+      data.role = "USER";
+      data.isSpecialist = true;
+    } else if (role === "USER" || role === "ADMIN") {
       data.role = role;
     }
 
@@ -213,6 +235,7 @@ router.patch("/users/:id", async (req: Request, res: Response) => {
         firstName: true,
         lastName: true,
         role: true,
+        isSpecialist: true,
         isBanned: true,
         createdAt: true,
         avatarUrl: true,
@@ -644,7 +667,8 @@ router.get("/specialists", async (req: Request, res: Response) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
     const skip = (page - 1) * limit;
 
-    const where: Prisma.UserWhereInput = { role: "SPECIALIST" };
+    // Iter11: admin specialist list = users with the opt-in flag set.
+    const where: Prisma.UserWhereInput = { isSpecialist: true };
     if (q) {
       where.OR = [
         { email: { contains: q, mode: "insensitive" } },

@@ -7,9 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Iter11 — role unification. CLIENT + SPECIALIST merged into USER.
+// - `role = USER` is the default for any authenticated human user.
+// - Specialist features opt-in via `User.isSpecialist` + `specialistProfileCompletedAt`.
+// - GUEST retained for unauthenticated visitors, ADMIN for platform moderators.
+// Legacy CLIENT/SPECIALIST values are migrated to USER in data migration.
 enum Role {
-  CLIENT
-  SPECIALIST
+  GUEST
+  USER
   ADMIN
 }
 
@@ -23,6 +28,11 @@ model User {
   id          String   @id @default(uuid())
   email       String   @unique
   role        Role?
+  // Iter11 — specialist opt-in flag (replaces role = SPECIALIST).
+  isSpecialist                 Boolean   @default(false) @map("is_specialist")
+  // Timestamp when specialist onboarding fully completed (profile populated).
+  // Null = either not a specialist, or specialist onboarding in progress.
+  specialistProfileCompletedAt DateTime? @map("specialist_profile_completed_at")
   firstName   String?  @map("first_name")
   lastName    String?  @map("last_name")
   avatarUrl   String?  @map("avatar_url")

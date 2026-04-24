@@ -9,7 +9,8 @@
  * production instead of showing "0 заявок / 0 специалистов".
  *
  * Dev test account MUST stay first:
- *   serter2069@gmail.com / Сергей Тертышный (CLIENT)
+ *   serter2069@gmail.com / Сергей Тертышный — role=USER, isSpecialist=false
+ *   (post-Iter11 unification: no more CLIENT/SPECIALIST roles).
  */
 import { PrismaClient } from "@prisma/client";
 
@@ -598,23 +599,30 @@ async function main() {
   for (const s of allServices) serviceMap[s.name] = s.id;
 
   // ─── Dev test account (must be first user) ────────────────────────
+  // Iter11: no more CLIENT role. Dev account = USER, non-specialist.
   const sergeiClient = await prisma.user.upsert({
     where: { email: "serter2069@gmail.com" },
     update: {
       firstName: "Сергей",
       lastName: "Тертышный",
-      role: "CLIENT",
+      role: "USER",
+      isSpecialist: false,
+      specialistProfileCompletedAt: null,
     },
     create: {
       email: "serter2069@gmail.com",
       firstName: "Сергей",
       lastName: "Тертышный",
-      role: "CLIENT",
+      role: "USER",
+      isSpecialist: false,
     },
   });
-  console.log(`  [dev] ${sergeiClient.email} (CLIENT)`);
+  console.log(`  [dev] ${sergeiClient.email} (USER, non-specialist)`);
 
   // ─── Specialists ──────────────────────────────────────────────────
+  // Iter11: seeded specialists are USER+isSpecialist=true with completed
+  // profile timestamp, so they pass the catalog's gate immediately.
+  const nowSeed = new Date();
   const specialistUsers: Array<{ id: string; email: string }> = [];
   let specialistCount = 0;
   for (const spec of SPECIALISTS) {
@@ -623,14 +631,18 @@ async function main() {
       update: {
         firstName: spec.firstName,
         lastName: spec.lastName,
-        role: "SPECIALIST",
+        role: "USER",
+        isSpecialist: true,
+        specialistProfileCompletedAt: nowSeed,
         isAvailable: true,
       },
       create: {
         email: spec.email,
         firstName: spec.firstName,
         lastName: spec.lastName,
-        role: "SPECIALIST",
+        role: "USER",
+        isSpecialist: true,
+        specialistProfileCompletedAt: nowSeed,
         isAvailable: true,
       },
     });
@@ -768,18 +780,21 @@ async function main() {
   ];
   const clientUsers: Array<{ id: string; email: string }> = [{ id: sergeiClient.id, email: sergeiClient.email }];
   for (const c of EXTRA_CLIENTS) {
+    // Iter11: clients are USER non-specialists in the unified schema.
     const u = await prisma.user.upsert({
       where: { email: c.email },
       update: {
         firstName: c.firstName,
         lastName: c.lastName,
-        role: "CLIENT",
+        role: "USER",
+        isSpecialist: false,
       },
       create: {
         email: c.email,
         firstName: c.firstName,
         lastName: c.lastName,
-        role: "CLIENT",
+        role: "USER",
+        isSpecialist: false,
       },
     });
     clientUsers.push({ id: u.id, email: u.email });

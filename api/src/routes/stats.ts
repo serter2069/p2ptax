@@ -78,7 +78,8 @@ router.get("/landing-counts", async (_req: Request, res: Response) => {
   try {
     const [specialistsCount, citiesCount, consultationsCount, resolvedCases] =
       await Promise.all([
-        prisma.user.count({ where: { role: "SPECIALIST", isBanned: false } }),
+        // Iter11: specialists counted by flag, not retired role value.
+        prisma.user.count({ where: { isSpecialist: true, isBanned: false } }),
         prisma.city.count(),
         prisma.thread.count(),
         prisma.specialistCase.count({ where: { status: "resolved" } }),
@@ -290,17 +291,21 @@ router.get(
           where: { status: { in: ["ACTIVE", "CLOSING_SOON"] } },
         }),
         prisma.complaint.count({ where: { status: "NEW" } }),
+        // Iter11: specialist counts now driven by isSpecialist flag. Admin
+        // dashboard distinguishes "clients" (USER non-specialist) from
+        // "specialists" (USER isSpecialist) to keep the familiar two-number
+        // breakdown on screen.
         prisma.user.count({
-          where: { role: "SPECIALIST", isAvailable: true, isBanned: false },
+          where: { isSpecialist: true, isAvailable: true, isBanned: false },
         }),
-        prisma.user.count({ where: { role: "CLIENT" } }),
-        prisma.user.count({ where: { role: "SPECIALIST" } }),
+        prisma.user.count({ where: { role: "USER", isSpecialist: false } }),
+        prisma.user.count({ where: { isSpecialist: true } }),
         prisma.user.count({
           where: { createdAt: { gte: weekAgo } },
         }),
         prisma.user.count({
           where: {
-            role: "SPECIALIST",
+            isSpecialist: true,
             isAvailable: false,
             isBanned: false,
             specialistProfile: { is: { description: null } },
