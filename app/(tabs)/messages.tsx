@@ -4,13 +4,14 @@ import { MessageCircle } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import { AVATAR_COLORS, colors, overlay } from "@/lib/theme";
 
+// Tax-domain conversations (specialists ↔ clients on tax matters).
 const CONVERSATIONS = [
-  { id: "1", name: "Alex K.", avatar: "A", lastMessage: "Is the iPhone still available?", time: "2m ago", unread: true },
-  { id: "2", name: "Maria S.", avatar: "M", lastMessage: "Great, I can pick it up tomorrow", time: "1h ago", unread: true },
-  { id: "3", name: "David R.", avatar: "D", lastMessage: "Can you do $700?", time: "3h ago", unread: false },
-  { id: "4", name: "Sophie L.", avatar: "S", lastMessage: "Thanks for the quick response!", time: "Yesterday", unread: false },
-  { id: "5", name: "James P.", avatar: "J", lastMessage: "What's the lowest you'd go?", time: "Yesterday", unread: false },
-  { id: "6", name: "Elena T.", avatar: "E", lastMessage: "Sent you the location pin", time: "2 days ago", unread: false },
+  { id: "1", name: "Алексей К.", avatar: "А", lastMessage: "Подготовил ответ на требование ИФНС, отправил в чат", time: "2 мин назад", unread: true },
+  { id: "2", name: "Мария С.", avatar: "М", lastMessage: "Завтра заседание по камеральной проверке — всё готово", time: "1 ч назад", unread: true },
+  { id: "3", name: "Давид Р.", avatar: "Д", lastMessage: "Стоимость сопровождения выездной — 80 000 ₽", time: "3 ч назад", unread: false },
+  { id: "4", name: "Софья Л.", avatar: "С", lastMessage: "Счёт разблокирован, документы на почте", time: "Вчера", unread: false },
+  { id: "5", name: "Иван П.", avatar: "И", lastMessage: "Можем обсудить оспаривание решения ИФНС?", time: "Вчера", unread: false },
+  { id: "6", name: "Елена Т.", avatar: "Е", lastMessage: "Отчёт по зарубежным счетам готов к подаче", time: "2 дня назад", unread: false },
 ];
 
 function ConversationItem({
@@ -75,7 +76,7 @@ export default function MessagesScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
   const containerStyle = isDesktop
-    ? { maxWidth: 520, width: "100%" as const, alignSelf: "center" as const }
+    ? { maxWidth: 720, width: "100%" as const, alignSelf: "center" as const }
     : undefined;
 
   return (
@@ -102,7 +103,7 @@ export default function MessagesScreen() {
             <EmptyState
               icon={MessageCircle}
               title="Нет сообщений"
-              subtitle="Здесь появятся ваши переписки"
+              subtitle="Здесь появятся переписки со специалистами и клиентами"
             />
           }
         />

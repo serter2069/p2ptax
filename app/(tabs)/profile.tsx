@@ -2,25 +2,31 @@ import { View, Text, Pressable, ScrollView, useWindowDimensions } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   User, Star, ChevronRight, LogOut,
-  List, Heart, Settings, HelpCircle, Info, type LucideIcon
+  FileText, Heart, Settings, HelpCircle, Info, type LucideIcon
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import EmptyState from "@/components/ui/EmptyState";
 
+// Tax-domain menu items (NOT marketplace listings).
 const MENU_ITEMS: { id: string; Icon: LucideIcon; label: string; badge: string | null }[] = [
-  { id: "listings", Icon: List, label: "My Listings", badge: "12" },
-  { id: "favorites", Icon: Heart, label: "Favorites", badge: "5" },
-  { id: "settings", Icon: Settings, label: "Settings", badge: null },
-  { id: "help", Icon: HelpCircle, label: "Help & Support", badge: null },
-  { id: "about", Icon: Info, label: "About", badge: null },
+  { id: "requests", Icon: FileText, label: "Мои заявки", badge: null },
+  { id: "saved", Icon: Heart, label: "Сохранённые специалисты", badge: null },
+  { id: "settings", Icon: Settings, label: "Настройки", badge: null },
+  { id: "help", Icon: HelpCircle, label: "Помощь и поддержка", badge: null },
+  { id: "about", Icon: Info, label: "О платформе", badge: null },
 ];
 
 export default function ProfileScreen() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
+
+  const displayName = user?.firstName
+    ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
+    : user?.email ?? "Пользователь";
+  const displayEmail = user?.email ?? "";
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
@@ -41,8 +47,10 @@ export default function ProfileScreen() {
             <View className="w-20 h-20 rounded-full bg-accent-soft items-center justify-center mb-3">
               <User size={32} color={colors.accent} />
             </View>
-            <Text className="text-xl font-bold text-text-base mt-1">John Doe</Text>
-            <Text className="text-sm text-text-mute mt-1">john@example.com</Text>
+            <Text className="text-xl font-bold text-text-base mt-1">{displayName}</Text>
+            {displayEmail ? (
+              <Text className="text-sm text-text-mute mt-1">{displayEmail}</Text>
+            ) : null}
 
             {/* Rating */}
             <Text className="text-sm font-medium text-text-mute mt-3 mb-1.5">Ваш рейтинг</Text>
@@ -55,7 +63,7 @@ export default function ProfileScreen() {
                   fill={star <= 4 ? colors.warning : "none"}
                 />
               ))}
-              <Text className="text-sm text-text-mute ml-1.5">4.5 (23 reviews)</Text>
+              <Text className="text-sm text-text-mute ml-1.5">4.5 (23 отзыва)</Text>
             </View>
 
             {/* Stats */}
@@ -63,31 +71,31 @@ export default function ProfileScreen() {
               className={`flex-row mt-5 border border-border rounded-xl overflow-hidden${isDesktop ? " px-2 py-1 bg-white" : ""}`}
             >
               <View className="items-center px-6 py-2">
-                <Text className="text-lg font-bold text-text-base">12</Text>
-                <Text className="text-xs text-text-mute mt-0.5">Listings</Text>
+                <Text className="text-lg font-bold text-text-base">0</Text>
+                <Text className="text-xs text-text-mute mt-0.5">Заявок</Text>
               </View>
               <View className="w-px bg-border" />
               <View className="items-center px-6 py-2">
-                <Text className="text-lg font-bold text-text-base">47</Text>
-                <Text className="text-xs text-text-mute mt-0.5">Sold</Text>
+                <Text className="text-lg font-bold text-text-base">0</Text>
+                <Text className="text-xs text-text-mute mt-0.5">Консультаций</Text>
               </View>
               <View className="w-px bg-border" />
               <View className="items-center px-6 py-2">
-                <Text className="text-lg font-bold text-text-base">2y</Text>
-                <Text className="text-xs text-text-mute mt-0.5">Member</Text>
+                <Text className="text-lg font-bold text-text-base">—</Text>
+                <Text className="text-xs text-text-mute mt-0.5">На платформе</Text>
               </View>
             </View>
           </View>
 
           {/* Section label */}
           <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-1 mt-4">
-            Menu
+            Меню
           </Text>
 
           {/* Menu Items Card */}
           <View className="bg-white mx-4 rounded-2xl border border-border overflow-hidden mb-4">
             {MENU_ITEMS.length === 0 ? (
-              <EmptyState icon={List} title="Нет разделов" subtitle="Разделы профиля недоступны" />
+              <EmptyState icon={FileText} title="Нет разделов" subtitle="Разделы профиля недоступны" />
             ) : (
               MENU_ITEMS.map((item, index) => (
                 <Pressable
@@ -115,7 +123,7 @@ export default function ProfileScreen() {
 
           {/* Account section */}
           <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider px-4 mb-1 mt-4">
-            Account
+            Аккаунт
           </Text>
 
           {/* Logout Card */}
@@ -129,11 +137,11 @@ export default function ProfileScreen() {
               <View className="w-9 h-9 rounded-xl items-center justify-center mr-3 bg-danger-soft">
                 <LogOut size={17} color={colors.danger} />
               </View>
-              <Text className="flex-1 text-base font-medium text-danger">Log out</Text>
+              <Text className="flex-1 text-base font-medium text-danger">Выйти</Text>
             </Pressable>
           </View>
 
-          <Text className="text-xs text-text-dim text-center mt-2 mb-4">Version 1.0.0</Text>
+          <Text className="text-xs text-text-dim text-center mt-2 mb-4">Версия 1.0.0</Text>
         </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>

@@ -3,26 +3,28 @@ import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions, Plat
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Search, SlidersHorizontal, Clock, ArrowRight, ChevronRight,
-  Laptop, Car, Building2, ShoppingBag, Home, type LucideIcon
+  FileSearch, Briefcase, ShieldCheck, Gavel, Globe2, Users, type LucideIcon
 } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import EmptyState from "@/components/ui/EmptyState";
 
+// Recent searches — tax-domain, not marketplace.
 const RECENT_SEARCHES = [
-  "iPhone 15",
-  "Apartment Tbilisi",
-  "Toyota",
-  "MacBook",
+  "Камеральная проверка Москва",
+  "Разблокировка счёта 115-ФЗ",
+  "Налоговый юрист СПб",
+  "Оспаривание решения ИФНС",
 ];
 
+// Tax-service categories.
 const POPULAR_CATEGORIES: { id: string; name: string; count: string; Icon: LucideIcon; color: string }[] = [
-  { id: "1", name: "Электроника", count: "12 453 объявл.", Icon: Laptop, color: colors.accentSoft },
-  { id: "2", name: "Авто", count: "8 291 объявл.", Icon: Car, color: colors.dangerSoft },
-  { id: "3", name: "Недвижимость", count: "5 872 объявл.", Icon: Building2, color: colors.limeSoft },
-  { id: "4", name: "Одежда", count: "9 104 объявл.", Icon: ShoppingBag, color: colors.yellowSoft },
-  { id: "5", name: "Спорт", count: "3 455 объявл.", Icon: Home, color: colors.pinkSoft },
-  { id: "6", name: "Дом и сад", count: "6 789 объявл.", Icon: Home, color: colors.cyanSoft },
+  { id: "1", name: "Камеральные проверки", count: "128 специалистов", Icon: FileSearch, color: colors.accentSoft },
+  { id: "2", name: "Выездные проверки", count: "84 специалиста", Icon: Briefcase, color: colors.dangerSoft },
+  { id: "3", name: "Оперативный контроль", count: "46 специалистов", Icon: ShieldCheck, color: colors.limeSoft },
+  { id: "4", name: "Споры с ИФНС", count: "210 специалистов", Icon: Gavel, color: colors.yellowSoft },
+  { id: "5", name: "Зарубежные счета", count: "37 специалистов", Icon: Globe2, color: colors.pinkSoft },
+  { id: "6", name: "Самозанятые", count: "92 специалиста", Icon: Users, color: colors.cyanSoft },
 ];
 
 const cardShadow = {
@@ -42,7 +44,7 @@ export default function SearchScreen() {
     <SafeAreaView className="flex-1 bg-surface2">
       {/* Header */}
       <View className="bg-white border-b border-border px-4 py-3">
-        <Text className="text-2xl font-bold text-text-base">Поиск</Text>
+        <Text className="text-2xl font-bold text-text-base">Поиск специалистов и услуг</Text>
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
@@ -54,7 +56,7 @@ export default function SearchScreen() {
               <TextInput
                 accessibilityLabel="Поиск"
                 className="flex-1 ml-3 text-base text-text-base"
-                placeholder="Что вы ищете?"
+                placeholder="Введите город, услугу или имя специалиста"
                 placeholderTextColor={colors.placeholder}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
@@ -126,7 +128,7 @@ export default function SearchScreen() {
 
           {/* Popular Categories */}
           <View>
-            <Text className="text-base font-semibold text-text-base mb-3">Популярные категории</Text>
+            <Text className="text-base font-semibold text-text-base mb-3">Виды налоговых услуг</Text>
             <View className={isDesktop ? "flex-row flex-wrap gap-2" : undefined}>
               {POPULAR_CATEGORIES.map((cat) => (
                 <Pressable
