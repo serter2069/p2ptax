@@ -42,3 +42,4 @@ yarn-error.*
 
 # API dist
 api/dist/
+.metro-map/
