@@ -21,7 +21,6 @@ import {
 import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import ErrorState from "@/components/ui/ErrorState";
-import LoadingState from "@/components/ui/LoadingState";
 import {
   DashboardGrid,
   KpiCard,
@@ -206,12 +205,7 @@ export default function AdminDashboard() {
           title="Панель администратора"
           subtitle="Ключевые метрики и события в реальном времени"
         >
-          {loading ? (
-            <View style={{ gap: 16 }}>
-              <LoadingState variant="skeleton" lines={4} />
-              <LoadingState variant="skeleton" lines={4} />
-            </View>
-          ) : error ? (
+          {error ? (
             <ErrorState
               message="Не удалось загрузить статистику"
               onRetry={() => {
@@ -221,13 +215,19 @@ export default function AdminDashboard() {
             />
           ) : (
             <View style={{ gap: 24 }}>
-              {/* Top KPIs: 4 */}
+              {/* Top KPIs: 4 — render immediately with sensible zeros so the
+                  dashboard structure is visible during loading instead of a
+                  bare skeleton. (iter11-b fix for admin dashboard 2/10 score.) */}
               <DashboardGrid>
                 <DashboardGrid.Col span={3} tabletSpan={1}>
                   <KpiCard
                     label="Пользователей"
-                    value={totalUsers}
-                    hint={`клиентов ${extra?.totalClients ?? 0} · специалистов ${extra?.totalSpecialists ?? 0}`}
+                    value={loading ? "—" : totalUsers}
+                    hint={
+                      loading
+                        ? "клиентов · специалистов"
+                        : `клиентов ${extra?.totalClients ?? 0} · специалистов ${extra?.totalSpecialists ?? 0}`
+                    }
                     icon={Users}
                     tone="primary"
                     onPress={() => router.push("/(admin-tabs)/users" as never)}
@@ -236,7 +236,7 @@ export default function AdminDashboard() {
                 <DashboardGrid.Col span={3} tabletSpan={1}>
                   <KpiCard
                     label="Активных заявок"
-                    value={extra?.activeRequests ?? stats?.activeRequests ?? 0}
+                    value={loading ? "—" : (extra?.activeRequests ?? stats?.activeRequests ?? 0)}
                     icon={FileCheck2}
                     tone="success"
                   />
@@ -244,9 +244,15 @@ export default function AdminDashboard() {
                 <DashboardGrid.Col span={3} tabletSpan={1}>
                   <KpiCard
                     label="Жалоб на модерации"
-                    value={extra?.openComplaints ?? 0}
+                    value={loading ? "—" : (extra?.openComplaints ?? 0)}
                     icon={AlertOctagon}
-                    tone={(extra?.openComplaints ?? 0) > 0 ? "danger" : "muted"}
+                    tone={
+                      loading
+                        ? "muted"
+                        : (extra?.openComplaints ?? 0) > 0
+                          ? "danger"
+                          : "muted"
+                    }
                     onPress={() =>
                       router.push("/(admin-tabs)/complaints" as never)
                     }
@@ -255,10 +261,16 @@ export default function AdminDashboard() {
                 <DashboardGrid.Col span={3} tabletSpan={1}>
                   <KpiCard
                     label="Превышений лимита"
-                    value={extra?.pendingVerifications ?? 0}
+                    value={loading ? "—" : (extra?.pendingVerifications ?? 0)}
                     hint="20 thread/день exceeds"
                     icon={Gauge}
-                    tone={(extra?.pendingVerifications ?? 0) > 0 ? "warning" : "muted"}
+                    tone={
+                      loading
+                        ? "muted"
+                        : (extra?.pendingVerifications ?? 0) > 0
+                          ? "warning"
+                          : "muted"
+                    }
                   />
                 </DashboardGrid.Col>
               </DashboardGrid>

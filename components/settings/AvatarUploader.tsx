@@ -125,9 +125,6 @@ export default function AvatarUploader({
           {avatarUrl ? "Изменить фото" : "Нажмите, чтобы добавить фото"}
         </Text>
       </Pressable>
-      <View className="mt-2 bg-surface2 px-3 py-1 rounded-full">
-        <Text className="text-xs font-medium text-accent">Специалист</Text>
-      </View>
 
       {Platform.OS === "web" && (
         <input

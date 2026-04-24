@@ -195,45 +195,80 @@ export default function CityFnsCascade({
 
   return (
     <View style={{ width: "100%" }}>
-      {/* Cities row */}
+      {/* Cities row — on desktop (>=640px) we wrap chips so long city lists
+          stay fully visible; on mobile we keep the horizontal scroller to
+          save vertical space. (iter11-b fix for work-area overflow critique.) */}
       <View className="mb-2">
         <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2 px-4">
           {labelCities}
         </Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="px-4"
-        >
-          {cities.length === 0 ? (
-            <Text className="text-sm text-text-mute">Загрузка…</Text>
-          ) : (
-            cities.map((city) => {
-              const active = value.cities.includes(city.id);
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={city.name}
-                  key={city.id}
-                  onPress={() => toggleCity(city.id)}
-                  className={`px-3 h-11 items-center justify-center rounded-full mr-2 mb-1 border ${
-                    active
-                      ? "bg-accent border-accent"
-                      : "bg-white border-border"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm ${
-                      active ? "text-white font-medium" : "text-text-base"
+        {isDesktop ? (
+          <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
+            {cities.length === 0 ? (
+              <Text className="text-sm text-text-mute">Загрузка…</Text>
+            ) : (
+              cities.map((city) => {
+                const active = value.cities.includes(city.id);
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={city.name}
+                    key={city.id}
+                    onPress={() => toggleCity(city.id)}
+                    className={`px-3 h-11 items-center justify-center rounded-full border ${
+                      active
+                        ? "bg-accent border-accent"
+                        : "bg-white border-border"
                     }`}
                   >
-                    {city.name}
-                  </Text>
-                </Pressable>
-              );
-            })
-          )}
-        </ScrollView>
+                    <Text
+                      className={`text-sm ${
+                        active ? "text-white font-medium" : "text-text-base"
+                      }`}
+                    >
+                      {city.name}
+                    </Text>
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="px-4"
+          >
+            {cities.length === 0 ? (
+              <Text className="text-sm text-text-mute">Загрузка…</Text>
+            ) : (
+              cities.map((city) => {
+                const active = value.cities.includes(city.id);
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={city.name}
+                    key={city.id}
+                    onPress={() => toggleCity(city.id)}
+                    className={`px-3 h-11 items-center justify-center rounded-full mr-2 mb-1 border ${
+                      active
+                        ? "bg-accent border-accent"
+                        : "bg-white border-border"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm ${
+                        active ? "text-white font-medium" : "text-text-base"
+                      }`}
+                    >
+                      {city.name}
+                    </Text>
+                  </Pressable>
+                );
+              })
+            )}
+          </ScrollView>
+        )}
       </View>
 
       {/* FNS combobox */}

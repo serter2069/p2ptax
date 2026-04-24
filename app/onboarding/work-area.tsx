@@ -209,7 +209,7 @@ export default function OnboardingWorkAreaScreen() {
         <View
           style={{
             width: "100%",
-            maxWidth: 640,
+            maxWidth: 720,
             alignSelf: "center",
             paddingHorizontal: 0,
           }}
