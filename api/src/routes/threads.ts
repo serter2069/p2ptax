@@ -49,7 +49,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { isSpecialist: true },
     });
 
     if (!user) {
@@ -57,7 +57,8 @@ router.get("/", async (req: Request, res: Response) => {
       return;
     }
 
-    const isSpecialist = user.role === "SPECIALIST";
+    // Iter11: specialist-mode view is gated by the opt-in flag, not role.
+    const isSpecialist = user.isSpecialist;
 
     const requestIdFilter = req.query.request_id as string | undefined;
 
@@ -212,13 +213,16 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify user is specialist
+    // Verify user has specialist features enabled. Iter11: CLIENT+SPECIALIST
+    // unified into USER — writing threads requires isSpecialist=true AND a
+    // completed specialist profile (so clients don't get half-filled profiles
+    // showing up in their inbox).
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { isSpecialist: true, specialistProfileCompletedAt: true },
     });
 
-    if (!user || user.role !== "SPECIALIST") {
+    if (!user || !user.isSpecialist) {
       res.status(403).json({ error: "Only specialists can create threads" });
       return;
     }

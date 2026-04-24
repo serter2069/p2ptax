@@ -4,9 +4,13 @@
 
 **Domain**: Налоговый консалтинг по трём каноническим видам проверок (ФНС). Не юридические услуги в целом. Не финансовые консультации. Не бухгалтерия. Только налоговые проверки и сопутствующие процедуры ФНС.
 
-**Target users**:
-- **CLIENT (primary emotional driver)**: Русский гражданин / ИП / представитель юрлица, который только что получил уведомление/требование ФНС. Emotional state: паника + растерянность + страх штрафов и блокировок. Не tech-savvy. Не юрист. Нужен trust и чёткий next step.
-- **SPECIALIST**: Практикующий налоговый консультант с опытом в камеральных, выездных или оперативных проверках. Часто бывшие сотрудники ФНС (ex-инспекторы). Ищет клиентов напрямую, без юридических фирм-посредников.
+**Target users** (Iter11 — role unification):
+
+Роли в БД теперь 3: `GUEST / USER / ADMIN`. Роль `SPECIALIST` отдельно больше не существует — вместо этого у пользователя есть opt-in флаг `isSpecialist` + `specialistProfileCompletedAt`. Это позволяет специалисту одновременно быть клиентом (т.е. создавать собственные заявки про налоги), убирает искусственное дублирование UI и двух дашбордов.
+
+- **USER (primary)**: Любой авторизованный человек. Emotional driver для большинства — русский гражданин / ИП / представитель юрлица, который только что получил уведомление/требование ФНС. Паника + растерянность + страх штрафов и блокировок. Не tech-savvy. Не юрист. Нужен trust и чёткий next step.
+  - **USER с `isSpecialist=true` (sub-mode «специалист»)**: Практикующий налоговый консультант с опытом в камеральных, выездных или оперативных проверках. Часто бывшие сотрудники ФНС (ex-инспекторы). Ищет клиентов напрямую, без юридических фирм-посредников. **Opportunity (Iter11)**: может сам создавать заявки — раньше было запрещено, теперь специалист тоже человек, может получить требование ФНС на свой личный ИНН.
+  - **USER с `isSpecialist=false`**: «Обычный клиент». Ищет специалиста по своей ФНС. Не видит публичного фида лидов.
 - **ADMIN**: Платформенный модератор — управляет пользователями, городами/ФНС, правилами модерации, настройками системы.
 - **GUEST**: Неавторизованный посетитель — может смотреть публичные заявки и каталог специалистов, не видит контактов.
 
@@ -35,11 +39,12 @@
 - **Dating/social-app patterns** — swipe matching, romantic copy, broad consumer tone.
 - **E-commerce patterns** — cart, checkout, купить в один клик. Это сервисный marketplace, не магазин.
 
-**Key business rules (from SA, non-negotiable)**:
+**Key business rules (from SA, non-negotiable)** — обновлено после Iter11 role-unification:
 - **Guest**: смотрит публичные заявки + каталог + профили. НЕ видит контактов, НЕ пишет, НЕ создаёт заявки.
-- **Client**: создаёт заявки (лимит default 5), читает messages от специалистов, отвечает, закрывает свои заявки. **НЕ** пишет первым specialists по чужим заявкам.
-- **Specialist**: пишет client'у по публичной заявке (создаёт thread, лимит 20/день), ведёт переписку, управляет профилем. **НЕ** создаёт заявки, **НЕ** видит private-данные других specialists.
+- **USER (все авторизованные)**: создаёт заявки (лимит default 5), читает messages от специалистов, отвечает, закрывает свои заявки. **НЕ** пишет первым specialists по чужим заявкам (если `isSpecialist=false`).
+- **USER + isSpecialist=true** (и `specialistProfileCompletedAt != null`): всё что USER + пишет клиенту по публичной заявке (создаёт thread, лимит 20/день), ведёт переписку, управляет профилем специалиста, видит публичный фид лидов. **Не** видит private-данные других specialists. В отличие от старой схемы — специалист теперь **может** создавать собственные заявки (он тоже может получить требование ФНС на свой ИНН).
 - **Admin**: всё выше + блокировка/разблокировка users, CRUD городов/ФНС, modification rules, limit_requests editor.
+- **Исключение в каталоге**: пользователь не видит себя в `/api/specialists` (если сам специалист) — нельзя связаться самому с собой.
 - **Notifications**: только email (SMTP/Resend). События: NEW_MESSAGE_FROM_SPECIALIST, NEW_MESSAGE, REQUEST_CLOSING_SOON (27 days inactivity), REQUEST_CLOSED.
 - **Files**: MinIO S3-compatible bucket. Avatar up to 5 MB jpg/png/webp. Documents/chat attachments up to 10 MB pdf/jpg/png.
 - **Requests auto-close** на 30 days неактивности. Predupreshenie клиенту за 3 days (SA: REQUEST_CLOSING_SOON).
@@ -48,7 +53,7 @@
 - Dark-mode возможен как optional theme, но primary = light (fintech trust reads better on white).
 - Spacing scale: 4/8/12/16/24/32/48/64 tokens only.
 - Typography: H1 32-56px (hero), H2 32-40px (sections), H3 20-24px, body 16px, small 14px, caption 12px. Manrope / Inter / system sans-serif.
-- Role-signalling: subtle accent color per role — client=blue (default), specialist=emerald, admin=amber. Chrome остаётся нейтральным.
+- Role-signalling: subtle accent color per role — USER non-specialist=blue (default), USER isSpecialist=emerald, admin=amber. Chrome остаётся нейтральным. Для специалиста, который одновременно просматривает свою личную заявку как клиент, accent может мягко переключаться по контексту страницы (решение дизайна в PR 2 UI-merge).
 - Components barrel: `components/ui/`, `components/layout/`, `components/landing/`, `components/dashboard/`, `components/specialist/`, `components/filters/`.
 
 **Key differentiators**:
