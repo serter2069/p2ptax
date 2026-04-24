@@ -1,4 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
+import { faker } from "@faker-js/faker/locale/ru";
 
 const prisma = new PrismaClient();
 
@@ -812,8 +813,45 @@ async function main() {
     },
   });
 
+  // Clean up legacy mosaic/metromap garbage accounts (those without names).
+  // Keeps real dev accounts intact (they have firstName/lastName set).
+  const purged = await prisma.user.deleteMany({
+    where: {
+      email: { contains: "@metromap.test" },
+      firstName: null,
+      lastName: null,
+    },
+  });
+
+  // Realistic demo users: 8 CLIENT + 3 SPECIALIST + 1 ADMIN = 12.
+  // Deterministic via faker.seed(42) so re-runs produce same 12 users.
+  faker.seed(42);
+
+  const demoUsers = Array.from({ length: 12 }, (_, i) => {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const role: Role = i < 8 ? "CLIENT" : i < 11 ? "SPECIALIST" : "ADMIN";
+    const email = faker.internet.email({ firstName, lastName }).toLowerCase();
+    return {
+      email,
+      firstName,
+      lastName,
+      role,
+      avatarUrl: `https://i.pravatar.cc/200?u=${faker.string.uuid()}`,
+      createdAt: faker.date.recent({ days: 90 }),
+    };
+  });
+
+  for (const u of demoUsers) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: {},
+      create: u,
+    });
+  }
+
   console.log(
-    `Seed complete: 10 cities, ${fnsCount} FNS offices, 3 services, 7 settings, 2 admins`
+    `Seed complete: 10 cities, ${fnsCount} FNS offices, 3 services, 7 settings, 2 admins, ${demoUsers.length} demo users (purged ${purged.count} garbage accounts)`
   );
 }
 
