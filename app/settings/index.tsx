@@ -294,11 +294,13 @@ export default function UnifiedSettings() {
     );
   }, []);
 
+  // Iter11 PR 3 — progressive specialist opt-in. Existing USERs already
+  // have firstName/lastName, so we skip `/onboarding/name` and jump into
+  // the FNS + services picker. That page collects the full matrix, calls
+  // `/api/user/become-specialist` server-side, and the user lands back
+  // in settings with isSpecialist=true and a completed profile.
   const handleBecomeSpecialist = useCallback(() => {
-    // Iter11 PR2 — reuse the existing onboarding flow. PR3 will introduce a
-    // first-class /api/user/become-specialist endpoint so existing clients
-    // with completed names can opt-in without redoing onboarding/name.
-    router.push("/onboarding/name" as never);
+    router.push("/onboarding/work-area" as never);
   }, [router]);
 
   if (!ready) {

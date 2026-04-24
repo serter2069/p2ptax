@@ -54,6 +54,21 @@ interface ThreadItem {
   } | null;
   unreadCount: number;
   createdAt: string;
+  /**
+   * Iter11 PR 3 — `/api/threads/my` tags each row with the caller's
+   * perspective so a dual-role USER (both client and specialist on the
+   * same request) can distinguish the two conversations in one inbox.
+   */
+  perspective?: "as_client" | "as_specialist";
+}
+
+/**
+ * Shape returned by `GET /api/threads/my` (Iter11 PR 3). Grouped per
+ * request; we flatten client-side for the existing list renderer.
+ */
+interface ThreadsMyGroup {
+  request: ThreadItem["request"];
+  threads: ThreadItem[];
 }
 
 function displayName(
@@ -112,8 +127,11 @@ export default function UnifiedInbox() {
   const fetchThreads = useCallback(async () => {
     setError(null);
     try {
-      const res = await apiGet<{ items: ThreadItem[] }>("/api/threads");
-      setThreads(res.items);
+      // Iter11 PR 3 — unified inbox endpoint. Returns grouped-by-request;
+      // we flatten to the existing list shape, keeping `perspective` tag.
+      const res = await apiGet<{ groups: ThreadsMyGroup[] }>("/api/threads/my");
+      const flat = res.groups.flatMap((g) => g.threads);
+      setThreads(flat);
     } catch (e) {
       console.error("fetch threads error:", e);
       setError("Не удалось загрузить сообщения");

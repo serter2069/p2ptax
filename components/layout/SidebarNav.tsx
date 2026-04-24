@@ -42,16 +42,14 @@ import RoleBadge from "./RoleBadge";
 
 export type SidebarGroup =
   | "user"
-  | "client"
-  | "specialist"
   | "admin"
   | "main"
   | null;
 
 interface MatchContext {
-  /** Browser path (groups stripped), e.g. `/dashboard` for `/(client-tabs)/dashboard`. */
+  /** Browser path (groups stripped), e.g. `/dashboard` for `/(tabs)/dashboard`. */
   path: string;
-  /** Raw Expo-Router segments including groups, e.g. `["(client-tabs)", "dashboard"]`. */
+  /** Raw Expo-Router segments including groups, e.g. `["(tabs)", "dashboard"]`. */
   segments: readonly string[];
 }
 
@@ -67,14 +65,14 @@ interface NavItem {
 /**
  * Match helpers.
  *
- * usePathname() strips group-parens, so `/(client-tabs)/dashboard` reports
- * as `/dashboard`. We use segments to know which group the user is in —
- * that disambiguates colliding paths like `/requests` that exist both as
- * `/(client-tabs)/requests.tsx` and `/requests/index.tsx`.
+ * usePathname() strips group-parens, so `/(tabs)/dashboard` reports as
+ * `/dashboard`. We use segments to know which group the user is in — that
+ * disambiguates colliding paths like `/requests` that exist both as
+ * `/(tabs)/requests.tsx` and `/requests/index.tsx`.
  */
 const groupMatch = (
   ctx: MatchContext,
-  group: "(tabs)" | "(client-tabs)" | "(specialist-tabs)" | "(admin-tabs)",
+  group: "(tabs)" | "(admin-tabs)",
   leaf: string
 ): boolean => {
   if (ctx.segments[0] === group && ctx.segments[1] === leaf) return true;
@@ -185,10 +183,9 @@ function toAccentKey(
   isSpecialist: boolean
 ): RoleAccentKey {
   if (role === "ADMIN") return "admin";
-  // Iter11 — isSpecialist opt-in drives the accent for USER/CLIENT/SPECIALIST
-  // so legacy role strings keep working during the 3-PR rollout.
+  // Iter11 PR 3 — isSpecialist is the single source of truth now that
+  // legacy CLIENT/SPECIALIST enum values have been removed.
   if (isSpecialist) return "specialist";
-  if (role === "SPECIALIST") return "specialist";
   return "client";
 }
 
@@ -198,9 +195,9 @@ function toAccentKey(
  * back to its no-sidebar layout.
  *
  * Why both `pathname` AND `segments`?
- *   - `usePathname()` strips group parens, so `/(client-tabs)/dashboard`
+ *   - `usePathname()` strips group parens, so `/(tabs)/dashboard`
  *     reports as `/dashboard` — we can't recover the group from it.
- *   - `useSegments()` keeps raw segments including `(client-tabs)` —
+ *   - `useSegments()` keeps raw segments including `(tabs)` —
  *     that's the authoritative source of group membership.
  *
  * We use `segments` to detect the tab group and fall back to `pathname`
@@ -222,18 +219,12 @@ export function detectSidebarGroup(
 
   // Group detection via segments (authoritative).
   const first = segments[0] ?? "";
-  // Iter11 — (tabs) is now the authenticated USER group. Legacy
-  // (client-tabs)/(specialist-tabs) still resolve so redirect stubs keep
-  // their sidebar layout while routing forward.
+  // Iter11 PR 3 — only (tabs) and (admin-tabs) remain; legacy groups removed.
   if (first === "(tabs)") return "user";
-  if (first === "(client-tabs)") return "user";
-  if (first === "(specialist-tabs)") return "user";
   if (first === "(admin-tabs)") return "admin";
 
-  // Fallback: pathname-based match, for safety when segments are empty
-  // (happens during route transitions or in some preview environments).
-  if (pathname.includes("/client-tabs/") || pathname.includes("(client-tabs)")) return "user";
-  if (pathname.includes("/specialist-tabs/") || pathname.includes("(specialist-tabs)")) return "user";
+  // Fallback: pathname-based match for route transitions when segments
+  // haven't settled yet.
   if (pathname.includes("/admin-tabs/") || pathname.includes("(admin-tabs)")) return "admin";
 
   const LEGACY_ROUTES = new Set(["/"]);
@@ -269,11 +260,7 @@ function itemsForGroup(
   if (group === "admin" || role === "ADMIN") return ADMIN_ITEMS;
 
   switch (group) {
-    // Legacy names resolve to the unified USER sidebar.
     case "user":
-    case "client":
-    case "specialist":
-      return buildUserItems(isSpecialist);
     case "main":
       return buildUserItems(isSpecialist);
     default:
@@ -373,7 +360,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
       </Pressable>
 
       <View style={{ paddingHorizontal: spacing.sm, marginBottom: spacing.md }}>
-        <RoleBadge role={user?.role ?? null} size="sm" />
+        <RoleBadge role={user?.role ?? null} isSpecialist={isSpecialistUser} size="sm" />
       </View>
 
       {/* Primary nav */}

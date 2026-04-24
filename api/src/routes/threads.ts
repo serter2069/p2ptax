@@ -146,6 +146,101 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+
+// GET /api/threads/my — unified inbox.
+//
+// Iter11 PR 3 — replaces the legacy perspective-split `/api/threads` for
+// the UI inbox. Returns threads where the caller is EITHER the client
+// (request author) OR the specialist (thread writer), grouped by request
+// so a single USER who sent a request AND later became a specialist can
+// see both sides of the same request in one list.
+router.get("/my", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+
+    const threads = await prisma.thread.findMany({
+      where: {
+        OR: [
+          { specialistId: userId },
+          { clientId: userId },
+        ],
+      },
+      orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
+      include: {
+        request: { select: { id: true, title: true, status: true, userId: true } },
+        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { text: true, createdAt: true, senderId: true },
+        },
+      },
+    });
+
+    // Enrich with actual unread counts, tagged with perspective
+    // ("as_client" | "as_specialist") so the UI can render two chips on
+    // the same request if the USER is on both sides.
+    const enriched = await Promise.all(
+      threads.map(async (thread) => {
+        const asSpecialist = thread.specialistId === userId;
+        const lastReadAt = asSpecialist
+          ? thread.specialistLastReadAt
+          : thread.clientLastReadAt;
+        const unreadCount = await prisma.message.count({
+          where: {
+            threadId: thread.id,
+            senderId: { not: userId },
+            ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+          },
+        });
+        const otherUser = asSpecialist ? thread.client : thread.specialist;
+        const lastMessage = thread.messages[0] ?? null;
+        return {
+          id: thread.id,
+          requestId: thread.requestId,
+          request: thread.request,
+          perspective: asSpecialist ? "as_specialist" : "as_client",
+          otherUser: {
+            id: otherUser.id,
+            firstName: otherUser.firstName,
+            lastName: otherUser.lastName,
+            avatarUrl: otherUser.avatarUrl,
+          },
+          lastMessage: lastMessage
+            ? { text: lastMessage.text, createdAt: lastMessage.createdAt }
+            : null,
+          unreadCount,
+          createdAt: thread.createdAt,
+        };
+      })
+    );
+
+    // Group by request. Same request seen from both perspectives (client
+    // + specialist) lands in the same group — useful for the dual-role
+    // case post-iter11.
+    type Group = {
+      request: typeof enriched[number]["request"];
+      threads: typeof enriched;
+    };
+    const groups = new Map<string, Group>();
+    for (const th of enriched) {
+      if (!th.requestId) continue;
+      const existing = groups.get(th.requestId);
+      if (existing) {
+        existing.threads.push(th);
+      } else {
+        groups.set(th.requestId, { request: th.request, threads: [th] });
+      }
+    }
+
+    res.json({ groups: Array.from(groups.values()) });
+  } catch (error) {
+    console.error("threads/my error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/threads/:id — get single thread by id (participant only)
 router.get("/:id", async (req: Request, res: Response) => {
   try {

@@ -39,7 +39,7 @@ const DAILY_LIMIT = 20;
 export default function SpecialistConfirmWrite() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, user, isSpecialistUser, isLoading: authLoading } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
@@ -70,13 +70,13 @@ export default function SpecialistConfirmWrite() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated || user?.role !== "SPECIALIST") {
+      if (!isAuthenticated || !isSpecialistUser) {
         router.replace("/auth/email" as never);
         return;
       }
       load();
     }
-  }, [authLoading, isAuthenticated, user, load, router]);
+  }, [authLoading, isAuthenticated, isSpecialistUser, load, router]);
 
   const handleSend = async () => {
     if (message.length < MIN_CHARS || sending) return;

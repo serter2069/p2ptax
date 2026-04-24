@@ -20,6 +20,13 @@ import { API_URL } from "@/lib/api";
 import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
 
 
+/**
+ * Iter11 PR 3 — admin filter tokens sent to `/api/admin/users?role=…`.
+ * The backend still accepts the legacy labels and maps them onto
+ * `{ role: "USER", isSpecialist: true/false }` server-side, so we keep
+ * the human-readable token names here (they are NOT role enum values in
+ * the Prisma sense — just filter identifiers).
+ */
 type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
 
 interface UserItem {
@@ -28,16 +35,22 @@ interface UserItem {
   firstName: string | null;
   lastName: string | null;
   role: string | null;
+  /** Iter11 PR 3 — specialist opt-in flag returned by /api/admin/users. */
+  isSpecialist?: boolean;
   isBanned: boolean;
   createdAt: string;
   avatarUrl: string | null;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  CLIENT: "Клиент",
-  SPECIALIST: "Специалист",
-  ADMIN: "Админ",
-};
+/**
+ * Iter11 PR 3 — backend returns role=USER | ADMIN now. Specialist/client
+ * distinction is derived from the `isSpecialist` flag on USER rows.
+ */
+function displayRoleLabel(role: string | null, isSpecialist?: boolean): string {
+  if (role === "ADMIN") return "Админ";
+  if (role === "USER") return isSpecialist ? "Специалист" : "Клиент";
+  return role ?? "";
+}
 
 const FILTER_OPTIONS: { key: RoleFilter; label: string }[] = [
   { key: "ALL", label: "Все" },
@@ -361,7 +374,7 @@ export default function AdminUsers() {
                           {user.role && (
                             <View className="bg-accent-soft rounded-full px-2.5 py-0.5">
                               <Text className="text-xs font-medium text-accent">
-                                {ROLE_LABELS[user.role] || user.role}
+                                {displayRoleLabel(user.role, user.isSpecialist)}
                               </Text>
                             </View>
                           )}
@@ -386,7 +399,7 @@ export default function AdminUsers() {
                           Email: {user.email}
                         </Text>
                         <Text className="text-xs text-text-mute mb-1">
-                          Роль: {user.role ? ROLE_LABELS[user.role] || user.role : "Не назначена"}
+                          Роль: {user.role ? displayRoleLabel(user.role, user.isSpecialist) : "Не назначена"}
                         </Text>
                         <Text className="text-xs text-text-mute mb-3">
                           Регистрация: {formatDate(user.createdAt)}
@@ -407,7 +420,7 @@ export default function AdminUsers() {
                             </Text>
                           </Pressable>
 
-                          {user.role === "CLIENT" && (
+                          {user.role !== "ADMIN" && !user.isSpecialist && (
                             <Pressable
                               accessibilityRole="button"
                               accessibilityLabel="Закрыть все заявки"

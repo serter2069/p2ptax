@@ -35,13 +35,10 @@ export default function RootLayout() {
             {/* Public */}
             <Stack.Screen name="index" />
 
-            {/* Role-based tab groups */}
-            <Stack.Screen name="(client-tabs)" />
-            <Stack.Screen name="(specialist-tabs)" />
-            <Stack.Screen name="(admin-tabs)" />
-
-            {/* Legacy tabs (kept for compatibility) */}
+            {/* Iter11 PR 3 — unified authenticated tabs + admin-only tabs.
+                Legacy (client-tabs)/(specialist-tabs) groups removed. */}
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(admin-tabs)" />
 
             {/* Auth flow */}
             <Stack.Screen name="auth/email" />
@@ -67,8 +64,6 @@ export default function RootLayout() {
             {/* Specialist flow */}
             <Stack.Screen name="requests/[id]/write" />
             <Stack.Screen name="settings" />
-            <Stack.Screen name="settings/client" />
-            <Stack.Screen name="settings/specialist" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="legal/privacy" />
             <Stack.Screen name="legal/terms" />

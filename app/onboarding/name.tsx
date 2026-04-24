@@ -58,10 +58,12 @@ export default function OnboardingNameScreen() {
         body: { firstName: firstNameTrimmed, lastName: lastNameTrimmed },
       });
 
+      // Iter11 — role stays USER; specialist mode is toggled by /set-role
+      // (which set `isSpecialist=true` already) and finalised by
+      // /onboarding/profile setting specialistProfileCompletedAt.
       updateUser({
         firstName: data.user.firstName,
         lastName: data.user.lastName,
-        role: "SPECIALIST",
       });
 
       router.push("/onboarding/work-area" as never);

@@ -14,19 +14,14 @@ const TOKEN_KEY = "p2ptax_access_token";
 const REFRESH_KEY = "p2ptax_refresh_token";
 
 /**
- * Iter11 — role unification. The DB enum is now GUEST | USER | ADMIN (CLIENT
- * and SPECIALIST were collapsed into USER + `isSpecialist` flag). For
- * backwards-compatibility during the 3-PR rollout we keep the legacy
- * "CLIENT" / "SPECIALIST" strings in this union: PR 1 ships the data layer
- * only, PR 2 rewrites the UI, PR 3 deletes the legacy directories. Callers
- * should prefer `isSpecialistUser` / `isClientUser` getters over `.role ===`
- * comparisons so the UI keeps working across both states.
+ * Iter11 (complete) — role enum: GUEST | USER | ADMIN. Specialist features
+ * are opt-in via the `isSpecialist` flag on USER accounts. Callers should
+ * use the `isSpecialistUser` / `isClientUser` / `isAdminUser` getters from
+ * `useAuth()` instead of `user.role === …` equality checks.
  */
 export type UserRole =
   | "GUEST"
   | "USER"
-  | "CLIENT"
-  | "SPECIALIST"
   | "ADMIN"
   | null;
 
@@ -49,12 +44,11 @@ interface AuthContextType {
   user: UserData | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  /** True when user has specialist features enabled. Prefer over `user.role === "SPECIALIST"`. */
+  /** True when user has specialist features enabled. */
   isSpecialistUser: boolean;
   /**
-   * True for any non-admin authenticated user. Replaces `user.role === "CLIENT"`
-   * after Iter11 (every USER, specialist or not, is a "client" as far as creating
-   * their own tax-help requests goes).
+   * True for any non-admin authenticated user — every USER, specialist or
+   * not, is a "client" as far as creating their own tax-help requests goes.
    */
   isClientUser: boolean;
   /** True for ADMIN role holders. */
@@ -99,14 +93,13 @@ async function clearTokens() {
 }
 
 /**
- * Iter11 — derive the specialist flag. Prefer the explicit `isSpecialist`
- * field from the API; fall back to the legacy `role === "SPECIALIST"` so UI
- * shipped before the API update keeps working for the PR 1 window.
+ * Iter11 (complete) — the `isSpecialist` flag is the single source of
+ * truth. Returns false for anonymous users and users whose backend payload
+ * is missing the flag (defensive; should not occur after PR 1).
  */
 function deriveIsSpecialist(user: UserData | null): boolean {
   if (!user) return false;
-  if (typeof user.isSpecialist === "boolean") return user.isSpecialist;
-  return user.role === "SPECIALIST";
+  return user.isSpecialist === true;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
