@@ -16,6 +16,12 @@ import MobileMenu from "@/components/MobileMenu";
 import RoleBadge from "./RoleBadge";
 
 /**
+ * iter10 Phase 3a: Desktop now renders SidebarNav which owns the role-accent
+ * brand/badge. AppHeader becomes a slim top-rail (search + right cluster) with
+ * NO role-accent border-top. Mobile keeps its compact burger/title/bell row.
+ */
+
+/**
  * Persistent in-app header rendered on every authenticated route.
  *
  * Desktop (>= 640px): logo + breadcrumb + search input + role badge + bell + avatar dropdown.
@@ -179,63 +185,39 @@ export default function AppHeader({ title }: AppHeaderProps) {
   }
 
   // -------- Desktop --------
+  // iter10 Phase 3a: role accent moved to SidebarNav; header is a neutral
+  // slim bar with breadcrumb + search + bell + avatar.
   return (
     <View
       className="flex-row items-center bg-white border-b"
       style={{
         borderBottomColor: colors.border,
-        borderTopWidth: 3,
-        borderTopColor: accent.strong,
-        height: 64,
+        height: 56,
         paddingHorizontal: spacing.lg,
-        gap: spacing.lg,
+        gap: spacing.md,
       }}
     >
-      {/* Logo + breadcrumb */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="P2PTax — главная"
-        onPress={() => router.push("/" as never)}
-        className="flex-row items-center"
-        style={{ minHeight: 44, gap: spacing.sm }}
-      >
-        <View
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            backgroundColor: colors.primary,
-          }}
-        />
-        <Text className="text-lg font-bold" style={{ color: colors.text }}>
-          P2P<Text style={{ color: colors.primary }}>Tax</Text>
+      {breadcrumb ? (
+        <Text
+          numberOfLines={1}
+          className="text-sm font-semibold"
+          style={{ color: colors.text, maxWidth: 280 }}
+        >
+          {breadcrumb}
         </Text>
-      </Pressable>
-
-      {breadcrumb && (
-        <>
-          <Text style={{ color: colors.textMuted }}>/</Text>
-          <Text
-            numberOfLines={1}
-            className="text-sm font-semibold"
-            style={{ color: colors.text, maxWidth: 260 }}
-          >
-            {breadcrumb}
-          </Text>
-        </>
-      )}
+      ) : null}
 
       {/* Search — fills available space */}
       <View
         className="flex-row items-center rounded-lg px-3"
         style={{
           flex: 1,
-          maxWidth: 520,
-          height: 40,
+          maxWidth: 480,
+          height: 36,
           backgroundColor: gray[100],
           borderWidth: 1,
           borderColor: colors.border,
-          marginLeft: spacing.md,
+          marginLeft: breadcrumb ? spacing.md : 0,
         }}
       >
         <Search size={16} color={colors.textMuted} />
@@ -258,17 +240,14 @@ export default function AppHeader({ title }: AppHeaderProps) {
       </View>
 
       {/* Right cluster */}
-      <View className="flex-row items-center" style={{ gap: spacing.md, marginLeft: "auto" }}>
-        <RoleBadge role={user?.role ?? null} />
-
+      <View className="flex-row items-center" style={{ gap: spacing.sm, marginLeft: "auto" }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Уведомления"
           onPress={() => router.push("/notifications" as never)}
-          className="w-11 h-11 rounded-lg items-center justify-center"
+          className="w-10 h-10 rounded-lg items-center justify-center"
         >
           <Bell size={18} color={colors.text} />
-          {/* Unread dot placeholder — wired to real count in future iteration */}
         </Pressable>
 
         <Pressable
@@ -301,7 +280,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
           <View
             style={{
               position: "absolute",
-              top: 64,
+              top: 56,
               right: spacing.lg,
               width: 260,
               backgroundColor: colors.surface,

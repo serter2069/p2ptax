@@ -17,7 +17,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
-import { colors, overlay, radiusValue, fontSizeValue } from "@/lib/theme";
+import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
 
 
 type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
@@ -220,79 +220,84 @@ export default function AdminUsers() {
     return layoutMeasurement.height + contentOffset.y >= contentSize.height - 200;
   };
 
+  const filterBar = (
+    <View style={{ gap: 12 }}>
+      <TextInput
+        accessibilityLabel="Поиск по email или имени"
+        style={{
+          backgroundColor: colors.surface2,
+          borderRadius: radiusValue.md,
+          height: 44,
+          paddingHorizontal: 14,
+          color: colors.text,
+          fontSize: fontSizeValue.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          outlineWidth: 0,
+        }}
+        placeholder="Поиск по email или имени..."
+        placeholderTextColor={colors.placeholder}
+        value={search}
+        onChangeText={setSearch}
+        autoCapitalize="none"
+      />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8 }}
+      >
+        {FILTER_OPTIONS.map((opt) => (
+          <Pressable
+            accessibilityRole="button"
+            key={opt.key}
+            accessibilityLabel={opt.label}
+            onPress={() => setFilter(opt.key)}
+            className={`px-3 rounded-full border active:opacity-70 ${
+              filter === opt.key
+                ? "bg-accent border-accent"
+                : "bg-surface2 border-border"
+            }`}
+            style={{ minHeight: 36, justifyContent: "center" }}
+          >
+            <Text
+              className={`text-sm ${
+                filter === opt.key
+                  ? "text-white font-medium"
+                  : "text-text-mute"
+              }`}
+            >
+              {opt.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      {/* Search header — accent hero */}
-      <View className="bg-accent px-4 pt-4 pb-3">
-        <Text className="text-2xl font-bold text-white mb-1">Пользователи</Text>
-        <Text className="text-sm mb-3" style={{ color: overlay.white75 }}>Управление аккаунтами платформы</Text>
-        <TextInput
-          accessibilityLabel="Поиск по email или имени"
-          style={{
-            backgroundColor: overlay.white15,
-            borderRadius: radiusValue.md,
-            height: 44,
-            paddingHorizontal: 14,
-            color: colors.surface,
-            fontSize: fontSizeValue.md,
-            outlineWidth: 0,
-          }}
-          placeholder="Поиск по email или имени..."
-          placeholderTextColor={overlay.white50}
-          value={search}
-          onChangeText={setSearch}
-          autoCapitalize="none"
-        />
-      </View>
-
-      {/* Filter chips */}
-      <View className="bg-white border-b border-border px-4 py-2">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {FILTER_OPTIONS.map((opt) => (
-            <Pressable
-              accessibilityRole="button"
-              key={opt.key}
-              accessibilityLabel={opt.label}
-              onPress={() => setFilter(opt.key)}
-              className={`px-3 rounded-full border active:opacity-70 ${
-                filter === opt.key
-                  ? "bg-accent border-accent"
-                  : "bg-surface2 border-border"
-              }`}
-              style={{ minHeight: 44, justifyContent: "center" }}
-            >
-              <Text
-                className={`text-sm ${
-                  filter === opt.key
-                    ? "text-white font-medium"
-                    : "text-text-mute"
-                }`}
-              >
-                {opt.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-
       {loading ? (
-        <DesktopScreen>
+        <DesktopScreen
+          title="Пользователи"
+          subtitle="Управление аккаунтами платформы"
+          filters={filterBar}
+        >
           <View className="py-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-border">
+              <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-border">
                 <LoadingState variant="skeleton" lines={4} />
               </View>
             ))}
           </View>
         </DesktopScreen>
       ) : error ? (
-        <View className="flex-1 items-center justify-center">
+        <DesktopScreen
+          title="Пользователи"
+          subtitle="Управление аккаунтами платформы"
+          filters={filterBar}
+        >
           <ErrorState message="Не удалось загрузить пользователей" onRetry={() => fetchUsers(search, filter, 1)} />
-        </View>
+        </DesktopScreen>
       ) : (
         <ScrollView
           className="flex-1"
@@ -301,7 +306,11 @@ export default function AdminUsers() {
           }}
           scrollEventThrottle={400}
         >
-          <DesktopScreen>
+          <DesktopScreen
+            title="Пользователи"
+            subtitle="Управление аккаунтами платформы"
+            filters={filterBar}
+          >
             <View className="py-2">
               {users.length === 0 ? (
                 <EmptyState
@@ -311,7 +320,7 @@ export default function AdminUsers() {
                 />
               ) : (
                 users.map((user) => (
-                  <View key={user.id} className="mx-4 mb-2">
+                  <View key={user.id} className="mb-2">
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`${[user.firstName, user.lastName].filter(Boolean).join(" ") || user.email}`}

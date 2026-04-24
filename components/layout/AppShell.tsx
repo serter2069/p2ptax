@@ -1,15 +1,29 @@
 import { useEffect } from "react";
 import { View, useWindowDimensions, Platform } from "react-native";
-import { usePathname } from "expo-router";
-import { colors, spacing } from "@/lib/theme";
-import SidebarNav, { detectSidebarGroup } from "./SidebarNav";
+import { usePathname, useSegments } from "expo-router";
+import { colors } from "@/lib/theme";
+import SidebarNav, { detectSidebarGroup, SIDEBAR_WIDTH } from "./SidebarNav";
 
 /**
- * Install a web-only <style> tag once — gives TextInput a visible focus ring
- * without touching every component. RN Web renders <input>/<textarea>; the
- * rule below adds a 3px accent-soft box-shadow on :focus. Style audits
- * (naked-input / no-focus-ring) rely on that diff.
+ * AppShell — desktop-first authenticated shell (iter10 Phase 3a).
+ *
+ * Triggered by multi-model critique (2026-04-24, 4/4 consensus P0):
+ *   "Implement a persistent left sidebar navigation (240px) for all
+ *    authenticated routes, push content to a max-width 960px container."
+ *
+ * Layout contract:
+ *   - Mobile  (<768px)  : pass-through. Existing bottom-tab + burger UX.
+ *   - Desktop (>=768px) : flex-row root with fixed {@link SidebarNav} on
+ *     the left (240px) and a scrollable main pane on the right. The main
+ *     pane hosts AppHeader + page content; page content is constrained
+ *     to 960px by {@link DesktopScreen} and its descendants.
+ *   - Native platforms  : pass-through (mobile UX preserved).
+ *
+ * Public-chrome routes (/, /auth/*, /onboarding/*, /legal/*, /brand) also
+ * bypass the sidebar because {@link detectSidebarGroup} returns `null`.
+ * Those screens keep their own marketing chrome.
  */
+
 const FOCUS_RING_STYLE_ID = "p2ptax-focus-ring";
 function installFocusRingCSS() {
   if (typeof document === "undefined") return;
@@ -26,84 +40,60 @@ function installFocusRingCSS() {
   document.head.appendChild(style);
 }
 
-/**
- * AppShell — desktop-first layout container.
- *
- * - Mobile (<768px): pass-through, no container, no sidebar.
- * - Tablet (768..1024px): centered column, max-width 1280px.
- * - Desktop (>=1024px): LEFT sidebar with role-aware navigation + content card.
- *
- * Sidebar visibility is route-aware (via usePathname): role-based links are
- * shown only when the user is inside a tab group. Outside those groups (auth,
- * onboarding, landing "/") the shell falls back to a plain centered column so
- * public pages don't grow a stray sidebar.
- */
-
 interface AppShellProps {
   children: React.ReactNode;
 }
 
-const MAX_WIDTH = 1280;
-const TABLET_BP = 768;
-const DESKTOP_BP = 1024;
+const SIDEBAR_BREAKPOINT = 768;
 
 export default function AppShell({ children }: AppShellProps) {
   const { width } = useWindowDimensions();
   const pathname = usePathname() ?? "";
+  const segments = useSegments();
 
   useEffect(() => {
     if (Platform.OS === "web") installFocusRingCSS();
   }, []);
 
-  // Native platforms: pass-through (mobile UX preserved).
+  // Native: preserve mobile UX.
   if (Platform.OS !== "web") {
     return <>{children}</>;
   }
 
-  const isTablet = width >= TABLET_BP;
-  const isDesktop = width >= DESKTOP_BP;
+  const isDesktop = width >= SIDEBAR_BREAKPOINT;
+  const group = detectSidebarGroup(pathname, segments as readonly string[]);
+  const showSidebar = isDesktop && group !== null;
 
-  // Mobile web: pass-through — preserve bottom-tab mobile UX.
-  if (!isTablet) {
+  // Mobile web or public-chrome routes: pass-through.
+  if (!showSidebar) {
     return <>{children}</>;
   }
-
-  const group = detectSidebarGroup(pathname);
-  const showSidebar = isDesktop && group !== null;
 
   return (
     <View
       style={{
         flex: 1,
         width: "100%",
-        alignItems: "center",
+        flexDirection: "row",
         backgroundColor: colors.surface2,
+        minHeight: "100%",
       }}
     >
+      <SidebarNav group={group} />
       <View
         style={{
-          flexDirection: "row",
-          width: "100%",
-          maxWidth: MAX_WIDTH,
           flex: 1,
-          paddingHorizontal: isDesktop ? spacing.xl : spacing.lg,
-          paddingVertical: spacing.lg,
+          minWidth: 0,
+          minHeight: "100%",
+          // The main pane is the scroll container — pages keep their own
+          // ScrollView for pull-to-refresh, but the shell provides the
+          // top-level overflow on desktop web.
+          ...(Platform.OS === "web"
+            ? ({ overflowY: "auto", maxWidth: `calc(100% - ${SIDEBAR_WIDTH}px)` } as object)
+            : {}),
         }}
       >
-        {showSidebar && <SidebarNav group={group} />}
-        <View
-          style={{
-            flex: 1,
-            minWidth: 0,
-            backgroundColor: colors.surface,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: colors.border,
-            overflow: "hidden",
-          }}
-        >
-          {children}
-        </View>
+        {children}
       </View>
     </View>
   );

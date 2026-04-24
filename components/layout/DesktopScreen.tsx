@@ -49,7 +49,10 @@ export default function DesktopScreen({
   headerActions,
   sidebar,
   filters,
-  maxWidth = 1200,
+  // iter10 Phase 3a: default content column is 960px (multi-model consensus).
+  // Sidebar is provided by AppShell at 240px — the 960 column sits to the
+  // right and centers within the remaining width.
+  maxWidth = 960,
   fullWidth = false,
   children,
 }: DesktopScreenProps) {
