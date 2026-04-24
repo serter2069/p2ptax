@@ -5,8 +5,6 @@ import {
   LayoutGrid,
   FileText,
   MessageCircle,
-  List,
-  Rocket,
   BarChart2,
   Users,
   Shield,
@@ -14,7 +12,6 @@ import {
   Bell,
   Settings,
   LogOut,
-  UserRound,
   Compass,
   Inbox,
   type LucideIcon,
@@ -44,6 +41,7 @@ import RoleBadge from "./RoleBadge";
  */
 
 export type SidebarGroup =
+  | "user"
   | "client"
   | "specialist"
   | "admin"
@@ -76,7 +74,7 @@ interface NavItem {
  */
 const groupMatch = (
   ctx: MatchContext,
-  group: "(client-tabs)" | "(specialist-tabs)" | "(admin-tabs)",
+  group: "(tabs)" | "(client-tabs)" | "(specialist-tabs)" | "(admin-tabs)",
   leaf: string
 ): boolean => {
   if (ctx.segments[0] === group && ctx.segments[1] === leaf) return true;
@@ -96,79 +94,48 @@ const topLevelMatch = (ctx: MatchContext, prefix: string): boolean => {
   return ctx.path === prefix || ctx.path.startsWith(`${prefix}/`);
 };
 
-const CLIENT_ITEMS: NavItem[] = [
+// Iter11 — unified USER nav (client-like items always present).
+const USER_BASE_ITEMS: NavItem[] = [
   {
     label: "Дашборд",
-    href: "/(client-tabs)/dashboard",
+    href: "/(tabs)",
     icon: LayoutGrid,
-    match: (ctx) => groupMatch(ctx, "(client-tabs)", "dashboard"),
+    match: (ctx) =>
+      groupMatch(ctx, "(tabs)", "index") ||
+      (ctx.segments[0] === "(tabs)" && !ctx.segments[1]),
   },
   {
     label: "Мои заявки",
-    href: "/(client-tabs)/requests",
+    href: "/(tabs)/requests",
     icon: FileText,
-    match: (ctx) => groupMatch(ctx, "(client-tabs)", "requests"),
+    match: (ctx) => groupMatch(ctx, "(tabs)", "requests"),
   },
   {
     label: "Сообщения",
-    href: "/(client-tabs)/messages",
+    href: "/(tabs)/messages",
     icon: MessageCircle,
-    match: (ctx) => groupMatch(ctx, "(client-tabs)", "messages"),
+    match: (ctx) => groupMatch(ctx, "(tabs)", "messages"),
   },
+];
+
+// Specialist-only addition: appended to USER_BASE when isSpecialist=true.
+const USER_SPECIALIST_EXTRA: NavItem[] = [
+  {
+    label: "Публичные заявки",
+    href: "/(tabs)/public-requests",
+    icon: Inbox,
+    match: (ctx) =>
+      groupMatch(ctx, "(tabs)", "public-requests") ||
+      topLevelMatch(ctx, "/requests"),
+  },
+];
+
+const USER_TAIL_ITEMS: NavItem[] = [
   {
     label: "Каталог специалистов",
     href: "/specialists",
     icon: Compass,
     match: (ctx) => topLevelMatch(ctx, "/specialists"),
-  },
-  {
-    label: "Публичные заявки",
-    href: "/requests",
-    icon: Inbox,
-    match: (ctx) => topLevelMatch(ctx, "/requests"),
-  },
-  {
-    label: "Уведомления",
-    href: "/notifications",
-    icon: Bell,
-    match: (ctx) => topLevelMatch(ctx, "/notifications"),
-  },
-];
-
-const SPECIALIST_ITEMS: NavItem[] = [
-  {
-    label: "Дашборд",
-    href: "/(specialist-tabs)/dashboard",
-    icon: LayoutGrid,
-    match: (ctx) => groupMatch(ctx, "(specialist-tabs)", "dashboard"),
-  },
-  {
-    label: "Публичные заявки",
-    href: "/(specialist-tabs)/requests",
-    icon: List,
-    match: (ctx) =>
-      groupMatch(ctx, "(specialist-tabs)", "requests") ||
-      topLevelMatch(ctx, "/requests"),
-  },
-  {
-    label: "Диалоги",
-    href: "/(specialist-tabs)/threads",
-    icon: MessageCircle,
-    match: (ctx) =>
-      groupMatch(ctx, "(specialist-tabs)", "threads") ||
-      topLevelMatch(ctx, "/threads"),
-  },
-  {
-    label: "Профиль",
-    href: "/settings/specialist",
-    icon: UserRound,
-    match: (ctx) => ctx.path.startsWith("/settings/specialist"),
-  },
-  {
-    label: "Продвижение",
-    href: "/(specialist-tabs)/promotion",
-    icon: Rocket,
-    match: (ctx) => groupMatch(ctx, "(specialist-tabs)", "promotion"),
   },
   {
     label: "Уведомления",
@@ -211,44 +178,18 @@ const ADMIN_ITEMS: NavItem[] = [
   },
 ];
 
-// "main" fallback — used for top-level authenticated screens (`/requests`,
-// `/specialists`, `/notifications`, `/threads`, `/settings`) that don't
-// live in a role-based tab group. When the user has a role we prefer that
-// role's full nav set; when role is unknown we surface the shared
-// public-ish destinations so the sidebar is never empty.
-const MAIN_ITEMS: NavItem[] = [
-  {
-    label: "Каталог специалистов",
-    href: "/specialists",
-    icon: Compass,
-    match: (ctx) => topLevelMatch(ctx, "/specialists"),
-  },
-  {
-    label: "Публичные заявки",
-    href: "/requests",
-    icon: Inbox,
-    match: (ctx) => topLevelMatch(ctx, "/requests"),
-  },
-  {
-    label: "Уведомления",
-    href: "/notifications",
-    icon: Bell,
-    match: (ctx) => topLevelMatch(ctx, "/notifications"),
-  },
-];
-
 // ─────────────────────────────────────────── classification helpers
 
-function toAccentKey(role: UserRole): RoleAccentKey {
-  switch (role) {
-    case "SPECIALIST":
-      return "specialist";
-    case "ADMIN":
-      return "admin";
-    case "CLIENT":
-    default:
-      return "client";
-  }
+function toAccentKey(
+  role: UserRole,
+  isSpecialist: boolean
+): RoleAccentKey {
+  if (role === "ADMIN") return "admin";
+  // Iter11 — isSpecialist opt-in drives the accent for USER/CLIENT/SPECIALIST
+  // so legacy role strings keep working during the 3-PR rollout.
+  if (isSpecialist) return "specialist";
+  if (role === "SPECIALIST") return "specialist";
+  return "client";
 }
 
 /**
@@ -281,27 +222,22 @@ export function detectSidebarGroup(
 
   // Group detection via segments (authoritative).
   const first = segments[0] ?? "";
-  if (first === "(client-tabs)") return "client";
-  if (first === "(specialist-tabs)") return "specialist";
+  // Iter11 — (tabs) is now the authenticated USER group. Legacy
+  // (client-tabs)/(specialist-tabs) still resolve so redirect stubs keep
+  // their sidebar layout while routing forward.
+  if (first === "(tabs)") return "user";
+  if (first === "(client-tabs)") return "user";
+  if (first === "(specialist-tabs)") return "user";
   if (first === "(admin-tabs)") return "admin";
-  // Legacy (tabs) marketplace group keeps its own `<Header>` — out of
-  // Phase 3a scope, no sidebar there (to avoid double chrome).
-  if (first === "(tabs)") return null;
 
   // Fallback: pathname-based match, for safety when segments are empty
   // (happens during route transitions or in some preview environments).
-  if (pathname.includes("/client-tabs/") || pathname.includes("(client-tabs)")) return "client";
-  if (pathname.includes("/specialist-tabs/") || pathname.includes("(specialist-tabs)")) return "specialist";
+  if (pathname.includes("/client-tabs/") || pathname.includes("(client-tabs)")) return "user";
+  if (pathname.includes("/specialist-tabs/") || pathname.includes("(specialist-tabs)")) return "user";
   if (pathname.includes("/admin-tabs/") || pathname.includes("(admin-tabs)")) return "admin";
 
-  const LEGACY_TABS_ROUTES = new Set([
-    "/",
-    "/search",
-    "/create",
-    "/messages",
-    "/profile",
-  ]);
-  if (LEGACY_TABS_ROUTES.has(pathname)) return null;
+  const LEGACY_ROUTES = new Set(["/"]);
+  if (LEGACY_ROUTES.has(pathname)) return null;
 
   // Top-level authenticated screens reachable from sidebar (requests,
   // specialists, notifications, threads, settings): show a generic "main"
@@ -319,22 +255,27 @@ export function detectSidebarGroup(
   return null;
 }
 
-function itemsForGroup(group: SidebarGroup, role: UserRole): NavItem[] {
-  // When the group is "main" but user has a known role, prefer that role's
-  // nav set so /specialists or /requests still shows Client/Specialist links.
-  if (group === "main" && role === "CLIENT") return CLIENT_ITEMS;
-  if (group === "main" && role === "SPECIALIST") return SPECIALIST_ITEMS;
-  if (group === "main" && role === "ADMIN") return ADMIN_ITEMS;
+function buildUserItems(isSpecialist: boolean): NavItem[] {
+  return isSpecialist
+    ? [...USER_BASE_ITEMS, ...USER_SPECIALIST_EXTRA, ...USER_TAIL_ITEMS]
+    : [...USER_BASE_ITEMS, ...USER_TAIL_ITEMS];
+}
+
+function itemsForGroup(
+  group: SidebarGroup,
+  role: UserRole,
+  isSpecialist: boolean
+): NavItem[] {
+  if (group === "admin" || role === "ADMIN") return ADMIN_ITEMS;
 
   switch (group) {
+    // Legacy names resolve to the unified USER sidebar.
+    case "user":
     case "client":
-      return CLIENT_ITEMS;
     case "specialist":
-      return SPECIALIST_ITEMS;
-    case "admin":
-      return ADMIN_ITEMS;
+      return buildUserItems(isSpecialist);
     case "main":
-      return MAIN_ITEMS;
+      return buildUserItems(isSpecialist);
     default:
       return [];
   }
@@ -350,7 +291,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const segments = useSegments();
-  const { user, signOut } = useAuth();
+  const { user, isSpecialistUser, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const matchCtx: MatchContext = {
@@ -358,9 +299,9 @@ export default function SidebarNav({ group }: SidebarNavProps) {
     segments: segments as readonly string[],
   };
 
-  const accentKey = toAccentKey(user?.role ?? "CLIENT");
+  const accentKey = toAccentKey(user?.role ?? null, isSpecialistUser);
   const accent = roleAccent[accentKey];
-  const items = itemsForGroup(group, user?.role ?? "CLIENT");
+  const items = itemsForGroup(group, user?.role ?? null, isSpecialistUser);
   if (items.length === 0) return null;
 
   const displayName = user?.firstName
@@ -378,11 +319,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
   };
 
   const settingsPath =
-    user?.role === "ADMIN"
-      ? "/admin/settings"
-      : user?.role === "SPECIALIST"
-      ? "/settings/specialist"
-      : "/settings/client";
+    user?.role === "ADMIN" ? "/admin/settings" : "/settings";
 
   return (
     <View

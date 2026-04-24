@@ -82,19 +82,18 @@ export default function AuthOtpScreen() {
 
   const routeByRole = useCallback(
     (user: UserData) => {
-      if (user.role === "CLIENT") {
-        router.replace("/(client-tabs)/dashboard" as never);
-      } else if (user.role === "SPECIALIST") {
-        if (!user.firstName) {
-          router.replace("/onboarding/name" as never);
-        } else {
-          router.replace("/(specialist-tabs)/dashboard" as never);
-        }
-      } else if (user.role === "ADMIN") {
+      // Iter11 — unified (tabs) replaces split client/specialist groups.
+      if (user.role === "ADMIN") {
         router.replace("/(admin-tabs)/dashboard" as never);
-      } else {
-        router.replace("/(client-tabs)/dashboard" as never);
+        return;
       }
+      // Specialist opt-in still requires a name/profile finish before the
+      // dashboard can render the specialist widgets meaningfully.
+      if (user.isSpecialist && !user.firstName) {
+        router.replace("/onboarding/name" as never);
+        return;
+      }
+      router.replace("/(tabs)" as never);
     },
     [router]
   );
@@ -212,7 +211,7 @@ export default function AuthOtpScreen() {
     if (role === "SPECIALIST") {
       router.replace("/onboarding/name" as never);
     } else {
-      router.replace("/(client-tabs)/dashboard" as never);
+      router.replace("/(tabs)" as never);
     }
   };
 

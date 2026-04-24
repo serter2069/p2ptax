@@ -142,7 +142,8 @@ export default function PublicRequestDetail() {
   }
 
   const isOwner = !!user && user.id === request.user.id;
-  const isSpecialist = user?.role === "SPECIALIST";
+  // Iter11 — specialist mode is an opt-in flag, not a role.
+  const isSpecialist = user?.isSpecialist === true;
 
   const createdDate = new Date(request.createdAt).toLocaleDateString("ru-RU", {
     day: "numeric",

@@ -57,7 +57,8 @@ export default function SpecialistPublicProfile() {
   const [error, setError] = useState<string | null>(null);
 
   const isOwnProfile = !!user && user.id === id;
-  const isSpecialist = user?.role === "SPECIALIST";
+  // Iter11 — specialist mode is an opt-in flag, not a role.
+  const isSpecialist = user?.isSpecialist === true;
 
   useEffect(() => {
     async function load() {

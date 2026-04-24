@@ -39,27 +39,25 @@ export interface AppHeaderProps {
   title?: string;
 }
 
-function toAccentKey(role: UserRole): RoleAccentKey {
-  switch (role) {
-    case "SPECIALIST":
-      return "specialist";
-    case "ADMIN":
-      return "admin";
-    case "CLIENT":
-    default:
-      return "client";
-  }
+function toAccentKey(
+  role: UserRole,
+  isSpecialist: boolean
+): RoleAccentKey {
+  if (role === "ADMIN") return "admin";
+  // Iter11 — isSpecialist opt-in drives the accent for USER/CLIENT/SPECIALIST.
+  if (isSpecialist) return "specialist";
+  if (role === "SPECIALIST") return "specialist";
+  return "client";
 }
 
 // Shallow breadcrumb mapping — exact-prefix first, then longest-prefix wins.
 const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
-  { prefix: "/(client-tabs)/dashboard", label: "Обзор" },
-  { prefix: "/(client-tabs)/requests", label: "Мои заявки" },
-  { prefix: "/(client-tabs)/messages", label: "Сообщения" },
-  { prefix: "/(specialist-tabs)/dashboard", label: "Дашборд" },
-  { prefix: "/(specialist-tabs)/requests", label: "Заявки" },
-  { prefix: "/(specialist-tabs)/threads", label: "Переписки" },
-  { prefix: "/(specialist-tabs)/promotion", label: "Продвижение" },
+  // Iter11 — unified (tabs) replaces split groups.
+  { prefix: "/(tabs)/public-requests", label: "Публичные заявки" },
+  { prefix: "/(tabs)/requests", label: "Мои заявки" },
+  { prefix: "/(tabs)/messages", label: "Сообщения" },
+  { prefix: "/(tabs)/profile", label: "Профиль" },
+  { prefix: "/(tabs)", label: "Дашборд" },
   { prefix: "/(admin-tabs)/dashboard", label: "Админ · Обзор" },
   { prefix: "/(admin-tabs)/users", label: "Пользователи" },
   { prefix: "/(admin-tabs)/moderation", label: "Модерация" },
@@ -71,6 +69,13 @@ const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/threads", label: "Переписки" },
   { prefix: "/settings", label: "Настройки" },
   { prefix: "/notifications", label: "Уведомления" },
+  // Legacy aliases kept so redirect stubs still render a breadcrumb.
+  { prefix: "/(client-tabs)/dashboard", label: "Дашборд" },
+  { prefix: "/(client-tabs)/requests", label: "Мои заявки" },
+  { prefix: "/(client-tabs)/messages", label: "Сообщения" },
+  { prefix: "/(specialist-tabs)/dashboard", label: "Дашборд" },
+  { prefix: "/(specialist-tabs)/requests", label: "Публичные заявки" },
+  { prefix: "/(specialist-tabs)/threads", label: "Сообщения" },
 ];
 
 function inferBreadcrumb(pathname: string): string | null {
@@ -89,7 +94,7 @@ function inferBreadcrumb(pathname: string): string | null {
 export default function AppHeader({ title }: AppHeaderProps) {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  const { user, signOut } = useAuth();
+  const { user, isSpecialistUser, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname() ?? "";
 
@@ -97,7 +102,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [query, setQuery] = useState("");
 
-  const accentKey = toAccentKey(user?.role ?? "CLIENT");
+  const accentKey = toAccentKey(user?.role ?? null, isSpecialistUser);
   const accent = roleAccent[accentKey];
 
   const displayName = user?.firstName
@@ -127,12 +132,10 @@ export default function AppHeader({ title }: AppHeaderProps) {
 
   const handleSettings = () => {
     setDropdownOpen(false);
+    // Iter11 — unified /settings for all non-admin USERs. Admin still has
+    // its own bespoke settings page.
     const settingsPath =
-      user?.role === "SPECIALIST"
-        ? "/settings/specialist"
-        : user?.role === "ADMIN"
-        ? "/admin/settings"
-        : "/settings/client";
+      user?.role === "ADMIN" ? "/admin/settings" : "/settings";
     router.push(settingsPath as never);
   };
 
@@ -397,13 +400,12 @@ export default function AppHeader({ title }: AppHeaderProps) {
  * auth, onboarding, legal) we suppress AppHeader entirely — those
  * screens render their own hero/chrome.
  *
- * NOTE (iter8 regression fix): the legacy marketplace `(tabs)` group renders
- * its own `Header` component (burger + nav links) from `(tabs)/_layout.tsx`.
- * `usePathname()` strips the group segment, so routes like `/search`,
- * `/create`, `/messages`, `/profile` belong to `(tabs)` but look like
- * top-level paths. We must exclude them here to avoid double-chrome.
+ * Iter11 — (tabs) is now authenticated USER space (dashboard, requests,
+ * messages, public-requests, profile) and should show AppHeader like any
+ * other authenticated route. The old marketplace /search and /create tabs
+ * are gone; the remaining top-level routes (usePathname strips groups) map
+ * cleanly onto authenticated screens.
  */
-const TABS_ROUTES = new Set(["/search", "/create", "/messages", "/profile"]);
 
 export function shouldShowAppHeader(pathname: string): boolean {
   if (!pathname) return false;
@@ -411,6 +413,5 @@ export function shouldShowAppHeader(pathname: string): boolean {
   if (pathname.startsWith("/auth")) return false;
   if (pathname.startsWith("/legal")) return false;
   if (pathname.startsWith("/onboarding")) return false;
-  if (TABS_ROUTES.has(pathname)) return false;
   return true;
 }

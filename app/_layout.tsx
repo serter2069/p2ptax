@@ -68,6 +68,7 @@ export default function RootLayout() {
             <Stack.Screen name="requests/[id]/write" />
             <Stack.Screen name="settings" />
             <Stack.Screen name="settings/client" />
+            <Stack.Screen name="settings/specialist" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="legal/privacy" />
             <Stack.Screen name="legal/terms" />

@@ -1,77 +1,88 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
-import { Home, Search, PlusSquare, MessageCircle, User } from "lucide-react-native";
-import Header from "@/components/Header";
+import {
+  LayoutGrid,
+  FileText,
+  MessageCircle,
+  Inbox,
+  User,
+} from "lucide-react-native";
 import { colors, fontSizeValue } from "@/lib/theme";
+import { useAuth } from "@/contexts/AuthContext";
 
+/**
+ * Unified (tabs) navigator — iter11 UI layer (PR 2/3).
+ *
+ * Replaces the split (client-tabs)/(specialist-tabs) groups. A single set of
+ * tabs is rendered; the "Публичные заявки" tab is conditional on
+ * {@link useAuth} `isSpecialistUser`.
+ *
+ * Tabs are hidden on desktop web — {@link SidebarNav} carries navigation
+ * there. Mobile keeps the bottom-tab pattern.
+ */
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  // NOTE (iter8 regression fix): we previously suppressed `Header` on desktop
-  // web (>=1024px) assuming the AppShell sidebar would carry navigation — but
-  // `/(tabs)` reports pathname `/` to `usePathname()`, which is excluded from
-  // both the sidebar group detection (`detectSidebarGroup`) and the AppHeader
-  // gate (`shouldShowAppHeader`). Suppressing Header left authenticated users
-  // with zero chrome on the root marketplace tab. Render Header always.
+  const { isSpecialistUser } = useAuth();
 
   return (
-    <>
-      <Header />
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textSecondary,
-          tabBarStyle: {
-            display: isMobile ? "flex" : "none",
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            height: 60,
-            paddingBottom: 8,
-            paddingTop: 4,
-          },
-          tabBarLabelStyle: {
-            fontSize: fontSizeValue.tabBar,
-            fontWeight: "500",
-          },
-          headerShown: false,
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: isMobile
+          ? {
+              height: 60,
+              paddingBottom: 8,
+              paddingTop: 4,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }
+          : { display: "none" },
+        tabBarLabelStyle: {
+          fontSize: fontSizeValue.tabBar,
+          fontWeight: "500",
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Дашборд",
+          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
         }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: "Home",
-            tabBarIcon: ({ color }) => <Home size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="search"
-          options={{
-            title: "Search",
-            tabBarIcon: ({ color }) => <Search size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="create"
-          options={{
-            title: "Create",
-            tabBarIcon: ({ color }) => <PlusSquare size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="messages"
-          options={{
-            title: "Messages",
-            tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: "Profile",
-            tabBarIcon: ({ color }) => <User size={22} color={color} />,
-          }}
-        />
-      </Tabs>
-    </>
+      />
+      <Tabs.Screen
+        name="requests"
+        options={{
+          title: "Мои заявки",
+          tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: "Сообщения",
+          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="public-requests"
+        options={{
+          title: "Публичные заявки",
+          tabBarIcon: ({ color, size }) => <Inbox size={size} color={color} />,
+          // Hide tab entry entirely when user has no specialist opt-in.
+          href: isSpecialistUser ? "/(tabs)/public-requests" : null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Профиль",
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }

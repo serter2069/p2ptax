@@ -144,7 +144,7 @@ export default function OnboardingProfileScreen() {
         updateUser({ avatarUrl });
       }
 
-      router.replace("/(specialist-tabs)/dashboard" as never);
+      router.replace("/(tabs)" as never);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);
