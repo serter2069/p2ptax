@@ -6,7 +6,7 @@ import { User } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { colors, overlay, textStyle } from "@/lib/theme";
@@ -67,7 +67,7 @@ export default function OnboardingNameScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
-      <ResponsiveContainer>
+      <DesktopScreen maxWidth={720}>
         <View className="flex-1">
           <ScrollView
             className="flex-1"
@@ -182,7 +182,7 @@ export default function OnboardingNameScreen() {
             />
           </View>
         </View>
-      </ResponsiveContainer>
+      </DesktopScreen>
     </SafeAreaView>
   );
 }

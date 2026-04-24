@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Pencil, Plus, LogOut, Tag } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -193,7 +193,7 @@ export default function SpecialistSettings() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderBack title="Настройки специалиста" />
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-        <ResponsiveContainer>
+        <DesktopScreen maxWidth={860}>
           <View className="py-4">
 
             {/* Avatar centered */}
@@ -432,7 +432,7 @@ export default function SpecialistSettings() {
             </Text>
 
           </View>
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
   );

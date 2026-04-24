@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import StatusBadge from "@/components/StatusBadge";
 import { FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
@@ -345,7 +345,7 @@ export default function MyRequests() {
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome />
-      <ResponsiveContainer>
+      <DesktopScreen>
         {/* Accent hero */}
         <View className="rounded-2xl px-5 py-5 mb-5 mt-2" style={{ backgroundColor: colors.accent }}>
           <Text className="text-xl font-bold text-white mb-0.5">Мои заявки</Text>
@@ -362,7 +362,7 @@ export default function MyRequests() {
         </View>
 
         {renderContent()}
-      </ResponsiveContainer>
+      </DesktopScreen>
 
       {/* Toast */}
       <Toast message="Заявка закрыта" visible={toast} />

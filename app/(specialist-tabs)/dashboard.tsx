@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { TriangleAlert, List } from "lucide-react-native";
 import HeaderHome from "@/components/HeaderHome";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -134,7 +134,7 @@ export default function SpecialistDashboard() {
           notificationCount={0}
           onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
-        <ResponsiveContainer>
+        <DesktopScreen>
           <View className="py-4 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <View key={i} className="bg-white rounded-xl overflow-hidden border border-border">
@@ -142,7 +142,7 @@ export default function SpecialistDashboard() {
               </View>
             ))}
           </View>
-        </ResponsiveContainer>
+        </DesktopScreen>
       </SafeAreaView>
     );
   }
@@ -179,7 +179,7 @@ export default function SpecialistDashboard() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        <ResponsiveContainer>
+        <DesktopScreen>
           <View className="py-4">
             {/* Hero banner */}
             <View className="rounded-2xl px-5 py-5 mb-4" style={{ backgroundColor: colors.accent }}>
@@ -300,7 +300,7 @@ export default function SpecialistDashboard() {
 
             <View className="h-8" />
           </View>
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
   );

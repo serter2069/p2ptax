@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import HeaderHome from "@/components/HeaderHome";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
       />
       {loading ? (
         <ScrollView className="flex-1">
-          <ResponsiveContainer>
+          <DesktopScreen>
             <View className="py-4 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
                 <View key={i} className="bg-white rounded-xl overflow-hidden border border-border">
@@ -154,7 +154,7 @@ export default function AdminDashboard() {
                 </View>
               ))}
             </View>
-          </ResponsiveContainer>
+          </DesktopScreen>
         </ScrollView>
       ) : error ? (
         <View className="flex-1 items-center justify-center">
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
         <ScrollView className="flex-1">
           {/* Accent hero section */}
           <View className="bg-accent px-4 pt-5 pb-6">
-            <ResponsiveContainer>
+            <DesktopScreen>
               <Text className="text-2xl font-bold text-white">
                 Панель администратора
               </Text>
@@ -174,10 +174,10 @@ export default function AdminDashboard() {
               >
                 Обзор ключевых метрик платформы
               </Text>
-            </ResponsiveContainer>
+            </DesktopScreen>
           </View>
 
-          <ResponsiveContainer>
+          <DesktopScreen>
             <View className="py-4 gap-3">
               {/* Stats grid */}
               <View className="flex-row flex-wrap gap-3">
@@ -243,7 +243,7 @@ export default function AdminDashboard() {
                 </View>
               </View>
             </View>
-          </ResponsiveContainer>
+          </DesktopScreen>
         </ScrollView>
       )}
     </SafeAreaView>

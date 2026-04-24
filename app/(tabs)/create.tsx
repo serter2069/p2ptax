@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { FileText, Lightbulb } from "lucide-react-native";
 import { colors } from "@/lib/theme";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import Button from "@/components/ui/Button";
 
 export default function CreateScreen() {
@@ -13,7 +13,7 @@ export default function CreateScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
-        <ResponsiveContainer>
+        <DesktopScreen>
           {/* Header */}
           <View className="pt-4 pb-4">
             <Text className="text-2xl font-bold text-text-base">Новая заявка специалисту</Text>
@@ -60,7 +60,7 @@ export default function CreateScreen() {
             label="Создать заявку"
             onPress={() => router.push("/requests/new" as never)}
           />
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
   );

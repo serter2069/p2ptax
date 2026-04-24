@@ -75,8 +75,9 @@ function ConversationItem({
 export default function MessagesScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
+  const isWideDesktop = width >= 1024;
   const containerStyle = isDesktop
-    ? { maxWidth: 720, width: "100%" as const, alignSelf: "center" as const }
+    ? { maxWidth: isWideDesktop ? 1200 : 720, width: "100%" as const, alignSelf: "center" as const, paddingHorizontal: isWideDesktop ? 32 : 0 }
     : undefined;
 
   return (

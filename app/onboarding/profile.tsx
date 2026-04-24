@@ -14,7 +14,7 @@ import { Pencil, Camera } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { API_URL, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -161,7 +161,7 @@ export default function OnboardingProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
-      <ResponsiveContainer>
+      <DesktopScreen maxWidth={720}>
         <View className="flex-1">
         <ScrollView
           className="flex-1"
@@ -387,7 +387,7 @@ export default function OnboardingProfileScreen() {
           </Pressable>
         </View>
         </View>
-      </ResponsiveContainer>
+      </DesktopScreen>
     </SafeAreaView>
   );
 }

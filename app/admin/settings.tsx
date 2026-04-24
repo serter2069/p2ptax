@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
 import { Settings } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ErrorState from "@/components/ui/ErrorState";
@@ -120,7 +120,7 @@ export default function AdminSettings() {
         </View>
       ) : (
         <ScrollView className="flex-1">
-          <ResponsiveContainer>
+          <DesktopScreen maxWidth={860}>
             <View className="py-4 gap-4">
               {SETTINGS_FIELDS.length === 0 ? (
                 <EmptyState icon={Settings} title="Нет настроек" subtitle="Настройки системы недоступны" />
@@ -145,7 +145,7 @@ export default function AdminSettings() {
                 />
               </View>
             </View>
-          </ResponsiveContainer>
+          </DesktopScreen>
         </ScrollView>
       )}
     </SafeAreaView>

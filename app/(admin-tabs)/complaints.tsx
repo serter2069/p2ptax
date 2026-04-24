@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ChevronUp, ChevronDown, Flag } from "lucide-react-native";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, overlay } from "@/lib/theme";
@@ -304,10 +304,10 @@ export default function AdminComplaints() {
       </View>
 
       {loading ? (
-        <ResponsiveContainer>
+        <DesktopScreen>
           <LoadingState variant="skeleton" lines={5} />
           <LoadingState variant="skeleton" lines={5} />
-        </ResponsiveContainer>
+        </DesktopScreen>
       ) : error ? (
         <View className="flex-1 items-center justify-center">
           <ErrorState
@@ -316,7 +316,7 @@ export default function AdminComplaints() {
           />
         </View>
       ) : (
-        <ResponsiveContainer>
+        <DesktopScreen>
           <FlatList
             data={complaints}
             keyExtractor={(item) => item.id}
@@ -345,7 +345,7 @@ export default function AdminComplaints() {
               ) : null
             }
           />
-        </ResponsiveContainer>
+        </DesktopScreen>
       )}
     </SafeAreaView>
   );

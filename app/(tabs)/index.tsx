@@ -84,7 +84,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const isDesktop = width >= 640;
   const containerStyle = isDesktop
-    ? { maxWidth: 960, width: "100%" as const, alignSelf: "center" as const }
+    ? { maxWidth: 1200, width: "100%" as const, alignSelf: "center" as const, paddingHorizontal: 16 }
     : undefined;
 
   return (

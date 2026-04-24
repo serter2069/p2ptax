@@ -6,7 +6,7 @@ import {
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, textStyle } from "@/lib/theme";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import EmptyState from "@/components/ui/EmptyState";
 
 // Tax-domain menu items (NOT marketplace listings).
@@ -31,7 +31,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <ScrollView className="flex-1" contentContainerClassName="pb-10">
-        <ResponsiveContainer>
+        <DesktopScreen>
           {/* Profile Header Card */}
           <View
             className="bg-white mx-4 mt-6 rounded-2xl border border-border px-6 py-8 items-center mb-4"
@@ -142,7 +142,7 @@ export default function ProfileScreen() {
           </View>
 
           <Text className="text-xs text-text-dim text-center mt-2 mb-4">Версия 1.0.0</Text>
-        </ResponsiveContainer>
+        </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
   );

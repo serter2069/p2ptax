@@ -252,12 +252,17 @@ export default function ClientMessages() {
 
   // Desktop: 2-column layout
   if (isDesktop) {
+    const isWide = width >= 1024;
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <HeaderHome />
-        <View className="flex-1 flex-row">
+        <View className="flex-1 items-center">
+          <View
+            className="flex-1 flex-row w-full"
+            style={{ maxWidth: isWide ? 1200 : "100%", borderWidth: isWide ? 1 : 0, borderColor: colors.border, borderRadius: isWide ? 12 : 0, overflow: "hidden", marginTop: isWide ? 24 : 0, marginBottom: isWide ? 24 : 0 }}
+          >
           {/* Thread list panel */}
-          <View style={{ maxWidth: 300, flex: 1, borderRightWidth: 1, borderRightColor: colors.border }}>
+          <View style={{ maxWidth: 320, flex: 1, borderRightWidth: 1, borderRightColor: colors.border }}>
             <FlatList
               data={sorted}
               keyExtractor={(item) => item.id}
@@ -298,6 +303,7 @@ export default function ClientMessages() {
                 subtitle="Нажмите на переписку слева, чтобы открыть её"
               />
             )}
+          </View>
           </View>
         </View>
       </SafeAreaView>

@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import HeaderHome from "@/components/HeaderHome";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import RequestCard from "@/components/RequestCard";
 import FilterBar from "@/components/FilterBar";
 import { TriangleAlert, FileText } from "lucide-react-native";
@@ -145,7 +145,7 @@ export default function SpecialistPublicRequests() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <HeaderHome />
-      <ResponsiveContainer>
+      <DesktopScreen>
         {/* Accent hero */}
         <View className="rounded-2xl px-5 py-5 mb-4 mt-2" style={{ backgroundColor: colors.accent }}>
           <Text className="text-xl font-bold text-white mb-0.5">Публичные заявки</Text>
@@ -223,7 +223,7 @@ export default function SpecialistPublicRequests() {
             }
           />
         )}
-      </ResponsiveContainer>
+      </DesktopScreen>
     </SafeAreaView>
   );
 }
