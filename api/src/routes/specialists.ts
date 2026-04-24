@@ -230,7 +230,24 @@ router.get("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    const requestsCount = await prisma.thread.count({ where: { specialistId: id } });
+    const [requestsCount, cases, reviews] = await Promise.all([
+      prisma.thread.count({ where: { specialistId: id } }),
+      prisma.specialistCase.findMany({
+        where: { specialistId: id },
+        orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      }),
+      prisma.specialistReview.findMany({
+        where: { specialistId: id },
+        orderBy: { date: "desc" },
+      }),
+    ]);
+
+    const averageRating =
+      reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        : null;
+
+    const profile = specialist.specialistProfile;
 
     res.json({
       id: specialist.id,
@@ -240,17 +257,43 @@ router.get("/:id", async (req: Request, res: Response) => {
       isAvailable: specialist.isAvailable,
       createdAt: specialist.createdAt,
       requestsCount,
-      profile: specialist.specialistProfile
+      profile: profile
         ? {
-            description: specialist.specialistProfile.description,
-            phone: specialist.specialistProfile.phone,
-            telegram: specialist.specialistProfile.telegram,
-            whatsapp: specialist.specialistProfile.whatsapp,
-            officeAddress: specialist.specialistProfile.officeAddress,
-            workingHours: specialist.specialistProfile.workingHours,
+            description: profile.description,
+            phone: profile.phone,
+            telegram: profile.telegram,
+            whatsapp: profile.whatsapp,
+            officeAddress: profile.officeAddress,
+            workingHours: profile.workingHours,
+            exFnsStartYear: profile.exFnsStartYear,
+            exFnsEndYear: profile.exFnsEndYear,
+            yearsOfExperience: profile.yearsOfExperience,
+            specializations: (profile.specializations as string[] | null) ?? null,
+            certifications: (profile.certifications as string[] | null) ?? null,
           }
         : null,
       fnsServices: [...fnsMap.values()],
+      cases: cases.map((c) => ({
+        id: c.id,
+        title: c.title,
+        category: c.category,
+        amount: c.amount,
+        resolvedAmount: c.resolvedAmount,
+        days: c.days,
+        status: c.status,
+        description: c.description,
+        year: c.year,
+      })),
+      reviews: reviews.map((r) => ({
+        id: r.id,
+        authorName: r.authorName,
+        rating: r.rating,
+        date: r.date,
+        text: r.text,
+        categoryChips: (r.categoryChips as string[] | null) ?? [],
+      })),
+      averageRating,
+      reviewCount: reviews.length,
     });
   } catch (error) {
     console.error("specialist detail error:", error);

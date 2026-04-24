@@ -34,6 +34,8 @@ model User {
   specialistProfile       SpecialistProfile?
   specialistFns           SpecialistFns[]
   specialistServices      SpecialistService[]
+  specialistCases         SpecialistCase[]
+  specialistReviews       SpecialistReview[]
   requests                Request[]
   clientThreads           Thread[]  @relation("ClientThreads")
   specialistThreads       Thread[]  @relation("SpecialistThreads")
@@ -48,19 +50,61 @@ model User {
 }
 
 model SpecialistProfile {
-  id            String  @id @default(uuid())
-  userId        String  @unique @map("user_id")
-  description   String?
-  phone         String?
-  telegram      String?
-  whatsapp      String?
-  officeAddress String? @map("office_address")
-  workingHours  String? @map("working_hours")
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  description        String?
+  phone              String?
+  telegram           String?
+  whatsapp           String?
+  officeAddress      String?  @map("office_address")
+  workingHours       String?  @map("working_hours")
+  // Iteration 5 — credibility stack fields
+  exFnsStartYear     Int?     @map("ex_fns_start_year")
+  exFnsEndYear       Int?     @map("ex_fns_end_year")
+  yearsOfExperience  Int?     @map("years_of_experience")
+  specializations    Json?    // array of strings
+  certifications     Json?    // array of strings
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   contactMethods ContactMethod[]
 
   @@map("specialist_profiles")
+}
+
+model SpecialistCase {
+  id             String   @id @default(uuid())
+  specialistId   String   @map("specialist_id")
+  title          String
+  category       String   // "Выездная проверка" | "Камеральная проверка" | "115-ФЗ" | "ОКК"
+  amount         Int?     // в рублях (доначисления)
+  resolvedAmount Int?     @map("resolved_amount") // в рублях (оспорено)
+  days           Int?     // срок решения
+  status         String   // "resolved" | "in_progress"
+  description    String
+  year           Int?
+  order          Int      @default(0)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  specialist User @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  @@index([specialistId])
+  @@map("specialist_cases")
+}
+
+model SpecialistReview {
+  id             String   @id @default(uuid())
+  specialistId   String   @map("specialist_id")
+  authorName     String   @map("author_name")
+  rating         Int      // 1..5
+  date           DateTime
+  text           String
+  categoryChips  Json?    @map("category_chips") // array of strings
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  specialist User @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  @@index([specialistId])
+  @@map("specialist_reviews")
 }
 
 model ContactMethod {
