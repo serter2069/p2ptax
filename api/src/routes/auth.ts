@@ -266,7 +266,9 @@ router.post("/set-role", authMiddleware, async (req: Request, res: Response) => 
     const userId = req.user!.userId;
     const { role } = req.body;
 
-    if (role !== "CLIENT" && role !== "SPECIALIST" && role !== "USER") {
+    const ALLOWED_TOKENS = new Set(["CLIENT", "SPECIALIST", "USER"]);
+    const roleToken: string | undefined = role;
+    if (!roleToken || !ALLOWED_TOKENS.has(roleToken)) {
       res.status(400).json({ error: "Role must be USER, CLIENT, or SPECIALIST" });
       return;
     }
@@ -287,7 +289,7 @@ router.post("/set-role", authMiddleware, async (req: Request, res: Response) => 
       return;
     }
 
-    const wantsSpecialist = role === "SPECIALIST";
+    const wantsSpecialist = roleToken === "SPECIALIST";
 
     const updated = await prisma.user.update({
       where: { id: userId },

@@ -64,6 +64,9 @@ interface AdminUser {
   firstName: string | null;
   lastName: string | null;
   role: string;
+  // Iter11 PR 3 — specialist opt-in flag; admin dashboard uses it to
+  // colour the feed rows (emerald for specialists, blue for plain USERs).
+  isSpecialist?: boolean;
   createdAt: string;
   isBanned: boolean;
 }
@@ -169,7 +172,7 @@ export default function AdminDashboard() {
         meta: `${u.role} · ${formatDateShort(u.createdAt)}`,
         rightValue: u.isBanned ? "BANNED" : undefined,
         icon: UserPlus,
-        iconTone: u.isBanned ? "danger" : u.role === "SPECIALIST" ? "success" : "primary",
+        iconTone: u.isBanned ? "danger" : u.isSpecialist ? "success" : "primary",
         onPress: () => router.push("/(admin-tabs)/users" as never),
       })),
     [recentUsers, router]

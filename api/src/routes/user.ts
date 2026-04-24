@@ -101,4 +101,144 @@ router.patch("/email", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+
+// POST /api/user/become-specialist — progressive specialist activation.
+//
+// Iter11 PR 3 — allows an existing USER account to flip `isSpecialist=true`
+// without going through the full onboarding flow. Required payload covers
+// the minimal specialist profile fields (phone + description) plus the
+// domain metadata (cities, fns, services). On success we:
+//   - flip `isSpecialist = true` on the user
+//   - set `specialistProfileCompletedAt = now()` (gates canWriteThreads + catalog)
+//   - upsert the profile row with contacts/workingHours/officeAddress
+//   - replace the user's specialist-services matrix with the new selection
+// No re-verification; the user stays signed in with the same token.
+router.post("/become-specialist", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const {
+      cities,
+      fns,
+      services,
+      bio,
+      phone,
+      telegram,
+      whatsapp,
+      officeAddress,
+      workingHours,
+    } = req.body ?? {};
+
+    // Basic required-field validation. FNS + services drive the catalog;
+    // `cities` is accepted for client-side UX but not persisted (every FNS
+    // row already belongs to a city via its foreign key).
+    void cities;
+    if (!Array.isArray(fns) || fns.length === 0) {
+      res.status(400).json({ error: "fns required" });
+      return;
+    }
+    if (!Array.isArray(services) || services.length === 0) {
+      res.status(400).json({ error: "services required" });
+      return;
+    }
+
+    // Normalise services input — accept either a flat `[{fnsId, serviceIds}]`
+    // matrix (preferred) or a mapping-like shape from the UI. Fall back to
+    // deriving fns+services by intersecting the two parallel arrays.
+    type Matrix = { fnsId: string; serviceIds: string[] }[];
+    let matrix: Matrix = [];
+    if (Array.isArray(services) && services.every((x) => x && typeof x === "object" && "fnsId" in x && "serviceIds" in x)) {
+      matrix = (services as Matrix).filter((m) => typeof m.fnsId === "string" && Array.isArray(m.serviceIds));
+    } else {
+      // Simple intersection: every selected FNS gets every selected service.
+      const fnsIds = (fns as unknown[]).filter((v): v is string => typeof v === "string");
+      const serviceIds = (services as unknown[]).filter((v): v is string => typeof v === "string");
+      if (fnsIds.length === 0 || serviceIds.length === 0) {
+        res.status(400).json({ error: "fns and services must be non-empty arrays" });
+        return;
+      }
+      matrix = fnsIds.map((fnsId) => ({ fnsId, serviceIds }));
+    }
+    if (matrix.length === 0) {
+      res.status(400).json({ error: "services matrix is empty" });
+      return;
+    }
+
+    const now = new Date();
+
+    // Transaction: all-or-nothing so we never leave a half-flipped user.
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          isSpecialist: true,
+          specialistProfileCompletedAt: now,
+          isAvailable: true,
+        },
+      });
+
+      await tx.specialistProfile.upsert({
+        where: { userId },
+        create: {
+          userId,
+          description: typeof bio === "string" ? bio : null,
+          phone: typeof phone === "string" ? phone : null,
+          telegram: typeof telegram === "string" ? telegram : null,
+          whatsapp: typeof whatsapp === "string" ? whatsapp : null,
+          officeAddress: typeof officeAddress === "string" ? officeAddress : null,
+          workingHours: typeof workingHours === "string" ? workingHours : null,
+        },
+        update: {
+          description: typeof bio === "string" ? bio : undefined,
+          phone: typeof phone === "string" ? phone : undefined,
+          telegram: typeof telegram === "string" ? telegram : undefined,
+          whatsapp: typeof whatsapp === "string" ? whatsapp : undefined,
+          officeAddress: typeof officeAddress === "string" ? officeAddress : undefined,
+          workingHours: typeof workingHours === "string" ? workingHours : undefined,
+        },
+      });
+
+      // Replace existing specialist-services + specialist-fns rows.
+      await tx.specialistService.deleteMany({ where: { specialistId: userId } });
+      await tx.specialistFns.deleteMany({ where: { specialistId: userId } });
+
+      for (const entry of matrix) {
+        if (!entry.serviceIds || entry.serviceIds.length === 0) continue;
+        const specialistFns = await tx.specialistFns.create({
+          data: { specialistId: userId, fnsId: entry.fnsId },
+        });
+        for (const serviceId of entry.serviceIds) {
+          await tx.specialistService.create({
+            data: {
+              specialistId: userId,
+              fnsId: entry.fnsId,
+              serviceId,
+              specialistFnsId: specialistFns.id,
+            },
+          });
+        }
+      }
+    });
+
+    const updated = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isSpecialist: true,
+        specialistProfileCompletedAt: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        isAvailable: true,
+      },
+    });
+
+    res.json({ user: updated });
+  } catch (error) {
+    console.error("user/become-specialist error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

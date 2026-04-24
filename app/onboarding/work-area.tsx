@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect, useMemo } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
 import { colors, textStyle } from "@/lib/theme";
@@ -24,6 +25,7 @@ interface FnsOffice {
 
 export default function OnboardingWorkAreaScreen() {
   const router = useRouter();
+  const { isSpecialistUser, updateUser } = useAuth();
 
   const [services, setServices] = useState<ServiceItem[]>([]);
 
@@ -148,17 +150,40 @@ export default function OnboardingWorkAreaScreen() {
         fnsId,
         serviceIds: servicesByFns[fnsId] || [],
       }));
-      await api("/api/onboarding/work-area", {
-        method: "PUT",
-        body: {
-          cities: cityIds,
-          fns: fnsIds,
-          fnsServices,
-          specialist_services: fnsServices.flatMap((f) =>
-            f.serviceIds.map((sid) => ({ fns_id: f.fnsId, service_id: sid }))
-          ),
-        },
-      });
+      // Iter11 PR 3 — if this user hasn't flipped isSpecialist yet (the
+      // "progressive" settings path), call the new unified endpoint that
+      // enables specialist features + persists the matrix in one go.
+      if (!isSpecialistUser) {
+        const res = await api<{ user: { isSpecialist: boolean; specialistProfileCompletedAt: string | null } }>(
+          "/api/user/become-specialist",
+          {
+            method: "POST",
+            body: {
+              cities: cityIds,
+              fns: fnsIds,
+              services: fnsServices,
+            },
+          }
+        );
+        if (res.user) {
+          updateUser({
+            isSpecialist: res.user.isSpecialist,
+            specialistProfileCompletedAt: res.user.specialistProfileCompletedAt ?? null,
+          });
+        }
+      } else {
+        await api("/api/onboarding/work-area", {
+          method: "PUT",
+          body: {
+            cities: cityIds,
+            fns: fnsIds,
+            fnsServices,
+            specialist_services: fnsServices.flatMap((f) =>
+              f.serviceIds.map((sid) => ({ fns_id: f.fnsId, service_id: sid }))
+            ),
+          },
+        });
+      }
       router.push("/onboarding/profile" as never);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";

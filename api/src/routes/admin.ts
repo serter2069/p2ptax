@@ -129,22 +129,29 @@ router.get("/users", async (req: Request, res: Response) => {
       ];
     }
 
-    // Iter11: role filter accepts the new enum (USER/ADMIN) plus legacy labels
-    // that UI may still send during the 3-PR migration window.
-    //   CLIENT     -> USER role AND isSpecialist=false
-    //   SPECIALIST -> isSpecialist=true  (role is always USER for specialists)
-    //   USER       -> role=USER (any client-side filter)
-    //   ADMIN      -> role=ADMIN
-    //   BANNED     -> pseudo-filter, maps to isBanned=true
-    if (role === "CLIENT") {
-      where.role = "USER";
-      where.isSpecialist = false;
-    } else if (role === "SPECIALIST") {
-      where.isSpecialist = true;
-    } else if (role === "USER" || role === "ADMIN") {
-      where.role = role;
-    } else if (role === "BANNED") {
-      where.isBanned = true;
+    // Iter11 PR 3 — admin UI filter tokens map onto the unified schema.
+    // Tokens are just filter identifiers, NOT DB role enum values.
+    //   "CLIENT"     -> role=USER, isSpecialist=false
+    //   "SPECIALIST" -> isSpecialist=true
+    //   "USER"       -> role=USER (any)
+    //   "ADMIN"      -> role=ADMIN
+    //   "BANNED"     -> isBanned=true
+    const roleFilter: string | undefined = role;
+    switch (roleFilter) {
+      case "CLIENT":
+        where.role = "USER";
+        where.isSpecialist = false;
+        break;
+      case "SPECIALIST":
+        where.isSpecialist = true;
+        break;
+      case "USER":
+      case "ADMIN":
+        where.role = roleFilter;
+        break;
+      case "BANNED":
+        where.isBanned = true;
+        break;
     }
 
     const [items, total] = await Promise.all([
@@ -214,16 +221,23 @@ router.patch("/users/:id", async (req: Request, res: Response) => {
     if (typeof isBanned === "boolean") data.isBanned = isBanned;
     if (typeof firstName === "string") data.firstName = firstName;
     if (typeof lastName === "string") data.lastName = lastName;
-    // Iter11: admin PATCH accepts new (USER/ADMIN) and legacy (CLIENT/SPECIALIST)
-    // role strings for backwards compat. Legacy values remap onto the new schema.
-    if (role === "CLIENT") {
-      data.role = "USER";
-      data.isSpecialist = false;
-    } else if (role === "SPECIALIST") {
-      data.role = "USER";
-      data.isSpecialist = true;
-    } else if (role === "USER" || role === "ADMIN") {
-      data.role = role;
+    // Iter11 PR 3 — admin PATCH accepts legacy UI labels and remaps onto
+    // the unified schema. The legacy tokens are UI-only; the DB always
+    // stores role=USER|ADMIN with isSpecialist toggled.
+    const roleInput: string | undefined = role;
+    switch (roleInput) {
+      case "CLIENT":
+        data.role = "USER";
+        data.isSpecialist = false;
+        break;
+      case "SPECIALIST":
+        data.role = "USER";
+        data.isSpecialist = true;
+        break;
+      case "USER":
+      case "ADMIN":
+        data.role = roleInput;
+        break;
     }
 
     const user = await prisma.user.update({

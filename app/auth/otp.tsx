@@ -204,11 +204,31 @@ export default function AuthOtpScreen() {
     }
   };
 
-  const handleRoleChoice = async (role: "CLIENT" | "SPECIALIST") => {
+  // Iter11 PR 3 — new-user type picker. Calls /api/auth/set-role which
+  // writes role=USER and toggles `isSpecialist` server-side (the legacy
+  // "CLIENT"/"SPECIALIST" strings remain accepted by the endpoint for
+  // compatibility with older clients).
+  const handleTypeChoice = async (becomeSpecialist: boolean) => {
     if (!pendingAuth) return;
-    const user: UserData = { ...pendingAuth.user, role };
-    await signIn(pendingAuth.accessToken, pendingAuth.refreshToken, user);
-    if (role === "SPECIALIST") {
+    const { accessToken, refreshToken, user: baseUser } = pendingAuth;
+    const optimisticUser: UserData = {
+      ...baseUser,
+      role: "USER",
+      isSpecialist: becomeSpecialist,
+    };
+    await signIn(accessToken, refreshToken, optimisticUser);
+    // Fire-and-forget: persist the choice. If this fails the next /me call
+    // will return the still-null role and the user will land back on the
+    // picker, which is the correct behaviour.
+    try {
+      await api("/api/auth/set-role", {
+        method: "POST",
+        body: { role: becomeSpecialist ? "SPECIALIST" : "USER" },
+      });
+    } catch {
+      // Silent: optimistic update keeps the UI responsive.
+    }
+    if (becomeSpecialist) {
       router.replace("/onboarding/name" as never);
     } else {
       router.replace("/(tabs)" as never);
@@ -242,7 +262,7 @@ export default function AuthOtpScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Мне нужна помощь с налоговой"
-              onPress={() => handleRoleChoice("CLIENT")}
+              onPress={() => handleTypeChoice(false)}
               className="border-2 border-border rounded-2xl p-5 mb-3 active:bg-surface2"
             >
               <Text className="text-base font-semibold text-text-base text-center mb-1">
@@ -256,7 +276,7 @@ export default function AuthOtpScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Я налоговый специалист"
-              onPress={() => handleRoleChoice("SPECIALIST")}
+              onPress={() => handleTypeChoice(true)}
               className="rounded-2xl p-5 active:opacity-90"
               style={{ backgroundColor: colors.primary }}
             >

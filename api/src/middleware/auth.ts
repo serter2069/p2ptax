@@ -137,8 +137,8 @@ type UserPermissionShape = {
 
 /**
  * Can the user start new threads with clients (write to a public request)?
- * Only completed-onboarding specialists. Iter11: checked via isSpecialist flag,
- * not role === "SPECIALIST".
+ * Only completed-onboarding specialists. Checked via the `isSpecialist`
+ * flag + `specialistProfileCompletedAt` timestamp.
  */
 export function canWriteThreads(user: UserPermissionShape | null): boolean {
   if (!user) return false;

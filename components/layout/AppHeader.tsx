@@ -46,7 +46,6 @@ function toAccentKey(
   if (role === "ADMIN") return "admin";
   // Iter11 — isSpecialist opt-in drives the accent for USER/CLIENT/SPECIALIST.
   if (isSpecialist) return "specialist";
-  if (role === "SPECIALIST") return "specialist";
   return "client";
 }
 
@@ -69,13 +68,6 @@ const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/threads", label: "Переписки" },
   { prefix: "/settings", label: "Настройки" },
   { prefix: "/notifications", label: "Уведомления" },
-  // Legacy aliases kept so redirect stubs still render a breadcrumb.
-  { prefix: "/(client-tabs)/dashboard", label: "Дашборд" },
-  { prefix: "/(client-tabs)/requests", label: "Мои заявки" },
-  { prefix: "/(client-tabs)/messages", label: "Сообщения" },
-  { prefix: "/(specialist-tabs)/dashboard", label: "Дашборд" },
-  { prefix: "/(specialist-tabs)/requests", label: "Публичные заявки" },
-  { prefix: "/(specialist-tabs)/threads", label: "Сообщения" },
 ];
 
 function inferBreadcrumb(pathname: string): string | null {
@@ -83,7 +75,7 @@ function inferBreadcrumb(pathname: string): string | null {
   const sorted = [...BREADCRUMB_MAP].sort((a, b) => b.prefix.length - a.prefix.length);
   for (const entry of sorted) {
     // Normalise paren-group markers: Expo Router may emit either form.
-    const normalised = pathname.replace(/\((client|specialist|admin)-tabs\)/g, "/$1-tabs/");
+    const normalised = pathname.replace(/\((admin-)?tabs\)/g, (m) => (m === "(admin-tabs)" ? "/admin-tabs/" : "/tabs/"));
     if (pathname.startsWith(entry.prefix) || normalised.includes(entry.prefix.replace(/[()]/g, ""))) {
       return entry.label;
     }
@@ -338,7 +330,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
             />
 
             <View style={{ paddingHorizontal: spacing.xs }}>
-              <RoleBadge role={user?.role ?? null} size="md" />
+              <RoleBadge role={user?.role ?? null} isSpecialist={isSpecialistUser} size="md" />
             </View>
 
             <View
