@@ -1,6 +1,8 @@
 import { useEffect } from "react";
-import { View, Text, useWindowDimensions, Platform } from "react-native";
-import { colors, spacing, typography } from "@/lib/theme";
+import { View, useWindowDimensions, Platform } from "react-native";
+import { usePathname } from "expo-router";
+import { colors, spacing } from "@/lib/theme";
+import SidebarNav, { detectSidebarGroup } from "./SidebarNav";
 
 /**
  * Install a web-only <style> tag once — gives TextInput a visible focus ring
@@ -28,27 +30,26 @@ function installFocusRingCSS() {
  * AppShell — desktop-first layout container.
  *
  * - Mobile (<768px): pass-through, no container, no sidebar.
- * - Tablet (768..1024px): centered column, max-width 1200px.
- * - Desktop (>=1024px): reserves a LEFT sidebar column (260px) as a stub
- *   for future role-aware navigation.
+ * - Tablet (768..1024px): centered column, max-width 1280px.
+ * - Desktop (>=1024px): LEFT sidebar with role-aware navigation + content card.
  *
- * Web-only max-width — native platforms always pass-through.
- *
- * Integrates at the root layout (app/_layout.tsx) so ALL screens get shell
- * on web. Existing screens keep their own paddings and are unaffected on mobile.
+ * Sidebar visibility is route-aware (via usePathname): role-based links are
+ * shown only when the user is inside a tab group. Outside those groups (auth,
+ * onboarding, landing "/") the shell falls back to a plain centered column so
+ * public pages don't grow a stray sidebar.
  */
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
-const MAX_WIDTH = 1200;
-const SIDEBAR_WIDTH = 260;
+const MAX_WIDTH = 1280;
 const TABLET_BP = 768;
 const DESKTOP_BP = 1024;
 
 export default function AppShell({ children }: AppShellProps) {
   const { width } = useWindowDimensions();
+  const pathname = usePathname() ?? "";
 
   useEffect(() => {
     if (Platform.OS === "web") installFocusRingCSS();
@@ -62,12 +63,14 @@ export default function AppShell({ children }: AppShellProps) {
   const isTablet = width >= TABLET_BP;
   const isDesktop = width >= DESKTOP_BP;
 
-  // Mobile web: pass-through too — avoid breaking mobile UX.
+  // Mobile web: pass-through — preserve bottom-tab mobile UX.
   if (!isTablet) {
     return <>{children}</>;
   }
 
-  // Tablet / desktop: centered container with optional sidebar stub.
+  const group = detectSidebarGroup(pathname);
+  const showSidebar = isDesktop && group !== null;
+
   return (
     <View
       style={{
@@ -87,7 +90,7 @@ export default function AppShell({ children }: AppShellProps) {
           paddingVertical: spacing.lg,
         }}
       >
-        {isDesktop && <SidebarStub />}
+        {showSidebar && <SidebarNav group={group} />}
         <View
           style={{
             flex: 1,
@@ -101,71 +104,6 @@ export default function AppShell({ children }: AppShellProps) {
         >
           {children}
         </View>
-      </View>
-    </View>
-  );
-}
-
-/**
- * Sidebar stub — reserves width, renders a brand mark + placeholder nav.
- * Real role-aware navigation arrives in a later iteration; this establishes
- * the shell.
- */
-function SidebarStub() {
-  const stubItems = ["Обзор", "Заявки", "Специалисты", "Сообщения", "Настройки"];
-  return (
-    <View
-      style={{
-        width: SIDEBAR_WIDTH,
-        paddingRight: spacing.lg,
-      }}
-    >
-      {/* Brand mark */}
-      <View
-        style={{
-          height: 44,
-          paddingHorizontal: spacing.base,
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: spacing.lg,
-        }}
-      >
-        <View
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            backgroundColor: colors.primary,
-            marginRight: spacing.sm,
-          }}
-        />
-        <Text className={typography.h3} style={{ color: colors.text }}>
-          P2P<Text style={{ color: colors.primary }}>Tax</Text>
-        </Text>
-      </View>
-
-      {/* Placeholder nav list — real router wiring comes next iteration */}
-      <View style={{ gap: spacing.xs as number }}>
-        {stubItems.map((label) => (
-          <View
-            key={label}
-            style={{
-              paddingVertical: spacing.sm,
-              paddingHorizontal: spacing.md,
-              borderRadius: 8,
-            }}
-          >
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 14,
-                fontWeight: "500",
-              }}
-            >
-              {label}
-            </Text>
-          </View>
-        ))}
       </View>
     </View>
   );
