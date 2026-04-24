@@ -293,19 +293,6 @@ export default function SpecialistPublicProfile() {
     </View>
   );
 
-  // MVP: cases & reviews sections removed per SA (stub only).
-  // Small subtle placeholder after "about" replaces large sections.
-  const reviewsStub = (
-    <View className="mt-6">
-      <Text
-        className="text-xs"
-        style={{ color: colors.textMuted, fontStyle: "italic" }}
-      >
-        Раздел отзывов появится после MVP
-      </Text>
-    </View>
-  );
-
   // Services & cities
   const servicesCitiesBlock = (
     <View className="mt-8">
@@ -533,7 +520,6 @@ export default function SpecialistPublicProfile() {
     <View>
       {hero}
       {aboutBlock}
-      {reviewsStub}
       {credentialsBlock}
       {servicesCitiesBlock}
       <View className="mt-8">

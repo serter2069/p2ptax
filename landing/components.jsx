@@ -394,7 +394,7 @@ function HowItWorks({ onCreate }) {
           <div className="step">
             <div className="step-num">[ ШАГ 02 ]</div>
             <div className="step-title">Специалисты пишут первыми</div>
-            <div className="step-desc">Обычно 2–5 откликов в течение часа. Они смотрят заявку и решают, берутся или нет — уже с планом.</div>
+            <div className="step-desc">Обычно 2–5 сообщений в течение часа. Они смотрят заявку и решают, берутся или нет — уже с планом.</div>
             <div className="step-preview" style={{flexDirection:'column', alignItems:'flex-start', gap:6}}>
               <div>◉ Алексей М. · ИФНС №7 · ответил через 18 мин</div>
               <div>◉ Ирина К. · ИФНС №1 · ответила через 32 мин</div>

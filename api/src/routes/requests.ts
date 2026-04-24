@@ -67,6 +67,20 @@ router.get("/public", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/requests/sample — dev helper: first request ID for metromap URL resolver
+router.get("/sample", async (_req: Request, res: Response) => {
+  try {
+    const first = await prisma.request.findFirst({
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    res.json({ items: first ? [{ id: first.id }] : [] });
+  } catch (error) {
+    console.error("requests/sample error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/requests/:id/public — single request detail (public, optional auth)
 router.get("/:id/public", async (req: Request, res: Response) => {
   try {

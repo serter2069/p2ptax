@@ -130,7 +130,7 @@ export default function AdminComplaints() {
     const doIt = async () => {
       setReviewingId(complaint.id);
       try {
-        const res = await fetch(`${API_URL}/api/admin/complaints/${complaint.id}/review`, {
+        const res = await fetch(`${API_URL}/api/admin/complaints/${complaint.id}/resolve`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
         });
