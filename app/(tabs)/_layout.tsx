@@ -83,6 +83,9 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
+      {/* STRUCT-1 — redirect-only tabs, hidden from tab bar. */}
+      <Tabs.Screen name="create" options={{ href: null }} />
+      <Tabs.Screen name="search" options={{ href: null }} />
     </Tabs>
   );
 }
