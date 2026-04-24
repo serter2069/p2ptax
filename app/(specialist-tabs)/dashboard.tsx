@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,43 +6,24 @@ import {
   RefreshControl,
   Pressable,
   Switch,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import {
-  TriangleAlert,
-  List,
-  Inbox,
-  Clock,
-  Reply,
-  CheckCircle2,
-} from "lucide-react-native";
+import { TriangleAlert, List } from "lucide-react-native";
 import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
-import {
-  DashboardHero,
-  PriorityFeed,
-  type HeroStat,
-  type PriorityItem,
-} from "@/components/dashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiGet, apiPatch } from "@/lib/api";
-import { colors, overlay, spacing, textStyle } from "@/lib/theme";
+import { colors, overlay, textStyle } from "@/lib/theme";
 
 interface Stats {
   threadsTotal: number;
   newMessages: number;
-}
-
-interface SpecialistExtra {
-  newRequestsWeek: number;
-  awaitingMyReply: number;
-  activeThreads: number;
-  disputedAmountMonth: number;
 }
 
 interface MatchingRequest {
@@ -57,6 +38,7 @@ interface MatchingRequest {
   isMyRegion: boolean;
   hasThread: boolean;
   threadId: string | null;
+  // legacy compat
   existingThreadId?: string | null;
 }
 
@@ -64,25 +46,16 @@ interface DashboardData {
   isAvailable: boolean;
   activeThreads: number;
   matchingRequests: MatchingRequest[];
-  stats: { threadsTotal: number; newMessages: number };
-}
-
-function formatRub(value: number): string {
-  if (value >= 1_000_000) {
-    const mln = value / 1_000_000;
-    return `${mln.toFixed(mln >= 10 ? 0 : 1).replace(/\.0$/, "")}М ₽`;
-  }
-  if (value >= 1_000) {
-    return `${Math.round(value / 1_000)}К ₽`;
-  }
-  return `${value} ₽`;
+  stats: {
+    threadsTotal: number;
+    newMessages: number;
+  };
 }
 
 export default function SpecialistDashboard() {
   const router = useRouter();
   const { user, updateUser } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [extra, setExtra] = useState<SpecialistExtra | null>(null);
   const [requests, setRequests] = useState<MatchingRequest[]>([]);
   const [isAvailable, setIsAvailable] = useState<boolean>(
     user?.isAvailable ?? true
@@ -95,35 +68,27 @@ export default function SpecialistDashboard() {
   const fetchData = useCallback(async () => {
     setError(false);
     try {
+      // Try unified dashboard endpoint first
       try {
-        const dashData = await apiGet<DashboardData>(
-          "/api/specialists/dashboard"
-        );
+        const dashData = await apiGet<DashboardData>("/api/specialists/dashboard");
         setIsAvailable(dashData.isAvailable);
         setRequests(dashData.matchingRequests ?? []);
         setStats({
-          threadsTotal:
-            dashData.stats?.threadsTotal ?? dashData.activeThreads ?? 0,
+          threadsTotal: dashData.stats?.threadsTotal ?? dashData.activeThreads ?? 0,
           newMessages: dashData.stats?.newMessages ?? 0,
         });
         updateUser({ isAvailable: dashData.isAvailable });
+        return;
       } catch {
-        const [statsData, requestsData] = await Promise.all([
-          apiGet<Stats>("/api/specialist/stats"),
-          apiGet<{ items: MatchingRequest[] }>("/api/specialist/requests"),
-        ]);
-        setStats(statsData);
-        setRequests(requestsData.items ?? []);
+        // Fallback to legacy separate endpoints
       }
 
-      try {
-        const ex = await apiGet<SpecialistExtra>(
-          "/api/stats/specialist-dashboard"
-        );
-        setExtra(ex);
-      } catch {
-        setExtra(null);
-      }
+      const [statsData, requestsData] = await Promise.all([
+        apiGet<Stats>("/api/specialist/stats"),
+        apiGet<{ items: MatchingRequest[] }>("/api/specialist/requests"),
+      ]);
+      setStats(statsData);
+      setRequests(requestsData.items ?? []);
     } catch {
       setError(true);
     }
@@ -148,6 +113,7 @@ export default function SpecialistDashboard() {
         await apiPatch("/api/specialists/availability", { isAvailable: val });
         updateUser({ isAvailable: val });
       } catch {
+        // Revert on error
         setIsAvailable(!val);
       } finally {
         setAvailabilityToggling(false);
@@ -156,89 +122,22 @@ export default function SpecialistDashboard() {
     [updateUser]
   );
 
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
+
   const firstName = user?.firstName ?? "специалист";
-  const greeting = `Здравствуйте, ${firstName}!`;
-
-  const newLeads = requests.filter((r) => !r.hasThread && r.status !== "CLOSED");
-  const subtitle = isAvailable
-    ? newLeads.length === 0
-      ? "Новых подходящих заявок пока нет. Вы в каталоге."
-      : `${newLeads.length} новых заявок ждут вашего отклика.`
-    : "Вы не принимаете заявки — включите, чтобы вернуться в каталог.";
-
-  const heroStats: HeroStat[] = useMemo(
-    () => [
-      {
-        label: "Новых заявок",
-        value: extra?.newRequestsWeek ?? newLeads.length,
-        color: "primary",
-        trend: (extra?.newRequestsWeek ?? 0) > 0 ? "up" : "flat",
-        trendValue:
-          (extra?.newRequestsWeek ?? 0) > 0 ? "за неделю" : "за неделю",
-      },
-      {
-        label: "Ждут ответа",
-        value: extra?.awaitingMyReply ?? stats?.newMessages ?? 0,
-        color:
-          (extra?.awaitingMyReply ?? stats?.newMessages ?? 0) > 0
-            ? "warning"
-            : "muted",
-      },
-      {
-        label: "Активных дел",
-        value: extra?.activeThreads ?? stats?.threadsTotal ?? 0,
-      },
-      {
-        label: "Оспорено за месяц",
-        value: formatRub(extra?.disputedAmountMonth ?? 0),
-        color: "success",
-        trend: (extra?.disputedAmountMonth ?? 0) > 0 ? "up" : "flat",
-      },
-    ],
-    [extra, stats, newLeads.length]
-  );
-
-  const priorityItems: PriorityItem[] = useMemo(() => {
-    const items: PriorityItem[] = [];
-    const toAnswer = requests.filter((r) => !r.hasThread).slice(0, 5);
-
-    for (const r of toAnswer) {
-      const urg =
-        r.status === "CLOSING_SOON" ? "high" : r.isMyRegion ? "medium" : "low";
-      items.push({
-        id: `lead-${r.id}`,
-        icon: r.status === "CLOSING_SOON" ? Clock : Inbox,
-        title: r.title,
-        meta: `${r.city.name} · ${r.fns.name}${r.service ? ` · ${r.service}` : ""}`,
-        urgency: urg,
-        action: {
-          label: "Ответить",
-          onPress: () => router.push(`/requests/${r.id}/write` as never),
-        },
-      });
-    }
-
-    return items;
-  }, [requests, router]);
-
-  const myActiveCases = requests.filter((r) => r.hasThread).slice(0, 4);
 
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
         <HeaderHome
           notificationCount={0}
-          onSettingsPress={() =>
-            router.push("/settings/specialist" as never)
-          }
+          onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
         <DesktopScreen>
-          <View style={{ paddingVertical: spacing.lg, gap: spacing.md }}>
+          <View className="py-4 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <View
-                key={i}
-                className="bg-white rounded-xl overflow-hidden border border-border"
-              >
+              <View key={i} className="bg-white rounded-xl overflow-hidden border border-border">
                 <LoadingState variant="skeleton" lines={3} />
               </View>
             ))}
@@ -252,9 +151,7 @@ export default function SpecialistDashboard() {
     return (
       <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
         <HeaderHome
-          onSettingsPress={() =>
-            router.push("/settings/specialist" as never)
-          }
+          onSettingsPress={() => router.push("/settings/specialist" as never)}
         />
         <View className="flex-1 items-center justify-center">
           <ErrorState
@@ -273,59 +170,50 @@ export default function SpecialistDashboard() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome
         notificationCount={stats?.newMessages ?? 0}
-        onSettingsPress={() =>
-          router.push("/settings/specialist" as never)
-        }
+        onSettingsPress={() => router.push("/settings/specialist" as never)}
       />
       <ScrollView
         className="flex-1"
+        contentContainerStyle={{ paddingBottom: 24 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
         <DesktopScreen>
-          <View style={{ paddingVertical: spacing.lg, gap: spacing.lg }}>
-            {/* Hero */}
-            <DashboardHero
-              greeting={greeting}
-              subtitle={subtitle}
-              primaryStats={heroStats}
-            />
+          <View className="py-4">
+            {/* Hero banner */}
+            <View className="rounded-2xl px-5 py-5 mb-4" style={{ backgroundColor: colors.accent }}>
+              <Text style={{ ...textStyle.h3, color: "#ffffff", marginBottom: 2 }}>
+                Здравствуйте, {firstName}!
+              </Text>
+              <Text style={{ ...textStyle.small, color: overlay.white75 }}>
+                Панель специалиста по налогам
+              </Text>
+              <View className="flex-row mt-4 gap-3">
+                <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+                  <Text className="text-xs" style={{ color: overlay.white70 }}>Диалогов</Text>
+                  <Text className="text-xl font-bold text-white">{stats?.threadsTotal ?? 0}</Text>
+                </View>
+                <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+                  <Text className="text-xs" style={{ color: overlay.white70 }}>Новых сообщений</Text>
+                  <Text className="text-xl font-bold text-white">{stats?.newMessages ?? 0}</Text>
+                </View>
+              </View>
+            </View>
 
             {/* Availability toggle */}
             <View
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: colors.border,
-                padding: spacing.md,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: spacing.md,
-                borderLeftWidth: 3,
-                borderLeftColor: isAvailable ? colors.success : colors.warning,
-              }}
+              className="bg-white border border-border rounded-xl p-4 mb-4 flex-row items-center justify-between"
+              style={{ borderLeftWidth: 3, borderLeftColor: colors.primary, shadowColor: colors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 }}
             >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    ...textStyle.bodyBold,
-                    color: colors.text,
-                  }}
-                >
+              <View className="flex-1 mr-3">
+                <Text className="text-sm font-semibold text-text-base">
                   Принимаю заявки
                 </Text>
-                <Text
-                  style={{
-                    ...textStyle.small,
-                    color: colors.textSecondary,
-                    marginTop: 2,
-                  }}
-                >
+                <Text className="text-xs text-text-mute mt-0.5">
                   {isAvailable
                     ? "Клиенты видят вас в каталоге"
-                    : "Вы скрыты из каталога — новые заявки не приходят"}
+                    : "Вы не принимаете новые заявки"}
                 </Text>
               </View>
               <Switch
@@ -337,199 +225,184 @@ export default function SpecialistDashboard() {
               />
             </View>
 
-            {!isAvailable ? (
+            {/* Standby banner */}
+            {!isAvailable && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Перейти в настройки"
-                onPress={() =>
-                  router.push("/settings/specialist" as never)
-                }
-                style={{
-                  backgroundColor: colors.yellowSoft,
-                  borderRadius: 14,
-                  padding: spacing.md,
-                  flexDirection: "row",
-                  gap: spacing.sm,
-                  borderWidth: 1,
-                  borderColor: colors.warning,
-                }}
+                onPress={() => router.push("/settings/specialist" as never)}
+                className="bg-warning-soft border border-warning rounded-xl p-4 mb-4 min-h-[44px]"
               >
-                <TriangleAlert
-                  size={18}
-                  color={colors.warning}
-                  style={{ marginTop: 2 }}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      ...textStyle.bodyBold,
-                      color: colors.warning,
-                    }}
-                  >
-                    Вы не принимаете заявки
-                  </Text>
-                  <Text
-                    style={{
-                      ...textStyle.small,
-                      color: colors.warning,
-                      marginTop: 2,
-                    }}
-                  >
-                    Включите переключатель выше, чтобы вернуться в каталог.
+                <View className="flex-row items-start">
+                  <TriangleAlert
+                    size={16}
+                    color={colors.warning}
+                    style={{ marginTop: 2 }}
+                  />
+                  <View className="flex-1 ml-2">
+                    <Text className="text-sm font-semibold text-warning">
+                      Вы не принимаете заявки
+                    </Text>
+                    <Text className="text-xs text-warning mt-0.5">
+                      Клиенты не видят ваш профиль в каталоге. Включите приём заявок выше.
+                    </Text>
+                  </View>
+                  <Text className="text-xs text-warning underline ml-2">
+                    Настройки
                   </Text>
                 </View>
               </Pressable>
-            ) : null}
+            )}
 
-            {/* Priority — what to answer today */}
-            {priorityItems.length > 0 ? (
-              <PriorityFeed
-                title="Что нужно ответить сегодня"
-                items={priorityItems}
-                emptyMessage="Все заявки уже обработаны!"
-                headerAction={
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Все заявки"
-                    onPress={() =>
-                      router.push("/(specialist-tabs)/requests" as never)
-                    }
-                  >
-                    <Text
-                      style={{
-                        color: colors.accent,
-                        fontWeight: "600",
-                        fontSize: 14,
-                      }}
-                    >
-                      Все →
-                    </Text>
-                  </Pressable>
-                }
-              />
-            ) : null}
-
-            {/* Active cases — threads where I've engaged */}
-            {myActiveCases.length > 0 ? (
-              <View
-                style={{
-                  backgroundColor: colors.surface,
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  padding: spacing.md,
-                }}
+            {/* Section header */}
+            <View className="flex-row items-center justify-between border-b border-border pb-2 mb-3">
+              <Text style={{ ...textStyle.h4, color: colors.text }}>
+                Подходящие заявки
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Мои обращения"
+                onPress={() => router.push("/(specialist-tabs)/threads" as never)}
+                className="min-h-[44px] justify-center px-1"
               >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: spacing.md,
-                  }}
-                >
-                  <Text
-                    style={{
-                      ...textStyle.h4,
-                      color: colors.text,
-                    }}
-                  >
-                    Ваши активные дела
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Все обращения"
-                    onPress={() =>
-                      router.push("/(specialist-tabs)/threads" as never)
-                    }
-                  >
-                    <Text
-                      style={{
-                        color: colors.accent,
-                        fontWeight: "600",
-                        fontSize: 14,
-                      }}
-                    >
-                      Все →
-                    </Text>
-                  </Pressable>
-                </View>
-                <View style={{ gap: spacing.sm }}>
-                  {myActiveCases.map((c) => (
-                    <Pressable
-                      key={c.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Открыть ${c.title}`}
-                      onPress={() => {
-                        const tid =
-                          c.threadId ?? c.existingThreadId ?? null;
-                        if (tid) router.push(`/threads/${tid}` as never);
-                        else router.push(`/requests/${c.id}` as never);
-                      }}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: spacing.md,
-                        paddingVertical: spacing.sm,
-                        paddingHorizontal: spacing.sm,
-                        borderRadius: 10,
-                        backgroundColor: colors.surface2,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 10,
-                          backgroundColor: colors.greenSoft,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <CheckCircle2 size={18} color={colors.success} />
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text
-                          style={{
-                            ...textStyle.bodyBold,
-                            color: colors.text,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {c.title}
-                        </Text>
-                        <Text
-                          style={{
-                            ...textStyle.small,
-                            color: colors.textSecondary,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {c.city.name} · {c.fns.name}
-                        </Text>
-                      </View>
-                      <StatusBadge status={c.status} />
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            ) : null}
+                <Text className="text-sm text-accent font-medium">
+                  Мои обращения
+                </Text>
+              </Pressable>
+            </View>
 
-            {/* Empty state */}
+            {/* Request list or empty */}
             {requests.length === 0 ? (
               <EmptyState
                 icon={List}
                 title="Нет подходящих заявок"
-                subtitle="Расширьте рабочую область, чтобы видеть больше заявок"
-                actionLabel="Настройки"
-                onAction={() =>
-                  router.push("/settings/specialist" as never)
-                }
+                subtitle="Расширьте рабочую область, чтобы видеть больше заявок из других городов и инспекций"
+                actionLabel="Расширить рабочую область"
+                onAction={() => router.push("/settings/specialist" as never)}
               />
-            ) : null}
+            ) : (
+              <View style={isDesktop ? { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginHorizontal: -6 } : undefined}>
+                {requests.map((item) => (
+                  <View key={item.id} style={isDesktop ? { width: '47%', marginHorizontal: 6 } : undefined}>
+                    <RequestCard
+                      item={item}
+                      onWrite={() => router.push(`/requests/${item.id}/write` as never)}
+                      onOpenThread={() => {
+                        const tid = item.threadId ?? item.existingThreadId ?? null;
+                        if (tid) router.push(`/threads/${tid}` as never);
+                      }}
+                      onPress={() => router.push(`/requests/${item.id}` as never)}
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View className="h-8" />
           </View>
         </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function RequestCard({
+  item,
+  onWrite,
+  onOpenThread,
+  onPress,
+}: {
+  item: MatchingRequest;
+  onWrite: () => void;
+  onOpenThread: () => void;
+  onPress: () => void;
+}) {
+  const hasThread = item.hasThread || !!(item.existingThreadId);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={item.title}
+      onPress={onPress}
+      className="bg-white border border-border rounded-xl p-4 mb-3 min-h-[44px]"
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.92 : 1,
+        shadowColor: colors.text,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 3,
+      })}
+    >
+      {/* Title + status */}
+      <View className="flex-row items-start justify-between mb-2">
+        <Text
+          className="text-base font-semibold text-text-base flex-1 mr-2"
+          numberOfLines={2}
+        >
+          {item.title}
+        </Text>
+        <StatusBadge status={item.status} />
+      </View>
+
+      {/* Chips */}
+      <View className="flex-row flex-wrap gap-1.5 mb-2">
+        <View className="bg-surface2 px-2 py-0.5 rounded-full">
+          <Text className="text-xs text-text-mute">{item.city.name}</Text>
+        </View>
+        <View className="bg-surface2 px-2 py-0.5 rounded-full">
+          <Text className="text-xs text-text-mute">{item.fns.name}</Text>
+        </View>
+        {item.service ? (
+          <View className="bg-accent-soft px-2 py-0.5 rounded-full">
+            <Text className="text-xs text-accent">{item.service}</Text>
+          </View>
+        ) : null}
+        {!item.isMyRegion ? (
+          <View className="bg-surface2 px-2 py-0.5 rounded-full">
+            <Text className="text-xs text-text-mute">Не ваш регион</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {/* Description */}
+      <Text className="text-sm text-text-mute mb-3" numberOfLines={2}>
+        {item.description}
+      </Text>
+
+      {/* Action */}
+      {hasThread ? (
+        <View className="flex-row items-center justify-between">
+          <View className="bg-success-soft border border-success px-3 py-1 rounded-full">
+            <Text className="text-xs text-success font-medium">
+              Вы уже откликнулись
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Открыть чат"
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onOpenThread();
+            }}
+            className="bg-accent rounded-xl px-4 py-2"
+          >
+            <Text className="text-white text-sm font-semibold">Открыть чат</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Написать клиенту"
+          onPress={(e) => {
+            e.stopPropagation?.();
+            onWrite();
+          }}
+          className="bg-accent rounded-xl py-2.5 items-center"
+        >
+          <Text className="text-white text-sm font-semibold">Написать клиенту</Text>
+        </Pressable>
+      )}
+    </Pressable>
   );
 }
