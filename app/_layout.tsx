@@ -1,60 +1,86 @@
 import "../global.css";
-import { Stack } from "expo-router";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { Stack, usePathname } from "expo-router";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppShell from "@/components/layout/AppShell";
+import AppHeader, { shouldShowAppHeader } from "@/components/layout/AppHeader";
+
+/**
+ * Thin wrapper that decides whether the persistent {@link AppHeader}
+ * should render for the current route. Header is shown only for
+ * authenticated users and only on routes that don't have their own
+ * chrome (landing, auth, onboarding, legal).
+ *
+ * Issue #1285 — persistent header on every authenticated route.
+ */
+function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  const pathname = usePathname() ?? "";
+
+  const show = isAuthenticated && shouldShowAppHeader(pathname);
+
+  return (
+    <>
+      {show && <AppHeader />}
+      {children}
+    </>
+  );
+}
 
 export default function RootLayout() {
   return (
     <AuthProvider>
       <AppShell>
-      <Stack screenOptions={{ headerShown: false }}>
-        {/* Public */}
-        <Stack.Screen name="index" />
+        <AuthenticatedHeaderGate>
+          <Stack screenOptions={{ headerShown: false }}>
+            {/* Public */}
+            <Stack.Screen name="index" />
 
-        {/* Role-based tab groups */}
-        <Stack.Screen name="(client-tabs)" />
-        <Stack.Screen name="(specialist-tabs)" />
-        <Stack.Screen name="(admin-tabs)" />
+            {/* Role-based tab groups */}
+            <Stack.Screen name="(client-tabs)" />
+            <Stack.Screen name="(specialist-tabs)" />
+            <Stack.Screen name="(admin-tabs)" />
 
-        {/* Legacy tabs (kept for compatibility) */}
-        <Stack.Screen name="(tabs)" />
+            {/* Legacy tabs (kept for compatibility) */}
+            <Stack.Screen name="(tabs)" />
 
-        {/* Auth flow */}
-        <Stack.Screen name="auth/email" />
-        <Stack.Screen name="auth/otp" />
+            {/* Auth flow */}
+            <Stack.Screen name="auth/email" />
+            <Stack.Screen name="auth/otp" />
 
-        {/* Onboarding */}
-        <Stack.Screen name="onboarding/name" />
-        <Stack.Screen name="onboarding/work-area" />
-        <Stack.Screen name="onboarding/profile" />
+            {/* Onboarding */}
+            <Stack.Screen name="onboarding/name" />
+            <Stack.Screen name="onboarding/work-area" />
+            <Stack.Screen name="onboarding/profile" />
 
-        {/* Public screens */}
-        <Stack.Screen name="requests/index" />
-        <Stack.Screen name="requests/new" />
-        <Stack.Screen name="requests/[id]/index" />
-        <Stack.Screen name="requests/[id]/detail" />
-        <Stack.Screen name="requests/[id]/messages" />
-        <Stack.Screen name="specialists/index" />
-        <Stack.Screen name="specialists/[id]" />
+            {/* Public screens */}
+            <Stack.Screen name="requests/index" />
+            <Stack.Screen name="requests/new" />
+            <Stack.Screen name="requests/[id]/index" />
+            <Stack.Screen name="requests/[id]/detail" />
+            <Stack.Screen name="requests/[id]/messages" />
+            <Stack.Screen name="specialists/index" />
+            <Stack.Screen name="specialists/[id]" />
 
-        {/* Chat */}
-        <Stack.Screen name="threads/[id]" />
+            {/* Chat */}
+            <Stack.Screen name="threads/[id]" />
 
-        {/* Specialist flow */}
-        <Stack.Screen name="requests/[id]/write" />
-        <Stack.Screen name="settings" />
-        <Stack.Screen name="settings/client" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="legal/privacy" />
-        <Stack.Screen name="legal/terms" />
-        <Stack.Screen name="brand" />
+            {/* Specialist flow */}
+            <Stack.Screen name="requests/[id]/write" />
+            <Stack.Screen name="settings" />
+            <Stack.Screen name="settings/client" />
+            <Stack.Screen name="notifications" />
+            <Stack.Screen name="legal/privacy" />
+            <Stack.Screen name="legal/terms" />
+            {/* Issue #1293: /brand is a dev-only design-system page. */}
+            {__DEV__ && <Stack.Screen name="brand" />}
 
-        {/* Admin detail screens */}
-        <Stack.Screen name="admin/settings" />
+            {/* Admin detail screens */}
+            <Stack.Screen name="admin/settings" />
             <Stack.Screen name="requests/[id]" />
             <Stack.Screen name="requests" />
             <Stack.Screen name="specialists" />
-      </Stack>
+          </Stack>
+        </AuthenticatedHeaderGate>
       </AppShell>
     </AuthProvider>
   );
