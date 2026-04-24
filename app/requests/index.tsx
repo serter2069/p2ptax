@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import HeaderBack from "@/components/HeaderBack";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import FilterBar from "@/components/FilterBar";
+import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import { Inbox } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -73,6 +74,7 @@ export default function PublicRequestsFeed() {
   const [total, setTotal] = useState(0);
 
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   const loadingMoreRef = useRef(false);
@@ -83,6 +85,7 @@ export default function PublicRequestsFeed() {
       try {
         let path = `/api/requests/public?page=${pageNum}&limit=${LIMIT}`;
         if (selectedCityId) path += `&city_id=${selectedCityId}`;
+        if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
 
         const res = await api<RequestsResponse>(path, { noAuth: true });
 
@@ -99,7 +102,7 @@ export default function PublicRequestsFeed() {
         setError("Не удалось загрузить заявки");
       }
     },
-    [selectedCityId]
+    [selectedCityId, selectedFnsId]
   );
 
   // Initial load: fetch cities, services, and first page of requests
@@ -143,7 +146,7 @@ export default function PublicRequestsFeed() {
     setListLoading(true);
     setPage(1);
     fetchRequests(1).finally(() => setListLoading(false));
-  }, [selectedCityId, fetchRequests]);
+  }, [selectedCityId, selectedFnsId, fetchRequests]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -168,8 +171,17 @@ export default function PublicRequestsFeed() {
 
   const handleResetFilters = useCallback(() => {
     setSelectedCityId(null);
+    setSelectedFnsId(null);
     setSelectedServiceIds([]);
   }, []);
+
+  const handleCascadeChange = useCallback(
+    (v: { cities: string[]; fns: string[] }) => {
+      setSelectedCityId(v.cities[0] ?? null);
+      setSelectedFnsId(v.fns[0] ?? null);
+    },
+    []
+  );
 
   const handleRequestPress = useCallback(
     (id: string) => {
@@ -178,7 +190,10 @@ export default function PublicRequestsFeed() {
     [router]
   );
 
-  const hasFilters = selectedCityId !== null || selectedServiceIds.length > 0;
+  const hasFilters =
+    selectedCityId !== null ||
+    selectedFnsId !== null ||
+    selectedServiceIds.length > 0;
 
   // Skeleton on initial load
   if (initLoading) {
@@ -209,12 +224,21 @@ export default function PublicRequestsFeed() {
         )}
       </View>
 
-      {/* Filter bar */}
-      <View className="bg-white border-b border-border">
+      {/* Filter bar: city → FNS cascade + services chips */}
+      <View className="bg-white border-b border-border py-2">
+        <CityFnsCascade
+          mode="single"
+          value={{
+            cities: selectedCityId ? [selectedCityId] : [],
+            fns: selectedFnsId ? [selectedFnsId] : [],
+          }}
+          onChange={handleCascadeChange}
+          citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
+        />
         <FilterBar
-          cities={cities}
-          selectedCityId={selectedCityId}
-          onCityChange={setSelectedCityId}
+          cities={[]}
+          selectedCityId={null}
+          onCityChange={() => {}}
           services={services}
           selectedServiceIds={selectedServiceIds}
           onServiceToggle={handleServiceToggle}

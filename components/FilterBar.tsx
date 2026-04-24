@@ -57,28 +57,30 @@ export default function FilterBar({
 }: FilterBarProps) {
   return (
     <View className="py-2">
-      {/* City filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="px-4"
-      >
-        <FilterChip
-          label="Все города"
-          active={!selectedCityId}
-          onPress={() => onCityChange(null)}
-        />
-        {cities.map((city) => (
+      {/* City filter (hidden when caller passes empty city list) */}
+      {cities.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="px-4"
+        >
           <FilterChip
-            key={city.id}
-            label={city.name}
-            active={selectedCityId === city.id}
-            onPress={() =>
-              onCityChange(selectedCityId === city.id ? null : city.id)
-            }
+            label="Все города"
+            active={!selectedCityId}
+            onPress={() => onCityChange(null)}
           />
-        ))}
-      </ScrollView>
+          {cities.map((city) => (
+            <FilterChip
+              key={city.id}
+              label={city.name}
+              active={selectedCityId === city.id}
+              onPress={() =>
+                onCityChange(selectedCityId === city.id ? null : city.id)
+              }
+            />
+          ))}
+        </ScrollView>
+      )}
 
       {/* FNS filter (cascade from city) */}
       {fnsOffices && fnsOffices.length > 0 && onFnsChange && (

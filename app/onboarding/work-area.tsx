@@ -7,16 +7,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useState, useEffect, useCallback } from "react";
-import { X, Plus, MapPin } from "lucide-react-native";
+import { useState, useEffect, useMemo } from "react";
+import { MapPin } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
 import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import OnboardingLeft from "@/components/onboarding/OnboardingLeft";
 import Button from "@/components/ui/Button";
 import { colors } from "@/lib/theme";
+import CityFnsCascade from "@/components/filters/CityFnsCascade";
 
-interface City {
+interface ServiceItem {
   id: string;
   name: string;
 }
@@ -26,18 +27,7 @@ interface FnsOffice {
   name: string;
   code: string;
   cityId: string;
-}
-
-interface ServiceItem {
-  id: string;
-  name: string;
-}
-
-interface SelectedFns {
-  fnsId: string;
-  fnsName: string;
-  cityName: string;
-  serviceIds: string[];
+  cityName?: string;
 }
 
 export default function OnboardingWorkAreaScreen() {
@@ -45,107 +35,135 @@ export default function OnboardingWorkAreaScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
-  const [cities, setCities] = useState<City[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const [fnsOffices, setFnsOffices] = useState<FnsOffice[]>([]);
 
-  const [showCityPicker, setShowCityPicker] = useState(false);
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  const [showFnsPicker, setShowFnsPicker] = useState(false);
+  // Cascade state — list of city ids + list of FNS ids, shared across this screen
+  const [cityIds, setCityIds] = useState<string[]>([]);
+  const [fnsIds, setFnsIds] = useState<string[]>([]);
 
-  const [selectedFns, setSelectedFns] = useState<SelectedFns[]>([]);
+  // Details of selected FNS offices (so we can show name + city per block)
+  const [fnsCatalog, setFnsCatalog] = useState<Map<string, FnsOffice>>(
+    new Map()
+  );
+
+  // Per-FNS services map: fnsId -> serviceIds[]
+  const [servicesByFns, setServicesByFns] = useState<Record<string, string[]>>(
+    {}
+  );
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Load cities and services on mount
+  // Load services (cities are fetched by the cascade component itself)
   useEffect(() => {
-    const loadData = async () => {
+    (async () => {
       try {
-        const [citiesRes, servicesRes] = await Promise.all([
-          api<{ items: City[] }>("/api/cities", { noAuth: true }),
-          api<{ items: ServiceItem[] }>("/api/services", { noAuth: true }),
-        ]);
-        setCities(citiesRes.items);
+        const servicesRes = await api<{ items: ServiceItem[] }>(
+          "/api/services",
+          { noAuth: true }
+        );
         setServices(servicesRes.items);
       } catch {
-        setError("Не удалось загрузить данные");
+        setError("Не удалось загрузить список услуг");
       }
-    };
-    loadData();
+    })();
   }, []);
 
-  // Load FNS offices when city selected
-  const loadFnsForCity = useCallback(async (cityId: string) => {
-    try {
-      const data = await api<{ offices: FnsOffice[] }>(
-        `/api/fns?city_id=${cityId}`,
-        { noAuth: true }
-      );
-      setFnsOffices(data.offices);
-    } catch {
-      setError("Не удалось загрузить отделения ФНС");
+  // Whenever selected city list changes, refresh FNS catalog for those cities
+  useEffect(() => {
+    if (cityIds.length === 0) {
+      setFnsCatalog(new Map());
+      return;
     }
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const path =
+          cityIds.length === 1
+            ? `/api/fns?city_id=${cityIds[0]}`
+            : `/api/fns?city_ids=${cityIds.join(",")}`;
+        const res = await api<{
+          offices: { id: string; name: string; code: string; cityId: string; city?: { name: string } }[];
+        }>(path, { noAuth: true });
+        if (cancelled) return;
+        const map = new Map<string, FnsOffice>();
+        for (const o of res.offices) {
+          map.set(o.id, {
+            id: o.id,
+            name: o.name,
+            code: o.code,
+            cityId: o.cityId,
+            cityName: o.city?.name,
+          });
+        }
+        setFnsCatalog(map);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cityIds]);
 
-  const handleCitySelect = (city: City) => {
-    setSelectedCityId(city.id);
-    setShowCityPicker(false);
-    setShowFnsPicker(true);
-    loadFnsForCity(city.id);
-  };
+  // Drop services rows for FNS that have been deselected
+  useEffect(() => {
+    setServicesByFns((prev) => {
+      const next: Record<string, string[]> = {};
+      for (const id of fnsIds) {
+        next[id] = prev[id] ?? [];
+      }
+      return next;
+    });
+  }, [fnsIds]);
 
-  const handleFnsSelect = (fns: FnsOffice) => {
-    // Don't add if already selected
-    if (selectedFns.some((s) => s.fnsId === fns.id)) return;
-
-    const cityName = cities.find((c) => c.id === fns.cityId)?.name || "";
-    setSelectedFns((prev) => [
-      ...prev,
-      { fnsId: fns.id, fnsName: fns.name, cityName, serviceIds: [] },
-    ]);
-    setShowFnsPicker(false);
-    setSelectedCityId(null);
-  };
+  const selectedFnsList = useMemo(
+    () =>
+      fnsIds
+        .map((id) => fnsCatalog.get(id))
+        .filter((f): f is FnsOffice => Boolean(f)),
+    [fnsIds, fnsCatalog]
+  );
 
   const toggleService = (fnsId: string, serviceId: string) => {
-    setSelectedFns((prev) =>
-      prev.map((item) => {
-        if (item.fnsId !== fnsId) return item;
-        const has = item.serviceIds.includes(serviceId);
-        return {
-          ...item,
-          serviceIds: has
-            ? item.serviceIds.filter((id) => id !== serviceId)
-            : [...item.serviceIds, serviceId],
-        };
-      })
-    );
-  };
-
-  const removeFns = (fnsId: string) => {
-    setSelectedFns((prev) => prev.filter((item) => item.fnsId !== fnsId));
+    setServicesByFns((prev) => {
+      const current = prev[fnsId] || [];
+      const has = current.includes(serviceId);
+      return {
+        ...prev,
+        [fnsId]: has
+          ? current.filter((s) => s !== serviceId)
+          : [...current, serviceId],
+      };
+    });
   };
 
   const canProceed =
-    selectedFns.length > 0 &&
-    selectedFns.every((item) => item.serviceIds.length > 0);
+    cityIds.length > 0 &&
+    fnsIds.length > 0 &&
+    fnsIds.every((id) => (servicesByFns[id] || []).length > 0);
 
   const handleNext = async () => {
     if (!canProceed || isLoading) return;
     setError("");
     setIsLoading(true);
-
     try {
-      const fnsServices = selectedFns.map((item) => ({
-        fnsId: item.fnsId,
-        serviceIds: item.serviceIds,
+      const fnsServices = fnsIds.map((fnsId) => ({
+        fnsId,
+        serviceIds: servicesByFns[fnsId] || [],
       }));
-
+      // Also send full cascade payload for future endpoint evolution
       await api("/api/onboarding/work-area", {
         method: "PUT",
-        body: { fnsServices },
+        body: {
+          cities: cityIds,
+          fns: fnsIds,
+          fnsServices,
+          specialist_services: fnsServices.flatMap((f) =>
+            f.serviceIds.map((sid) => ({ fns_id: f.fnsId, service_id: sid }))
+          ),
+        },
       });
-
       router.push("/onboarding/profile" as never);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
@@ -160,11 +178,11 @@ export default function OnboardingWorkAreaScreen() {
       step={2}
       icon={MapPin}
       title="Ваша рабочая зона"
-      description="Выберите города и ФНС-инспекции, которые обслуживаете. По этим данным клиенты найдут вас."
+      description="Выберите города, ФНС-инспекции и типы проверок, которыми вы занимаетесь."
       bullets={[
-        "Чем больше городов — тем больше заявок",
-        "Каждой ФНС можно привязать свой набор услуг",
-        `Выбрано сейчас: ${selectedFns.length}`,
+        "Города: где вы принимаете клиентов",
+        "ФНС: в каких инспекциях вы работаете",
+        `Выбрано ФНС: ${fnsIds.length}`,
       ]}
     />
   );
@@ -172,9 +190,12 @@ export default function OnboardingWorkAreaScreen() {
   const rightForm = (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
-      <View className="flex-1 px-4">
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isDesktop ? 64 : 40 }}>
-          <View className="pt-8">
+      <View className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: isDesktop ? 64 : 40 }}
+        >
+          <View className="pt-8 px-4">
             {/* Progress indicator */}
             <View className="mb-6">
               <View className="flex-row justify-center gap-2 mb-3">
@@ -191,196 +212,96 @@ export default function OnboardingWorkAreaScreen() {
               Рабочая зона
             </Text>
             <Text className="text-base text-text-mute text-center leading-6 mb-8">
-              Укажите отделения ФНС, в которых вы работаете
+              Укажите города, ФНС и услуги по каждой инспекции
             </Text>
+          </View>
 
-            {/* Selected FNS offices with services */}
-            {selectedFns.map((item) => (
-              <View
-                key={item.fnsId}
-                className="border border-border rounded-xl p-4 mb-3"
-                style={{ backgroundColor: colors.surface2 }}
-              >
-                <View className="flex-row items-start justify-between mb-3">
-                  <View className="flex-1 mr-3">
-                    <Text className="text-sm font-semibold text-text-base leading-5">
-                      {item.fnsName}
+          {/* Cascade lives outside px-4 because it has internal padding */}
+          <CityFnsCascade
+            mode="multi"
+            value={{ cities: cityIds, fns: fnsIds }}
+            onChange={(v) => {
+              setCityIds(v.cities);
+              setFnsIds(v.fns);
+            }}
+            labelCities="Города"
+            labelFns="Отделения ФНС"
+            showCounts
+          />
+
+          <View className="px-4 mt-4">
+            {/* Per-FNS service matrix */}
+            {selectedFnsList.length > 0 && (
+              <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2">
+                Услуги по каждой инспекции
+              </Text>
+            )}
+
+            {selectedFnsList.map((fns) => {
+              const picked = servicesByFns[fns.id] || [];
+              return (
+                <View
+                  key={fns.id}
+                  className="border border-border rounded-xl p-4 mb-3"
+                  style={{ backgroundColor: colors.surface2 }}
+                >
+                  <Text className="text-sm font-semibold text-text-base leading-5">
+                    {fns.name}
+                  </Text>
+                  {fns.cityName ? (
+                    <Text className="text-sm text-text-mute mt-0.5">
+                      {fns.cityName}
                     </Text>
-                    <Text className="text-sm text-text-mute mt-0.5">{item.cityName}</Text>
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Удалить отделение"
-                    onPress={() => removeFns(item.fnsId)}
-                    className="w-7 h-7 rounded-full items-center justify-center"
-                    style={{ backgroundColor: colors.border }}
-                  >
-                    <X size={14} color={colors.textSecondary} />
-                  </Pressable>
-                </View>
+                  ) : null}
 
-                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2">
-                  Услуги
-                </Text>
-
-                {/* Service checkboxes */}
-                {services.map((svc) => {
-                  const isChecked = item.serviceIds.includes(svc.id);
-                  return (
-                    <Pressable
-                      accessibilityRole="button"
-                      key={svc.id}
-                      accessibilityLabel={svc.name}
-                      onPress={() => toggleService(item.fnsId, svc.id)}
-                      className={`flex-row items-center py-2 px-3 rounded-lg mb-1 ${isChecked ? "bg-accent-soft" : "bg-white"}`}
-                    >
-                      <View
-                        className={`w-5 h-5 rounded border-2 items-center justify-center ${
-                          isChecked
-                            ? "bg-accent border-accent"
-                            : "border-border bg-white"
-                        }`}
-                      >
-                        {isChecked && (
-                          <Text className="text-white text-xs font-bold">
-                            ✓
+                  <View className="flex-row flex-wrap gap-2 mt-3">
+                    {services.map((svc) => {
+                      const isChecked = picked.includes(svc.id);
+                      return (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={svc.name}
+                          key={svc.id}
+                          onPress={() => toggleService(fns.id, svc.id)}
+                          className={`px-3 h-10 rounded-full items-center justify-center border ${
+                            isChecked
+                              ? "bg-accent border-accent"
+                              : "bg-white border-border"
+                          }`}
+                        >
+                          <Text
+                            className={`text-sm ${
+                              isChecked
+                                ? "text-white font-medium"
+                                : "text-text-base"
+                            }`}
+                          >
+                            {svc.name}
                           </Text>
-                        )}
-                      </View>
-                      <Text className={`ml-2.5 text-sm leading-5 ${isChecked ? "text-accent font-medium" : "text-text-base"}`}>
-                        {svc.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-
-                {item.serviceIds.length === 0 && (
-                  <View className="mt-2 px-3 py-2 rounded-lg" style={{ backgroundColor: colors.errorBg }}>
-                    <Text className="text-sm text-danger">
-                      Выберите хотя бы одну услугу
-                    </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
-                )}
-              </View>
-            ))}
 
-            {/* City picker dropdown */}
-            {showCityPicker && (
-              <View className="border border-border rounded-xl mb-3 max-h-60 overflow-hidden bg-white">
-                <View className="px-4 py-2.5 border-b border-border">
-                  <Text className="text-sm font-semibold text-text-base">Выберите город</Text>
-                </View>
-                <ScrollView nestedScrollEnabled>
-                  {cities.map((city) => (
-                    <Pressable
-                      accessibilityRole="button"
-                      key={city.id}
-                      accessibilityLabel={city.name}
-                      onPress={() => handleCitySelect(city)}
-                      className="px-4 py-3.5 border-b border-border active:bg-surface2"
+                  {picked.length === 0 && (
+                    <View
+                      className="mt-3 px-3 py-2 rounded-lg"
+                      style={{ backgroundColor: colors.errorBg }}
                     >
-                      <Text className="text-sm text-text-base">{city.name}</Text>
-                    </Pressable>
-                  ))}
-                  {cities.length === 0 && (
-                    <View className="px-4 py-3">
-                      <Text className="text-sm text-text-mute">
-                        Загрузка городов...
+                      <Text className="text-sm text-danger">
+                        Выберите хотя бы одну услугу
                       </Text>
                     </View>
                   )}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* FNS picker dropdown */}
-            {showFnsPicker && selectedCityId && (
-              <View className="border border-border rounded-xl mb-3 max-h-60 overflow-hidden bg-white">
-                <View className="px-4 py-2.5 border-b border-border">
-                  <Text className="text-sm font-semibold text-text-base">Выберите отделение ФНС</Text>
                 </View>
-                <ScrollView nestedScrollEnabled>
-                  {fnsOffices
-                    .filter(
-                      (fns) =>
-                        !selectedFns.some((s) => s.fnsId === fns.id)
-                    )
-                    .map((fns) => (
-                      <Pressable
-                        accessibilityRole="button"
-                        key={fns.id}
-                        accessibilityLabel={fns.name}
-                        onPress={() => handleFnsSelect(fns)}
-                        className="px-4 py-3.5 border-b border-border active:bg-surface2"
-                      >
-                        <Text className="text-sm font-medium text-text-base">
-                          {fns.name}
-                        </Text>
-                        <Text className="text-xs text-text-mute mt-0.5">
-                          {fns.code}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  {fnsOffices.length === 0 && (
-                    <View className="px-4 py-3">
-                      <Text className="text-sm text-text-mute">
-                        Загрузка отделений...
-                      </Text>
-                    </View>
-                  )}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Add city button */}
-            {!showCityPicker && !showFnsPicker && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Добавить город"
-                onPress={() => {
-                  setShowCityPicker(true);
-                  setShowFnsPicker(false);
-                }}
-                className="flex-row items-center justify-center py-3.5 border-2 border-dashed border-border rounded-xl mb-6 active:bg-surface2"
-              >
-                <Plus size={16} color={colors.accent} />
-                <Text className="text-sm text-accent ml-2 font-semibold">
-                  Добавить город
-                </Text>
-              </Pressable>
-            )}
-
-            {showCityPicker && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Отмена"
-                onPress={() => setShowCityPicker(false)}
-                className="mb-4 py-2"
-              >
-                <Text className="text-sm text-text-mute text-center">
-                  Отмена
-                </Text>
-              </Pressable>
-            )}
-
-            {showFnsPicker && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Отмена"
-                onPress={() => {
-                  setShowFnsPicker(false);
-                  setSelectedCityId(null);
-                }}
-                className="mb-4 py-2"
-              >
-                <Text className="text-sm text-text-mute text-center">
-                  Отмена
-                </Text>
-              </Pressable>
-            )}
+              );
+            })}
 
             {error ? (
-              <View className="mb-4 px-4 py-3 rounded-xl" style={{ backgroundColor: colors.errorBg }}>
+              <View
+                className="mb-4 px-4 py-3 rounded-xl"
+                style={{ backgroundColor: colors.errorBg }}
+              >
                 <Text className="text-sm text-danger text-center leading-5">
                   {error}
                 </Text>

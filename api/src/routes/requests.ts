@@ -19,14 +19,14 @@ router.get("/public", async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
 
     const cityId = (req.query.city_id as string) || undefined;
+    const fnsId = (req.query.fns_id as string) || undefined;
 
     const where: Prisma.RequestWhereInput = {
       status: { in: ["ACTIVE", "CLOSING_SOON"] },
     };
 
-    if (cityId) {
-      where.cityId = cityId;
-    }
+    if (cityId) where.cityId = cityId;
+    if (fnsId) where.fnsId = fnsId;
 
     const [items, total] = await Promise.all([
       prisma.request.findMany({
