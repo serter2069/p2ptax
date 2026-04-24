@@ -344,7 +344,7 @@ export default function MyRequestDetail() {
               }}
             >
               <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-text-mute">Откликов</Text>
+                <Text className="text-sm text-text-mute">Сообщений</Text>
                 <Text className="text-sm text-text-base">
                   {request.threadsCount}
                 </Text>

@@ -286,7 +286,7 @@ export default function ClientMessages() {
                 <EmptyState
                   icon={MessageSquare}
                   title="Нет сообщений"
-                  subtitle="Когда специалисты откликнутся на ваши заявки, сообщения появятся здесь"
+                  subtitle="Когда специалисты напишут по вашим заявкам, сообщения появятся здесь"
                   actionLabel="Найти специалиста"
                   onAction={() => router.push("/specialists" as never)}
                 />
@@ -303,7 +303,7 @@ export default function ClientMessages() {
                 hint={
                   sorted.length > 0
                     ? `У вас ${sorted.length} ${sorted.length === 1 ? "диалог" : sorted.length < 5 ? "диалога" : "диалогов"}. Нажмите любой, чтобы открыть переписку.`
-                    : "Когда специалисты откликнутся на заявки, переписки появятся слева."
+                    : "Когда специалисты напишут по заявкам, переписки появятся слева."
                 }
                 leftHint="Список диалогов"
                 primary={{
@@ -344,7 +344,7 @@ export default function ClientMessages() {
           <EmptyState
             icon={MessageSquare}
             title="Нет сообщений"
-            subtitle="Когда специалисты откликнутся на ваши заявки, сообщения появятся здесь"
+            subtitle="Когда специалисты напишут по вашим заявкам, сообщения появятся здесь"
             actionLabel="Найти специалиста"
             onAction={() => router.push("/specialists" as never)}
           />

@@ -1,31 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, useWindowDimensions, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Search, SlidersHorizontal, Clock, ArrowRight, ChevronRight,
-  FileSearch, Briefcase, ShieldCheck, Gavel, Globe2, Users, type LucideIcon
+  FileSearch, Briefcase, ShieldCheck, type LucideIcon
 } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import EmptyState from "@/components/ui/EmptyState";
+import { api } from "@/lib/api";
 
-// Recent searches — tax-domain, not marketplace.
+// Recent searches — tax-domain, 3 canonical services only.
 const RECENT_SEARCHES = [
   "Камеральная проверка Москва",
-  "Разблокировка счёта 115-ФЗ",
-  "Налоговый юрист СПб",
-  "Оспаривание решения ИФНС",
+  "Выездная проверка СПб",
+  "Налоговый консультант",
+  "Оперативный контроль",
 ];
 
-// Tax-service categories.
-const POPULAR_CATEGORIES: { id: string; name: string; count: string; Icon: LucideIcon; color: string }[] = [
-  { id: "1", name: "Камеральные проверки", count: "128 специалистов", Icon: FileSearch, color: colors.accentSoft },
-  { id: "2", name: "Выездные проверки", count: "84 специалиста", Icon: Briefcase, color: colors.dangerSoft },
-  { id: "3", name: "Оперативный контроль", count: "46 специалистов", Icon: ShieldCheck, color: colors.limeSoft },
-  { id: "4", name: "Споры с ИФНС", count: "210 специалистов", Icon: Gavel, color: colors.yellowSoft },
-  { id: "5", name: "Зарубежные счета", count: "37 специалистов", Icon: Globe2, color: colors.pinkSoft },
-  { id: "6", name: "Самозанятые", count: "92 специалиста", Icon: Users, color: colors.cyanSoft },
-];
+// Iconography for the 3 canonical services (SA).
+function pickIcon(name: string): LucideIcon {
+  if (/камеральн/i.test(name)) return FileSearch;
+  if (/выездн/i.test(name)) return Briefcase;
+  return ShieldCheck;
+}
+function pickTint(name: string): string {
+  if (/камеральн/i.test(name)) return colors.accentSoft;
+  if (/выездн/i.test(name)) return colors.limeSoft;
+  return colors.greenSoft;
+}
+
+interface ServiceItem { id: string; name: string }
 
 const cardShadow = {
   shadowColor: colors.text,
@@ -39,6 +44,22 @@ export default function SearchScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
   const [searchFocused, setSearchFocused] = useState(false);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+
+  useEffect(() => {
+    api<{ items: ServiceItem[] }>("/api/services", { noAuth: true })
+      .then((res) => setServices(res.items ?? []))
+      .catch(() => setServices([]));
+  }, []);
+
+  // SA: fallback to 3 canonical services when API is unreachable.
+  const popular: ServiceItem[] = services.length > 0
+    ? services
+    : [
+        { id: "s1", name: "Камеральная проверка" },
+        { id: "s2", name: "Выездная проверка" },
+        { id: "s3", name: "Отдел оперативного контроля" },
+      ];
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
@@ -130,27 +151,29 @@ export default function SearchScreen() {
           <View>
             <Text className="text-base font-semibold text-text-base mb-3">Виды налоговых услуг</Text>
             <View className={isDesktop ? "flex-row flex-wrap gap-2" : undefined}>
-              {POPULAR_CATEGORIES.map((cat) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={cat.id}
-                  accessibilityLabel={cat.name}
-                  className="flex-row items-center p-3 rounded-xl mb-2 border border-border"
-                  style={[
-                    { backgroundColor: cat.color, minHeight: 56 },
-                    isDesktop ? { width: "48%" } : undefined,
-                  ]}
-                >
-                  <View className="w-10 h-10 rounded-xl bg-white items-center justify-center">
-                    <cat.Icon size={18} color={colors.accent} />
-                  </View>
-                  <View className="flex-1 ml-3">
-                    <Text className="text-base font-semibold text-text-base">{cat.name}</Text>
-                    <Text className="text-sm text-text-mute">{cat.count}</Text>
-                  </View>
-                  <ChevronRight size={14} color={colors.textSecondary} />
-                </Pressable>
-              ))}
+              {popular.map((s) => {
+                const Icon = pickIcon(s.name);
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={s.id}
+                    accessibilityLabel={s.name}
+                    className="flex-row items-center p-3 rounded-xl mb-2 border border-border"
+                    style={[
+                      { backgroundColor: pickTint(s.name), minHeight: 56 },
+                      isDesktop ? { width: "48%" } : undefined,
+                    ]}
+                  >
+                    <View className="w-10 h-10 rounded-xl bg-white items-center justify-center">
+                      <Icon size={18} color={colors.accent} />
+                    </View>
+                    <View className="flex-1 ml-3">
+                      <Text className="text-base font-semibold text-text-base">{s.name}</Text>
+                    </View>
+                    <ChevronRight size={14} color={colors.textSecondary} />
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         </DesktopScreen>

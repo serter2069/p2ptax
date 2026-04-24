@@ -94,10 +94,10 @@ export default function SpecialistConfirmWrite() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          setSubmitError("Заявка закрыта — отклик невозможен");
+          setSubmitError("Заявка закрыта — сообщение отправить невозможно");
         } else if (err.status === 429) {
           setSubmitError(
-            "Лимит откликов на сегодня исчерпан (20 в день). Попробуйте завтра."
+            "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
           );
           if (rateLimit) {
             setRateLimit({ ...rateLimit, writesToday: DAILY_LIMIT });
@@ -157,7 +157,7 @@ export default function SpecialistConfirmWrite() {
                 }`}
               >
                 {isLimitReached
-                  ? "Лимит откликов на сегодня исчерпан (20 в день). Попробуйте завтра."
+                  ? "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
                   : `Вы отправили ${rateLimit.writesToday} из ${rateLimit.limit} обращений сегодня`}
               </Text>
             </View>

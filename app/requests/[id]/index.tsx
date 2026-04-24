@@ -152,10 +152,10 @@ export default function PublicRequestDetail() {
 
   const responsesLabel =
     request.threadsCount === 1
-      ? "1 специалист откликнулся"
+      ? "1 специалист уже написал"
       : request.threadsCount > 0
-      ? `${request.threadsCount} специалистов откликнулись`
-      : "Нет откликов";
+      ? `${request.threadsCount} специалистов уже написали`
+      : "Пока никто не написал";
 
   const renderFooter = () => {
     if (isOwner) {
@@ -204,7 +204,7 @@ export default function PublicRequestDetail() {
       <View className="border-t border-border bg-white px-4 py-3">
         <ResponsiveContainer>
           <Button
-            label="Войдите, чтобы откликнуться"
+            label="Войдите, чтобы написать"
             onPress={() => router.push("/auth/email" as never)}
           />
         </ResponsiveContainer>

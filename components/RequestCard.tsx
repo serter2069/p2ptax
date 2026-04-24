@@ -54,7 +54,7 @@ export default function RequestCard({
       </Text>
 
       <Text className="text-xs text-text-mute">
-        {threadsCount} {threadsCount === 1 ? "специалист откликнулся" : "специалистов откликнулось"}
+        {threadsCount} {threadsCount === 1 ? "специалист уже написал" : "специалистов уже написали"}
       </Text>
     </Pressable>
   );

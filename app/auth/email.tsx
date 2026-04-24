@@ -73,7 +73,7 @@ export default function AuthEmailScreen() {
         <Text
           style={{ ...textStyle.body, color: colors.textSecondary, fontSize: 16, lineHeight: 24 }}
         >
-          Проверенные эксперты по выездной, камеральной проверке и оперативному контролю. Отклики
+          Проверенные эксперты по выездной, камеральной проверке и оперативному контролю. Ответы
           в течение 24 часов.
         </Text>
       </View>

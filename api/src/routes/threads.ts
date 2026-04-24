@@ -286,14 +286,15 @@ router.post("/", async (req: Request, res: Response) => {
       data: { lastActivityAt: now },
     });
 
-    // Notify client: new response on their request
+    // Notify client: specialist started a new thread on their request
+    // SA: «Специалист X написал по вашей заявке 'TITLE'»
     sendNotification({
       userId: request.userId,
-      type: "new_response",
-      title: "Новый отклик на вашу заявку",
+      type: "new_message_from_specialist",
+      title: `Новое сообщение от специалиста по заявке «${thread.request.title}»`,
       body: firstMessage.slice(0, 200),
       entityId: thread.id,
-    }).catch((err: Error) => console.warn("[notifications] new_response trigger failed:", err.message));
+    }).catch((err: Error) => console.warn("[notifications] new_message_from_specialist trigger failed:", err.message));
 
     res.status(201).json({
       id: thread.id,

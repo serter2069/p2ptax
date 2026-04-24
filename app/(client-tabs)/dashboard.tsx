@@ -64,11 +64,11 @@ const TIPS: { title: string; text: string }[] = [
   },
   {
     title: "Опишите ситуацию",
-    text: "Чем точнее суть, тем быстрее откликнутся профильные эксперты.",
+    text: "Чем точнее суть, тем быстрее вам напишут профильные эксперты.",
   },
   {
     title: "Будьте на связи",
-    text: "Первые отклики приходят в течение 24 часов — отвечайте быстро.",
+    text: "Первые сообщения приходят в течение 24 часов — отвечайте быстро.",
   },
 ];
 
@@ -131,7 +131,7 @@ export default function ClientDashboard() {
         meta: `${r.city.name} · ${r.fns.name}`,
         rightValue:
           r.threadsCount > 0
-            ? `${r.threadsCount} ${r.threadsCount === 1 ? "отклик" : r.threadsCount < 5 ? "отклика" : "откликов"}`
+            ? `${r.threadsCount} ${r.threadsCount === 1 ? "диалог" : r.threadsCount < 5 ? "диалога" : "диалогов"}`
             : undefined,
         icon: FileText,
         iconTone:
@@ -159,7 +159,7 @@ export default function ClientDashboard() {
       >
         <DesktopScreen
           title={firstName ? `Здравствуйте, ${firstName}!` : "Главная"}
-          subtitle="Ваш рабочий стол: заявки, отклики, сообщения"
+          subtitle="Ваш рабочий стол: заявки, диалоги, сообщения"
         >
           {loading ? (
             <View style={{ paddingVertical: spacing.lg, gap: spacing.md }}>
@@ -198,7 +198,7 @@ export default function ClientDashboard() {
                 </DashboardGrid.Col>
                 <DashboardGrid.Col span={4} tabletSpan={2}>
                   <KpiCard
-                    label="Откликов сегодня"
+                    label="Новых диалогов сегодня"
                     value={extra?.responsesToday ?? 0}
                     icon={Inbox}
                     tone={(extra?.responsesToday ?? 0) > 0 ? "success" : "muted"}
@@ -285,7 +285,7 @@ export default function ClientDashboard() {
                           >
                             {atLimit
                               ? "Закройте одну, чтобы создать новую"
-                              : "Отклики в течение 24 часов"}
+                              : "Первые сообщения в течение 24 часов"}
                           </Text>
                         </View>
                       </View>
