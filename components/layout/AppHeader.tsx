@@ -27,7 +27,7 @@ import RoleBadge from "./RoleBadge";
  * Desktop (>= 640px): logo + breadcrumb + search input + role badge + bell + avatar dropdown.
  * Mobile  (<  640px): burger + centered title + bell, dropdown deferred to MobileMenu.
  *
- * Issue #1285 (persistent header), #1289 (role accent tint).
+ * Issue GH-1285 (persistent header), GH-1289 (role accent tint).
  *
  * The component deliberately keeps its own breadcrumb mapping small —
  * more sophisticated trails can be added later once the screen set
@@ -283,7 +283,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
               borderWidth: 1,
               borderColor: colors.border,
               padding: spacing.sm,
-              shadowColor: "#000",
+              shadowColor: colors.black,
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.08,
               shadowRadius: 16,

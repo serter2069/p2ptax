@@ -193,7 +193,7 @@ export default function UnifiedInbox() {
               minHeight: 72,
               borderLeftWidth: hasUnread ? 3 : 0,
               borderLeftColor: hasUnread ? colors.primary : "transparent",
-              shadowColor: "#000",
+              shadowColor: colors.black,
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.06,
               shadowRadius: 3,
@@ -205,7 +205,7 @@ export default function UnifiedInbox() {
           <View
             className="relative mr-3 my-3.5"
             style={{
-              shadowColor: "#000",
+              shadowColor: colors.black,
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 4,
@@ -223,7 +223,7 @@ export default function UnifiedInbox() {
                 width: 12,
                 height: 12,
                 borderWidth: 2,
-                borderColor: "#fff",
+                borderColor: colors.white,
               }}
             />
             {hasUnread && (

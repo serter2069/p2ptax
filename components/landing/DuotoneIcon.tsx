@@ -58,7 +58,7 @@ function renderIcon(name: IconName, stroke: string, soft: string) {
             strokeWidth={2}
             strokeLinecap="round"
           />
-          <Circle cx={32} cy={32} r={7} fill="#fff" stroke={stroke} strokeWidth={2.5} />
+          <Circle cx={32} cy={32} r={7} fill={colors.white} stroke={stroke} strokeWidth={2.5} />
           <Path
             d="M37 37l5 5"
             stroke={stroke}
@@ -77,7 +77,7 @@ function renderIcon(name: IconName, stroke: string, soft: string) {
             strokeWidth={2}
             strokeLinecap="round"
           />
-          <Circle cx={36} cy={34} r={6} fill="#fff" stroke={stroke} strokeWidth={2.5} />
+          <Circle cx={36} cy={34} r={6} fill={colors.white} stroke={stroke} strokeWidth={2.5} />
           <Path
             d="M33 34l2 2 4-4"
             stroke={stroke}
@@ -97,7 +97,7 @@ function renderIcon(name: IconName, stroke: string, soft: string) {
             strokeWidth={2}
             strokeLinejoin="round"
           />
-          <Circle cx={36} cy={14} r={7} fill="#fff" stroke={stroke} strokeWidth={2.5} />
+          <Circle cx={36} cy={14} r={7} fill={colors.white} stroke={stroke} strokeWidth={2.5} />
           <Path
             d="M36 11v3l2 2"
             stroke={stroke}
@@ -129,7 +129,7 @@ function renderIcon(name: IconName, stroke: string, soft: string) {
       return (
         <G>
           <Rect x={10} y={8} width={28} height={32} rx={3} fill={soft} />
-          <Rect x={18} y={6} width={12} height={6} rx={2} fill="#fff" stroke={stroke} strokeWidth={2} />
+          <Rect x={18} y={6} width={12} height={6} rx={2} fill={colors.white} stroke={stroke} strokeWidth={2} />
           <Path
             d="M16 20h16M16 26h16M16 32h10"
             stroke={stroke}

@@ -10,7 +10,7 @@ import AppHeader, { shouldShowAppHeader } from "@/components/layout/AppHeader";
  * authenticated users and only on routes that don't have their own
  * chrome (landing, auth, onboarding, legal).
  *
- * Issue #1285 — persistent header on every authenticated route.
+ * Issue GH-1285 — persistent header on every authenticated route.
  */
 function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -67,7 +67,7 @@ export default function RootLayout() {
             <Stack.Screen name="notifications" />
             <Stack.Screen name="legal/privacy" />
             <Stack.Screen name="legal/terms" />
-            {/* Issue #1293: /brand is a dev-only design-system page. */}
+            {/* Issue GH-1293: /brand is a dev-only design-system page. */}
             {__DEV__ && <Stack.Screen name="brand" />}
 
             {/* Admin detail screens */}

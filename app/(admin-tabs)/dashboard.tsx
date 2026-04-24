@@ -388,7 +388,7 @@ export default function AdminDashboard() {
                           className="rounded-xl items-center justify-center bg-white/20"
                           style={{ width: 44, height: 44 }}
                         >
-                          <Shield size={22} color="#fff" />
+                          <Shield size={22} color={colors.white} />
                         </View>
                         <View className="flex-1 min-w-0">
                           <Text

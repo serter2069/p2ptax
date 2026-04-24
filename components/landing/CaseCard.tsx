@@ -27,7 +27,7 @@ export default function CaseCard({ data, index }: CaseCardProps) {
       className="rounded-2xl"
       style={{
         flex: 1,
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
         borderWidth: 1,
         borderColor: colors.border,
         padding: 24,
@@ -50,7 +50,7 @@ export default function CaseCard({ data, index }: CaseCardProps) {
             {data.specialistName}
           </Text>
           <View className="flex-row items-center" style={{ gap: 4, marginTop: 2 }}>
-            <DuotoneIcon name="shield-check" size={14} color={colors.success} softColor="#d1fae5" />
+            <DuotoneIcon name="shield-check" size={14} color={colors.success} softColor={colors.successSoft} />
             <Text style={{ color: colors.success, fontSize: 11, fontWeight: "600" }}>
               Проверен платформой
             </Text>

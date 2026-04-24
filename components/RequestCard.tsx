@@ -1,5 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import StatusBadge from "./StatusBadge";
+import { colors } from "@/lib/theme";
 
 interface RequestCardProps {
   id: string;
@@ -29,7 +30,7 @@ export default function RequestCard({
       onPress={() => onPress(id)}
       className="bg-white border border-border rounded-xl p-4 mb-3"
       style={({ pressed }) => [
-        { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+        { shadowColor: colors.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
         pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
       ]}
     >

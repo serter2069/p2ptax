@@ -224,12 +224,12 @@ export default function SpecialistPublicProfile() {
         {isExFns && (
           <View
             className="flex-row items-center self-start mt-3 px-3 py-1.5 rounded-full"
-            style={{ backgroundColor: "#fef3c7", gap: 6 }}
+            style={{ backgroundColor: colors.yellowSoft, gap: 6 }}
           >
-            <ShieldCheck size={14} color="#b45309" />
+            <ShieldCheck size={14} color={colors.warningInk} />
             <Text
               className="text-xs font-semibold"
-              style={{ color: "#b45309" }}
+              style={{ color: colors.warningInk }}
             >
               Ex-ФНС {profile?.exFnsStartYear}–{profile?.exFnsEndYear}
             </Text>
@@ -543,7 +543,7 @@ export default function SpecialistPublicProfile() {
   );
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: "#fafbfc" }}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.surface2 }}>
       <Head>
         <title>{name} — специалист по налогам | P2PTax</title>
         <meta

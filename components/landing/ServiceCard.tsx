@@ -30,7 +30,7 @@ export default function ServiceCard({
       className="rounded-2xl"
       style={{
         flex: 1,
-        backgroundColor: "#ffffff",
+        backgroundColor: colors.white,
         borderWidth: 1,
         borderColor: colors.border,
         padding: 28,

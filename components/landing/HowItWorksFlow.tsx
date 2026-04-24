@@ -29,7 +29,7 @@ export default function HowItWorksFlow({ isDesktop }: HowItWorksFlowProps) {
       style={{
         paddingVertical: isDesktop ? 96 : 64,
         paddingHorizontal: isDesktop ? 32 : 20,
-        backgroundColor: "#f6f9ff",
+        backgroundColor: colors.accentTintBg,
       }}
     >
       <View
@@ -150,7 +150,7 @@ export default function HowItWorksFlow({ isDesktop }: HowItWorksFlowProps) {
             marginTop: 48,
             padding: 20,
             borderRadius: 16,
-            backgroundColor: "#ffffff",
+            backgroundColor: colors.white,
             borderWidth: 1,
             borderColor: colors.border,
             alignSelf: "center",

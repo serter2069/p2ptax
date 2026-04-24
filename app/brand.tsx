@@ -36,7 +36,7 @@ export default function BrandScreen() {
   const [inputError, setInputError] = useState("not-email");
   const [inputIcon, setInputIcon] = useState("");
 
-  // Issue #1293 (regression): /brand must never render in production.
+  // Issue GH-1293 (regression): /brand must never render in production.
   // The `{__DEV__ && <Stack.Screen />}` gate in `app/_layout.tsx` only hides
   // the route registration — Expo Router file-based routing still discovers
   // `app/brand.tsx` and serves the page. The only bulletproof guard is to

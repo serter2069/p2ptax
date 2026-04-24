@@ -541,7 +541,7 @@ export default function UserDashboard() {
                         >
                           <Plus
                             size={22}
-                            color={atLimit ? colors.textMuted : "#fff"}
+                            color={atLimit ? colors.textMuted : colors.white}
                           />
                         </View>
                         <View className="flex-1 min-w-0">
@@ -646,7 +646,7 @@ export default function UserDashboard() {
                             className="rounded-xl items-center justify-center bg-white/20"
                             style={{ width: 44, height: 44 }}
                           >
-                            <List size={22} color="#fff" />
+                            <List size={22} color={colors.white} />
                           </View>
                           <View className="flex-1 min-w-0">
                             <Text
