@@ -32,7 +32,7 @@ import type {
 } from "@/components/specialist/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { colors, textStyle, spacing } from "@/lib/theme";
+import { colors, gray, textStyle, spacing } from "@/lib/theme";
 
 function getInitials(
   firstName: string | null,
@@ -517,6 +517,34 @@ export default function SpecialistPublicProfile() {
     </View>
   ) : null;
 
+  // Reviews placeholder (SA-3): real reviews come post-MVP
+  const reviewsPlaceholder = (
+    <View className="mt-8">
+      <Text
+        className="uppercase mb-3"
+        style={{
+          fontSize: 11,
+          letterSpacing: 3,
+          color: colors.textSecondary,
+          fontWeight: "600",
+        }}
+      >
+        Отзывы клиентов
+      </Text>
+      <View
+        className="rounded-2xl border border-border p-5"
+        style={{ backgroundColor: colors.surface, ...legacyShadow }}
+      >
+        <Text
+          className="text-sm text-center"
+          style={{ color: gray[400] }}
+        >
+          Отзывы появятся после MVP
+        </Text>
+      </View>
+    </View>
+  );
+
   const mainContent = (
     <View>
       {hero}
@@ -539,6 +567,7 @@ export default function SpecialistPublicProfile() {
           guestLockedContacts
         )}
       </View>
+      {reviewsPlaceholder}
     </View>
   );
 
