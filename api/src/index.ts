@@ -40,10 +40,6 @@ app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/specialists", specialistsRoutes);
 app.use("/api/requests", requestsRoutes);
 app.use("/api", referenceRoutes);
-// Register /api/stats BEFORE contactsRoutes — contactsRoutes is mounted at
-// /api with a global authMiddleware, which incorrectly auth-protects any
-// later /api/* handlers passing through it.
-app.use("/api/stats", statsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/specialist", specialistRoutes);
@@ -51,6 +47,7 @@ app.use("/api/threads", threadsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api", contactsRoutes);
+app.use("/api/stats", statsRoutes);
 
 app.listen(PORT, () => {
   // Start BullMQ worker (graceful degradation if Valkey unavailable)
