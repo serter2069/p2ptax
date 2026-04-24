@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { useWindowDimensions, Platform } from "react-native";
+import { useWindowDimensions } from "react-native";
 import { Home, Search, PlusSquare, MessageCircle, User } from "lucide-react-native";
 import Header from "@/components/Header";
 import { colors, fontSizeValue } from "@/lib/theme";
@@ -7,13 +7,16 @@ import { colors, fontSizeValue } from "@/lib/theme";
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  // Desktop web: AppShell sidebar carries primary navigation — hide the
-  // marketplace Header to kill the duplicate horizontal nav.
-  const isDesktopWeb = Platform.OS === "web" && width >= 1024;
+  // NOTE (iter8 regression fix): we previously suppressed `Header` on desktop
+  // web (>=1024px) assuming the AppShell sidebar would carry navigation — but
+  // `/(tabs)` reports pathname `/` to `usePathname()`, which is excluded from
+  // both the sidebar group detection (`detectSidebarGroup`) and the AppHeader
+  // gate (`shouldShowAppHeader`). Suppressing Header left authenticated users
+  // with zero chrome on the root marketplace tab. Render Header always.
 
   return (
     <>
-      {!isDesktopWeb && <Header />}
+      <Header />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: colors.primary,

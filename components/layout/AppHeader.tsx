@@ -417,12 +417,21 @@ export default function AppHeader({ title }: AppHeaderProps) {
  * Path-prefix gate: when the current route is public chrome (landing,
  * auth, onboarding, legal) we suppress AppHeader entirely — those
  * screens render their own hero/chrome.
+ *
+ * NOTE (iter8 regression fix): the legacy marketplace `(tabs)` group renders
+ * its own `Header` component (burger + nav links) from `(tabs)/_layout.tsx`.
+ * `usePathname()` strips the group segment, so routes like `/search`,
+ * `/create`, `/messages`, `/profile` belong to `(tabs)` but look like
+ * top-level paths. We must exclude them here to avoid double-chrome.
  */
+const TABS_ROUTES = new Set(["/search", "/create", "/messages", "/profile"]);
+
 export function shouldShowAppHeader(pathname: string): boolean {
   if (!pathname) return false;
   if (pathname === "/") return false;
   if (pathname.startsWith("/auth")) return false;
   if (pathname.startsWith("/legal")) return false;
   if (pathname.startsWith("/onboarding")) return false;
+  if (TABS_ROUTES.has(pathname)) return false;
   return true;
 }
