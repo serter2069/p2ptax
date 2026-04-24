@@ -11,9 +11,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Pencil, Plus, LogOut, Tag } from "lucide-react-native";
+import { Pencil, Plus, LogOut, Tag, Eye, Clock } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import DesktopScreen from "@/components/layout/DesktopScreen";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -189,11 +189,71 @@ export default function SpecialistSettings() {
     );
   }
 
-  return (
+  const leftPane = (
+    <View style={{ gap: 24 }}>
+      <View
+        className="rounded-2xl items-center justify-center bg-white self-start"
+        style={{ width: 56, height: 56 }}
+      >
+        <Eye size={26} color={colors.accent} />
+      </View>
+      <View style={{ gap: 12 }}>
+        <Text className="font-extrabold text-text-base" style={{ fontSize: 24, lineHeight: 30 }}>
+          Ваш профиль в каталоге
+        </Text>
+        <Text className="text-text-mute" style={{ fontSize: 14, lineHeight: 20 }}>
+          Так вас видят клиенты, когда ищут специалиста по ФНС. Изменения применяются сразу
+          после сохранения.
+        </Text>
+      </View>
+      <View
+        className="bg-white rounded-2xl border border-border"
+        style={{ padding: 16, gap: 12 }}
+      >
+        <View>
+          <Text className="text-text-dim" style={{ fontSize: 11, letterSpacing: 0.5 }}>
+            ИМЯ
+          </Text>
+          <Text className="text-text-base font-bold mt-0.5" style={{ fontSize: 16 }}>
+            {[firstName, lastName].filter(Boolean).join(" ") || "не заполнено"}
+          </Text>
+        </View>
+        <View>
+          <Text className="text-text-dim" style={{ fontSize: 11, letterSpacing: 0.5 }}>
+            СТАТУС
+          </Text>
+          <Text
+            className={`font-bold mt-0.5 ${isAvailable ? "text-success" : "text-warning"}`}
+            style={{ fontSize: 14 }}
+          >
+            {isAvailable ? "В каталоге — принимаю заявки" : "Скрыт из каталога"}
+          </Text>
+        </View>
+        <View>
+          <Text className="text-text-dim" style={{ fontSize: 11, letterSpacing: 0.5 }}>
+            ФНС / ГОРОДА
+          </Text>
+          <Text className="text-text-base font-semibold mt-0.5" style={{ fontSize: 14 }}>
+            {data?.fnsServices?.length
+              ? `${data.fnsServices.length} инспекций`
+              : "не заполнено"}
+          </Text>
+        </View>
+        <View className="flex-row items-center gap-2 pt-2 border-t border-border">
+          <Clock size={12} color={colors.textMuted} />
+          <Text className="text-text-dim" style={{ fontSize: 11 }}>
+            Last updated: только что
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const rightForm = (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderBack title="Настройки специалиста" />
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-        <DesktopScreen maxWidth={860}>
+        <View className="px-4">
           <View className="py-4">
 
             {/* Avatar centered */}
@@ -432,8 +492,10 @@ export default function SpecialistSettings() {
             </Text>
 
           </View>
-        </DesktopScreen>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
+
+  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }

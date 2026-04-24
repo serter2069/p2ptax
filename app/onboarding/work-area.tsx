@@ -8,10 +8,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useCallback } from "react";
-import { X, Plus } from "lucide-react-native";
+import { X, Plus, MapPin } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
-import DesktopScreen from "@/components/layout/DesktopScreen";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
+import OnboardingLeft from "@/components/onboarding/OnboardingLeft";
 import Button from "@/components/ui/Button";
 import { colors } from "@/lib/theme";
 
@@ -154,10 +155,24 @@ export default function OnboardingWorkAreaScreen() {
     }
   };
 
-  return (
+  const leftPane = (
+    <OnboardingLeft
+      step={2}
+      icon={MapPin}
+      title="Ваша рабочая зона"
+      description="Выберите города и ФНС-инспекции, которые обслуживаете. По этим данным клиенты найдут вас."
+      bullets={[
+        "Чем больше городов — тем больше заявок",
+        "Каждой ФНС можно привязать свой набор услуг",
+        `Выбрано сейчас: ${selectedFns.length}`,
+      ]}
+    />
+  );
+
+  const rightForm = (
     <SafeAreaView className="flex-1 bg-white">
       <HeaderBack title="" />
-      <DesktopScreen maxWidth={720}>
+      <View className="flex-1 px-4">
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isDesktop ? 64 : 40 }}>
           <View className="pt-8">
             {/* Progress indicator */}
@@ -380,7 +395,9 @@ export default function OnboardingWorkAreaScreen() {
             />
           </View>
         </ScrollView>
-      </DesktopScreen>
+      </View>
     </SafeAreaView>
   );
+
+  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }

@@ -1,28 +1,116 @@
-import { View, Text, ScrollView, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { FileText, Lightbulb } from "lucide-react-native";
-import { colors } from "@/lib/theme";
-import DesktopScreen from "@/components/layout/DesktopScreen";
+import {
+  FileText,
+  Lightbulb,
+  CheckCircle2,
+  MapPin,
+  Clock,
+  Target,
+  ScrollText,
+} from "lucide-react-native";
+import { colors, textStyle } from "@/lib/theme";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
 import Button from "@/components/ui/Button";
 
+const TIPS: { icon: typeof Target; title: string; text: string }[] = [
+  {
+    icon: Target,
+    title: "Вид проверки",
+    text: "Камеральная, выездная или оперативный контроль — специалисты фильтруют заявки по этому полю.",
+  },
+  {
+    icon: MapPin,
+    title: "Регион ФНС",
+    text: "Инспекция и город определяют, кому покажут заявку в первую очередь.",
+  },
+  {
+    icon: Clock,
+    title: "Текущий этап",
+    text: "Требование получено, назначен выезд, решение вручено — это резко сужает круг экспертов.",
+  },
+  {
+    icon: ScrollText,
+    title: "Сроки и бюджет",
+    text: "Опишите рамки — так специалисты сразу напишут, берутся или нет.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Контакт — по желанию",
+    text: "Телефон не обязателен: вся связь идёт через чат внутри сервиса.",
+  },
+];
+
 export default function CreateScreen() {
-  const { width } = useWindowDimensions();
-  const _isDesktop = width >= 640;
   const router = useRouter();
-  return (
+
+  const leftPane = (
+    <View style={{ gap: 24 }}>
+      <View
+        className="rounded-2xl items-center justify-center bg-white self-start"
+        style={{ width: 56, height: 56 }}
+      >
+        <Lightbulb size={26} color={colors.accent} />
+      </View>
+      <View style={{ gap: 12 }}>
+        <Text
+          style={{ ...textStyle.h1, color: colors.text, fontSize: 28, lineHeight: 34 }}
+        >
+          Что указать в заявке
+        </Text>
+        <Text
+          style={{ ...textStyle.body, color: colors.textSecondary, fontSize: 15, lineHeight: 22 }}
+        >
+          Чем точнее описание, тем быстрее и дешевле будет решение. Ниже 5 пунктов, которые
+          помогут специалисту откликнуться осмысленно.
+        </Text>
+      </View>
+      <View style={{ gap: 12 }}>
+        {TIPS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <View key={t.title} className="flex-row items-start gap-3">
+              <View
+                className="rounded-xl items-center justify-center bg-white"
+                style={{ width: 36, height: 36 }}
+              >
+                <Icon size={16} color={colors.accent} />
+              </View>
+              <View className="flex-1 min-w-0">
+                <Text
+                  className="text-text-base font-bold"
+                  style={{ fontSize: 14 }}
+                >
+                  {t.title}
+                </Text>
+                <Text
+                  className="text-text-mute mt-0.5"
+                  style={{ fontSize: 13, lineHeight: 19 }}
+                >
+                  {t.text}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+
+  const rightForm = (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
-        <DesktopScreen>
-          {/* Header */}
+        <View className="px-4">
           <View className="pt-4 pb-4">
-            <Text className="text-2xl font-bold text-text-base">Новая заявка специалисту</Text>
+            <Text className="text-2xl font-bold text-text-base">
+              Новая заявка специалисту
+            </Text>
             <Text className="text-sm text-text-mute mt-1 leading-5">
               Опишите ситуацию — специалисты из вашего региона увидят заявку и сами предложат помощь.
             </Text>
           </View>
 
-          {/* Intro card */}
           <View
             className="rounded-2xl border border-border bg-accent-soft p-5 mb-6"
             style={{
@@ -35,33 +123,28 @@ export default function CreateScreen() {
           >
             <View className="flex-row items-center mb-2">
               <FileText size={18} color={colors.accent} />
-              <Text className="text-base font-semibold text-accent ml-2">Как работают заявки</Text>
+              <Text className="text-base font-semibold text-accent ml-2">
+                Как работают заявки
+              </Text>
             </View>
-            <Text className="text-sm leading-6" style={{ color: colors.textSecondary }}>
-              Вы бесплатно публикуете заявку с описанием вопроса: вид проверки, регион ФНС, сроки.
-              Специалисты откликаются в чат — вы сравниваете предложения и выбираете подходящего.
+            <Text
+              className="text-sm leading-6"
+              style={{ color: colors.textSecondary }}
+            >
+              Вы бесплатно публикуете заявку с описанием вопроса: вид проверки, регион ФНС,
+              сроки. Специалисты откликаются в чат — вы сравниваете предложения и выбираете
+              подходящего.
             </Text>
           </View>
 
-          {/* Tips */}
-          <View className="p-4 rounded-xl border border-warning-soft mb-8 bg-warning-soft">
-            <View className="flex-row items-center mb-2">
-              <Lightbulb size={16} color={colors.warning} />
-              <Text className="text-sm font-semibold ml-2" style={{ color: colors.warning }}>Что указать в заявке</Text>
-            </View>
-            <Text className="text-sm leading-6 text-text-mute">
-              Вид проверки (камеральная, выездная, оперативный контроль) · регион налогового органа ·
-              этап (требование получено, назначен выезд, решение вручено) · желаемые сроки и бюджет.
-            </Text>
-          </View>
-
-          {/* Next Button — uses shared primary Button */}
           <Button
             label="Создать заявку"
             onPress={() => router.push("/requests/new" as never)}
           />
-        </DesktopScreen>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
+
+  return <TwoColumnForm left={leftPane} right={rightForm} />;
 }

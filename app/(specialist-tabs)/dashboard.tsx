@@ -10,28 +10,28 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
-  TriangleAlert,
-  List,
   Inbox,
+  MessageSquare,
+  TrendingUp,
   Clock,
-  Reply,
-  CheckCircle2,
+  Sparkles,
+  CalendarDays,
+  List,
 } from "lucide-react-native";
 import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
-import StatusBadge from "@/components/StatusBadge";
-import EmptyState from "@/components/ui/EmptyState";
-import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
+import ErrorState from "@/components/ui/ErrorState";
 import {
-  DashboardHero,
-  PriorityFeed,
-  type HeroStat,
-  type PriorityItem,
+  DashboardGrid,
+  KpiCard,
+  DashboardWidget,
+  FeedList,
+  type FeedItem,
 } from "@/components/dashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiGet, apiPatch } from "@/lib/api";
-import { colors, overlay, spacing, textStyle } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 
 interface Stats {
   threadsTotal: number;
@@ -55,8 +55,8 @@ interface MatchingRequest {
   fns: { id: string; name: string; code: string };
   service?: string;
   isMyRegion: boolean;
-  hasThread: boolean;
-  threadId: string | null;
+  hasThread?: boolean;
+  threadId?: string | null;
   existingThreadId?: string | null;
 }
 
@@ -67,16 +67,7 @@ interface DashboardData {
   stats: { threadsTotal: number; newMessages: number };
 }
 
-function formatRub(value: number): string {
-  if (value >= 1_000_000) {
-    const mln = value / 1_000_000;
-    return `${mln.toFixed(mln >= 10 ? 0 : 1).replace(/\.0$/, "")}М ₽`;
-  }
-  if (value >= 1_000) {
-    return `${Math.round(value / 1_000)}К ₽`;
-  }
-  return `${value} ₽`;
-}
+const THREAD_LIMIT_PER_DAY = 20;
 
 export default function SpecialistDashboard() {
   const router = useRouter();
@@ -84,6 +75,7 @@ export default function SpecialistDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [extra, setExtra] = useState<SpecialistExtra | null>(null);
   const [requests, setRequests] = useState<MatchingRequest[]>([]);
+  const [threadsToday, setThreadsToday] = useState(0);
   const [isAvailable, setIsAvailable] = useState<boolean>(
     user?.isAvailable ?? true
   );
@@ -124,6 +116,15 @@ export default function SpecialistDashboard() {
       } catch {
         setExtra(null);
       }
+
+      try {
+        const today = await apiGet<{ count: number }>(
+          "/api/specialist/threads-today"
+        );
+        setThreadsToday(today.count);
+      } catch {
+        setThreadsToday(0);
+      }
     } catch {
       setError(true);
     }
@@ -157,117 +158,47 @@ export default function SpecialistDashboard() {
   );
 
   const firstName = user?.firstName ?? "специалист";
-  const greeting = `Здравствуйте, ${firstName}!`;
+  const matched = requests.filter((r) => r.status !== "CLOSED");
+  const newLeads = matched.filter((r) => !r.hasThread);
+  const matchedToday = matched.filter((r) => {
+    const dt = new Date(r.createdAt);
+    const now = new Date();
+    return dt.toDateString() === now.toDateString();
+  });
 
-  const newLeads = requests.filter((r) => !r.hasThread && r.status !== "CLOSED");
-  const subtitle = isAvailable
-    ? newLeads.length === 0
-      ? "Новых подходящих заявок пока нет. Вы в каталоге."
-      : `${newLeads.length} новых заявок ждут вашего отклика.`
-    : "Вы не принимаете заявки — включите, чтобы вернуться в каталог.";
-
-  const heroStats: HeroStat[] = useMemo(
-    () => [
-      {
-        label: "Новых заявок",
-        value: extra?.newRequestsWeek ?? newLeads.length,
-        color: "primary",
-        trend: (extra?.newRequestsWeek ?? 0) > 0 ? "up" : "flat",
-        trendValue:
-          (extra?.newRequestsWeek ?? 0) > 0 ? "за неделю" : "за неделю",
-      },
-      {
-        label: "Ждут ответа",
-        value: extra?.awaitingMyReply ?? stats?.newMessages ?? 0,
-        color:
-          (extra?.awaitingMyReply ?? stats?.newMessages ?? 0) > 0
-            ? "warning"
-            : "muted",
-      },
-      {
-        label: "Активных дел",
-        value: extra?.activeThreads ?? stats?.threadsTotal ?? 0,
-      },
-      {
-        label: "Оспорено за месяц",
-        value: formatRub(extra?.disputedAmountMonth ?? 0),
-        color: "success",
-        trend: (extra?.disputedAmountMonth ?? 0) > 0 ? "up" : "flat",
-      },
-    ],
-    [extra, stats, newLeads.length]
+  const activeThreads = extra?.activeThreads ?? stats?.threadsTotal ?? 0;
+  const weekCount = extra?.newRequestsWeek ?? 0;
+  const threadsLeft = Math.max(0, THREAD_LIMIT_PER_DAY - threadsToday);
+  const progressPct = Math.min(
+    100,
+    Math.round((threadsToday / THREAD_LIMIT_PER_DAY) * 100)
   );
 
-  const priorityItems: PriorityItem[] = useMemo(() => {
-    const items: PriorityItem[] = [];
-    const toAnswer = requests.filter((r) => !r.hasThread).slice(0, 5);
-
-    for (const r of toAnswer) {
-      const urg =
-        r.status === "CLOSING_SOON" ? "high" : r.isMyRegion ? "medium" : "low";
-      items.push({
-        id: `lead-${r.id}`,
-        icon: r.status === "CLOSING_SOON" ? Clock : Inbox,
+  const feedItems: FeedItem[] = useMemo(
+    () =>
+      matched.slice(0, 8).map((r) => ({
+        id: r.id,
         title: r.title,
         meta: `${r.city.name} · ${r.fns.name}${r.service ? ` · ${r.service}` : ""}`,
-        urgency: urg,
-        action: {
-          label: "Ответить",
-          onPress: () => router.push(`/requests/${r.id}/write` as never),
+        rightValue: r.isMyRegion ? "Моя зона" : undefined,
+        icon: r.status === "CLOSING_SOON" ? Clock : Inbox,
+        iconTone:
+          r.status === "CLOSING_SOON"
+            ? "warning"
+            : r.isMyRegion
+              ? "primary"
+              : "muted",
+        onPress: () => {
+          const existing = r.existingThreadId ?? r.threadId;
+          if (r.hasThread && existing) {
+            router.push(`/threads/${existing}` as never);
+          } else {
+            router.push(`/requests/${r.id}/write` as never);
+          }
         },
-      });
-    }
-
-    return items;
-  }, [requests, router]);
-
-  const myActiveCases = requests.filter((r) => r.hasThread).slice(0, 4);
-
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-        <HeaderHome
-          notificationCount={0}
-          onSettingsPress={() =>
-            router.push("/settings/specialist" as never)
-          }
-        />
-        <DesktopScreen>
-          <View style={{ paddingVertical: spacing.lg, gap: spacing.md }}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <View
-                key={i}
-                className="bg-white rounded-xl overflow-hidden border border-border"
-              >
-                <LoadingState variant="skeleton" lines={3} />
-              </View>
-            ))}
-          </View>
-        </DesktopScreen>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-        <HeaderHome
-          onSettingsPress={() =>
-            router.push("/settings/specialist" as never)
-          }
-        />
-        <View className="flex-1 items-center justify-center">
-          <ErrorState
-            message="Не удалось загрузить заявки"
-            onRetry={() => {
-              setLoading(true);
-              fetchData().finally(() => setLoading(false));
-            }}
-          />
-        </View>
-      </SafeAreaView>
-    );
-  }
+      })),
+    [matched, router]
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
@@ -283,51 +214,20 @@ export default function SpecialistDashboard() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        <DesktopScreen>
-          <View style={{ paddingVertical: spacing.lg, gap: spacing.lg }}>
-            {/* Hero */}
-            <DashboardHero
-              greeting={greeting}
-              subtitle={subtitle}
-              primaryStats={heroStats}
-            />
-
-            {/* Availability toggle */}
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: colors.border,
-                padding: spacing.md,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: spacing.md,
-                borderLeftWidth: 3,
-                borderLeftColor: isAvailable ? colors.success : colors.warning,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    ...textStyle.bodyBold,
-                    color: colors.text,
-                  }}
-                >
-                  Принимаю заявки
-                </Text>
-                <Text
-                  style={{
-                    ...textStyle.small,
-                    color: colors.textSecondary,
-                    marginTop: 2,
-                  }}
-                >
-                  {isAvailable
-                    ? "Клиенты видят вас в каталоге"
-                    : "Вы скрыты из каталога — новые заявки не приходят"}
-                </Text>
-              </View>
+        <DesktopScreen
+          title={`Здравствуйте, ${firstName}!`}
+          subtitle={
+            isAvailable
+              ? newLeads.length > 0
+                ? `${newLeads.length} новых подходящих заявок`
+                : "Вы в каталоге. Новых заявок пока нет."
+              : "Вы скрыты из каталога — включите приём заявок"
+          }
+          headerActions={
+            <View className="flex-row items-center gap-2 bg-white border border-border rounded-full px-3 py-2">
+              <Text className="text-text-mute text-xs">
+                Принимаю заявки
+              </Text>
               <Switch
                 value={isAvailable}
                 onValueChange={handleToggleAvailability}
@@ -336,198 +236,182 @@ export default function SpecialistDashboard() {
                 thumbColor={colors.surface}
               />
             </View>
+          }
+        >
+          {loading ? (
+            <View style={{ gap: 16 }}>
+              <LoadingState variant="skeleton" lines={4} />
+              <LoadingState variant="skeleton" lines={4} />
+            </View>
+          ) : error ? (
+            <ErrorState
+              message="Не удалось загрузить заявки"
+              onRetry={() => {
+                setLoading(true);
+                fetchData().finally(() => setLoading(false));
+              }}
+            />
+          ) : (
+            <View style={{ gap: 24 }}>
+              {/* KPI row: 4 */}
+              <DashboardGrid>
+                <DashboardGrid.Col span={3} tabletSpan={1}>
+                  <KpiCard
+                    label="Matched сегодня"
+                    value={matchedToday.length}
+                    icon={Sparkles}
+                    tone="primary"
+                  />
+                </DashboardGrid.Col>
+                <DashboardGrid.Col span={3} tabletSpan={1}>
+                  <KpiCard
+                    label="Активных диалогов"
+                    value={activeThreads}
+                    icon={MessageSquare}
+                    tone={activeThreads > 0 ? "success" : "muted"}
+                  />
+                </DashboardGrid.Col>
+                <DashboardGrid.Col span={3} tabletSpan={1}>
+                  <KpiCard
+                    label="Thread-лимит"
+                    value={`${threadsToday}/${THREAD_LIMIT_PER_DAY}`}
+                    hint={threadsLeft > 0 ? `осталось ${threadsLeft}` : "исчерпан"}
+                    icon={CalendarDays}
+                    tone={
+                      threadsLeft === 0
+                        ? "danger"
+                        : threadsLeft <= 3
+                          ? "warning"
+                          : "muted"
+                    }
+                  />
+                </DashboardGrid.Col>
+                <DashboardGrid.Col span={3} tabletSpan={1}>
+                  <KpiCard
+                    label="Новых за неделю"
+                    value={weekCount}
+                    icon={TrendingUp}
+                    tone={weekCount > 0 ? "success" : "muted"}
+                    trend={weekCount > 0 ? "up" : "flat"}
+                  />
+                </DashboardGrid.Col>
+              </DashboardGrid>
 
-            {!isAvailable ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Перейти в настройки"
-                onPress={() =>
-                  router.push("/settings/specialist" as never)
-                }
-                style={{
-                  backgroundColor: colors.yellowSoft,
-                  borderRadius: 14,
-                  padding: spacing.md,
-                  flexDirection: "row",
-                  gap: spacing.sm,
-                  borderWidth: 1,
-                  borderColor: colors.warning,
-                }}
-              >
-                <TriangleAlert
-                  size={18}
-                  color={colors.warning}
-                  style={{ marginTop: 2 }}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      ...textStyle.bodyBold,
-                      color: colors.warning,
-                    }}
-                  >
-                    Вы не принимаете заявки
-                  </Text>
-                  <Text
-                    style={{
-                      ...textStyle.small,
-                      color: colors.warning,
-                      marginTop: 2,
-                    }}
-                  >
-                    Включите переключатель выше, чтобы вернуться в каталог.
-                  </Text>
-                </View>
-              </Pressable>
-            ) : null}
-
-            {/* Priority — what to answer today */}
-            {priorityItems.length > 0 ? (
-              <PriorityFeed
-                title="Что нужно ответить сегодня"
-                items={priorityItems}
-                emptyMessage="Все заявки уже обработаны!"
-                headerAction={
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Все заявки"
-                    onPress={() =>
+              {/* Main + sidebar */}
+              <DashboardGrid>
+                <DashboardGrid.Col span={8} tabletSpan={2}>
+                  <DashboardWidget
+                    title="Подходящие публичные заявки"
+                    subtitle={`Всего ${matched.length}`}
+                    icon={Inbox}
+                    actionLabel="Все →"
+                    onActionPress={() =>
                       router.push("/(specialist-tabs)/requests" as never)
                     }
+                    flush
                   >
-                    <Text
-                      style={{
-                        color: colors.accent,
-                        fontWeight: "600",
-                        fontSize: 14,
-                      }}
-                    >
-                      Все →
-                    </Text>
-                  </Pressable>
-                }
-              />
-            ) : null}
+                    <FeedList
+                      items={feedItems}
+                      limit={8}
+                      emptyText="Подходящих заявок пока нет. Расширьте рабочую область."
+                    />
+                  </DashboardWidget>
+                </DashboardGrid.Col>
 
-            {/* Active cases — threads where I've engaged */}
-            {myActiveCases.length > 0 ? (
-              <View
-                style={{
-                  backgroundColor: colors.surface,
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  padding: spacing.md,
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: spacing.md,
-                  }}
-                >
-                  <Text
-                    style={{
-                      ...textStyle.h4,
-                      color: colors.text,
-                    }}
-                  >
-                    Ваши активные дела
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Все обращения"
-                    onPress={() =>
-                      router.push("/(specialist-tabs)/threads" as never)
-                    }
-                  >
-                    <Text
-                      style={{
-                        color: colors.accent,
-                        fontWeight: "600",
-                        fontSize: 14,
-                      }}
+                <DashboardGrid.Col span={4} tabletSpan={2}>
+                  <View style={{ gap: 16 }}>
+                    {/* Thread-limit progress */}
+                    <DashboardWidget
+                      title="Thread-лимит сегодня"
+                      icon={CalendarDays}
+                      accentBar={
+                        threadsLeft === 0
+                          ? "danger"
+                          : threadsLeft <= 3
+                            ? "warning"
+                            : "success"
+                      }
                     >
-                      Все →
-                    </Text>
-                  </Pressable>
-                </View>
-                <View style={{ gap: spacing.sm }}>
-                  {myActiveCases.map((c) => (
+                      <View style={{ gap: 12 }}>
+                        <View className="flex-row items-baseline justify-between">
+                          <Text
+                            className="font-extrabold text-text-base"
+                            style={{ fontSize: 28 }}
+                          >
+                            {threadsToday}
+                            <Text className="text-text-dim font-normal" style={{ fontSize: 16 }}>
+                              {` / ${THREAD_LIMIT_PER_DAY}`}
+                            </Text>
+                          </Text>
+                          <Text className="text-text-mute" style={{ fontSize: 12 }}>
+                            {threadsLeft > 0
+                              ? `${threadsLeft} осталось`
+                              : "исчерпан"}
+                          </Text>
+                        </View>
+                        <View
+                          className="w-full rounded-full overflow-hidden"
+                          style={{
+                            height: 8,
+                            backgroundColor: colors.surface2,
+                          }}
+                        >
+                          <View
+                            style={{
+                              width: `${progressPct}%`,
+                              height: "100%",
+                              backgroundColor:
+                                threadsLeft === 0
+                                  ? colors.danger
+                                  : threadsLeft <= 3
+                                    ? colors.warning
+                                    : colors.success,
+                            }}
+                          />
+                        </View>
+                        <Text className="text-text-mute" style={{ fontSize: 12 }}>
+                          Лимит обновляется каждые сутки в 00:00.
+                        </Text>
+                      </View>
+                    </DashboardWidget>
+
+                    {/* CTA */}
                     <Pressable
-                      key={c.id}
                       accessibilityRole="button"
-                      accessibilityLabel={`Открыть ${c.title}`}
-                      onPress={() => {
-                        const tid =
-                          c.threadId ?? c.existingThreadId ?? null;
-                        if (tid) router.push(`/threads/${tid}` as never);
-                        else router.push(`/requests/${c.id}` as never);
-                      }}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: spacing.md,
-                        paddingVertical: spacing.sm,
-                        paddingHorizontal: spacing.sm,
-                        borderRadius: 10,
-                        backgroundColor: colors.surface2,
-                      }}
+                      accessibilityLabel="Все публичные заявки"
+                      onPress={() =>
+                        router.push("/(specialist-tabs)/requests" as never)
+                      }
+                      className="rounded-2xl bg-accent p-5"
                     >
-                      <View
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 10,
-                          backgroundColor: colors.greenSoft,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <CheckCircle2 size={18} color={colors.success} />
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text
-                          style={{
-                            ...textStyle.bodyBold,
-                            color: colors.text,
-                          }}
-                          numberOfLines={1}
+                      <View className="flex-row items-center gap-3">
+                        <View
+                          className="rounded-xl items-center justify-center bg-white/20"
+                          style={{ width: 44, height: 44 }}
                         >
-                          {c.title}
-                        </Text>
-                        <Text
-                          style={{
-                            ...textStyle.small,
-                            color: colors.textSecondary,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {c.city.name} · {c.fns.name}
-                        </Text>
+                          <List size={22} color="#fff" />
+                        </View>
+                        <View className="flex-1 min-w-0">
+                          <Text
+                            className="font-extrabold text-white"
+                            style={{ fontSize: 16 }}
+                          >
+                            Публичные заявки
+                          </Text>
+                          <Text
+                            className="text-white/80 mt-0.5"
+                            style={{ fontSize: 12 }}
+                          >
+                            Полный каталог с фильтрами
+                          </Text>
+                        </View>
                       </View>
-                      <StatusBadge status={c.status} />
                     </Pressable>
-                  ))}
-                </View>
-              </View>
-            ) : null}
-
-            {/* Empty state */}
-            {requests.length === 0 ? (
-              <EmptyState
-                icon={List}
-                title="Нет подходящих заявок"
-                subtitle="Расширьте рабочую область, чтобы видеть больше заявок"
-                actionLabel="Настройки"
-                onAction={() =>
-                  router.push("/settings/specialist" as never)
-                }
-              />
-            ) : null}
-          </View>
+                  </View>
+                </DashboardGrid.Col>
+              </DashboardGrid>
+            </View>
+          )}
         </DesktopScreen>
       </ScrollView>
     </SafeAreaView>

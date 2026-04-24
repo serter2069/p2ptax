@@ -11,28 +11,26 @@ import { useRouter } from "expo-router";
 import {
   MessageSquare,
   FileText,
-  Clock,
+  Inbox,
   Plus,
-  AlertCircle,
-  CheckCircle2,
+  Lightbulb,
+  ClipboardList,
 } from "lucide-react-native";
 import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
-import Avatar from "@/components/ui/Avatar";
-import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
+import StatusBadge from "@/components/StatusBadge";
 import {
-  DashboardHero,
-  CaseTimeline,
-  PriorityFeed,
-  type TimelineStage,
-  type PriorityItem,
-  type HeroStat,
+  DashboardGrid,
+  KpiCard,
+  DashboardWidget,
+  FeedList,
+  type FeedItem,
 } from "@/components/dashboard";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors, overlay, spacing, textStyle, AVATAR_COLORS } from "@/lib/theme";
+import { colors, spacing } from "@/lib/theme";
 
 interface DashboardStats {
   requestsUsed: number;
@@ -59,63 +57,20 @@ interface RequestItem {
   threadsCount: number;
 }
 
-interface ThreadMini {
-  id: string;
-  lastMessageAt?: string | null;
-  specialist?: {
-    id: string;
-    firstName?: string | null;
-    lastName?: string | null;
-  };
-  request?: { id: string; title: string };
-}
-
-function buildTimelineStages(
-  req: RequestItem | undefined,
-  threadsCount: number
-): TimelineStage[] {
-  const hasThreads = threadsCount > 0;
-  const status = req?.status;
-  const isClosed = status === "CLOSED";
-
-  return [
-    {
-      key: "created",
-      label: "Создана",
-      status: "done",
-      date: req?.createdAt
-        ? new Date(req.createdAt).toLocaleDateString("ru-RU", {
-            day: "numeric",
-            month: "short",
-          })
-        : undefined,
-    },
-    {
-      key: "responding",
-      label: "Отклики",
-      status: hasThreads ? "done" : "current",
-      meta: hasThreads
-        ? `${threadsCount} ${threadsCount === 1 ? "отклик" : threadsCount < 5 ? "отклика" : "откликов"}`
-        : "ждём специалистов",
-    },
-    {
-      key: "dialog",
-      label: "Диалог",
-      status: hasThreads ? (isClosed ? "done" : "current") : "pending",
-      meta: hasThreads && !isClosed ? "в процессе" : undefined,
-    },
-    {
-      key: "documents",
-      label: "Документы",
-      status: isClosed ? "done" : "pending",
-    },
-    {
-      key: "resolved",
-      label: "Решено",
-      status: isClosed ? "done" : "pending",
-    },
-  ];
-}
+const TIPS: { title: string; text: string }[] = [
+  {
+    title: "Укажите ФНС",
+    text: "Специалисты ищут заявки по своим инспекциям — без ФНС вас не увидят.",
+  },
+  {
+    title: "Опишите ситуацию",
+    text: "Чем точнее суть, тем быстрее откликнутся профильные эксперты.",
+  },
+  {
+    title: "Будьте на связи",
+    text: "Первые отклики приходят в течение 24 часов — отвечайте быстро.",
+  },
+];
 
 export default function ClientDashboard() {
   const router = useRouter();
@@ -123,7 +78,6 @@ export default function ClientDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [extra, setExtra] = useState<ClientDashboardExtra | null>(null);
   const [requests, setRequests] = useState<RequestItem[]>([]);
-  const [threads, setThreads] = useState<ThreadMini[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
@@ -133,12 +87,11 @@ export default function ClientDashboard() {
       setError(false);
       const [statsRes, requestsRes] = await Promise.all([
         api<DashboardStats>("/api/dashboard/stats"),
-        api<{ items: RequestItem[] }>("/api/requests/my?limit=5"),
+        api<{ items: RequestItem[] }>("/api/requests/my?limit=8"),
       ]);
       setStats(statsRes);
       setRequests(requestsRes.items);
 
-      // Optional endpoints — degrade gracefully
       try {
         const ex = await api<ClientDashboardExtra>(
           "/api/stats/client-dashboard"
@@ -146,13 +99,6 @@ export default function ClientDashboard() {
         setExtra(ex);
       } catch {
         setExtra(null);
-      }
-
-      try {
-        const th = await api<{ items: ThreadMini[] }>("/api/threads");
-        setThreads(th.items ?? []);
-      } catch {
-        setThreads([]);
       }
     } catch (e) {
       console.error("Dashboard fetch error:", e);
@@ -172,109 +118,32 @@ export default function ClientDashboard() {
   }, [fetchData]);
 
   const atLimit = stats ? stats.requestsUsed >= stats.requestsLimit : false;
-
   const firstName = user?.firstName ?? "";
-  const greeting = firstName
-    ? `Здравствуйте, ${firstName}!`
-    : "Здравствуйте!";
-
-  const activeRequests = requests.filter((r) =>
-    r.status === "ACTIVE" || r.status === "CLOSING_SOON"
-  );
-  const latestActive = activeRequests[0];
-
-  const subtitle = useMemo(() => {
-    if (activeRequests.length === 0) {
-      return "Создайте первую заявку — специалисты откликнутся сами.";
-    }
-    if (activeRequests.length === 1) {
-      return "У вас 1 активная заявка в работе.";
-    }
-    return `У вас ${activeRequests.length} активные заявки в работе.`;
-  }, [activeRequests.length]);
-
-  const heroStats: HeroStat[] = useMemo(
-    () => [
-      {
-        label: "Активных заявок",
-        value: extra?.activeRequests ?? activeRequests.length,
-        color: "primary",
-      },
-      {
-        label: "Откликов сегодня",
-        value: extra?.responsesToday ?? 0,
-        trend: (extra?.responsesToday ?? 0) > 0 ? "up" : "flat",
-        trendValue:
-          (extra?.responsesToday ?? 0) > 0 ? "последние 24 часа" : "пока нет",
-      },
-      {
-        label: "Ждут ответа",
-        value: extra?.awaitingReplies ?? 0,
-        color: (extra?.awaitingReplies ?? 0) > 0 ? "warning" : "muted",
-      },
-      {
-        label: "Специалистов в работе",
-        value: extra?.specialistsWorkingWithYou ?? threads.length,
-      },
-    ],
-    [extra, activeRequests.length, threads.length]
+  const activeRequests = requests.filter(
+    (r) => r.status === "ACTIVE" || r.status === "CLOSING_SOON"
   );
 
-  const priorityItems: PriorityItem[] = useMemo(() => {
-    const items: PriorityItem[] = [];
-
-    if ((stats?.unreadMessages ?? 0) > 0) {
-      items.push({
-        id: "unread-messages",
-        icon: MessageSquare,
-        title: `Непрочитанных сообщений: ${stats!.unreadMessages}`,
-        meta: "Откройте диалог, чтобы не пропустить",
-        urgency: "high",
-        action: {
-          label: "Открыть",
-          onPress: () => router.push("/(client-tabs)/messages" as never),
-        },
-      });
-    }
-
-    for (const r of activeRequests.slice(0, 3)) {
-      if (r.status === "CLOSING_SOON") {
-        items.push({
-          id: `closing-${r.id}`,
-          icon: Clock,
-          title: `Заявка закрывается: ${r.title}`,
-          meta: `${r.city.name} · ${r.fns.name}`,
-          urgency: "medium",
-          action: {
-            label: "Открыть",
-            onPress: () => router.push(`/requests/${r.id}/detail` as never),
-          },
-        });
-      } else if (r.threadsCount === 0) {
-        items.push({
-          id: `no-resp-${r.id}`,
-          icon: AlertCircle,
-          title: `Пока нет откликов: ${r.title}`,
-          meta: `${r.city.name} · ожидайте до 24 часов`,
-          urgency: "low",
-        });
-      } else {
-        items.push({
-          id: `active-${r.id}`,
-          icon: FileText,
-          title: r.title,
-          meta: `${r.city.name} · ${r.threadsCount} ${r.threadsCount === 1 ? "отклик" : "откликов"}`,
-          urgency: "low",
-          action: {
-            label: "Открыть",
-            onPress: () => router.push(`/requests/${r.id}/detail` as never),
-          },
-        });
-      }
-    }
-
-    return items;
-  }, [stats, activeRequests, router]);
+  const feedItems: FeedItem[] = useMemo(
+    () =>
+      requests.map((r) => ({
+        id: r.id,
+        title: r.title,
+        meta: `${r.city.name} · ${r.fns.name}`,
+        rightValue:
+          r.threadsCount > 0
+            ? `${r.threadsCount} ${r.threadsCount === 1 ? "отклик" : r.threadsCount < 5 ? "отклика" : "откликов"}`
+            : undefined,
+        icon: FileText,
+        iconTone:
+          r.status === "CLOSING_SOON"
+            ? "warning"
+            : r.status === "CLOSED"
+              ? "muted"
+              : "primary",
+        onPress: () => router.push(`/requests/${r.id}/detail` as never),
+      })),
+    [requests, router]
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
@@ -288,7 +157,10 @@ export default function ClientDashboard() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        <DesktopScreen>
+        <DesktopScreen
+          title={firstName ? `Здравствуйте, ${firstName}!` : "Главная"}
+          subtitle="Ваш рабочий стол: заявки, отклики, сообщения"
+        >
           {loading ? (
             <View style={{ paddingVertical: spacing.lg, gap: spacing.md }}>
               <LoadingState variant="skeleton" lines={5} />
@@ -302,217 +174,147 @@ export default function ClientDashboard() {
               }}
             />
           ) : (
-            <View style={{ paddingVertical: spacing.lg, gap: spacing.lg }}>
-              {/* 1. Dashboard Hero */}
-              <DashboardHero
-                greeting={greeting}
-                subtitle={subtitle}
-                primaryStats={heroStats}
-              />
+            <View style={{ gap: 24 }}>
+              {/* Top KPI row: 3 KPIs */}
+              <DashboardGrid>
+                <DashboardGrid.Col span={4} tabletSpan={1}>
+                  <KpiCard
+                    label="Активных заявок"
+                    value={extra?.activeRequests ?? activeRequests.length}
+                    hint={`из ${stats?.requestsLimit ?? 5} доступных`}
+                    icon={FileText}
+                    tone="primary"
+                    onPress={() => router.push("/(client-tabs)/requests" as never)}
+                  />
+                </DashboardGrid.Col>
+                <DashboardGrid.Col span={4} tabletSpan={1}>
+                  <KpiCard
+                    label="Непрочитанных сообщений"
+                    value={stats?.unreadMessages ?? 0}
+                    icon={MessageSquare}
+                    tone={(stats?.unreadMessages ?? 0) > 0 ? "warning" : "muted"}
+                    onPress={() => router.push("/(client-tabs)/messages" as never)}
+                  />
+                </DashboardGrid.Col>
+                <DashboardGrid.Col span={4} tabletSpan={2}>
+                  <KpiCard
+                    label="Откликов сегодня"
+                    value={extra?.responsesToday ?? 0}
+                    icon={Inbox}
+                    tone={(extra?.responsesToday ?? 0) > 0 ? "success" : "muted"}
+                    trend={
+                      (extra?.responsesToday ?? 0) > 0 ? "up" : "flat"
+                    }
+                  />
+                </DashboardGrid.Col>
+              </DashboardGrid>
 
-              {/* 2. Primary CTA (contextual) */}
-              {!atLimit && activeRequests.length === 0 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Создать первую заявку"
-                  onPress={() => router.push("/requests/new" as never)}
-                  style={{
-                    backgroundColor: colors.accent,
-                    borderRadius: 16,
-                    paddingHorizontal: spacing.lg,
-                    paddingVertical: spacing.md,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    minHeight: 64,
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
-                      Создайте первую заявку
-                    </Text>
-                    <Text style={{ color: overlay.white75, fontSize: 13, marginTop: 2 }}>
-                      Специалисты откликнутся сами в течение 24 часов
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: overlay.white20,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
+              {/* Main + sidebar: 8 / 4 */}
+              <DashboardGrid>
+                <DashboardGrid.Col span={8} tabletSpan={2}>
+                  <DashboardWidget
+                    title="Мои заявки"
+                    subtitle={
+                      feedItems.length > 0
+                        ? `Всего ${feedItems.length}`
+                        : "Пусто"
+                    }
+                    icon={ClipboardList}
+                    actionLabel="Все →"
+                    onActionPress={() =>
+                      router.push("/(client-tabs)/requests" as never)
+                    }
+                    flush
                   >
-                    <Plus size={20} color="#fff" />
-                  </View>
-                </Pressable>
-              ) : null}
-
-              {/* 3. Case timeline (active case) */}
-              {latestActive ? (
-                <CaseTimeline
-                  caseTitle={`${latestActive.title} · ${latestActive.fns.name}`}
-                  stages={buildTimelineStages(latestActive, latestActive.threadsCount)}
-                  nextAction={
-                    latestActive.threadsCount > 0
-                      ? {
-                          label:
-                            (stats?.unreadMessages ?? 0) > 0
-                              ? "Прочитайте новые сообщения"
-                              : "Продолжите диалог со специалистом",
-                          description:
-                            (stats?.unreadMessages ?? 0) > 0
-                              ? `Непрочитанных: ${stats?.unreadMessages}`
-                              : "Обсудите документы и следующие шаги",
-                          cta: {
-                            label: "Открыть заявку",
-                            onPress: () =>
-                              router.push(
-                                `/requests/${latestActive.id}/detail` as never
-                              ),
-                          },
-                        }
-                      : {
-                          label: "Ожидайте откликов",
-                          description:
-                            "Специалисты из вашего города увидят заявку и напишут",
-                          cta: {
-                            label: "Открыть заявку",
-                            onPress: () =>
-                              router.push(
-                                `/requests/${latestActive.id}/detail` as never
-                              ),
-                          },
-                        }
-                  }
-                  headerAction={
-                    !atLimit ? (
-                      <Pressable
-                        onPress={() => router.push("/requests/new" as never)}
-                        accessibilityRole="button"
-                        accessibilityLabel="Новая заявка"
+                    <FeedList
+                      items={feedItems}
+                      limit={6}
+                      emptyText="У вас пока нет заявок. Создайте первую."
+                    />
+                    {activeRequests.length > 0 ? (
+                      <View
+                        className="flex-row flex-wrap items-center gap-2"
                         style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 4,
-                          paddingHorizontal: spacing.sm,
-                          paddingVertical: 6,
-                          borderRadius: 8,
-                          backgroundColor: colors.accentSoft,
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                          borderTopWidth: 1,
+                          borderTopColor: colors.border,
                         }}
                       >
-                        <Plus size={14} color={colors.accent} />
-                        <Text
-                          style={{
-                            color: colors.accent,
-                            fontWeight: "600",
-                            fontSize: 13,
-                          }}
-                        >
-                          Новая заявка
+                        {activeRequests.slice(0, 3).map((r) => (
+                          <StatusBadge key={r.id} status={r.status} />
+                        ))}
+                        <Text className="text-text-dim" style={{ fontSize: 12 }}>
+                          {activeRequests.length} активных
                         </Text>
-                      </Pressable>
-                    ) : null
-                  }
-                />
-              ) : null}
+                      </View>
+                    ) : null}
+                  </DashboardWidget>
+                </DashboardGrid.Col>
 
-              {/* 4. Priority feed */}
-              {priorityItems.length > 0 ? (
-                <PriorityFeed
-                  title="Приоритеты"
-                  items={priorityItems}
-                  emptyMessage="Все задачи решены. Отдохните!"
-                />
-              ) : null}
-
-              {/* 5. Specialists working with you */}
-              {threads.length > 0 ? (
-                <View
-                  style={{
-                    backgroundColor: colors.surface,
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    padding: spacing.md,
-                  }}
-                >
-                  <Text
-                    style={{
-                      ...textStyle.h4,
-                      color: colors.text,
-                      marginBottom: spacing.md,
-                    }}
-                  >
-                    С вами работают
-                  </Text>
-                  <View style={{ gap: spacing.sm }}>
-                    {threads.slice(0, 3).map((t, i) => {
-                      const name =
-                        [t.specialist?.firstName, t.specialist?.lastName]
-                          .filter(Boolean)
-                          .join(" ") || "Специалист";
-                      return (
-                        <Pressable
-                          key={t.id}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Открыть диалог с ${name}`}
-                          onPress={() =>
-                            router.push(`/threads/${t.id}` as never)
-                          }
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: spacing.md,
-                            paddingVertical: spacing.sm,
-                            paddingHorizontal: spacing.sm,
-                            borderRadius: 10,
-                          }}
+                <DashboardGrid.Col span={4} tabletSpan={2}>
+                  <View style={{ gap: 16 }}>
+                    {/* Primary CTA */}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Создать заявку"
+                      onPress={() => router.push("/requests/new" as never)}
+                      disabled={atLimit}
+                      className={`rounded-2xl p-5 ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
+                    >
+                      <View className="flex-row items-center gap-3">
+                        <View
+                          className={`rounded-xl items-center justify-center ${atLimit ? "bg-white" : "bg-white/20"}`}
+                          style={{ width: 44, height: 44 }}
                         >
-                          <Avatar
-                            name={name}
-                            size="sm"
-                            tint={AVATAR_COLORS[i % AVATAR_COLORS.length]}
+                          <Plus
+                            size={22}
+                            color={atLimit ? colors.textMuted : "#fff"}
                           />
-                          <View style={{ flex: 1 }}>
+                        </View>
+                        <View className="flex-1 min-w-0">
+                          <Text
+                            className={`font-extrabold ${atLimit ? "text-text-mute" : "text-white"}`}
+                            style={{ fontSize: 16 }}
+                          >
+                            {atLimit ? "Лимит исчерпан" : "Создать заявку"}
+                          </Text>
+                          <Text
+                            className={atLimit ? "text-text-dim" : "text-white/80"}
+                            style={{ fontSize: 12, marginTop: 2 }}
+                          >
+                            {atLimit
+                              ? "Закройте одну, чтобы создать новую"
+                              : "Отклики в течение 24 часов"}
+                          </Text>
+                        </View>
+                      </View>
+                    </Pressable>
+
+                    {/* Tips widget */}
+                    <DashboardWidget title="Советы" icon={Lightbulb}>
+                      <View style={{ gap: 12 }}>
+                        {TIPS.map((t) => (
+                          <View key={t.title}>
                             <Text
-                              style={{
-                                ...textStyle.bodyBold,
-                                color: colors.text,
-                              }}
-                              numberOfLines={1}
+                              className="text-text-base font-semibold"
+                              style={{ fontSize: 13 }}
                             >
-                              {name}
+                              {t.title}
                             </Text>
                             <Text
-                              style={{
-                                ...textStyle.small,
-                                color: colors.textSecondary,
-                              }}
-                              numberOfLines={1}
+                              className="text-text-mute mt-0.5"
+                              style={{ fontSize: 12, lineHeight: 16 }}
                             >
-                              {t.request?.title ?? "Диалог"}
+                              {t.text}
                             </Text>
                           </View>
-                          <CheckCircle2 size={16} color={colors.success} />
-                        </Pressable>
-                      );
-                    })}
+                        ))}
+                      </View>
+                    </DashboardWidget>
                   </View>
-                </View>
-              ) : null}
-
-              {activeRequests.length === 0 && !atLimit ? (
-                <EmptyState
-                  icon={FileText}
-                  title="У вас пока нет заявок"
-                  subtitle="Создайте первую — специалисты из вашего города откликнутся"
-                  actionLabel="Создать заявку"
-                  onAction={() => router.push("/requests/new" as never)}
-                />
-              ) : null}
+                </DashboardGrid.Col>
+              </DashboardGrid>
             </View>
           )}
         </DesktopScreen>

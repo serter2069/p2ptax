@@ -8,7 +8,7 @@ import {
 import { useState } from "react";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
-import DesktopScreen from "@/components/layout/DesktopScreen";
+import TwoColumnForm from "@/components/layout/TwoColumnForm";
 
 function SettingRow({
   icon: Icon,
@@ -62,10 +62,34 @@ export default function SettingsScreen() {
     );
   }
 
-  return (
+  const leftPane = (
+    <View style={{ gap: 20 }}>
+      <View
+        className="rounded-2xl items-center justify-center bg-white self-start"
+        style={{ width: 56, height: 56 }}
+      >
+        <Bell size={26} color={colors.accent} />
+      </View>
+      <View style={{ gap: 10 }}>
+        <Text className="font-extrabold text-text-base" style={{ fontSize: 24, lineHeight: 30 }}>
+          Фильтр уведомлений
+        </Text>
+        <Text className="text-text-mute" style={{ fontSize: 14, lineHeight: 20 }}>
+          Выберите, по каким событиям присылать push и email. Настройки применяются сразу.
+        </Text>
+      </View>
+      <View className="bg-white rounded-2xl border border-border" style={{ padding: 14, gap: 8 }}>
+        <Pill active={pushEnabled} label="Push" />
+        <Pill active={emailEnabled} label="Email" />
+        <Pill active={messageEnabled} label="Сообщения" />
+      </View>
+    </View>
+  );
+
+  const rightForm = (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
-        <DesktopScreen maxWidth={860}>
+        <View className="px-4">
         {/* Header */}
         <View className="flex-row items-center pt-2 pb-3 border-b border-border">
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="w-11 h-11 items-center justify-center -ml-2 mr-1">
@@ -135,8 +159,30 @@ export default function SettingsScreen() {
             />
           </>
         )}
-        </DesktopScreen>
+        </View>
       </ScrollView>
     </SafeAreaView>
+  );
+
+  return <TwoColumnForm left={leftPane} right={rightForm} />;
+}
+
+function Pill({ active, label }: { active: boolean; label: string }) {
+  return (
+    <View
+      className={`flex-row items-center gap-2 rounded-full self-start ${active ? "bg-accent-soft" : "bg-surface2"}`}
+      style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+    >
+      <View
+        className={`rounded-full ${active ? "bg-accent" : "bg-text-dim"}`}
+        style={{ width: 8, height: 8 }}
+      />
+      <Text
+        className={`font-semibold ${active ? "text-accent" : "text-text-mute"}`}
+        style={{ fontSize: 12 }}
+      >
+        {label} {active ? "вкл" : "выкл"}
+      </Text>
+    </View>
   );
 }
