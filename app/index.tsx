@@ -20,8 +20,6 @@ import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import CTASection from "@/components/landing/CTASection";
 import FooterSection from "@/components/landing/FooterSection";
-import RecentWinsStrip, { type RecentWin } from "@/components/dashboard/RecentWinsStrip";
-import { spacing } from "@/lib/theme";
 
 interface PlatformStats {
   specialistsCount: number;
@@ -36,7 +34,6 @@ export default function LandingScreen() {
   const isDesktop = width >= 640;
 
   const [stats, setStats] = useState<PlatformStats | null>(null);
-  const [wins, setWins] = useState<RecentWin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [scrollY, setScrollY] = useState(0);
@@ -60,17 +57,6 @@ export default function LandingScreen() {
     try {
       const statsRes = await api<PlatformStats>("/api/stats", { noAuth: true });
       setStats(statsRes);
-
-      // Non-blocking: recent wins (public)
-      try {
-        const w = await api<{ items: RecentWin[] }>(
-          "/api/stats/recent-wins?limit=6",
-          { noAuth: true }
-        );
-        setWins(w.items ?? []);
-      } catch {
-        setWins([]);
-      }
     } catch {
       setError(true);
     } finally {
@@ -160,23 +146,6 @@ export default function LandingScreen() {
       >
         <HeroSection isDesktop={isDesktop} onCreateRequest={handleCreateRequest} onViewCatalog={handleViewCatalog} stats={stats} />
         {stats && <StatsStrip stats={stats} isDesktop={isDesktop} />}
-        {wins.length > 0 && (
-          <View
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: spacing.xl,
-              width: "100%",
-              alignSelf: "center",
-              maxWidth: 1152,
-            }}
-          >
-            <RecentWinsStrip
-              title="Недавние победы"
-              subtitle="Реальные дела, где специалисты оспорили доначисления"
-              items={wins}
-            />
-          </View>
-        )}
         <ProblemsSection isDesktop={isDesktop} />
         <HowItWorksSection isDesktop={isDesktop} />
         <FeaturesSection isDesktop={isDesktop} />
