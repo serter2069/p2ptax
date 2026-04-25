@@ -477,9 +477,22 @@ export default function UnifiedSettings() {
                 </Text>
                 {specLoading ? (
                   <LoadingState variant="skeleton" lines={3} />
-                ) : specData && specData.fnsServices.length > 0 ? (
+                ) : specData && specData.fnsServices.length === 0 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Добавить рабочую зону"
+                    onPress={() =>
+                      router.push("/onboarding/work-area" as never)
+                    }
+                    className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
+                  >
+                    <Text className="text-sm text-accent font-medium">
+                      + Добавить ИФНС и услуги
+                    </Text>
+                  </Pressable>
+                ) : (
                   <>
-                    {specData.fnsServices.map((item) => (
+                    {specData?.fnsServices.map((item) => (
                       <View
                         key={item.fns.id}
                         className="bg-surface2 rounded-xl p-3 mb-2 border border-border"
@@ -518,19 +531,6 @@ export default function UnifiedSettings() {
                       </Text>
                     </Pressable>
                   </>
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Добавить рабочую зону"
-                    onPress={() =>
-                      router.push("/onboarding/work-area" as never)
-                    }
-                    className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
-                  >
-                    <Text className="text-sm text-accent font-medium">
-                      + Добавить ИФНС и услуги
-                    </Text>
-                  </Pressable>
                 )}
               </View>
 

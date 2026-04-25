@@ -297,6 +297,7 @@ export default function SpecialistPublicProfile() {
   // Services & cities
   const servicesCitiesBlock = (
     <View className="mt-8">
+      {serviceNames.size === 0 && cities.length === 0 ? null : null /* empty state handled per-section below */}
       {serviceNames.size > 0 && (
         <View className="mb-6">
           <Text

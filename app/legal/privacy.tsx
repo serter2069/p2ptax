@@ -107,7 +107,7 @@ export default function PrivacyPolicyScreen() {
           className={isDesktopWeb ? "" : "mx-4 bg-white border border-border rounded-2xl p-6"}
           style={isDesktopWeb ? { maxWidth: 720 } : undefined}
         >
-          {SECTIONS.map((section, idx) => (
+          {SECTIONS.length === 0 ? null : SECTIONS.map((section, idx) => (
             <View
               key={section.id}
               onLayout={(e) => {

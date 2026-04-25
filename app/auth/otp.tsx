@@ -368,7 +368,7 @@ export default function AuthOtpScreen() {
             </Pressable>
 
             <View className="flex-row justify-center gap-2 mb-4">
-              {digits.map((digit, i) => (
+              {digits.length === 0 ? null : digits.map((digit, i) => (
                 <TextInput
                   key={i}
                   accessibilityLabel={`Цифра ${i + 1} кода подтверждения`}

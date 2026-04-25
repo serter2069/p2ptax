@@ -6,6 +6,7 @@ import {
   Pressable,
   RefreshControl,
   Switch,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -126,6 +127,8 @@ export default function UserDashboard() {
   const router = useRouter();
   const { ready } = useRequireAuth();
   const { user, isSpecialistUser, updateUser } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
 
   // Shared (client side of dashboard) state
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -365,7 +368,7 @@ export default function UserDashboard() {
               }}
             />
           ) : (
-            <View style={{ gap: 24 }}>
+            <View style={{ gap: isDesktop ? 32 : 24 }}>
               {/* KPI row — specialist gets 4 KPIs, client gets 3 */}
               {isSpecialistUser ? (
                 <DashboardGrid>

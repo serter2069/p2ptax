@@ -4,6 +4,7 @@ import {
   ScrollView,
   Pressable,
   RefreshControl,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -106,6 +107,8 @@ function formatDateShort(iso: string): string {
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   const [stats, setStats] = useState<Stats | null>(null);
   const [extra, setExtra] = useState<AdminExtra | null>(null);
   const [recentUsers, setRecentUsers] = useState<AdminUser[]>([]);
@@ -214,7 +217,7 @@ export default function AdminDashboard() {
               }}
             />
           ) : (
-            <View style={{ gap: 24 }}>
+            <View style={{ gap: isDesktop ? 32 : 24 }}>
               {/* Top KPIs: 4 — render immediately with sensible zeros so the
                   dashboard structure is visible during loading instead of a
                   bare skeleton. (iter11-b fix for admin dashboard 2/10 score.) */}
