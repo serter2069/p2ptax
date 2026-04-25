@@ -27,13 +27,15 @@ export default function NotificationPreferences({
               Новые заявки и сообщения
             </Text>
           </View>
-          <Switch
-            accessibilityLabel="Push-уведомления"
-            value={pushEnabled}
-            onValueChange={onPushChange}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.surface}
-          />
+          <View style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+            <Switch
+              accessibilityLabel="Push-уведомления"
+              value={pushEnabled}
+              onValueChange={onPushChange}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.surface}
+            />
+          </View>
         </View>
         <View className="flex-row items-center px-4 py-3">
           <View className="flex-1 mr-3">
@@ -42,13 +44,15 @@ export default function NotificationPreferences({
               Дублировать уведомления на почту
             </Text>
           </View>
-          <Switch
-            accessibilityLabel="Email-уведомления"
-            value={emailEnabled}
-            onValueChange={onEmailChange}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.surface}
-          />
+          <View style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+            <Switch
+              accessibilityLabel="Email-уведомления"
+              value={emailEnabled}
+              onValueChange={onEmailChange}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.surface}
+            />
+          </View>
         </View>
       </View>
     </View>

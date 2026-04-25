@@ -344,13 +344,15 @@ export default function UserDashboard() {
             isSpecialistUser ? (
               <View className="flex-row items-center gap-2 bg-white border border-border rounded-full px-3 py-2">
                 <Text className="text-text-mute text-xs">Принимаю заявки</Text>
-                <Switch
-                  value={isAvailable}
-                  onValueChange={handleToggleAvailability}
-                  disabled={availabilityToggling}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor={colors.surface}
-                />
+                <View style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+                  <Switch
+                    value={isAvailable}
+                    onValueChange={handleToggleAvailability}
+                    disabled={availabilityToggling}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    thumbColor={colors.surface}
+                  />
+                </View>
               </View>
             ) : undefined
           }

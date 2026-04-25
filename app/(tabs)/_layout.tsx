@@ -33,16 +33,21 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: isMobile
           ? {
-              height: 60,
-              paddingBottom: 8,
-              paddingTop: 4,
+              height: 72,
+              paddingBottom: 10,
+              paddingTop: 8,
               borderTopWidth: 1,
               borderTopColor: colors.border,
             }
           : { display: "none" },
         tabBarLabelStyle: {
           fontSize: fontSizeValue.tabBar,
+          lineHeight: 14,
           fontWeight: "500",
+          marginTop: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 0,
         },
       }}
     >

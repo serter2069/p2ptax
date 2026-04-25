@@ -377,7 +377,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                height: 40,
+                minHeight: 44,
                 paddingLeft: spacing.md,
                 paddingRight: spacing.sm,
                 borderRadius: 8,

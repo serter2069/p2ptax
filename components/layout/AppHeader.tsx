@@ -208,7 +208,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
         style={{
           flex: 1,
           maxWidth: 480,
-          height: 36,
+          height: 44,
           backgroundColor: gray[100],
           borderWidth: 1,
           borderColor: colors.border,
@@ -229,7 +229,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
             marginLeft: 8,
             fontSize: 14,
             color: colors.text,
-            ...(Platform.OS === "web" ? { outlineStyle: "none" as never } : {}),
+            ...(Platform.OS === "web" ? { height: "100%" as never, outlineStyle: "none" as never } : {}),
           }}
         />
       </View>
@@ -240,7 +240,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
           accessibilityRole="button"
           accessibilityLabel="Уведомления"
           onPress={() => router.push("/notifications" as never)}
-          className="w-10 h-10 rounded-lg items-center justify-center"
+          className="w-11 h-11 rounded-lg items-center justify-center"
         >
           <Bell size={18} color={colors.text} />
         </Pressable>
@@ -249,7 +249,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
           accessibilityRole="button"
           accessibilityLabel="Меню профиля"
           onPress={() => setDropdownOpen(true)}
-          className="w-10 h-10 rounded-full items-center justify-center"
+          className="w-11 h-11 rounded-full items-center justify-center"
           style={{ backgroundColor: accent.soft, borderWidth: 1, borderColor: accent.strong }}
         >
           <Text className="text-sm font-bold" style={{ color: accent.strong }}>

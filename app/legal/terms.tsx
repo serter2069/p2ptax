@@ -90,7 +90,7 @@ export default function TermsScreen() {
       {!isDesktopWeb && (
         <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
           <Text className="text-xl font-bold text-white mb-0.5">Пользовательское соглашение</Text>
-          <Text className="text-sm" style={{ color: overlay.white75 }}>Условия использования платформы P2PTax</Text>
+          <Text className="text-sm" style={{ color: overlay.white90 }}>Условия использования платформы P2PTax</Text>
         </View>
       )}
 
@@ -181,7 +181,7 @@ export default function TermsScreen() {
                     paddingVertical: spacing.xs,
                     paddingHorizontal: spacing.sm,
                     borderRadius: 6,
-                    minHeight: 32,
+                    minHeight: 44,
                     justifyContent: "center",
                   }}
                 >

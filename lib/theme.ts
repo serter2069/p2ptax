@@ -233,7 +233,9 @@ export const shadowColor = {
   heroDeep: '#1a2b4a', // deep navy — landing hero card lift shadow
 } as const
 
-// Semantic overlay tokens — for rgba on colored backgrounds
+// Semantic overlay tokens — for rgba on colored backgrounds.
+// NOTE: white-on-#2256c2 hits WCAG AA only at >=92% opacity. Hero subcopy
+// uses white90 (passes) instead of the older white75 (4.48:1, fails).
 export const overlay = {
   white10: 'rgba(255,255,255,0.1)',
   white15: 'rgba(255,255,255,0.15)',
@@ -243,6 +245,7 @@ export const overlay = {
   white75: 'rgba(255,255,255,0.75)',
   white80: 'rgba(255,255,255,0.8)',
   white85: 'rgba(255,255,255,0.85)',
+  white90: 'rgba(255,255,255,0.92)',  // WCAG AA on accent (>=4.5:1)
   white20: 'rgba(255,255,255,0.2)',
   accent10: 'rgba(34,86,194,0.1)',
   accent20: 'rgba(34,86,194,0.2)',  // focus-ring tint (web)

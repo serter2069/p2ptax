@@ -234,11 +234,7 @@ export default function CityFnsCascade({
             )}
           </View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerClassName="px-4"
-          >
+          <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
             {cities.length === 0 ? (
               <Text className="text-sm text-text-mute">Загрузка…</Text>
             ) : (
@@ -250,7 +246,7 @@ export default function CityFnsCascade({
                     accessibilityLabel={city.name}
                     key={city.id}
                     onPress={() => toggleCity(city.id)}
-                    className={`px-3 h-11 items-center justify-center rounded-full mr-2 mb-1 border ${
+                    className={`px-3 h-11 items-center justify-center rounded-full border ${
                       active
                         ? "bg-accent border-accent"
                         : "bg-white border-border"
@@ -267,7 +263,7 @@ export default function CityFnsCascade({
                 );
               })
             )}
-          </ScrollView>
+          </View>
         )}
       </View>
 

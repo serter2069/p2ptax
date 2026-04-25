@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable } from "react-native";
 
 interface SelectOption {
   id: string;
@@ -31,7 +31,7 @@ function FilterChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`px-3 h-11 items-center justify-center rounded-full mr-2 mb-1 border ${
+      className={`px-3 h-11 items-center justify-center rounded-full border ${
         active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
     >
@@ -59,11 +59,7 @@ export default function FilterBar({
     <View className="py-2">
       {/* City filter (hidden when caller passes empty city list) */}
       {cities.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="px-4"
-        >
+        <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
           <FilterChip
             label="Все города"
             active={!selectedCityId}
@@ -79,16 +75,12 @@ export default function FilterBar({
               }
             />
           ))}
-        </ScrollView>
+        </View>
       )}
 
       {/* FNS filter (cascade from city) */}
       {fnsOffices && fnsOffices.length > 0 && onFnsChange && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="px-4 mt-1"
-        >
+        <View className="flex-row flex-wrap px-4 mt-2" style={{ gap: 8 }}>
           <FilterChip
             label="Все ИФНС"
             active={!selectedFnsId}
@@ -104,16 +96,12 @@ export default function FilterBar({
               }
             />
           ))}
-        </ScrollView>
+        </View>
       )}
 
       {/* Services filter */}
       {services && services.length > 0 && onServiceToggle && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="px-4 mt-1"
-        >
+        <View className="flex-row flex-wrap px-4 mt-2" style={{ gap: 8 }}>
           {services.map((s) => (
             <FilterChip
               key={s.id}
@@ -122,7 +110,7 @@ export default function FilterBar({
               onPress={() => onServiceToggle(s.id)}
             />
           ))}
-        </ScrollView>
+        </View>
       )}
     </View>
   );

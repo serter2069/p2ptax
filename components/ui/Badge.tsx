@@ -8,10 +8,10 @@ export interface BadgeProps {
 }
 
 const variantStyles = {
-  error: { bg: "bg-danger-soft", text: "text-danger", dotColor: colors.danger },
-  success: { bg: "bg-success-soft", text: "text-success", dotColor: colors.success },
-  warning: { bg: "bg-warning-soft", text: "text-warning", dotColor: colors.warning },
-  info: { bg: "bg-sky-50", text: "text-sky-700", dotColor: colors.primary },
+  error: { bg: "bg-danger-soft", textColor: colors.dangerInk, dotColor: colors.danger },
+  success: { bg: "bg-success-soft", textColor: "#166534", dotColor: colors.success },
+  warning: { bg: "bg-warning-soft", textColor: colors.warningInkStrong, dotColor: colors.warning },
+  info: { bg: "bg-sky-50", textColor: "#0369a1", dotColor: colors.primary },
 } as const;
 
 export default function Badge({
@@ -34,7 +34,7 @@ export default function Badge({
           marginRight: 6,
         }}
       />
-      <Text className={`${textSize} font-medium ${styles.text}`}>{label}</Text>
+      <Text className={`${textSize} font-medium`} style={{ color: styles.textColor }}>{label}</Text>
     </View>
   );
 }

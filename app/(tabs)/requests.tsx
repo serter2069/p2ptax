@@ -349,7 +349,7 @@ export default function MyRequests() {
         {/* Accent hero */}
         <View className="rounded-2xl px-5 py-5 mb-5 mt-2" style={{ backgroundColor: colors.accent }}>
           <Text className="text-xl font-bold text-white mb-0.5">Мои заявки</Text>
-          <Text className="text-sm mb-4" style={{ color: overlay.white75 }}>Управляйте своими обращениями к специалистам</Text>
+          <Text className="text-sm mb-4" style={{ color: overlay.white90 }}>Управляйте своими обращениями к специалистам</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"

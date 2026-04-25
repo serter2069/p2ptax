@@ -53,14 +53,14 @@ export default function Button({
 
   const textColorValue =
     disabled && !loading
-      ? gray[400]
+      ? gray[600]
       : variant === "primary" || variant === "destructive"
         ? colors.white
         : colors.text;
 
   const iconColor =
     disabled && !loading
-      ? gray[400]
+      ? gray[600]
       : variant === "primary" || variant === "destructive"
         ? colors.white
         : colors.primary;
