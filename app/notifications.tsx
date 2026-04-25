@@ -201,7 +201,8 @@ export default function NotificationsScreen() {
             accessibilityRole="button"
             accessibilityLabel="Прочитать все"
             onPress={handleMarkAllRead}
-            className="py-2 pl-3"
+            className="py-2 pl-3 justify-center"
+            style={{ minHeight: 44 }}
           >
             <Text className="text-sm text-accent font-semibold">Прочитать все</Text>
           </Pressable>

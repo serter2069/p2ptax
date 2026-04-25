@@ -535,7 +535,7 @@ function FilterChip({
       className={`px-4 rounded-full border ${
         active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
-      style={{ height: 36, justifyContent: "center" }}
+      style={{ minHeight: 44, justifyContent: "center" }}
     >
       <Text
         className={`text-sm font-medium ${active ? "text-white" : "text-text-base"}`}

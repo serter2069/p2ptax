@@ -266,7 +266,7 @@ export default function AdminComplaints() {
           key={opt.key}
           accessibilityLabel={opt.label}
           onPress={() => setFilter(opt.key)}
-          className={`px-3 py-1.5 rounded-full border min-h-[36px] justify-center ${
+          className={`px-3 py-1.5 rounded-full border min-h-[44px] justify-center ${
             filter === opt.key
               ? "bg-accent border-accent"
               : "bg-surface2 border-border"
