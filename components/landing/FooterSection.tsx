@@ -114,7 +114,7 @@ function FooterColumn({ title, children }: { title: string; children: React.Reac
       <Text
         style={{
           color: overlay.white70,
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: "700",
           textTransform: "uppercase",
           letterSpacing: 1.2,
@@ -133,7 +133,7 @@ function FooterLink({ label, onPress }: { label: string; onPress: () => void }) 
       accessibilityRole="link"
       accessibilityLabel={label}
       onPress={onPress}
-      className="min-h-[36px] justify-center"
+      className="min-h-[44px] justify-center"
     >
       <Text style={{ color: colors.white, fontSize: 14 }}>{label}</Text>
     </Pressable>

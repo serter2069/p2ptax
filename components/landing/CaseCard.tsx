@@ -32,7 +32,7 @@ export default function CaseCard({ data, index }: CaseCardProps) {
         borderColor: colors.border,
         padding: 24,
         gap: 18,
-        minWidth: 280,
+        minWidth: 240,
       }}
     >
       {/* Top — specialist + verification badge. */}
@@ -51,7 +51,7 @@ export default function CaseCard({ data, index }: CaseCardProps) {
           </Text>
           <View className="flex-row items-center" style={{ gap: 4, marginTop: 2 }}>
             <DuotoneIcon name="shield-check" size={14} color={colors.success} softColor={colors.successSoft} />
-            <Text style={{ color: colors.success, fontSize: 11, fontWeight: "600" }}>
+            <Text style={{ color: colors.success, fontSize: 12, fontWeight: "600" }}>
               Проверен платформой
             </Text>
           </View>
@@ -87,7 +87,7 @@ export default function CaseCard({ data, index }: CaseCardProps) {
           borderTopColor: colors.border,
         }}
       >
-        <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1 }}>
+        <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1 }}>
           Оспорено
         </Text>
         <Text
@@ -116,7 +116,7 @@ function Chip({ label }: { label: string }) {
         backgroundColor: colors.accentSoft,
       }}
     >
-      <Text style={{ color: colors.accentSoftInk, fontSize: 11, fontWeight: "500" }}>
+      <Text style={{ color: colors.accentSoftInk, fontSize: 12, fontWeight: "500" }}>
         {label}
       </Text>
     </View>

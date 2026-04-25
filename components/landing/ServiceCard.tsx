@@ -35,7 +35,7 @@ export default function ServiceCard({
         borderColor: colors.border,
         padding: 28,
         gap: 18,
-        minWidth: 260,
+        minWidth: 240,
       }}
     >
       <View
@@ -76,7 +76,7 @@ export default function ServiceCard({
           marginTop: "auto",
         }}
       >
-        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: "600" }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: "600" }}>
           {statChip}
         </Text>
       </View>

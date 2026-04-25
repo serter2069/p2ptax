@@ -99,7 +99,7 @@ export default function LandingHeader({
             onPress={onCreateRequest}
             className="rounded-xl items-center justify-center"
             style={{
-              height: 40,
+              height: 44,
               paddingHorizontal: isDesktop ? 18 : 14,
               backgroundColor: colors.primary,
             }}
