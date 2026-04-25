@@ -391,12 +391,13 @@ export default function SidebarNav({ group }: SidebarNavProps) {
                 color={active ? accent.ink : colors.textSecondary}
               />
               <Text
-                numberOfLines={1}
                 style={{
                   marginLeft: spacing.sm + 4,
                   fontSize: 14,
                   fontWeight: active ? "700" : "500",
                   color: active ? accent.ink : colors.text,
+                  flexShrink: 1,
+                  flex: 1,
                 }}
               >
                 {item.label}

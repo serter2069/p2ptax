@@ -187,8 +187,7 @@ export default function TermsScreen() {
                 >
                   <Text
                     className="text-sm"
-                    style={{ color: colors.textSecondary }}
-                    numberOfLines={1}
+                    style={{ color: colors.textSecondary, flexShrink: 1 }}
                   >
                     {section.title}
                   </Text>

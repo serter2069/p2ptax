@@ -153,7 +153,10 @@ export default function FileUploadSection({
           className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl active:bg-surface2"
         >
           <Plus size={13} color={colors.accent} />
-          <Text className="text-sm text-warning ml-2 font-medium">
+          <Text
+            className="text-sm ml-2 font-medium"
+            style={{ color: colors.warningInkStrong }}
+          >
             + Прикрепить файл
           </Text>
         </Pressable>
