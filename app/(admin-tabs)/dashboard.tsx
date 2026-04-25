@@ -301,19 +301,19 @@ export default function AdminDashboard() {
                     >
                       <Text
                         className="text-text-dim uppercase"
-                        style={{ fontSize: 11, flex: 3, fontWeight: "700" }}
+                        style={{ fontSize: 12, flex: 3, fontWeight: "700" }}
                       >
                         Пользователь
                       </Text>
                       <Text
                         className="text-text-dim uppercase"
-                        style={{ fontSize: 11, flex: 1, fontWeight: "700" }}
+                        style={{ fontSize: 12, flex: 1, fontWeight: "700" }}
                       >
                         Роль
                       </Text>
                       <Text
                         className="text-text-dim uppercase"
-                        style={{ fontSize: 11, flex: 1, fontWeight: "700" }}
+                        style={{ fontSize: 12, flex: 1, fontWeight: "700" }}
                       >
                         Дата
                       </Text>

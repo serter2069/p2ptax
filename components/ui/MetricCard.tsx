@@ -49,7 +49,7 @@ export default function MetricCard({
       <Text
         className="uppercase mb-2"
         style={{
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: 2,
           color: colors.textSecondary,
           fontWeight: "600",

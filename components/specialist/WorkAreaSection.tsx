@@ -15,7 +15,7 @@ export default function WorkAreaSection({ fnsServices, cardShadow }: WorkAreaSec
       className="bg-white rounded-2xl border border-border p-4 mx-4 mt-4"
       style={cardShadow}
     >
-      <Text style={{ color: colors.textSecondary, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}>
+      <Text style={{ color: colors.textSecondary, fontSize: 12, letterSpacing: 3, marginBottom: 8 }}>
         РАБОЧИЕ ИНСПЕКЦИИ
       </Text>
       {fnsServices.map((group) => (

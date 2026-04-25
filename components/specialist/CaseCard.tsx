@@ -90,7 +90,7 @@ export default function CaseCard({ case: c }: CaseCardProps) {
               <Text
                 className="uppercase"
                 style={{
-                  fontSize: 10,
+                  fontSize: 12,
                   letterSpacing: 1.5,
                   color: colors.textMuted,
                   marginBottom: 2,
@@ -111,7 +111,7 @@ export default function CaseCard({ case: c }: CaseCardProps) {
               <Text
                 className="uppercase"
                 style={{
-                  fontSize: 10,
+                  fontSize: 12,
                   letterSpacing: 1.5,
                   color: colors.textMuted,
                   marginBottom: 2,
@@ -142,7 +142,7 @@ export default function CaseCard({ case: c }: CaseCardProps) {
               <Text
                 className="uppercase"
                 style={{
-                  fontSize: 10,
+                  fontSize: 12,
                   letterSpacing: 1.5,
                   color: colors.textMuted,
                   marginBottom: 2,

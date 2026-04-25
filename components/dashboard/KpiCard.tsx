@@ -93,7 +93,7 @@ export default function KpiCard({
             <TrendIcon trend={trend} />
             {trendLabel ? (
               <Text
-                style={{ fontSize: 11, fontWeight: "600" }}
+                style={{ fontSize: 12, fontWeight: "600" }}
                 className={
                   trend === "up"
                     ? "text-success"
@@ -131,7 +131,7 @@ export default function KpiCard({
         {hint ? (
           <Text
             className="text-text-dim mt-1"
-            style={{ fontSize: 11 }}
+            style={{ fontSize: 12 }}
             numberOfLines={1}
           >
             {hint}
