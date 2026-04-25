@@ -229,7 +229,11 @@ export default function AppHeader({ title }: AppHeaderProps) {
             marginLeft: 8,
             fontSize: 14,
             color: colors.text,
-            ...(Platform.OS === "web" ? { height: "100%" as never, outlineStyle: "none" as never } : {}),
+            ...(Platform.OS === "web" ? {
+              height: "100%" as never,
+              alignSelf: "stretch" as never,
+              outlineStyle: "none" as never,
+            } : {}),
           }}
         />
       </View>

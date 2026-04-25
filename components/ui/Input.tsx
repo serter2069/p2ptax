@@ -66,8 +66,7 @@ export default function Input({
         style={[{
           flexDirection: "row",
           alignItems: "center",
-          height: multiline ? undefined : 48,
-          minHeight: multiline ? 96 : undefined,
+          minHeight: multiline ? 96 : 48,
           borderRadius: radiusValue.md,
           borderWidth: 1,
           borderColor,
@@ -106,7 +105,12 @@ export default function Input({
             flex: 1,
             // On web the <input> intrinsic height is ~18px; fill the 48px
             // container so the full area is interactive (touch target rule).
-            ...(Platform.OS === 'web' && !multiline ? { height: '100%' as any } : {}),
+            // alignSelf: 'stretch' overrides the parent's alignItems: 'center'
+            // which would otherwise shrink the <input> to its intrinsic 18px.
+            ...(Platform.OS === 'web' && !multiline ? {
+              height: '100%' as any,
+              alignSelf: 'stretch' as any,
+            } : {}),
             fontSize: fontSizeValue.base,
             color: colors.text,
             paddingVertical: multiline ? spacing.sm : 0,
