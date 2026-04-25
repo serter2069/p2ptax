@@ -1,4 +1,4 @@
-import { View, Text, Pressable, TextInput } from "react-native";
+import { View, Text, Pressable, TextInput, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
@@ -114,6 +114,12 @@ export default function AuthEmailScreen() {
                 fontSize: 15,
                 color: colors.text,
                 outlineWidth: 0,
+                // WCAG 2.5.5 — explicit 44px tap target on web; the
+                // <input> intrinsic height is ~18px otherwise.
+                ...(Platform.OS === "web" ? {
+                  minHeight: 44,
+                  alignSelf: "stretch" as never,
+                } : {}),
               }}
             />
           </View>

@@ -103,12 +103,15 @@ export default function Input({
           onBlur={() => setFocused(false)}
           style={{
             flex: 1,
-            // On web the <input> intrinsic height is ~18px; fill the 48px
-            // container so the full area is interactive (touch target rule).
-            // alignSelf: 'stretch' overrides the parent's alignItems: 'center'
-            // which would otherwise shrink the <input> to its intrinsic 18px.
+            // On web the <input> intrinsic height is ~18px. We force a
+            // minHeight of 44 so the full tap target area is interactive
+            // (Apple HIG / WCAG 2.5.5 — minimum 44×44 touch target). Using
+            // an explicit minHeight rather than height: '100%' avoids the
+            // 42px artifact caused by container_height − 2*borderWidth on
+            // web, where the parent's borderWidth subtracts from the
+            // child's effective height.
             ...(Platform.OS === 'web' && !multiline ? {
-              height: '100%' as any,
+              minHeight: 44,
               alignSelf: 'stretch' as any,
             } : {}),
             fontSize: fontSizeValue.base,

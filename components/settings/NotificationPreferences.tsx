@@ -1,4 +1,4 @@
-import { View, Text, Switch } from "react-native";
+import { View, Text, Switch, Pressable } from "react-native";
 import { colors } from "@/lib/theme";
 
 interface NotificationPreferencesProps {
@@ -27,15 +27,22 @@ export default function NotificationPreferences({
               Новые заявки и сообщения
             </Text>
           </View>
-          <View style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityLabel="Push-уведомления"
+            accessibilityState={{ checked: pushEnabled }}
+            onPress={() => onPushChange(!pushEnabled)}
+            style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+          >
             <Switch
               accessibilityLabel="Push-уведомления"
               value={pushEnabled}
               onValueChange={onPushChange}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor={colors.surface}
+              pointerEvents="none"
             />
-          </View>
+          </Pressable>
         </View>
         <View className="flex-row items-center px-4 py-3">
           <View className="flex-1 mr-3">
@@ -44,15 +51,22 @@ export default function NotificationPreferences({
               Дублировать уведомления на почту
             </Text>
           </View>
-          <View style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityLabel="Email-уведомления"
+            accessibilityState={{ checked: emailEnabled }}
+            onPress={() => onEmailChange(!emailEnabled)}
+            style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+          >
             <Switch
               accessibilityLabel="Email-уведомления"
               value={emailEnabled}
               onValueChange={onEmailChange}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor={colors.surface}
+              pointerEvents="none"
             />
-          </View>
+          </Pressable>
         </View>
       </View>
     </View>

@@ -440,15 +440,22 @@ export default function UnifiedSettings() {
                   {availabilityLoading ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
-                    <View style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityLabel="Принимаю заявки"
+                      accessibilityState={{ checked: isAvailable }}
+                      onPress={() => handleToggleAvailable(!isAvailable)}
+                      style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+                    >
                       <Switch
                         accessibilityLabel="Принимаю заявки"
                         value={isAvailable}
                         onValueChange={handleToggleAvailable}
                         trackColor={{ false: colors.border, true: colors.primary }}
                         thumbColor={colors.surface}
+                        pointerEvents="none"
                       />
-                    </View>
+                    </Pressable>
                   )}
                 </View>
               </View>

@@ -230,7 +230,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
             fontSize: 14,
             color: colors.text,
             ...(Platform.OS === "web" ? {
-              height: "100%" as never,
+              minHeight: 44,
               alignSelf: "stretch" as never,
               outlineStyle: "none" as never,
             } : {}),

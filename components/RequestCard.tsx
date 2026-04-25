@@ -35,7 +35,16 @@ export default function RequestCard({
       ]}
     >
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-lg font-semibold text-text-base flex-1 mr-2" numberOfLines={1}>
+        {/* flex-1 + min-w-0 + flexShrink: 1 lets the title use ALL available
+            space and shrink (rather than pushing the StatusBadge off-screen
+            or being clipped at an arbitrary intrinsic width). On web the
+            default min-width of a flex item is its intrinsic content width,
+            so without minWidth: 0 the text never shrinks below that. */}
+        <Text
+          className="text-lg font-semibold text-text-base flex-1 mr-2"
+          numberOfLines={1}
+          style={{ flexShrink: 1, minWidth: 0 }}
+        >
           {title}
         </Text>
         <StatusBadge status={status} />
