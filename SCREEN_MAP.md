@@ -39,6 +39,7 @@ cycles:
     total_runs: 0
     escalations_to_opus: 0
     stops: 0
+reference_page: app/(tabs)/index
 autopilot:
   mode: manual
   paused: false
