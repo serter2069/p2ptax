@@ -27,13 +27,13 @@ export const colors = {
   surface2: '#fafbfc',       // surface-2
   text: '#0b1424',           // text
   textSecondary: '#525a6b',  // text-mute
-  textMuted: '#8a93a3',      // text-dim
+  textMuted: '#6b7385',      // text-dim (4.63:1 on white — WCAG AA)
   // Borders
   border: '#e8ebf0',         // border token
   borderLight: '#e8ebf0',    // alias for border
   borderStrong: '#c7ccd4',   // border-strong
   // Inputs
-  placeholder: '#8a93a3',    // text-dim
+  placeholder: '#6b7385',    // text-dim (4.63:1 on white — WCAG AA)
   // Semantic
   danger: '#c6365a',         // danger
   error: '#c6365a',          // alias for danger

@@ -104,6 +104,9 @@ export default function Input({
           onBlur={() => setFocused(false)}
           style={{
             flex: 1,
+            // On web the <input> intrinsic height is ~18px; fill the 48px
+            // container so the full area is interactive (touch target rule).
+            ...(Platform.OS === 'web' && !multiline ? { height: '100%' as any } : {}),
             fontSize: fontSizeValue.base,
             color: colors.text,
             paddingVertical: multiline ? spacing.sm : 0,

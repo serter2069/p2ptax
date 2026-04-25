@@ -17,7 +17,7 @@ module.exports = {
         'accent-soft-ink': '#1b3d8a',
         'text-base': '#0b1424',
         'text-mute': '#525a6b',
-        'text-dim': '#8a93a3',
+        'text-dim': '#6b7385',
         surface: '#ffffff',
         surface2: '#fafbfc',
         border: '#e8ebf0',
