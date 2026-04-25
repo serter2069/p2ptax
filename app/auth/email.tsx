@@ -146,9 +146,9 @@ export default function AuthEmailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Условия использования"
             onPress={() => router.push("/legal/terms" as never)}
-            className="mt-6 py-2"
+            className="mt-4 min-h-[44px] items-center justify-center"
           >
-            <Text className="text-xs text-text-mute text-center underline">
+            <Text className="text-text-mute text-center underline" style={{ fontSize: 13 }}>
               Условия использования
             </Text>
           </Pressable>

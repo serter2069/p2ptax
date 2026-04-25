@@ -109,7 +109,7 @@ export default function HeroBlock({
             <Text
               style={{
                 color: colors.textSecondary,
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: "600",
                 letterSpacing: 1.2,
                 textTransform: "uppercase",
@@ -289,7 +289,7 @@ function SpecialistCard({
                   marginRight: 5,
                 }}
               />
-              <Text style={{ color: colors.success, fontSize: 10, fontWeight: "600" }}>
+              <Text style={{ color: colors.success, fontSize: 12, fontWeight: "600" }}>
                 онлайн
               </Text>
             </View>
@@ -357,7 +357,7 @@ function Chip({ label, tone }: { label: string; tone: "default" | "accent" }) {
         backgroundColor: bg,
       }}
     >
-      <Text style={{ color, fontSize: 11, fontWeight: "500" }}>{label}</Text>
+      <Text style={{ color, fontSize: 12, fontWeight: "500" }}>{label}</Text>
     </View>
   );
 }
