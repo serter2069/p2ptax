@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppShell from "@/components/layout/AppShell";
 import AppHeader, { shouldShowAppHeader } from "@/components/layout/AppHeader";
 
+import MetroBridge from "@/components/MetroBridge";
 /**
  * Thin wrapper that decides whether the persistent {@link AppHeader}
  * should render for the current route. Header is shown only for
@@ -29,6 +30,7 @@ function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <AuthProvider>
+      <MetroBridge />
       <AppShell>
         <AuthenticatedHeaderGate>
           <Stack screenOptions={{ headerShown: false }}>

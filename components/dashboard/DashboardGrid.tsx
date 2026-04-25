@@ -1,5 +1,5 @@
-import React from "react";
-import { View, useWindowDimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, useWindowDimensions, Platform } from "react-native";
 
 /**
  * DashboardGrid — 12-column responsive grid for dashboard widgets.
@@ -13,6 +13,10 @@ import { View, useWindowDimensions } from "react-native";
  * Desktop (>=1024px): true 12-col grid — spans respected.
  * Tablet (>=640px):   2-col fallback (span 6+6 or 12).
  * Mobile (<640px):    1-col stack — every child takes full width.
+ *
+ * On web, flex-direction is controlled via NativeWind CSS media queries
+ * (sm: = 640px) so the grid responds instantly to viewport changes without
+ * waiting for a JS re-render.
  */
 
 const DESKTOP_BP = 1024;
@@ -33,8 +37,36 @@ interface ColProps {
   className?: string;
 }
 
+// On web, directly track window.innerWidth via window.resize so JS-driven
+// flexBasis calculations stay in sync with the actual CSS viewport.
+function useLayoutWidth(): number {
+  const { width: dimWidth } = useWindowDimensions();
+  const [webWidth, setWebWidth] = useState<number>(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      return window.innerWidth;
+    }
+    return dimWidth;
+  });
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const onResize = () => setWebWidth(window.innerWidth);
+    window.addEventListener("resize", onResize, { passive: true });
+    onResize();
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      setWebWidth(window.innerWidth);
+    }
+  }, [dimWidth]);
+
+  return Platform.OS === "web" ? webWidth : dimWidth;
+}
+
 function Grid({ children, gap = 24, className }: GridProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isDesktop = width >= DESKTOP_BP;
   const isTablet = width >= TABLET_BP;
 
@@ -43,7 +75,9 @@ function Grid({ children, gap = 24, className }: GridProps) {
       className={className}
       style={{
         flexDirection: isTablet ? "row" : "column",
-        flexWrap: "wrap",
+        // flexWrap only in row mode — column+wrap causes multi-column layout
+        // inside constrained containers (ScrollView, SafeAreaView).
+        flexWrap: isTablet ? "wrap" : "nowrap",
         gap,
         width: "100%",
       }}
@@ -53,8 +87,6 @@ function Grid({ children, gap = 24, className }: GridProps) {
         const span = child.props.span ?? 12;
         const tabletSpan = child.props.tabletSpan ?? 2;
 
-        // Compute width percentage using string (web supports calc, native
-        // falls back to the percentage portion).
         let basis: string;
         if (!isTablet) {
           basis = "100%";
@@ -74,8 +106,9 @@ function Grid({ children, gap = 24, className }: GridProps) {
                 minWidth: 0,
                 maxWidth: "100%",
               },
-              // flexBasis accepts string on web; cast keeps TS happy for RN.
-              { flexBasis: basis as unknown as number },
+              isTablet
+                ? { flexBasis: basis as unknown as number }
+                : { width: "100%" },
             ]}
           >
             {child}

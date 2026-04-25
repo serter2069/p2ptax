@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, useWindowDimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, useWindowDimensions, Platform } from "react-native";
 import { colors, spacing, textStyle } from "@/lib/theme";
 
 /**
@@ -43,6 +43,32 @@ interface DesktopScreenProps {
   children: React.ReactNode;
 }
 
+function useLayoutWidth(): number {
+  const { width: dimWidth } = useWindowDimensions();
+  const [webWidth, setWebWidth] = useState<number>(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      return window.innerWidth;
+    }
+    return dimWidth;
+  });
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const onResize = () => setWebWidth(window.innerWidth);
+    window.addEventListener("resize", onResize, { passive: true });
+    onResize();
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      setWebWidth(window.innerWidth);
+    }
+  }, [dimWidth]);
+
+  return Platform.OS === "web" ? webWidth : dimWidth;
+}
+
 export default function DesktopScreen({
   title,
   subtitle,
@@ -56,7 +82,7 @@ export default function DesktopScreen({
   fullWidth = false,
   children,
 }: DesktopScreenProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isDesktop = width >= DESKTOP_BP;
   const isTablet = width >= TABLET_BP;
 
