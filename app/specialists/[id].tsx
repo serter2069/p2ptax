@@ -302,7 +302,7 @@ export default function SpecialistPublicProfile() {
           <Text
             className="uppercase mb-3"
             style={{
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: 3,
               color: colors.textSecondary,
               fontWeight: "600",
@@ -334,7 +334,7 @@ export default function SpecialistPublicProfile() {
           <Text
             className="uppercase mb-3"
             style={{
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: 3,
               color: colors.textSecondary,
               fontWeight: "600",
@@ -447,7 +447,7 @@ export default function SpecialistPublicProfile() {
       <Text
         className="uppercase mb-3"
         style={{
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: 3,
           color: colors.textSecondary,
           fontWeight: "600",
@@ -523,7 +523,7 @@ export default function SpecialistPublicProfile() {
       <Text
         className="uppercase mb-3"
         style={{
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: 3,
           color: colors.textSecondary,
           fontWeight: "600",

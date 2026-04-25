@@ -32,7 +32,7 @@ export default function RoleBadge({ role, isSpecialist = false, size = "sm" }: R
 
   const accent = roleAccent[toAccentKey(role, isSpecialist)];
   const paddingClass = size === "sm" ? "px-2 py-0.5" : "px-2.5 py-1";
-  const textSizeClass = size === "sm" ? "text-[11px]" : "text-xs";
+  const textSizeClass = size === "sm" ? "text-xs" : "text-sm";
 
   return (
     <View

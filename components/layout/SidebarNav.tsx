@@ -450,7 +450,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
             </Text>
             <Text
               numberOfLines={1}
-              style={{ fontSize: 11, color: colors.textSecondary }}
+              style={{ fontSize: 12, color: colors.textSecondary }}
             >
               {user?.email ?? ""}
             </Text>

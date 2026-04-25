@@ -70,6 +70,7 @@ export default function FeedList({ items, emptyText, limit }: FeedListProps) {
             style={{
               paddingHorizontal: 16,
               paddingVertical: 12,
+              minHeight: 48,
               borderTopWidth: idx === 0 ? 0 : 1,
               borderTopColor: colors.border,
             }}
