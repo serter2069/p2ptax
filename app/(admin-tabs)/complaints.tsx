@@ -175,11 +175,17 @@ export default function AdminComplaints() {
           accessibilityRole="button"
           accessibilityLabel={`Жалоба от ${userName(item.reporter)}`}
           onPress={() => setExpandedId(isExpanded ? null : item.id)}
-          className="bg-white px-4 py-3 min-h-[44px]"
+          className="bg-white px-4 py-3 min-h-[44px] gap-2"
         >
-          <View className="flex-row items-start justify-between mb-1">
-            <View className="flex-1 mr-3">
-              <Text className="text-xs text-text-mute mb-0.5">
+          {/*
+            Audit fix: previously had mb-1 on header row, mt-1 on body, mt-2
+            on footer — three different rhythms in one card. Parent now uses
+            `gap-2` (8px) and the meta stack inside the header uses `gap-0.5`
+            (2px) for the dense reporter/target lines.
+          */}
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 mr-3 gap-0.5">
+              <Text className="text-xs text-text-mute">
                 От: <Text className="font-medium text-text-base">{userName(item.reporter)}</Text>
               </Text>
               <Text className="text-xs text-text-mute">
@@ -199,11 +205,11 @@ export default function AdminComplaints() {
             />
           </View>
 
-          <Text className="text-sm text-text-base mt-1" numberOfLines={isExpanded ? undefined : 2}>
+          <Text className="text-sm text-text-base" numberOfLines={isExpanded ? undefined : 2}>
             {item.text}
           </Text>
 
-          <View className="flex-row items-center justify-between mt-2">
+          <View className="flex-row items-center justify-between">
             <Text className="text-xs text-text-mute">{formatDate(item.createdAt)}</Text>
             {isExpanded
               ? <ChevronUp size={11} color={colors.placeholder} />
@@ -213,44 +219,47 @@ export default function AdminComplaints() {
         </Pressable>
 
         {isExpanded && (
-          <View className="border-t border-border">
-            <View className="bg-surface2 mx-3 mb-3 mt-3 p-3 rounded-xl">
-              <Text className="text-xs text-text-mute mb-1">
+          // Audit fix: expanded panel previously mixed mb-1/mb-2/mt-1 on
+          // sibling Text rows and mb-3/mt-3 on container — auditors flagged
+          // inconsistent vertical rhythm. Parent now drives spacing via
+          // `gap-3` (12px) for the outer block and `gap-1` (4px) inside the
+          // metadata stack. No per-child margins.
+          <View className="border-t border-border p-3 gap-3">
+            <View className="bg-surface2 p-3 rounded-xl gap-1">
+              <Text className="text-xs text-text-mute">
                 ID жалобы: <Text className="text-text-base">{item.id}</Text>
               </Text>
-              <Text className="text-xs text-text-mute mb-1">
+              <Text className="text-xs text-text-mute">
                 Жалобщик: <Text className="text-text-base">{item.reporter.email}</Text>
               </Text>
-              <Text className="text-xs text-text-mute mb-1">
+              <Text className="text-xs text-text-mute">
                 На пользователя: <Text className="text-text-base">{item.targetUser.email}</Text>
               </Text>
               {item.reviewedAt && (
-                <Text className="text-xs text-text-mute mb-1">
+                <Text className="text-xs text-text-mute">
                   Рассмотрена: <Text className="text-text-base">{formatDate(item.reviewedAt)}</Text>
                 </Text>
               )}
-              <Text className="text-xs text-text-mute mb-2 mt-1">Текст жалобы:</Text>
+              <Text className="text-xs text-text-mute">Текст жалобы:</Text>
               <Text className="text-sm text-text-base">{item.text}</Text>
             </View>
 
             {item.status === "NEW" && (
-              <View className="px-3 mb-3">
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Рассмотрено"
-                  onPress={() => markReviewed(item)}
-                  disabled={isReviewing}
-                  className={`rounded-xl h-11 items-center justify-center ${
-                    isReviewing ? "bg-surface2" : "bg-success"
-                  }`}
-                >
-                  {isReviewing ? (
-                    <ActivityIndicator size="small" color={colors.surface} />
-                  ) : (
-                    <Text className="text-sm text-white font-semibold">Рассмотрено</Text>
-                  )}
-                </Pressable>
-              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Рассмотрено"
+                onPress={() => markReviewed(item)}
+                disabled={isReviewing}
+                className={`rounded-xl h-11 items-center justify-center ${
+                  isReviewing ? "bg-surface2" : "bg-success"
+                }`}
+              >
+                {isReviewing ? (
+                  <ActivityIndicator size="small" color={colors.surface} />
+                ) : (
+                  <Text className="text-sm text-white font-semibold">Рассмотрено</Text>
+                )}
+              </Pressable>
             )}
           </View>
         )}

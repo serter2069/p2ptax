@@ -229,8 +229,15 @@ export default function BrandScreen() {
         </Section>
 
         {/* ====== STATES ====== */}
+        {/*
+          Audit fix: previous layout used `mb-4` on each child wrapper which
+          mixed with the implicit 0px gap of the last child — auditors flagged
+          this as inconsistent rhythm at Y~3102. Now we drive spacing from the
+          parent `gap-4`, no per-child margins, so adding/removing items keeps
+          the 16px rhythm intact.
+        */}
         <Section title="States">
-          <View className="mb-4">
+          <View className="gap-4">
             <EmptyState
               icon={FileText}
               title="Нет заявок"
@@ -238,30 +245,25 @@ export default function BrandScreen() {
               actionLabel="Создать"
               onAction={() => {}}
             />
-          </View>
-
-          <View className="mb-4">
             <ErrorState
               message="Ошибка загрузки"
               onRetry={() => {}}
             />
-          </View>
-
-          <View className="mb-4">
             <LoadingState variant="spinner" />
+            <Card>
+              <LoadingState variant="skeleton" lines={3} />
+            </Card>
           </View>
-
-          <Card>
-            <LoadingState variant="skeleton" lines={3} />
-          </Card>
         </Section>
 
         {/* ====== HEADERS ====== */}
+        {/*
+          Audit fix (Y~3422): same treatment as States — gap-4 on the parent
+          replaces per-child mb-4. Single source of spacing truth.
+        */}
         <Section title="Headers">
-          <View className="mb-4">
+          <View className="gap-4">
             <HeaderBack title="Header-Back" />
-          </View>
-          <View className="mb-4">
             <HeaderHome notificationCount={2} />
           </View>
         </Section>
