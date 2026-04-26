@@ -17,6 +17,11 @@ import HeaderHome from "../components/HeaderHome";
 import ResponsiveContainer from "../components/ResponsiveContainer";
 import { colors, tw, typography, spacing, radius } from "../lib/theme";
 
+// Spacing rhythm is unified on `gap-4` (16px) for all section content. Old
+// design had a mix of mb-4 (16), mb-2 (8) and gap-5 (20) on the same level —
+// the 16/8/20 trio that auditors flag as inconsistent rhythm. We use 16px
+// throughout and rely on `gap` on parents instead of per-child margins, so
+// removing/reordering items doesn't break the rhythm.
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View className="mb-10">
@@ -56,10 +61,10 @@ export default function BrandScreen() {
 
         {/* ====== COLORS ====== */}
         <Section title="Colors">
-          <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
+          <Text className="text-xs font-semibold text-text-mute mb-4 uppercase tracking-wide">
             Base
           </Text>
-          <View className="flex-row flex-wrap gap-3 mb-4">
+          <View className="flex-row flex-wrap gap-4 mb-4">
             {([
               { name: "primary", cls: tw.primary, label: "blue-900" },
               { name: "accent", cls: tw.accent, label: "amber-700" },
@@ -76,10 +81,10 @@ export default function BrandScreen() {
             ))}
           </View>
 
-          <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
+          <Text className="text-xs font-semibold text-text-mute mb-4 uppercase tracking-wide">
             Semantic
           </Text>
-          <View className="flex-row gap-3">
+          <View className="flex-row gap-4">
             {([
               { name: "error", cls: tw.errorBg, label: "red-600" },
               { name: "success", cls: tw.successBg, label: "emerald-600" },
@@ -96,7 +101,7 @@ export default function BrandScreen() {
 
         {/* ====== TYPOGRAPHY ====== */}
         <Section title="Typography">
-          <View className="gap-3">
+          <View className="gap-4">
             {([
               { key: "h1", label: "h1 · 30px extrabold", example: "Найдите специалиста" },
               { key: "h2", label: "h2 · 24px bold", example: "Мои заявки" },
@@ -115,7 +120,7 @@ export default function BrandScreen() {
 
         {/* ====== SPACING ====== */}
         <Section title="Spacing">
-          <View className="gap-2">
+          <View className="gap-4">
             {(Object.entries(spacing) as [string, number][]).map(([name, size]) => (
               <View key={name} className="flex-row items-center gap-3">
                 <Text className="text-xs text-text-mute w-6">{name}</Text>
@@ -131,7 +136,7 @@ export default function BrandScreen() {
 
         {/* ====== BUTTONS ====== */}
         <Section title="Buttons">
-          <View className="gap-3">
+          <View className="gap-4">
             <Button label="Создать заявку" />
             <Button label="Создать заявку" disabled />
             <Button label="Загрузка..." loading />
@@ -143,7 +148,7 @@ export default function BrandScreen() {
 
         {/* ====== INPUTS ====== */}
         <Section title="Inputs">
-          <View className="gap-3">
+          <View className="gap-4">
             <Input
               label="Email"
               placeholder="your@email.com"
@@ -173,7 +178,7 @@ export default function BrandScreen() {
 
         {/* ====== CARDS ====== */}
         <Section title="Cards">
-          <View className="gap-3">
+          <View className="gap-4">
             <Card>
               <Text className={`${typography.h3} ${tw.text} mb-1`}>
                 Камеральная проверка по НДС
@@ -195,7 +200,7 @@ export default function BrandScreen() {
 
         {/* ====== AVATARS ====== */}
         <Section title="Avatars">
-          <View className="flex-row items-end gap-5">
+          <View className="flex-row items-end gap-4">
             <View className="items-center">
               <Avatar name="Ivan" size="sm" />
               <Text className={`${typography.small} mt-1`}>sm 36</Text>
@@ -213,7 +218,7 @@ export default function BrandScreen() {
 
         {/* ====== BADGES ====== */}
         <Section title="Badges">
-          <View className="flex-row flex-wrap items-center gap-3">
+          <View className="flex-row flex-wrap items-center gap-4">
             <Badge variant="error" label="Ошибка" />
             <Badge variant="success" label="Успех" />
             <Badge variant="warning" label="Внимание" />
@@ -225,7 +230,7 @@ export default function BrandScreen() {
 
         {/* ====== STATES ====== */}
         <Section title="States">
-          <View className="mb-3">
+          <View className="mb-4">
             <EmptyState
               icon={FileText}
               title="Нет заявок"
@@ -235,14 +240,14 @@ export default function BrandScreen() {
             />
           </View>
 
-          <View className="mb-3">
+          <View className="mb-4">
             <ErrorState
               message="Ошибка загрузки"
               onRetry={() => {}}
             />
           </View>
 
-          <View className="mb-3">
+          <View className="mb-4">
             <LoadingState variant="spinner" />
           </View>
 
@@ -253,10 +258,10 @@ export default function BrandScreen() {
 
         {/* ====== HEADERS ====== */}
         <Section title="Headers">
-          <View className="mb-3">
+          <View className="mb-4">
             <HeaderBack title="Header-Back" />
           </View>
-          <View className="mb-3">
+          <View className="mb-4">
             <HeaderHome notificationCount={2} />
           </View>
         </Section>
