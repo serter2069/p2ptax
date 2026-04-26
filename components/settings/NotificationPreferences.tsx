@@ -1,5 +1,14 @@
-import { View, Text, Switch, Pressable } from "react-native";
+import { View, Text, Switch, Pressable, Platform } from "react-native";
 import { colors } from "@/lib/theme";
+
+// On web RN's <Switch> renders as ~40x20 native HTML <input type="checkbox">.
+// Vizor / a11y audits measure that inner DOM element, not the Pressable
+// wrapper. Forcing height: 44 + width: 52 directly on the Switch makes the
+// rendered element clear the 44x44 minimum tap-target threshold (WCAG 2.5.5).
+const switchWebStyle =
+  Platform.OS === "web"
+    ? ({ height: 44, width: 52 } as const)
+    : undefined;
 
 interface NotificationPreferencesProps {
   pushEnabled: boolean;
@@ -41,6 +50,7 @@ export default function NotificationPreferences({
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor={colors.surface}
               pointerEvents="none"
+              style={switchWebStyle}
             />
           </Pressable>
         </View>
@@ -65,6 +75,7 @@ export default function NotificationPreferences({
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor={colors.surface}
               pointerEvents="none"
+              style={switchWebStyle}
             />
           </Pressable>
         </View>

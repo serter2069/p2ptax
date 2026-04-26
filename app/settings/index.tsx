@@ -454,6 +454,11 @@ export default function UnifiedSettings() {
                         trackColor={{ false: colors.border, true: colors.primary }}
                         thumbColor={colors.surface}
                         pointerEvents="none"
+                        style={
+                          Platform.OS === "web"
+                            ? ({ height: 44, width: 52 } as const)
+                            : undefined
+                        }
                       />
                     </Pressable>
                   )}
