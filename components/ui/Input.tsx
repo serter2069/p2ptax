@@ -50,12 +50,28 @@ export default function Input({
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
+  // On web `colors.border` (#e8ebf0) on `colors.surface` (#ffffff) is barely
+  // visible — auditors flag the field as "naked input". We bump to
+  // `colors.borderStrong` (#c7ccd4) on web to give the input a clear frame
+  // even at default state. Native keeps the soft border (high-DPI displays
+  // already render it crisp enough).
   const borderColor = error
     ? colors.error
     : focused
       ? colors.accent
-      : colors.border;
-  const bgColor = error ? colors.errorBg : !editable ? colors.background : colors.surface;
+      : Platform.OS === "web"
+        ? colors.borderStrong
+        : colors.border;
+  // On web inputs sit on a slightly off-white background (`surface2`,
+  // #fafbfc) so the frame is reinforced by background contrast. Native
+  // keeps the standard surface white.
+  const bgColor = error
+    ? colors.errorBg
+    : !editable
+      ? colors.background
+      : Platform.OS === "web"
+        ? colors.surface2
+        : colors.surface;
 
   return (
     <View style={style}>
