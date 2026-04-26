@@ -335,10 +335,11 @@ export default function UnifiedInbox() {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <HeaderHome />
-        <View className="flex-1 items-center">
+        <View className="flex-1 items-center" style={{ width: "100%", overflow: "hidden" }}>
           <View
-            className="flex-1 flex-row w-full"
+            className="flex-1 flex-row"
             style={{
+              width: "100%",
               maxWidth: isWide ? 1200 : "100%",
               borderWidth: isWide ? 1 : 0,
               borderColor: colors.border,
@@ -350,8 +351,9 @@ export default function UnifiedInbox() {
           >
             <View
               style={{
+                width: 320,
                 maxWidth: 360,
-                flex: 1,
+                flexShrink: 0,
                 borderRightWidth: 1,
                 borderRightColor: colors.border,
                 backgroundColor: colors.surface,
@@ -419,7 +421,7 @@ export default function UnifiedInbox() {
                 ListEmptyComponent={emptyState}
               />
             </View>
-            <View className="flex-1">
+            <View className="flex-1" style={{ minWidth: 0 }}>
               {selectedThreadId ? (
                 <InlineChatView threadId={selectedThreadId} />
               ) : (
