@@ -42,7 +42,7 @@ export default function RequestCard({
             so without minWidth: 0 the text never shrinks below that. */}
         <Text
           className="text-lg font-semibold text-text-base flex-1 mr-2"
-          numberOfLines={1}
+          numberOfLines={2}
           style={{ flexShrink: 1, minWidth: 0 }}
         >
           {title}
