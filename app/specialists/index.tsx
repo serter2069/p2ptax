@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   useWindowDimensions,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -251,7 +252,20 @@ export default function SpecialistsCatalog() {
           onChangeText={setSearch}
           placeholder="Поиск по имени, роли, ФНС..."
           placeholderTextColor={colors.placeholder}
-          style={{ flex: 1, fontSize: 15, color: colors.text, height: 48 }}
+          style={{
+            flex: 1,
+            fontSize: 15,
+            color: colors.text,
+            height: 48,
+            backgroundColor: "transparent",
+            ...(Platform.OS === "web" ? {
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 8,
+              paddingHorizontal: 8,
+              outlineStyle: "none" as never,
+            } : {}),
+          }}
         />
         {total > 0 && (
           <Text className="text-sm text-text-mute">{total} специалистов</Text>

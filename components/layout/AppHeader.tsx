@@ -229,10 +229,15 @@ export default function AppHeader({ title }: AppHeaderProps) {
             marginLeft: 8,
             fontSize: 14,
             color: colors.text,
+            backgroundColor: "transparent",
             ...(Platform.OS === "web" ? {
               minHeight: 44,
               alignSelf: "stretch" as never,
               outlineStyle: "none" as never,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 6,
+              paddingHorizontal: 8,
             } : {}),
           }}
         />

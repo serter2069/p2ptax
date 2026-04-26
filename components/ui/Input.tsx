@@ -68,7 +68,11 @@ export default function Input({
           alignItems: "center",
           minHeight: multiline ? 96 : 48,
           borderRadius: radiusValue.md,
-          borderWidth: 1,
+          // On web the inner <input> owns the border so style/a11y audits
+          // recognise the field as framed (kills "naked input" flag). On
+          // native we keep the wrapper border because RN <TextInput> doesn't
+          // visually paint borderColor reliably across iOS/Android.
+          borderWidth: Platform.OS === "web" ? 0 : 1,
           borderColor,
           backgroundColor: bgColor,
           paddingHorizontal: spacing.md, // token: 12
@@ -117,13 +121,13 @@ export default function Input({
             fontSize: fontSizeValue.base,
             color: colors.text,
             paddingVertical: multiline ? spacing.sm : 0,
-            // Border is visually drawn by the outer View. On web we still
-            // set a transparent border on the <input> so a11y/style audits
-            // recognise the field as "framed" (kills naked-input flag) —
-            // and the boxShadow focus-ring below makes the focused state
-            // obvious without a native double-outline.
+            // On web the <input> owns the visible border so style/a11y
+            // audits flag the field as "framed" (kills naked-input flag).
+            // The outer View's border is suppressed on web (see above) to
+            // avoid a double border. On native the wrapper paints the
+            // border instead, so we keep the input borderless there.
             borderWidth: Platform.OS === "web" ? 1 : 0,
-            borderColor: "transparent",
+            borderColor: Platform.OS === "web" ? borderColor : "transparent",
             outlineWidth: 0,
             outlineStyle: 'none' as any,
             backgroundColor: 'transparent',
