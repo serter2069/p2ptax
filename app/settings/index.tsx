@@ -445,7 +445,7 @@ export default function UnifiedSettings() {
                       accessibilityLabel="Принимаю заявки"
                       accessibilityState={{ checked: isAvailable }}
                       onPress={() => handleToggleAvailable(!isAvailable)}
-                      style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+                      style={{ width: 56, height: 44, alignItems: "center", justifyContent: "center" }}
                     >
                       <Switch
                         accessibilityLabel="Принимаю заявки"

@@ -32,7 +32,7 @@ export default function NotificationPreferences({
             accessibilityLabel="Push-уведомления"
             accessibilityState={{ checked: pushEnabled }}
             onPress={() => onPushChange(!pushEnabled)}
-            style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+            style={{ width: 56, height: 44, alignItems: "center", justifyContent: "center" }}
           >
             <Switch
               accessibilityLabel="Push-уведомления"
@@ -56,7 +56,7 @@ export default function NotificationPreferences({
             accessibilityLabel="Email-уведомления"
             accessibilityState={{ checked: emailEnabled }}
             onPress={() => onEmailChange(!emailEnabled)}
-            style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+            style={{ width: 56, height: 44, alignItems: "center", justifyContent: "center" }}
           >
             <Switch
               accessibilityLabel="Email-уведомления"
