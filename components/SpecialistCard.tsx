@@ -92,20 +92,20 @@ export default function SpecialistCard({
       </View>
 
       {/* Name */}
-      <Text className="text-base font-bold mt-3" style={{ color: colors.text }} numberOfLines={1}>
+      <Text className="text-base font-bold mt-2" style={{ color: colors.text }} numberOfLines={1}>
         {name}
       </Text>
 
       {/* Description */}
       {description ? (
-        <Text className="text-sm mt-1" style={{ color: colors.textSecondary }} numberOfLines={2}>
+        <Text className="text-sm mt-2" style={{ color: colors.textSecondary }} numberOfLines={2}>
           {description}
         </Text>
       ) : null}
 
       {/* Service pills */}
       {services.length > 0 && (
-        <View className="flex-row flex-wrap mt-3" style={{ gap: 8 }}>
+        <View className="flex-row flex-wrap mt-2" style={{ gap: 8 }}>
           {services.map((s) => (
             <View
               key={s.id}
