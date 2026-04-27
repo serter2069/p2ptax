@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import Head from "expo-router/head";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
@@ -57,7 +58,8 @@ function MetaRow({
 
 export default function PublicRequestDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
@@ -119,7 +121,7 @@ export default function PublicRequestDetail() {
           </Text>
           <Button
             label="Назад к заявкам"
-            onPress={() => router.push("/requests" as never)}
+            onPress={() => nav.routes.requests()}
             fullWidth={false}
           />
         </View>
@@ -179,7 +181,7 @@ export default function PublicRequestDetail() {
               <Button
                 label="Открыть чат"
                 onPress={() =>
-                  router.push(`/threads/${request.existingThreadId}` as never)
+                  nav.any(`/threads/${request.existingThreadId}`)
                 }
                 icon={MessageCircle}
               />
@@ -192,7 +194,7 @@ export default function PublicRequestDetail() {
           <ResponsiveContainer>
             <Button
               label="Написать клиенту"
-              onPress={() => router.push(`/requests/${id}/write` as never)}
+              onPress={() => nav.any(`/requests/${id}/write`)}
               icon={Send}
             />
           </ResponsiveContainer>
@@ -206,7 +208,7 @@ export default function PublicRequestDetail() {
         <ResponsiveContainer>
           <Button
             label="Войдите, чтобы написать"
-            onPress={() => router.push("/login" as never)}
+            onPress={() => nav.routes.login()}
           />
         </ResponsiveContainer>
       </View>

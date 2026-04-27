@@ -1,5 +1,6 @@
 import { View, Text, Pressable, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { Menu, Bell } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
@@ -17,7 +18,8 @@ export default function Header() {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const { isAuthenticated, user } = useAuth();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const initials = user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
@@ -37,7 +39,7 @@ export default function Header() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Уведомления"
-                onPress={() => router.push("/notifications" as never)}
+                onPress={() => nav.routes.notifications()}
                 className="w-11 h-11 items-center justify-center"
               >
                 <Bell size={18} color={colors.text} />
@@ -47,7 +49,7 @@ export default function Header() {
                 accessibilityLabel="Профиль"
                 onPress={() => {
                   // Iter11 — unified /settings for non-admin users.
-                  router.push("/settings" as never);
+                  nav.routes.settings();
                 }}
                 className="w-11 h-11 rounded-full items-center justify-center"
                 style={{ backgroundColor: colors.accentSoft }}
@@ -59,7 +61,7 @@ export default function Header() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Войти"
-              onPress={() => router.push("/login" as never)}
+              onPress={() => nav.routes.login()}
               className="px-4 h-11 rounded-lg items-center justify-center"
               style={{ borderWidth: 1, borderColor: colors.border }}
             >
@@ -76,7 +78,7 @@ export default function Header() {
   // Desktop header
   return (
     <View className="flex-row items-center justify-between px-6 h-16 bg-white border-b" style={{ borderBottomColor: colors.border }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Главная" onPress={() => router.push("/" as never)} className="px-2 items-center justify-center" style={{ minHeight: 44 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Главная" onPress={() => nav.routes.home()} className="px-2 items-center justify-center" style={{ minHeight: 44 }}>
         <Text className="text-xl font-bold" style={{ color: colors.primary }}>P2PTax</Text>
       </Pressable>
 
@@ -87,7 +89,7 @@ export default function Header() {
             key={link.href}
             accessibilityRole="button"
             accessibilityLabel={link.label}
-            onPress={() => router.push(link.href as never)}
+            onPress={() => nav.any(link.href)}
             className="px-2 items-center justify-center"
             style={{ minHeight: 44 }}
           >
@@ -101,7 +103,7 @@ export default function Header() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Уведомления"
-            onPress={() => router.push("/notifications" as never)}
+            onPress={() => nav.routes.notifications()}
             className="w-11 h-11 rounded-lg items-center justify-center active:bg-surface2"
           >
             <Bell size={18} color={colors.text} />
@@ -111,7 +113,7 @@ export default function Header() {
             accessibilityLabel="Профиль"
             onPress={() => {
               // Iter11 — unified /settings for non-admin users.
-              router.push("/settings" as never);
+              nav.routes.settings();
             }}
             className="w-11 h-11 rounded-full items-center justify-center"
             style={{ backgroundColor: colors.accentSoft }}
@@ -124,7 +126,7 @@ export default function Header() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Войти"
-            onPress={() => router.push("/login" as never)}
+            onPress={() => nav.routes.login()}
             className="px-5 h-11 rounded-lg items-center justify-center"
             style={{ borderWidth: 1, borderColor: colors.border }}
           >
@@ -133,7 +135,7 @@ export default function Header() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"
-            onPress={() => router.push("/requests/new" as never)}
+            onPress={() => nav.routes.requestsNew()}
             className="px-5 h-11 rounded-lg items-center justify-center"
             style={{ backgroundColor: colors.primary }}
           >

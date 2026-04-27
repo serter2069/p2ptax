@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import rateLimit from "express-rate-limit";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
@@ -10,6 +11,14 @@ const router = Router();
 // All admin routes require auth + ADMIN role
 router.use(authMiddleware);
 router.use(roleGuard("ADMIN"));
+
+const adminWriteRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много запросов. Попробуйте через минуту." },
+});
 
 // GET /api/admin/stats
 router.get("/stats", async (_req: Request, res: Response) => {
@@ -266,6 +275,7 @@ router.patch("/users/:id", async (req: Request, res: Response) => {
 // POST /api/admin/users/:id/close-all-requests
 router.post(
   "/users/:id/close-all-requests",
+  adminWriteRateLimiter,
   async (req: Request, res: Response) => {
     try {
       const id = req.params.id as string;
@@ -324,7 +334,7 @@ router.get("/cities", async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/cities
-router.post("/cities", async (req: Request, res: Response) => {
+router.post("/cities", adminWriteRateLimiter, async (req: Request, res: Response) => {
   try {
     const { name, slug } = req.body as { name?: string; slug?: string };
     if (!name || !slug) {
@@ -383,7 +393,7 @@ router.patch("/cities/:id", async (req: Request, res: Response) => {
 });
 
 // DELETE /api/admin/cities/:id — guard: no IFNS offices attached
-router.delete("/cities/:id", async (req: Request, res: Response) => {
+router.delete("/cities/:id", adminWriteRateLimiter, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const officesCount = await prisma.fnsOffice.count({ where: { cityId: id } });
@@ -445,7 +455,7 @@ router.get("/ifns", async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/ifns
-router.post("/ifns", async (req: Request, res: Response) => {
+router.post("/ifns", adminWriteRateLimiter, async (req: Request, res: Response) => {
   try {
     const { name, code, cityId, address, searchAliases } = req.body as {
       name?: string;
@@ -524,7 +534,7 @@ router.patch("/ifns/:id", async (req: Request, res: Response) => {
 });
 
 // DELETE /api/admin/ifns/:id
-router.delete("/ifns/:id", async (req: Request, res: Response) => {
+router.delete("/ifns/:id", adminWriteRateLimiter, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const [specialistCount, requestCount] = await Promise.all([
@@ -551,7 +561,7 @@ router.delete("/ifns/:id", async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/ifns/import — bulk JSON import [{code, name, citySlug, address, searchAliases}]
-router.post("/ifns/import", async (req: Request, res: Response) => {
+router.post("/ifns/import", adminWriteRateLimiter, async (req: Request, res: Response) => {
   try {
     const items = req.body as {
       code: string;
@@ -576,44 +586,49 @@ router.post("/ifns/import", async (req: Request, res: Response) => {
       return;
     }
 
-    let created = 0;
-    let updated = 0;
-    const errors: string[] = [];
+    // Execute all imports in a single transaction
+    const result = await prisma.$transaction(async (tx) => {
+      let created = 0;
+      let updated = 0;
+      const errors: string[] = [];
 
-    for (const item of items) {
-      const cityId = cityMap.get(item.citySlug);
-      if (!cityId) continue;
-      try {
-        const existing = await prisma.fnsOffice.findUnique({ where: { code: item.code } });
-        if (existing) {
-          await prisma.fnsOffice.update({
-            where: { code: item.code },
-            data: {
-              name: item.name,
-              cityId,
-              address: item.address ?? null,
-              searchAliases: item.searchAliases ?? null,
-            },
-          });
-          updated++;
-        } else {
-          await prisma.fnsOffice.create({
-            data: {
-              name: item.name,
-              code: item.code,
-              cityId,
-              address: item.address ?? null,
-              searchAliases: item.searchAliases ?? null,
-            },
-          });
-          created++;
+      for (const item of items) {
+        const cityId = cityMap.get(item.citySlug);
+        if (!cityId) continue;
+        try {
+          const existing = await tx.fnsOffice.findUnique({ where: { code: item.code } });
+          if (existing) {
+            await tx.fnsOffice.update({
+              where: { code: item.code },
+              data: {
+                name: item.name,
+                cityId,
+                address: item.address ?? null,
+                searchAliases: item.searchAliases ?? null,
+              },
+            });
+            updated++;
+          } else {
+            await tx.fnsOffice.create({
+              data: {
+                name: item.name,
+                code: item.code,
+                cityId,
+                address: item.address ?? null,
+                searchAliases: item.searchAliases ?? null,
+              },
+            });
+            created++;
+          }
+        } catch {
+          errors.push(`Failed to import code ${item.code}`);
         }
-      } catch {
-        errors.push(`Failed to import code ${item.code}`);
       }
-    }
 
-    res.json({ created, updated, errors });
+      return { created, updated, errors };
+    });
+
+    res.json(result);
   } catch (error) {
     console.error("admin/ifns/import error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -794,7 +809,7 @@ router.patch("/complaints/:id/resolve", async (req: Request, res: Response) => {
 });
 
 // DELETE /api/admin/users/:id — hard delete with proper FK dependency order
-router.delete("/users/:id", async (req: Request, res: Response) => {
+router.delete("/users/:id", adminWriteRateLimiter, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
 

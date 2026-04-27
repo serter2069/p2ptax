@@ -1,6 +1,7 @@
 import { View, Text, Pressable, TextInput, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect } from "react";
 import { Mail } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,8 @@ import Button from "@/components/ui/Button";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function AuthEmailScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { isAuthenticated, user } = useAuth();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -22,9 +24,9 @@ export default function AuthEmailScreen() {
     if (isAuthenticated && user) {
       // Iter11 — unified (tabs) replaces split client/specialist groups.
       if (user.role === "ADMIN") {
-        router.replace("/(admin-tabs)/dashboard" as never);
+        nav.replaceRoutes.adminDashboard();
       } else {
-        router.replace("/(tabs)" as never);
+        nav.replaceRoutes.tabs();
       }
     }
   }, [isAuthenticated, user, router]);
@@ -42,10 +44,10 @@ export default function AuthEmailScreen() {
         body: { email: email.trim().toLowerCase() },
         noAuth: true,
       });
-      router.push({
-        pathname: "/otp" as never,
+      nav.any({
+        pathname: "/otp",
         params: { email: email.trim().toLowerCase() },
-      } as never);
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);
@@ -152,7 +154,7 @@ export default function AuthEmailScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Условия использования"
-            onPress={() => router.push("/legal/terms" as never)}
+            onPress={() => nav.routes.legalTerms()}
             className="mt-4 min-h-[44px] items-center justify-center"
           >
             <Text className="text-text-mute text-center underline" style={{ fontSize: 13 }}>

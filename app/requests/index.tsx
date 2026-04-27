@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import HeaderBack from "@/components/HeaderBack";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import FilterBar from "@/components/FilterBar";
@@ -55,7 +56,8 @@ interface RequestsResponse {
 const LIMIT = 20;
 
 export default function PublicRequestsFeed() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
@@ -105,6 +107,9 @@ export default function PublicRequestsFeed() {
     [selectedCityId, selectedFnsId]
   );
 
+  const fetchRequestsRef = useRef(fetchRequests);
+  fetchRequestsRef.current = fetchRequests;
+
   // Initial load: fetch cities, services, and first page of requests
   useEffect(() => {
     let cancelled = false;
@@ -125,7 +130,7 @@ export default function PublicRequestsFeed() {
         // Non-fatal: filters will just be empty
       }
       if (!cancelled) {
-        await fetchRequests(1);
+        await fetchRequestsRef.current(1);
         setInitLoading(false);
       }
     }
@@ -134,7 +139,6 @@ export default function PublicRequestsFeed() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-fetch when city filter changes (skip on first mount since init handles it)
@@ -185,7 +189,7 @@ export default function PublicRequestsFeed() {
 
   const handleRequestPress = useCallback(
     (id: string) => {
-      router.push(`/requests/${id}` as never);
+      nav.any(`/requests/${id}`);
     },
     [router]
   );

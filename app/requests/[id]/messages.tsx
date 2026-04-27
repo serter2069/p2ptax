@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { MessageCircle } from "lucide-react-native";
@@ -62,7 +63,8 @@ function truncate(str: string, maxLen: number): string {
 
 export default function RequestMessages() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
@@ -107,7 +109,7 @@ export default function RequestMessages() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Чат с ${name}`}
-          onPress={() => router.push(`/threads/${item.id}` as never)}
+          onPress={() => nav.any(`/threads/${item.id}`)}
           className="flex-row items-center py-3 border-b border-border"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >

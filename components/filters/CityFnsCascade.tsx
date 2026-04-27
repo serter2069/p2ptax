@@ -133,9 +133,7 @@ export default function CityFnsCascade({
     if (filtered.length !== value.fns.length) {
       onChange({ cities: value.cities, fns: filtered });
     }
-    // value.fns intentionally excluded — we only react to the source list changing
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fnsAll]);
+  }, [fnsAll, value.cities, value.fns, onChange]);
 
   const toggleCity = useCallback(
     (id: string) => {

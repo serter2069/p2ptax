@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
@@ -37,7 +38,8 @@ const MIN_CHARS = 10;
 const DAILY_LIMIT = 20;
 
 export default function SpecialistConfirmWrite() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isAuthenticated, user, isSpecialistUser, isLoading: authLoading } = useAuth();
   const { width } = useWindowDimensions();
@@ -71,7 +73,7 @@ export default function SpecialistConfirmWrite() {
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated || !isSpecialistUser) {
-        router.replace("/login" as never);
+        nav.replaceRoutes.login();
         return;
       }
       load();
@@ -90,7 +92,7 @@ export default function SpecialistConfirmWrite() {
         method: "POST",
         body: { requestId: id, firstMessage: message },
       });
-      router.replace(`/threads/${result.id}` as never);
+      nav.replaceAny(`/threads/${result.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth, UserData } from "@/contexts/AuthContext";
@@ -40,7 +41,8 @@ function formatCountdown(seconds: number): string {
 }
 
 export default function AuthOtpScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const params = useLocalSearchParams<{ email: string }>();
   const email =
     typeof params.email === "string"
@@ -77,16 +79,16 @@ export default function AuthOtpScreen() {
     (user: UserData) => {
       // Iter11 — unified (tabs) replaces split client/specialist groups.
       if (user.role === "ADMIN") {
-        router.replace("/(admin-tabs)/dashboard" as never);
+        nav.replaceRoutes.adminDashboard();
         return;
       }
       // Specialist opt-in still requires a name/profile finish before the
       // dashboard can render the specialist widgets meaningfully.
       if (user.isSpecialist && !user.firstName) {
-        router.replace("/onboarding/name" as never);
+        nav.replaceRoutes.onboardingName();
         return;
       }
-      router.replace("/(tabs)" as never);
+      nav.replaceRoutes.tabs();
     },
     [router]
   );
@@ -135,8 +137,7 @@ export default function AuthOtpScreen() {
     if (digits.every(d => d !== "") && !isLoading) {
       handleVerify(digits.join(""));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [digits]);
+  }, [digits, isLoading, handleVerify]);
 
   const handleDigitChange = (index: number, value: string) => {
     if (value.length > 1) {
@@ -222,9 +223,9 @@ export default function AuthOtpScreen() {
       // Silent: optimistic update keeps the UI responsive.
     }
     if (becomeSpecialist) {
-      router.replace("/onboarding/name" as never);
+      nav.replaceRoutes.onboardingName();
     } else {
-      router.replace("/(tabs)" as never);
+      nav.replaceRoutes.tabs();
     }
   };
 
@@ -319,7 +320,7 @@ export default function AuthOtpScreen() {
             </Text>
             <Button
               label="Ввести email"
-              onPress={() => router.replace("/login" as never)}
+              onPress={() => nav.replaceRoutes.login()}
             />
           </View>
         </View>
@@ -359,7 +360,7 @@ export default function AuthOtpScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Изменить email"
-              onPress={() => router.replace("/login" as never)}
+              onPress={() => nav.replaceRoutes.login()}
               className="mb-7"
             >
               <Text className="text-accent text-center font-medium" style={{ fontSize: 13 }}>

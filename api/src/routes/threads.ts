@@ -61,32 +61,46 @@ router.get("/", async (req: Request, res: Response) => {
     const isSpecialist = user.isSpecialist;
 
     const requestIdFilter = req.query.request_id as string | undefined;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
-    const threads = await prisma.thread.findMany({
-      where: {
-        ...(isSpecialist
-          ? { specialistId: userId }
-          : { clientId: userId }),
-        ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
-      },
-      orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
-      include: {
-        request: {
-          select: { id: true, title: true, status: true },
+    const [threads, total] = await Promise.all([
+      prisma.thread.findMany({
+        where: {
+          ...(isSpecialist
+            ? { specialistId: userId }
+            : { clientId: userId }),
+          ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
         },
-        client: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+        orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
+        skip: offset,
+        take: limit,
+        include: {
+          request: {
+            select: { id: true, title: true, status: true },
+          },
+          client: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+          },
+          specialist: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+          },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { text: true, createdAt: true, senderId: true },
+          },
         },
-        specialist: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+      }),
+      prisma.thread.count({
+        where: {
+          ...(isSpecialist
+            ? { specialistId: userId }
+            : { clientId: userId }),
+          ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
         },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { text: true, createdAt: true, senderId: true },
-        },
-      },
-    });
+      }),
+    ]);
 
     const mapped = threads.map((t) => {
       const lastReadAt = isSpecialist
@@ -123,23 +137,56 @@ router.get("/", async (req: Request, res: Response) => {
       };
     });
 
-    // Enrich with actual unread counts
-    for (const item of mapped) {
-      const thread = threads.find((t) => t.id === item.id)!;
-      const lastReadAt = isSpecialist
-        ? thread.specialistLastReadAt
-        : thread.clientLastReadAt;
+    // Enrich with actual unread counts — batch into parallel queries
+    // Threads with lastReadAt need per-thread counts; threads without can be batched.
+    const threadsWithRead = threads.filter(t => {
+      const lastReadAt = isSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
+      return lastReadAt !== null;
+    });
+    const threadsWithoutRead = threads.filter(t => {
+      const lastReadAt = isSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
+      return lastReadAt === null;
+    });
 
-      item.unreadCount = await prisma.message.count({
+    const readCounts = await Promise.all(
+      threadsWithRead.map(async (thread) => {
+        const lastReadAt = isSpecialist
+          ? thread.specialistLastReadAt
+          : thread.clientLastReadAt;
+        return prisma.message.count({
+          where: {
+            threadId: thread.id,
+            senderId: { not: userId },
+            ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+          },
+        });
+      })
+    );
+
+    // Build a map from thread id to unread count
+    const unreadMap = new Map<string, number>();
+    threadsWithRead.forEach((t, i) => unreadMap.set(t.id, readCounts[i]));
+
+    // Use groupBy for the threadsWithoutRead to get per-thread counts in one query
+    if (threadsWithoutRead.length > 0) {
+      const groupCounts = await prisma.message.groupBy({
+        by: ['threadId'],
+        _count: { id: true },
         where: {
-          threadId: item.id,
+          threadId: { in: threadsWithoutRead.map(t => t.id) },
           senderId: { not: userId },
-          ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
         },
       });
+      groupCounts.forEach(g => unreadMap.set(g.threadId, g._count.id));
     }
 
-    res.json({ items: mapped });
+    // Map counts back to items
+    const itemThreadMap = new Map(mapped.map((item, i) => [threads[i].id, item]));
+    threads.forEach((t, i) => {
+      itemThreadMap.get(t.id)!.unreadCount = unreadMap.get(t.id) ?? 0;
+    });
+
+    res.json({ items: mapped, total, limit, offset, hasMore: offset + limit < total });
   } catch (error) {
     console.error("threads list error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -157,64 +204,112 @@ router.get("/", async (req: Request, res: Response) => {
 router.get("/my", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
-    const threads = await prisma.thread.findMany({
-      where: {
-        OR: [
-          { specialistId: userId },
-          { clientId: userId },
-        ],
-      },
-      orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
-      include: {
-        request: { select: { id: true, title: true, status: true, userId: true } },
-        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
-        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { text: true, createdAt: true, senderId: true },
+    const [threads, total] = await Promise.all([
+      prisma.thread.findMany({
+        where: {
+          OR: [
+            { specialistId: userId },
+            { clientId: userId },
+          ],
         },
-      },
+        orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
+        skip: offset,
+        take: limit,
+        include: {
+          request: { select: { id: true, title: true, status: true, userId: true } },
+          client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { text: true, createdAt: true, senderId: true },
+          },
+        },
+      }),
+      prisma.thread.count({
+        where: {
+          OR: [
+            { specialistId: userId },
+            { clientId: userId },
+          ],
+        },
+      }),
+    ]);
+
+    // Enrich with actual unread counts — batch with groupBy for threads
+    // that share the same lastReadAt pattern. Each thread has its own
+    // lastReadAt so we still need per-thread queries, but we parallelize
+    // them in a single Promise.all (no sequential for-await).
+    const threadsWithRead = threads.filter(t => {
+      const asSpecialist = t.specialistId === userId;
+      const lastReadAt = asSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
+      return lastReadAt !== null;
+    });
+    const threadsWithoutRead = threads.filter(t => {
+      const asSpecialist = t.specialistId === userId;
+      const lastReadAt = asSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
+      return lastReadAt === null;
     });
 
-    // Enrich with actual unread counts, tagged with perspective
-    // ("as_client" | "as_specialist") so the UI can render two chips on
-    // the same request if the USER is on both sides.
-    const enriched = await Promise.all(
-      threads.map(async (thread) => {
+    const readCounts = await Promise.all(
+      threadsWithRead.map(async (thread) => {
         const asSpecialist = thread.specialistId === userId;
         const lastReadAt = asSpecialist
-          ? thread.specialistLastReadAt
-          : thread.clientLastReadAt;
-        const unreadCount = await prisma.message.count({
+          ? thread.specialistLastReadAt!
+          : thread.clientLastReadAt!;
+        return prisma.message.count({
           where: {
             threadId: thread.id,
             senderId: { not: userId },
-            ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+            createdAt: { gt: lastReadAt },
           },
         });
-        const otherUser = asSpecialist ? thread.client : thread.specialist;
-        const lastMessage = thread.messages[0] ?? null;
-        return {
-          id: thread.id,
-          requestId: thread.requestId,
-          request: thread.request,
-          perspective: asSpecialist ? "as_specialist" : "as_client",
-          otherUser: {
-            id: otherUser.id,
-            firstName: otherUser.firstName,
-            lastName: otherUser.lastName,
-            avatarUrl: otherUser.avatarUrl,
-          },
-          lastMessage: lastMessage
-            ? { text: lastMessage.text, createdAt: lastMessage.createdAt }
-            : null,
-          unreadCount,
-          createdAt: thread.createdAt,
-        };
       })
     );
+
+    // Build per-thread unread map
+    const unreadMap = new Map<string, number>();
+    threadsWithRead.forEach((t, i) => unreadMap.set(t.id, readCounts[i]));
+
+    // For threads never read, use groupBy to get per-thread counts in one query
+    if (threadsWithoutRead.length > 0) {
+      const groupCounts = await prisma.message.groupBy({
+        by: ['threadId'],
+        _count: { id: true },
+        where: {
+          threadId: { in: threadsWithoutRead.map(t => t.id) },
+          senderId: { not: userId },
+        },
+      });
+      groupCounts.forEach(g => unreadMap.set(g.threadId, g._count.id));
+    }
+
+    // Build enriched results with correct unread counts
+    const enriched = threads.map((thread) => {
+      const asSpecialist = thread.specialistId === userId;
+      const otherUser = asSpecialist ? thread.client : thread.specialist;
+      const lastMessage = thread.messages[0] ?? null;
+      return {
+        id: thread.id,
+        requestId: thread.requestId,
+        request: thread.request,
+        perspective: asSpecialist ? "as_specialist" : "as_client",
+        otherUser: {
+          id: otherUser.id,
+          firstName: otherUser.firstName,
+          lastName: otherUser.lastName,
+          avatarUrl: otherUser.avatarUrl,
+        },
+        lastMessage: lastMessage
+          ? { text: lastMessage.text, createdAt: lastMessage.createdAt }
+          : null,
+        unreadCount: unreadMap.get(thread.id) ?? 0,
+        createdAt: thread.createdAt,
+      };
+    });
 
     // Group by request. Same request seen from both perspectives (client
     // + specialist) lands in the same group — useful for the dual-role
@@ -234,7 +329,7 @@ router.get("/my", async (req: Request, res: Response) => {
       }
     }
 
-    res.json({ groups: Array.from(groups.values()) });
+    res.json({ groups: Array.from(groups.values()), total, limit, offset, hasMore: offset + limit < total });
   } catch (error) {
     console.error("threads/my error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -372,32 +467,37 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Create thread + first message in transaction
+    // Create thread + first message + update request in a single transaction
     const now = new Date();
-    const thread = await prisma.thread.create({
-      data: {
-        requestId,
-        clientId: request.userId,
-        specialistId: userId,
-        lastMessageAt: now,
-        specialistLastReadAt: now,
-        messages: {
-          create: {
-            senderId: userId,
-            text: firstMessage,
+    const result = await prisma.$transaction(async (tx) => {
+      const thread = await tx.thread.create({
+        data: {
+          requestId,
+          clientId: request.userId,
+          specialistId: userId,
+          lastMessageAt: now,
+          specialistLastReadAt: now,
+          messages: {
+            create: {
+              senderId: userId,
+              text: firstMessage,
+            },
           },
         },
-      },
-      include: {
-        request: { select: { id: true, title: true, status: true } },
-      },
+        include: {
+          request: { select: { id: true, title: true, status: true } },
+        },
+      });
+
+      await tx.request.update({
+        where: { id: requestId },
+        data: { lastActivityAt: now },
+      });
+
+      return thread;
     });
 
-    // Update request lastActivityAt
-    await prisma.request.update({
-      where: { id: requestId },
-      data: { lastActivityAt: now },
-    });
+    const thread = result;
 
     // Notify client: specialist started a new thread on their request
     // SA: «Специалист X написал по вашей заявке 'TITLE'»

@@ -19,6 +19,22 @@ const otpRateLimiter = rateLimit({
   skip: (req) => req.headers['x-smoke-test'] === 'metromap',
 });
 
+const verifyOtpRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много попыток. Попробуйте через минуту." },
+});
+
+const refreshRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много запросов обновления токена. Попробуйте через минуту." },
+});
+
 // POST /api/auth/request-otp
 router.post("/request-otp", otpRateLimiter, async (req: Request, res: Response) => {
   try {
@@ -74,7 +90,7 @@ router.post("/request-otp", otpRateLimiter, async (req: Request, res: Response) 
 });
 
 // POST /api/auth/verify-otp
-router.post("/verify-otp", async (req: Request, res: Response) => {
+router.post("/verify-otp", verifyOtpRateLimiter, async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
 
@@ -145,7 +161,7 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/refresh
-router.post("/refresh", async (req: Request, res: Response) => {
+router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
 

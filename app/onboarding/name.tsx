@@ -1,6 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useState } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,8 @@ import Input from "@/components/ui/Input";
 import { colors, textStyle } from "@/lib/theme";
 
 export default function OnboardingNameScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { updateUser } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -66,7 +68,7 @@ export default function OnboardingNameScreen() {
         lastName: data.user.lastName,
       });
 
-      router.push("/onboarding/work-area" as never);
+      nav.routes.onboardingWorkArea();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);
@@ -163,7 +165,7 @@ export default function OnboardingNameScreen() {
               <Pressable
                 accessibilityRole="link"
                 accessibilityLabel="Условия использования"
-                onPress={() => router.push("/legal/terms" as never)}
+                onPress={() => nav.routes.legalTerms()}
                 style={{ minHeight: 44, justifyContent: "center" }}
               >
                 <Text className="text-accent font-medium underline text-xs leading-5">

@@ -150,16 +150,33 @@ router.get(
 
       const specialistIds = new Set(userThreads.map((t) => t.specialistId));
 
-      // Awaiting specialist reply — threads where last message is from client
-      let awaitingReplies = 0;
-      for (const t of userThreads) {
-        const last = await prisma.message.findFirst({
-          where: { threadId: t.id },
+      // Awaiting specialist reply — threads where last message is from client.
+      // Batch: single groupBy query to find the latest message sender per thread.
+      const awaitingReplies = await (async () => {
+        if (userThreads.length === 0) return 0;
+        // Get latest message per thread using a subquery approach:
+        // Find the max createdAt per thread, then join to get senderId.
+        // Since Prisma doesn't support window functions directly, use groupBy
+        // with _max and then fetch senders — but simpler: just fetch all
+        // latest messages in one go using raw-ish approach.
+        //
+        // Alternative: fetch all messages for these threads, ordered by
+        // threadId + createdAt desc, then deduplicate by threadId in JS.
+        const latestMessages = await prisma.message.findMany({
+          where: { threadId: { in: userThreads.map(t => t.id) } },
           orderBy: { createdAt: "desc" },
-          select: { senderId: true },
+          select: { threadId: true, senderId: true },
         });
-        if (last && last.senderId === userId) awaitingReplies += 1;
-      }
+        // Deduplicate: keep only the first (latest) message per thread
+        const seen = new Set<string>();
+        let count = 0;
+        for (const m of latestMessages) {
+          if (seen.has(m.threadId)) continue;
+          seen.add(m.threadId);
+          if (m.senderId === userId) count++;
+        }
+        return count;
+      })();
 
       res.json({
         activeRequests,
@@ -213,16 +230,24 @@ router.get(
         }),
       ]);
 
-      // Awaiting-your-reply — threads where last message is not from specialist
-      let awaitingMyReply = 0;
-      for (const t of threads) {
-        const last = await prisma.message.findFirst({
-          where: { threadId: t.id },
+      // Awaiting-your-reply — threads where last message is not from specialist.
+      // Batch: fetch all latest messages in one query.
+      const awaitingMyReply = await (async () => {
+        if (threads.length === 0) return 0;
+        const latestMessages = await prisma.message.findMany({
+          where: { threadId: { in: threads.map(t => t.id) } },
           orderBy: { createdAt: "desc" },
-          select: { senderId: true },
+          select: { threadId: true, senderId: true },
         });
-        if (last && last.senderId !== userId) awaitingMyReply += 1;
-      }
+        const seen = new Set<string>();
+        let count = 0;
+        for (const m of latestMessages) {
+          if (seen.has(m.threadId)) continue;
+          seen.add(m.threadId);
+          if (m.senderId !== userId) count++;
+        }
+        return count;
+      })();
 
       // New requests in specialist's regions (last 7 days)
       const specialistFns = await prisma.specialistFns.findMany({

@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter, usePathname } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { Bell, Menu, Search, Settings, LogOut, User } from "lucide-react-native";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import { colors, roleAccent, type RoleAccentKey, gray, spacing } from "@/lib/theme";
@@ -96,7 +97,8 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const { user, isSpecialistUser, signOut } = useAuth();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const pathname = usePathname() ?? "";
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -119,16 +121,16 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
   const handleSearchSubmit = () => {
     const trimmed = query.trim();
     if (!trimmed) {
-      router.push("/specialists" as never);
+      nav.routes.specialists();
       return;
     }
-    router.push(`/specialists?q=${encodeURIComponent(trimmed)}` as never);
+    nav.any(`/specialists?q=${encodeURIComponent(trimmed)}`);
   };
 
   const handleLogout = async () => {
     setDropdownOpen(false);
     await signOut();
-    router.replace("/login" as never);
+    nav.replaceRoutes.login();
   };
 
   const handleSettings = () => {
@@ -137,7 +139,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
     // its own bespoke settings page.
     const settingsPath =
       user?.role === "ADMIN" ? "/admin/settings" : "/settings";
-    router.push(settingsPath as never);
+    nav.any(settingsPath);
   };
 
   // -------- Mobile --------
@@ -189,7 +191,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Уведомления"
-            onPress={() => router.push("/notifications" as never)}
+            onPress={() => nav.routes.notifications()}
             className="w-11 h-11 items-center justify-center"
           >
             <Bell size={18} color={colors.text} />
@@ -224,7 +226,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Главная"
-          onPress={() => router.push("/" as never)}
+          onPress={() => nav.routes.home()}
           style={{ minHeight: 44, justifyContent: "center" }}
         >
           <Text className="text-base font-bold" style={{ color: colors.primary }}>P2PTax</Text>
@@ -235,7 +237,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
             key={link.href}
             accessibilityRole="button"
             accessibilityLabel={link.label}
-            onPress={() => router.push(link.href as never)}
+            onPress={() => nav.any(link.href)}
             style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 4 }}
           >
             <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>{link.label}</Text>
@@ -297,7 +299,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Уведомления"
-          onPress={() => router.push("/notifications" as never)}
+          onPress={() => nav.routes.notifications()}
           className="w-11 h-11 rounded-lg items-center justify-center"
         >
           <Bell size={18} color={colors.text} />
@@ -416,7 +418,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
               accessibilityLabel="Профиль"
               onPress={() => {
                 setDropdownOpen(false);
-                router.push("/settings" as never);
+                nav.routes.settings();
               }}
               className="flex-row items-center rounded-md"
               style={{ padding: spacing.sm, gap: spacing.sm }}

@@ -22,18 +22,31 @@ router.get("/stats", async (req: Request, res: Response) => {
       },
     });
 
-    let newMessages = 0;
-    for (const thread of threads) {
-      const unread = await prisma.message.count({
+    // Batch unread counts: parallelize threads with lastReadAt, use groupBy for those without
+    const threadsWithRead = threads.filter(t => t.specialistLastReadAt !== null);
+    const threadsWithoutRead = threads.filter(t => t.specialistLastReadAt === null);
+
+    const readCounts = await Promise.all(
+      threadsWithRead.map(t =>
+        prisma.message.count({
+          where: {
+            threadId: t.id,
+            senderId: { not: userId },
+            createdAt: { gt: t.specialistLastReadAt! },
+          },
+        })
+      )
+    );
+
+    let newMessages = readCounts.reduce((s, c) => s + c, 0);
+
+    if (threadsWithoutRead.length > 0) {
+      newMessages += await prisma.message.count({
         where: {
-          threadId: thread.id,
+          threadId: { in: threadsWithoutRead.map(t => t.id) },
           senderId: { not: userId },
-          ...(thread.specialistLastReadAt
-            ? { createdAt: { gt: thread.specialistLastReadAt } }
-            : {}),
         },
       });
-      newMessages += unread;
     }
 
     res.json({ threadsTotal: threads.length, newMessages });

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import StatusBadge from "@/components/StatusBadge";
@@ -215,7 +216,8 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
 
 // ── Main screen ────────────────────────────────────────────────────────
 export default function MyRequests() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -282,7 +284,7 @@ export default function MyRequests() {
 
   const handleRequestPress = useCallback(
     (id: string) => {
-      router.push(`/requests/${id}/detail` as never);
+      nav.any(`/requests/${id}/detail`);
     },
     [router]
   );
@@ -324,7 +326,7 @@ export default function MyRequests() {
           title="Заявок пока нет"
           subtitle="Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
           actionLabel="Создать заявку"
-          onAction={() => router.push("/requests/new" as never)}
+          onAction={() => nav.routes.requestsNew()}
         />
       );
     }
@@ -353,7 +355,7 @@ export default function MyRequests() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"
-            onPress={() => router.push("/requests/new" as never)}
+            onPress={() => nav.routes.requestsNew()}
             className="rounded-xl px-4 flex-row items-center self-start"
             style={{ backgroundColor: overlay.white20, minHeight: 44, justifyContent: "center" }}
           >

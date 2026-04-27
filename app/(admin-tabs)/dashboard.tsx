@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   AlertOctagon,
@@ -106,7 +107,8 @@ function formatDateShort(iso: string): string {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
   const [stats, setStats] = useState<Stats | null>(null);
@@ -175,7 +177,7 @@ export default function AdminDashboard() {
         rightValue: u.isBanned ? "BANNED" : undefined,
         icon: UserPlus,
         iconTone: u.isBanned ? "danger" : u.isSpecialist ? "success" : "primary",
-        onPress: () => router.push("/(admin-tabs)/users" as never),
+        onPress: () => nav.routes.adminUsers(),
       })),
     [recentUsers, router]
   );
@@ -188,7 +190,7 @@ export default function AdminDashboard() {
         meta: `от ${formatUserName(c.reporter)} · ${formatDateShort(c.createdAt)}`,
         icon: AlertOctagon,
         iconTone: "danger",
-        onPress: () => router.push("/(admin-tabs)/complaints" as never),
+        onPress: () => nav.routes.adminComplaints(),
       })),
     [complaints, router]
   );
@@ -196,7 +198,7 @@ export default function AdminDashboard() {
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome
-        onSettingsPress={() => router.push("/admin/settings" as never)}
+        onSettingsPress={() => nav.routes.adminSettings()}
       />
       <ScrollView
         className="flex-1"
@@ -233,7 +235,7 @@ export default function AdminDashboard() {
                     }
                     icon={Users}
                     tone="primary"
-                    onPress={() => router.push("/(admin-tabs)/users" as never)}
+                    onPress={() => nav.routes.adminUsers()}
                   />
                 </DashboardGrid.Col>
                 <DashboardGrid.Col span={3} tabletSpan={1}>
@@ -257,7 +259,7 @@ export default function AdminDashboard() {
                           : "muted"
                     }
                     onPress={() =>
-                      router.push("/(admin-tabs)/complaints" as never)
+                      nav.routes.adminComplaints()
                     }
                   />
                 </DashboardGrid.Col>
@@ -287,7 +289,7 @@ export default function AdminDashboard() {
                     icon={UserCheck}
                     actionLabel="Все →"
                     onActionPress={() =>
-                      router.push("/(admin-tabs)/users" as never)
+                      nav.routes.adminUsers()
                     }
                     flush
                   >
@@ -337,7 +339,7 @@ export default function AdminDashboard() {
                       accentBar={complaints.length > 0 ? "danger" : "success"}
                       actionLabel="Все →"
                       onActionPress={() =>
-                        router.push("/(admin-tabs)/complaints" as never)
+                        nav.routes.adminComplaints()
                       }
                       flush
                     >
@@ -382,7 +384,7 @@ export default function AdminDashboard() {
                       accessibilityRole="button"
                       accessibilityLabel="Модерация"
                       onPress={() =>
-                        router.push("/(admin-tabs)/moderation" as never)
+                        nav.routes.adminModeration()
                       }
                       className="rounded-2xl bg-accent p-5"
                     >
