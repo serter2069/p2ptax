@@ -410,7 +410,11 @@ export default function AppHeader({ title }: AppHeaderProps) {
 
 export function shouldShowAppHeader(pathname: string): boolean {
   if (!pathname) return false;
-  if (pathname === "/") return false;
+  // NOTE: "/" is NOT blocked here — Expo Router strips the "(tabs)" group prefix,
+  // so /(tabs)/index (the authenticated dashboard) resolves to pathname="/".
+  // The AuthenticatedHeaderGate already guards on isAuthenticated, so the
+  // landing page (which has its own LandingHeader) is never reached while
+  // the gate is active. Blocking "/" would hide the header on the dashboard tab.
   if (pathname.startsWith("/auth")) return false;
   if (pathname.startsWith("/legal")) return false;
   if (pathname.startsWith("/onboarding")) return false;
