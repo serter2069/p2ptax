@@ -146,7 +146,14 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
       <>
         <View
           className="flex-row items-center justify-between px-4 h-14 bg-white border-b"
-          style={{ borderBottomColor: colors.border, borderTopWidth: 3, borderTopColor: accent.strong }}
+          style={{
+            borderBottomColor: colors.border,
+            borderTopWidth: 3,
+            borderTopColor: accent.strong,
+            ...(Platform.OS === "web"
+              ? ({ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 } as object)
+              : {}),
+          }}
         >
           <Pressable
             accessibilityRole="button"
@@ -198,6 +205,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
   // iter10 Phase 3a: role accent moved to SidebarNav; header is a neutral
   // slim bar with breadcrumb + search + bell + avatar.
   // feat-1350: logo + nav links added to left side on desktop.
+  // fix-1378: position:fixed so header stays at top while content scrolls.
   return (
     <View
       className="flex-row items-center bg-white border-b"
@@ -206,6 +214,9 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
         height: 56,
         paddingHorizontal: spacing.lg,
         gap: spacing.md,
+        ...(Platform.OS === "web"
+          ? ({ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 } as object)
+          : {}),
       }}
     >
       {/* Left: logo + nav links */}
