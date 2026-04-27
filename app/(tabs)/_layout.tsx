@@ -4,26 +4,22 @@ import {
   LayoutGrid,
   FileText,
   MessageCircle,
-  Inbox,
   User,
 } from "lucide-react-native";
 import { colors, fontSizeValue } from "@/lib/theme";
-import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Unified (tabs) navigator — iter11 UI layer (PR 2/3).
+ * Unified (tabs) navigator — task #1379 cleanup.
  *
- * Replaces the split (client-tabs)/(specialist-tabs) groups. A single set of
- * tabs is rendered; the "Публичные заявки" tab is conditional on
- * {@link useAuth} `isSpecialistUser`.
+ * Exactly 4 tabs on mobile: Главная / Заявки / Сообщения / Настройки.
+ * "Публичные заявки" is hidden from the tab bar (href: null) — accessible
+ * via the mobile drawer / sidebar only.
  *
- * Tabs are hidden on desktop web — {@link SidebarNav} carries navigation
- * there. Mobile keeps the bottom-tab pattern.
+ * Tab bar is hidden on desktop (≥640px) — SidebarNav carries navigation there.
  */
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  const { isSpecialistUser } = useAuth();
 
   return (
     <Tabs
@@ -33,9 +29,9 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: isMobile
           ? {
-              height: 72,
-              paddingBottom: 10,
-              paddingTop: 8,
+              height: 60,
+              paddingBottom: 8,
+              paddingTop: 6,
               borderTopWidth: 1,
               borderTopColor: colors.border,
             }
@@ -54,14 +50,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Дашборд",
+          title: "Главная",
           tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="requests"
         options={{
-          title: "Мои заявки",
+          title: "Заявки",
           tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
         }}
       />
@@ -73,21 +69,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="public-requests"
-        options={{
-          title: "Публичные заявки",
-          tabBarIcon: ({ color, size }) => <Inbox size={size} color={color} />,
-          // Hide tab entry entirely when user has no specialist opt-in.
-          href: isSpecialistUser ? "/(tabs)/public-requests" : null,
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
           title: "Настройки",
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
+      {/* Hidden from tab bar — accessible via mobile drawer / sidebar. */}
+      <Tabs.Screen name="public-requests" options={{ href: null }} />
       {/* STRUCT-1 — redirect-only tabs, hidden from tab bar. */}
       <Tabs.Screen name="create" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
