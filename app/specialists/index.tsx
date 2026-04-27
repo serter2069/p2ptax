@@ -259,8 +259,6 @@ export default function SpecialistsCatalog() {
             height: 48,
             backgroundColor: "transparent",
             ...(Platform.OS === "web" ? {
-              borderWidth: 1,
-              borderColor: colors.border,
               borderRadius: 8,
               paddingHorizontal: 8,
               outlineStyle: "none" as never,

@@ -266,8 +266,6 @@ export default function AppHeader({ title }: AppHeaderProps) {
               minHeight: 44,
               alignSelf: "stretch" as never,
               outlineStyle: "none" as never,
-              borderWidth: 1,
-              borderColor: colors.border,
               borderRadius: 6,
               paddingHorizontal: 8,
             } : {}),
