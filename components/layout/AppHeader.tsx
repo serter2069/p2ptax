@@ -44,6 +44,8 @@ const NAV_LINKS = [
 export interface AppHeaderProps {
   /** Optional override for the breadcrumb title. Falls back to route inference. */
   title?: string;
+  /** Called when the burger button is pressed on mobile. */
+  onBurgerPress?: () => void;
 }
 
 function toAccentKey(
@@ -90,7 +92,7 @@ function inferBreadcrumb(pathname: string): string | null {
   return null;
 }
 
-export default function AppHeader({ title }: AppHeaderProps) {
+export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const { user, isSpecialistUser, signOut } = useAuth();
@@ -149,7 +151,13 @@ export default function AppHeader({ title }: AppHeaderProps) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Открыть меню"
-            onPress={() => setMenuOpen(true)}
+            onPress={() => {
+              if (onBurgerPress) {
+                onBurgerPress();
+              } else {
+                setMenuOpen(true);
+              }
+            }}
             className="w-11 h-11 items-center justify-center"
           >
             <Menu size={20} color={colors.text} />
