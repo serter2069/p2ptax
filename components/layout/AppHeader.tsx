@@ -21,6 +21,13 @@ import RoleBadge from "./RoleBadge";
  * NO role-accent border-top. Mobile keeps its compact burger/title/bell row.
  */
 
+const NAV_LINKS = [
+  { label: "Специалисты", href: "/specialists" },
+  { label: "Ситуации", href: "/situations" },
+  { label: "Покрытие", href: "/coverage" },
+  { label: "Для специалистов", href: "/for-specialists" },
+];
+
 /**
  * Persistent in-app header rendered on every authenticated route.
  *
@@ -182,6 +189,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
   // -------- Desktop --------
   // iter10 Phase 3a: role accent moved to SidebarNav; header is a neutral
   // slim bar with breadcrumb + search + bell + avatar.
+  // feat-1350: logo + nav links added to left side on desktop.
   return (
     <View
       className="flex-row items-center bg-white border-b"
@@ -192,11 +200,35 @@ export default function AppHeader({ title }: AppHeaderProps) {
         gap: spacing.md,
       }}
     >
+      {/* Left: logo + nav links */}
+      <View className="flex-row items-center" style={{ gap: spacing.md }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Главная"
+          onPress={() => router.push("/" as never)}
+          style={{ minHeight: 44, justifyContent: "center" }}
+        >
+          <Text className="text-base font-bold" style={{ color: colors.primary }}>P2PTax</Text>
+        </Pressable>
+
+        {NAV_LINKS.map((link) => (
+          <Pressable
+            key={link.href}
+            accessibilityRole="button"
+            accessibilityLabel={link.label}
+            onPress={() => router.push(link.href as never)}
+            style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 4 }}
+          >
+            <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>{link.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
       {breadcrumb ? (
         <Text
           numberOfLines={1}
           className="text-sm font-semibold"
-          style={{ color: colors.text, maxWidth: 280 }}
+          style={{ color: colors.text, maxWidth: 200, marginLeft: spacing.sm }}
         >
           {breadcrumb}
         </Text>
@@ -207,12 +239,12 @@ export default function AppHeader({ title }: AppHeaderProps) {
         className="flex-row items-center rounded-lg px-3"
         style={{
           flex: 1,
-          maxWidth: 480,
+          maxWidth: 400,
           height: 44,
           backgroundColor: gray[100],
           borderWidth: 1,
           borderColor: colors.border,
-          marginLeft: breadcrumb ? spacing.md : 0,
+          marginLeft: spacing.sm,
         }}
       >
         <Search size={16} color={colors.textMuted} />
