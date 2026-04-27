@@ -43,7 +43,7 @@ export default function AuthEmailScreen() {
         noAuth: true,
       });
       router.push({
-        pathname: "/auth/otp" as never,
+        pathname: "/otp" as never,
         params: { email: email.trim().toLowerCase() },
       } as never);
     } catch (e: unknown) {
@@ -114,6 +114,7 @@ export default function AuthEmailScreen() {
                 fontSize: 15,
                 color: colors.text,
                 outlineWidth: 0,
+                borderWidth: 0,
                 // WCAG 2.5.5 — explicit 44px tap target on web; the
                 // <input> intrinsic height is ~18px otherwise.
                 ...(Platform.OS === "web" ? {

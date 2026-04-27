@@ -290,8 +290,8 @@ export default function AuthOtpScreen() {
 
   // Iter11-b — if the user landed here without an email query param (direct
   // URL / session lost), show a distinct notice state with a CTA back to
-  // /auth/email instead of silently redirecting. The silent redirect made
-  // /auth/otp render identical to /auth/email in audits, which hides the
+  // /login instead of silently redirecting. The silent redirect made
+  // /otp render identical to /login in audits, which hides the
   // screen and caused the "identical render" critique finding.
   if (!email) {
     return (
@@ -319,7 +319,7 @@ export default function AuthOtpScreen() {
             </Text>
             <Button
               label="Ввести email"
-              onPress={() => router.replace("/auth/email" as never)}
+              onPress={() => router.replace("/login" as never)}
             />
           </View>
         </View>
@@ -359,7 +359,7 @@ export default function AuthOtpScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Изменить email"
-              onPress={() => router.replace("/auth/email" as never)}
+              onPress={() => router.replace("/login" as never)}
               className="mb-7"
             >
               <Text className="text-accent text-center font-medium" style={{ fontSize: 13 }}>

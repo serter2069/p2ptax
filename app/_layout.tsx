@@ -43,8 +43,8 @@ export default function RootLayout() {
             <Stack.Screen name="(admin-tabs)" />
 
             {/* Auth flow */}
-            <Stack.Screen name="auth/email" />
-            <Stack.Screen name="auth/otp" />
+            <Stack.Screen name="login" />
+            <Stack.Screen name="otp" />
 
             {/* Onboarding */}
             <Stack.Screen name="onboarding/name" />

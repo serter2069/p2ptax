@@ -71,7 +71,7 @@ export default function SpecialistConfirmWrite() {
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated || !isSpecialistUser) {
-        router.replace("/auth/email" as never);
+        router.replace("/login" as never);
         return;
       }
       load();

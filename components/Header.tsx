@@ -59,7 +59,7 @@ export default function Header() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Войти"
-              onPress={() => router.push("/auth/email" as never)}
+              onPress={() => router.push("/login" as never)}
               className="px-4 h-11 rounded-lg items-center justify-center"
               style={{ borderWidth: 1, borderColor: colors.border }}
             >
@@ -124,7 +124,7 @@ export default function Header() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Войти"
-            onPress={() => router.push("/auth/email" as never)}
+            onPress={() => router.push("/login" as never)}
             className="px-5 h-11 rounded-lg items-center justify-center"
             style={{ borderWidth: 1, borderColor: colors.border }}
           >

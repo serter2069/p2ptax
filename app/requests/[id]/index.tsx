@@ -206,7 +206,7 @@ export default function PublicRequestDetail() {
         <ResponsiveContainer>
           <Button
             label="Войдите, чтобы написать"
-            onPress={() => router.push("/auth/email" as never)}
+            onPress={() => router.push("/login" as never)}
           />
         </ResponsiveContainer>
       </View>

@@ -154,7 +154,7 @@ export default function LandingScreen() {
   }, [loadData]);
 
   const goCreateRequest = useCallback(() => {
-    router.push("/auth/email" as never);
+    router.push("/login" as never);
   }, [router]);
 
   const goCatalog = useCallback(() => {
@@ -166,11 +166,11 @@ export default function LandingScreen() {
   }, [router]);
 
   const goLogin = useCallback(() => {
-    router.push("/auth/email" as never);
+    router.push("/login" as never);
   }, [router]);
 
   const goBecomeSpecialist = useCallback(() => {
-    router.push("/auth/email" as never);
+    router.push("/login" as never);
   }, [router]);
 
   const goLegal = useCallback(

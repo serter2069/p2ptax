@@ -85,7 +85,7 @@ export default function SpecialistPublicProfile() {
   const handleWritePress = useCallback(() => {
     if (!isAuthenticated) {
       router.push(
-        `/auth/email?returnTo=/specialists/${id}` as never,
+        `/login?returnTo=/specialists/${id}` as never,
       );
     } else {
       router.push("/requests/new" as never);
@@ -95,7 +95,7 @@ export default function SpecialistPublicProfile() {
   const handleSavePress = useCallback(() => {
     if (!isAuthenticated) {
       router.push(
-        `/auth/email?returnTo=/specialists/${id}` as never,
+        `/login?returnTo=/specialists/${id}` as never,
       );
     }
     // Future: POST /api/bookmarks
@@ -509,7 +509,7 @@ export default function SpecialistPublicProfile() {
           <Button
             label="Войти"
             onPress={() =>
-              router.push(`/auth/email?returnTo=/specialists/${id}` as never)
+              router.push(`/login?returnTo=/specialists/${id}` as never)
             }
             fullWidth={false}
           />
