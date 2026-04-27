@@ -22,6 +22,7 @@ import {
   Sparkles,
   TrendingUp,
   Clock,
+  ArrowRight,
 } from "lucide-react-native";
 import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
@@ -371,6 +372,102 @@ export default function UserDashboard() {
             />
           ) : (
             <View style={{ gap: isDesktop ? 32 : 24 }}>
+              {/* Empty state for client with no requests */}
+              {!isSpecialistUser && requests.length === 0 ? (
+                <View
+                  className="bg-white rounded-2xl"
+                  style={{
+                    padding: spacing.lg,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    gap: 16,
+                  }}
+                >
+                  <View style={{ gap: 6 }}>
+                    <Text
+                      className="text-text-base font-extrabold"
+                      style={{ fontSize: 20 }}
+                    >
+                      Создайте первую заявку
+                    </Text>
+                    <Text
+                      className="text-text-mute"
+                      style={{ fontSize: 14, lineHeight: 20 }}
+                    >
+                      Опишите вашу налоговую ситуацию — специалисты в вашем регионе откликнутся в течение 24 часов
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Создать заявку"
+                    onPress={() => router.push("/requests/new" as never)}
+                    className="rounded-xl flex-row items-center justify-center"
+                    style={{
+                      backgroundColor: colors.primary,
+                      paddingVertical: 14,
+                      paddingHorizontal: 20,
+                      gap: 8,
+                    }}
+                  >
+                    <Plus size={18} color={colors.white} />
+                    <Text
+                      className="font-bold text-white"
+                      style={{ fontSize: 15 }}
+                    >
+                      Создать заявку
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {/* Empty state for specialist with no active threads */}
+              {isSpecialistUser && (specialistExtra?.activeThreads ?? 0) === 0 ? (
+                <View
+                  className="bg-white rounded-2xl"
+                  style={{
+                    padding: spacing.lg,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    gap: 16,
+                  }}
+                >
+                  <View style={{ gap: 6 }}>
+                    <Text
+                      className="text-text-base font-extrabold"
+                      style={{ fontSize: 20 }}
+                    >
+                      Найдите клиентов в вашем регионе
+                    </Text>
+                    <Text
+                      className="text-text-mute"
+                      style={{ fontSize: 14, lineHeight: 20 }}
+                    >
+                      Просмотрите открытые заявки от клиентов и начните диалог
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Смотреть заявки"
+                    onPress={() => router.push("/(tabs)/public-requests" as never)}
+                    className="rounded-xl flex-row items-center justify-center"
+                    style={{
+                      backgroundColor: colors.success,
+                      paddingVertical: 14,
+                      paddingHorizontal: 20,
+                      gap: 8,
+                    }}
+                  >
+                    <ArrowRight size={18} color={colors.white} />
+                    <Text
+                      className="font-bold text-white"
+                      style={{ fontSize: 15 }}
+                    >
+                      Смотреть заявки
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
               {/* KPI row — specialist gets 4 KPIs, client gets 3 */}
               {isSpecialistUser ? (
                 <DashboardGrid>
