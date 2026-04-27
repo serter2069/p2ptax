@@ -1,5 +1,6 @@
 import { View, Text, Pressable, Modal } from "react-native";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { User, X, Home, FileText, Users, Settings, LogOut, type LucideIcon } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
@@ -18,7 +19,8 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
   const { isAuthenticated, user, signOut } = useAuth();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
 
   const displayName = user?.firstName
     ? `${user.firstName} ${user.lastName || ""}`.trim()
@@ -27,13 +29,13 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
 
   const handleNavigate = (route: string) => {
     onClose();
-    router.push(route as never);
+    nav.any(route);
   };
 
   const handleLogout = async () => {
     onClose();
     await signOut();
-    router.replace("/login" as never);
+    nav.replaceRoutes.login();
   };
 
   return (

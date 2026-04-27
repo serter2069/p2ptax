@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
@@ -8,11 +9,12 @@ import { useAuth } from "@/contexts/AuthContext";
  */
 export function useRequireAuth() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace("/auth/email" as never);
+      nav.replaceRoutes.authEmail();
     }
   }, [isLoading, isAuthenticated, router]);
 

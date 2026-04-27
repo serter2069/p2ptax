@@ -1,37 +1,34 @@
 import { Router, Request, Response } from "express";
-import * as Minio from "minio";
+import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
+import type * as Minio from "minio";
+import { minioClient, MINIO_BUCKET } from "../lib/minio";
 
 const router = Router();
 
-const BUCKET = process.env.MINIO_BUCKET || "p2ptax";
-
-function getMinioClient(): Minio.Client {
-  return new Minio.Client({
-    endPoint: process.env.MINIO_ENDPOINT || "localhost",
-    port: parseInt(process.env.MINIO_PORT || "9000", 10),
-    useSSL: process.env.MINIO_USE_SSL === "true",
-    accessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
-    secretKey: process.env.MINIO_SECRET_KEY || "minioadmin",
-  });
-}
+const messageRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много сообщений. Попробуйте через минуту." },
+});
 
 // Resolve uploadToken to MinIO object key by listing objects with matching prefix
 async function resolveUploadToken(threadId: string, uploadToken: string): Promise<{ key: string; fileUrl: string } | null> {
-  const client = getMinioClient();
   const prefix = `chat-files/${threadId}/${uploadToken}_`;
   try {
     return await new Promise((resolve, reject) => {
-      const stream = client.listObjects(BUCKET, prefix, false);
+      const stream = minioClient.listObjects(MINIO_BUCKET, prefix, false);
       let found: Minio.BucketItem | null = null;
       stream.on("data", (obj: Minio.BucketItem) => {
         if (!found) found = obj;
       });
       stream.on("end", () => {
         if (found && found.name) {
-          resolve({ key: found.name, fileUrl: `/${BUCKET}/${found.name}` });
+          resolve({ key: found.name, fileUrl: `/${MINIO_BUCKET}/${found.name}` });
         } else {
           resolve(null);
         }
@@ -58,29 +55,40 @@ interface FileInput {
 router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
-    const threads = await prisma.thread.findMany({
-      where: {
-        OR: [{ clientId: userId }, { specialistId: userId }],
-      },
-      include: {
-        request: {
-          select: { id: true, title: true, status: true },
+    const [threads, total] = await Promise.all([
+      prisma.thread.findMany({
+        where: {
+          OR: [{ clientId: userId }, { specialistId: userId }],
         },
-        client: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+        include: {
+          request: {
+            select: { id: true, title: true, status: true },
+          },
+          client: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+          },
+          specialist: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+          },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { text: true, createdAt: true, senderId: true },
+          },
         },
-        specialist: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+        orderBy: { lastMessageAt: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.thread.count({
+        where: {
+          OR: [{ clientId: userId }, { specialistId: userId }],
         },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { text: true, createdAt: true, senderId: true },
-        },
-      },
-      orderBy: { lastMessageAt: "desc" },
-    });
+      }),
+    ]);
 
     const result = threads.map((t) => ({
       id: t.id,
@@ -92,7 +100,7 @@ router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
       createdAt: t.createdAt,
     }));
 
-    res.json({ threads: result });
+    res.json({ threads: result, total, limit, offset, hasMore: offset + limit < total });
   } catch (error) {
     console.error("list threads error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -160,7 +168,7 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
 // Supports uploadToken (idempotency): if provided, verifies the file exists in MinIO
 // Fix #186: text (content) is optional when uploadToken or files are present.
 // Validation rule: at least one of (text, files, uploadToken) must be non-empty.
-router.post("/:threadId", authMiddleware, async (req: Request, res: Response) => {
+router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const threadId = param(req.params.threadId);
@@ -219,57 +227,60 @@ router.post("/:threadId", authMiddleware, async (req: Request, res: Response) =>
 
     const now = new Date();
 
-    const message = await prisma.message.create({
-      data: {
-        threadId,
-        senderId: userId,
-        text: trimmedText,
-      },
-      include: {
-        sender: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+    const { message, savedFiles } = await prisma.$transaction(async (tx) => {
+      const message = await tx.message.create({
+        data: {
+          threadId,
+          senderId: userId,
+          text: trimmedText,
         },
-      },
-    });
-
-    // Store file records — combine token-resolved file + legacy files array
-    let savedFiles: { id: string; url: string; filename: string; size: number; mimeType: string }[] = [];
-    const allFilesToSave: FileInput[] = [...attachedFiles];
-    if (tokenFile) {
-      // Extract filename from the MinIO key: chat-files/{threadId}/{token}_{filename}
-      const keyParts = tokenFile.fileUrl.split("/");
-      const rawName = keyParts[keyParts.length - 1] ?? "file";
-      const underscoreIdx = rawName.indexOf("_");
-      const resolvedFilename = underscoreIdx >= 0 ? rawName.slice(underscoreIdx + 1) : rawName;
-      allFilesToSave.push({
-        url: tokenFile.fileUrl,
-        filename: resolvedFilename,
-        size: 0,
-        mimeType: "application/octet-stream",
+        include: {
+          sender: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+          },
+        },
       });
-    }
-    if (allFilesToSave.length > 0) {
-      const created = await prisma.$transaction(
-        allFilesToSave.map((f) =>
-          prisma.file.create({
-            data: {
-              entityType: "message",
-              entityId: message.id,
-              url: f.url,
-              filename: f.filename,
-              size: f.size,
-              mimeType: f.mimeType,
-            },
-            select: { id: true, url: true, filename: true, size: true, mimeType: true },
-          })
-        )
-      );
-      savedFiles = created;
-    }
 
-    await prisma.thread.update({
-      where: { id: threadId },
-      data: { lastMessageAt: now },
+      // Store file records — combine token-resolved file + legacy files array
+      let savedFiles: { id: string; url: string; filename: string; size: number; mimeType: string }[] = [];
+      const allFilesToSave: FileInput[] = [...attachedFiles];
+      if (tokenFile) {
+        const keyParts = tokenFile.fileUrl.split("/");
+        const rawName = keyParts[keyParts.length - 1] ?? "file";
+        const underscoreIdx = rawName.indexOf("_");
+        const resolvedFilename = underscoreIdx >= 0 ? rawName.slice(underscoreIdx + 1) : rawName;
+        allFilesToSave.push({
+          url: tokenFile.fileUrl,
+          filename: resolvedFilename,
+          size: 0,
+          mimeType: "application/octet-stream",
+        });
+      }
+      if (allFilesToSave.length > 0) {
+        const created = await Promise.all(
+          allFilesToSave.map((f) =>
+            tx.file.create({
+              data: {
+                entityType: "message",
+                entityId: message.id,
+                url: f.url,
+                filename: f.filename,
+                size: f.size,
+                mimeType: f.mimeType,
+              },
+              select: { id: true, url: true, filename: true, size: true, mimeType: true },
+            })
+          )
+        );
+        savedFiles = created;
+      }
+
+      await tx.thread.update({
+        where: { id: threadId },
+        data: { lastMessageAt: now },
+      });
+
+      return { message, savedFiles };
     });
 
     // Notify the other participant

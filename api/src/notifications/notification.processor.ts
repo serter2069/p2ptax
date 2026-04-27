@@ -1,6 +1,7 @@
 import { Worker, Job } from "bullmq";
 import { prisma } from "../lib/prisma";
-import { QUEUE_NAME, getRedisConnection } from "./notification.queue";
+import { QUEUE_NAME } from "./notification.queue";
+import { config, getRedisConnection } from "../lib/config";
 import nodemailer from "nodemailer";
 
 export interface NotificationJobData {
@@ -33,17 +34,17 @@ async function sendEmail(data: NotificationJobData): Promise<void> {
 
   try {
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true",
+      host: config.smtpHost,
+      port: config.smtpPort,
+      secure: config.smtpSecure,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: config.smtpUser,
+        pass: config.smtpPass,
       },
     });
 
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || "noreply@p2ptax.ru",
+      from: config.smtpFrom,
       to: user.email,
       subject: data.title,
       text: data.body,

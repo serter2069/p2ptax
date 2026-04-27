@@ -1,6 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect, useMemo } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
@@ -24,7 +25,8 @@ interface FnsOffice {
 }
 
 export default function OnboardingWorkAreaScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { isSpecialistUser, updateUser } = useAuth();
 
   const [services, setServices] = useState<ServiceItem[]>([]);
@@ -184,7 +186,7 @@ export default function OnboardingWorkAreaScreen() {
           },
         });
       }
-      router.push("/onboarding/profile" as never);
+      nav.routes.onboardingProfile();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);

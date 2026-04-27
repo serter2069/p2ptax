@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
@@ -51,7 +52,8 @@ interface SpecialistsResponse {
 }
 
 export default function SpecialistsCatalog() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
   const isWide = width >= 1024;
@@ -118,6 +120,9 @@ export default function SpecialistsCatalog() {
     [selectedCityIds, selectedFnsIds, selectedServiceIds, search]
   );
 
+  const fetchSpecialistsRef = useRef(fetchSpecialists);
+  fetchSpecialistsRef.current = fetchSpecialists;
+
   useEffect(() => {
     async function init() {
       setLoading(true);
@@ -131,11 +136,10 @@ export default function SpecialistsCatalog() {
       } catch (e) {
         console.error("Init error:", e);
       }
-      await fetchSpecialists(1);
+      await fetchSpecialistsRef.current(1);
       setLoading(false);
     }
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refetch on filter change
@@ -149,12 +153,11 @@ export default function SpecialistsCatalog() {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
       setLoading(true);
-      fetchSpecialists(1, false, search).finally(() => setLoading(false));
+      fetchSpecialistsRef.current(1, false, search).finally(() => setLoading(false));
     }, 400);
     return () => {
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   const handleCascadeChange = useCallback(
@@ -186,7 +189,7 @@ export default function SpecialistsCatalog() {
 
   const handleSpecialistPress = useCallback(
     (id: string) => {
-      router.push(`/specialists/${id}` as never);
+      nav.any(`/specialists/${id}`);
     },
     [router]
   );

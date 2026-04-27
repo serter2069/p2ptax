@@ -121,18 +121,28 @@ export default function Input({
           textAlignVertical={multiline ? "top" : undefined}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          // @ts-expect-error — TextInput's `style` prop is typed as
+          // `StyleProp<TextStyle>`, which doesn't include web-only CSS
+          // properties. We use three non-standard keys here:
+          //   alignSelf: 'stretch' — forces the web <input> to fill its
+          //     flex-row parent vertically (RN ignores on native).
+          //   outlineStyle: 'none' — removes default browser outline on
+          //     focus; we render our own focus ring via boxShadow.
+          //   boxShadow — custom 3px accent ring on web focus state.
+          // All three are safe: RN drops unknown style keys, and on web
+          // they produce the intended CSS.
           style={{
             flex: 1,
             // On web the <input> intrinsic height is ~18px. We force a
             // minHeight of 44 so the full tap target area is interactive
-            // (Apple HIG / WCAG 2.5.5 — minimum 44×44 touch target). Using
+            // (Apple HIG / WCAG 2.5.5 — minimum 44x44 touch target). Using
             // an explicit minHeight rather than height: '100%' avoids the
-            // 42px artifact caused by container_height − 2*borderWidth on
+            // 42px artifact caused by container_height - 2*borderWidth on
             // web, where the parent's borderWidth subtracts from the
             // child's effective height.
             ...(Platform.OS === 'web' && !multiline ? {
               minHeight: 44,
-              alignSelf: 'stretch' as any,
+              alignSelf: 'stretch',
             } : {}),
             fontSize: fontSizeValue.base,
             color: colors.text,
@@ -145,11 +155,11 @@ export default function Input({
             borderWidth: Platform.OS === "web" ? 1 : 0,
             borderColor: Platform.OS === "web" ? borderColor : "transparent",
             outlineWidth: 0,
-            outlineStyle: 'none' as any,
+            outlineStyle: 'none',
             backgroundColor: 'transparent',
             // web-only 3px accent ring on focus — ignored on native
             ...(Platform.OS === "web" && focused
-              ? { boxShadow: `0 0 0 3px ${colors.accent}33` as any }
+              ? { boxShadow: `0 0 0 3px ${colors.accent}33` }
               : {}),
           }}
         />

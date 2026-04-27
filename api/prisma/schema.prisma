@@ -215,6 +215,7 @@ model Request {
   threads Thread[]
   files   File[]
 
+  @@index([userId, status, createdAt])
   @@map("requests")
 }
 
@@ -234,6 +235,8 @@ model Thread {
   messages   Message[]
 
   @@unique([requestId, specialistId])
+  @@index([specialistId, createdAt])
+  @@index([clientId, createdAt])
   @@map("threads")
 }
 
@@ -247,6 +250,8 @@ model Message {
   thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
   sender User   @relation(fields: [senderId], references: [id])
 
+  @@index([threadId, createdAt])
+  @@index([threadId, senderId])
   @@map("messages")
 }
 
@@ -264,6 +269,7 @@ model File {
   requestId String?  @map("request_id")
   request   Request? @relation(fields: [requestId], references: [id], onDelete: SetNull)
 
+  @@index([entityType, entityId])
   @@map("files")
 }
 
@@ -282,6 +288,7 @@ model OtpCode {
   used      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([email, expiresAt])
   @@map("otp_codes")
 }
 
@@ -311,6 +318,7 @@ model Notification {
 
   deliveryLogs NotificationDeliveryLog[]
 
+  @@index([userId, isRead, createdAt])
   @@map("notifications")
 }
 

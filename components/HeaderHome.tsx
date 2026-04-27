@@ -1,5 +1,6 @@
 import { View, Text, Pressable, useWindowDimensions, Platform } from "react-native";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { Bell, Settings } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
@@ -16,7 +17,8 @@ interface HeaderHomeProps {
  * we keep the full-bleed blue brand bar because the sidebar isn't shown.
  */
 export default function HeaderHome({ notificationCount = 0, onSettingsPress }: HeaderHomeProps) {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktopWeb = Platform.OS === "web" && width >= 768;
 
@@ -31,7 +33,7 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Уведомления"
-          onPress={() => router.push("/notifications" as never)}
+          onPress={() => nav.routes.notifications()}
           className="w-11 h-11 items-center justify-center"
         >
           <Bell size={18} color={colors.surface} />

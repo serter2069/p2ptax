@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useState, useRef } from "react";
 import { Pencil, Camera } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
@@ -21,7 +22,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, overlay, textStyle } from "@/lib/theme";
 
 export default function OnboardingProfileScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { updateUser } = useAuth();
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -144,7 +146,7 @@ export default function OnboardingProfileScreen() {
         updateUser({ avatarUrl });
       }
 
-      router.replace("/(tabs)" as never);
+      nav.replaceRoutes.tabs();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);

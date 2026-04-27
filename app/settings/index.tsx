@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import {
   LogOut,
   Trash2,
@@ -79,7 +80,8 @@ interface SpecialistProfileData {
 }
 
 export default function UnifiedSettings() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { ready } = useRequireAuth();
   const { user, isSpecialistUser, isAdminUser, signOut, updateUser } = useAuth();
 
@@ -146,7 +148,7 @@ export default function UnifiedSettings() {
   useEffect(() => {
     // Admin users don't belong here.
     if (ready && isAdminUser) {
-      router.replace("/admin/settings" as never);
+      nav.replaceRoutes.adminSettings();
       return;
     }
     if (ready && isSpecialistUser) {
@@ -269,7 +271,7 @@ export default function UnifiedSettings() {
         style: "destructive",
         onPress: async () => {
           await signOut();
-          router.replace("/" as never);
+          nav.replaceRoutes.home();
         },
       },
     ]);
@@ -301,7 +303,7 @@ export default function UnifiedSettings() {
   // `/api/user/become-specialist` server-side, and the user lands back
   // in settings with isSpecialist=true and a completed profile.
   const handleBecomeSpecialist = useCallback(() => {
-    router.push("/onboarding/work-area" as never);
+    nav.routes.onboardingWorkArea();
   }, [router]);
 
   if (!ready) {
@@ -496,7 +498,7 @@ export default function UnifiedSettings() {
                     accessibilityRole="button"
                     accessibilityLabel="Добавить рабочую зону"
                     onPress={() =>
-                      router.push("/onboarding/work-area" as never)
+                      nav.routes.onboardingWorkArea()
                     }
                     className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
                   >
@@ -535,7 +537,7 @@ export default function UnifiedSettings() {
                       accessibilityRole="button"
                       accessibilityLabel="Изменить рабочую зону"
                       onPress={() =>
-                        router.push("/onboarding/work-area" as never)
+                        nav.routes.onboardingWorkArea()
                       }
                       className="flex-row items-center justify-center py-2 mt-1"
                     >
@@ -606,7 +608,7 @@ export default function UnifiedSettings() {
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="Все уведомления"
-              onPress={() => router.push("/notifications" as never)}
+              onPress={() => nav.routes.notifications()}
               className="flex-row items-center py-3 mt-2 border-t border-border"
             >
               <Bell size={16} color={colors.textSecondary} />
@@ -625,7 +627,7 @@ export default function UnifiedSettings() {
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="Условия использования"
-              onPress={() => router.push("/legal/terms" as never)}
+              onPress={() => nav.routes.legalTerms()}
               className="flex-row items-center min-h-[44px]"
             >
               <FileText size={16} color={colors.placeholder} />
@@ -637,7 +639,7 @@ export default function UnifiedSettings() {
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="Политика конфиденциальности"
-              onPress={() => router.push("/legal/privacy" as never)}
+              onPress={() => nav.routes.legalPrivacy()}
               className="flex-row items-center min-h-[44px] border-t border-border"
             >
               <FileText size={16} color={colors.placeholder} />
@@ -685,7 +687,7 @@ export default function UnifiedSettings() {
               <Pressable
                 accessibilityRole="link"
                 accessibilityLabel="Design System"
-                onPress={() => router.push("/brand" as never)}
+                onPress={() => nav.routes.brand()}
                 className="flex-row items-center min-h-[44px]"
               >
                 <Palette size={16} color={colors.textSecondary} />

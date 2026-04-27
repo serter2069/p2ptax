@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import HeaderHome from "@/components/HeaderHome";
 import EmptyState from "@/components/ui/EmptyState";
 import { MessageSquare } from "lucide-react-native";
@@ -30,9 +31,8 @@ import { colors, overlay } from "@/lib/theme";
  * user.isSpecialist=false, specialist-side threads when true. The screen
  * shape is the same — only the "other participant" label differs.
  *
- * TODO PR3 (post iter11): unify backend to return a single list that
- * merges both perspectives for specialists who also create their own
- * tax-help requests, grouped by request (SA requirement).
+ * `/api/threads/my` (PR3) is already unified: it merges both perspectives
+ * for dual-role users, grouped by request, tagged with `perspective`.
  */
 
 interface ThreadItem {
@@ -109,7 +109,8 @@ function sortThreads(threads: ThreadItem[]): ThreadItem[] {
 }
 
 export default function UnifiedInbox() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { ready } = useRequireAuth();
   const { isSpecialistUser } = useAuth();
   const { width } = useWindowDimensions();
@@ -173,7 +174,7 @@ export default function UnifiedInbox() {
         if (onSelect) {
           onSelect();
         } else {
-          router.push(`/threads/${item.id}` as never);
+          nav.any(`/threads/${item.id}`);
         }
       };
 
@@ -440,12 +441,12 @@ export default function UnifiedInbox() {
                       ? {
                           label: "Публичные заявки",
                           onPress: () =>
-                            router.push("/(tabs)/public-requests" as never),
+                            nav.routes.tabsPublicRequests(),
                           icon: "sparkles",
                         }
                       : {
                           label: "Создать новую заявку",
-                          onPress: () => router.push("/requests/new" as never),
+                          onPress: () => nav.routes.requestsNew(),
                           icon: "plus",
                         }
                   }
@@ -454,7 +455,7 @@ export default function UnifiedInbox() {
                       ? undefined
                       : {
                           label: "Найти специалиста",
-                          onPress: () => router.push("/specialists" as never),
+                          onPress: () => nav.routes.specialists(),
                           icon: "sparkles",
                         }
                   }

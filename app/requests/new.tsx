@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { MapPin, ChevronDown, ChevronUp } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import Button from "@/components/ui/Button";
@@ -24,7 +25,8 @@ import CityFnsServicePicker, {
 import FileUploadSection, { AttachedFile } from "@/components/requests/FileUploadSection";
 
 export default function NewRequest() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { ready, isLoading, isAuthenticated } = useRequireAuth();
 
   const [title, setTitle] = useState("");
@@ -142,7 +144,7 @@ export default function NewRequest() {
         files: fileUrls,
       });
 
-      router.replace(`/requests/${result.id}/detail` as never);
+      nav.replaceAny(`/requests/${result.id}/detail`);
     } catch (e: unknown) {
       const msg =
         e instanceof Error

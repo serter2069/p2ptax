@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import {
   MessageSquare,
   FileText,
@@ -125,7 +126,8 @@ const TIPS: { title: string; text: string }[] = [
 ];
 
 export default function UserDashboard() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { ready } = useRequireAuth();
   const { user, isSpecialistUser, updateUser } = useAuth();
   const { width } = useWindowDimensions();
@@ -270,7 +272,7 @@ export default function UserDashboard() {
             : r.status === "CLOSED"
               ? "muted"
               : "primary",
-        onPress: () => router.push(`/requests/${r.id}/detail` as never),
+        onPress: () => nav.any(`/requests/${r.id}/detail`),
       })),
     [requests, router]
   );
@@ -309,9 +311,9 @@ export default function UserDashboard() {
         onPress: () => {
           const existing = r.existingThreadId ?? r.threadId;
           if (r.hasThread && existing) {
-            router.push(`/threads/${existing}` as never);
+            nav.any(`/threads/${existing}`);
           } else {
-            router.push(`/requests/${r.id}/write` as never);
+            nav.any(`/requests/${r.id}/write`);
           }
         },
       })),
@@ -330,7 +332,7 @@ export default function UserDashboard() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome
         notificationCount={stats?.unreadMessages ?? 0}
-        onSettingsPress={() => router.push("/settings" as never)}
+        onSettingsPress={() => nav.routes.settings()}
       />
       <ScrollView
         className="flex-1"
@@ -400,7 +402,7 @@ export default function UserDashboard() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Создать заявку"
-                    onPress={() => router.push("/requests/new" as never)}
+                    onPress={() => nav.routes.requestsNew()}
                     className="rounded-xl flex-row items-center justify-center"
                     style={{
                       backgroundColor: colors.primary,
@@ -448,7 +450,7 @@ export default function UserDashboard() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Смотреть заявки"
-                    onPress={() => router.push("/(tabs)/public-requests" as never)}
+                    onPress={() => nav.routes.tabsPublicRequests()}
                     className="rounded-xl flex-row items-center justify-center"
                     style={{
                       backgroundColor: colors.success,
@@ -525,7 +527,7 @@ export default function UserDashboard() {
                       hint={`из ${stats?.requestsLimit ?? 5} доступных`}
                       icon={FileText}
                       tone="primary"
-                      onPress={() => router.push("/(tabs)/requests" as never)}
+                      onPress={() => nav.routes.tabsRequests()}
                     />
                   </DashboardGrid.Col>
                   <DashboardGrid.Col span={4} tabletSpan={1}>
@@ -536,7 +538,7 @@ export default function UserDashboard() {
                       tone={
                         (stats?.unreadMessages ?? 0) > 0 ? "warning" : "muted"
                       }
-                      onPress={() => router.push("/(tabs)/messages" as never)}
+                      onPress={() => nav.routes.tabsMessages()}
                     />
                   </DashboardGrid.Col>
                   <DashboardGrid.Col span={4} tabletSpan={2}>
@@ -572,7 +574,7 @@ export default function UserDashboard() {
                       icon={ClipboardList}
                       actionLabel="Все →"
                       onActionPress={() =>
-                        router.push("/(tabs)/requests" as never)
+                        nav.routes.tabsRequests()
                       }
                       flush
                     >
@@ -612,7 +614,7 @@ export default function UserDashboard() {
                         icon={Inbox}
                         actionLabel="Все →"
                         onActionPress={() =>
-                          router.push("/(tabs)/public-requests" as never)
+                          nav.routes.tabsPublicRequests()
                         }
                         flush
                       >
@@ -632,7 +634,7 @@ export default function UserDashboard() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="Создать заявку"
-                      onPress={() => router.push("/requests/new" as never)}
+                      onPress={() => nav.routes.requestsNew()}
                       disabled={atLimit}
                       className={`rounded-2xl p-5 ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
                     >
@@ -739,7 +741,7 @@ export default function UserDashboard() {
                         accessibilityRole="button"
                         accessibilityLabel="Все публичные заявки"
                         onPress={() =>
-                          router.push("/(tabs)/public-requests" as never)
+                          nav.routes.tabsPublicRequests()
                         }
                         className="rounded-2xl bg-accent p-5"
                       >

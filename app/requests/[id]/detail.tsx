@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { Trash2, File, FileImage, Download } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import StatusBadge from "@/components/StatusBadge";
@@ -47,7 +48,8 @@ interface RequestDetailData {
 
 export default function MyRequestDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
@@ -324,12 +326,12 @@ export default function MyRequestDetail() {
               requestId={id}
               threadsCount={request.threadsCount}
               unreadMessages={request.unreadMessages}
-              onOpenThread={(threadId) => router.push(`/threads/${threadId}` as never)}
+              onOpenThread={(threadId) => nav.any(`/threads/${threadId}`)}
             />
 
             <SpecialistRecommendations
               recommendations={recommendations}
-              onContact={(specialistId) => router.push(`/specialists/${specialistId}` as never)}
+              onContact={(specialistId) => nav.any(`/specialists/${specialistId}`)}
             />
 
             {/* Meta stats */}

@@ -8,6 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter, usePathname, useSegments } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import {
   X,
   LogOut,
@@ -200,7 +201,8 @@ export interface MobileDrawerProps {
 }
 
 export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const pathname = usePathname() ?? "";
   const segments = useSegments();
   const { user, isSpecialistUser, signOut } = useAuth();
@@ -236,13 +238,13 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
 
   const handleNav = (href: string) => {
     onClose();
-    router.push(href as never);
+    nav.any(href);
   };
 
   const handleLogout = async () => {
     onClose();
     await signOut();
-    router.replace("/login" as never);
+    nav.replaceRoutes.login();
   };
 
   const settingsPath = user?.role === "ADMIN" ? "/admin/settings" : "/settings";

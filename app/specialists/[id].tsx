@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import Head from "expo-router/head";
 import {
   AlertCircle,
@@ -45,7 +46,8 @@ function getInitials(
 
 export default function SpecialistPublicProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { user, isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -88,7 +90,7 @@ export default function SpecialistPublicProfile() {
         `/login?returnTo=/specialists/${id}` as never,
       );
     } else {
-      router.push("/requests/new" as never);
+      nav.routes.requestsNew();
     }
   }, [isAuthenticated, router, id]);
 
@@ -139,7 +141,7 @@ export default function SpecialistPublicProfile() {
           <View className="mt-6">
             <Button
               label="Назад к каталогу"
-              onPress={() => router.push("/specialists" as never)}
+              onPress={() => nav.routes.specialists()}
               fullWidth={false}
             />
           </View>
@@ -179,7 +181,7 @@ export default function SpecialistPublicProfile() {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Редактировать профиль"
-      onPress={() => router.push("/settings" as never)}
+      onPress={() => nav.routes.settings()}
     >
       <Pencil size={16} color={colors.text} />
     </Pressable>
@@ -509,7 +511,7 @@ export default function SpecialistPublicProfile() {
           <Button
             label="Войти"
             onPress={() =>
-              router.push(`/login?returnTo=/specialists/${id}` as never)
+              nav.any(`/login?returnTo=/specialists/${id}`)
             }
             fullWidth={false}
           />

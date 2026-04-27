@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { View, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import LoadingState from "@/components/ui/LoadingState";
@@ -69,7 +70,8 @@ interface RecentWinsResponse {
  * No mock data. Empty states handled per-section.
  */
 export default function LandingScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -86,9 +88,9 @@ export default function LandingScreen() {
   useEffect(() => {
     if (!authLoading && isAuthenticated && user?.role) {
       if (user.role === "ADMIN") {
-        router.replace("/(admin-tabs)/dashboard" as never);
+        nav.replaceRoutes.adminDashboard();
       } else {
-        router.replace("/(tabs)" as never);
+        nav.replaceRoutes.tabs();
       }
     }
   }, [authLoading, isAuthenticated, user, router]);
@@ -154,28 +156,28 @@ export default function LandingScreen() {
   }, [loadData]);
 
   const goCreateRequest = useCallback(() => {
-    router.push("/login" as never);
+    nav.routes.login();
   }, [router]);
 
   const goCatalog = useCallback(() => {
-    router.push("/specialists" as never);
+    nav.routes.specialists();
   }, [router]);
 
   const goHome = useCallback(() => {
-    router.push("/" as never);
+    nav.routes.home();
   }, [router]);
 
   const goLogin = useCallback(() => {
-    router.push("/login" as never);
+    nav.routes.login();
   }, [router]);
 
   const goBecomeSpecialist = useCallback(() => {
-    router.push("/login" as never);
+    nav.routes.login();
   }, [router]);
 
   const goLegal = useCallback(
     (target: "terms" | "privacy") => {
-      router.push((target === "terms" ? "/legal/terms" : "/legal/privacy") as never);
+      target === "terms" ? nav.routes.legalTerms() : nav.routes.legalPrivacy();
     },
     [router]
   );

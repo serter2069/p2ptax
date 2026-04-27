@@ -14,14 +14,22 @@ function normalizeQuery(q: string): string {
 }
 
 // GET /api/cities — list all cities (with offices count)
-router.get("/cities", async (_req: Request, res: Response) => {
+router.get("/cities", async (req: Request, res: Response) => {
   try {
-    const cities = await prisma.city.findMany({
-      orderBy: { name: "asc" },
-      include: {
-        _count: { select: { fnsOffices: true } },
-      },
-    });
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 100));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+
+    const [cities, total] = await Promise.all([
+      prisma.city.findMany({
+        orderBy: { name: "asc" },
+        skip: offset,
+        take: limit,
+        include: {
+          _count: { select: { fnsOffices: true } },
+        },
+      }),
+      prisma.city.count(),
+    ]);
 
     res.json({
       items: cities.map((c) => ({
@@ -30,6 +38,10 @@ router.get("/cities", async (_req: Request, res: Response) => {
         slug: c.slug,
         officesCount: c._count.fnsOffices,
       })),
+      total,
+      limit,
+      offset,
+      hasMore: offset + limit < total,
     });
   } catch (error) {
     console.error("cities error:", error);
@@ -58,13 +70,21 @@ router.get("/cities/:slug/ifns", async (req: Request, res: Response) => {
       ];
     }
 
-    const offices = await prisma.fnsOffice.findMany({
-      where,
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, code: true, address: true, cityId: true },
-    });
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 100));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
-    res.json({ city: { id: city.id, name: city.name, slug: city.slug }, items: offices });
+    const [offices, total] = await Promise.all([
+      prisma.fnsOffice.findMany({
+        where,
+        orderBy: { name: "asc" },
+        skip: offset,
+        take: limit,
+        select: { id: true, name: true, code: true, address: true, cityId: true },
+      }),
+      prisma.fnsOffice.count({ where }),
+    ]);
+
+    res.json({ city: { id: city.id, name: city.name, slug: city.slug }, items: offices, total, limit, offset, hasMore: offset + limit < total });
   } catch (error) {
     console.error("cities/:slug/ifns error:", error);
     res.status(500).json({ error: "Internal server error" });

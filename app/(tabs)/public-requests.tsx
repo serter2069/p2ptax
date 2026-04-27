@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import RequestCard from "@/components/RequestCard";
@@ -50,7 +51,8 @@ interface RequestsResponse {
 }
 
 export default function SpecialistPublicRequests() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
@@ -133,7 +135,7 @@ export default function SpecialistPublicRequests() {
 
   const handleRequestPress = useCallback(
     (id: string) => {
-      router.push(`/requests/${id}` as never);
+      nav.any(`/requests/${id}`);
     },
     [router]
   );

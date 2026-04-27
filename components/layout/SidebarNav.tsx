@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, Modal, Platform } from "react-native";
 import { useRouter, usePathname, useSegments } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import {
   LayoutGrid,
   FileText,
@@ -279,7 +280,8 @@ interface SidebarNavProps {
 }
 
 export default function SidebarNav({ group }: SidebarNavProps) {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const pathname = usePathname() ?? "";
   const segments = useSegments();
   const { user, isSpecialistUser, signOut } = useAuth();
@@ -306,7 +308,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
   const handleLogout = async () => {
     setDropdownOpen(false);
     await signOut();
-    router.replace("/login" as never);
+    nav.replaceRoutes.login();
   };
 
   const settingsPath =
@@ -339,7 +341,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
       <Pressable
         accessibilityRole="link"
         accessibilityLabel="P2PTax — главная"
-        onPress={() => router.push("/" as never)}
+        onPress={() => nav.routes.home()}
         style={{
           height: 48,
           paddingHorizontal: spacing.sm,
@@ -383,7 +385,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
               key={item.href}
               accessibilityRole="link"
               accessibilityLabel={item.label}
-              onPress={() => router.push(item.href as never)}
+              onPress={() => nav.any(item.href)}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -505,7 +507,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
               accessibilityLabel="Настройки"
               onPress={() => {
                 setDropdownOpen(false);
-                router.push(settingsPath as never);
+                nav.any(settingsPath);
               }}
               style={{
                 flexDirection: "row",
@@ -531,7 +533,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
               accessibilityLabel="Уведомления"
               onPress={() => {
                 setDropdownOpen(false);
-                router.push("/notifications" as never);
+                nav.routes.notifications();
               }}
               style={{
                 flexDirection: "row",
