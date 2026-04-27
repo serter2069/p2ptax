@@ -70,7 +70,7 @@ interface RecentWinsResponse {
  */
 export default function LandingScreen() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
@@ -84,14 +84,14 @@ export default function LandingScreen() {
   // Iter11 — unified (tabs) carries both USER sub-modes (isSpecialist on/off);
   // admin still has its own group.
   useEffect(() => {
-    if (isAuthenticated && user?.role) {
+    if (!authLoading && isAuthenticated && user?.role) {
       if (user.role === "ADMIN") {
         router.replace("/(admin-tabs)/dashboard" as never);
       } else {
         router.replace("/(tabs)" as never);
       }
     }
-  }, [isAuthenticated, user, router]);
+  }, [authLoading, isAuthenticated, user, router]);
 
   const loadData = useCallback(async () => {
     setLoading(true);

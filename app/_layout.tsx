@@ -1,11 +1,12 @@
 import "../global.css";
 import { useState } from "react";
-import { useWindowDimensions, Platform } from "react-native";
+import { useWindowDimensions, Platform, View, ActivityIndicator } from "react-native";
 import { Stack, usePathname } from "expo-router";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppShell from "@/components/layout/AppShell";
 import AppHeader, { shouldShowAppHeader } from "@/components/layout/AppHeader";
 import MobileDrawer from "@/components/layout/MobileDrawer";
+import { colors } from "@/lib/theme";
 
 import MetroBridge from "@/components/MetroBridge";
 
@@ -22,12 +23,23 @@ const MOBILE_BREAKPOINT = 768;
  *
  * Issue GH-1285 — persistent header on every authenticated route.
  * Issue GH-1353 — mobile drawer navigation.
+ * Issue GH-1367 — auth loading flash: show spinner while auth restores from storage.
  */
 function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname() ?? "";
   const { width } = useWindowDimensions();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Block rendering until AsyncStorage token restoration is complete.
+  // Without this, authenticated users briefly see the public landing page.
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   const show = isAuthenticated && shouldShowAppHeader(pathname);
   // MobileDrawer only on web mobile (native has bottom tabs; sidebar handles desktop)
