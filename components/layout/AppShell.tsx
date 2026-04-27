@@ -70,28 +70,31 @@ export default function AppShell({ children }: AppShellProps) {
     return <>{children}</>;
   }
 
+  // Desktop web with sidebar: fixed-position architecture.
+  // Sidebar is fixed (handled in SidebarNav). Header is fixed (handled in AppHeader).
+  // This root View is just a positioning context — the real scroll container
+  // is the content pane below.
   return (
     <View
       style={{
         flex: 1,
         width: "100%",
-        flexDirection: "row",
         backgroundColor: colors.surface2,
-        minHeight: "100%",
       }}
     >
+      {/* SidebarNav renders itself as position:fixed — no layout slot needed here */}
       <SidebarNav group={group} />
+      {/* Content area: offset by sidebar (left) and header (top), scrolls independently */}
       <View
         style={{
-          flex: 1,
-          minWidth: 0,
-          minHeight: "100%",
-          // The main pane is the scroll container — pages keep their own
-          // ScrollView for pull-to-refresh, but the shell provides the
-          // top-level overflow on desktop web.
           ...(Platform.OS === "web"
-            ? ({ overflowY: "auto", maxWidth: `calc(100% - ${SIDEBAR_WIDTH}px)` } as object)
-            : {}),
+            ? ({
+                marginLeft: SIDEBAR_WIDTH,
+                marginTop: 56,
+                height: "calc(100vh - 56px)",
+                overflowY: "auto",
+              } as object)
+            : { flex: 1, minWidth: 0 }),
         }}
       >
         {children}

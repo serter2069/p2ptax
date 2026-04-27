@@ -44,6 +44,10 @@ function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
   const show = isAuthenticated && shouldShowAppHeader(pathname);
   // MobileDrawer only on web mobile (native has bottom tabs; sidebar handles desktop)
   const showDrawer = Platform.OS === "web" && width < MOBILE_BREAKPOINT;
+  // On desktop, AppShell's content pane already applies marginTop:56.
+  // On mobile web, the fixed header needs offsetting via paddingTop on the
+  // content container. Desktop web passes through here without extra padding.
+  const isMobileWeb = Platform.OS === "web" && width < MOBILE_BREAKPOINT;
 
   return (
     <>
@@ -52,7 +56,24 @@ function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
           onBurgerPress={showDrawer ? () => setDrawerOpen(true) : undefined}
         />
       )}
-      {children}
+      {isMobileWeb && show ? (
+        <View
+          style={
+            Platform.OS === "web"
+              ? ({
+                  paddingTop: 56,
+                  paddingBottom: 60,
+                  height: "100vh",
+                  overflowY: "auto",
+                } as object)
+              : { flex: 1 }
+          }
+        >
+          {children}
+        </View>
+      ) : (
+        children
+      )}
       {showDrawer && (
         <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       )}

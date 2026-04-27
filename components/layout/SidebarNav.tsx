@@ -325,7 +325,13 @@ export default function SidebarNav({ group }: SidebarNavProps) {
         paddingTop: spacing.lg,
         paddingBottom: spacing.md,
         ...(Platform.OS === "web"
-          ? ({ position: "sticky", top: 0, height: "100vh" } as object)
+          ? ({
+              position: "fixed",
+              top: 56,
+              left: 0,
+              height: "calc(100vh - 56px)",
+              overflowY: "auto",
+            } as object)
           : {}),
       }}
     >
