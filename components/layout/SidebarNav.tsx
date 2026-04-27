@@ -302,7 +302,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
   const handleLogout = async () => {
     setDropdownOpen(false);
     await signOut();
-    router.replace("/auth/email" as never);
+    router.replace("/login" as never);
   };
 
   const settingsPath =

@@ -33,7 +33,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
   const handleLogout = async () => {
     onClose();
     await signOut();
-    router.replace("/auth/email" as never);
+    router.replace("/login" as never);
   };
 
   return (
@@ -95,7 +95,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Войти"
-                onPress={() => handleNavigate("/auth/email")}
+                onPress={() => handleNavigate("/login")}
                 className="h-12 rounded-xl bg-accent items-center justify-center"
               >
                 <Text className="text-base font-semibold text-white">Войти</Text>

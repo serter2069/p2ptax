@@ -119,7 +119,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
   const handleLogout = async () => {
     setDropdownOpen(false);
     await signOut();
-    router.replace("/auth/email" as never);
+    router.replace("/login" as never);
   };
 
   const handleSettings = () => {
