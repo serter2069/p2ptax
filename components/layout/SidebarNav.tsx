@@ -12,8 +12,8 @@ import {
   Bell,
   Settings,
   LogOut,
-  Compass,
   Inbox,
+  Search,
   type LucideIcon,
 } from "lucide-react-native";
 import { colors, spacing, roleAccent, type RoleAccentKey } from "@/lib/theme";
@@ -116,10 +116,20 @@ const USER_BASE_ITEMS: NavItem[] = [
   },
 ];
 
+// Client-only addition: injected after "Мои заявки" for non-specialist users.
+const USER_CLIENT_EXTRA: NavItem[] = [
+  {
+    label: "Найти специалиста",
+    href: "/specialists",
+    icon: Search,
+    match: (ctx) => topLevelMatch(ctx, "/specialists"),
+  },
+];
+
 // Specialist-only addition: appended to USER_BASE when isSpecialist=true.
 const USER_SPECIALIST_EXTRA: NavItem[] = [
   {
-    label: "Публичные заявки",
+    label: "Заявки клиентов",
     href: "/(tabs)/public-requests",
     icon: Inbox,
     match: (ctx) =>
@@ -129,12 +139,6 @@ const USER_SPECIALIST_EXTRA: NavItem[] = [
 ];
 
 const USER_TAIL_ITEMS: NavItem[] = [
-  {
-    label: "Каталог специалистов",
-    href: "/specialists",
-    icon: Compass,
-    match: (ctx) => topLevelMatch(ctx, "/specialists"),
-  },
   {
     label: "Уведомления",
     href: "/notifications",
@@ -249,7 +253,7 @@ export function detectSidebarGroup(
 function buildUserItems(isSpecialist: boolean): NavItem[] {
   return isSpecialist
     ? [...USER_BASE_ITEMS, ...USER_SPECIALIST_EXTRA, ...USER_TAIL_ITEMS]
-    : [...USER_BASE_ITEMS, ...USER_TAIL_ITEMS];
+    : [...USER_BASE_ITEMS, ...USER_CLIENT_EXTRA, ...USER_TAIL_ITEMS];
 }
 
 function itemsForGroup(
