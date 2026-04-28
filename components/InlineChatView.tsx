@@ -120,7 +120,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       const res = await api<{ messages: MessageItem[] }>(`/api/messages/${threadId}`);
       setMessages(res.messages);
     } catch (e) {
-      console.error("fetch messages error:", e);
+      // ignore
     }
   }, [threadId]);
 
@@ -130,7 +130,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       const res = await api<ThreadInfo>(`/api/threads/${threadId}`);
       setThread(res);
     } catch (e) {
-      console.error("fetch thread error:", e);
+      // ignore
     }
   }, [threadId]);
 
@@ -139,7 +139,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     try {
       await apiPatch(`/api/messages/${threadId}/read`, {});
     } catch (e) {
-      console.error("mark read error:", e);
+      // ignore
     }
   }, [threadId]);
 
@@ -198,7 +198,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         },
       ]);
     } catch (e) {
-      console.error("document picker error:", e);
+      // ignore
     }
   }, [pendingFiles.length]);
 

@@ -96,6 +96,7 @@ export default function AvatarUploader({
           <View>
             <Image
               source={{ uri: avatarUrl }}
+              accessibilityLabel="Profile photo"
               style={{
                 width: 80,
                 height: 80,

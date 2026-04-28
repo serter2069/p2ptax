@@ -113,7 +113,6 @@ export default function SpecialistsCatalog() {
         setPage(pageNum);
         setError(null);
       } catch (e) {
-        console.error("Fetch specialists error:", e);
         setError("Не удалось загрузить список");
       }
     },
@@ -134,7 +133,6 @@ export default function SpecialistsCatalog() {
         setCities(citiesRes.items);
         setServices(servicesRes.items);
       } catch (e) {
-        console.error("Init error:", e);
       }
       await fetchSpecialistsRef.current(1);
       setLoading(false);
