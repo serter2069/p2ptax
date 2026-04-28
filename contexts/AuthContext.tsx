@@ -37,6 +37,7 @@ export interface UserData {
   lastName: string | null;
   avatarUrl?: string | null;
   isAvailable?: boolean;
+  isSpecialist?: boolean;
 }
 
 interface AuthContextType {

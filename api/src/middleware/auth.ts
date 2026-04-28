@@ -62,7 +62,7 @@ export function roleGuard(...roles: Role[]) {
     const { prisma } = await import("../lib/prisma");
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
-      select: { role: true, isBanned: true },
+      select: { role: true, isSpecialist: true, isBanned: true },
     });
 
     if (!user) {
@@ -75,7 +75,14 @@ export function roleGuard(...roles: Role[]) {
       return;
     }
 
-    if (!user.role || !roles.includes(user.role)) {
+    // A user with isSpecialist=true is treated as having SPECIALIST role
+    // even if their base role is CLIENT (dual-role scenario)
+    const effectiveRoles: Role[] = user.role ? [user.role] : [];
+    if (user.isSpecialist && !effectiveRoles.includes("SPECIALIST")) {
+      effectiveRoles.push("SPECIALIST");
+    }
+
+    if (!roles.some((r) => effectiveRoles.includes(r))) {
       res.status(403).json({ error: "Insufficient permissions" });
       return;
     }

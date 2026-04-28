@@ -142,9 +142,9 @@ export default function OnboardingProfileScreen() {
         },
       });
 
-      if (avatarUrl) {
-        updateUser({ avatarUrl });
-      }
+      // Mark user as specialist in local context (covers both new specialists
+      // and existing CLIENTs who enabled specialist mode)
+      updateUser({ isSpecialist: true, ...(avatarUrl ? { avatarUrl } : {}) });
 
       nav.replaceRoutes.tabs();
     } catch (e: unknown) {
