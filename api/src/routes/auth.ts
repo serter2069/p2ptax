@@ -10,21 +10,24 @@ import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
 
+// POST /login equivalent: max 10 req per 15 min per IP (relaxed in dev)
 const otpRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 5 : 1000,
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Слишком много запросов. Попробуйте через 15 минут." },
   skip: (req) => req.headers['x-smoke-test'] === 'metromap',
 });
 
+// POST /verify-otp: max 5 req per 15 min per IP
 const verifyOtpRateLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 5 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Слишком много попыток. Попробуйте через минуту." },
+  message: { error: "Слишком много попыток. Попробуйте через 15 минут." },
+  skip: (req) => req.headers['x-smoke-test'] === 'metromap',
 });
 
 const refreshRateLimiter = rateLimit({
