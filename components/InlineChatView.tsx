@@ -92,9 +92,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const { user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
-  const desktopStyle = isDesktop
-    ? { maxWidth: 520, width: "100%" as const, alignSelf: "center" as const }
-    : undefined;
 
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [thread, setThread] = useState<ThreadInfo | null>(null);
@@ -282,9 +279,11 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     return (
       <View className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
-          <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="chevron-left" size={18} color={colors.primary} />
-          </Pressable>
+          {!isDesktop && (
+            <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
+              <FontAwesome name="chevron-left" size={18} color={colors.primary} />
+            </Pressable>
+          )}
           <Text className="text-base font-semibold" style={{ color: colors.text }}>Чат</Text>
         </View>
         <View className="flex-1 items-center justify-center">
@@ -298,9 +297,11 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     return (
       <View className="flex-1 bg-white">
         <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
-          <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-            <FontAwesome name="chevron-left" size={18} color={colors.primary} />
-          </Pressable>
+          {!isDesktop && (
+            <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
+              <FontAwesome name="chevron-left" size={18} color={colors.primary} />
+            </Pressable>
+          )}
           <Text className="text-base font-semibold" style={{ color: colors.text }}>Чат</Text>
         </View>
         <View className="flex-1 items-center justify-center px-4">
@@ -321,12 +322,14 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   }
 
   return (
-    <View className="flex-1 bg-white" style={desktopStyle}>
+    <View className="flex-1 bg-white">
       {/* Header with avatar + other party name + request title */}
       <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
-        <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
-          <FontAwesome name="chevron-left" size={18} color={colors.primary} />
-        </Pressable>
+        {!isDesktop && (
+          <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
+            <FontAwesome name="chevron-left" size={18} color={colors.primary} />
+          </Pressable>
+        )}
         {otherUser ? (
           <Avatar
             name={displayName(otherUser)}
