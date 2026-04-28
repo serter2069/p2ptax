@@ -9,7 +9,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { api, apiPatch } from "@/lib/api";
-import { colors, overlay } from "@/lib/theme";
+import { colors, overlay, BREAKPOINT } from "@/lib/theme";
 
 interface NotificationItem {
   id: string;
@@ -110,7 +110,7 @@ function NotificationRow({
 
 export default function NotificationsScreen() {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
   const router = useRouter();
   const { ready } = useRequireAuth();
 

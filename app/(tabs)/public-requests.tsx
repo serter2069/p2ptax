@@ -18,7 +18,7 @@ import { TriangleAlert, FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
-import { colors, overlay } from "@/lib/theme";
+import { colors, overlay, BREAKPOINT } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -54,7 +54,7 @@ export default function SpecialistPublicRequests() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);

@@ -1,11 +1,11 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import { BarChart2, Users, Shield, Flag } from "lucide-react-native";
-import { colors, fontSizeValue } from "@/lib/theme";
+import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 
 export default function AdminTabsLayout() {
   const { width } = useWindowDimensions();
-  const isMobile = width < 640;
+  const isMobile = width < BREAKPOINT;
 
   return (
     <Tabs

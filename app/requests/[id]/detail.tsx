@@ -17,7 +17,7 @@ import HeaderBack from "@/components/HeaderBack";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
 import { api, apiPost, apiDelete } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, BREAKPOINT } from "@/lib/theme";
 import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
 import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
 import EmptyState from "@/components/ui/EmptyState";
@@ -51,7 +51,7 @@ export default function MyRequestDetail() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   const [request, setRequest] = useState<RequestDetailData | null>(null);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);

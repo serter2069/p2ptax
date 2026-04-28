@@ -31,7 +31,7 @@ import {
   type FeedItem,
 } from "@/components/dashboard";
 import { api } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, BREAKPOINT } from "@/lib/theme";
 
 interface Stats {
   activeRequests: number;
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
   const [stats, setStats] = useState<Stats | null>(null);
   const [extra, setExtra] = useState<AdminExtra | null>(null);
   const [recentUsers, setRecentUsers] = useState<AdminUser[]>([]);

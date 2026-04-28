@@ -12,6 +12,7 @@ import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { MessageCircle, Send } from "lucide-react-native";
 import { api, ApiError } from "@/lib/api";
+import { BREAKPOINT } from "@/lib/theme";
 
 interface RequestDetail {
   id: string;
@@ -62,7 +63,7 @@ export default function PublicRequestDetail() {
   const nav = useTypedRouter();
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);

@@ -16,7 +16,7 @@ import { MessageCircle } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import { api, ApiError } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, BREAKPOINT } from "@/lib/theme";
 
 interface ThreadItem {
   id: string;
@@ -66,7 +66,7 @@ export default function RequestMessages() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);

@@ -21,7 +21,7 @@ import InlineChatView from "@/components/InlineChatView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiGet } from "@/lib/api";
-import { colors, overlay } from "@/lib/theme";
+import { colors, overlay, BREAKPOINT } from "@/lib/theme";
 
 /**
  * Unified Inbox — iter11 UI layer (PR 2/3).
@@ -114,7 +114,7 @@ export default function UnifiedInbox() {
   const { ready } = useRequireAuth();
   const { isSpecialistUser } = useAuth();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   const otherPartyFallback = isSpecialistUser ? "Клиент" : "Специалист";
 

@@ -40,7 +40,7 @@ import {
 import { api, apiGet, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { colors, spacing } from "@/lib/theme";
+import { colors, spacing, BREAKPOINT } from "@/lib/theme";
 
 /**
  * Unified User Dashboard — iter11 UI layer (PR 2/3).
@@ -131,7 +131,7 @@ export default function UserDashboard() {
   const { ready } = useRequireAuth();
   const { user, isSpecialistUser, updateUser } = useAuth();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   // Shared (client side of dashboard) state
   const [stats, setStats] = useState<DashboardStats | null>(null);
