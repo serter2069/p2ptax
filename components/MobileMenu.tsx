@@ -1,16 +1,9 @@
 import { View, Text, Pressable, Modal } from "react-native";
-import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { User, X, Home, FileText, Users, Settings, LogOut, type LucideIcon } from "lucide-react-native";
+import { User, X, Settings, LogOut } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
-
-const MENU_ITEMS: { label: string; route: string; Icon: LucideIcon }[] = [
-  { label: "Главная", route: "/", Icon: Home },
-  { label: "Заявки", route: "/requests", Icon: FileText },
-  { label: "Специалисты", route: "/specialists", Icon: Users },
-  { label: "Настройки", route: "/settings", Icon: Settings },
-];
+import { buildUserItems } from "@/lib/nav-items";
 
 interface MobileMenuProps {
   visible: boolean;
@@ -18,14 +11,17 @@ interface MobileMenuProps {
 }
 
 export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
-  const { isAuthenticated, user, signOut } = useAuth();
-  const router = useRouter()
+  const { isAuthenticated, user, isSpecialistUser, signOut } = useAuth();
   const nav = useTypedRouter();
 
   const displayName = user?.firstName
     ? `${user.firstName} ${user.lastName || ""}`.trim()
     : "Профиль";
   const initials = user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
+
+  // Role-aware nav: authenticated users get items per their role.
+  // Unauthenticated users see only Settings and no role-specific items.
+  const navItems = isAuthenticated ? buildUserItems(isSpecialistUser) : [];
 
   const handleNavigate = (route: string) => {
     onClose();
@@ -68,22 +64,37 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
             <X size={20} color={colors.surface} />
           </Pressable>
 
-          {/* Menu items */}
+          {/* Menu items — role-aware via buildUserItems */}
           <View className="flex-1 pt-2">
-            {MENU_ITEMS.map((item) => (
-              <Pressable
-                accessibilityRole="button"
-                key={item.label}
-                accessibilityLabel={item.label}
-                onPress={() => handleNavigate(item.route)}
-                className="flex-row items-center px-5 py-3.5 active:bg-surface2"
-              >
-                <View className="w-8 items-center">
-                  <item.Icon size={18} color={colors.textSecondary} />
-                </View>
-                <Text className="text-base text-text-base ml-3">{item.label}</Text>
-              </Pressable>
-            ))}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  key={item.href}
+                  accessibilityLabel={item.label}
+                  onPress={() => handleNavigate(item.href)}
+                  className="flex-row items-center px-5 py-3.5 active:bg-surface2"
+                >
+                  <View className="w-8 items-center">
+                    <Icon size={18} color={colors.textSecondary} />
+                  </View>
+                  <Text className="text-base text-text-base ml-3">{item.label}</Text>
+                </Pressable>
+              );
+            })}
+            {/* Settings always present */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Настройки"
+              onPress={() => handleNavigate("/settings")}
+              className="flex-row items-center px-5 py-3.5 active:bg-surface2"
+            >
+              <View className="w-8 items-center">
+                <Settings size={18} color={colors.textSecondary} />
+              </View>
+              <Text className="text-base text-text-base ml-3">Настройки</Text>
+            </Pressable>
           </View>
 
           {/* Bottom actions */}
