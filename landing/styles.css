@@ -149,6 +149,8 @@ img, svg { display: block; max-width: 100%; }
   font-weight: 600;
   letter-spacing: -0.02em;
   font-size: 15px;
+  min-height: 44px;
+  padding: 0 4px;
 }
 .logo .dot {
   width: 8px; height: 8px; border-radius: 2px;
@@ -158,6 +160,7 @@ img, svg { display: block; max-width: 100%; }
 .nav-links {
   display: flex; gap: 28px; font-size: 14px; color: var(--text-mute);
 }
+.nav-links a { display: inline-flex; align-items: center; min-height: 44px; }
 .nav-links a:hover { color: var(--text); }
 .nav-right { display: flex; align-items: center; gap: 12px; }
 
@@ -549,8 +552,9 @@ img, svg { display: block; max-width: 100%; }
   box-shadow: var(--shadow-sm);
 }
 .chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 14px;
+  min-height: 44px;
   border-radius: 999px;
   font-size: 13px;
   color: var(--text-mute);
@@ -828,6 +832,7 @@ img, svg { display: block; max-width: 100%; }
   margin: 0 0 16px; font-weight: 500;
 }
 .footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.footer a { display: inline-flex; align-items: center; min-height: 44px; }
 .footer a:hover { color: var(--text); }
 .legal {
   display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap;
@@ -1254,6 +1259,11 @@ img, svg { display: block; max-width: 100%; }
 .muted { color: var(--text-mute); }
 .dim { color: var(--text-dim); }
 .small { font-size: 13px; }
+.small a, .dim a {
+  display: inline-block;
+  padding: 6px 2px;
+  min-height: 44px;
+}
 .xs { font-size: 11px; }
 .hidden { display: none !important; }
 
