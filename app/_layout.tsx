@@ -121,6 +121,7 @@ export default function RootLayout() {
             <Stack.Screen name="requests/[id]/write" />
             <Stack.Screen name="settings" />
             <Stack.Screen name="notifications" />
+            <Stack.Screen name="legal/index" options={{ headerShown: false }} />
             <Stack.Screen name="legal/privacy" />
             <Stack.Screen name="legal/terms" />
             {/* Issue GH-1293: /brand is a dev-only design-system page. */}

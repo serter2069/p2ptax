@@ -64,6 +64,7 @@ export const ROUTES = {
   specialists: "/specialists",
 
   // Legal
+  legalIndex: "/legal",
   legalTerms: "/legal/terms",
   legalPrivacy: "/legal/privacy",
 } as const;

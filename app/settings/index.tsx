@@ -609,7 +609,7 @@ export default function UnifiedSettings() {
               accessibilityRole="link"
               accessibilityLabel="Все уведомления"
               onPress={() => nav.routes.notifications()}
-              className="flex-row items-center py-3 mt-2 border-t border-border"
+              className="flex-row items-center py-3 border-t border-border"
             >
               <Bell size={16} color={colors.textSecondary} />
               <Text className="flex-1 ml-3 text-sm text-text-base">
@@ -626,26 +626,12 @@ export default function UnifiedSettings() {
             </Text>
             <Pressable
               accessibilityRole="link"
-              accessibilityLabel="Условия использования"
-              onPress={() => nav.routes.legalTerms()}
+              accessibilityLabel="Правовые документы"
+              onPress={() => nav.routes.legalIndex()}
               className="flex-row items-center min-h-[44px]"
             >
               <FileText size={16} color={colors.placeholder} />
-              <Text className="text-base text-text-base ml-3 flex-1">
-                Условия использования
-              </Text>
-              <ChevronRight size={14} color={colors.borderLight} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Политика конфиденциальности"
-              onPress={() => nav.routes.legalPrivacy()}
-              className="flex-row items-center min-h-[44px] border-t border-border"
-            >
-              <FileText size={16} color={colors.placeholder} />
-              <Text className="text-base text-text-base ml-3 flex-1">
-                Политика конфиденциальности
-              </Text>
+              <Text className="text-base text-text-base ml-3 flex-1">Правовые документы</Text>
               <ChevronRight size={14} color={colors.borderLight} />
             </Pressable>
           </View>
