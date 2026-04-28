@@ -36,7 +36,6 @@ model User {
   firstName   String?  @map("first_name")
   lastName    String?  @map("last_name")
   avatarUrl   String?  @map("avatar_url")
-  isSpecialist Boolean  @default(false) @map("is_specialist")
   isAvailable Boolean  @default(false) @map("is_available")
   isBanned    Boolean  @default(false) @map("is_banned")
   createdAt   DateTime @default(now()) @map("created_at")
