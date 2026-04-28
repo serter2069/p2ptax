@@ -329,18 +329,24 @@ export default function UnifiedInbox() {
   const emptyState = (
     <EmptyState
       icon={MessageSquare}
-      title={isSpecialistUser ? "Пока нет диалогов" : "Нет сообщений"}
+      title={
+        isSpecialistUser
+          ? "Пока нет диалогов с клиентами"
+          : "Создайте заявку, чтобы получать сообщения"
+      }
       subtitle={
         isSpecialistUser
           ? "Напишите по публичной заявке — переписка появится здесь"
-          : "Когда специалисты напишут по вашим заявкам, сообщения появятся здесь"
+          : "Когда специалисты ответят на вашу заявку, сообщения появятся здесь"
       }
-      actionLabel={isSpecialistUser ? "Смотреть заявки" : "Найти специалиста"}
+      actionLabel={
+        isSpecialistUser ? "Посмотреть открытые заявки" : "Создать заявку"
+      }
       onAction={() =>
         router.push(
           isSpecialistUser
             ? ("/(tabs)/public-requests" as never)
-            : ("/specialists" as never)
+            : ("/requests/new" as never)
         )
       }
     />

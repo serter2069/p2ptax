@@ -135,7 +135,7 @@ export default function SpecialistPublicRequests() {
 
   const handleRequestPress = useCallback(
     (id: string) => {
-      nav.any(`/requests/${id}`);
+      nav.any(`/requests/${id}/detail`);
     },
     [router]
   );
