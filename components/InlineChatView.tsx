@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import * as Linking from "expo-linking";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { FileText, ChevronRight } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
 import { Avatar } from "@/components/ui";
 import Input from "@/components/ui/Input";
@@ -365,13 +366,36 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           <Text className="text-base font-semibold" style={{ color: colors.text }} numberOfLines={1}>
             {otherName}
           </Text>
-          {thread?.request?.title ? (
-            <Text className="text-xs" style={{ color: colors.textSecondary }} numberOfLines={1}>
-              {thread.request.title}
-            </Text>
-          ) : null}
         </View>
       </View>
+
+      {/* Source request link strip — visible when thread was created from a request */}
+      {thread?.requestId ? (
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`Открыть заявку ${thread.request?.title ?? ""}`}
+          onPress={() => router.push(`/requests/${thread.requestId}` as never)}
+          style={({ pressed }) => [
+            {
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              backgroundColor: colors.surface2,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+              gap: 8,
+            },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <FileText size={14} color={colors.accent} />
+          <Text style={{ flex: 1, fontSize: 13, color: colors.text }} numberOfLines={1}>
+            По заявке: {thread.request?.title || "Заявка"}
+          </Text>
+          <ChevronRight size={14} color={colors.textMuted} />
+        </Pressable>
+      ) : null}
 
       <KeyboardAvoidingView
         className="flex-1"
