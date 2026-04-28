@@ -1553,6 +1553,12 @@ img, svg { display: block; max-width: 100%; }
 .kebab-btn { min-height: 40px; min-width: 40px; }
 .close-btn { min-height: 36px; min-width: 36px; }
 
+/* WCAG 2.5.5 — 44×44px minimum touch targets */
+.logo { min-height: 44px; }
+.nav-links a { display: inline-flex; align-items: center; min-height: 44px; }
+.chip { min-height: 44px; }
+.footer ul a { display: flex; align-items: center; min-height: 44px; }
+
 @media (max-width: 640px) {
   /* --- type scale --- */
   body { font-size: 15px; }
