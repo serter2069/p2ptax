@@ -308,6 +308,7 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
         fromName: senderName,
         threadId,
         requestTitle: thread.request.title,
+        recipientId,
       });
     }).catch((err: Error) => console.warn("[email] new_message email failed:", err.message));
 

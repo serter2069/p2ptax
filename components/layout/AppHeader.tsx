@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { Bell, Menu, Search, Settings, LogOut, User } from "lucide-react-native";
+import { Menu, Search, Settings, LogOut, User } from "lucide-react-native";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import { colors, roleAccent, type RoleAccentKey, gray, spacing } from "@/lib/theme";
 import MobileMenu from "@/components/MobileMenu";
@@ -70,7 +70,6 @@ const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/requests", label: "Заявки" },
   { prefix: "/threads", label: "Переписки" },
   { prefix: "/settings", label: "Настройки" },
-  { prefix: "/notifications", label: "Уведомления" },
 ];
 
 function inferBreadcrumb(pathname: string): string | null {
@@ -181,14 +180,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
             )}
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Уведомления"
-            onPress={() => nav.routes.notifications()}
-            className="w-11 h-11 items-center justify-center"
-          >
-            <Bell size={18} color={colors.text} />
-          </Pressable>
+          <View className="w-11 h-11" />
         </View>
 
         <MobileMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -275,15 +267,6 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
 
       {/* Right cluster */}
       <View className="flex-row items-center" style={{ gap: spacing.sm, marginLeft: "auto" }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Уведомления"
-          onPress={() => nav.routes.notifications()}
-          className="w-11 h-11 rounded-lg items-center justify-center"
-        >
-          <Bell size={18} color={colors.text} />
-        </Pressable>
-
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Меню профиля"
