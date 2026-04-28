@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect, useMemo } from "react";
 import HeaderBack from "@/components/HeaderBack";
@@ -27,6 +27,8 @@ interface FnsOffice {
 export default function OnboardingWorkAreaScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
+  const params = useLocalSearchParams<{ from?: string }>();
+  const fromSettings = params.from === "settings";
   const { isSpecialistUser, updateUser } = useAuth();
 
   const [services, setServices] = useState<ServiceItem[]>([]);
@@ -186,7 +188,11 @@ export default function OnboardingWorkAreaScreen() {
           },
         });
       }
-      nav.routes.onboardingProfile();
+      if (fromSettings) {
+        nav.routes.settings();
+      } else {
+        nav.routes.onboardingProfile();
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);
@@ -197,11 +203,13 @@ export default function OnboardingWorkAreaScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <HeaderBack title="" />
+      <HeaderBack title={fromSettings ? "Назад к настройкам" : ""} />
 
-      <View className="px-6 pb-4">
-        <OnboardingProgress step={2} />
-      </View>
+      {!fromSettings && (
+        <View className="px-6 pb-4">
+          <OnboardingProgress step={2} />
+        </View>
+      )}
 
       <ScrollView
         className="flex-1"
