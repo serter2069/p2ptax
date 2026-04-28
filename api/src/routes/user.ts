@@ -35,6 +35,37 @@ router.patch("/profile", authMiddleware, async (req: Request, res: Response) => 
   }
 });
 
+// PATCH /api/user/specialist-mode — enable or disable specialist mode
+router.patch("/specialist-mode", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { isSpecialist } = req.body;
+
+    if (typeof isSpecialist !== "boolean") {
+      res.status(400).json({ error: "isSpecialist must be a boolean" });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { isSpecialist },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isSpecialist: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+
+    res.json({ user });
+  } catch (error) {
+    console.error("user/specialist-mode error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // PATCH /api/user/notification-settings — update notification settings
 router.patch("/notification-settings", authMiddleware, async (req: Request, res: Response) => {
   try {
