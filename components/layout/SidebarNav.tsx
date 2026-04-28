@@ -69,6 +69,15 @@ export function detectSidebarGroup(
 ): SidebarGroup {
   if (!pathname) return null;
 
+  // Segments are authoritative — check them FIRST before pathname heuristics.
+  // Critical: (tabs)/index resolves to pathname="/" which would otherwise be
+  // caught by the public-chrome guard, hiding the sidebar on the dashboard.
+  const first = segments[0] ?? "";
+  if (first === "(tabs)") return "user";
+  if (first === "(admin-tabs)") {
+    return role === "ADMIN" ? "admin" : "user";
+  }
+
   // Public-chrome screens own their own layout.
   if (pathname === "/") return null;
   if (pathname.startsWith("/auth")) return null;
@@ -76,23 +85,11 @@ export function detectSidebarGroup(
   if (pathname.startsWith("/onboarding")) return null;
   if (pathname === "/brand") return null;
 
-  // Group detection via segments (authoritative).
-  const first = segments[0] ?? "";
-  // Iter11 PR 3 — only (tabs) and (admin-tabs) remain; legacy groups removed.
-  if (first === "(tabs)") return "user";
-  if (first === "(admin-tabs)") {
-    // Role-guard: only real admins get the admin sidebar.
-    return role === "ADMIN" ? "admin" : "user";
-  }
-
   // Fallback: pathname-based match for route transitions when segments
   // haven't settled yet.
   if (pathname.includes("/admin-tabs/") || pathname.includes("(admin-tabs)")) {
     return role === "ADMIN" ? "admin" : "user";
   }
-
-  const LEGACY_ROUTES = new Set(["/"]);
-  if (LEGACY_ROUTES.has(pathname)) return null;
 
   // Top-level authenticated screens reachable from sidebar (requests,
   // specialists, notifications, threads, settings): show a generic "main"
