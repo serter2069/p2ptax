@@ -1,10 +1,10 @@
-import { Redirect } from "expo-router";
+import UnifiedSettings from "@/app/settings/index";
 
 /**
- * Iter11 PR 2 — profile tab is now a thin redirect to the unified settings
- * page. The settings screen carries personal-data, notification, specialist
- * toggle, and account sections in a single progressive form.
+ * Profile tab — renders the unified settings screen inline so the tab bar
+ * remains visible. Previously used <Redirect href="/settings" /> which
+ * pushed a Stack screen outside (tabs), causing the tab bar to disappear.
  */
 export default function ProfileTab() {
-  return <Redirect href={"/settings" as never} />;
+  return <UnifiedSettings />;
 }
