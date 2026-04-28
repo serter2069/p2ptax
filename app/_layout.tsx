@@ -108,6 +108,7 @@ export default function RootLayout() {
             {/* Public screens */}
             <Stack.Screen name="requests/index" />
             <Stack.Screen name="requests/new" />
+            <Stack.Screen name="requests/create" />
             <Stack.Screen name="requests/[id]/index" />
             <Stack.Screen name="requests/[id]/detail" />
             <Stack.Screen name="requests/[id]/messages" />

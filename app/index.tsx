@@ -156,7 +156,7 @@ export default function LandingScreen() {
   }, [loadData]);
 
   const goCreateRequest = useCallback(() => {
-    nav.routes.login();
+    nav.routes.requestsCreate();
   }, [router]);
 
   const goCatalog = useCallback(() => {
