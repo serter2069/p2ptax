@@ -277,9 +277,12 @@ export default function SpecialistsCatalog() {
             height: 48,
             backgroundColor: "transparent",
             ...(Platform.OS === "web" ? {
+              borderWidth: 0,
+              outlineStyle: "none" as never,
+              outlineWidth: 0,
+              appearance: "none" as never,
               borderRadius: 8,
               paddingHorizontal: 8,
-              outlineStyle: "none" as never,
             } : {}),
           }}
         />

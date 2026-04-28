@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
+  Platform,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -347,6 +348,9 @@ export default function CityFnsCascade({
                       color: colors.text,
                       marginLeft: 8,
                       height: 40,
+                      borderWidth: 0,
+                      backgroundColor: "transparent",
+                      ...(Platform.OS === "web" ? { outlineStyle: "none" as never, outlineWidth: 0, appearance: "none" as never } : {}),
                     }}
                   />
                 </View>
