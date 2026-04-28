@@ -6,7 +6,7 @@ import {
   MessageCircle,
   User,
 } from "lucide-react-native";
-import { colors, fontSizeValue } from "@/lib/theme";
+import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 
 /**
  * Unified (tabs) navigator — task #1379 cleanup.
@@ -15,11 +15,11 @@ import { colors, fontSizeValue } from "@/lib/theme";
  * "Публичные заявки" is hidden from the tab bar (href: null) — accessible
  * via the mobile drawer / sidebar only.
  *
- * Tab bar is hidden on desktop (≥640px) — SidebarNav carries navigation there.
+ * Tab bar is hidden on desktop (≥768px) — SidebarNav carries navigation there.
  */
 export default function TabLayout() {
   const { width } = useWindowDimensions();
-  const isMobile = width < 640;
+  const isMobile = width < BREAKPOINT;
 
   return (
     <Tabs

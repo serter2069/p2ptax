@@ -15,7 +15,7 @@ import {
 import HeaderBack from "../components/HeaderBack";
 import HeaderHome from "../components/HeaderHome";
 import ResponsiveContainer from "../components/ResponsiveContainer";
-import { colors, tw, typography, spacing, radius } from "../lib/theme";
+import { colors, tw, typography, spacing, radius, BREAKPOINT } from "../lib/theme";
 
 // Spacing rhythm is unified on `gap-4` (16px) for all section content. Old
 // design had a mix of mb-4 (16), mb-2 (8) and gap-5 (20) on the same level —
@@ -35,7 +35,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function BrandScreen() {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
   const [inputDefault, setInputDefault] = useState("");
   const [inputFocused, setInputFocused] = useState("ivan@mail.ru");
   const [inputError, setInputError] = useState("not-email");

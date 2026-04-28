@@ -33,7 +33,7 @@ import type {
 } from "@/components/specialist/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { colors, gray, textStyle, spacing } from "@/lib/theme";
+import { colors, gray, textStyle, spacing, BREAKPOINT } from "@/lib/theme";
 
 function getInitials(
   firstName: string | null,
@@ -51,7 +51,7 @@ export default function SpecialistPublicProfile() {
   const { user, isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
-  const isTablet = width >= 640;
+  const isTablet = width >= BREAKPOINT;
 
   const [specialist, setSpecialist] = useState<SpecialistDetail | null>(null);
   const [contacts, setContacts] = useState<ContactMethodItem[]>([]);

@@ -21,7 +21,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import RequestCard from "@/components/RequestCard";
 import { api } from "@/lib/api";
-import { colors, overlay, textStyle } from "@/lib/theme";
+import { colors, overlay, textStyle, BREAKPOINT } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -59,7 +59,7 @@ export default function PublicRequestsFeed() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);

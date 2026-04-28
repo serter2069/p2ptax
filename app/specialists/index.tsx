@@ -20,7 +20,7 @@ import { AlertCircle, UserX, Search } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
-import { colors, overlay, textStyle } from "@/lib/theme";
+import { colors, overlay, textStyle, BREAKPOINT } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -55,7 +55,7 @@ export default function SpecialistsCatalog() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
   const isWide = width >= 1024;
   const gridCols = isWide ? 3 : isDesktop ? 2 : 1;
 

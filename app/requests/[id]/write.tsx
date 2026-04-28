@@ -16,7 +16,7 @@ import Button from "@/components/ui/Button";
 import { Send } from "lucide-react-native";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
+import { colors, radiusValue, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 
 interface RequestSummary {
   id: string;
@@ -43,7 +43,7 @@ export default function SpecialistConfirmWrite() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isAuthenticated, user, isSpecialistUser, isLoading: authLoading } = useAuth();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   const [request, setRequest] = useState<RequestSummary | null>(null);
   const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);

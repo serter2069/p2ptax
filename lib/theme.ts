@@ -236,6 +236,10 @@ export const shadowColor = {
 // Semantic overlay tokens — for rgba on colored backgrounds.
 // NOTE: white-on-#2256c2 hits WCAG AA only at >=92% opacity. Hero subcopy
 // uses white90 (passes) instead of the older white75 (4.48:1, fails).
+// Unified responsive breakpoint — desktop ≥ 768px, mobile < 768px.
+// Use this constant everywhere; do NOT hardcode 640 or other values.
+export const BREAKPOINT = 768;
+
 export const overlay = {
   white10: 'rgba(255,255,255,0.1)',
   white15: 'rgba(255,255,255,0.15)',
