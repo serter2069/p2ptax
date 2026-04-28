@@ -16,7 +16,9 @@ import { Trash2, File, FileImage, Download } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
+import LoadingState from "@/components/ui/LoadingState";
 import { api, apiPost, apiDelete } from "@/lib/api";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors, BREAKPOINT } from "@/lib/theme";
 import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
 import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
@@ -52,6 +54,7 @@ export default function MyRequestDetail() {
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
+  const { ready } = useRequireAuth();
 
   const [request, setRequest] = useState<RequestDetailData | null>(null);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
@@ -81,8 +84,8 @@ export default function MyRequestDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (id) fetchAll();
-  }, [id, fetchAll]);
+    if (id && ready) fetchAll();
+  }, [id, ready, fetchAll]);
 
   const handleDelete = useCallback(() => {
     Alert.alert(
@@ -142,13 +145,11 @@ export default function MyRequestDetail() {
     }
   }, []);
 
-  if (loading) {
+  if (!ready || loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <HeaderBack title="Заявка" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <LoadingState />
       </SafeAreaView>
     );
   }
