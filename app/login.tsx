@@ -115,13 +115,19 @@ export default function AuthEmailScreen() {
                 marginLeft: 10,
                 fontSize: 15,
                 color: colors.text,
-                outlineWidth: 0,
                 borderWidth: 0,
                 // WCAG 2.5.5 — explicit 44px tap target on web; the
                 // <input> intrinsic height is ~18px otherwise.
+                // appearance:none + outlineStyle:none kill the default
+                // browser <input> chrome that creates the double-border
+                // artifact when the outer View owns the visible border.
                 ...(Platform.OS === "web" ? {
                   minHeight: 44,
                   alignSelf: "stretch" as never,
+                  borderColor: "transparent",
+                  outlineStyle: "none" as never,
+                  outlineWidth: 0,
+                  appearance: "none" as never,
                 } : {}),
               }}
             />

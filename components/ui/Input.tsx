@@ -126,13 +126,17 @@ export default function Input({
           onBlur={() => setFocused(false)}
           // @ts-expect-error — TextInput's `style` prop is typed as
           // `StyleProp<TextStyle>`, which doesn't include web-only CSS
-          // properties. We use two non-standard keys here:
+          // properties. We use several non-standard keys here:
           //   alignSelf: 'stretch' — forces the web <input> to fill its
           //     flex-row parent vertically (RN ignores on native).
           //   outlineStyle: 'none' — removes default browser outline on
           //     focus; the focus ring is rendered on the outer View via
           //     boxShadow instead.
-          // Both are safe: RN drops unknown style keys, and on web they
+          //   appearance: 'none' — strips UA-default chrome on
+          //     <input> AND <textarea> (multiline). Without this Safari
+          //     renders an inset border on textarea even when borderWidth
+          //     is 0, producing the double-border artifact.
+          // All are safe: RN drops unknown style keys, and on web they
           // produce the intended CSS.
           style={{
             flex: 1,
@@ -150,9 +154,12 @@ export default function Input({
             // This prevents the double-border artifact on web.
             borderWidth: 0,
             borderColor: 'transparent',
-            outlineWidth: 0,
-            outlineStyle: 'none',
             backgroundColor: 'transparent',
+            ...(Platform.OS === 'web' ? {
+              outlineWidth: 0,
+              outlineStyle: 'none',
+              appearance: 'none',
+            } : {}),
           }}
         />
       </View>

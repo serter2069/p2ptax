@@ -400,7 +400,7 @@ export default function AuthOtpScreen() {
                     ref={(ref) => {
                       inputRefs.current[i] = ref;
                     }}
-                    // @ts-expect-error — outlineStyle is web-only CSS; RN drops unknown style keys safely
+                    // @ts-expect-error — outlineStyle/appearance are web-only CSS; RN drops unknown style keys safely
                     style={{
                       width: 48,
                       height: 56,
@@ -408,10 +408,14 @@ export default function AuthOtpScreen() {
                       fontSize: 24,
                       fontWeight: "700",
                       color: error ? colors.error : colors.text,
-                      outlineWidth: 0,
-                      outlineStyle: "none",
                       borderWidth: 0,
                       backgroundColor: "transparent",
+                      ...(Platform.OS === "web" ? {
+                        borderColor: "transparent",
+                        outlineStyle: "none",
+                        outlineWidth: 0,
+                        appearance: "none",
+                      } : {}),
                     }}
                     value={digit}
                     onChangeText={(v) => handleDigitChange(i, v)}

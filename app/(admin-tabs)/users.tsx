@@ -257,7 +257,12 @@ export default function AdminUsers() {
             fontSize: fontSizeValue.md,
             borderWidth: 0,
             backgroundColor: "transparent",
-            outlineWidth: 0,
+            ...(Platform.OS === "web" ? {
+              borderColor: "transparent",
+              outlineStyle: "none" as never,
+              outlineWidth: 0,
+              appearance: "none" as never,
+            } : {}),
           }}
           placeholder="Поиск по email или имени..."
           placeholderTextColor={colors.placeholder}

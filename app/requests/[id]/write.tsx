@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   useWindowDimensions,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -232,9 +233,17 @@ export default function SpecialistConfirmWrite() {
                 fontSize: fontSizeValue.base,
                 color: colors.text,
                 textAlignVertical: "top",
-                outlineWidth: 0,
                 borderWidth: 0,
                 backgroundColor: "transparent",
+                // appearance:none + outlineStyle:none kill the default
+                // browser <textarea> chrome that creates the double-border
+                // artifact when the outer View owns the visible border.
+                ...(Platform.OS === "web" ? {
+                  borderColor: "transparent",
+                  outlineStyle: "none" as never,
+                  outlineWidth: 0,
+                  appearance: "none" as never,
+                } : {}),
               }}
             />
           </View>
