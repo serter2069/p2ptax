@@ -1,31 +1,26 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   View,
   Text,
-  TextInput,
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
+  Pressable,
   useWindowDimensions,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import SpecialistCard from "@/components/SpecialistCard";
-import FilterBar from "@/components/FilterBar";
-import CityFnsCascade from "@/components/filters/CityFnsCascade";
-import { AlertCircle, UserX, Search } from "lucide-react-native";
+import SpecialistSearchBar, {
+  CityOpt,
+  FnsOpt,
+} from "@/components/filters/SpecialistSearchBar";
+import { AlertCircle, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
-import { colors, textStyle, BREAKPOINT } from "@/lib/theme";
-
-interface CityOption {
-  id: string;
-  name: string;
-  fnsOffices: { id: string; name: string; code: string }[];
-}
+import { colors, textStyle } from "@/lib/theme";
 
 interface ServiceOption {
   id: string;
@@ -51,8 +46,22 @@ interface SpecialistsResponse {
   hasMore: boolean;
 }
 
+interface CitiesResponse {
+  items: { id: string; name: string; slug: string; officesCount: number }[];
+}
+
+interface FnsResponse {
+  offices: {
+    id: string;
+    name: string;
+    code: string;
+    cityId: string;
+    address?: string | null;
+    city?: { id: string; name: string };
+  }[];
+}
+
 export default function SpecialistsCatalog() {
-  const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -60,7 +69,8 @@ export default function SpecialistsCatalog() {
   const gridCols = isWide ? 3 : isDesktop ? 2 : 1;
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
-  const [cities, setCities] = useState<CityOption[]>([]);
+  const [cities, setCities] = useState<CityOpt[]>([]);
+  const [fnsAll, setFnsAll] = useState<FnsOpt[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,38 +79,31 @@ export default function SpecialistsCatalog() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-
-  const [search, setSearch] = useState("");
   const [total, setTotal] = useState(0);
-  const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
-  const [selectedFnsIds, setSelectedFnsIds] = useState<string[]>([]);
+
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const hasFilters =
-    selectedCityIds.length > 0 ||
-    selectedFnsIds.length > 0 ||
+    selectedCityId !== null ||
+    selectedFnsId !== null ||
     selectedServiceIds.length > 0;
 
   const resetFilters = useCallback(() => {
-    setSelectedCityIds([]);
-    setSelectedFnsIds([]);
+    setSelectedCityId(null);
+    setSelectedFnsId(null);
     setSelectedServiceIds([]);
   }, []);
 
   const fetchSpecialists = useCallback(
-    async (pageNum: number, append = false, q?: string) => {
+    async (pageNum: number, append = false) => {
       try {
-        const searchQ = q ?? search;
         let path = `/api/specialists?page=${pageNum}&limit=20`;
-        if (selectedCityIds.length > 0)
-          path += `&city_ids=${selectedCityIds.join(",")}`;
-        if (selectedFnsIds.length > 0)
-          path += `&fns_ids=${selectedFnsIds.join(",")}`;
+        if (selectedCityId) path += `&city_ids=${selectedCityId}`;
+        if (selectedFnsId) path += `&fns_ids=${selectedFnsId}`;
         if (selectedServiceIds.length > 0)
           path += `&services=${selectedServiceIds.join(",")}`;
-        if (searchQ.trim()) path += `&q=${encodeURIComponent(searchQ.trim())}`;
 
         const res = await api<SpecialistsResponse>(path, { noAuth: true });
 
@@ -117,60 +120,89 @@ export default function SpecialistsCatalog() {
         setError("Не удалось загрузить список");
       }
     },
-    [selectedCityIds, selectedFnsIds, selectedServiceIds, search]
+    [selectedCityId, selectedFnsId, selectedServiceIds]
   );
 
   const fetchSpecialistsRef = useRef(fetchSpecialists);
   fetchSpecialistsRef.current = fetchSpecialists;
 
+  // Initial load: cities, services, then all FNS in one batch (for typeahead).
   useEffect(() => {
+    let cancelled = false;
     async function init() {
       setLoading(true);
       try {
         const [citiesRes, servicesRes] = await Promise.all([
-          api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
+          api<CitiesResponse>("/api/cities", { noAuth: true }),
           api<{ items: ServiceOption[] }>("/api/services", { noAuth: true }),
         ]);
-        setCities(citiesRes.items);
+        if (cancelled) return;
+        setCities(citiesRes.items.map((c) => ({ id: c.id, name: c.name })));
         setServices(servicesRes.items);
+
+        // Load all FNS for typeahead — one request keyed by all city ids.
+        if (citiesRes.items.length > 0) {
+          const ids = citiesRes.items.map((c) => c.id).join(",");
+          try {
+            const fnsRes = await api<FnsResponse>(
+              `/api/fns?city_ids=${ids}`,
+              { noAuth: true }
+            );
+            if (cancelled) return;
+            setFnsAll(
+              fnsRes.offices.map((f) => ({
+                id: f.id,
+                name: f.name,
+                code: f.code,
+                cityId: f.cityId,
+                cityName: f.city?.name,
+              }))
+            );
+          } catch {
+            /* typeahead degrades gracefully — empty FNS list */
+          }
+        }
       } catch (e) {
+        // ignore — page still renders without filters
       }
       await fetchSpecialistsRef.current(1);
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
     init();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Refetch on filter change
   useEffect(() => {
     setLoading(true);
     fetchSpecialists(1).finally(() => setLoading(false));
-  }, [selectedCityIds, selectedFnsIds, selectedServiceIds, fetchSpecialists]);
+  }, [selectedCityId, selectedFnsId, selectedServiceIds, fetchSpecialists]);
 
-  // Debounced search
-  useEffect(() => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => {
-      setLoading(true);
-      fetchSpecialistsRef.current(1, false, search).finally(() => setLoading(false));
-    }, 400);
-    return () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    };
-  }, [search]);
+  const handlePickCity = useCallback((cityId: string) => {
+    setSelectedCityId(cityId);
+    setSelectedFnsId(null);
+  }, []);
 
-  const handleCascadeChange = useCallback(
-    (v: { cities: string[]; fns: string[] }) => {
-      setSelectedCityIds(v.cities);
-      setSelectedFnsIds(v.fns);
-    },
-    []
-  );
+  const handlePickFns = useCallback((fns: FnsOpt) => {
+    setSelectedCityId(fns.cityId);
+    setSelectedFnsId(fns.id);
+  }, []);
+
+  const handleClearLocation = useCallback(() => {
+    setSelectedCityId(null);
+    setSelectedFnsId(null);
+  }, []);
 
   const handleServiceToggle = useCallback((id: string) => {
     setSelectedServiceIds((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
+  }, []);
+
+  const handleClearServices = useCallback(() => {
+    setSelectedServiceIds([]);
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -190,7 +222,7 @@ export default function SpecialistsCatalog() {
     (id: string) => {
       nav.any(`/specialists/${id}`);
     },
-    [router]
+    [nav]
   );
 
   const handleBookmark = useCallback((id: string) => {
@@ -205,15 +237,25 @@ export default function SpecialistsCatalog() {
     });
   }, []);
 
+  const headerCount = useMemo(() => {
+    if (loading) return null;
+    return total > 0 ? total : specialists.length;
+  }, [loading, total, specialists.length]);
+
   if (loading && specialists.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
         {!isDesktop && (
-          <Text className="text-xl font-bold text-text-base mx-4 mt-4 mb-2">Специалисты</Text>
+          <Text className="text-xl font-bold text-text-base mx-4 mt-4 mb-2">
+            Специалисты
+          </Text>
         )}
         <View className="py-4 px-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-border">
+            <View
+              key={i}
+              className="mb-3 bg-white rounded-2xl overflow-hidden border border-border"
+            >
               <LoadingState variant="skeleton" lines={4} />
             </View>
           ))}
@@ -226,7 +268,9 @@ export default function SpecialistsCatalog() {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
         {!isDesktop && (
-          <Text className="text-xl font-bold text-text-base mx-4 mt-4 mb-2">Специалисты</Text>
+          <Text className="text-xl font-bold text-text-base mx-4 mt-4 mb-2">
+            Специалисты
+          </Text>
         )}
         <EmptyState
           icon={AlertCircle}
@@ -242,69 +286,99 @@ export default function SpecialistsCatalog() {
     );
   }
 
+  const allServicesActive = selectedServiceIds.length === 0;
+
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      {/* Compact header — mobile only (desktop uses sidebar nav) */}
-      {!isDesktop && (
-        <View className="flex-row items-center justify-between px-4 pt-2 pb-1">
-          <Text className="text-xl font-bold" style={{ color: colors.text }}>Специалисты</Text>
-          {specialists.length > 0 && (
-            <Text className="text-sm" style={{ color: colors.textMuted }}>{specialists.length} специалистов</Text>
-          )}
-        </View>
-      )}
-      {isDesktop && (
-        <View className="flex-row items-center justify-between px-4 pt-4 pb-1">
-          <Text style={{ ...textStyle.h2, color: colors.text }}>Специалисты</Text>
-          {total > 0 && (
-            <Text className="text-sm" style={{ color: colors.textMuted }}>{total} специалистов</Text>
-          )}
-        </View>
-      )}
+      {/* Compact header — Row 1: title + count */}
+      <View
+        className={`flex-row items-center justify-between px-4 ${
+          isDesktop ? "pt-4" : "pt-2"
+        } pb-1`}
+      >
+        <Text
+          style={
+            isDesktop
+              ? { ...textStyle.h3, color: colors.text }
+              : { ...textStyle.h4, color: colors.text }
+          }
+        >
+          Специалисты
+        </Text>
+        {headerCount !== null && headerCount > 0 && (
+          <Text className="text-xs" style={{ color: colors.textMuted }}>
+            {headerCount} специалистов
+          </Text>
+        )}
+      </View>
 
-      {/* Search bar */}
-      <View className="flex-row items-center bg-white border border-border rounded-xl mx-4 mt-3 mb-2 px-4 h-12">
-        <Search size={14} color={colors.placeholder} style={{ marginRight: 8 }} />
-        <TextInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Поиск по имени, роли, ФНС..."
-          placeholderTextColor={colors.placeholder}
-          style={{
-            flex: 1,
-            fontSize: 15,
-            color: colors.text,
-            height: 48,
-            backgroundColor: "transparent",
-            ...(Platform.OS === "web" ? {
-              borderWidth: 0,
-              outlineStyle: "none" as never,
-              outlineWidth: 0,
-              appearance: "none" as never,
-              borderRadius: 8,
-              paddingHorizontal: 8,
-            } : {}),
-          }}
+      {/* Row 2: typeahead search bar */}
+      <View className="px-4 pt-2" style={{ zIndex: 20 }}>
+        <SpecialistSearchBar
+          cities={cities}
+          fnsAll={fnsAll}
+          selectedCityId={selectedCityId}
+          selectedFnsId={selectedFnsId}
+          onPickCity={handlePickCity}
+          onPickFns={handlePickFns}
+          onClear={handleClearLocation}
         />
       </View>
 
-      {/* City → FNS cascade + services chips */}
-      <View className="bg-white border-b border-border py-2">
-        <CityFnsCascade
-          mode="multi"
-          value={{ cities: selectedCityIds, fns: selectedFnsIds }}
-          onChange={handleCascadeChange}
-          citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
-        />
-        <FilterBar
-          cities={[]}
-          selectedCityId={null}
-          onCityChange={() => {}}
-          services={services}
-          selectedServiceIds={selectedServiceIds}
-          onServiceToggle={handleServiceToggle}
-        />
-      </View>
+      {/* Row 3: compact service chips */}
+      {services.length > 0 && (
+        <View className="pt-2 pb-2" style={{ zIndex: 1 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              gap: 8,
+              paddingHorizontal: 16,
+            }}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Не знаю — все услуги"
+              onPress={handleClearServices}
+              className={`px-3 h-8 items-center justify-center rounded-full border ${
+                allServicesActive
+                  ? "bg-accent border-accent"
+                  : "bg-white border-border"
+              }`}
+            >
+              <Text
+                className={`text-xs ${
+                  allServicesActive ? "text-white font-medium" : "text-text-base"
+                }`}
+              >
+                Не знаю
+              </Text>
+            </Pressable>
+            {services.map((s) => {
+              const active = selectedServiceIds.includes(s.id);
+              return (
+                <Pressable
+                  key={s.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={s.name}
+                  onPress={() => handleServiceToggle(s.id)}
+                  className={`px-3 h-8 items-center justify-center rounded-full border ${
+                    active ? "bg-accent border-accent" : "bg-white border-border"
+                  }`}
+                >
+                  <Text
+                    className={`text-xs ${
+                      active ? "text-white font-medium" : "text-text-base"
+                    }`}
+                  >
+                    {s.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Specialist list */}
       {specialists.length === 0 && !loading ? (
@@ -321,11 +395,15 @@ export default function SpecialistsCatalog() {
           data={specialists}
           keyExtractor={(item) => item.id}
           numColumns={gridCols}
-          columnWrapperStyle={gridCols > 1 ? { gap: 16, paddingHorizontal: isWide ? 32 : 16 } : undefined}
+          columnWrapperStyle={
+            gridCols > 1
+              ? { gap: 16, paddingHorizontal: isWide ? 32 : 16 }
+              : undefined
+          }
           contentContainerStyle={{
             paddingHorizontal: gridCols > 1 ? 0 : 16,
             paddingBottom: 48,
-            paddingTop: 16,
+            paddingTop: 8,
             maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined,
             alignSelf: isDesktop ? ("center" as const) : undefined,
             width: "100%" as const,
@@ -355,7 +433,11 @@ export default function SpecialistsCatalog() {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             loadingMore ? (
-              <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 16 }} />
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                style={{ paddingVertical: 16 }}
+              />
             ) : null
           }
         />
