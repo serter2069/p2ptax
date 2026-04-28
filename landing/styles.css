@@ -25,7 +25,7 @@ body.modal-open .tweaks-btn { display: none !important; }
   --line-strong: #c7ccd4;
   --text: #0b1424;
   --text-mute: #525a6b;
-  --text-dim: #8a93a3;
+  --text-dim: #6b7280;
 
   /* Accent: calm business blue */
   --accent: #2256c2;                     /* primary blue */
@@ -77,7 +77,7 @@ body.modal-open .tweaks-btn { display: none !important; }
   --line-strong: #b3a685;
   --text: #1b1a16;
   --text-mute: #57523f;
-  --text-dim: #827c66;
+  --text-dim: #6b6550;
   --cta: #254b9e;
   --accent: #254b9e;
   --accent-soft: #e4ecf8;
