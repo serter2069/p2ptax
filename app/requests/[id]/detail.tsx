@@ -75,7 +75,6 @@ export default function MyRequestDetail() {
         .catch(() => {/* silent — not critical */});
     } catch (e) {
       setError("Не удалось загрузить заявку");
-      console.error("Request detail error:", e);
     } finally {
       setLoading(false);
     }
@@ -99,7 +98,6 @@ export default function MyRequestDetail() {
               await apiDelete(`/api/requests/${id}`);
               router.back();
             } catch (e) {
-              console.error("Delete error:", e);
               Alert.alert("Ошибка", "Не удалось удалить заявку");
             }
           },
@@ -140,7 +138,7 @@ export default function MyRequestDetail() {
       );
       await Linking.openURL(res.url);
     } catch (e) {
-      console.error("File open error:", e);
+      // ignore
     }
   }, []);
 

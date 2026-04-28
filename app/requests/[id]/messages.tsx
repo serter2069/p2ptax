@@ -85,7 +85,6 @@ export default function RequestMessages() {
       } else {
         setError("Проверьте соединение с интернетом и попробуйте снова");
       }
-      console.error("fetch request threads error:", e);
     } finally {
       setLoading(false);
       setRefreshing(false);

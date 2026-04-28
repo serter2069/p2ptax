@@ -235,7 +235,6 @@ export default function MyRequests() {
       const res = await api<{ items: RequestItem[] }>("/api/requests/my");
       setRequests(res.items);
     } catch (e) {
-      console.error("Fetch my requests error:", e);
       setError("Не удалось загрузить заявки");
     }
   }, []);
@@ -271,7 +270,6 @@ export default function MyRequests() {
                 );
                 showToast();
               } catch (e) {
-                console.error("Close request error:", e);
                 Alert.alert("Ошибка", "Не удалось закрыть заявку");
               }
             },

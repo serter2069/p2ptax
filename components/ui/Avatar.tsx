@@ -59,6 +59,7 @@ export default function Avatar({
     return (
       <Image
         source={{ uri: imageUrl }}
+        accessibilityLabel={name}
         style={{
           width: wh,
           height: wh,
