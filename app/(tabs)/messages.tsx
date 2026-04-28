@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import HeaderHome from "@/components/HeaderHome";
 import EmptyState from "@/components/ui/EmptyState";
@@ -113,6 +113,7 @@ export default function UnifiedInbox() {
   const { isSpecialistUser } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
+  const params = useLocalSearchParams<{ thread?: string }>();
 
   const otherPartyFallback = isSpecialistUser ? "Клиент" : "Специалист";
 
@@ -144,6 +145,16 @@ export default function UnifiedInbox() {
     if (!ready) return;
     fetchThreads();
   }, [ready, fetchThreads]);
+
+  // Auto-select thread from URL search param (restores state on navigation/reload)
+  useEffect(() => {
+    if (params.thread && threads.length > 0) {
+      const found = threads.find((t) => t.id === params.thread);
+      if (found) {
+        setSelectedThreadId(params.thread);
+      }
+    }
+  }, [params.thread, threads]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -412,7 +423,10 @@ export default function UnifiedInbox() {
                 renderItem={({ item }) =>
                   renderThread({
                     item,
-                    onSelect: () => setSelectedThreadId(item.id),
+                    onSelect: () => {
+                      setSelectedThreadId(item.id);
+                      router.setParams({ thread: item.id });
+                    },
                     selected: item.id === selectedThreadId,
                   })
                 }
