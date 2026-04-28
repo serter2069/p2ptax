@@ -113,6 +113,7 @@ export default function RootLayout() {
             <Stack.Screen name="requests/[id]/messages" />
             <Stack.Screen name="specialists/index" />
             <Stack.Screen name="specialists/[id]" />
+            <Stack.Screen name="saved-specialists/index" />
 
             {/* Chat */}
             <Stack.Screen name="threads/[id]" />

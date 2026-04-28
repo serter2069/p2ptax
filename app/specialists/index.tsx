@@ -19,7 +19,8 @@ import SpecialistSearchBar, {
 import { AlertCircle, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
-import { api } from "@/lib/api";
+import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { colors, textStyle } from "@/lib/theme";
 
 interface ServiceOption {
@@ -69,6 +70,7 @@ interface FnsResponse {
 
 export default function SpecialistsCatalog() {
   const nav = useTypedRouter();
+  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const isWide = width >= 1024;
@@ -131,6 +133,14 @@ export default function SpecialistsCatalog() {
 
   const fetchSpecialistsRef = useRef(fetchSpecialists);
   fetchSpecialistsRef.current = fetchSpecialists;
+
+  // Load saved IDs for authenticated users
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    apiGet<{ ids: string[] }>("/api/saved-specialists")
+      .then((r) => setBookmarkedIds(new Set(r.ids)))
+      .catch(() => {});
+  }, [isAuthenticated]);
 
   // Initial load: cities, services, then all FNS in one batch (for typeahead).
   useEffect(() => {
@@ -231,17 +241,41 @@ export default function SpecialistsCatalog() {
     [nav]
   );
 
-  const handleBookmark = useCallback((id: string) => {
+  const handleBookmark = useCallback(async (id: string) => {
+    if (!isAuthenticated) {
+      nav.any("/login");
+      return;
+    }
+    const isSaved = bookmarkedIds.has(id);
+    // Optimistic update
     setBookmarkedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
+      if (isSaved) {
         next.delete(id);
       } else {
         next.add(id);
       }
       return next;
     });
-  }, []);
+    try {
+      if (isSaved) {
+        await apiDelete(`/api/saved-specialists/${id}`);
+      } else {
+        await apiPost(`/api/saved-specialists/${id}`, {});
+      }
+    } catch {
+      // Revert on error
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (isSaved) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+        return next;
+      });
+    }
+  }, [isAuthenticated, bookmarkedIds, nav]);
 
   const headerCount = useMemo(() => {
     if (loading) return null;

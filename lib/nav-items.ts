@@ -15,6 +15,7 @@ import {
   Settings,
   Inbox,
   Search,
+  Bookmark,
   type LucideIcon,
 } from "lucide-react-native";
 import type { SidebarGroup } from "@/components/layout/SidebarNav";
@@ -99,6 +100,12 @@ export const USER_CLIENT_EXTRA: NavItem[] = [
     href: "/specialists",
     icon: Search,
     match: (ctx) => topLevelMatch(ctx, "/specialists"),
+  },
+  {
+    label: "Мои специалисты",
+    href: "/saved-specialists",
+    icon: Bookmark,
+    match: (ctx) => topLevelMatch(ctx, "/saved-specialists"),
   },
 ];
 

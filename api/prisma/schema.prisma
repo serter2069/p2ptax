@@ -55,6 +55,8 @@ model User {
   notificationPreferences NotificationPreference[]
   complaintsReported      Complaint[] @relation("ComplaintReporter")
   complaintsReceived      Complaint[] @relation("ComplaintTarget")
+  savedSpecialists        SavedSpecialist[] @relation("SavedByUser_user")
+  savedByUsers            SavedSpecialist[] @relation("SavedByUser_specialist")
 
   @@map("users")
 }
@@ -366,4 +368,16 @@ model Complaint {
   targetUser User @relation("ComplaintTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
 
   @@map("complaints")
+}
+
+model SavedSpecialist {
+  id           String   @id @default(cuid())
+  userId       String
+  specialistId String
+  savedAt      DateTime @default(now())
+  user         User     @relation("SavedByUser_user", fields: [userId], references: [id], onDelete: Cascade)
+  specialist   User     @relation("SavedByUser_specialist", fields: [specialistId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, specialistId])
+  @@map("saved_specialists")
 }

@@ -97,6 +97,7 @@ export function detectSidebarGroup(
   // sidebar scoped to the user's role.
   if (
     pathname.startsWith("/specialists") ||
+    pathname.startsWith("/saved-specialists") ||
     pathname.startsWith("/requests") ||
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/threads") ||
