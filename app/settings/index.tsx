@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import Constants from "expo-constants";
 import {
   View,
   Text,
@@ -670,7 +671,7 @@ export default function UnifiedSettings() {
           </View>
 
           <Text className="text-xs text-text-dim text-center mb-4">
-            Версия 1.0.0
+            Версия {Constants.expoConfig?.version ?? "1.0.0"}
           </Text>
         </View>
       </ScrollView>

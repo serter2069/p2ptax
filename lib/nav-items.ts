@@ -115,9 +115,10 @@ export const USER_SPECIALIST_EXTRA: NavItem[] = [
     label: "Заявки клиентов",
     href: "/(tabs)/public-requests",
     icon: Inbox,
-    match: (ctx) =>
-      groupMatch(ctx, "(tabs)", "public-requests") ||
-      topLevelMatch(ctx, "/requests"),
+    // Only match the public-requests tab — do NOT match "/requests" which is
+    // "Мои заявки" (the client-side tab). Previously this had an erroneous
+    // topLevelMatch("/requests") that highlighted the wrong item.
+    match: (ctx) => groupMatch(ctx, "(tabs)", "public-requests"),
   },
 ];
 
