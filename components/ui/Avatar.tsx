@@ -57,18 +57,23 @@ export default function Avatar({
 
   if (imageUrl) {
     return (
-      <Image
-        source={{ uri: imageUrl }}
-        accessibilityLabel={name}
+      <View
         style={{
           width: wh,
           height: wh,
-          borderRadius: wh / 2,
+          borderRadius: 9999,
+          overflow: "hidden",
           borderWidth: 2,
           borderColor: colors.border,
           backgroundColor: colors.background,
         }}
-      />
+      >
+        <Image
+          source={{ uri: imageUrl }}
+          accessibilityLabel={name}
+          style={{ width: wh, height: wh }}
+        />
+      </View>
     );
   }
 
