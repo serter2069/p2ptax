@@ -1,11 +1,32 @@
+import { useEffect } from "react";
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import { BarChart2, Users, Shield, Flag } from "lucide-react-native";
 import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTypedRouter } from "@/lib/navigation";
+import LoadingState from "@/components/ui/LoadingState";
 
 export default function AdminTabsLayout() {
   const { width } = useWindowDimensions();
   const isMobile = width < BREAKPOINT;
+  const { isAuthenticated, isLoading, isAdminUser } = useAuth();
+  const nav = useTypedRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      nav.replaceRoutes.login();
+      return;
+    }
+    if (!isAdminUser) {
+      nav.replaceRoutes.tabs();
+    }
+  }, [isLoading, isAuthenticated, isAdminUser]);
+
+  if (isLoading || !isAuthenticated || !isAdminUser) {
+    return <LoadingState />;
+  }
 
   return (
     <Tabs

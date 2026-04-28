@@ -19,6 +19,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
 import { colors, overlay, BREAKPOINT } from "@/lib/theme";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 interface CityOption {
   id: string;
@@ -55,6 +57,14 @@ export default function SpecialistPublicRequests() {
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
+  const { ready, isLoading: authLoading, isAuthenticated } = useRequireAuth();
+  const { isSpecialistUser } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && !isSpecialistUser) {
+      nav.replaceRoutes.tabs();
+    }
+  }, [authLoading, isAuthenticated, isSpecialistUser]);
 
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -143,6 +153,14 @@ export default function SpecialistPublicRequests() {
   const handleServiceToggle = useCallback((id: string) => {
     setSelectedServiceId((prev) => (prev === id ? null : id));
   }, []);
+
+  if (!ready || !isSpecialistUser) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+        <LoadingState />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
