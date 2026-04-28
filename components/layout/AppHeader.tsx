@@ -22,13 +22,6 @@ import RoleBadge from "./RoleBadge";
  * NO role-accent border-top. Mobile keeps its compact burger/title/bell row.
  */
 
-const NAV_LINKS = [
-  { label: "Специалисты", href: "/specialists" },
-  { label: "Ситуации", href: "/situations" },
-  { label: "Покрытие", href: "/coverage" },
-  { label: "Для специалистов", href: "/for-specialists" },
-];
-
 /**
  * Persistent in-app header rendered on every authenticated route.
  *
@@ -221,29 +214,15 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
           : {}),
       }}
     >
-      {/* Left: logo + nav links */}
-      <View className="flex-row items-center" style={{ gap: spacing.md }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Главная"
-          onPress={() => nav.routes.home()}
-          style={{ minHeight: 44, justifyContent: "center" }}
-        >
-          <Text className="text-base font-bold" style={{ color: colors.primary }}>P2PTax</Text>
-        </Pressable>
-
-        {NAV_LINKS.map((link) => (
-          <Pressable
-            key={link.href}
-            accessibilityRole="button"
-            accessibilityLabel={link.label}
-            onPress={() => nav.any(link.href)}
-            style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 4 }}
-          >
-            <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>{link.label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      {/* Left: logo */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Главная"
+        onPress={() => nav.routes.home()}
+        style={{ minHeight: 44, justifyContent: "center" }}
+      >
+        <Text className="text-base font-bold" style={{ color: colors.primary }}>P2PTax</Text>
+      </Pressable>
 
       {breadcrumb ? (
         <Text
