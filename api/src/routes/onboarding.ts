@@ -29,30 +29,6 @@ router.put("/name", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-      select: { role: true, isSpecialist: true },
-    });
-
-    // Determine update: new users get role=SPECIALIST, existing CLIENTs get isSpecialist=true
-    const isExistingClient = existing?.role === "CLIENT";
-    const updateData: {
-      firstName: string;
-      lastName: string;
-      role?: "SPECIALIST";
-      isSpecialist?: boolean;
-    } = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-    };
-    if (isExistingClient) {
-      updateData.isSpecialist = true;
-    } else if (!existing?.role) {
-      // New user — set role to SPECIALIST
-      updateData.role = "SPECIALIST";
-    }
-    // If already SPECIALIST or ADMIN, just update name fields
-
     // Iter11 — /onboarding/name is part of the specialist signup flow.
     // After unification everyone is role=USER; specialist identity is opt-in
     // via isSpecialist=true. Profile completion timestamp is set only once
