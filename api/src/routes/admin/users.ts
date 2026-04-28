@@ -31,23 +31,22 @@ router.get("/", async (req: Request, res: Response) => {
       ];
     }
 
-    // Iter11 PR 3 — admin UI filter tokens map onto the unified schema.
-    // Tokens are just filter identifiers, NOT DB role enum values.
-    //   "CLIENT"     -> role=USER, isSpecialist=false
+    // Filter tokens map onto DB enum values (CLIENT | SPECIALIST | ADMIN).
+    //   "CLIENT"     -> role=CLIENT, isSpecialist=false
     //   "SPECIALIST" -> isSpecialist=true
-    //   "USER"       -> role=USER (any)
+    //   "USER"       -> role=CLIENT (legacy alias)
     //   "ADMIN"      -> role=ADMIN
     //   "BANNED"     -> isBanned=true
     const roleFilter: string | undefined = role;
     switch (roleFilter) {
       case "CLIENT":
-        where.role = "USER";
+      case "USER":
+        where.role = "CLIENT";
         where.isSpecialist = false;
         break;
       case "SPECIALIST":
         where.isSpecialist = true;
         break;
-      case "USER":
       case "ADMIN":
         where.role = roleFilter;
         break;
@@ -123,20 +122,18 @@ router.patch("/:id", async (req: Request, res: Response) => {
     if (typeof isBanned === "boolean") data.isBanned = isBanned;
     if (typeof firstName === "string") data.firstName = firstName;
     if (typeof lastName === "string") data.lastName = lastName;
-    // Iter11 PR 3 — admin PATCH accepts legacy UI labels and remaps onto
-    // the unified schema. The legacy tokens are UI-only; the DB always
-    // stores role=USER|ADMIN with isSpecialist toggled.
+    // Admin PATCH accepts role tokens and maps onto DB enum values.
     const roleInput: string | undefined = role;
     switch (roleInput) {
       case "CLIENT":
-        data.role = "USER";
+      case "USER":
+        data.role = "CLIENT";
         data.isSpecialist = false;
         break;
       case "SPECIALIST":
-        data.role = "USER";
+        data.role = "CLIENT";
         data.isSpecialist = true;
         break;
-      case "USER":
       case "ADMIN":
         data.role = roleInput;
         break;

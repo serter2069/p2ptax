@@ -7,14 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Iter11 — role unification. CLIENT + SPECIALIST merged into USER.
-// - `role = USER` is the default for any authenticated human user.
-// - Specialist features opt-in via `User.isSpecialist` + `specialistProfileCompletedAt`.
-// - GUEST retained for unauthenticated visitors, ADMIN for platform moderators.
-// Legacy CLIENT/SPECIALIST values are migrated to USER in data migration.
 enum Role {
-  GUEST
-  USER
+  CLIENT
+  SPECIALIST
   ADMIN
 }
 

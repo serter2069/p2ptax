@@ -38,7 +38,7 @@ router.put("/name", authMiddleware, async (req: Request, res: Response) => {
       data: {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        role: "USER",
+        role: "CLIENT",
         isSpecialist: true,
       },
       select: {
