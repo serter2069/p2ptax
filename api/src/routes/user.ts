@@ -243,7 +243,7 @@ router.post("/become-specialist", authMiddleware, async (req: Request, res: Resp
 
 // POST /api/user/leave-specialist — disable specialist mode
 router.post("/leave-specialist", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as AuthRequest).userId!;
+  const userId = req.user!.userId;
   try {
     const updated = await prisma.user.update({
       where: { id: userId },
@@ -259,7 +259,7 @@ router.post("/leave-specialist", authMiddleware, async (req: Request, res: Respo
 
 // POST /api/user/leave-specialist-toggle — re-enable specialist mode (user already has FNS data)
 router.post("/leave-specialist-toggle", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as AuthRequest).userId!;
+  const userId = req.user!.userId;
   try {
     const updated = await prisma.user.update({
       where: { id: userId },
