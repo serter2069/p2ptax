@@ -374,7 +374,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         <Pressable
           accessibilityRole="link"
           accessibilityLabel={`Открыть заявку ${thread.request?.title ?? ""}`}
-          onPress={() => router.push(`/requests/${thread.requestId}` as never)}
+          onPress={() => router.push(`/requests/${thread.requestId}/detail` as never)}
           style={({ pressed }) => [
             {
               flexDirection: "row",

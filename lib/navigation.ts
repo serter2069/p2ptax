@@ -77,8 +77,8 @@ export type StaticRoute = (typeof ROUTES)[keyof typeof ROUTES];
 // ---------------------------------------------------------------------------
 
 export const DYNAMIC_ROUTES = {
-  /** /requests/:id */
-  request: (id: string) => `/requests/${id}` as const,
+  /** /requests/:id — alias of requestDetail (kept for backward compatibility). */
+  request: (id: string) => `/requests/${id}/detail` as const,
 
   /** /requests/:id/detail */
   requestDetail: (id: string) => `/requests/${id}/detail` as const,

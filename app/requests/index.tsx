@@ -189,7 +189,7 @@ export default function PublicRequestsFeed() {
 
   const handleRequestPress = useCallback(
     (id: string) => {
-      nav.any(`/requests/${id}`);
+      nav.any(`/requests/${id}/detail`);
     },
     [router]
   );

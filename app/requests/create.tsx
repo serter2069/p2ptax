@@ -194,6 +194,13 @@ export default function CreateRequest() {
         description: description.trim(),
         files: [],
       });
+      // Clear any pending draft from a previous unauthenticated attempt
+      // so the form does not pre-fill on next visit.
+      try {
+        await AsyncStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* ignore storage errors */
+      }
       nav.replaceAny(`/requests/${result.id}/detail`);
     } catch (e: unknown) {
       const msg =
