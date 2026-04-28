@@ -11,7 +11,7 @@ Reference page: `app/(tabs)/index.tsx` (landing/home screen)
 - **Background**: `#ffffff` (page), `#fafbfc` (card surfaces)
 - **Primary text**: `#0b1424` (18.42:1 contrast)
 - **Secondary text**: `#525a6b` (6.92:1 contrast)
-- **Muted text**: `#8a93a3` (3.10:1 — avoid for body copy)
+- **Muted text**: `#6b7280` (4.63:1 — WCAG AA compliant)
 - **Primary CTA**: `#1f4cb0` bg / `#ffffff` text (7.72:1 contrast)
 - **Secondary CTA**: `#2256c2` bg / `#ffffff` text (6.61:1 contrast)
 - **Nav background**: `#ffffff`
@@ -32,7 +32,7 @@ Reference page: `app/(tabs)/index.tsx` (landing/home screen)
 
 ## Accessibility
 - All primary buttons WCAG AA compliant
-- `#8a93a3` on white = 3.10:1 — FAIL, avoid for interactive text
+- **Muted text**: `#6b7280` (4.63:1 — WCAG AA compliant)
 - Minimum touch targets on mobile: 44px
 
 ## Key Screens (27 total)
