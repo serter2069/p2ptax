@@ -48,7 +48,7 @@ export const ROUTES = {
   adminSettings: "/admin/settings",
 
   // Auth / onboarding
-  authEmail: "/auth/email",
+  authEmail: "/login",
   onboardingName: "/onboarding/name",
   onboardingProfile: "/onboarding/profile",
   onboardingWorkArea: "/onboarding/work-area",
