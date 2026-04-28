@@ -3,6 +3,13 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Bookmark } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
+interface FnsGroup {
+  fnsId: string;
+  fnsName: string;
+  city: { id: string; name: string };
+  services: { id: string; name: string }[];
+}
+
 interface SpecialistCardProps {
   id: string;
   firstName: string | null;
@@ -11,6 +18,8 @@ interface SpecialistCardProps {
   createdAt?: string;
   services: { id: string; name: string }[];
   cities: { id: string; name: string }[];
+  /** FNS-grouped services. When provided, used instead of flat services in vertical variant. */
+  specialistFns?: FnsGroup[];
   description?: string | null;
   onPress: (id: string) => void;
   variant?: "vertical" | "horizontal";
@@ -34,6 +43,7 @@ export default function SpecialistCard({
   createdAt,
   services,
   cities,
+  specialistFns,
   description,
   onPress,
   variant,
@@ -146,30 +156,77 @@ export default function SpecialistCard({
         </Text>
       ) : null}
 
-      {/* Service pills */}
-      {services.length > 0 && (
-        <View className="flex-row flex-wrap mt-2" style={{ gap: 8 }}>
-          {services.map((s) => (
-            <View
-              key={s.id}
-              className="px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: colors.accentSoft }}
-            >
-              <Text className="text-xs font-medium" style={{ color: colors.primary }}>{s.name}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* City */}
-      {cities.length > 0 && (
-        <View className="flex-row items-center mt-2">
-          <FontAwesome name="map-marker" size={12} color={colors.textMuted} />
-          <Text className="text-xs ml-1" style={{ color: colors.textMuted }} numberOfLines={1}>
-            {cities.map((c) => c.name).join(", ")}
-          </Text>
-        </View>
-      )}
+      {/* FNS-grouped services (vertical variant) */}
+      {specialistFns && specialistFns.length > 0
+        ? (() => {
+            // Show max 2 FNS groups, max 3 services each; rest as overflow pill
+            const visibleFns = specialistFns.slice(0, 2);
+            const totalServices = specialistFns.reduce((acc, g) => acc + g.services.length, 0);
+            const shownServices = visibleFns.reduce(
+              (acc, g) => acc + Math.min(g.services.length, 3),
+              0
+            );
+            const overflow = totalServices - shownServices;
+            return (
+              <View className="mt-2" style={{ gap: 8 }}>
+                {visibleFns.map((group) => (
+                  <View key={group.fnsId}>
+                    {/* FNS label */}
+                    <View className="flex-row items-center mb-1" style={{ gap: 4 }}>
+                      <FontAwesome name="map-marker" size={10} color={colors.textMuted} />
+                      <Text className="text-xs" style={{ color: colors.textMuted }} numberOfLines={1}>
+                        {group.city.name} — {group.fnsName}
+                      </Text>
+                    </View>
+                    {/* Service pills for this FNS */}
+                    <View className="flex-row flex-wrap" style={{ gap: 6 }}>
+                      {group.services.slice(0, 3).map((s) => (
+                        <View
+                          key={s.id}
+                          className="px-2.5 py-1 rounded-full"
+                          style={{ backgroundColor: colors.accentSoft }}
+                        >
+                          <Text className="text-xs font-medium" style={{ color: colors.primary }}>{s.name}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+                {overflow > 0 && (
+                  <Text className="text-xs mt-1" style={{ color: colors.textMuted }}>
+                    +{overflow} ещё
+                  </Text>
+                )}
+              </View>
+            );
+          })()
+        : (
+          <>
+            {/* Fallback: flat service pills */}
+            {services.length > 0 && (
+              <View className="flex-row flex-wrap mt-2" style={{ gap: 8 }}>
+                {services.map((s) => (
+                  <View
+                    key={s.id}
+                    className="px-2.5 py-1 rounded-full"
+                    style={{ backgroundColor: colors.accentSoft }}
+                  >
+                    <Text className="text-xs font-medium" style={{ color: colors.primary }}>{s.name}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {/* City */}
+            {cities.length > 0 && (
+              <View className="flex-row items-center mt-2">
+                <FontAwesome name="map-marker" size={12} color={colors.textMuted} />
+                <Text className="text-xs ml-1" style={{ color: colors.textMuted }} numberOfLines={1}>
+                  {cities.map((c) => c.name).join(", ")}
+                </Text>
+              </View>
+            )}
+          </>
+        )}
     </Pressable>
   );
 }
