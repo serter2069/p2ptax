@@ -9,24 +9,7 @@ import {
 } from "react-native";
 import { useRouter, usePathname, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import {
-  X,
-  LogOut,
-  Settings,
-  Bell,
-  type LucideIcon,
-} from "lucide-react-native";
-import {
-  LayoutGrid,
-  FileText,
-  MessageCircle,
-  BarChart2,
-  Users,
-  Shield,
-  Flag,
-  Inbox,
-  Search,
-} from "lucide-react-native";
+import { X, LogOut, Settings } from "lucide-react-native";
 import { colors, spacing, roleAccent, type RoleAccentKey } from "@/lib/theme";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import RoleBadge from "./RoleBadge";
@@ -34,158 +17,23 @@ import {
   detectSidebarGroup,
   type SidebarGroup,
 } from "./SidebarNav";
+import {
+  type MatchContext,
+  itemsForGroup,
+} from "@/lib/nav-items";
 
 /**
  * MobileDrawer — slide-in left rail for mobile (<768px).
  *
- * Mirrors SidebarNav nav items exactly. Opened by the burger button in
- * AppHeader; closed by: overlay tap, X button, or a nav tap.
+ * Mirrors SidebarNav nav items exactly (shared via lib/nav-items.ts).
+ * Opened by the burger button in AppHeader; closed by: overlay tap, X button,
+ * or a nav tap.
  *
  * Implementation: React Native Animated (no 3rd-party libs), Modal for
  * overlay. Slide animation: translateX -280 → 0.
  */
 
 const DRAWER_WIDTH = 280;
-
-// ─────────────────────────────────────────── nav item types (mirrors SidebarNav)
-
-interface MatchContext {
-  path: string;
-  segments: readonly string[];
-}
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  match: (ctx: MatchContext) => boolean;
-}
-
-const groupMatch = (
-  ctx: MatchContext,
-  group: "(tabs)" | "(admin-tabs)",
-  leaf: string
-): boolean => {
-  if (ctx.segments[0] === group && ctx.segments[1] === leaf) return true;
-  return (
-    ctx.path.includes(`${group}/${leaf}`) ||
-    ctx.path.includes(`${group.replace(/[()]/g, "")}/${leaf}`)
-  );
-};
-
-const topLevelMatch = (ctx: MatchContext, prefix: string): boolean => {
-  const first = ctx.segments[0] ?? "";
-  const inGroup = first.startsWith("(") && first.endsWith(")") && first !== "(tabs)";
-  if (inGroup) return false;
-  return ctx.path === prefix || ctx.path.startsWith(`${prefix}/`);
-};
-
-const USER_BASE_ITEMS: NavItem[] = [
-  {
-    label: "Дашборд",
-    href: "/(tabs)",
-    icon: LayoutGrid,
-    match: (ctx) =>
-      groupMatch(ctx, "(tabs)", "index") ||
-      (ctx.segments[0] === "(tabs)" && !ctx.segments[1]),
-  },
-  {
-    label: "Мои заявки",
-    href: "/(tabs)/requests",
-    icon: FileText,
-    match: (ctx) => groupMatch(ctx, "(tabs)", "requests"),
-  },
-  {
-    label: "Сообщения",
-    href: "/(tabs)/messages",
-    icon: MessageCircle,
-    match: (ctx) => groupMatch(ctx, "(tabs)", "messages"),
-  },
-];
-
-// Client-only addition: injected after "Мои заявки" for non-specialist users.
-const USER_CLIENT_EXTRA: NavItem[] = [
-  {
-    label: "Найти специалиста",
-    href: "/specialists",
-    icon: Search,
-    match: (ctx) => topLevelMatch(ctx, "/specialists"),
-  },
-];
-
-const USER_SPECIALIST_EXTRA: NavItem[] = [
-  {
-    label: "Заявки клиентов",
-    href: "/(tabs)/public-requests",
-    icon: Inbox,
-    match: (ctx) =>
-      groupMatch(ctx, "(tabs)", "public-requests") ||
-      topLevelMatch(ctx, "/requests"),
-  },
-];
-
-const USER_TAIL_ITEMS: NavItem[] = [
-  {
-    label: "Уведомления",
-    href: "/notifications",
-    icon: Bell,
-    match: (ctx) => topLevelMatch(ctx, "/notifications"),
-  },
-];
-
-const ADMIN_ITEMS: NavItem[] = [
-  {
-    label: "Дашборд",
-    href: "/(admin-tabs)/dashboard",
-    icon: BarChart2,
-    match: (ctx) => groupMatch(ctx, "(admin-tabs)", "dashboard"),
-  },
-  {
-    label: "Пользователи",
-    href: "/(admin-tabs)/users",
-    icon: Users,
-    match: (ctx) => groupMatch(ctx, "(admin-tabs)", "users"),
-  },
-  {
-    label: "Модерация",
-    href: "/(admin-tabs)/moderation",
-    icon: Shield,
-    match: (ctx) => groupMatch(ctx, "(admin-tabs)", "moderation"),
-  },
-  {
-    label: "Жалобы",
-    href: "/(admin-tabs)/complaints",
-    icon: Flag,
-    match: (ctx) => groupMatch(ctx, "(admin-tabs)", "complaints"),
-  },
-  {
-    label: "Настройки системы",
-    href: "/admin/settings",
-    icon: Settings,
-    match: (ctx) => ctx.path.startsWith("/admin/settings"),
-  },
-];
-
-function buildUserItems(isSpecialist: boolean): NavItem[] {
-  return isSpecialist
-    ? [...USER_BASE_ITEMS, ...USER_SPECIALIST_EXTRA, ...USER_TAIL_ITEMS]
-    : [...USER_BASE_ITEMS, ...USER_CLIENT_EXTRA, ...USER_TAIL_ITEMS];
-}
-
-function itemsForGroup(
-  group: SidebarGroup,
-  role: UserRole,
-  isSpecialist: boolean
-): NavItem[] {
-  if (group === "admin" || role === "ADMIN") return ADMIN_ITEMS;
-  switch (group) {
-    case "user":
-    case "main":
-      return buildUserItems(isSpecialist);
-    default:
-      return [];
-  }
-}
 
 function toAccentKey(role: UserRole, isSpecialist: boolean): RoleAccentKey {
   if (role === "ADMIN") return "admin";
@@ -223,7 +71,7 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
     segments: segments as readonly string[],
   };
 
-  const group = detectSidebarGroup(pathname, segments as readonly string[]);
+  const group = detectSidebarGroup(pathname, segments as readonly string[], user?.role ?? null);
   const accentKey = toAccentKey(user?.role ?? null, isSpecialistUser);
   const accent = roleAccent[accentKey];
   const items = itemsForGroup(group, user?.role ?? null, isSpecialistUser);
