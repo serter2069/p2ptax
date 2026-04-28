@@ -484,23 +484,8 @@ export default function UnifiedInbox() {
           />
         }
         ListHeaderComponent={
-          <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-            <View className="flex-row items-center gap-2 mb-3">
-              <Text className="text-2xl font-bold text-text-base flex-1">
-                Сообщения
-              </Text>
-              {unreadTotal > 0 && (
-                <View
-                  className="bg-accent rounded-full items-center justify-center"
-                  style={{ minWidth: 24, height: 24, paddingHorizontal: 6 }}
-                >
-                  <Text className="text-xs font-bold text-white">
-                    {unreadTotal > 99 ? "99+" : unreadTotal}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <View className="flex-row gap-2 mb-3">
+          <View style={{ paddingHorizontal: 16, paddingTop: 6 }}>
+            <View className="flex-row gap-2 pb-2">
               <FilterChip
                 label="Все"
                 active={filter === "all"}
@@ -511,6 +496,16 @@ export default function UnifiedInbox() {
                 active={filter === "unread"}
                 onPress={() => setFilter("unread")}
               />
+              {unreadTotal > 0 && (
+                <View
+                  className="bg-accent rounded-full items-center justify-center self-center"
+                  style={{ minWidth: 20, height: 20, paddingHorizontal: 5 }}
+                >
+                  <Text className="text-xs font-bold text-white">
+                    {unreadTotal > 99 ? "99+" : unreadTotal}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         }

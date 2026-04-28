@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
+import { sendNewMessageEmail } from "../lib/email";
 import type * as Minio from "minio";
 import { minioClient, MINIO_BUCKET } from "../lib/minio";
 
@@ -207,7 +208,7 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
 
     const thread = await prisma.thread.findUnique({
       where: { id: threadId },
-      include: { request: { select: { status: true } } },
+      include: { request: { select: { status: true, title: true } } },
     });
 
     if (!thread) {
@@ -293,6 +294,22 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
       body: trimmedText ? trimmedText.slice(0, 200) : "Вложение",
       entityId: threadId,
     }).catch((err: Error) => console.warn("[notifications] new_message trigger failed:", err.message));
+
+    // Email notification — fire-and-forget
+    prisma.user.findUnique({
+      where: { id: recipientId },
+      select: { email: true, firstName: true, lastName: true },
+    }).then((recipient) => {
+      if (!recipient) return;
+      const toName = [recipient.firstName, recipient.lastName].filter(Boolean).join(" ") || "Пользователь";
+      return sendNewMessageEmail({
+        toEmail: recipient.email,
+        toName,
+        fromName: senderName,
+        threadId,
+        requestTitle: thread.request.title,
+      });
+    }).catch((err: Error) => console.warn("[email] new_message email failed:", err.message));
 
     res.json({ message: { ...message, files: savedFiles } });
   } catch (error) {

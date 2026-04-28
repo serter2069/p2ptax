@@ -163,7 +163,7 @@ export default function RequestMessages() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Сообщения" />
+        {!isDesktop && <HeaderBack title="Сообщения" />}
         <ResponsiveContainer>
           {[0, 1, 2, 3].map((i) => (
             <View key={i} className="flex-row items-center py-3 border-b border-border">
@@ -183,7 +183,7 @@ export default function RequestMessages() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Сообщения" />
+        {!isDesktop && <HeaderBack title="Сообщения" />}
         <View className="flex-1 items-center justify-center">
           <ErrorState
             message={error}
@@ -199,7 +199,7 @@ export default function RequestMessages() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <HeaderBack title="Сообщения" />
+      {!isDesktop && <HeaderBack title="Сообщения" />}
       <ResponsiveContainer>
         <FlatList
           data={threads}
