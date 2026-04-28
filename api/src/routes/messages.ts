@@ -52,6 +52,48 @@ interface FileInput {
   mimeType: string;
 }
 
+// GET /api/messages/unread-count — count of threads with unread messages
+router.get("/unread-count", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+
+    const threads = await prisma.thread.findMany({
+      where: {
+        OR: [{ clientId: userId }, { specialistId: userId }],
+      },
+      select: {
+        id: true,
+        clientId: true,
+        specialistId: true,
+        clientLastReadAt: true,
+        specialistLastReadAt: true,
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { senderId: true, createdAt: true },
+        },
+      },
+    });
+
+    let count = 0;
+    for (const t of threads) {
+      const isClient = t.clientId === userId;
+      const lastReadAt = isClient ? t.clientLastReadAt : t.specialistLastReadAt;
+      const lastMsg = t.messages[0];
+      if (!lastMsg) continue;
+      if (lastMsg.senderId === userId) continue;
+      if (!lastReadAt || lastMsg.createdAt > lastReadAt) {
+        count++;
+      }
+    }
+
+    res.json({ count });
+  } catch (error) {
+    console.error("unread-count error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/messages/threads — list threads for current user
 router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
   try {

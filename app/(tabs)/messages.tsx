@@ -96,14 +96,12 @@ function formatTime(dateStr: string): string {
 
 function sortThreads(threads: ThreadItem[]): ThreadItem[] {
   return [...threads].sort((a, b) => {
-    if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
-    if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
     const aTime = a.lastMessage
       ? new Date(a.lastMessage.createdAt).getTime()
-      : new Date(a.createdAt).getTime();
+      : a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bTime = b.lastMessage
       ? new Date(b.lastMessage.createdAt).getTime()
-      : new Date(b.createdAt).getTime();
+      : b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return bTime - aTime;
   });
 }
@@ -178,6 +176,14 @@ export default function UnifiedInbox() {
         }
       };
 
+      // If we're viewing as_client, the other party is a specialist — navigate to their profile
+      const handleUserPress = (e: { stopPropagation?: () => void }) => {
+        if (e.stopPropagation) e.stopPropagation();
+        if (item.perspective === "as_client") {
+          nav.any(`/specialists/${item.otherUser.id}`);
+        }
+      };
+
       return (
         <Pressable
           accessibilityRole="button"
@@ -203,7 +209,10 @@ export default function UnifiedInbox() {
             pressed && { opacity: 0.75 },
           ]}
         >
-          <View
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={item.perspective === "as_client" ? `Профиль специалиста ${name}` : name}
+            onPress={handleUserPress}
             className="relative mr-3 my-3.5"
             style={{
               shadowColor: colors.black,
@@ -229,15 +238,11 @@ export default function UnifiedInbox() {
             />
             {hasUnread && (
               <View
-                className="absolute -top-1 -right-1 rounded-full bg-accent items-center justify-center px-1"
-                style={{ minWidth: 18, height: 18 }}
-              >
-                <Text className="text-xs font-bold text-white">
-                  {item.unreadCount > 99 ? "99+" : item.unreadCount}
-                </Text>
-              </View>
+                className="absolute -top-0.5 -right-0.5 rounded-full"
+                style={{ width: 10, height: 10, backgroundColor: colors.primary }}
+              />
             )}
-          </View>
+          </Pressable>
 
           <View className="flex-1 min-w-0 py-3.5">
             <View className="flex-row items-center justify-between gap-2">
@@ -290,7 +295,7 @@ export default function UnifiedInbox() {
 
   if (!ready || loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-white" edges={isDesktop ? [] : ["top"]}>
         <HeaderHome />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
@@ -301,7 +306,7 @@ export default function UnifiedInbox() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-white" edges={isDesktop ? [] : ["top"]}>
         <HeaderHome />
         <View className="flex-1 items-center justify-center">
           <ErrorState message={error} onRetry={fetchThreads} />
@@ -334,7 +339,7 @@ export default function UnifiedInbox() {
   if (isDesktop) {
     const isWide = width >= 1024;
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-white" edges={[]}>
         <HeaderHome />
         <View className="flex-1 items-center" style={{ width: "100%", overflow: "hidden" }}>
           <View
@@ -435,7 +440,6 @@ export default function UnifiedInbox() {
                         ? "Напишите по публичной заявке, чтобы начать переписку с клиентом."
                         : "Когда специалисты напишут по заявкам, переписки появятся слева."
                   }
-                  leftHint="Список диалогов"
                   primary={
                     isSpecialistUser
                       ? {
@@ -456,7 +460,7 @@ export default function UnifiedInbox() {
                       : {
                           label: "Найти специалиста",
                           onPress: () => nav.routes.specialists(),
-                          icon: "sparkles",
+                          icon: "search",
                         }
                   }
                 />
@@ -470,7 +474,7 @@ export default function UnifiedInbox() {
 
   // Mobile: full-screen list
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={isDesktop ? [] : ["top"]}>
       <HeaderHome />
       <FlatList
         data={filtered}
@@ -530,13 +534,13 @@ function FilterChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`px-4 rounded-full border ${
+      className={`px-3 rounded-full border ${
         active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
-      style={{ minHeight: 44, justifyContent: "center" }}
+      style={{ height: 28, justifyContent: "center" }}
     >
       <Text
-        className={`text-sm font-medium ${active ? "text-white" : "text-text-base"}`}
+        className={`text-xs font-medium ${active ? "text-white" : "text-text-base"}`}
       >
         {label}
       </Text>

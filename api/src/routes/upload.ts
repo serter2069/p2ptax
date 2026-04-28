@@ -118,11 +118,25 @@ const chatFileUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ["application/pdf", "image/jpeg", "image/png"];
+    const allowed = [
+      // Images
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      // Documents
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      // Text
+      "text/plain",
+    ];
     if (allowed.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only pdf, jpg, png allowed for chat files"));
+      cb(new Error("Недопустимый тип файла. Разрешены: изображения, PDF, Word, Excel, TXT"));
     }
   },
 });
