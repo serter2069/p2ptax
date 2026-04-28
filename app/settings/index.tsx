@@ -15,11 +15,9 @@ import { useTypedRouter } from "@/lib/navigation";
 import {
   LogOut,
   Trash2,
-  Bell,
   Pencil,
   Briefcase,
   ChevronRight,
-  Palette,
   FileText,
 } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
@@ -601,18 +599,6 @@ export default function UnifiedSettings() {
               onPushChange={setPushEnabled}
               onEmailChange={setEmailEnabled}
             />
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Все уведомления"
-              onPress={() => nav.routes.notifications()}
-              className="flex-row items-center py-3 border-t border-border"
-            >
-              <Bell size={16} color={colors.textSecondary} />
-              <Text className="flex-1 ml-3 text-sm text-text-base">
-                Все уведомления
-              </Text>
-              <ChevronRight size={14} color={colors.borderLight} />
-            </Pressable>
           </View>
 
           {/* 4. Правовая информация */}
@@ -660,25 +646,6 @@ export default function UnifiedSettings() {
               </Text>
             </Pressable>
           </View>
-
-          {__DEV__ ? (
-            <View className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 overflow-hidden">
-              <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
-                Разработка
-              </Text>
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel="Design System"
-                onPress={() => nav.routes.brand()}
-                className="flex-row items-center min-h-[44px]"
-              >
-                <Palette size={16} color={colors.textSecondary} />
-                <Text className="text-base text-text-base ml-3 flex-1">
-                  Design System
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
 
           <Text className="text-xs text-text-dim text-center mb-4">
             Версия 1.0.0

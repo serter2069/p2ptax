@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable, Modal, Platform } from "react-native";
 import { useRouter, usePathname, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { Bell, Settings, LogOut } from "lucide-react-native";
+import { Settings, LogOut } from "lucide-react-native";
 import { colors, spacing, roleAccent, type RoleAccentKey } from "@/lib/theme";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import RoleBadge from "./RoleBadge";
@@ -360,32 +360,6 @@ export default function SidebarNav({ group }: SidebarNavProps) {
                 }}
               >
                 Настройки
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Уведомления"
-              onPress={() => {
-                setDropdownOpen(false);
-                nav.routes.notifications();
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: spacing.sm,
-                paddingHorizontal: spacing.sm,
-                borderRadius: 8,
-              }}
-            >
-              <Bell size={16} color={colors.textSecondary} />
-              <Text
-                style={{
-                  marginLeft: spacing.sm,
-                  fontSize: 14,
-                  color: colors.text,
-                }}
-              >
-                Уведомления
               </Text>
             </Pressable>
             <Pressable

@@ -12,7 +12,6 @@ import {
   Users,
   Shield,
   Flag,
-  Bell,
   Settings,
   Inbox,
   Search,
@@ -115,14 +114,7 @@ export const USER_SPECIALIST_EXTRA: NavItem[] = [
   },
 ];
 
-export const USER_TAIL_ITEMS: NavItem[] = [
-  {
-    label: "Уведомления",
-    href: "/notifications",
-    icon: Bell,
-    match: (ctx) => topLevelMatch(ctx, "/notifications"),
-  },
-];
+export const USER_TAIL_ITEMS: NavItem[] = [];
 
 export const ADMIN_ITEMS: NavItem[] = [
   {
