@@ -370,17 +370,15 @@ export default function AuthOtpScreen() {
 
             <View className="flex-row justify-center gap-2 mb-4">
               {digits.length === 0 ? null : digits.map((digit, i) => (
-                <TextInput
+                // Outer View owns border/bg — prevents double-input on web
+                // (NativeWind wraps TextInput in extra div when className is present;
+                // keeping className off TextInput and visual styling on parent View
+                // avoids the double-box artifact).
+                <View
                   key={i}
-                  accessibilityLabel={`Цифра ${i + 1} кода подтверждения`}
-                  ref={(ref) => {
-                    inputRefs.current[i] = ref;
-                  }}
-                  // @ts-expect-error — outlineStyle is web-only CSS; RN drops unknown style keys safely
                   style={{
                     width: 48,
                     height: 56,
-                    textAlign: "center",
                     borderRadius: radiusValue.md,
                     borderWidth: error ? 2 : digit ? 2 : 1.5,
                     borderColor: error
@@ -393,22 +391,39 @@ export default function AuthOtpScreen() {
                       : digit
                         ? colors.accentSoft
                         : colors.surface,
-                    fontSize: 24,
-                    fontWeight: "700",
-                    color: error ? colors.error : colors.text,
-                    outlineWidth: 0,
-                    outlineStyle: "none",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
-                  value={digit}
-                  onChangeText={(v) => handleDigitChange(i, v)}
-                  onKeyPress={({ nativeEvent }) =>
-                    handleKeyPress(i, nativeEvent.key)
-                  }
-                  keyboardType="number-pad"
-                  maxLength={CODE_LENGTH}
-                  editable={!isLoading}
-                  selectTextOnFocus
-                />
+                >
+                  <TextInput
+                    accessibilityLabel={`Цифра ${i + 1} кода подтверждения`}
+                    ref={(ref) => {
+                      inputRefs.current[i] = ref;
+                    }}
+                    // @ts-expect-error — outlineStyle is web-only CSS; RN drops unknown style keys safely
+                    style={{
+                      width: 48,
+                      height: 56,
+                      textAlign: "center",
+                      fontSize: 24,
+                      fontWeight: "700",
+                      color: error ? colors.error : colors.text,
+                      outlineWidth: 0,
+                      outlineStyle: "none",
+                      borderWidth: 0,
+                      backgroundColor: "transparent",
+                    }}
+                    value={digit}
+                    onChangeText={(v) => handleDigitChange(i, v)}
+                    onKeyPress={({ nativeEvent }) =>
+                      handleKeyPress(i, nativeEvent.key)
+                    }
+                    keyboardType="number-pad"
+                    maxLength={CODE_LENGTH}
+                    editable={!isLoading}
+                    selectTextOnFocus
+                  />
+                </View>
               ))}
             </View>
 
