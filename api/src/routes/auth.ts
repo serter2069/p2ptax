@@ -272,14 +272,9 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
 
 // POST /api/auth/set-role — set role for new users (auth required, one-time only)
 //
-// Iter11 — role unification. After merge of CLIENT + SPECIALIST -> USER, this
-// endpoint continues to accept legacy role strings from existing UI clients
-// for backwards compatibility during the 3-PR rollout:
-//   - "CLIENT"      -> role=USER, isSpecialist=false
-//   - "SPECIALIST"  -> role=USER, isSpecialist=true  (profile still needs completion)
-//   - "USER"        -> role=USER, isSpecialist=false (new clients)
-// UI merge in PR 2 will replace this with a cleaner `/set-user-type` that only
-// accepts `{ isSpecialist: boolean }`.
+// Accepts role tokens:
+//   - "CLIENT" / "USER" -> role=CLIENT, isSpecialist=false
+//   - "SPECIALIST"      -> role=CLIENT, isSpecialist=true
 router.post("/set-role", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -288,7 +283,7 @@ router.post("/set-role", authMiddleware, async (req: Request, res: Response) => 
     const ALLOWED_TOKENS = new Set(["CLIENT", "SPECIALIST", "USER"]);
     const roleToken: string | undefined = role;
     if (!roleToken || !ALLOWED_TOKENS.has(roleToken)) {
-      res.status(400).json({ error: "Role must be USER, CLIENT, or SPECIALIST" });
+      res.status(400).json({ error: "Role must be CLIENT or SPECIALIST" });
       return;
     }
 
@@ -313,7 +308,7 @@ router.post("/set-role", authMiddleware, async (req: Request, res: Response) => 
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
-        role: "USER",
+        role: "CLIENT",
         isSpecialist: wantsSpecialist,
       },
       select: {
