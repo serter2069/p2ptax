@@ -16,7 +16,7 @@ import SpecialistSearchBar, {
   CityOpt,
   FnsOpt,
 } from "@/components/filters/SpecialistSearchBar";
-import { AlertCircle, UserX } from "lucide-react-native";
+import { AlertCircle, Search, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
@@ -81,6 +81,9 @@ export default function SpecialistsCatalog() {
   const [fnsAll, setFnsAll] = useState<FnsOpt[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
+  // filtersReady: true once user has picked an FNS (or city+service without FNS)
+  // We do NOT show specialists until FNS is selected — per KEY REQUIREMENT.
+  const [filtersReady, setFiltersReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -102,6 +105,9 @@ export default function SpecialistsCatalog() {
     setSelectedCityId(null);
     setSelectedFnsId(null);
     setSelectedServiceIds([]);
+    setFiltersReady(false);
+    setSpecialists([]);
+    setTotal(0);
   }, []);
 
   const fetchSpecialists = useCallback(
@@ -142,7 +148,8 @@ export default function SpecialistsCatalog() {
       .catch(() => {});
   }, [isAuthenticated]);
 
-  // Initial load: cities, services, then all FNS in one batch (for typeahead).
+  // Initial load: cities, services, and all FNS for typeahead.
+  // We do NOT fetch specialists here — user must select FNS first.
   useEffect(() => {
     let cancelled = false;
     async function init() {
@@ -181,7 +188,7 @@ export default function SpecialistsCatalog() {
       } catch (e) {
         // ignore — page still renders without filters
       }
-      await fetchSpecialistsRef.current(1);
+      // Do NOT fetch specialists on init — wait for FNS selection.
       if (!cancelled) setLoading(false);
     }
     init();
@@ -190,25 +197,31 @@ export default function SpecialistsCatalog() {
     };
   }, []);
 
-  // Refetch on filter change
+  // Refetch on filter change — only when FNS is selected (filtersReady).
   useEffect(() => {
+    if (!filtersReady) return;
     setLoading(true);
     fetchSpecialists(1).finally(() => setLoading(false));
-  }, [selectedCityId, selectedFnsId, selectedServiceIds, fetchSpecialists]);
+  }, [filtersReady, selectedCityId, selectedFnsId, selectedServiceIds, fetchSpecialists]);
 
   const handlePickCity = useCallback((cityId: string) => {
     setSelectedCityId(cityId);
     setSelectedFnsId(null);
+    // City alone does not unlock the catalog — still need FNS selection.
   }, []);
 
   const handlePickFns = useCallback((fns: FnsOpt) => {
     setSelectedCityId(fns.cityId);
     setSelectedFnsId(fns.id);
+    setFiltersReady(true);
   }, []);
 
   const handleClearLocation = useCallback(() => {
     setSelectedCityId(null);
     setSelectedFnsId(null);
+    setFiltersReady(false);
+    setSpecialists([]);
+    setTotal(0);
   }, []);
 
   const handleServiceToggle = useCallback((id: string) => {
@@ -282,50 +295,6 @@ export default function SpecialistsCatalog() {
     return total > 0 ? total : specialists.length;
   }, [loading, total, specialists.length]);
 
-  if (loading && specialists.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface2">
-        {!isDesktop && (
-          <Text className="text-xl font-bold text-text-base mx-4 mt-4 mb-2">
-            Специалисты
-          </Text>
-        )}
-        <View className="py-4 px-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <View
-              key={i}
-              className="mb-3 bg-white rounded-2xl overflow-hidden border border-border"
-            >
-              <LoadingState variant="skeleton" lines={4} />
-            </View>
-          ))}
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error && specialists.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface2">
-        {!isDesktop && (
-          <Text className="text-xl font-bold text-text-base mx-4 mt-4 mb-2">
-            Специалисты
-          </Text>
-        )}
-        <EmptyState
-          icon={AlertCircle}
-          title="Не удалось загрузить список"
-          subtitle="Проверьте соединение с интернетом и попробуйте снова"
-          actionLabel="Повторить"
-          onAction={() => {
-            setLoading(true);
-            fetchSpecialists(1).finally(() => setLoading(false));
-          }}
-        />
-      </SafeAreaView>
-    );
-  }
-
   const allServicesActive = selectedServiceIds.length === 0;
 
   return (
@@ -345,7 +314,7 @@ export default function SpecialistsCatalog() {
         >
           Специалисты
         </Text>
-        {headerCount !== null && headerCount > 0 && (
+        {filtersReady && headerCount !== null && headerCount > 0 && (
           <Text className="text-xs" style={{ color: colors.textMuted }}>
             {headerCount} специалистов
           </Text>
@@ -365,8 +334,8 @@ export default function SpecialistsCatalog() {
         />
       </View>
 
-      {/* Row 3: compact service chips */}
-      {services.length > 0 && (
+      {/* Row 3: compact service chips — only shown once FNS is selected */}
+      {filtersReady && services.length > 0 && (
         <View className="pt-2 pb-2" style={{ zIndex: 1 }}>
           <ScrollView
             horizontal
@@ -420,14 +389,56 @@ export default function SpecialistsCatalog() {
         </View>
       )}
 
-      {/* Specialist list */}
-      {specialists.length === 0 && !loading ? (
+      {/* Specialist list / instruction state */}
+      {!filtersReady ? (
+        /* No FNS selected yet — show instruction */
+        loading ? (
+          <View className="py-4 px-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <View
+                key={i}
+                className="mb-3 bg-white rounded-2xl overflow-hidden border border-border"
+              >
+                <LoadingState variant="skeleton" lines={4} />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <EmptyState
+            icon={Search}
+            title="Выберите ФНС для поиска"
+            subtitle="Введите город или название инспекции в поисковой строке выше, чтобы найти специалистов по вашей налоговой инспекции"
+          />
+        )
+      ) : loading && specialists.length === 0 ? (
+        <View className="py-4 px-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <View
+              key={i}
+              className="mb-3 bg-white rounded-2xl overflow-hidden border border-border"
+            >
+              <LoadingState variant="skeleton" lines={4} />
+            </View>
+          ))}
+        </View>
+      ) : error && specialists.length === 0 ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="Не удалось загрузить список"
+          subtitle="Проверьте соединение с интернетом и попробуйте снова"
+          actionLabel="Повторить"
+          onAction={() => {
+            setLoading(true);
+            fetchSpecialists(1).finally(() => setLoading(false));
+          }}
+        />
+      ) : specialists.length === 0 && !loading ? (
         <EmptyState
           icon={UserX}
           title="Специалистов не найдено"
-          subtitle="Попробуйте изменить фильтры или выбрать другой город"
-          actionLabel={hasFilters ? "Сбросить фильтры" : undefined}
-          onAction={hasFilters ? resetFilters : undefined}
+          subtitle="По выбранной ФНС специалистов пока нет. Попробуйте другую инспекцию."
+          actionLabel="Сбросить фильтры"
+          onAction={resetFilters}
         />
       ) : (
         <FlatList
