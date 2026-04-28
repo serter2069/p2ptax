@@ -371,7 +371,7 @@ img, svg { display: block; max-width: 100%; }
 .avatar.xl .online { width: 18px; height: 18px; right: 3px; bottom: 3px; border-width: 3px; }
 .spec-meta { flex: 1; min-width: 0; }
 .spec-name { font-size: 14px; font-weight: 500; }
-.spec-desc { font-size: 13px; color: var(--text-mute); margin-top: 2px; }
+.spec-desc { font-size: 13px; color: var(--text-mute); margin-top: 4px; }
 .spec-tag {
   font-family: var(--fs-mono);
   font-size: 13px;
@@ -721,7 +721,7 @@ img, svg { display: block; max-width: 100%; }
   letter-spacing: .04em;
 }
 .timeline-label { font-weight: 500; font-size: 15px; }
-.timeline-desc { font-size: 14px; color: var(--text-mute); margin-top: 2px; }
+.timeline-desc { font-size: 14px; color: var(--text-mute); margin-top: 4px; }
 .timeline-item.bad .timeline-label { color: var(--cta); }
 
 /* ============ Cases ============ */
@@ -748,11 +748,11 @@ img, svg { display: block; max-width: 100%; }
   font-size: 22px;
   line-height: 1.25;
   letter-spacing: -0.015em;
-  margin: 16px 0 auto;
+  margin: 12px 0 auto;
 }
 .case-foot {
   display: flex; align-items: center; gap: 12px;
-  margin-top: 20px;
+  margin-top: 24px;
   font-size: 13px; color: var(--text-mute);
 }
 .placeholder-badge {
@@ -782,9 +782,9 @@ img, svg { display: block; max-width: 100%; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  padding-top: 28px;
+  padding-top: 24px;
   border-top: 1px solid var(--line);
-  margin-top: 28px;
+  margin-top: 24px;
 }
 .stat-val {
   font-family: var(--fs-serif);
@@ -795,7 +795,7 @@ img, svg { display: block; max-width: 100%; }
 .stat-label {
   font-family: var(--fs-mono); font-size: 13px;
   color: var(--text-mute); text-transform: uppercase; letter-spacing: .08em;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 /* ============ Final CTA ============ */
@@ -1095,7 +1095,7 @@ img, svg { display: block; max-width: 100%; }
 }
 .chat-item-time {
   font-family: var(--fs-mono); font-size: 12px;
-  color: var(--text-dim); margin-top: 2px;
+  color: var(--text-dim); margin-top: 4px;
 }
 .chat-panel { display: flex; flex-direction: column; min-width: 0; }
 .chat-head {
@@ -1317,10 +1317,10 @@ img, svg { display: block; max-width: 100%; }
 .crumbs .crumb-cur { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
 
 .page-title {
-  margin: 8px 0 20px;
+  margin: 12px 0 24px;
 }
 .page-title h1 {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-family: var(--fs-sans);
   font-size: clamp(28px, 3.6vw, 40px);
   letter-spacing: -0.02em;
@@ -1461,7 +1461,7 @@ img, svg { display: block; max-width: 100%; }
 .msg-file-size {
   font-size: 11px;
   opacity: 0.65;
-  margin-top: 2px;
+  margin-top: 4px;
   font-family: var(--fs-mono);
 }
 .msg-file-dl {
