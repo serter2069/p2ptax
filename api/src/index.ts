@@ -22,6 +22,7 @@ import adminRoutes from "./routes/admin";
 import notificationsRoutes from "./routes/notifications";
 import contactsRoutes from "./routes/contacts";
 import statsRoutes from "./routes/stats";
+import savedSpecialistsRoutes from "./routes/saved-specialists";
 import { startNotificationWorker } from "./notifications/notification.processor";
 import { runRequestLifecycleCron } from "./cron/requestLifecycle";
 
@@ -54,6 +55,7 @@ app.use("/api/specialist", specialistRoutes);
 app.use("/api/threads", threadsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/saved-specialists", savedSpecialistsRoutes);
 app.use("/api", contactsRoutes);
 
 // 404 handler — no matching route
