@@ -71,7 +71,9 @@ router.post("/avatar", authMiddleware, uploadRateLimiter, avatarUpload.single("f
       "Content-Type": "image/jpeg",
     });
 
-    const url = `/${MINIO_BUCKET}/${key}`;
+    // Return 1-year presigned URL so the avatar is directly usable in <Image>.
+    // The raw key is also returned so callers can re-presign on future loads.
+    const url = await minioClient.presignedGetObject(MINIO_BUCKET, key, 365 * 24 * 60 * 60);
     res.json({ url, key });
   } catch (error) {
     console.error("avatar upload error:", error);
