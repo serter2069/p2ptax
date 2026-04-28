@@ -102,6 +102,14 @@ export default function Header() {
         <View className="flex-row items-center gap-3">
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel="Личный кабинет"
+            onPress={() => router.push("/(tabs)" as never)}
+            className="px-4 h-11 rounded-lg items-center justify-center active:bg-slate-100"
+          >
+            <Text className="text-sm font-semibold text-blue-900">Личный кабинет</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Уведомления"
             onPress={() => nav.routes.notifications()}
             className="w-11 h-11 rounded-lg items-center justify-center active:bg-surface2"
