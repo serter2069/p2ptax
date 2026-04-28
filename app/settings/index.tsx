@@ -166,10 +166,13 @@ export default function UnifiedSettings() {
       nav.replaceRoutes.adminSettings();
       return;
     }
-    if (ready && isSpecialistUser) {
+    // Load specialist profile for any non-admin user. Returning specialists
+    // who toggled off keep their FNS data — we need it to skip onboarding
+    // when they re-enable from client mode.
+    if (ready && !isAdminUser) {
       loadSpecialistData();
     }
-  }, [ready, isSpecialistUser, isAdminUser, loadSpecialistData, router]);
+  }, [ready, isAdminUser, loadSpecialistData, router]);
 
   const initials = [firstName, lastName]
     .map((n) => n?.charAt(0)?.toUpperCase())
@@ -324,9 +327,13 @@ export default function UnifiedSettings() {
           nav.any("/onboarding/work-area?from=settings");
           return;
         }
-        // Already has data — just re-enable.
+        // Already has data — just re-enable, then refresh profile so the
+        // settings panel reflects current FNS/services/contacts immediately.
         apiPost("/api/user/leave-specialist-toggle", { enable: true })
-          .then(() => updateUser({ isSpecialist: true }))
+          .then(async () => {
+            updateUser({ isSpecialist: true });
+            await loadSpecialistData();
+          })
           .catch(() => Alert.alert("Ошибка", "Не удалось включить режим специалиста"));
       } else {
         Alert.alert(
@@ -350,7 +357,7 @@ export default function UnifiedSettings() {
         );
       }
     },
-    [specData, updateUser, router]
+    [specData, updateUser, loadSpecialistData, router]
   );
 
   if (!ready) {
