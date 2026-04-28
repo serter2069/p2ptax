@@ -4,7 +4,8 @@ import { useTypedRouter } from "@/lib/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Redirects unauthenticated users to /auth/email.
+ * Redirects unauthenticated users to /auth/email with a returnTo param
+ * so the user is redirected back after login.
  * Returns { user, isLoading, isAuthenticated } for rendering guards.
  */
 export function useRequireAuth() {
