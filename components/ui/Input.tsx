@@ -84,14 +84,17 @@ export default function Input({
           alignItems: "center",
           minHeight: multiline ? 96 : 48,
           borderRadius: radiusValue.md,
-          // On web the inner <input> owns the border so style/a11y audits
-          // recognise the field as framed (kills "naked input" flag). On
-          // native we keep the wrapper border because RN <TextInput> doesn't
-          // visually paint borderColor reliably across iOS/Android.
-          borderWidth: Platform.OS === "web" ? 0 : 1,
+          // Outer View owns the border on ALL platforms — eliminates the
+          // "box in a box" artifact on web where the inner <input> previously
+          // had its own border while the wrapper added a background+radius.
+          borderWidth: 1,
           borderColor,
           backgroundColor: bgColor,
           paddingHorizontal: spacing.md, // token: 12
+          // web-only 3px accent ring on focus — ignored on native
+          ...(Platform.OS === "web" && focused
+            ? { boxShadow: `0 0 0 3px ${colors.accent}33` }
+            : {}),
         }, containerStyle]}
       >
         {Icon && (
@@ -123,23 +126,19 @@ export default function Input({
           onBlur={() => setFocused(false)}
           // @ts-expect-error — TextInput's `style` prop is typed as
           // `StyleProp<TextStyle>`, which doesn't include web-only CSS
-          // properties. We use three non-standard keys here:
+          // properties. We use two non-standard keys here:
           //   alignSelf: 'stretch' — forces the web <input> to fill its
           //     flex-row parent vertically (RN ignores on native).
           //   outlineStyle: 'none' — removes default browser outline on
-          //     focus; we render our own focus ring via boxShadow.
-          //   boxShadow — custom 3px accent ring on web focus state.
-          // All three are safe: RN drops unknown style keys, and on web
-          // they produce the intended CSS.
+          //     focus; the focus ring is rendered on the outer View via
+          //     boxShadow instead.
+          // Both are safe: RN drops unknown style keys, and on web they
+          // produce the intended CSS.
           style={{
             flex: 1,
             // On web the <input> intrinsic height is ~18px. We force a
             // minHeight of 44 so the full tap target area is interactive
-            // (Apple HIG / WCAG 2.5.5 — minimum 44x44 touch target). Using
-            // an explicit minHeight rather than height: '100%' avoids the
-            // 42px artifact caused by container_height - 2*borderWidth on
-            // web, where the parent's borderWidth subtracts from the
-            // child's effective height.
+            // (Apple HIG / WCAG 2.5.5 — minimum 44x44 touch target).
             ...(Platform.OS === 'web' && !multiline ? {
               minHeight: 44,
               alignSelf: 'stretch',
@@ -147,20 +146,13 @@ export default function Input({
             fontSize: fontSizeValue.base,
             color: colors.text,
             paddingVertical: multiline ? spacing.sm : 0,
-            // On web the <input> owns the visible border so style/a11y
-            // audits flag the field as "framed" (kills naked-input flag).
-            // The outer View's border is suppressed on web (see above) to
-            // avoid a double border. On native the wrapper paints the
-            // border instead, so we keep the input borderless there.
-            borderWidth: Platform.OS === "web" ? 1 : 0,
-            borderColor: Platform.OS === "web" ? borderColor : "transparent",
+            // Inner TextInput never owns a border — the outer View does.
+            // This prevents the double-border artifact on web.
+            borderWidth: 0,
+            borderColor: 'transparent',
             outlineWidth: 0,
             outlineStyle: 'none',
             backgroundColor: 'transparent',
-            // web-only 3px accent ring on focus — ignored on native
-            ...(Platform.OS === "web" && focused
-              ? { boxShadow: `0 0 0 3px ${colors.accent}33` }
-              : {}),
           }}
         />
       </View>

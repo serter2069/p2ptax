@@ -376,8 +376,11 @@ export default function AuthOtpScreen() {
                   ref={(ref) => {
                     inputRefs.current[i] = ref;
                   }}
-                  className="w-12 h-14 text-center"
+                  // @ts-expect-error — outlineStyle is web-only CSS; RN drops unknown style keys safely
                   style={{
+                    width: 48,
+                    height: 56,
+                    textAlign: "center",
                     borderRadius: radiusValue.md,
                     borderWidth: error ? 2 : digit ? 2 : 1.5,
                     borderColor: error
@@ -394,6 +397,7 @@ export default function AuthOtpScreen() {
                     fontWeight: "700",
                     color: error ? colors.error : colors.text,
                     outlineWidth: 0,
+                    outlineStyle: "none",
                   }}
                   value={digit}
                   onChangeText={(v) => handleDigitChange(i, v)}
