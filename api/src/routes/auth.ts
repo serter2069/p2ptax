@@ -308,7 +308,7 @@ router.post("/set-role", authMiddleware, async (req: Request, res: Response) => 
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
-        role: "CLIENT",
+        role: "USER",
         isSpecialist: wantsSpecialist,
       },
       select: {

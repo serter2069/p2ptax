@@ -323,7 +323,7 @@ router.get(
         prisma.user.count({
           where: { isSpecialist: true, isAvailable: true, isBanned: false },
         }),
-        prisma.user.count({ where: { role: "CLIENT", isSpecialist: false } }),
+        prisma.user.count({ where: { role: "USER", isSpecialist: false } }),
         prisma.user.count({ where: { isSpecialist: true } }),
         prisma.user.count({
           where: { createdAt: { gte: weekAgo } },

@@ -41,7 +41,7 @@ router.get("/", async (req: Request, res: Response) => {
     switch (roleFilter) {
       case "CLIENT":
       case "USER":
-        where.role = "CLIENT";
+        where.role = "USER";
         where.isSpecialist = false;
         break;
       case "SPECIALIST":
@@ -127,11 +127,11 @@ router.patch("/:id", async (req: Request, res: Response) => {
     switch (roleInput) {
       case "CLIENT":
       case "USER":
-        data.role = "CLIENT";
+        data.role = "USER";
         data.isSpecialist = false;
         break;
       case "SPECIALIST":
-        data.role = "CLIENT";
+        data.role = "USER";
         data.isSpecialist = true;
         break;
       case "ADMIN":
