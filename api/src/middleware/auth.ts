@@ -155,7 +155,7 @@ export function canWriteThreads(user: UserPermissionShape | null): boolean {
  */
 export function canCreateRequests(user: UserPermissionShape | null): boolean {
   if (!user) return false;
-  return user.role === "CLIENT";
+  return user.role === "USER";
 }
 
 /**

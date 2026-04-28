@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { verifyAccessToken } from "../lib/jwt";
-import { authMiddleware, roleGuard } from "../middleware/auth";
+import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
 
 const router = Router();
 
@@ -224,7 +224,7 @@ router.get("/", async (req: Request, res: Response) => {
 
 // GET /api/specialists/dashboard — specialist's own dashboard data (auth required)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get("/dashboard", authMiddleware, roleGuard("SPECIALIST" as any), async (req: Request, res: Response) => {
+router.get("/dashboard", authMiddleware, requireSpecialistFeatures, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
 
@@ -331,7 +331,7 @@ router.get("/dashboard", authMiddleware, roleGuard("SPECIALIST" as any), async (
 
 // PATCH /api/specialists/availability — toggle specialist availability (auth required)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.patch("/availability", authMiddleware, roleGuard("SPECIALIST" as any), async (req: Request, res: Response) => {
+router.patch("/availability", authMiddleware, requireSpecialistFeatures, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const { isAvailable } = req.body as { isAvailable?: unknown };
