@@ -101,6 +101,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const [text, setText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -202,6 +203,25 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const handleRemovePendingFile = useCallback((index: number) => {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
+
+  const handleWebFileDrop = useCallback(async (file: File) => {
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      Alert.alert("Файл слишком большой", "Максимум 10 МБ");
+      return;
+    }
+    if (pendingFiles.length >= 3) {
+      Alert.alert("Лимит файлов", "Можно прикрепить не более 3 файлов");
+      return;
+    }
+    const pending: PendingFile = {
+      uri: URL.createObjectURL(file),
+      name: file.name,
+      mimeType: file.type || "application/octet-stream",
+      size: file.size,
+    };
+    setPendingFiles((prev) => [...prev, pending]);
+  }, [pendingFiles.length]);
 
   const uploadChatFile = useCallback(async (file: PendingFile, tid: string): Promise<string> => {
     const uploadToken = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -415,7 +435,29 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
         {/* Input bar */}
         {!isClosed && (
-          <View className="flex-row items-end border-t border-border px-3 py-2 bg-white">
+          <View
+            className="flex-row items-end border-t border-border px-3 py-2 bg-white"
+            style={dragOver ? { backgroundColor: colors.accentSoft } as object : undefined}
+            {...(Platform.OS === "web" ? {
+              onDragOver: (e: React.DragEvent) => { e.preventDefault(); setDragOver(true); },
+              onDragLeave: () => setDragOver(false),
+              onDrop: (e: React.DragEvent) => {
+                e.preventDefault();
+                setDragOver(false);
+                const file = e.dataTransfer.files[0];
+                if (file) handleWebFileDrop(file);
+              },
+            } as object : {})}
+          >
+            {dragOver && Platform.OS === "web" && (
+              <View
+                className="absolute inset-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: "rgba(0,0,0,0.05)", zIndex: 10 }}
+                pointerEvents="none"
+              >
+                <Text className="text-sm font-medium text-text-dim">Перетащите файл сюда</Text>
+              </View>
+            )}
             {/* Attach button */}
             <Pressable
               accessibilityRole="button"

@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
-import { MessagesSquare, Sparkles, ArrowLeft, Plus } from "lucide-react-native";
+import { MessagesSquare, Sparkles, ArrowLeft, Plus, Search } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 /**
@@ -16,7 +16,7 @@ import { colors } from "@/lib/theme";
 interface CTAProps {
   label: string;
   onPress: () => void;
-  icon?: "plus" | "sparkles";
+  icon?: "plus" | "sparkles" | "search";
 }
 
 interface Props {
@@ -30,7 +30,7 @@ interface Props {
 export default function MessengerEmptyPane({
   title = "Выберите диалог",
   hint = "Нажмите на переписку слева, чтобы открыть её",
-  leftHint = "Выберите диалог слева",
+  leftHint,
   primary,
   secondary,
 }: Props) {
@@ -113,16 +113,18 @@ export default function MessengerEmptyPane({
           </Text>
         </View>
 
-        {/* Left-arrow hint strip */}
-        <View
-          className="flex-row items-center gap-2 bg-white rounded-full border border-border"
-          style={{ paddingHorizontal: 12, paddingVertical: 6 }}
-        >
-          <ArrowLeft size={14} color={colors.accent} />
-          <Text className="text-accent font-semibold" style={{ fontSize: 12 }}>
-            {leftHint}
-          </Text>
-        </View>
+        {/* Left-arrow hint strip — only shown when leftHint is provided */}
+        {leftHint ? (
+          <View
+            className="flex-row items-center gap-2 bg-white rounded-full border border-border"
+            style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+          >
+            <ArrowLeft size={14} color={colors.accent} />
+            <Text className="text-accent font-semibold" style={{ fontSize: 12 }}>
+              {leftHint}
+            </Text>
+          </View>
+        ) : null}
 
         {(primary || secondary) && (
           <View className="flex-row flex-wrap items-center justify-center gap-2 mt-2">
@@ -157,6 +159,8 @@ export default function MessengerEmptyPane({
               >
                 {secondary.icon === "plus" ? (
                   <Plus size={14} color={colors.accent} />
+                ) : secondary.icon === "search" ? (
+                  <Search size={14} color={colors.accent} />
                 ) : (
                   <Sparkles size={14} color={colors.accent} />
                 )}

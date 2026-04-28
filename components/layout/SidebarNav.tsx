@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, Pressable, Modal, Platform } from "react-native";
 import { useRouter, usePathname, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { Settings, LogOut } from "lucide-react-native";
 import { colors, spacing, roleAccent, type RoleAccentKey } from "@/lib/theme";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
+import { apiGet } from "@/lib/api";
 import RoleBadge from "./RoleBadge";
 import {
   type MatchContext,
@@ -120,6 +121,20 @@ export default function SidebarNav({ group }: SidebarNavProps) {
   const segments = useSegments();
   const { user, isSpecialistUser, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    apiGet<{ count: number }>("/api/messages/unread-count")
+      .then((r) => setUnreadCount(r.count))
+      .catch(() => {});
+    const interval = setInterval(() => {
+      apiGet<{ count: number }>("/api/messages/unread-count")
+        .then((r) => setUnreadCount(r.count))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const matchCtx: MatchContext = {
     path: pathname,
@@ -248,6 +263,23 @@ export default function SidebarNav({ group }: SidebarNavProps) {
               >
                 {item.label}
               </Text>
+              {unreadCount > 0 && item.href === "/(tabs)/messages" && (
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    backgroundColor: colors.danger,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: 4,
+                  }}
+                >
+                  <Text style={{ color: "white", fontSize: 10, fontWeight: "700" }}>
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           );
         })}
