@@ -22,12 +22,6 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
   lastName: true,
   avatarUrl: true,
   createdAt: true,
-  specialistServices: {
-    select: {
-      service: { select: { id: true, name: true } },
-    },
-    distinct: ["serviceId"],
-  },
   specialistFns: {
     select: {
       fns: {
@@ -37,6 +31,11 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
           city: { select: { id: true, name: true } },
         },
       },
+      services: {
+        select: {
+          service: { select: { id: true, name: true } },
+        },
+      },
     },
   },
 });
@@ -44,19 +43,34 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
 type SpecialistListItem = Prisma.UserGetPayload<{ select: typeof specialistListSelect }>;
 
 function mapSpecialist(s: SpecialistListItem) {
-  const services = s.specialistServices.map((ss) => ss.service);
   const citiesMap = new Map<string, { id: string; name: string }>();
-  for (const sf of s.specialistFns) {
+  const specialistFns = s.specialistFns.map((sf) => {
     citiesMap.set(sf.fns.city.id, sf.fns.city);
+    return {
+      fnsId: sf.fns.id,
+      fnsName: sf.fns.name,
+      city: sf.fns.city,
+      services: sf.services.map((sv) => sv.service),
+    };
+  });
+
+  // Flat deduped services list (for backward compat with horizontal card variant)
+  const servicesMap = new Map<string, { id: string; name: string }>();
+  for (const sf of specialistFns) {
+    for (const svc of sf.services) {
+      servicesMap.set(svc.id, svc);
+    }
   }
+
   return {
     id: s.id,
     firstName: s.firstName,
     lastName: s.lastName,
     avatarUrl: s.avatarUrl,
     createdAt: s.createdAt,
-    services,
+    services: [...servicesMap.values()],
     cities: [...citiesMap.values()],
+    specialistFns,
   };
 }
 

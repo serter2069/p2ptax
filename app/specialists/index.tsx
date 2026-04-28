@@ -35,6 +35,12 @@ interface SpecialistItem {
   createdAt: string;
   services: { id: string; name: string }[];
   cities: { id: string; name: string }[];
+  specialistFns?: {
+    fnsId: string;
+    fnsName: string;
+    city: { id: string; name: string };
+    services: { id: string; name: string }[];
+  }[];
   description?: string | null;
 }
 
@@ -418,6 +424,7 @@ export default function SpecialistsCatalog() {
                 createdAt={item.createdAt}
                 services={item.services}
                 cities={item.cities}
+                specialistFns={item.specialistFns}
                 description={item.description}
                 onPress={handleSpecialistPress}
                 onBookmark={handleBookmark}
