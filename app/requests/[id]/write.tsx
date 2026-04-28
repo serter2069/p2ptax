@@ -201,32 +201,43 @@ export default function SpecialistConfirmWrite() {
           <Text className="text-sm font-semibold text-text-base mb-2">
             Ваше сообщение
           </Text>
-          <TextInput
-            accessibilityLabel="Ваше сообщение"
-            value={message}
-            maxLength={MAX_CHARS}
-            onChangeText={(t) => {
-              if (t.length <= MAX_CHARS) setMessage(t);
-            }}
-            placeholder="Здравствуйте! Я специалист по... Могу помочь с вашей ситуацией. Расскажите подробнее..."
-            placeholderTextColor={colors.placeholder}
-            multiline
-            editable={!isLimitReached}
+          {/* Outer View owns all visual styling — prevents double-input on web (NativeWind wraps
+              TextInput in an extra div when className is used; keeping className off TextInput
+              and border/bg on the parent View avoids the double-box artifact). */}
+          <View
             style={{
               minHeight: 140,
               borderWidth: 1,
               borderColor: isLimitReached ? colors.border : colors.borderLight,
               borderRadius: radiusValue.md,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              fontSize: fontSizeValue.base,
-              color: colors.text,
               backgroundColor: isLimitReached ? colors.background : colors.surface,
-              textAlignVertical: "top",
               opacity: isLimitReached ? 0.5 : 1,
-              outlineWidth: 0,
             }}
-          />
+          >
+            <TextInput
+              accessibilityLabel="Ваше сообщение"
+              value={message}
+              maxLength={MAX_CHARS}
+              onChangeText={(t) => {
+                if (t.length <= MAX_CHARS) setMessage(t);
+              }}
+              placeholder="Здравствуйте! Я специалист по... Могу помочь с вашей ситуацией. Расскажите подробнее..."
+              placeholderTextColor={colors.placeholder}
+              multiline
+              editable={!isLimitReached}
+              style={{
+                flex: 1,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: fontSizeValue.base,
+                color: colors.text,
+                textAlignVertical: "top",
+                outlineWidth: 0,
+                borderWidth: 0,
+                backgroundColor: "transparent",
+              }}
+            />
+          </View>
 
           {/* Counter + min-length hint */}
           <View className="flex-row justify-between items-center mt-1 mb-1">

@@ -235,25 +235,37 @@ export default function AdminUsers() {
 
   const filterBar = (
     <View style={{ gap: 12 }}>
-      <TextInput
-        accessibilityLabel="Поиск по email или имени"
+      {/* Outer View owns all visual styling — prevents double-input on web (NativeWind wraps
+          TextInput in an extra div when className is used; keeping className off TextInput
+          and border/bg on the parent View avoids the double-box artifact). */}
+      <View
         style={{
           backgroundColor: colors.surface2,
           borderRadius: radiusValue.md,
           height: 44,
           paddingHorizontal: 14,
-          color: colors.text,
-          fontSize: fontSizeValue.md,
           borderWidth: 1,
           borderColor: colors.border,
-          outlineWidth: 0,
+          justifyContent: "center",
         }}
-        placeholder="Поиск по email или имени..."
-        placeholderTextColor={colors.placeholder}
-        value={search}
-        onChangeText={setSearch}
-        autoCapitalize="none"
-      />
+      >
+        <TextInput
+          accessibilityLabel="Поиск по email или имени"
+          style={{
+            flex: 1,
+            color: colors.text,
+            fontSize: fontSizeValue.md,
+            borderWidth: 0,
+            backgroundColor: "transparent",
+            outlineWidth: 0,
+          }}
+          placeholder="Поиск по email или имени..."
+          placeholderTextColor={colors.placeholder}
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+        />
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
