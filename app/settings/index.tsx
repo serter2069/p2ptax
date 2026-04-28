@@ -26,7 +26,7 @@ import Input from "@/components/ui/Input";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { apiGet, apiPatch } from "@/lib/api";
+import { apiGet, apiPatch, apiPost } from "@/lib/api";
 import { colors, roleAccent } from "@/lib/theme";
 import AvatarUploader from "@/components/settings/AvatarUploader";
 import ContactMethodsList, {
@@ -311,14 +311,46 @@ export default function UnifiedSettings() {
     );
   }, []);
 
-  // Iter11 PR 3 — progressive specialist opt-in. Existing USERs already
-  // have firstName/lastName, so we skip `/onboarding/name` and jump into
-  // the FNS + services picker. That page collects the full matrix, calls
-  // `/api/user/become-specialist` server-side, and the user lands back
-  // in settings with isSpecialist=true and a completed profile.
-  const handleBecomeSpecialist = useCallback(() => {
-    nav.any("/onboarding/work-area?from=settings");
-  }, [router]);
+  // Toggle specialist mode on/off.
+  // ON → if no FNS data configured yet, redirect to work-area; otherwise enable directly.
+  // OFF → confirmation then API call.
+  const handleToggleSpecialist = useCallback(
+    (value: boolean) => {
+      if (value) {
+        // Enable: if specialist has no FNS/services yet, go configure them first.
+        const hasData = specData && specData.fnsServices.length > 0;
+        if (!hasData) {
+          nav.any("/onboarding/work-area?from=settings");
+          return;
+        }
+        // Already has data — just re-enable.
+        apiPost("/api/user/leave-specialist-toggle", { enable: true })
+          .then(() => updateUser({ isSpecialist: true }))
+          .catch(() => Alert.alert("Ошибка", "Не удалось включить режим специалиста"));
+      } else {
+        Alert.alert(
+          "Выключить режим специалиста?",
+          "Вы исчезнете из каталога, новые заявки не будут поступать. История переписок сохранится.",
+          [
+            { text: "Отмена", style: "cancel" },
+            {
+              text: "Выключить",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  await apiPost("/api/user/leave-specialist", {});
+                  updateUser({ isSpecialist: false, isAvailable: false });
+                } catch {
+                  Alert.alert("Ошибка", "Не удалось выключить режим специалиста");
+                }
+              },
+            },
+          ]
+        );
+      }
+    },
+    [specData, updateUser, router]
+  );
 
   if (!ready) {
     return (
@@ -405,61 +437,50 @@ export default function UnifiedSettings() {
             </View>
           </View>
 
-          {/* 2. Специалист на платформе — progressive */}
-          {!isSpecialistUser ? (
-            <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-              <View className="flex-row items-start gap-3">
-                <View
-                  className="rounded-xl items-center justify-center"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: roleAccent.specialist.soft,
-                  }}
-                >
-                  <Briefcase size={18} color={roleAccent.specialist.strong} />
-                </View>
-                <View className="flex-1 min-w-0">
-                  <Text className="text-base font-semibold text-text-base mb-1">
-                    Специалист на платформе
-                  </Text>
-                  <Text className="text-sm text-text-mute mb-3">
-                    Принимайте заявки от клиентов по налоговым проверкам
-                    напрямую. Не нужно становиться специалистом — вы можете
-                    остаться обычным пользователем.
-                  </Text>
-                  <Button
-                    label="Включить режим специалиста"
-                    onPress={handleBecomeSpecialist}
-                  />
-                </View>
-              </View>
-            </View>
-          ) : (
-            <>
-              {/* Активность */}
-              <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-                  Режим специалиста
+          {/* 2. Режим специалиста — единый тумблер */}
+          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+              Режим специалиста
+            </Text>
+            {/* Toggle: включить/выключить специалиста */}
+            <View className="flex-row items-center justify-between py-2">
+              <View className="flex-1 mr-4">
+                <Text className="text-base font-semibold text-text-base">
+                  Я специалист
                 </Text>
-                <View className="flex-row items-center justify-between py-2">
-                  <View className="flex-1 mr-4">
-                    <Text className="text-base font-semibold text-text-base">
-                      Принимаю заявки
-                    </Text>
-                    <Text className="text-xs text-text-mute mt-0.5">
-                      {isAvailable
-                        ? "Вы видны клиентам и получаете заявки"
-                        : "Вы скрыты от клиентов — новые заявки не поступают"}
-                    </Text>
-                  </View>
-                  {availabilityLoading ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <IosToggle value={isAvailable} onChange={handleToggleAvailable} />
-                  )}
-                </View>
+                <Text className="text-xs text-text-mute mt-0.5">
+                  {isSpecialistUser
+                    ? "Клиенты могут найти вас через каталог"
+                    : "Включите, чтобы принимать заявки от клиентов"}
+                </Text>
               </View>
+              <IosToggle value={isSpecialistUser} onChange={handleToggleSpecialist} />
+            </View>
+
+            {/* Принимаю заявки — только когда режим включён */}
+            {isSpecialistUser && (
+              <View className="flex-row items-center justify-between py-2 border-t border-border mt-2">
+                <View className="flex-1 mr-4">
+                  <Text className="text-base font-semibold text-text-base">
+                    Принимаю заявки
+                  </Text>
+                  <Text className="text-xs text-text-mute mt-0.5">
+                    {isAvailable
+                      ? "Вы видны клиентам и получаете заявки"
+                      : "Вы скрыты от клиентов — новые заявки не поступают"}
+                  </Text>
+                </View>
+                {availabilityLoading ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <IosToggle value={isAvailable} onChange={handleToggleAvailable} />
+                )}
+              </View>
+            )}
+          </View>
+
+          {isSpecialistUser && (
+            <>
 
               {/* Описание */}
               <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
@@ -585,6 +606,7 @@ export default function UnifiedSettings() {
                   placeholder="Пн-Пт 9:00-18:00"
                 />
               </View>
+
             </>
           )}
 
