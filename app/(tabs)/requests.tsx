@@ -21,7 +21,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
 import { api, apiPatch } from "@/lib/api";
-import { colors, overlay } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 
 interface RequestItem {
   id: string;
@@ -346,18 +346,16 @@ export default function MyRequests() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <HeaderHome />
       <DesktopScreen>
-        {/* Accent hero */}
-        <View className="rounded-2xl px-5 py-5 mb-5 mt-2" style={{ backgroundColor: colors.accent }}>
-          <Text className="text-xl font-bold text-white mb-0.5">Мои заявки</Text>
-          <Text className="text-sm mb-4" style={{ color: overlay.white90 }}>Управляйте своими обращениями к специалистам</Text>
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"
             onPress={() => nav.routes.requestsNew()}
-            className="rounded-xl px-4 flex-row items-center self-start"
-            style={{ backgroundColor: overlay.white20, minHeight: 44, justifyContent: "center" }}
+            className="flex-row items-center gap-1.5 px-4 rounded-xl"
+            style={{ backgroundColor: colors.primary, minHeight: 40, justifyContent: "center" }}
           >
-            <Text className="text-white font-semibold text-sm">+ Создать заявку</Text>
+            <Text className="text-white font-semibold text-sm">+ Создать</Text>
           </Pressable>
         </View>
 
