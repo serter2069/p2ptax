@@ -1,5 +1,6 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Image } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Bookmark } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 interface SpecialistCardProps {
@@ -7,6 +8,7 @@ interface SpecialistCardProps {
   firstName: string | null;
   lastName: string | null;
   avatarUrl: string | null;
+  createdAt?: string;
   services: { id: string; name: string }[];
   cities: { id: string; name: string }[];
   description?: string | null;
@@ -14,6 +16,8 @@ interface SpecialistCardProps {
   variant?: "vertical" | "horizontal";
   /** @deprecated Use variant="horizontal" instead */
   horizontal?: boolean;
+  onBookmark?: (id: string) => void;
+  bookmarked?: boolean;
 }
 
 function getInitials(firstName: string | null, lastName: string | null): string {
@@ -26,16 +30,21 @@ export default function SpecialistCard({
   id,
   firstName,
   lastName,
+  avatarUrl,
+  createdAt,
   services,
   cities,
   description,
   onPress,
   variant,
   horizontal = false,
+  onBookmark,
+  bookmarked = false,
 }: SpecialistCardProps) {
   const resolvedVariant = variant ?? (horizontal ? "horizontal" : "vertical");
   const name = [firstName, lastName].filter(Boolean).join(" ") || "Специалист";
   const initials = getInitials(firstName, lastName);
+  const joinYear = createdAt ? new Date(createdAt).getFullYear() : null;
 
   if (resolvedVariant === "horizontal") {
     return (
@@ -83,18 +92,52 @@ export default function SpecialistCard({
         pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
       ]}
     >
-      {/* Avatar */}
-      <View
-        className="rounded-full items-center justify-center"
-        style={{ width: 56, height: 56, backgroundColor: colors.primary }}
-      >
-        <Text className="text-white font-bold text-lg">{initials}</Text>
+      {/* Top row: avatar + bookmark */}
+      <View className="flex-row items-start justify-between">
+        {/* Avatar */}
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={{ width: 56, height: 56, borderRadius: 28 }}
+            accessibilityLabel={name}
+          />
+        ) : (
+          <View
+            className="rounded-full items-center justify-center"
+            style={{ width: 56, height: 56, backgroundColor: colors.primary }}
+          >
+            <Text className="text-white font-bold text-lg">{initials}</Text>
+          </View>
+        )}
+
+        {/* Bookmark button */}
+        {onBookmark && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={bookmarked ? "Убрать из сохранённых" : "Сохранить"}
+            onPress={(e) => { e.stopPropagation?.(); onBookmark(id); }}
+            hitSlop={8}
+          >
+            <Bookmark
+              size={18}
+              color={bookmarked ? colors.primary : colors.textMuted}
+              fill={bookmarked ? colors.primary : "none"}
+            />
+          </Pressable>
+        )}
       </View>
 
       {/* Name */}
       <Text className="text-base font-bold mt-2" style={{ color: colors.text }} numberOfLines={1}>
         {name}
       </Text>
+
+      {/* Join year */}
+      {joinYear && (
+        <Text className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
+          На сайте с {joinYear}
+        </Text>
+      )}
 
       {/* Description */}
       {description ? (

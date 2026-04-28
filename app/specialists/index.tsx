@@ -15,12 +15,11 @@ import { useTypedRouter } from "@/lib/navigation";
 import SpecialistCard from "@/components/SpecialistCard";
 import FilterBar from "@/components/FilterBar";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
-import HeaderBack from "@/components/HeaderBack";
 import { AlertCircle, UserX, Search } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
-import { colors, overlay, textStyle, BREAKPOINT } from "@/lib/theme";
+import { colors, textStyle, BREAKPOINT } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -38,6 +37,7 @@ interface SpecialistItem {
   firstName: string | null;
   lastName: string | null;
   avatarUrl: string | null;
+  createdAt: string;
   services: { id: string; name: string }[];
   cities: { id: string; name: string }[];
   description?: string | null;
@@ -55,9 +55,10 @@ export default function SpecialistsCatalog() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= BREAKPOINT;
+  const isDesktop = width >= 768;
   const isWide = width >= 1024;
   const gridCols = isWide ? 3 : isDesktop ? 2 : 1;
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -192,10 +193,24 @@ export default function SpecialistsCatalog() {
     [router]
   );
 
+  const handleBookmark = useCallback((id: string) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
   if (loading && specialists.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        <HeaderBack title="Специалисты" />
+        {!isDesktop && (
+          <Text className="text-xl font-bold text-text-base mx-4 mt-4 mb-2">Специалисты</Text>
+        )}
         <View className="py-4 px-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-border">
@@ -210,7 +225,9 @@ export default function SpecialistsCatalog() {
   if (error && specialists.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        <HeaderBack title="Специалисты" />
+        {!isDesktop && (
+          <Text className="text-xl font-bold text-text-base mx-4 mt-4 mb-2">Специалисты</Text>
+        )}
         <EmptyState
           icon={AlertCircle}
           title="Не удалось загрузить список"
@@ -227,23 +244,23 @@ export default function SpecialistsCatalog() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <HeaderBack title="Специалисты" />
-      <View style={{ backgroundColor: colors.accent, width: "100%", alignItems: "center" }}>
-        <View style={{ width: "100%", maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined, paddingHorizontal: isWide ? 32 : 16, paddingTop: 20, paddingBottom: 20 }}>
-        <Text style={{ ...(isWide ? textStyle.h1 : textStyle.h3), color: colors.white, marginBottom: 4 }}>Каталог специалистов</Text>
-        <Text style={{ ...textStyle.small, color: overlay.white90 }}>Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.</Text>
-        <View className="flex-row mt-4 gap-3">
-          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
-            <Text className="text-xs" style={{ color: overlay.white90 }}>Специалистов</Text>
-            <Text className="text-xl font-bold text-white">{total > 0 ? total : "..."}</Text>
-          </View>
-          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
-            <Text className="text-xs" style={{ color: overlay.white90 }}>Готовы помочь</Text>
-            <Text className="text-xl font-bold text-white">Сейчас</Text>
-          </View>
+      {/* Compact header — mobile only (desktop uses sidebar nav) */}
+      {!isDesktop && (
+        <View className="flex-row items-center justify-between px-4 pt-2 pb-1">
+          <Text className="text-xl font-bold" style={{ color: colors.text }}>Специалисты</Text>
+          {specialists.length > 0 && (
+            <Text className="text-sm" style={{ color: colors.textMuted }}>{specialists.length} специалистов</Text>
+          )}
         </View>
+      )}
+      {isDesktop && (
+        <View className="flex-row items-center justify-between px-4 pt-4 pb-1">
+          <Text style={{ ...textStyle.h2, color: colors.text }}>Специалисты</Text>
+          {total > 0 && (
+            <Text className="text-sm" style={{ color: colors.textMuted }}>{total} специалистов</Text>
+          )}
         </View>
-      </View>
+      )}
 
       {/* Search bar */}
       <View className="flex-row items-center bg-white border border-border rounded-xl mx-4 mt-3 mb-2 px-4 h-12">
@@ -266,9 +283,6 @@ export default function SpecialistsCatalog() {
             } : {}),
           }}
         />
-        {total > 0 && (
-          <Text className="text-sm text-text-mute">{total} специалистов</Text>
-        )}
       </View>
 
       {/* City → FNS cascade + services chips */}
@@ -320,10 +334,13 @@ export default function SpecialistsCatalog() {
                 firstName={item.firstName}
                 lastName={item.lastName}
                 avatarUrl={item.avatarUrl}
+                createdAt={item.createdAt}
                 services={item.services}
                 cities={item.cities}
                 description={item.description}
                 onPress={handleSpecialistPress}
+                onBookmark={handleBookmark}
+                bookmarked={bookmarkedIds.has(item.id)}
                 variant="vertical"
               />
             </View>

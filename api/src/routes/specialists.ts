@@ -21,6 +21,7 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
   firstName: true,
   lastName: true,
   avatarUrl: true,
+  createdAt: true,
   specialistServices: {
     select: {
       service: { select: { id: true, name: true } },
@@ -53,6 +54,7 @@ function mapSpecialist(s: SpecialistListItem) {
     firstName: s.firstName,
     lastName: s.lastName,
     avatarUrl: s.avatarUrl,
+    createdAt: s.createdAt,
     services,
     cities: [...citiesMap.values()],
   };

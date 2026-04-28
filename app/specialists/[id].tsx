@@ -19,6 +19,7 @@ import {
   ScrollText,
   Bookmark,
   Lock,
+  MessageSquare,
 } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import Button from "@/components/ui/Button";
@@ -57,6 +58,7 @@ export default function SpecialistPublicProfile() {
   const [contacts, setContacts] = useState<ContactMethodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [savedBookmark, setSavedBookmark] = useState(false);
 
   const isOwnProfile = !!user && user.id === id;
   // Iter11 — specialist mode is an opt-in flag, not a role.
@@ -99,7 +101,9 @@ export default function SpecialistPublicProfile() {
       router.push(
         `/login?returnTo=/specialists/${id}` as never,
       );
+      return;
     }
+    setSavedBookmark((prev) => !prev);
     // Future: POST /api/bookmarks
   }, [isAuthenticated, router, id]);
 
@@ -415,6 +419,7 @@ export default function SpecialistPublicProfile() {
         style={{
           backgroundColor: colors.primary,
           height: 56,
+          gap: 8,
           shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.2,
@@ -422,23 +427,28 @@ export default function SpecialistPublicProfile() {
           elevation: 4,
         }}
       >
+        <MessageSquare size={18} color="white" />
         <Text className="text-white font-semibold text-base">Написать</Text>
       </Pressable>
 
       {isAuthenticated && !isSpecialist && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Сохранить"
+          accessibilityLabel={savedBookmark ? "Убрать из сохранённых" : "Сохранить"}
           onPress={handleSavePress}
           className="items-center justify-center rounded-xl flex-row mt-2 border border-border"
           style={{ backgroundColor: colors.surface, height: 44, gap: 6 }}
         >
-          <Bookmark size={14} color={colors.textSecondary} />
+          <Bookmark
+            size={14}
+            color={savedBookmark ? colors.primary : colors.textSecondary}
+            fill={savedBookmark ? colors.primary : "none"}
+          />
           <Text
             className="text-sm font-semibold"
-            style={{ color: colors.textSecondary }}
+            style={{ color: savedBookmark ? colors.primary : colors.textSecondary }}
           >
-            Сохранить
+            {savedBookmark ? "Сохранено" : "Сохранить"}
           </Text>
         </Pressable>
       )}
@@ -664,23 +674,31 @@ export default function SpecialistPublicProfile() {
             elevation: 6,
           }}
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Написать"
-            onPress={handleWritePress}
-            className="items-center justify-center rounded-xl flex-row"
-            style={{
-              backgroundColor: colors.primary,
-              height: 52,
-            }}
-          >
-            <Text className="text-white font-semibold text-base">
-              Написать
-            </Text>
-            <Text className="text-white text-sm ml-2 opacity-80">
-              · первое сообщение бесплатно
-            </Text>
-          </Pressable>
+          <View className="flex-row" style={{ gap: 10 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Написать"
+              onPress={handleWritePress}
+              className="flex-1 items-center justify-center rounded-xl flex-row"
+              style={{ backgroundColor: colors.primary, height: 52, gap: 8 }}
+            >
+              <MessageSquare size={18} color="white" />
+              <Text className="text-white font-semibold text-base">Написать</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={savedBookmark ? "Убрать из сохранённых" : "Сохранить"}
+              onPress={handleSavePress}
+              className="items-center justify-center rounded-xl border border-border"
+              style={{ backgroundColor: colors.surface, height: 52, width: 52 }}
+            >
+              <Bookmark
+                size={18}
+                color={savedBookmark ? colors.primary : colors.textSecondary}
+                fill={savedBookmark ? colors.primary : "none"}
+              />
+            </Pressable>
+          </View>
         </View>
       )}
     </SafeAreaView>
