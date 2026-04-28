@@ -92,7 +92,7 @@ export const gray = {
  */
 export const roleAccent = {
   client:     { strong: PRIMARY_BLUE, soft: '#e8eefb', ink: '#ffffff', label: 'Клиент' },
-  specialist: { strong: '#059669',    soft: '#d1fae5', ink: '#ffffff', label: 'Специалист' },
+  specialist: { strong: PRIMARY_BLUE, soft: '#e8eefb', ink: '#ffffff', label: 'Специалист' },
   admin:      { strong: '#d97706',    soft: '#fef3c7', ink: '#ffffff', label: 'Админ' },
 } as const
 

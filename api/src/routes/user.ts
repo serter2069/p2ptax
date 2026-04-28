@@ -241,4 +241,36 @@ router.post("/become-specialist", authMiddleware, async (req: Request, res: Resp
   }
 });
 
+// POST /api/user/leave-specialist — disable specialist mode
+router.post("/leave-specialist", authMiddleware, async (req: Request, res: Response) => {
+  const userId = (req as AuthRequest).userId!;
+  try {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isSpecialist: false, isAvailable: false },
+      select: { id: true, isSpecialist: true, isAvailable: true },
+    });
+    res.json({ user: updated });
+  } catch (error) {
+    console.error("user/leave-specialist error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/user/leave-specialist-toggle — re-enable specialist mode (user already has FNS data)
+router.post("/leave-specialist-toggle", authMiddleware, async (req: Request, res: Response) => {
+  const userId = (req as AuthRequest).userId!;
+  try {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isSpecialist: true },
+      select: { id: true, isSpecialist: true, isAvailable: true },
+    });
+    res.json({ user: updated });
+  } catch (error) {
+    console.error("user/leave-specialist-toggle error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
