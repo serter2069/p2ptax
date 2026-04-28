@@ -1,6 +1,6 @@
 import { View, Text, Pressable, TextInput, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect } from "react";
 import { Mail } from "lucide-react-native";
@@ -15,6 +15,13 @@ export default function AuthEmailScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { isAuthenticated, user } = useAuth();
+  const params = useLocalSearchParams<{ returnTo?: string }>();
+  const returnTo =
+    typeof params.returnTo === "string"
+      ? params.returnTo
+      : Array.isArray(params.returnTo)
+        ? params.returnTo[0]
+        : undefined;
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +29,10 @@ export default function AuthEmailScreen() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
+      if (returnTo) {
+        nav.replaceAny(returnTo);
+        return;
+      }
       // Iter11 — unified (tabs) replaces split client/specialist groups.
       if (user.role === "ADMIN") {
         nav.replaceRoutes.adminDashboard();
@@ -29,7 +40,7 @@ export default function AuthEmailScreen() {
         nav.replaceRoutes.tabs();
       }
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, returnTo]);
 
   const handleContinue = async () => {
     setError("");
@@ -46,7 +57,10 @@ export default function AuthEmailScreen() {
       });
       nav.any({
         pathname: "/otp",
-        params: { email: email.trim().toLowerCase() },
+        params: {
+          email: email.trim().toLowerCase(),
+          ...(returnTo ? { returnTo } : {}),
+        },
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";

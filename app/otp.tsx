@@ -43,13 +43,19 @@ function formatCountdown(seconds: number): string {
 export default function AuthOtpScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
-  const params = useLocalSearchParams<{ email: string }>();
+  const params = useLocalSearchParams<{ email: string; returnTo?: string }>();
   const email =
     typeof params.email === "string"
       ? params.email
       : Array.isArray(params.email)
         ? params.email[0]
         : "";
+  const returnTo =
+    typeof params.returnTo === "string"
+      ? params.returnTo
+      : Array.isArray(params.returnTo)
+        ? params.returnTo[0]
+        : undefined;
   const { signIn } = useAuth();
 
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
@@ -77,6 +83,11 @@ export default function AuthOtpScreen() {
 
   const routeByRole = useCallback(
     (user: UserData) => {
+      // If there's a returnTo param, navigate there after login
+      if (returnTo) {
+        nav.replaceAny(returnTo);
+        return;
+      }
       // Iter11 — unified (tabs) replaces split client/specialist groups.
       if (user.role === "ADMIN") {
         nav.replaceRoutes.adminDashboard();
@@ -90,7 +101,7 @@ export default function AuthOtpScreen() {
       }
       nav.replaceRoutes.tabs();
     },
-    [router]
+    [router, returnTo]
   );
 
   const handleVerify = useCallback(
@@ -224,6 +235,8 @@ export default function AuthOtpScreen() {
     }
     if (becomeSpecialist) {
       nav.replaceRoutes.onboardingName();
+    } else if (returnTo) {
+      nav.replaceAny(returnTo);
     } else {
       nav.replaceRoutes.tabs();
     }
