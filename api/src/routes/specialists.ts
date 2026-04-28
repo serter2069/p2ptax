@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { verifyAccessToken } from "../lib/jwt";
+import { authMiddleware, roleGuard } from "../middleware/auth";
 
 const router = Router();
 
@@ -219,6 +220,146 @@ router.get("/", async (req: Request, res: Response) => {
     console.error("specialists list error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// GET /api/specialists/dashboard — specialist's own dashboard data (auth required)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get("/dashboard", authMiddleware, roleGuard("SPECIALIST" as any), async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+
+    // Get specialist user info and isAvailable flag
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isAvailable: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Get all threads for this specialist
+    const threads = await prisma.thread.findMany({
+      where: { specialistId: userId },
+      select: { id: true, requestId: true, specialistLastReadAt: true },
+    });
+
+    // Count unread messages (new messages since specialist last read each thread)
+    let newMessages = 0;
+    for (const thread of threads) {
+      const unread = await prisma.message.count({
+        where: {
+          threadId: thread.id,
+          senderId: { not: userId },
+          ...(thread.specialistLastReadAt
+            ? { createdAt: { gt: thread.specialistLastReadAt } }
+            : {}),
+        },
+      });
+      newMessages += unread;
+    }
+
+    const threadByRequest = new Map(threads.map((t) => [t.requestId, t.id]));
+
+    // Get specialist's covered FNS/city ids for region matching
+    const specialistFns = await prisma.specialistFns.findMany({
+      where: { specialistId: userId },
+      select: { fnsId: true, fns: { select: { cityId: true } } },
+    });
+
+    const fnsIds = specialistFns.map((sf) => sf.fnsId);
+    const cityIds = [...new Set(specialistFns.map((sf) => sf.fns.cityId))];
+
+    const requestInclude = {
+      city: true,
+      fns: true,
+    } as const;
+
+    const [myRequests, otherRequests] = await Promise.all([
+      fnsIds.length > 0
+        ? prisma.request.findMany({
+            where: { status: { not: "CLOSED" }, fnsId: { in: fnsIds }, cityId: { in: cityIds } },
+            orderBy: { createdAt: "desc" },
+            include: requestInclude,
+          })
+        : Promise.resolve([]),
+      prisma.request.findMany({
+        where: {
+          status: { not: "CLOSED" },
+          ...(fnsIds.length > 0
+            ? { NOT: { fnsId: { in: fnsIds }, cityId: { in: cityIds } } }
+            : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        include: requestInclude,
+      }),
+    ]);
+
+    const mapRequest = (r: (typeof myRequests)[number], isMyRegion: boolean) => {
+      const threadId = threadByRequest.get(r.id) ?? null;
+      return {
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        status: r.status,
+        createdAt: r.createdAt,
+        city: { id: r.city.id, name: r.city.name },
+        fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
+        isMyRegion,
+        hasThread: threadId !== null,
+        threadId,
+      };
+    };
+
+    const matchingRequests = [
+      ...myRequests.map((r) => mapRequest(r, true)),
+      ...otherRequests.map((r) => mapRequest(r, false)),
+    ];
+
+    res.json({
+      isAvailable: user.isAvailable,
+      activeThreads: threads.length,
+      matchingRequests,
+      stats: { threadsTotal: threads.length, newMessages },
+    });
+  } catch (error) {
+    console.error("specialists/dashboard error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /api/specialists/availability — toggle specialist availability (auth required)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.patch("/availability", authMiddleware, roleGuard("SPECIALIST" as any), async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { isAvailable } = req.body as { isAvailable?: unknown };
+
+    if (typeof isAvailable !== "boolean") {
+      res.status(400).json({ error: "isAvailable must be a boolean" });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isAvailable },
+      select: { isAvailable: true },
+    });
+
+    res.json({ isAvailable: updated.isAvailable });
+  } catch (error) {
+    console.error("specialists/availability error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/specialists/:id/reviews — public reviews for a specialist
+// Security note: only name (first name) and avatarUrl are returned — never email (#179)
+router.get("/:id/reviews", async (_req: Request, res: Response) => {
+  // Reviews feature is not yet implemented (DB model pending).
+  // Endpoint exists to enforce the email-safe contract from day one.
+  res.json({ items: [], total: 0 });
 });
 
 // GET /api/specialists/:id — full profile
