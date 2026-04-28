@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   useWindowDimensions,
   Platform,
 } from "react-native";
@@ -14,8 +13,10 @@ import { useTypedRouter } from "@/lib/navigation";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
+import LoadingState from "@/components/ui/LoadingState";
 import { Send } from "lucide-react-native";
 import { api, ApiError } from "@/lib/api";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, radiusValue, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 
@@ -42,7 +43,8 @@ export default function SpecialistConfirmWrite() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isAuthenticated, user, isSpecialistUser, isLoading: authLoading } = useAuth();
+  const { ready } = useRequireAuth();
+  const { isSpecialistUser } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
 
@@ -71,15 +73,18 @@ export default function SpecialistConfirmWrite() {
     }
   }, [id]);
 
+  // Authed but wrong role: redirect to client-facing requests screen.
   useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated || !isSpecialistUser) {
-        nav.replaceRoutes.login();
-        return;
-      }
+    if (ready && !isSpecialistUser) {
+      nav.replaceRoutes.login();
+    }
+  }, [ready, isSpecialistUser, nav]);
+
+  useEffect(() => {
+    if (ready && isSpecialistUser) {
       load();
     }
-  }, [authLoading, isAuthenticated, isSpecialistUser, load, router]);
+  }, [ready, isSpecialistUser, load]);
 
   const handleSend = async () => {
     if (message.length < MIN_CHARS || sending) return;
@@ -119,13 +124,11 @@ export default function SpecialistConfirmWrite() {
   const isLimitReached = rateLimit !== null && rateLimit.writesToday >= DAILY_LIMIT;
   const canSubmit = message.length >= MIN_CHARS && !isLimitReached && !sending;
 
-  if (loading || authLoading) {
+  if (!ready || !isSpecialistUser || loading) {
     return (
       <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
         <HeaderBack title="Написать клиенту" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <LoadingState />
       </SafeAreaView>
     );
   }

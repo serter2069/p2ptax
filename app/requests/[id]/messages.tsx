@@ -15,7 +15,9 @@ import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { MessageCircle } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import { api, ApiError } from "@/lib/api";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors, BREAKPOINT } from "@/lib/theme";
 
 interface ThreadItem {
@@ -67,6 +69,7 @@ export default function RequestMessages() {
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
+  const { ready } = useRequireAuth();
 
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,8 +95,8 @@ export default function RequestMessages() {
   }, [id]);
 
   useEffect(() => {
-    fetchThreads();
-  }, [fetchThreads]);
+    if (ready) fetchThreads();
+  }, [ready, fetchThreads]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -159,6 +162,15 @@ export default function RequestMessages() {
     },
     [router]
   );
+
+  if (!ready) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <HeaderBack title="Сообщения" />
+        <LoadingState />
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (
