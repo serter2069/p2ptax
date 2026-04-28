@@ -53,8 +53,8 @@ interface RecentWinsResponse {
 }
 
 /**
- * Public landing (/). The only route any unauthenticated user sees by
- * default. Authenticated users are redirected to their role dashboard.
+ * Public landing (/). Accessible by both authenticated and unauthenticated
+ * users — no automatic redirect. Authenticated users can navigate manually.
  *
  * Layout (top → bottom):
  *   Header → Hero (copy + 3 specialist cards) → Trust strip (3 counters)
@@ -72,7 +72,7 @@ interface RecentWinsResponse {
 export default function LandingScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
@@ -81,19 +81,6 @@ export default function LandingScreen() {
   const [cases, setCases] = useState<CaseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-
-  // Redirect authenticated users to their role-specific dashboard.
-  // Iter11 — unified (tabs) carries both USER sub-modes (isSpecialist on/off);
-  // admin still has its own group.
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && user?.role) {
-      if (user.role === "ADMIN") {
-        nav.replaceRoutes.adminDashboard();
-      } else {
-        nav.replaceRoutes.tabs();
-      }
-    }
-  }, [authLoading, isAuthenticated, user, router]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
