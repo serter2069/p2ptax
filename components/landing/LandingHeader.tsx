@@ -8,6 +8,7 @@ interface LandingHeaderProps {
   onLogin: () => void;
   onCreateRequest: () => void;
   transparent?: boolean;
+  onFindSpecialist?: () => void;
 }
 
 /**
@@ -22,6 +23,7 @@ export default function LandingHeader({
   onLogin,
   onCreateRequest,
   transparent = true,
+  onFindSpecialist,
 }: LandingHeaderProps) {
   return (
     <View
@@ -82,7 +84,18 @@ export default function LandingHeader({
                 Специалисты
               </Text>
             </Pressable>
-          ) : null}
+          ) : (onFindSpecialist ? (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Найти специалиста"
+              onPress={onFindSpecialist}
+              className="min-h-[44px] items-center justify-center px-2"
+            >
+              <Text className="font-medium" style={{ color: colors.primary, fontSize: 14 }}>
+                Найти специалиста
+              </Text>
+            </Pressable>
+          ) : null)}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Войти"

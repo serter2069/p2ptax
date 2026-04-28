@@ -213,6 +213,7 @@ export default function LandingScreen() {
           onCatalog={goCatalog}
           onLogin={goLogin}
           onCreateRequest={goCreateRequest}
+          onFindSpecialist={goCatalog}
         />
 
         <HeroBlock
