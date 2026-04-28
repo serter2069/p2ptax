@@ -6,7 +6,7 @@ import { sendNotification } from "../notifications/notification.service";
 import { sendNewMessageEmail } from "../lib/email";
 import { firstNameInGenitive } from "../lib/ru";
 import type * as Minio from "minio";
-import { minioClient, MINIO_BUCKET } from "../lib/minio";
+import { minioClient, MINIO_BUCKET, presignStoredUrl } from "../lib/minio";
 
 const router = Router();
 
@@ -177,15 +177,17 @@ router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
       }),
     ]);
 
-    const result = threads.map((t) => ({
-      id: t.id,
-      request: t.request,
-      client: t.client,
-      specialist: t.specialist,
-      lastMessage: t.messages[0] || null,
-      lastMessageAt: t.lastMessageAt,
-      createdAt: t.createdAt,
-    }));
+    const result = await Promise.all(
+      threads.map(async (t) => ({
+        id: t.id,
+        request: t.request,
+        client: { ...t.client, avatarUrl: await presignStoredUrl(t.client.avatarUrl) },
+        specialist: { ...t.specialist, avatarUrl: await presignStoredUrl(t.specialist.avatarUrl) },
+        lastMessage: t.messages[0] || null,
+        lastMessageAt: t.lastMessageAt,
+        createdAt: t.createdAt,
+      }))
+    );
 
     res.json({ threads: result, total, limit, offset, hasMore: offset + limit < total });
   } catch (error) {
@@ -298,10 +300,13 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
       filesByMessage[f.entityId].push(f);
     }
 
-    const result = messages.map((m) => ({
-      ...m,
-      files: filesByMessage[m.id] || [],
-    }));
+    const result = await Promise.all(
+      messages.map(async (m) => ({
+        ...m,
+        sender: { ...m.sender, avatarUrl: await presignStoredUrl(m.sender.avatarUrl) },
+        files: filesByMessage[m.id] || [],
+      }))
+    );
 
     if (!paginated) {
       res.json({ messages: result });
@@ -515,7 +520,13 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
       });
     }).catch((err: Error) => console.warn("[email] new_message email failed:", err.message));
 
-    res.json({ message: { ...message, files: savedFiles } });
+    res.json({
+      message: {
+        ...message,
+        sender: { ...message.sender, avatarUrl: await presignStoredUrl(message.sender.avatarUrl) },
+        files: savedFiles,
+      },
+    });
   } catch (error) {
     console.error("send message error:", error);
     res.status(500).json({ error: "Internal server error" });
