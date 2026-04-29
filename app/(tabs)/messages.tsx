@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  Pressable,
   ActivityIndicator,
   RefreshControl,
   useWindowDimensions,
@@ -15,13 +14,17 @@ import EmptyState from "@/components/ui/EmptyState";
 import { MessageSquare } from "lucide-react-native";
 import MessengerEmptyPane from "@/components/MessengerEmptyPane";
 import ErrorState from "@/components/ui/ErrorState";
-import Avatar from "@/components/ui/Avatar";
-import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import InlineChatView from "@/components/InlineChatView";
+import ThreadCard, { type ThreadCardItem } from "@/components/messages/ThreadCard";
+import InboxFilterChips, {
+  type InboxFilter,
+  type InboxRoleFilter,
+} from "@/components/messages/InboxFilterChips";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiGet } from "@/lib/api";
-import { colors, overlay, BREAKPOINT } from "@/lib/theme";
+import { sortThreads } from "@/lib/threadDisplay";
+import { colors, BREAKPOINT } from "@/lib/theme";
 
 /**
  * Unified Inbox — iter11 UI layer (PR 2/3).
@@ -35,34 +38,7 @@ import { colors, overlay, BREAKPOINT } from "@/lib/theme";
  * for dual-role users, grouped by request, tagged with `perspective`.
  */
 
-interface ThreadItem {
-  id: string;
-  otherUser: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    avatarUrl: string | null;
-    /** Soft-deleted user — UI must render "Аккаунт удалён" instead of name. */
-    isDeleted?: boolean;
-  };
-  request: {
-    id: string;
-    title: string;
-    status: string;
-  };
-  lastMessage: {
-    text: string;
-    createdAt: string;
-  } | null;
-  unreadCount: number;
-  createdAt: string;
-  /**
-   * Iter11 PR 3 — `/api/threads/my` tags each row with the caller's
-   * perspective so a dual-role USER (both client and specialist on the
-   * same request) can distinguish the two conversations in one inbox.
-   */
-  perspective?: "as_client" | "as_specialist";
-}
+type ThreadItem = ThreadCardItem;
 
 /**
  * Shape returned by `GET /api/threads/my` (Iter11 PR 3). Grouped per
@@ -73,44 +49,8 @@ interface ThreadsMyGroup {
   threads: ThreadItem[];
 }
 
-function displayName(
-  user: { firstName: string | null; lastName: string | null; isDeleted?: boolean },
-  fallback: string
-): string {
-  if (user.isDeleted) return "Аккаунт удалён";
-  const parts = [user.firstName, user.lastName].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : fallback;
-}
-
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-
-  if (isToday) {
-    return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
-  }
-  const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays < 7) {
-    return d.toLocaleDateString("ru-RU", { weekday: "short" });
-  }
-  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
-}
-
-function sortThreads(threads: ThreadItem[]): ThreadItem[] {
-  return [...threads].sort((a, b) => {
-    const aTime = a.lastMessage
-      ? new Date(a.lastMessage.createdAt).getTime()
-      : a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bTime = b.lastMessage
-      ? new Date(b.lastMessage.createdAt).getTime()
-      : b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return bTime - aTime;
-  });
-}
-
 export default function UnifiedInbox() {
-  const router = useRouter()
+  const router = useRouter();
   const nav = useTypedRouter();
   const { ready } = useRequireAuth();
   const { isSpecialistUser, user } = useAuth();
@@ -125,8 +65,8 @@ export default function UnifiedInbox() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "unread">("all");
-  const [roleFilter, setRoleFilter] = useState<"all" | "client" | "specialist">("all");
+  const [filter, setFilter] = useState<InboxFilter>("all");
+  const [roleFilter, setRoleFilter] = useState<InboxRoleFilter>("all");
 
   /**
    * Dual-role users (USER.isSpecialist === true) can have threads in both
@@ -186,165 +126,34 @@ export default function UnifiedInbox() {
         );
   const unreadTotal = threads.reduce((sum, t) => sum + t.unreadCount, 0);
 
-  const renderThread = useCallback(
-    ({
-      item,
-      onSelect,
-      selected,
-    }: {
-      item: ThreadItem;
-      onSelect?: () => void;
-      selected?: boolean;
-    }) => {
-      const hasUnread = item.unreadCount > 0;
-      const name = displayName(item.otherUser, otherPartyFallback);
-
-      const handlePress = () => {
-        if (onSelect) {
-          onSelect();
-        } else {
-          nav.any(`/threads/${item.id}`);
+  const renderRow = useCallback(
+    (item: ThreadItem, opts?: { onSelect?: () => void; selected?: boolean }) => (
+      <ThreadCard
+        item={item}
+        onSelect={
+          opts?.onSelect ?? (() => nav.any(`/threads/${item.id}`))
         }
-      };
-
-      // If we're viewing as_client, the other party is a specialist — navigate to their profile
-      const handleUserPress = (e: { stopPropagation?: () => void }) => {
-        if (e.stopPropagation) e.stopPropagation();
-        if (item.perspective === "as_client") {
-          nav.any(`/specialists/${item.otherUser.id}`);
+        onUserPress={
+          item.perspective === "as_client"
+            ? () => nav.any(`/specialists/${item.otherUser.id}`)
+            : undefined
         }
-      };
-
-      return (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Чат с ${name}`}
-          onPress={handlePress}
-          className="flex-row items-center px-4 border-b border-border active:bg-surface2"
-          style={({ pressed }) => [
-            {
-              backgroundColor: selected
-                ? colors.accentSoft
-                : hasUnread
-                  ? overlay.accent10
-                  : colors.surface,
-              minHeight: 72,
-              borderLeftWidth: hasUnread ? 3 : 0,
-              borderLeftColor: hasUnread ? colors.primary : "transparent",
-              shadowColor: colors.black,
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.06,
-              shadowRadius: 3,
-              elevation: 2,
-            },
-            pressed && { opacity: 0.75 },
-          ]}
-        >
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={item.perspective === "as_client" ? `Профиль специалиста ${name}` : name}
-            onPress={handleUserPress}
-            className="relative mr-3 my-3.5"
-            style={{
-              shadowColor: colors.black,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
-            }}
-          >
-            <Avatar
-              name={name}
-              imageUrl={item.otherUser.avatarUrl ?? undefined}
-              size="md"
-            />
-            <View
-              className="absolute bottom-0 right-0 rounded-full bg-success"
-              style={{
-                width: 12,
-                height: 12,
-                borderWidth: 2,
-                borderColor: colors.white,
-              }}
-            />
-            {hasUnread && (
-              <View
-                className="absolute -top-0.5 -right-0.5 rounded-full"
-                style={{ width: 10, height: 10, backgroundColor: colors.primary }}
-              />
-            )}
-          </Pressable>
-
-          <View className="flex-1 min-w-0 py-3.5">
-            <View className="flex-row items-center justify-between gap-2">
-              <Text
-                className={`text-base flex-shrink ${
-                  hasUnread
-                    ? "font-bold text-text-base"
-                    : "font-semibold text-text-base"
-                }`}
-                numberOfLines={1}
-              >
-                {name}
-              </Text>
-              {item.perspective ? (
-                <View className="ml-2 flex-shrink-0">
-                  <PerspectiveBadge perspective={item.perspective} size="sm" />
-                </View>
-              ) : null}
-              <View style={{ flex: 1 }} />
-              {item.lastMessage && (
-                <Text
-                  className={`text-xs flex-shrink-0 ${
-                    hasUnread ? "text-accent font-semibold" : "text-text-dim"
-                  }`}
-                >
-                  {formatTime(item.lastMessage.createdAt)}
-                </Text>
-              )}
-            </View>
-
-            <Text className="text-xs text-text-dim mt-0.5" numberOfLines={1}>
-              {item.request.title}
-            </Text>
-
-            {item.lastMessage ? (
-              <Text
-                className={`text-sm mt-1 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
-                numberOfLines={2}
-              >
-                {item.lastMessage.text}
-              </Text>
-            ) : (
-              <Text
-                className="text-sm mt-1 italic text-text-dim"
-                numberOfLines={1}
-              >
-                Нет сообщений
-              </Text>
-            )}
-          </View>
-        </Pressable>
-      );
-    },
-    [router, otherPartyFallback]
+        selected={opts?.selected}
+        otherPartyFallback={otherPartyFallback}
+      />
+    ),
+    [nav, otherPartyFallback]
   );
 
-  if (!ready || loading) {
+  if (!ready || loading || error) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={isDesktop ? [] : ["top"]}>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView className="flex-1 bg-white" edges={isDesktop ? [] : ["top"]}>
-        <View className="flex-1 items-center justify-center">
-          <ErrorState message={error} onRetry={fetchThreads} />
+          {error ? (
+            <ErrorState message={error} onRetry={fetchThreads} />
+          ) : (
+            <ActivityIndicator size="large" color={colors.primary} />
+          )}
         </View>
       </SafeAreaView>
     );
@@ -379,6 +188,18 @@ export default function UnifiedInbox() {
   // Desktop: 2-column layout
   if (isDesktop) {
     const isWide = width >= 1024;
+    const emptyPaneHint =
+      sorted.length > 0
+        ? `У вас ${sorted.length} ${sorted.length === 1 ? "диалог" : sorted.length < 5 ? "диалога" : "диалогов"}. Нажмите любой, чтобы открыть переписку.`
+        : isSpecialistUser
+          ? "Напишите по публичной заявке, чтобы начать переписку с клиентом."
+          : "Когда специалисты напишут по заявкам, переписки появятся слева.";
+    const emptyPanePrimary = isSpecialistUser
+      ? { label: "Публичные заявки", onPress: () => nav.routes.tabsPublicRequests(), icon: "sparkles" as const }
+      : { label: "Создать новую заявку", onPress: () => nav.routes.requestsNew(), icon: "plus" as const };
+    const emptyPaneSecondary = isSpecialistUser
+      ? undefined
+      : { label: "Найти специалиста", onPress: () => nav.routes.specialists(), icon: "search" as const };
     return (
       <SafeAreaView className="flex-1 bg-white" edges={[]}>
         <View className="flex-1 items-center" style={{ width: "100%", overflow: "hidden" }}>
@@ -433,44 +254,21 @@ export default function UnifiedInbox() {
                     </View>
                   )}
                 </View>
-                <View className="flex-row gap-2">
-                  <FilterChip
-                    label="Все"
-                    active={filter === "all"}
-                    onPress={() => setFilter("all")}
-                  />
-                  <FilterChip
-                    label="Непрочитанные"
-                    active={filter === "unread"}
-                    onPress={() => setFilter("unread")}
-                  />
-                </View>
-                {isDualRole && (
-                  <View className="flex-row gap-2 mt-2">
-                    <FilterChip
-                      label="Все"
-                      active={roleFilter === "all"}
-                      onPress={() => setRoleFilter("all")}
-                    />
-                    <FilterChip
-                      label="Как клиент"
-                      active={roleFilter === "client"}
-                      onPress={() => setRoleFilter("client")}
-                    />
-                    <FilterChip
-                      label="Как специалист"
-                      active={roleFilter === "specialist"}
-                      onPress={() => setRoleFilter("specialist")}
-                    />
-                  </View>
-                )}
+                <InboxFilterChips
+                  variant="desktop"
+                  filter={filter}
+                  roleFilter={roleFilter}
+                  isDualRole={isDualRole}
+                  onFilterChange={setFilter}
+                  onRoleFilterChange={setRoleFilter}
+                  unreadTotal={unreadTotal}
+                />
               </View>
               <FlatList
                 data={filtered}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) =>
-                  renderThread({
-                    item,
+                  renderRow(item, {
                     onSelect: () => {
                       setSelectedThreadId(item.id);
                       router.setParams({ thread: item.id });
@@ -495,36 +293,9 @@ export default function UnifiedInbox() {
               ) : (
                 <MessengerEmptyPane
                   title="Выберите диалог слева"
-                  hint={
-                    sorted.length > 0
-                      ? `У вас ${sorted.length} ${sorted.length === 1 ? "диалог" : sorted.length < 5 ? "диалога" : "диалогов"}. Нажмите любой, чтобы открыть переписку.`
-                      : isSpecialistUser
-                        ? "Напишите по публичной заявке, чтобы начать переписку с клиентом."
-                        : "Когда специалисты напишут по заявкам, переписки появятся слева."
-                  }
-                  primary={
-                    isSpecialistUser
-                      ? {
-                          label: "Публичные заявки",
-                          onPress: () =>
-                            nav.routes.tabsPublicRequests(),
-                          icon: "sparkles",
-                        }
-                      : {
-                          label: "Создать новую заявку",
-                          onPress: () => nav.routes.requestsNew(),
-                          icon: "plus",
-                        }
-                  }
-                  secondary={
-                    isSpecialistUser
-                      ? undefined
-                      : {
-                          label: "Найти специалиста",
-                          onPress: () => nav.routes.specialists(),
-                          icon: "search",
-                        }
-                  }
+                  hint={emptyPaneHint}
+                  primary={emptyPanePrimary}
+                  secondary={emptyPaneSecondary}
                 />
               )}
             </View>
@@ -540,7 +311,7 @@ export default function UnifiedInbox() {
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => renderThread({ item })}
+        renderItem={({ item }) => renderRow(item)}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -550,80 +321,20 @@ export default function UnifiedInbox() {
         }
         ListHeaderComponent={
           <View style={{ paddingHorizontal: 16, paddingTop: 6 }}>
-            <View className="flex-row gap-2 pb-2">
-              <FilterChip
-                label="Все"
-                active={filter === "all"}
-                onPress={() => setFilter("all")}
-              />
-              <FilterChip
-                label="Непрочитанные"
-                active={filter === "unread"}
-                onPress={() => setFilter("unread")}
-              />
-              {unreadTotal > 0 && (
-                <View
-                  className="bg-accent rounded-full items-center justify-center self-center"
-                  style={{ minWidth: 20, height: 20, paddingHorizontal: 5 }}
-                >
-                  <Text className="text-xs font-bold text-white">
-                    {unreadTotal > 99 ? "99+" : unreadTotal}
-                  </Text>
-                </View>
-              )}
-            </View>
-            {isDualRole && (
-              <View className="flex-row gap-2 pb-2">
-                <FilterChip
-                  label="Все"
-                  active={roleFilter === "all"}
-                  onPress={() => setRoleFilter("all")}
-                />
-                <FilterChip
-                  label="Как клиент"
-                  active={roleFilter === "client"}
-                  onPress={() => setRoleFilter("client")}
-                />
-                <FilterChip
-                  label="Как специалист"
-                  active={roleFilter === "specialist"}
-                  onPress={() => setRoleFilter("specialist")}
-                />
-              </View>
-            )}
+            <InboxFilterChips
+              variant="mobile"
+              filter={filter}
+              roleFilter={roleFilter}
+              isDualRole={isDualRole}
+              onFilterChange={setFilter}
+              onRoleFilterChange={setRoleFilter}
+              unreadTotal={unreadTotal}
+            />
           </View>
         }
         ListEmptyComponent={emptyState}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       />
     </SafeAreaView>
-  );
-}
-
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      className={`px-3 rounded-full border ${
-        active ? "bg-accent border-accent" : "bg-white border-border"
-      }`}
-      style={{ height: 28, justifyContent: "center" }}
-    >
-      <Text
-        className={`text-xs font-medium ${active ? "text-white" : "text-text-base"}`}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
