@@ -7,6 +7,7 @@ import React, {
   useMemo,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
@@ -177,6 +178,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshAuth();
     }, 12 * 60 * 1000);
     return () => clearInterval(interval);
+  }, [token, refreshAuth]);
+
+  // Web: sync auth state across browser tabs via the `storage` event.
+  // The event only fires in OTHER tabs (not the originator), so this is safe
+  // from feedback loops. On native this is a no-op (single instance).
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    if (typeof window === "undefined") return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== TOKEN_KEY) return;
+      if (!e.newValue) {
+        // Logged out in another tab — drop local session.
+        setToken(null);
+        setUser(null);
+      } else if (e.newValue !== token) {
+        // New token appeared in another tab — pull fresh user state.
+        refreshAuth();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, [token, refreshAuth]);
 
   const signIn = useCallback(
