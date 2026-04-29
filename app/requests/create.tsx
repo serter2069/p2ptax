@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -201,7 +202,13 @@ export default function CreateRequest() {
       } catch {
         /* ignore storage errors */
       }
-      nav.replaceAny(`/requests/${result.id}/detail`);
+      const goToDetail = () => nav.replaceAny(`/requests/${result.id}/detail`);
+      Alert.alert(
+        "Заявка опубликована",
+        "Специалисты по вашей ФНС увидят её и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
+        [{ text: "OK", onPress: goToDetail }],
+        { onDismiss: goToDetail }
+      );
     } catch (e: unknown) {
       const msg =
         e instanceof Error
