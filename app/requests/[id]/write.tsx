@@ -14,11 +14,10 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTypedRouter } from "@/lib/navigation";
-import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import { Send, Paperclip, X, UserCheck } from "lucide-react-native";
+import { Send, Paperclip, X, UserCheck, ChevronLeft } from "lucide-react-native";
 import { api, ApiError, API_URL } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
@@ -264,10 +263,26 @@ export default function SpecialistConfirmWrite() {
   const isLimitReached = rateLimit !== null && rateLimit.writesToday >= DAILY_LIMIT;
   const canSubmit = message.length >= MIN_CHARS && !isLimitReached && !sending;
 
+  const backRow = (
+    <View className="px-4 pt-4">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Назад"
+        onPress={() => router.back()}
+        className="flex-row items-center mb-2"
+        style={{ minHeight: 44 }}
+      >
+        <ChevronLeft size={20} color={colors.text} />
+        <Text className="text-text-base ml-1">Назад</Text>
+      </Pressable>
+      <Text className="text-2xl font-extrabold text-text-base mb-3">Написать клиенту</Text>
+    </View>
+  );
+
   if (!ready || !isSpecialistUser || loading) {
     return (
       <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-        <HeaderBack title="Написать клиенту" />
+        {backRow}
         <LoadingState />
       </SafeAreaView>
     );
@@ -276,7 +291,7 @@ export default function SpecialistConfirmWrite() {
   if (isStrandedSpecialist) {
     return (
       <SafeAreaView className="flex-1 bg-surface2" edges={["top", "bottom"]}>
-        <HeaderBack title="Написать клиенту" />
+        {backRow}
         <View className="flex-1 justify-center">
           <EmptyState
             icon={UserCheck}
@@ -292,7 +307,7 @@ export default function SpecialistConfirmWrite() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top", "bottom"]}>
-      <HeaderBack title="Написать клиенту" />
+      {backRow}
 
       <ScrollView
         className="flex-1"

@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import RequestCard from "@/components/RequestCard";
 import FilterBar from "@/components/FilterBar";
@@ -218,7 +217,6 @@ export default function SpecialistPublicRequests() {
   if (!hasFnsCoverage) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-        <HeaderHome />
         <DesktopScreen>
           <EmptyState
             icon={FileText}
@@ -234,7 +232,6 @@ export default function SpecialistPublicRequests() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <HeaderHome />
       <DesktopScreen>
         {/* Accent hero */}
         <View className="rounded-2xl px-5 py-5 mb-4 mt-2" style={{ backgroundColor: colors.accent }}>

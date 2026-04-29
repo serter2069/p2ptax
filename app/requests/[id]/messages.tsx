@@ -10,9 +10,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
-import { MessageCircle } from "lucide-react-native";
+import { MessageCircle, ChevronLeft } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -166,10 +165,26 @@ export default function RequestMessages() {
     [router]
   );
 
+  const backRow = !isDesktop ? (
+    <View className="px-4 pt-4">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Назад"
+        onPress={() => router.back()}
+        className="flex-row items-center mb-2"
+        style={{ minHeight: 44 }}
+      >
+        <ChevronLeft size={20} color={colors.text} />
+        <Text className="text-text-base ml-1">Назад</Text>
+      </Pressable>
+      <Text className="text-2xl font-extrabold text-text-base mb-3">Сообщения</Text>
+    </View>
+  ) : null;
+
   if (!ready) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Сообщения" />
+        {backRow}
         <LoadingState />
       </SafeAreaView>
     );
@@ -178,7 +193,7 @@ export default function RequestMessages() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        {!isDesktop && <HeaderBack title="Сообщения" />}
+        {backRow}
         <ResponsiveContainer>
           {[0, 1, 2, 3].map((i) => (
             <View key={i} className="flex-row items-center py-3 border-b border-border">
@@ -198,7 +213,7 @@ export default function RequestMessages() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        {!isDesktop && <HeaderBack title="Сообщения" />}
+        {backRow}
         <View className="flex-1 items-center justify-center">
           <ErrorState
             message={error}
@@ -214,7 +229,7 @@ export default function RequestMessages() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {!isDesktop && <HeaderBack title="Сообщения" />}
+      {backRow}
       <ResponsiveContainer>
         <FlatList
           data={threads}

@@ -7,13 +7,13 @@ import {
   Alert,
   TextInput,
   Platform,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { MapPin, Mail } from "lucide-react-native";
+import { MapPin, Mail, ChevronLeft } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import HeaderBack from "@/components/HeaderBack";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -393,7 +393,6 @@ export default function CreateRequest() {
   if (authLoading || loadingInit) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        <HeaderBack title="Создать заявку" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -404,7 +403,6 @@ export default function CreateRequest() {
   if (loadError && cities.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        <HeaderBack title="Создать заявку" />
         <View className="flex-1 items-center justify-center">
           <EmptyState
             icon={MapPin}
@@ -418,7 +416,19 @@ export default function CreateRequest() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <HeaderBack title="Создать заявку" />
+      <View className="px-4 pt-4">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="flex-row items-center mb-2"
+          style={{ minHeight: 44 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+        <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+      </View>
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"

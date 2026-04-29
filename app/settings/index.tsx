@@ -18,9 +18,9 @@ import {
   Trash2,
   Pencil,
   ChevronRight,
+  ChevronLeft,
   FileText,
 } from "lucide-react-native";
-import HeaderBack from "@/components/HeaderBack";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import LoadingState from "@/components/ui/LoadingState";
@@ -524,7 +524,19 @@ export default function UnifiedSettings() {
   if (!ready) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        <HeaderBack title="Настройки" />
+        <View className="px-4 pt-4">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => router.back()}
+            className="flex-row items-center mb-2"
+            style={{ minHeight: 44 }}
+          >
+            <ChevronLeft size={20} color={colors.text} />
+            <Text className="text-text-base ml-1">Назад</Text>
+          </Pressable>
+          <Text className="text-2xl font-extrabold text-text-base mb-4">Настройки</Text>
+        </View>
         <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
     );
@@ -532,7 +544,19 @@ export default function UnifiedSettings() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <HeaderBack title="Настройки" />
+      <View className="px-4 pt-4">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="flex-row items-center mb-2"
+          style={{ minHeight: 44 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+        <Text className="text-2xl font-extrabold text-text-base mb-3">Настройки</Text>
+      </View>
 
       <SettingsTabs
         activeTab={activeTab}

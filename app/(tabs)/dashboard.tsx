@@ -25,7 +25,6 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react-native";
-import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -326,10 +325,6 @@ export default function UserDashboard() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      <HeaderHome
-        notificationCount={stats?.unreadMessages ?? 0}
-        onSettingsPress={() => nav.routes.settings()}
-      />
       <ScrollView
         className="flex-1"
         refreshControl={

@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import HeaderHome from "@/components/HeaderHome";
 import EmptyState from "@/components/ui/EmptyState";
 import { MessageSquare } from "lucide-react-native";
 import MessengerEmptyPane from "@/components/MessengerEmptyPane";
@@ -334,7 +333,6 @@ export default function UnifiedInbox() {
   if (!ready || loading) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={isDesktop ? [] : ["top"]}>
-        <HeaderHome />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -345,7 +343,6 @@ export default function UnifiedInbox() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={isDesktop ? [] : ["top"]}>
-        <HeaderHome />
         <View className="flex-1 items-center justify-center">
           <ErrorState message={error} onRetry={fetchThreads} />
         </View>
@@ -384,7 +381,6 @@ export default function UnifiedInbox() {
     const isWide = width >= 1024;
     return (
       <SafeAreaView className="flex-1 bg-white" edges={[]}>
-        <HeaderHome />
         <View className="flex-1 items-center" style={{ width: "100%", overflow: "hidden" }}>
           <View
             className="flex-1 flex-row"
@@ -541,7 +537,6 @@ export default function UnifiedInbox() {
   // Mobile: full-screen list
   return (
     <SafeAreaView className="flex-1 bg-white" edges={isDesktop ? [] : ["top"]}>
-      <HeaderHome />
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}

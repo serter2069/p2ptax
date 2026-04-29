@@ -1,10 +1,9 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus } from "lucide-react-native";
-import HeaderBack from "@/components/HeaderBack";
+import { Plus, ChevronLeft } from "lucide-react-native";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -54,6 +53,7 @@ interface FnsResponse {
  */
 export default function OnboardingWorkAreaScreen() {
   const nav = useTypedRouter();
+  const router = useRouter();
   const params = useLocalSearchParams<{ from?: string; role?: string }>();
   const fromSettings = params.from === "settings";
   const role =
@@ -324,7 +324,18 @@ export default function OnboardingWorkAreaScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <HeaderBack title={fromSettings ? "Назад к настройкам" : ""} />
+      <View className="px-6 pt-4 pb-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={fromSettings ? "Назад к настройкам" : "Назад"}
+          onPress={() => router.back()}
+          className="flex-row items-center"
+          style={{ minHeight: 44 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">{fromSettings ? "Назад к настройкам" : "Назад"}</Text>
+        </Pressable>
+      </View>
 
       {!fromSettings && (
         <View className="px-6 pb-4">

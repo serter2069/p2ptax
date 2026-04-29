@@ -13,10 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import StatusBadge from "@/components/StatusBadge";
-import { FileText } from "lucide-react-native";
+import { FileText, Trash2 } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -153,7 +152,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
       {/* Card sliding layer */}
       <Animated.View
         style={{ transform: [{ translateX }] }}
-        {...(isActive ? panResponder.panHandlers : {})}
+        {...(isActive && Platform.OS !== "web" ? panResponder.panHandlers : {})}
       >
         <Pressable
           accessibilityRole="button"
@@ -169,7 +168,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
             minHeight: 44,
           }}
         >
-          {/* Title + status */}
+          {/* Title + status (+ trash on web) */}
           <View className="flex-row items-start justify-between mb-2 gap-2">
             <Text
               className="text-base font-semibold text-text-base flex-1 mb-1"
@@ -177,7 +176,23 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
             >
               {item.title}
             </Text>
-            <StatusBadge status={item.status} />
+            <View className="flex-row items-center gap-2">
+              <StatusBadge status={item.status} />
+              {isActive && Platform.OS === "web" && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Закрыть заявку"
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onClose(item.id, item.title);
+                  }}
+                  className="p-2"
+                  style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Trash2 size={18} color={colors.danger} />
+                </Pressable>
+              )}
+            </View>
           </View>
 
           {/* City + FNS */}
@@ -344,7 +359,6 @@ export default function MyRequests() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      <HeaderHome />
       <DesktopScreen>
         <View className="flex-row items-center justify-between mb-4">
           <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
