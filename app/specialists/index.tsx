@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
+import { useLocalSearchParams, router } from "expo-router";
 import SpecialistCard from "@/components/SpecialistCard";
 import SpecialistSearchBar, {
   CityOpt,
@@ -68,6 +69,8 @@ interface FnsResponse {
   }[];
 }
 
+const PAGE_SIZE = 12;
+
 export default function SpecialistsCatalog() {
   const nav = useTypedRouter();
   const { isAuthenticated } = useAuth();
@@ -77,13 +80,17 @@ export default function SpecialistsCatalog() {
   const gridCols = isWide ? 3 : isDesktop ? 2 : 1;
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
+  // URL params for shareable filtered catalog
+  const urlParams = useLocalSearchParams<{
+    city?: string;
+    fns?: string;
+    services?: string;
+  }>();
+
   const [cities, setCities] = useState<CityOpt[]>([]);
   const [fnsAll, setFnsAll] = useState<FnsOpt[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
-  // filtersReady: true once user has picked an FNS (or city+service without FNS)
-  // We do NOT show specialists until FNS is selected — per KEY REQUIREMENT.
-  const [filtersReady, setFiltersReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -92,9 +99,16 @@ export default function SpecialistsCatalog() {
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
 
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  // Initialize filter state from URL params (read once on mount).
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(
+    urlParams.city || null
+  );
+  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(
+    urlParams.fns || null
+  );
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
+    urlParams.services ? urlParams.services.split(",").filter(Boolean) : []
+  );
 
   const hasFilters =
     selectedCityId !== null ||
@@ -105,15 +119,17 @@ export default function SpecialistsCatalog() {
     setSelectedCityId(null);
     setSelectedFnsId(null);
     setSelectedServiceIds([]);
-    setFiltersReady(false);
-    setSpecialists([]);
-    setTotal(0);
+    router.setParams({
+      city: undefined,
+      fns: undefined,
+      services: undefined,
+    });
   }, []);
 
   const fetchSpecialists = useCallback(
     async (pageNum: number, append = false) => {
       try {
-        let path = `/api/specialists?page=${pageNum}&limit=20`;
+        let path = `/api/specialists?page=${pageNum}&limit=${PAGE_SIZE}`;
         if (selectedCityId) path += `&city_ids=${selectedCityId}`;
         if (selectedFnsId) path += `&fns_ids=${selectedFnsId}`;
         if (selectedServiceIds.length > 0)
@@ -148,12 +164,10 @@ export default function SpecialistsCatalog() {
       .catch(() => {});
   }, [isAuthenticated]);
 
-  // Initial load: cities, services, and all FNS for typeahead.
-  // We do NOT fetch specialists here — user must select FNS first.
+  // Initial load: cities, services, FNS list for typeahead.
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      setLoading(true);
       try {
         const [citiesRes, servicesRes] = await Promise.all([
           api<CitiesResponse>("/api/cities", { noAuth: true }),
@@ -163,7 +177,6 @@ export default function SpecialistsCatalog() {
         setCities(citiesRes.items.map((c) => ({ id: c.id, name: c.name })));
         setServices(servicesRes.items);
 
-        // Load all FNS for typeahead — one request keyed by all city ids.
         if (citiesRes.items.length > 0) {
           const ids = citiesRes.items.map((c) => c.id).join(",");
           try {
@@ -186,10 +199,8 @@ export default function SpecialistsCatalog() {
           }
         }
       } catch (e) {
-        // ignore — page still renders without filters
+        // ignore — page still renders, fetchSpecialists below handles its own errors
       }
-      // Do NOT fetch specialists on init — wait for FNS selection.
-      if (!cancelled) setLoading(false);
     }
     init();
     return () => {
@@ -197,41 +208,46 @@ export default function SpecialistsCatalog() {
     };
   }, []);
 
-  // Refetch on filter change — only when FNS is selected (filtersReady).
+  // Fetch specialists on mount and on filter change.
+  // Catalog is open by default — no FNS gate.
   useEffect(() => {
-    if (!filtersReady) return;
     setLoading(true);
     fetchSpecialists(1).finally(() => setLoading(false));
-  }, [filtersReady, selectedCityId, selectedFnsId, selectedServiceIds, fetchSpecialists]);
+  }, [selectedCityId, selectedFnsId, selectedServiceIds, fetchSpecialists]);
 
   const handlePickCity = useCallback((cityId: string) => {
     setSelectedCityId(cityId);
     setSelectedFnsId(null);
-    // City alone does not unlock the catalog — still need FNS selection.
+    router.setParams({ city: cityId, fns: undefined });
   }, []);
 
   const handlePickFns = useCallback((fns: FnsOpt) => {
     setSelectedCityId(fns.cityId);
     setSelectedFnsId(fns.id);
-    setFiltersReady(true);
+    router.setParams({ city: fns.cityId, fns: fns.id });
   }, []);
 
   const handleClearLocation = useCallback(() => {
     setSelectedCityId(null);
     setSelectedFnsId(null);
-    setFiltersReady(false);
-    setSpecialists([]);
-    setTotal(0);
+    router.setParams({ city: undefined, fns: undefined });
   }, []);
 
   const handleServiceToggle = useCallback((id: string) => {
-    setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setSelectedServiceIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((s) => s !== id)
+        : [...prev, id];
+      router.setParams({
+        services: next.length > 0 ? next.join(",") : undefined,
+      });
+      return next;
+    });
   }, []);
 
   const handleClearServices = useCallback(() => {
     setSelectedServiceIds([]);
+    router.setParams({ services: undefined });
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -314,7 +330,7 @@ export default function SpecialistsCatalog() {
         >
           Специалисты
         </Text>
-        {filtersReady && headerCount !== null && headerCount > 0 && (
+        {headerCount !== null && headerCount > 0 && (
           <Text className="text-xs" style={{ color: colors.textMuted }}>
             {headerCount} специалистов
           </Text>
@@ -334,8 +350,8 @@ export default function SpecialistsCatalog() {
         />
       </View>
 
-      {/* Row 3: compact service chips — only shown once FNS is selected */}
-      {filtersReady && services.length > 0 && (
+      {/* Row 3: compact service chips — always visible */}
+      {services.length > 0 && (
         <View className="pt-2 pb-2" style={{ zIndex: 1 }}>
           <ScrollView
             horizontal
@@ -389,28 +405,8 @@ export default function SpecialistsCatalog() {
         </View>
       )}
 
-      {/* Specialist list / instruction state */}
-      {!filtersReady ? (
-        /* No FNS selected yet — show instruction */
-        loading ? (
-          <View className="py-4 px-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <View
-                key={i}
-                className="mb-3 bg-white rounded-2xl overflow-hidden border border-border"
-              >
-                <LoadingState variant="skeleton" lines={4} />
-              </View>
-            ))}
-          </View>
-        ) : (
-          <EmptyState
-            icon={Search}
-            title="Выберите ФНС для поиска"
-            subtitle="Введите город или название инспекции в поисковой строке выше, чтобы найти специалистов по вашей налоговой инспекции"
-          />
-        )
-      ) : loading && specialists.length === 0 ? (
+      {/* Specialist list */}
+      {loading && specialists.length === 0 ? (
         <View className="py-4 px-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <View
@@ -433,13 +429,26 @@ export default function SpecialistsCatalog() {
           }}
         />
       ) : specialists.length === 0 && !loading ? (
-        <EmptyState
-          icon={UserX}
-          title="Специалистов не найдено"
-          subtitle="По выбранной ФНС специалистов пока нет. Попробуйте другую инспекцию."
-          actionLabel="Сбросить фильтры"
-          onAction={resetFilters}
-        />
+        hasFilters ? (
+          <EmptyState
+            icon={UserX}
+            title="По выбранным фильтрам никого не нашли"
+            subtitle="Попробуйте расширить поиск или сбросить фильтры."
+            actionLabel="Сбросить фильтры"
+            onAction={resetFilters}
+          />
+        ) : (
+          <EmptyState
+            icon={Search}
+            title="Пока нет специалистов"
+            subtitle="Загляните позже — каталог пополняется."
+            actionLabel="Обновить"
+            onAction={() => {
+              setLoading(true);
+              fetchSpecialists(1).finally(() => setLoading(false));
+            }}
+          />
+        )
       ) : (
         <FlatList
           key={`grid-${gridCols}`}
