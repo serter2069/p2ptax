@@ -149,22 +149,30 @@ export default function OnboardingProfileScreen() {
     setIsLoading(true);
 
     try {
-      await api("/api/onboarding/profile", {
-        method: "PUT",
-        body: {
-          description: description.trim() || null,
-          phone: phone.trim() || null,
-          telegram: telegram.trim() || null,
-          whatsapp: whatsapp.trim() || null,
-          officeAddress: officeAddress.trim() || null,
-          workingHours: workingHours.trim() || null,
-          avatarUrl: avatarUrl || null,
-        },
-      });
+      const result = await api<{ success: boolean; specialistProfileCompletedAt?: string }>(
+        "/api/onboarding/profile",
+        {
+          method: "PUT",
+          body: {
+            description: description.trim() || null,
+            phone: phone.trim() || null,
+            telegram: telegram.trim() || null,
+            whatsapp: whatsapp.trim() || null,
+            officeAddress: officeAddress.trim() || null,
+            workingHours: workingHours.trim() || null,
+            avatarUrl: avatarUrl || null,
+          },
+        }
+      );
 
-      // Mark user as specialist in local context (covers both new specialists
-      // and existing CLIENTs who enabled specialist mode)
-      updateUser({ isSpecialist: true, ...(avatarUrl ? { avatarUrl } : {}) });
+      // Mark user as specialist locally + record onboarding completion so
+      // useStrandedSpecialistGuard stops bouncing back to /onboarding/name.
+      const completedAt = result.specialistProfileCompletedAt ?? new Date().toISOString();
+      updateUser({
+        isSpecialist: true,
+        specialistProfileCompletedAt: completedAt,
+        ...(avatarUrl ? { avatarUrl } : {}),
+      });
 
       nav.replaceRoutes.tabs();
     } catch (e: unknown) {

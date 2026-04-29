@@ -143,22 +143,58 @@ export default function NotificationsScreen() {
     setRefreshing(false);
   }, [fetchNotifications]);
 
+  /**
+   * Resolve the in-app route a notification should navigate to.
+   * Backend payload: notifications carry a single `entityId` (no `data` JSON).
+   * Type -> entityId semantics:
+   *   - new_message / new_message_from_specialist : entityId = thread.id  -> /threads/{id}
+   *   - new_response                              : entityId = thread.id  -> /threads/{id}
+   *   - new_request_in_city                       : entityId = request.id -> /requests/{id}/detail
+   *   - promo_expiring                            : no navigation
+   */
+  const routeForNotification = useCallback((item: NotificationItem): string | null => {
+    if (!item.entityId) return null;
+    switch (item.type) {
+      case "new_message":
+      case "new_message_from_specialist":
+      case "new_response":
+        return `/threads/${item.entityId}`;
+      case "new_request_in_city":
+        return `/requests/${item.entityId}/detail`;
+      case "promo_expiring":
+      default:
+        return null;
+    }
+  }, []);
+
   const handleMarkRead = useCallback(async (id: string) => {
     const item = notifications.find((n) => n.id === id);
-    if (!item || item.isRead) return;
+    if (!item) return;
+    const target = routeForNotification(item);
+
+    if (item.isRead) {
+      // Already read - just navigate (tap-again behaviour).
+      if (target) router.push(target as never);
+      return;
+    }
+
+    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
-    try {
-      await apiPatch(`/api/notifications/${id}/read`, {});
-    } catch {
+
+    // Fire-and-forget mark-read; navigate immediately for snappy UX.
+    apiPatch(`/api/notifications/${id}/read`, {}).catch(() => {
+      // Revert on failure
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: false } : n))
       );
       setUnreadCount((prev) => prev + 1);
-    }
-  }, [notifications]);
+    });
+
+    if (target) router.push(target as never);
+  }, [notifications, routeForNotification, router]);
 
   const handleMarkAllRead = useCallback(async () => {
     const prevNotifications = notifications;

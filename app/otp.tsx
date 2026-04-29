@@ -93,9 +93,14 @@ export default function AuthOtpScreen() {
         nav.replaceRoutes.adminDashboard();
         return;
       }
-      // Specialist opt-in still requires a name/profile finish before the
-      // dashboard can render the specialist widgets meaningfully.
-      if (user.isSpecialist && !user.firstName) {
+      // Resume incomplete specialist onboarding. The previous check used
+      // `!user.firstName`, which only catches users who quit before step 1.
+      // Specialists who finish step 1 (firstName set) but abandon before
+      // step 3 are stranded — they have no profile, are invisible in the
+      // catalog, and cannot write threads. `specialistProfileCompletedAt`
+      // is the authoritative gate: it's set only after `/api/onboarding/profile`
+      // succeeds, so any falsy value means onboarding is incomplete.
+      if (user.isSpecialist && !user.specialistProfileCompletedAt) {
         nav.replaceRoutes.onboardingName();
         return;
       }
