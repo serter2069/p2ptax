@@ -216,10 +216,15 @@ export default function UnifiedInbox() {
               marginBottom: isWide ? 24 : 0,
             }}
           >
+            {/* Wave 6 polish — widened from 320/360 to 360/400. At 320 the
+                ThreadCard squeezes the name column hard: with avatar (44 + 12
+                margin) + perspective badge (~70) + timestamp (~50) the name
+                gets ~140-160px and "Алексей Воронов" truncates to "Алексей
+                Во…". Bumping by 40px adds enough room for two-word names. */}
             <View
               style={{
-                width: 320,
-                maxWidth: 360,
+                width: 360,
+                maxWidth: 400,
                 flexShrink: 0,
                 borderRightWidth: 1,
                 borderRightColor: colors.border,
