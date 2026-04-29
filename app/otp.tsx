@@ -43,7 +43,7 @@ function formatCountdown(seconds: number): string {
 export default function AuthOtpScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
-  const params = useLocalSearchParams<{ email: string; returnTo?: string }>();
+  const params = useLocalSearchParams<{ email: string; returnTo?: string; intent?: string }>();
   const email =
     typeof params.email === "string"
       ? params.email
@@ -55,6 +55,12 @@ export default function AuthOtpScreen() {
       ? params.returnTo
       : Array.isArray(params.returnTo)
         ? params.returnTo[0]
+        : undefined;
+  const intent =
+    typeof params.intent === "string"
+      ? params.intent
+      : Array.isArray(params.intent)
+        ? params.intent[0]
         : undefined;
   const { signIn } = useAuth();
 
@@ -83,6 +89,18 @@ export default function AuthOtpScreen() {
 
   const routeByRole = useCallback(
     (user: UserData) => {
+      // Landing CTA "Я специалист" passes intent=specialist through the auth
+      // chain. If the authenticated user is not yet a specialist, drop them
+      // into the specialist onboarding (name -> work-area) instead of the
+      // generic dashboard. Existing specialists fall through to the regular
+      // resume-onboarding / tabs logic below.
+      if (intent === "specialist" && !user.isSpecialist) {
+        nav.replaceAny({
+          pathname: "/onboarding/name",
+          params: { role: "specialist" },
+        });
+        return;
+      }
       // If there's a returnTo param, navigate there after login
       if (returnTo) {
         nav.replaceAny(returnTo);
@@ -106,7 +124,7 @@ export default function AuthOtpScreen() {
       }
       nav.replaceRoutes.tabs();
     },
-    [router, returnTo]
+    [router, returnTo, intent]
   );
 
   const handleVerify = useCallback(

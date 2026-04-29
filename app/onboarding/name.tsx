@@ -16,8 +16,15 @@ import { colors, textStyle } from "@/lib/theme";
 export default function OnboardingNameScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
-  const params = useLocalSearchParams<{ from?: string }>();
+  const params = useLocalSearchParams<{ from?: string; role?: string }>();
   const fromSettings = params.from === "settings";
+  const role =
+    typeof params.role === "string"
+      ? params.role
+      : Array.isArray(params.role)
+        ? params.role[0]
+        : undefined;
+  const isSpecialistIntent = role === "specialist";
   const { ready, user } = useRequireAuth();
   const { updateUser, isSpecialistUser, isAdminUser } = useAuth();
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
@@ -29,14 +36,18 @@ export default function OnboardingNameScreen() {
       nav.replaceRoutes.adminDashboard();
       return;
     }
-    if (!isSpecialistUser) {
+    // Wave 1/B — landing CTA "Я специалист" routes here with ?role=specialist
+    // even when isSpecialist is still false. Allow the screen to render so
+    // the user can fill name first; work-area then flips isSpecialist via
+    // /api/user/become-specialist.
+    if (!isSpecialistUser && !isSpecialistIntent) {
       nav.replaceRoutes.tabs();
       return;
     }
     if (!fromSettings && user?.specialistProfileCompletedAt) {
       nav.replaceRoutes.tabs();
     }
-  }, [ready, isAdminUser, isSpecialistUser, user, fromSettings]);
+  }, [ready, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings]);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -88,7 +99,14 @@ export default function OnboardingNameScreen() {
         lastName: data.user.lastName,
       });
 
-      nav.routes.onboardingWorkArea();
+      if (isSpecialistIntent) {
+        nav.replaceAny({
+          pathname: "/onboarding/work-area",
+          params: { role: "specialist" },
+        });
+      } else {
+        nav.routes.onboardingWorkArea();
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);
@@ -97,7 +115,7 @@ export default function OnboardingNameScreen() {
     }
   };
 
-  if (!ready || isAdminUser || !isSpecialistUser) {
+  if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent)) {
     return <LoadingState />;
   }
 
