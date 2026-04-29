@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import Avatar from "@/components/ui/Avatar";
 import { colors } from "@/lib/theme";
+import { pluralizeRu } from "@/lib/ru";
 
 export interface ThreadSummary {
   id: string;
@@ -72,9 +73,12 @@ export default function ThreadsList({
         <>
           <Text className="text-sm text-text-mute mb-3">
             {threadsCount}{" "}
-            {threadsCount === 1
-              ? "специалист написал"
-              : "специалистов написали"}{" "}
+            {pluralizeRu(threadsCount, [
+              "специалист",
+              "специалиста",
+              "специалистов",
+            ])}{" "}
+            {pluralizeRu(threadsCount, ["написал", "написали", "написали"])}{" "}
             вам
           </Text>
           {threads.map((thread) => {

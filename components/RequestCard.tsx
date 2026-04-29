@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import StatusBadge from "./StatusBadge";
 import { colors } from "@/lib/theme";
+import { pluralizeRu } from "@/lib/ru";
 
 interface RequestCardProps {
   id: string;
@@ -64,7 +65,17 @@ export default function RequestCard({
       </Text>
 
       <Text className="text-xs text-text-mute">
-        {threadsCount} {threadsCount === 1 ? "специалист уже написал" : "специалистов уже написали"}
+        {threadsCount === 0
+          ? "Никто пока не откликнулся"
+          : `${threadsCount} ${pluralizeRu(threadsCount, [
+              "специалист",
+              "специалиста",
+              "специалистов",
+            ])} уже ${pluralizeRu(threadsCount, [
+              "написал",
+              "написали",
+              "написали",
+            ])}`}
       </Text>
     </Pressable>
   );

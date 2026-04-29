@@ -17,6 +17,7 @@ import { TriangleAlert, FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
+import { pluralizeRu } from "@/lib/ru";
 import { colors, overlay, BREAKPOINT } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -237,7 +238,9 @@ export default function SpecialistPublicRequests() {
           <Text className="text-xl font-bold text-white mb-0.5">Публичные заявки</Text>
           <Text className="text-sm" style={{ color: overlay.white90 }}>Находите клиентов по своей специализации</Text>
           {total > 0 && (
-            <Text className="text-sm font-semibold text-white mt-2">{total} заявок доступно</Text>
+            <Text className="text-sm font-semibold text-white mt-2">
+              {total} {pluralizeRu(total, ["заявка", "заявки", "заявок"])} доступно
+            </Text>
           )}
         </View>
 
