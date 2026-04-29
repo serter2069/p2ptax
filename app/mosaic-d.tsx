@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Redirect } from 'expo-router';
 
 const METROMAP = 'http://localhost:8091';
 const PROJECT_ROOT = '/Users/sergei/Documents/Projects/Ruslan/p2ptax';
-
-// No __DEV__ guard — this is a local-only dev page, always render
 
 interface PageItem {
   idx: number;
@@ -48,6 +47,8 @@ function imageUrl(pagesDir: string, file: string) {
 }
 
 export default function MosaicDesktop() {
+  if (!__DEV__) return <Redirect href="/" />;
+
   const [data, setData] = useState<MosaicData | null>(null);
   const [error, setError] = useState('');
 
