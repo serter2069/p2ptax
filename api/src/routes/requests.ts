@@ -14,8 +14,13 @@ function stripHtml(str: string): string {
 const router = Router();
 
 /**
- * Fan-out: notify every specialist whose FNS coverage matches this request's
- * FNS. Side-effect only — never crashes the request flow.
+ * Notifies all specialists who cover the request's FNS, regardless of
+ * which specific services they offer. This is intentional: when a client
+ * picks "Не знаю" for service, we still want their request visible to
+ * any qualified specialist at the FNS. Specialists can self-filter via
+ * the public-requests feed.
+ *
+ * Side-effect only — never crashes the request flow.
  */
 async function notifyMatchingSpecialists(args: {
   requestId: string;
