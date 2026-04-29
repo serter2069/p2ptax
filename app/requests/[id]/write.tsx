@@ -6,6 +6,7 @@ import {
   ScrollView,
   useWindowDimensions,
   Platform,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -102,7 +103,20 @@ export default function SpecialistConfirmWrite() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          setSubmitError("Заявка закрыта — сообщение отправить невозможно");
+          const existingThreadId =
+            typeof err.data?.threadId === "string" ? err.data.threadId : null;
+          if (existingThreadId) {
+            const goToThread = () =>
+              nav.replaceAny(`/threads/${existingThreadId}`);
+            Alert.alert(
+              "Вы уже откликнулись",
+              "Перейдём к существующему диалогу.",
+              [{ text: "OK", onPress: goToThread }],
+              { onDismiss: goToThread }
+            );
+          } else {
+            setSubmitError("Заявка закрыта — сообщение отправить невозможно");
+          }
         } else if (err.status === 429) {
           setSubmitError(
             "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
