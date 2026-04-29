@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  Pressable,
   RefreshControl,
   Switch,
   useWindowDimensions,
@@ -11,101 +10,37 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import {
-  MessageSquare,
-  FileText,
-  Inbox,
-  Plus,
-  Lightbulb,
-  ClipboardList,
-  CalendarDays,
-  List,
-  Sparkles,
-  TrendingUp,
-  Clock,
-  ArrowRight,
-} from "lucide-react-native";
+import { FileText, Inbox, Clock } from "lucide-react-native";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
-import StatusBadge from "@/components/StatusBadge";
-import {
-  DashboardGrid,
-  KpiCard,
-  DashboardWidget,
-  FeedList,
-  type FeedItem,
-} from "@/components/dashboard";
+import { DashboardGrid, type FeedItem } from "@/components/dashboard";
+import ClientEmptyState from "@/components/dashboard/sections/ClientEmptyState";
+import SpecialistEmptyState from "@/components/dashboard/sections/SpecialistEmptyState";
+import ClientKPIRow from "@/components/dashboard/sections/ClientKPIRow";
+import SpecialistKPIRow from "@/components/dashboard/sections/SpecialistKPIRow";
+import ClientSidebar from "@/components/dashboard/sections/ClientSidebar";
+import SpecialistSidebar from "@/components/dashboard/sections/SpecialistSidebar";
+import MyRequestsWidget from "@/components/dashboard/sections/MyRequestsWidget";
+import SpecialistMatchedWidget from "@/components/dashboard/sections/SpecialistMatchedWidget";
 import { api, apiGet, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors, spacing, BREAKPOINT } from "@/lib/theme";
+import type {
+  DashboardStats,
+  ClientDashboardExtra,
+  SpecialistExtra,
+  RequestItem,
+  MatchingRequest,
+  SpecialistDashboardData,
+} from "@/components/dashboard/sections/types";
 
 /**
- * Unified User Dashboard — iter11 UI layer (PR 2/3).
- *
- * Merges the legacy (client-tabs)/dashboard and (specialist-tabs)/dashboard
- * into a single screen. Always shows: MyRequests widget, unread messages,
- * primary CTA (create request) and tips. When {@link useAuth} reports
- * `isSpecialistUser=true` we additionally render: thread-limit gauge,
- * public-requests feed widget, availability toggle, and specialist KPIs.
- *
+ * Unified User Dashboard. Renders KPIs, feeds, sidebar — split into
+ * components/dashboard/sections/* for both client and specialist roles.
  * ADMIN users are handled separately by (admin-tabs) and never reach here.
  */
-
-interface DashboardStats {
-  requestsUsed: number;
-  requestsLimit: number;
-  unreadMessages: number;
-}
-
-interface ClientDashboardExtra {
-  activeRequests: number;
-  threadsToday: number;
-  awaitingReplies: number;
-  specialistsWorkingWithYou: number;
-  weeklyNewRequests: number;
-}
-
-interface SpecialistExtra {
-  newRequestsWeek: number;
-  awaitingMyReply: number;
-  activeThreads: number;
-  disputedAmountMonth: number;
-}
-
-interface RequestItem {
-  id: string;
-  title: string;
-  description: string;
-  status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  createdAt: string;
-  city: { id: string; name: string };
-  fns: { id: string; name: string; code: string };
-  threadsCount: number;
-}
-
-interface MatchingRequest {
-  id: string;
-  title: string;
-  description: string;
-  status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  createdAt: string;
-  city: { id: string; name: string };
-  fns: { id: string; name: string; code: string };
-  service?: string;
-  isMyRegion: boolean;
-  hasThread?: boolean;
-  threadId?: string | null;
-  existingThreadId?: string | null;
-}
-
-interface SpecialistDashboardData {
-  isAvailable: boolean;
-  activeThreads: number;
-  matchingRequests: MatchingRequest[];
-  stats: { threadsTotal: number; newMessages: number };
-}
 
 const THREAD_LIMIT_PER_DAY = 20;
 
@@ -125,7 +60,7 @@ const TIPS: { title: string; text: string }[] = [
 ];
 
 export default function UserDashboard() {
-  const router = useRouter()
+  const router = useRouter();
   const nav = useTypedRouter();
   const { ready } = useRequireAuth();
   const { user, isSpecialistUser, updateUser } = useAuth();
@@ -365,360 +300,69 @@ export default function UserDashboard() {
             />
           ) : (
             <View style={{ gap: isDesktop ? 32 : 24 }}>
-              {/* Empty state for client with no requests */}
               {!isSpecialistUser && requests.length === 0 ? (
-                <View
-                  className="bg-white rounded-2xl"
-                  style={{
-                    padding: spacing.lg,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    gap: 16,
-                  }}
-                >
-                  <View style={{ gap: 6 }}>
-                    <Text
-                      className="text-text-base font-extrabold"
-                      style={{ fontSize: 20 }}
-                    >
-                      Создайте первую заявку
-                    </Text>
-                    <Text
-                      className="text-text-mute"
-                      style={{ fontSize: 14, lineHeight: 20 }}
-                    >
-                      Опишите вашу налоговую ситуацию — специалисты в вашем регионе откликнутся в течение 24 часов
-                    </Text>
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Создать заявку"
-                    onPress={() => nav.routes.requestsNew()}
-                    className="rounded-xl flex-row items-center justify-center"
-                    style={{
-                      backgroundColor: colors.primary,
-                      paddingVertical: 14,
-                      paddingHorizontal: 20,
-                      gap: 8,
-                    }}
-                  >
-                    <Plus size={18} color={colors.white} />
-                    <Text
-                      className="font-bold text-white"
-                      style={{ fontSize: 15 }}
-                    >
-                      Создать заявку
-                    </Text>
-                  </Pressable>
-                </View>
+                <ClientEmptyState onCreate={() => nav.routes.requestsNew()} />
               ) : null}
 
-              {/* Empty state for specialist with no active threads */}
               {isSpecialistUser && (specialistExtra?.activeThreads ?? 0) === 0 ? (
-                <View
-                  className="bg-white rounded-2xl"
-                  style={{
-                    padding: spacing.lg,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    gap: 16,
-                  }}
-                >
-                  <View style={{ gap: 6 }}>
-                    <Text
-                      className="text-text-base font-extrabold"
-                      style={{ fontSize: 20 }}
-                    >
-                      Найдите клиентов в вашем регионе
-                    </Text>
-                    <Text
-                      className="text-text-mute"
-                      style={{ fontSize: 14, lineHeight: 20 }}
-                    >
-                      Просмотрите открытые заявки от клиентов и начните диалог
-                    </Text>
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Смотреть заявки"
-                    onPress={() => nav.routes.tabsPublicRequests()}
-                    className="rounded-xl flex-row items-center justify-center"
-                    style={{
-                      backgroundColor: colors.success,
-                      paddingVertical: 14,
-                      paddingHorizontal: 20,
-                      gap: 8,
-                    }}
-                  >
-                    <ArrowRight size={18} color={colors.white} />
-                    <Text
-                      className="font-bold text-white"
-                      style={{ fontSize: 15 }}
-                    >
-                      Смотреть заявки
-                    </Text>
-                  </Pressable>
-                </View>
+                <SpecialistEmptyState
+                  onBrowse={() => nav.routes.tabsPublicRequests()}
+                />
               ) : null}
 
-              {/* KPI row — specialist gets 4 KPIs, client gets 3 */}
               {isSpecialistUser ? (
-                <DashboardGrid>
-                  <DashboardGrid.Col span={3} tabletSpan={1}>
-                    <KpiCard
-                      label="Новых совпадений"
-                      value={matchedToday.length}
-                      icon={Sparkles}
-                      tone="primary"
-                    />
-                  </DashboardGrid.Col>
-                  <DashboardGrid.Col span={3} tabletSpan={1}>
-                    <KpiCard
-                      label="Активных диалогов"
-                      value={activeThreads}
-                      icon={MessageSquare}
-                      tone={activeThreads > 0 ? "success" : "muted"}
-                    />
-                  </DashboardGrid.Col>
-                  <DashboardGrid.Col span={3} tabletSpan={1}>
-                    <KpiCard
-                      label="Лимит диалогов"
-                      value={`${threadsToday}/${THREAD_LIMIT_PER_DAY}`}
-                      hint={
-                        threadsLeft > 0 ? `осталось ${threadsLeft}` : "исчерпан"
-                      }
-                      icon={CalendarDays}
-                      tone={
-                        threadsLeft === 0
-                          ? "danger"
-                          : threadsLeft <= 3
-                            ? "warning"
-                            : "muted"
-                      }
-                    />
-                  </DashboardGrid.Col>
-                  <DashboardGrid.Col span={3} tabletSpan={1}>
-                    <KpiCard
-                      label="Новых за неделю"
-                      value={weekCount}
-                      icon={TrendingUp}
-                      tone={weekCount > 0 ? "success" : "muted"}
-                      trend={weekCount > 0 ? "up" : "flat"}
-                    />
-                  </DashboardGrid.Col>
-                </DashboardGrid>
+                <SpecialistKPIRow
+                  matchedToday={matchedToday.length}
+                  activeThreads={activeThreads}
+                  threadsToday={threadsToday}
+                  threadsLeft={threadsLeft}
+                  weekCount={weekCount}
+                  threadLimitPerDay={THREAD_LIMIT_PER_DAY}
+                />
               ) : (
-                <DashboardGrid>
-                  <DashboardGrid.Col span={4} tabletSpan={1}>
-                    <KpiCard
-                      label="Активных заявок"
-                      value={
-                        clientExtra?.activeRequests ?? activeRequests.length
-                      }
-                      hint={`из ${stats?.requestsLimit ?? 5} доступных`}
-                      icon={FileText}
-                      tone="primary"
-                      onPress={() => nav.routes.tabsRequests()}
-                    />
-                  </DashboardGrid.Col>
-                  <DashboardGrid.Col span={4} tabletSpan={1}>
-                    <KpiCard
-                      label="Непрочитанных сообщений"
-                      value={stats?.unreadMessages ?? 0}
-                      icon={MessageSquare}
-                      tone={
-                        (stats?.unreadMessages ?? 0) > 0 ? "warning" : "muted"
-                      }
-                      onPress={() => nav.routes.tabsMessages()}
-                    />
-                  </DashboardGrid.Col>
-                  <DashboardGrid.Col span={4} tabletSpan={2}>
-                    <KpiCard
-                      label="Новых диалогов сегодня"
-                      value={clientExtra?.threadsToday ?? 0}
-                      icon={Inbox}
-                      tone={
-                        (clientExtra?.threadsToday ?? 0) > 0
-                          ? "success"
-                          : "muted"
-                      }
-                      trend={
-                        (clientExtra?.threadsToday ?? 0) > 0 ? "up" : "flat"
-                      }
-                    />
-                  </DashboardGrid.Col>
-                </DashboardGrid>
+                <ClientKPIRow
+                  clientExtra={clientExtra}
+                  stats={stats}
+                  activeRequestsCount={activeRequests.length}
+                  onPressRequests={() => nav.routes.tabsRequests()}
+                  onPressMessages={() => nav.routes.tabsMessages()}
+                />
               )}
 
               {/* Main + sidebar: 8 / 4 */}
               <DashboardGrid>
                 <DashboardGrid.Col span={8} tabletSpan={2}>
                   <View style={{ gap: 16 }}>
-                    {/* Always show "My requests" widget */}
-                    <DashboardWidget
-                      title="Мои заявки"
-                      subtitle={
-                        clientFeedItems.length > 0
-                          ? `Всего ${clientFeedItems.length}`
-                          : "Пусто"
-                      }
-                      icon={ClipboardList}
-                      actionLabel="Все →"
-                      onActionPress={() =>
-                        nav.routes.tabsRequests()
-                      }
-                      flush
-                    >
-                      <FeedList
-                        items={clientFeedItems}
-                        limit={6}
-                        emptyText="У вас пока нет заявок. Создайте первую."
-                      />
-                      {activeRequests.length > 0 ? (
-                        <View
-                          className="flex-row flex-wrap items-center gap-2"
-                          style={{
-                            paddingHorizontal: 16,
-                            paddingVertical: 12,
-                            borderTopWidth: 1,
-                            borderTopColor: colors.border,
-                          }}
-                        >
-                          {activeRequests.slice(0, 3).map((r) => (
-                            <StatusBadge key={r.id} status={r.status} />
-                          ))}
-                          <Text
-                            className="text-text-dim"
-                            style={{ fontSize: 12 }}
-                          >
-                            {activeRequests.length} активных
-                          </Text>
-                        </View>
-                      ) : null}
-                    </DashboardWidget>
+                    <MyRequestsWidget
+                      clientFeedItems={clientFeedItems}
+                      activeRequests={activeRequests}
+                      onAllRequests={() => nav.routes.tabsRequests()}
+                    />
 
-                    {/* Specialist-only: public-requests feed */}
                     {isSpecialistUser ? (
-                      <DashboardWidget
-                        title="Подходящие публичные заявки"
-                        subtitle={`Всего ${matched.length}`}
-                        icon={Inbox}
-                        actionLabel="Все →"
-                        onActionPress={() =>
-                          nav.routes.tabsPublicRequests()
-                        }
-                        flush
-                      >
-                        <FeedList
-                          items={specialistFeedItems}
-                          limit={6}
-                          emptyText="Подходящих заявок пока нет. Расширьте рабочую область."
-                        />
-                      </DashboardWidget>
+                      <SpecialistMatchedWidget
+                        specialistFeedItems={specialistFeedItems}
+                        matchedCount={matched.length}
+                        onAllPublic={() => nav.routes.tabsPublicRequests()}
+                      />
                     ) : null}
                   </View>
                 </DashboardGrid.Col>
 
                 <DashboardGrid.Col span={4} tabletSpan={2}>
-                  <View style={{ gap: 16 }}>
-                    {/* Primary CTA — create request (always) */}
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Создать заявку"
-                      onPress={() => nav.routes.requestsNew()}
-                      disabled={atLimit}
-                      className={`rounded-2xl p-5 ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
-                    >
-                      <View className="flex-row items-center gap-3">
-                        <View
-                          className={`rounded-xl items-center justify-center ${atLimit ? "bg-white" : "bg-white/20"}`}
-                          style={{ width: 44, height: 44 }}
-                        >
-                          <Plus
-                            size={22}
-                            color={atLimit ? colors.textMuted : colors.white}
-                          />
-                        </View>
-                        <View className="flex-1 min-w-0">
-                          <Text
-                            className={`font-extrabold ${atLimit ? "text-text-mute" : "text-white"}`}
-                            style={{ fontSize: 16 }}
-                          >
-                            {atLimit ? "Лимит активных заявок исчерпан (5/5). Закройте одну." : "Создать заявку"}
-                          </Text>
-                          <Text
-                            className={
-                              atLimit ? "text-text-dim" : "text-white/80"
-                            }
-                            style={{ fontSize: 12, marginTop: 2 }}
-                          >
-                            {atLimit
-                              ? "Закройте одну, чтобы создать новую"
-                              : "Первые сообщения в течение 24 часов"}
-                          </Text>
-                        </View>
-                      </View>
-                    </Pressable>
-
-                    {/* Specialist-only: secondary CTA to full public catalog */}
-                    {isSpecialistUser ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Все публичные заявки"
-                        onPress={() =>
-                          nav.routes.tabsPublicRequests()
-                        }
-                        className="rounded-2xl bg-accent p-5"
-                      >
-                        <View className="flex-row items-center gap-3">
-                          <View
-                            className="rounded-xl items-center justify-center bg-white/20"
-                            style={{ width: 44, height: 44 }}
-                          >
-                            <List size={22} color={colors.white} />
-                          </View>
-                          <View className="flex-1 min-w-0">
-                            <Text
-                              className="font-extrabold text-white"
-                              style={{ fontSize: 16 }}
-                            >
-                              Публичные заявки
-                            </Text>
-                            <Text
-                              className="text-white/80 mt-0.5"
-                              style={{ fontSize: 12 }}
-                            >
-                              Полный каталог с фильтрами
-                            </Text>
-                          </View>
-                        </View>
-                      </Pressable>
-                    ) : null}
-
-                    {/* Client-only: tips widget */}
-                    {!isSpecialistUser ? (
-                      <DashboardWidget title="Советы" icon={Lightbulb}>
-                        <View style={{ gap: 12 }}>
-                          {TIPS.map((t) => (
-                            <View key={t.title}>
-                              <Text
-                                className="text-text-base font-semibold"
-                                style={{ fontSize: 13 }}
-                              >
-                                {t.title}
-                              </Text>
-                              <Text
-                                className="text-text-mute mt-0.5"
-                                style={{ fontSize: 12, lineHeight: 16 }}
-                              >
-                                {t.text}
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                      </DashboardWidget>
-                    ) : null}
-                  </View>
+                  {isSpecialistUser ? (
+                    <SpecialistSidebar
+                      atLimit={atLimit}
+                      onCreateRequest={() => nav.routes.requestsNew()}
+                      onPublicRequests={() => nav.routes.tabsPublicRequests()}
+                    />
+                  ) : (
+                    <ClientSidebar
+                      atLimit={atLimit}
+                      onCreateRequest={() => nav.routes.requestsNew()}
+                      tips={TIPS}
+                    />
+                  )}
                 </DashboardGrid.Col>
               </DashboardGrid>
             </View>
