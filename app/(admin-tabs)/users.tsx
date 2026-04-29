@@ -21,13 +21,14 @@ import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
 
 
 /**
- * Iter11 PR 3 — admin filter tokens sent to `/api/admin/users?role=…`.
- * The backend still accepts the legacy labels and maps them onto
- * `{ role: "USER", isSpecialist: true/false }` server-side, so we keep
- * the human-readable token names here (they are NOT role enum values in
- * the Prisma sense — just filter identifiers).
+ * Iter11 unified role model: guest/user/admin + isSpecialist flag.
+ * Filter tokens sent to `/api/admin/users?role=…`:
+ *   ALL         → no role filter (returns user + admin rows)
+ *   USERS       → role=USER isSpecialist=false  (maps to backend "USER")
+ *   SPECIALISTS → role=USER isSpecialist=true   (maps to backend "SPECIALIST")
+ *   ADMINS      → role=ADMIN                    (maps to backend "ADMIN")
  */
-type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
+type RoleFilter = "ALL" | "USERS" | "SPECIALISTS" | "ADMINS";
 
 interface UserItem {
   id: string;
@@ -54,10 +55,18 @@ function displayRoleLabel(role: string | null, isSpecialist?: boolean): string {
 
 const FILTER_OPTIONS: { key: RoleFilter; label: string }[] = [
   { key: "ALL", label: "Все" },
-  { key: "CLIENT", label: "Клиенты" },
-  { key: "SPECIALIST", label: "Специалисты" },
-  { key: "BANNED", label: "Заблокированные" },
+  { key: "USERS", label: "Пользователи" },
+  { key: "SPECIALISTS", label: "Специалисты" },
+  { key: "ADMINS", label: "Админы" },
 ];
+
+/** Maps frontend RoleFilter to the backend role query param value. */
+function toApiRoleParam(filter: RoleFilter): string | undefined {
+  if (filter === "USERS") return "USER";
+  if (filter === "SPECIALISTS") return "SPECIALIST";
+  if (filter === "ADMINS") return "ADMIN";
+  return undefined; // ALL → no filter
+}
 
 const cardShadow = {
   shadowColor: colors.text,
@@ -105,7 +114,8 @@ export default function AdminUsers() {
       try {
         const params = new URLSearchParams();
         if (q) params.set("q", q);
-        if (role !== "ALL") params.set("role", role);
+        const apiRole = toApiRoleParam(role);
+        if (apiRole) params.set("role", apiRole);
         params.set("page", String(p));
         params.set("limit", "20");
 
