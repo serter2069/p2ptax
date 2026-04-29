@@ -72,6 +72,10 @@ const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/(admin-tabs)/moderation", label: "Модерация" },
   { prefix: "/(admin-tabs)/complaints", label: "Жалобы" },
   { prefix: "/admin/settings", label: "Админ · Настройки" },
+  // Wave 6 polish — longer prefix listed first so the longest-prefix sort
+  // tie-break still picks the saved-specialists label over the generic
+  // "/specialists" entry below.
+  { prefix: "/saved-specialists", label: "Мои специалисты" },
   { prefix: "/specialists", label: "Специалисты" },
   { prefix: "/requests/new", label: "Новая заявка" },
   { prefix: "/requests", label: "Заявки" },

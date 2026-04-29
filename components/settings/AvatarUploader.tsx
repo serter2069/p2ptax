@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -69,6 +69,14 @@ export default function AvatarUploader({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [lastFile, setLastFile] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Wave 6 polish — fall back to initials when avatarUrl 404s (MinIO rotation,
+  // deleted file, broken CDN). Without this, a stale URL renders a blank
+  // circle with just the edit-pencil overlay. Reset on every avatarUrl change
+  // so a successful re-upload is rendered immediately.
+  const [hasImageError, setHasImageError] = useState(false);
+  useEffect(() => {
+    setHasImageError(false);
+  }, [avatarUrl]);
 
   const uploadAvatar = async (file: File) => {
     // Pre-check size before any network call
@@ -135,11 +143,12 @@ export default function AvatarUploader({
           >
             <ActivityIndicator color={colors.primary} />
           </View>
-        ) : avatarUrl ? (
+        ) : avatarUrl && !hasImageError ? (
           <View>
             <Image
               source={{ uri: avatarUrl }}
               accessibilityLabel="Profile photo"
+              onError={() => setHasImageError(true)}
               style={{
                 width: 80,
                 height: 80,
