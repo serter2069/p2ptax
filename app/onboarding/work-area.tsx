@@ -54,8 +54,15 @@ interface FnsResponse {
  */
 export default function OnboardingWorkAreaScreen() {
   const nav = useTypedRouter();
-  const params = useLocalSearchParams<{ from?: string }>();
+  const params = useLocalSearchParams<{ from?: string; role?: string }>();
   const fromSettings = params.from === "settings";
+  const role =
+    typeof params.role === "string"
+      ? params.role
+      : Array.isArray(params.role)
+        ? params.role[0]
+        : undefined;
+  const isSpecialistIntent = role === "specialist";
   const { ready, user } = useRequireAuth();
   const { isSpecialistUser, isAdminUser, updateUser } = useAuth();
 
@@ -65,14 +72,17 @@ export default function OnboardingWorkAreaScreen() {
       nav.replaceRoutes.adminDashboard();
       return;
     }
-    if (!isSpecialistUser) {
+    // Wave 1/B — when user arrives here from "Я специалист" landing CTA,
+    // isSpecialist is still false; the form's submit will call
+    // /api/user/become-specialist which flips the flag. Allow render.
+    if (!isSpecialistUser && !isSpecialistIntent) {
       nav.replaceRoutes.tabs();
       return;
     }
     if (!fromSettings && user?.specialistProfileCompletedAt) {
       nav.replaceRoutes.tabs();
     }
-  }, [ready, isAdminUser, isSpecialistUser, user, fromSettings, nav]);
+  }, [ready, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings, nav]);
 
   // Catalogs (loaded once)
   const [cities, setCities] = useState<CityOpt[]>([]);
@@ -308,7 +318,7 @@ export default function OnboardingWorkAreaScreen() {
     }
   };
 
-  if (!ready || isAdminUser || !isSpecialistUser) {
+  if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent)) {
     return <LoadingState />;
   }
 

@@ -15,12 +15,18 @@ export default function AuthEmailScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { isAuthenticated, user } = useAuth();
-  const params = useLocalSearchParams<{ returnTo?: string }>();
+  const params = useLocalSearchParams<{ returnTo?: string; intent?: string }>();
   const returnTo =
     typeof params.returnTo === "string"
       ? params.returnTo
       : Array.isArray(params.returnTo)
         ? params.returnTo[0]
+        : undefined;
+  const intent =
+    typeof params.intent === "string"
+      ? params.intent
+      : Array.isArray(params.intent)
+        ? params.intent[0]
         : undefined;
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -60,6 +66,7 @@ export default function AuthEmailScreen() {
         params: {
           email: email.trim().toLowerCase(),
           ...(returnTo ? { returnTo } : {}),
+          ...(intent ? { intent } : {}),
         },
       });
     } catch (e: unknown) {
