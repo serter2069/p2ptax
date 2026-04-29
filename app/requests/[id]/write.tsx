@@ -272,7 +272,11 @@ export default function SpecialistConfirmWrite() {
             ) : (
               <View />
             )}
-            <Text className="text-xs text-text-mute ml-auto">
+            <Text
+              className={`text-xs ml-auto ${
+                message.length >= MAX_CHARS ? "text-danger" : "text-text-mute"
+              }`}
+            >
               {message.length}/{MAX_CHARS}
             </Text>
           </View>
