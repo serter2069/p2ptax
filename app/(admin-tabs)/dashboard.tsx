@@ -89,15 +89,18 @@ interface ComplaintItem {
 }
 
 function formatUserName(u: {
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-}): string {
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+} | null | undefined): string {
+  if (!u) return "—";
   const parts = [u.firstName, u.lastName].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : u.email;
+  if (parts.length > 0) return parts.join(" ");
+  return u.email ?? "—";
 }
 
-function formatDateShort(iso: string): string {
+function formatDateShort(iso: string | null | undefined): string {
+  if (!iso) return "";
   try {
     const d = new Date(iso);
     return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
@@ -171,12 +174,12 @@ export default function AdminDashboard() {
   const recentUsersItems: FeedItem[] = useMemo(
     () =>
       (recentUsers ?? []).map((u) => ({
-        id: u.id,
+        id: u?.id ?? "",
         title: formatUserName(u),
-        meta: `${u.role} · ${formatDateShort(u.createdAt)}`,
-        rightValue: u.isBanned ? "BANNED" : undefined,
+        meta: `${u?.role ?? "—"} · ${formatDateShort(u?.createdAt)}`,
+        rightValue: u?.isBanned ? "BANNED" : undefined,
         icon: UserPlus,
-        iconTone: u.isBanned ? "danger" : u.isSpecialist ? "success" : "primary",
+        iconTone: u?.isBanned ? "danger" : u?.isSpecialist ? "success" : "primary",
         onPress: () => nav.routes.adminUsers(),
       })),
     [recentUsers, router]
@@ -184,14 +187,17 @@ export default function AdminDashboard() {
 
   const complaintsItems: FeedItem[] = useMemo(
     () =>
-      (complaints ?? []).map((c) => ({
-        id: c.id,
-        title: c.reason.length > 60 ? `${c.reason.slice(0, 60)}…` : c.reason,
-        meta: `от ${formatUserName(c.reporter)} · ${formatDateShort(c.createdAt)}`,
-        icon: AlertOctagon,
-        iconTone: "danger",
-        onPress: () => nav.routes.adminComplaints(),
-      })),
+      (complaints ?? []).map((c) => {
+        const reason = c?.reason ?? "";
+        return {
+          id: c?.id ?? "",
+          title: reason.length > 60 ? `${reason.slice(0, 60)}…` : (reason || "(без причины)"),
+          meta: `от ${formatUserName(c?.reporter)} · ${formatDateShort(c?.createdAt)}`,
+          icon: AlertOctagon,
+          iconTone: "danger" as const,
+          onPress: () => nav.routes.adminComplaints(),
+        };
+      }),
     [complaints, router]
   );
 
