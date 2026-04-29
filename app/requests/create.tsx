@@ -324,7 +324,11 @@ export default function CreateRequest() {
                 maxLength={100}
                 editable={!atLimit && !submitting}
               />
-              <Text className="text-xs text-text-dim text-right mt-1">
+              <Text
+                className={`text-xs text-right mt-1 ${
+                  title.length >= 100 ? "text-danger" : "text-text-dim"
+                }`}
+              >
                 {title.length}/100
               </Text>
             </View>
@@ -374,7 +378,11 @@ export default function CreateRequest() {
                 editable={!atLimit && !submitting}
                 containerStyle={{ minHeight: 120 }}
               />
-              <Text className="text-xs text-text-dim text-right mt-1">
+              <Text
+                className={`text-xs text-right mt-1 ${
+                  description.length >= 2000 ? "text-danger" : "text-text-dim"
+                }`}
+              >
                 {description.length}/2000
               </Text>
             </View>
