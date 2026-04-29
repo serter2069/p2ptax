@@ -98,10 +98,45 @@ export default function AuthEmailScreen() {
           </Text>
           <Text
             className="text-text-mute text-center"
-            style={{ fontSize: 14, lineHeight: 20, marginBottom: 28 }}
+            style={{ fontSize: 14, lineHeight: 20, marginBottom: returnTo ? 16 : 28 }}
           >
             Введите email — отправим код подтверждения
           </Text>
+
+          {/*
+            Issues #1515 / #1520 — when the user reached /login via the
+            auth gate (useRequireAuth), surface the original target so
+            the screen no longer reads as a dead end / wrong destination.
+            Without this hint, deep-links to /onboarding/name and other
+            protected routes silently rendered as /login with no clue
+            that login was an intermediate step.
+          */}
+          {returnTo ? (
+            <View
+              accessibilityRole="alert"
+              testID="auth-return-hint"
+              className="rounded-xl mb-6 px-4 py-3"
+              style={{
+                backgroundColor: colors.accentSoft,
+                borderWidth: 1,
+                borderColor: colors.accent,
+              }}
+            >
+              <Text
+                className="font-semibold text-accent"
+                style={{ fontSize: 13, lineHeight: 18, marginBottom: 2 }}
+              >
+                Войдите, чтобы продолжить
+              </Text>
+              <Text
+                className="text-text-base"
+                style={{ fontSize: 12, lineHeight: 18 }}
+                numberOfLines={2}
+              >
+                После входа мы вернём вас на запрошенную страницу.
+              </Text>
+            </View>
+          ) : null}
 
           {/* Email input with leading icon */}
           <View
