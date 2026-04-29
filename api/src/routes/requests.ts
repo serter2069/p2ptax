@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { verifyAccessToken } from "../lib/jwt";
 import { sendNotification } from "../notifications/notification.service";
+import { notSeedRequestWhere } from "../lib/seedFilter";
 
 // Strip all HTML tags to prevent XSS
 function stripHtml(str: string): string {
@@ -89,6 +90,16 @@ router.get("/public", async (req: Request, res: Response) => {
 
     if (cityId) where.cityId = cityId;
     if (fnsId) where.fnsId = fnsId;
+
+    // Exclude QA/dev seed rows from the public feed.
+    const seedWhere = notSeedRequestWhere();
+    if (seedWhere) {
+      where.AND = where.AND
+        ? Array.isArray(where.AND)
+          ? [...where.AND, seedWhere]
+          : [where.AND, seedWhere]
+        : [seedWhere];
+    }
 
     const [items, total] = await Promise.all([
       prisma.request.findMany({

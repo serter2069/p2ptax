@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { verifyAccessToken } from "../lib/jwt";
 import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
+import { notSeedUserWhere } from "../lib/seedFilter";
 
 const router = Router();
 
@@ -78,6 +79,7 @@ function mapSpecialist(s: SpecialistListItem) {
 // GET /api/specialists/featured — top 10 available specialists
 router.get("/featured", async (_req: Request, res: Response) => {
   try {
+    const seedUserNot = notSeedUserWhere();
     const specialists = await prisma.user.findMany({
       where: {
         // Iter11: specialist catalog is driven by the flag, not the legacy
@@ -88,6 +90,7 @@ router.get("/featured", async (_req: Request, res: Response) => {
         isAvailable: true,
         isBanned: false,
         deletedAt: null,
+        ...(seedUserNot ?? {}),
       },
       take: 10,
       // Catalog ranking: specialists with avatar photos first, then newest.
@@ -169,6 +172,7 @@ router.get("/", async (req: Request, res: Response) => {
     // their own catalog view — showing yourself as a specialist you could
     // contact is a bug, not a feature.
     const callerId = resolveCallerId(req);
+    const seedUserNot = notSeedUserWhere();
     const where: Prisma.UserWhereInput = {
       isSpecialist: true,
       specialistProfileCompletedAt: { not: null },
@@ -177,6 +181,7 @@ router.get("/", async (req: Request, res: Response) => {
       // Hide soft-deleted accounts from the public catalog.
       deletedAt: null,
       ...(callerId ? { id: { not: callerId } } : {}),
+      ...(seedUserNot ?? {}),
     };
 
     // Name search — uses Prisma `contains` (parameterized ILIKE under the hood)
