@@ -7,8 +7,10 @@ import { Plus } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
+import LoadingState from "@/components/ui/LoadingState";
 import { colors, textStyle } from "@/lib/theme";
 import SpecialistSearchBar, {
   CityOpt,
@@ -54,7 +56,23 @@ export default function OnboardingWorkAreaScreen() {
   const nav = useTypedRouter();
   const params = useLocalSearchParams<{ from?: string }>();
   const fromSettings = params.from === "settings";
-  const { isSpecialistUser, updateUser } = useAuth();
+  const { ready, user } = useRequireAuth();
+  const { isSpecialistUser, isAdminUser, updateUser } = useAuth();
+
+  useEffect(() => {
+    if (!ready) return;
+    if (isAdminUser) {
+      nav.replaceRoutes.adminDashboard();
+      return;
+    }
+    if (!isSpecialistUser) {
+      nav.replaceRoutes.tabs();
+      return;
+    }
+    if (!fromSettings && user?.specialistProfileCompletedAt) {
+      nav.replaceRoutes.tabs();
+    }
+  }, [ready, isAdminUser, isSpecialistUser, user, fromSettings, nav]);
 
   // Catalogs (loaded once)
   const [cities, setCities] = useState<CityOpt[]>([]);
@@ -289,6 +307,10 @@ export default function OnboardingWorkAreaScreen() {
       setIsLoading(false);
     }
   };
+
+  if (!ready || isAdminUser || !isSpecialistUser) {
+    return <LoadingState />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>

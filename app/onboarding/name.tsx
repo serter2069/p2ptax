@@ -1,22 +1,42 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import { api } from "@/lib/api";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import LoadingState from "@/components/ui/LoadingState";
 import { colors, textStyle } from "@/lib/theme";
 
 export default function OnboardingNameScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
-  const { updateUser } = useAuth();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const params = useLocalSearchParams<{ from?: string }>();
+  const fromSettings = params.from === "settings";
+  const { ready, user } = useRequireAuth();
+  const { updateUser, isSpecialistUser, isAdminUser } = useAuth();
+  const [firstName, setFirstName] = useState(user?.firstName ?? "");
+  const [lastName, setLastName] = useState(user?.lastName ?? "");
+
+  useEffect(() => {
+    if (!ready) return;
+    if (isAdminUser) {
+      nav.replaceRoutes.adminDashboard();
+      return;
+    }
+    if (!isSpecialistUser) {
+      nav.replaceRoutes.tabs();
+      return;
+    }
+    if (!fromSettings && user?.specialistProfileCompletedAt) {
+      nav.replaceRoutes.tabs();
+    }
+  }, [ready, isAdminUser, isSpecialistUser, user, fromSettings]);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -76,6 +96,10 @@ export default function OnboardingNameScreen() {
       setIsLoading(false);
     }
   };
+
+  if (!ready || isAdminUser || !isSpecialistUser) {
+    return <LoadingState />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
