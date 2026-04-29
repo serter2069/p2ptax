@@ -120,3 +120,52 @@ export const apiPatch = <T>(path: string, body: unknown) =>
   api<T>(path, { method: "PATCH", body });
 export const apiDelete = <T>(path: string) =>
   api<T>(path, { method: "DELETE" });
+
+// Avatar upload constants & helpers (shared between settings + onboarding)
+export const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5 MB — must match api/src/routes/upload.ts
+export const AVATAR_TOO_LARGE_TITLE = "Файл слишком большой";
+export const AVATAR_TOO_LARGE_MESSAGE = "Максимальный размер аватара — 5 МБ.";
+
+/**
+ * Map an avatar upload failure (HTTP status / network) to a user-facing message in Russian.
+ * status 0 = network error / no response.
+ */
+export function avatarUploadErrorMessage(status: number): string {
+  if (status === 413) return "Файл слишком большой. Максимум 5 МБ.";
+  if (status === 429) return "Слишком много загрузок. Попробуйте через минуту.";
+  if (status === 0) return "Нет связи с сервером.";
+  return "Не удалось загрузить аватар. Попробуйте ещё раз.";
+}
+
+/**
+ * Upload an avatar file. Performs client-side size pre-check, throws ApiError on
+ * server error (with mapped Russian message), or a network ApiError(0, ...) on fetch failure.
+ * Returns the absolute URL of the uploaded avatar.
+ */
+export async function uploadAvatarFile(file: File): Promise<string> {
+  if (file.size > AVATAR_MAX_BYTES) {
+    throw new ApiError(413, avatarUploadErrorMessage(413));
+  }
+
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const formData = new FormData();
+  formData.append("file", file);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/upload/avatar`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+  } catch {
+    throw new ApiError(0, avatarUploadErrorMessage(0));
+  }
+
+  if (!res.ok) {
+    throw new ApiError(res.status, avatarUploadErrorMessage(res.status));
+  }
+
+  const data = (await res.json()) as { url: string };
+  return data.url.startsWith("http") ? data.url : `${API_URL}${data.url}`;
+}

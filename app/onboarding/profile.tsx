@@ -13,14 +13,20 @@ import { useTypedRouter } from "@/lib/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Pencil, Camera } from "lucide-react-native";
 import HeaderBack from "@/components/HeaderBack";
-import { API_URL, api } from "@/lib/api";
+import {
+  api,
+  ApiError,
+  AVATAR_MAX_BYTES,
+  AVATAR_TOO_LARGE_MESSAGE,
+  avatarUploadErrorMessage,
+  uploadAvatarFile,
+} from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import LoadingState from "@/components/ui/LoadingState";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, overlay, textStyle } from "@/lib/theme";
 
 export default function OnboardingProfileScreen() {
@@ -81,31 +87,20 @@ export default function OnboardingProfileScreen() {
   };
 
   const uploadAvatar = async (file: File) => {
+    // Pre-check size before any network call
+    if (file.size > AVATAR_MAX_BYTES) {
+      setError(AVATAR_TOO_LARGE_MESSAGE);
+      return;
+    }
+
     setAvatarUploading(true);
     setError("");
     try {
-      const token = await AsyncStorage.getItem("p2ptax_access_token");
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch(`${API_URL}/api/upload/avatar`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || "Не удалось загрузить фото");
-      }
-
-      const data = (await res.json()) as { url: string; key: string };
-      const fullUrl = data.url.startsWith("http")
-        ? data.url
-        : `${API_URL}${data.url}`;
+      const fullUrl = await uploadAvatarFile(file);
       setAvatarUrl(fullUrl);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Ошибка загрузки фото";
+      const msg =
+        e instanceof ApiError ? e.message : avatarUploadErrorMessage(-1);
       setError(msg);
     } finally {
       setAvatarUploading(false);
