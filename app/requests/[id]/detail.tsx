@@ -12,8 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { Trash2, File, FileImage, Download } from "lucide-react-native";
-import HeaderBack from "@/components/HeaderBack";
+import { Trash2, File, FileImage, Download, ChevronLeft } from "lucide-react-native";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
@@ -148,7 +147,6 @@ export default function MyRequestDetail() {
   if (!ready || loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Заявка" />
         <LoadingState />
       </SafeAreaView>
     );
@@ -157,7 +155,6 @@ export default function MyRequestDetail() {
   if (error || !request) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Заявка" />
         <View className="flex-1 items-center justify-center px-4">
           <Text className="text-base text-danger text-center">
             {error || "Заявка не найдена"}
@@ -190,21 +187,29 @@ export default function MyRequestDetail() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <HeaderBack
-        title={request.title}
-        rightAction={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Удалить заявку"
-            onPress={handleDelete}
-            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-          >
-            <Trash2 size={18} color={colors.error} />
-          </Pressable>
-        }
-      />
       <ScrollView className="flex-1">
         <View style={containerStyle} className={isDesktop ? "" : "px-4"}>
+          <View className="flex-row items-center justify-between pt-4 pb-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Назад"
+              onPress={() => router.back()}
+              className="flex-row items-center"
+              style={{ minHeight: 44 }}
+            >
+              <ChevronLeft size={20} color={colors.text} />
+              <Text className="text-text-base ml-1">Назад</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Удалить заявку"
+              onPress={handleDelete}
+              className="p-2"
+              style={({ pressed }) => [{ minHeight: 44, minWidth: 44, alignItems: "center", justifyContent: "center" }, pressed && { opacity: 0.7 }]}
+            >
+              <Trash2 size={18} color={colors.error} />
+            </Pressable>
+          </View>
           <View className="py-4">
 
             {/* Status + date */}

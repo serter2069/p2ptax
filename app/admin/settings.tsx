@@ -5,11 +5,12 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
-import { AlertTriangle, Settings } from "lucide-react-native";
-import HeaderBack from "@/components/HeaderBack";
+import { useRouter } from "expo-router";
+import { AlertTriangle, Settings, ChevronLeft } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ErrorState from "@/components/ui/ErrorState";
@@ -42,6 +43,7 @@ const SETTINGS_FIELDS: SettingField[] = [
 
 export default function AdminSettings() {
   const { token } = useAuth();
+  const router = useRouter();
   const [values, setValues] = useState<Record<string, string>>({});
   const [stats, setStats] = useState<AdminExtra | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,7 +128,19 @@ export default function AdminSettings() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      <HeaderBack title="Настройки системы" />
+      <View className="px-4 pt-4">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="flex-row items-center mb-2"
+          style={{ minHeight: 44 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+        <Text className="text-2xl font-extrabold text-text-base mb-4">Настройки системы</Text>
+      </View>
 
       {loading ? (
         <View className="flex-1 items-center justify-center">

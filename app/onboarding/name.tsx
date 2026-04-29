@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect } from "react";
-import HeaderBack from "@/components/HeaderBack";
+import { ChevronLeft } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { api } from "@/lib/api";
@@ -121,7 +121,18 @@ export default function OnboardingNameScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <HeaderBack title="" />
+      <View className="px-6 pt-4 pb-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="flex-row items-center"
+          style={{ minHeight: 44 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+      </View>
 
       <View className="px-6 pb-4">
         <OnboardingProgress step={1} />

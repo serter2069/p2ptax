@@ -1,7 +1,8 @@
 import { useRef } from "react";
 import { View, Text, ScrollView, Pressable, useWindowDimensions, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import HeaderBack from "@/components/HeaderBack";
+import { useRouter } from "expo-router";
+import { ChevronLeft } from "lucide-react-native";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { colors, overlay, spacing } from "@/lib/theme";
 
@@ -57,6 +58,7 @@ const SECTIONS: Section[] = [
 ];
 
 export default function PrivacyPolicyScreen() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktopWeb = Platform.OS === "web" && width >= 1024;
   const scrollRef = useRef<ScrollView>(null);
@@ -139,7 +141,19 @@ export default function PrivacyPolicyScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <HeaderBack title="Политика конфиденциальности" />
+      <View className="px-4 pt-4">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="flex-row items-center mb-2"
+          style={{ minHeight: 44 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+        <Text className="text-2xl font-extrabold text-text-base mb-3">Политика конфиденциальности</Text>
+      </View>
       {isDesktopWeb ? (
         <View
           style={{

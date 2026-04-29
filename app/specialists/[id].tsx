@@ -20,8 +20,8 @@ import {
   Bookmark,
   Lock,
   MessageSquare,
+  ChevronLeft,
 } from "lucide-react-native";
-import HeaderBack from "@/components/HeaderBack";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import Avatar from "@/components/ui/Avatar";
@@ -110,7 +110,6 @@ export default function SpecialistPublicProfile() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Профиль специалиста" />
         <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
     );
@@ -119,7 +118,6 @@ export default function SpecialistPublicProfile() {
   if (error || !specialist) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Профиль специалиста" />
         <View className="flex-1 items-center justify-center px-6">
           <AlertCircle size={48} color={colors.placeholder} />
           <Text
@@ -599,7 +597,6 @@ export default function SpecialistPublicProfile() {
         />
         <meta property="og:type" content="profile" />
       </Head>
-      <HeaderBack title="Профиль специалиста" rightAction={rightAction} />
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -611,6 +608,19 @@ export default function SpecialistPublicProfile() {
           className="w-full items-center"
           style={{ paddingHorizontal: isDesktop ? 32 : 16, paddingTop: 16 }}
         >
+          <View className="w-full flex-row items-center justify-between mb-3" style={{ maxWidth: 720 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Назад"
+              onPress={() => router.back()}
+              className="flex-row items-center"
+              style={{ minHeight: 44 }}
+            >
+              <ChevronLeft size={20} color={colors.text} />
+              <Text className="text-text-base ml-1">Назад</Text>
+            </Pressable>
+            {rightAction}
+          </View>
           <View
             className={`${isDesktop ? "flex-row" : "flex-col"} w-full`}
             style={{

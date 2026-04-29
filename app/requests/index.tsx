@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import HeaderBack from "@/components/HeaderBack";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import FilterBar from "@/components/FilterBar";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
@@ -203,7 +202,6 @@ export default function PublicRequestsFeed() {
   if (initLoading) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        <HeaderBack title="Заявки" />
         <View className="flex-1 pt-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-border">
@@ -217,8 +215,6 @@ export default function PublicRequestsFeed() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <HeaderBack title="Заявки" />
-
       {/* Accent hero */}
       <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
         <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>Открытые заявки</Text>
