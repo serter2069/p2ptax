@@ -1,22 +1,24 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
   ScrollView,
   ActivityIndicator,
   Alert,
+  TextInput,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { MapPin } from "lucide-react-native";
+import { MapPin, Mail } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import HeaderBack from "@/components/HeaderBack";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
 import { api, apiPost } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, UserData } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
 import CityFnsServicePicker, {
   CityOption,
@@ -24,7 +26,11 @@ import CityFnsServicePicker, {
   ServiceOption,
 } from "@/components/requests/CityFnsServicePicker";
 
-const DRAFT_KEY = "pending_request_draft";
+// Single canonical key (v1). Replaces legacy "pending_request_draft".
+const DRAFT_KEY = "p2ptax_request_draft_v1";
+const LEGACY_DRAFT_KEY = "pending_request_draft";
+const CODE_LENGTH = 6;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface RequestDraft {
   title: string;
@@ -35,10 +41,46 @@ interface RequestDraft {
   serviceId: string | null;
 }
 
+// Cross-platform storage shim: localStorage on web, AsyncStorage on native.
+const storage = {
+  get: async (k: string): Promise<string | null> => {
+    if (Platform.OS === "web") {
+      try {
+        return typeof window !== "undefined" ? window.localStorage.getItem(k) : null;
+      } catch {
+        return null;
+      }
+    }
+    return AsyncStorage.getItem(k);
+  },
+  set: async (k: string, v: string): Promise<void> => {
+    if (Platform.OS === "web") {
+      try {
+        if (typeof window !== "undefined") window.localStorage.setItem(k, v);
+      } catch {
+        /* quota / private mode — fall back silently */
+      }
+      return;
+    }
+    await AsyncStorage.setItem(k, v);
+  },
+  del: async (k: string): Promise<void> => {
+    if (Platform.OS === "web") {
+      try {
+        if (typeof window !== "undefined") window.localStorage.removeItem(k);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    await AsyncStorage.removeItem(k);
+  },
+};
+
 export default function CreateRequest() {
   const router = useRouter();
   const nav = useTypedRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, signIn } = useAuth();
   const params = useLocalSearchParams<{ restore?: string }>();
   const restoreMode = params.restore === "1";
 
@@ -62,8 +104,19 @@ export default function CreateRequest() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [atLimit, setAtLimit] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
-  // Load cities/services — public, no auth required
+  // Inline OTP state — only used for anonymous submit path.
+  const [otpStage, setOtpStage] = useState<"hidden" | "email" | "code">("hidden");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpEmailError, setOtpEmailError] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpCodeError, setOtpCodeError] = useState("");
+  const [otpRequesting, setOtpRequesting] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const pendingSubmitAfterAuth = useRef(false);
+
+  // Load cities/services — public, no auth required.
   useEffect(() => {
     async function init() {
       try {
@@ -82,7 +135,7 @@ export default function CreateRequest() {
     init();
   }, []);
 
-  // Check request limit when authenticated
+  // Check request limit when authenticated.
   useEffect(() => {
     if (!isAuthenticated || authLoading) return;
     api<{ requestsUsed: number; requestsLimit: number }>("/api/dashboard/stats")
@@ -110,23 +163,72 @@ export default function CreateRequest() {
     }
   }, []);
 
-  // Restore draft after post-login redirect
+  // Restore draft on mount (anyone — anon or returning post-login).
+  // Reads new key first, falls back to legacy key for in-flight users.
   useEffect(() => {
-    if (!restoreMode || loadingInit) return;
-    AsyncStorage.getItem(DRAFT_KEY)
-      .then((raw) => {
-        if (!raw) return;
-        const draft: RequestDraft = JSON.parse(raw);
-        if (draft.title) setTitle(draft.title);
-        if (draft.description) setDescription(draft.description);
-        if (draft.cityId) setSelectedCityId(draft.cityId);
-        if (draft.fnsId) setSelectedFnsId(draft.fnsId);
-        if (draft.serviceId) setSelectedServiceId(draft.serviceId);
-        if (draft.citySlug) loadFnsForCity(draft.citySlug);
-        AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
-      })
-      .catch(() => {});
-  }, [restoreMode, loadingInit, loadFnsForCity]);
+    if (loadingInit || draftLoaded) return;
+    (async () => {
+      try {
+        let raw = await storage.get(DRAFT_KEY);
+        if (!raw) {
+          raw = await storage.get(LEGACY_DRAFT_KEY);
+          if (raw) {
+            // Migrate legacy → v1 key, then drop the old one.
+            await storage.set(DRAFT_KEY, raw);
+            await storage.del(LEGACY_DRAFT_KEY);
+          }
+        }
+        if (raw) {
+          const draft: RequestDraft = JSON.parse(raw);
+          if (draft.title) setTitle(draft.title);
+          if (draft.description) setDescription(draft.description);
+          if (draft.cityId) setSelectedCityId(draft.cityId);
+          if (draft.fnsId) setSelectedFnsId(draft.fnsId);
+          if (draft.serviceId) setSelectedServiceId(draft.serviceId);
+          if (draft.citySlug) loadFnsForCity(draft.citySlug);
+        }
+      } catch {
+        /* ignore parse / storage errors */
+      } finally {
+        setDraftLoaded(true);
+        // restore flag may be stale — clear it from URL by no-op (no nav change here).
+        if (restoreMode) {
+          // legacy returnTo path — already restored, nothing else to do.
+        }
+      }
+    })();
+  }, [loadingInit, draftLoaded, restoreMode, loadFnsForCity]);
+
+  // Persist draft on every form-field change (after initial load to avoid wiping).
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const selectedCity = cities.find((c) => c.id === selectedCityId);
+    const draft: RequestDraft = {
+      title,
+      description,
+      cityId: selectedCityId,
+      citySlug: selectedCity?.slug ?? null,
+      fnsId: selectedFnsId,
+      serviceId: selectedServiceId,
+    };
+    // Skip writing an empty/blank draft.
+    const isEmpty =
+      !draft.title &&
+      !draft.description &&
+      !draft.cityId &&
+      !draft.fnsId &&
+      !draft.serviceId;
+    if (isEmpty) return;
+    storage.set(DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    draftLoaded,
+    title,
+    description,
+    selectedCityId,
+    selectedFnsId,
+    selectedServiceId,
+    cities,
+  ]);
 
   const handleCitySelect = useCallback(
     (city: CityOption) => {
@@ -155,37 +257,10 @@ export default function CreateRequest() {
   const formValid =
     titleValid && descriptionValid && !!selectedCityId && !!selectedFnsId && !atLimit;
 
-  const handleSubmit = useCallback(async () => {
-    setSubmitted(true);
-    setSubmitError("");
-
-    if (!formValid || submitting) return;
-
-    // Not logged in — save draft and redirect to auth with returnTo
-    if (!isAuthenticated) {
-      const selectedCity = cities.find((c) => c.id === selectedCityId);
-      const draft: RequestDraft = {
-        title: title.trim(),
-        description: description.trim(),
-        cityId: selectedCityId,
-        citySlug: selectedCity?.slug ?? null,
-        fnsId: selectedFnsId,
-        serviceId: selectedServiceId,
-      };
-      try {
-        await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-      } catch {
-        /* ignore storage errors */
-      }
-      nav.any({
-        pathname: "/login",
-        params: { returnTo: "/requests/create?restore=1" },
-      });
-      return;
-    }
-
-    // Logged in — submit directly
+  // Actually post the request — used by both auth and post-OTP paths.
+  const submitRequestAuthed = useCallback(async () => {
     setSubmitting(true);
+    setSubmitError("");
     try {
       const result = await apiPost<{ id: string }>("/api/requests", {
         title: title.trim(),
@@ -195,20 +270,22 @@ export default function CreateRequest() {
         description: description.trim(),
         files: [],
       });
-      // Clear any pending draft from a previous unauthenticated attempt
-      // so the form does not pre-fill on next visit.
-      try {
-        await AsyncStorage.removeItem(DRAFT_KEY);
-      } catch {
-        /* ignore storage errors */
-      }
+      // Clear draft on success.
+      await storage.del(DRAFT_KEY).catch(() => {});
+      await storage.del(LEGACY_DRAFT_KEY).catch(() => {});
+
       const goToDetail = () => nav.replaceAny(`/requests/${result.id}/detail`);
-      Alert.alert(
-        "Заявка опубликована",
-        "Специалисты по вашей ФНС увидят её и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
-        [{ text: "OK", onPress: goToDetail }],
-        { onDismiss: goToDetail }
-      );
+      // Native: confirm via Alert; Web: skip Alert (no useful UX) and navigate.
+      if (Platform.OS === "web") {
+        goToDetail();
+      } else {
+        Alert.alert(
+          "Заявка опубликована",
+          "Специалисты по вашей ФНС увидят её и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
+          [{ text: "OK", onPress: goToDetail }],
+          { onDismiss: goToDetail }
+        );
+      }
     } catch (e: unknown) {
       const msg =
         e instanceof Error
@@ -218,18 +295,96 @@ export default function CreateRequest() {
     } finally {
       setSubmitting(false);
     }
-  }, [
-    formValid,
-    submitting,
-    isAuthenticated,
-    title,
-    description,
-    cities,
-    selectedCityId,
-    selectedFnsId,
-    selectedServiceId,
-    nav,
-  ]);
+  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav]);
+
+  // If user becomes authenticated while inline OTP flow finished, post the request.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!pendingSubmitAfterAuth.current) return;
+    pendingSubmitAfterAuth.current = false;
+    submitRequestAuthed();
+  }, [isAuthenticated, submitRequestAuthed]);
+
+  const handleSubmit = useCallback(async () => {
+    setSubmitted(true);
+    setSubmitError("");
+    if (!formValid || submitting) return;
+
+    if (isAuthenticated) {
+      await submitRequestAuthed();
+      return;
+    }
+
+    // Anonymous path — open inline OTP block (email step).
+    setOtpStage("email");
+  }, [formValid, submitting, isAuthenticated, submitRequestAuthed]);
+
+  const handleRequestOtp = useCallback(async () => {
+    setOtpEmailError("");
+    const trimmed = otpEmail.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(trimmed)) {
+      setOtpEmailError("Некорректный email");
+      return;
+    }
+    setOtpRequesting(true);
+    try {
+      await api("/api/auth/request-otp", {
+        method: "POST",
+        body: { email: trimmed },
+        noAuth: true,
+      });
+      setOtpEmail(trimmed);
+      setOtpStage("code");
+      setOtpCode("");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Не удалось отправить код";
+      setOtpEmailError(msg);
+    } finally {
+      setOtpRequesting(false);
+    }
+  }, [otpEmail]);
+
+  const handleVerifyOtp = useCallback(async () => {
+    setOtpCodeError("");
+    if (otpCode.length !== CODE_LENGTH) {
+      setOtpCodeError("Введите 6-значный код");
+      return;
+    }
+    setOtpVerifying(true);
+    try {
+      const data = await api<{
+        accessToken: string;
+        refreshToken: string;
+        user: UserData;
+      }>("/api/auth/verify-otp", {
+        method: "POST",
+        body: { email: otpEmail, code: otpCode },
+        noAuth: true,
+      });
+      // New users with null role: route to standard OTP screen for role choice.
+      // We've still saved the JWT, so they'll come back authenticated.
+      if (!data.user.role) {
+        await signIn(data.accessToken, data.refreshToken, data.user);
+        nav.any({
+          pathname: "/otp",
+          params: {
+            email: otpEmail,
+            returnTo: "/requests/create",
+          },
+        });
+        return;
+      }
+      // Mark a pending submit; signIn triggers the effect that posts the request.
+      pendingSubmitAfterAuth.current = true;
+      await signIn(data.accessToken, data.refreshToken, data.user);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Неверный код";
+      setOtpCodeError(msg);
+      setOtpCode("");
+    } finally {
+      setOtpVerifying(false);
+    }
+  }, [otpCode, otpEmail, signIn, nav]);
 
   const selectedCity = cities.find((c) => c.id === selectedCityId);
   const selectedFns = fnsOffices.find((f) => f.id === selectedFnsId);
@@ -282,10 +437,10 @@ export default function CreateRequest() {
           {!isAuthenticated && (
             <View className="bg-accent-soft border border-accent rounded-xl p-4 mb-4">
               <Text className="text-sm font-semibold text-accent mb-0.5">
-                Войдите, чтобы опубликовать заявку
+                Заполните заявку — войдёте в один шаг при отправке
               </Text>
               <Text className="text-sm text-accent">
-                Заполните форму — после входа заявка будет отправлена автоматически.
+                Подтверждение по email кодом. Без паролей.
               </Text>
             </View>
           )}
@@ -397,16 +552,180 @@ export default function CreateRequest() {
             </View>
           ) : null}
 
-          <Button
-            label={
-              isAuthenticated
-                ? "Опубликовать заявку"
-                : "Продолжить (войти и отправить)"
-            }
-            onPress={handleSubmit}
-            disabled={submitting || atLimit}
-            loading={submitting}
-          />
+          {/* Inline OTP block — anon submit only */}
+          {!isAuthenticated && otpStage !== "hidden" && (
+            <View
+              className="bg-white border border-border rounded-2xl px-4 pt-4 pb-4 mb-4"
+              testID="inline-otp-block"
+            >
+              <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                Подтверждение
+              </Text>
+
+              {otpStage === "email" && (
+                <View>
+                  <Text className="text-sm font-medium text-text-base mb-1.5">
+                    Email <Text className="text-danger">*</Text>
+                  </Text>
+                  <View
+                    className="flex-row items-center rounded-xl border bg-white"
+                    style={{
+                      borderColor: otpEmailError ? colors.error : colors.border,
+                      height: 48,
+                      paddingHorizontal: 14,
+                      marginBottom: otpEmailError ? 6 : 12,
+                    }}
+                  >
+                    <Mail size={18} color={colors.placeholder} />
+                    <TextInput
+                      accessibilityLabel="Email адрес"
+                      placeholder="your@email.com"
+                      placeholderTextColor={colors.placeholder}
+                      value={otpEmail}
+                      onChangeText={(t) => {
+                        setOtpEmail(t);
+                        if (otpEmailError) setOtpEmailError("");
+                      }}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      editable={!otpRequesting}
+                      onSubmitEditing={handleRequestOtp}
+                      style={{
+                        flex: 1,
+                        marginLeft: 10,
+                        fontSize: 15,
+                        color: colors.text,
+                        borderWidth: 0,
+                        ...(Platform.OS === "web"
+                          ? {
+                              minHeight: 44,
+                              alignSelf: "stretch" as never,
+                              borderColor: "transparent",
+                              outlineStyle: "none" as never,
+                              outlineWidth: 0,
+                              appearance: "none" as never,
+                            }
+                          : {}),
+                      }}
+                    />
+                  </View>
+                  {otpEmailError ? (
+                    <Text
+                      className="text-sm text-danger mb-3"
+                      style={{ fontSize: 13 }}
+                    >
+                      {otpEmailError}
+                    </Text>
+                  ) : null}
+                  <Button
+                    label="Получить код"
+                    onPress={handleRequestOtp}
+                    loading={otpRequesting}
+                    disabled={otpRequesting || !otpEmail.trim()}
+                    testID="inline-otp-request"
+                  />
+                </View>
+              )}
+
+              {otpStage === "code" && (
+                <View>
+                  <Text
+                    className="text-sm text-text-mute mb-3"
+                    style={{ lineHeight: 20 }}
+                  >
+                    Код отправлен на{" "}
+                    <Text className="text-text-base font-semibold">
+                      {otpEmail}
+                    </Text>
+                    . Введите 6 цифр.
+                  </Text>
+                  <Text className="text-sm font-medium text-text-base mb-1.5">
+                    Код <Text className="text-danger">*</Text>
+                  </Text>
+                  <TextInput
+                    accessibilityLabel="6-значный код"
+                    placeholder="000000"
+                    placeholderTextColor={colors.placeholder}
+                    value={otpCode}
+                    onChangeText={(t) => {
+                      const cleaned = t.replace(/\D/g, "").slice(0, CODE_LENGTH);
+                      setOtpCode(cleaned);
+                      if (otpCodeError) setOtpCodeError("");
+                    }}
+                    keyboardType="number-pad"
+                    inputMode="numeric"
+                    maxLength={CODE_LENGTH}
+                    editable={!otpVerifying}
+                    onSubmitEditing={handleVerifyOtp}
+                    style={{
+                      borderWidth: otpCodeError ? 1 : 1,
+                      borderColor: otpCodeError ? colors.error : colors.border,
+                      borderRadius: 12,
+                      height: 48,
+                      paddingHorizontal: 14,
+                      fontSize: 18,
+                      letterSpacing: 4,
+                      textAlign: "center",
+                      color: colors.text,
+                      marginBottom: otpCodeError ? 6 : 12,
+                      ...(Platform.OS === "web"
+                        ? {
+                            outlineStyle: "none" as never,
+                            outlineWidth: 0,
+                            appearance: "none" as never,
+                          }
+                        : {}),
+                    }}
+                    testID="inline-otp-code"
+                  />
+                  {otpCodeError ? (
+                    <Text
+                      className="text-sm text-danger mb-3"
+                      style={{ fontSize: 13 }}
+                    >
+                      {otpCodeError}
+                    </Text>
+                  ) : null}
+                  <Button
+                    label="Подтвердить и опубликовать"
+                    onPress={handleVerifyOtp}
+                    loading={otpVerifying || submitting}
+                    disabled={
+                      otpVerifying || submitting || otpCode.length !== CODE_LENGTH
+                    }
+                    testID="inline-otp-verify"
+                  />
+                  <View style={{ marginTop: 10 }}>
+                    <Button
+                      variant="secondary"
+                      label="Изменить email"
+                      onPress={() => {
+                        setOtpStage("email");
+                        setOtpCode("");
+                        setOtpCodeError("");
+                      }}
+                      disabled={otpVerifying}
+                    />
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Primary submit button — hidden once inline OTP block is open. */}
+          {(isAuthenticated || otpStage === "hidden") && (
+            <Button
+              label={
+                isAuthenticated
+                  ? "Опубликовать заявку"
+                  : "Отправить заявку"
+              }
+              onPress={handleSubmit}
+              disabled={submitting || atLimit}
+              loading={submitting}
+            />
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
