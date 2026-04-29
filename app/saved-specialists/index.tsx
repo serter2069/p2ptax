@@ -5,6 +5,7 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
@@ -27,11 +28,16 @@ interface SpecialistItem {
 
 export default function SavedSpecialistsScreen() {
   const nav = useTypedRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const isWide = width >= 1024;
+  const gridCols = isWide ? 3 : isDesktop ? 2 : 1;
+
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   const fetchSaved = useCallback(async () => {
     try {
@@ -57,42 +63,45 @@ export default function SavedSpecialistsScreen() {
     setRefreshing(false);
   }, [fetchSaved]);
 
-  const handleBookmarkToggle = useCallback(async (id: string) => {
-    const isSaved = savedIds.has(id);
-    // Optimistic update
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (isSaved) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-    if (isSaved) {
-      setSpecialists((prev) => prev.filter((s) => s.id !== id));
-    }
-
-    try {
-      if (isSaved) {
-        await apiDelete(`/api/saved-specialists/${id}`);
-      } else {
-        await apiPost(`/api/saved-specialists/${id}`, {});
-      }
-    } catch {
-      // Revert on error
+  const handleBookmarkToggle = useCallback(
+    async (id: string) => {
+      const isSaved = savedIds.has(id);
+      // Optimistic update
       setSavedIds((prev) => {
         const next = new Set(prev);
         if (isSaved) {
-          next.add(id);
-        } else {
           next.delete(id);
+        } else {
+          next.add(id);
         }
         return next;
       });
-      await fetchSaved();
-    }
-  }, [savedIds, fetchSaved]);
+      if (isSaved) {
+        setSpecialists((prev) => prev.filter((s) => s.id !== id));
+      }
+
+      try {
+        if (isSaved) {
+          await apiDelete(`/api/saved-specialists/${id}`);
+        } else {
+          await apiPost(`/api/saved-specialists/${id}`, {});
+        }
+      } catch {
+        // Revert on error
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          if (isSaved) {
+            next.add(id);
+          } else {
+            next.delete(id);
+          }
+          return next;
+        });
+        await fetchSaved();
+      }
+    },
+    [savedIds, fetchSaved]
+  );
 
   const handleSpecialistPress = useCallback(
     (id: string) => {
@@ -111,7 +120,16 @@ export default function SavedSpecialistsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <View className="px-4 pt-4 pb-2">
+      <View
+        style={{
+          width: "100%",
+          maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined,
+          alignSelf: "center",
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 8,
+        }}
+      >
         <Text className="text-xl font-bold text-text-base">Мои специалисты</Text>
       </View>
 
@@ -125,28 +143,40 @@ export default function SavedSpecialistsScreen() {
         />
       ) : (
         <FlatList
+          key={`grid-${gridCols}`}
           data={specialists}
           keyExtractor={(item) => item.id}
+          numColumns={gridCols}
+          columnWrapperStyle={
+            gridCols > 1
+              ? { gap: 16, paddingHorizontal: isWide ? 32 : 16 }
+              : undefined
+          }
           contentContainerStyle={{
-            paddingHorizontal: 16,
+            paddingHorizontal: gridCols > 1 ? 0 : 16,
             paddingBottom: 48,
             paddingTop: 8,
+            maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined,
+            alignSelf: isDesktop ? ("center" as const) : undefined,
+            width: "100%" as const,
           }}
           renderItem={({ item }) => (
-            <SpecialistCard
-              id={item.id}
-              firstName={item.firstName}
-              lastName={item.lastName}
-              avatarUrl={item.avatarUrl}
-              createdAt={item.createdAt}
-              services={item.services}
-              cities={item.cities}
-              description={item.description}
-              onPress={handleSpecialistPress}
-              onBookmark={handleBookmarkToggle}
-              bookmarked={savedIds.has(item.id)}
-              variant="vertical"
-            />
+            <View style={gridCols > 1 ? { flex: 1 } : undefined}>
+              <SpecialistCard
+                id={item.id}
+                firstName={item.firstName}
+                lastName={item.lastName}
+                avatarUrl={item.avatarUrl}
+                createdAt={item.createdAt}
+                services={item.services}
+                cities={item.cities}
+                description={item.description}
+                onPress={handleSpecialistPress}
+                onBookmark={handleBookmarkToggle}
+                bookmarked={savedIds.has(item.id)}
+                variant="vertical"
+              />
+            </View>
           )}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
