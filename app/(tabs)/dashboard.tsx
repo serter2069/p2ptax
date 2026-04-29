@@ -289,10 +289,6 @@ export default function UserDashboard() {
     specialistExtra?.activeThreads ?? stats?.unreadMessages ?? 0;
   const weekCount = specialistExtra?.newRequestsWeek ?? 0;
   const threadsLeft = Math.max(0, THREAD_LIMIT_PER_DAY - threadsToday);
-  const progressPct = Math.min(
-    100,
-    Math.round((threadsToday / THREAD_LIMIT_PER_DAY) * 100)
-  );
 
   const specialistFeedItems: FeedItem[] = useMemo(
     () =>
@@ -475,7 +471,7 @@ export default function UserDashboard() {
                 <DashboardGrid>
                   <DashboardGrid.Col span={3} tabletSpan={1}>
                     <KpiCard
-                      label="Matched сегодня"
+                      label="Новых совпадений"
                       value={matchedToday.length}
                       icon={Sparkles}
                       tone="primary"
@@ -491,7 +487,7 @@ export default function UserDashboard() {
                   </DashboardGrid.Col>
                   <DashboardGrid.Col span={3} tabletSpan={1}>
                     <KpiCard
-                      label="Thread-лимит"
+                      label="Лимит диалогов"
                       value={`${threadsToday}/${THREAD_LIMIT_PER_DAY}`}
                       hint={
                         threadsLeft > 0 ? `осталось ${threadsLeft}` : "исчерпан"
@@ -653,7 +649,7 @@ export default function UserDashboard() {
                             className={`font-extrabold ${atLimit ? "text-text-mute" : "text-white"}`}
                             style={{ fontSize: 16 }}
                           >
-                            {atLimit ? "Лимит исчерпан" : "Создать заявку"}
+                            {atLimit ? "Лимит активных заявок исчерпан (5/5). Закройте одну." : "Создать заявку"}
                           </Text>
                           <Text
                             className={
@@ -668,72 +664,6 @@ export default function UserDashboard() {
                         </View>
                       </View>
                     </Pressable>
-
-                    {/* Specialist-only: thread-limit gauge */}
-                    {isSpecialistUser ? (
-                      <DashboardWidget
-                        title="Thread-лимит сегодня"
-                        icon={CalendarDays}
-                        accentBar={
-                          threadsLeft === 0
-                            ? "danger"
-                            : threadsLeft <= 3
-                              ? "warning"
-                              : "success"
-                        }
-                      >
-                        <View style={{ gap: 12 }}>
-                          <View className="flex-row items-baseline justify-between">
-                            <Text
-                              className="font-extrabold text-text-base"
-                              style={{ fontSize: 28 }}
-                            >
-                              {threadsToday}
-                              <Text
-                                className="text-text-dim font-normal"
-                                style={{ fontSize: 16 }}
-                              >
-                                {` / ${THREAD_LIMIT_PER_DAY}`}
-                              </Text>
-                            </Text>
-                            <Text
-                              className="text-text-mute"
-                              style={{ fontSize: 12 }}
-                            >
-                              {threadsLeft > 0
-                                ? `${threadsLeft} осталось`
-                                : "исчерпан"}
-                            </Text>
-                          </View>
-                          <View
-                            className="w-full rounded-full overflow-hidden"
-                            style={{
-                              height: 8,
-                              backgroundColor: colors.surface2,
-                            }}
-                          >
-                            <View
-                              style={{
-                                width: `${progressPct}%`,
-                                height: "100%",
-                                backgroundColor:
-                                  threadsLeft === 0
-                                    ? colors.danger
-                                    : threadsLeft <= 3
-                                      ? colors.warning
-                                      : colors.success,
-                              }}
-                            />
-                          </View>
-                          <Text
-                            className="text-text-mute"
-                            style={{ fontSize: 12 }}
-                          >
-                            Лимит обновляется каждые сутки в 00:00.
-                          </Text>
-                        </View>
-                      </DashboardWidget>
-                    ) : null}
 
                     {/* Specialist-only: secondary CTA to full public catalog */}
                     {isSpecialistUser ? (

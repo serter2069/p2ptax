@@ -89,7 +89,7 @@ function inferBreadcrumb(pathname: string): string | null {
 export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  const { user, isSpecialistUser, signOut } = useAuth();
+  const { user, isSpecialistUser, isAuthenticated, signOut } = useAuth();
   const router = useRouter()
   const nav = useTypedRouter();
   const pathname = usePathname() ?? "";
@@ -211,7 +211,13 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Главная"
-        onPress={() => nav.routes.home()}
+        onPress={() => {
+          if (isAuthenticated) {
+            nav.routes.dashboard();
+          } else {
+            nav.routes.home();
+          }
+        }}
         style={{ minHeight: 44, justifyContent: "center" }}
       >
         <Text className="text-base font-bold" style={{ color: colors.primary }}>P2PTax</Text>
