@@ -83,6 +83,96 @@ function displayName(user: { firstName: string | null; lastName: string | null; 
   return parts.length > 0 ? parts.join(" ") : "Пользователь";
 }
 
+/**
+ * Inline Russian instrumental-case helper for first+last names.
+ * Pragmatic suffix rules — handles common cases for "переписываетесь с <Name>".
+ * Track U will replace this with a proper library-level helper (lib/ru.ts) later.
+ *
+ * Rules covered:
+ *   мужские имена: -ей → -еем (Алексей → Алексеем), -й → -ем (Сергей → Сергеем), -а/я → -ой/ей,
+ *                   -consonant → +ом (Иван → Иваном)
+ *   мужские фамилии: -ов/ев/ёв/ин/ын → +ым (Воронов → Вороновым, Пушкин → Пушкиным)
+ *   женские: -а → -ой, -я → -ей (Анна → Анной, Юлия → Юлией)
+ *   фамилии на -ова/ева/ина/ына → -овой/евой/иной/ыной
+ * Unknowns return original token.
+ */
+function tokenInInstrumental(token: string): string {
+  if (!token) return token;
+  const lower = token.toLowerCase();
+
+  // Female surnames: -ова/ева/ёва/ина/ына → -овой/евой/ёвой/иной/ыной
+  if (/(?:ова|ева|ёва|ина|ына)$/.test(lower)) {
+    return token.slice(0, -1) + "ой";
+  }
+  // Female surnames: -ская → -ской
+  if (/ская$/.test(lower)) {
+    return token.slice(0, -2) + "ой";
+  }
+  // Male surnames: -ов/ев/ёв/ин/ын → +ым
+  if (/(?:ов|ев|ёв|ин|ын)$/.test(lower)) {
+    return token + "ым";
+  }
+  // Male surnames: -ский/цкий → -ским/цким
+  if (/(?:ский|цкий)$/.test(lower)) {
+    return token.slice(0, -2) + "им";
+  }
+
+  // First names ending -ей (Алексей, Андрей, Сергей*) → -еем
+  // (Сергей → Сергеем — collapses with -ей rule)
+  if (/ей$/.test(lower)) {
+    return token.slice(0, -2) + "еем";
+  }
+  // -ай/-ой/-уй ends → -аем/-оем/-уем (rare but safer than -ем)
+  if (/[аоу]й$/.test(lower)) {
+    return token.slice(0, -1) + "ем";
+  }
+  // Generic -й → -ем (Николай → Николаем would match -ай above; Юрий → Юрием handled below)
+  if (/ий$/.test(lower)) {
+    return token.slice(0, -2) + "ием";
+  }
+  if (/й$/.test(lower)) {
+    return token.slice(0, -1) + "ем";
+  }
+
+  // -ия (female): Юлия → Юлией, Мария → Марией
+  if (/ия$/.test(lower)) {
+    return token.slice(0, -1) + "ей";
+  }
+  // -я (female/male soft): Аня → Аней, Илья → Ильёй (not handled — return -ей as best-effort)
+  if (/я$/.test(lower)) {
+    return token.slice(0, -1) + "ей";
+  }
+  // -а (female or male like Никита): default to -ой
+  // Special: hissing stems (ж/ш/щ/ч/ц + а) → -ей (Саша → Сашей). Approximate.
+  if (/[жшщчц]а$/.test(lower)) {
+    return token.slice(0, -1) + "ей";
+  }
+  if (/а$/.test(lower)) {
+    return token.slice(0, -1) + "ой";
+  }
+
+  // Male names ending in soft sign -ь (Игорь → Игорем)
+  if (/ь$/.test(lower)) {
+    return token.slice(0, -1) + "ем";
+  }
+
+  // Male names ending in consonant (Иван, Петр) → +ом
+  // Russian consonant set check (last letter)
+  if (/[бвгджзйклмнпрстфхцчшщ]$/.test(lower)) {
+    return token + "ом";
+  }
+
+  return token;
+}
+
+function nameInInstrumental(fullName: string): string {
+  if (!fullName) return fullName;
+  return fullName
+    .split(/\s+/)
+    .map((part) => tokenInInstrumental(part))
+    .join(" ");
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -353,6 +443,20 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     [myId, handleFilePress]
   );
 
+  // S1 fix — render-time defensive sort: ascending by createdAt (Date timestamp).
+  // The API already returns ASC, but optimistic appends in handleSend + polling races
+  // can interleave messages so a reply lands above older ones. Sorting here guarantees
+  // chronological order regardless of how state was updated. Stable sort keeps within-ms ties.
+  const sortedMessages = (() => {
+    if (messages.length < 2) return messages;
+    return [...messages].sort((a, b) => {
+      const ta = new Date(a.createdAt).getTime();
+      const tb = new Date(b.createdAt).getTime();
+      if (ta !== tb) return ta - tb;
+      return a.id.localeCompare(b.id);
+    });
+  })();
+
   if (loading) {
     return (
       <View className="flex-1 bg-white">
@@ -444,7 +548,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
               const counterpartyFallback =
                 myPerspective === "as_client" ? "Специалистом" : "Клиентом";
               const namedCounterparty = otherUser && !otherUser.isDeleted
-                ? displayName(otherUser)
+                ? nameInInstrumental(displayName(otherUser))
                 : counterpartyFallback;
               return (
                 <Text
@@ -495,7 +599,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       >
         <FlatList
           ref={flatListRef}
-          data={messages}
+          data={sortedMessages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={{ padding: 16, flexGrow: 1, justifyContent: "flex-end" }}

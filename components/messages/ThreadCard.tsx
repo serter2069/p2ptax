@@ -117,28 +117,33 @@ export default function ThreadCard({
       </Pressable>
 
       <View className="flex-1 min-w-0 py-3.5">
-        <View className="flex-row items-center justify-between gap-2">
+        {/* S3 fix — give the name flex-1 + min-w-0 so it gets the bulk of the row width
+            and only ellipsises for genuinely long names. Timestamp is fixed-width on the
+            right (flex-shrink-0). Perspective badge sits between name and timestamp, also
+            shrink-proof. Removed the spacer-View that previously starved the name. */}
+        <View className="flex-row items-center gap-2">
           <Text
-            className={`text-base flex-shrink ${
+            className={`flex-1 min-w-0 text-base ${
               hasUnread
                 ? "font-bold text-text-base"
                 : "font-semibold text-text-base"
             }`}
             numberOfLines={1}
+            ellipsizeMode="tail"
           >
             {name}
           </Text>
           {item.perspective ? (
-            <View className="ml-2 flex-shrink-0">
+            <View className="flex-shrink-0">
               <PerspectiveBadge perspective={item.perspective} size="sm" />
             </View>
           ) : null}
-          <View style={{ flex: 1 }} />
           {item.lastMessage && (
             <Text
               className={`text-xs flex-shrink-0 ${
                 hasUnread ? "text-accent font-semibold" : "text-text-dim"
               }`}
+              numberOfLines={1}
             >
               {formatTime(item.lastMessage.createdAt)}
             </Text>
