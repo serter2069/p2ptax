@@ -30,17 +30,27 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
   req.user = payload;
 
-  // Check isBanned on every authenticated request — security fix #175
-  // Banned users must be rejected regardless of which endpoint they call.
+  // Check isBanned + deletedAt on every authenticated request.
+  // Banned users must be rejected regardless of which endpoint they call (#175).
+  // Soft-deleted users must be force-signed-out (deletedAt sets isBanned=true,
+  // but we explicitly check deletedAt so the error message is more honest).
   // Using lazy import to avoid circular dependency (same pattern as roleGuard).
   try {
     const { prisma } = await import("../lib/prisma");
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { isBanned: true },
+      select: { isBanned: true, deletedAt: true },
     });
 
-    if (!user || user.isBanned) {
+    if (!user) {
+      res.status(401).json({ error: "User not found" });
+      return;
+    }
+    if (user.deletedAt) {
+      res.status(401).json({ error: "Account deleted" });
+      return;
+    }
+    if (user.isBanned) {
       res.status(403).json({ error: "Account blocked" });
       return;
     }

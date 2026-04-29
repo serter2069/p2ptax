@@ -43,6 +43,8 @@ interface ThreadItem {
     firstName: string | null;
     lastName: string | null;
     avatarUrl: string | null;
+    /** Soft-deleted user — UI must render "Аккаунт удалён" instead of name. */
+    isDeleted?: boolean;
   };
   request: {
     id: string;
@@ -73,9 +75,10 @@ interface ThreadsMyGroup {
 }
 
 function displayName(
-  user: { firstName: string | null; lastName: string | null },
+  user: { firstName: string | null; lastName: string | null; isDeleted?: boolean },
   fallback: string
 ): string {
+  if (user.isDeleted) return "Аккаунт удалён";
   const parts = [user.firstName, user.lastName].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : fallback;
 }

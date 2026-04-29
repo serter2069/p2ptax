@@ -80,10 +80,10 @@ router.get("/", async (req: Request, res: Response) => {
             select: { id: true, title: true, status: true },
           },
           client: {
-            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true },
           },
           specialist: {
-            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true },
           },
           messages: {
             orderBy: { createdAt: "desc" },
@@ -125,6 +125,7 @@ router.get("/", async (req: Request, res: Response) => {
           firstName: otherUser.firstName,
           lastName: otherUser.lastName,
           avatarUrl: otherUser.avatarUrl,
+          isDeleted: otherUser.deletedAt !== null,
         },
         lastMessage: lastMessage
           ? {
@@ -220,8 +221,8 @@ router.get("/my", async (req: Request, res: Response) => {
         take: limit,
         include: {
           request: { select: { id: true, title: true, status: true, userId: true } },
-          client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
-          specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
+          specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
           messages: {
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -302,6 +303,7 @@ router.get("/my", async (req: Request, res: Response) => {
           firstName: otherUser.firstName,
           lastName: otherUser.lastName,
           avatarUrl: otherUser.avatarUrl,
+          isDeleted: otherUser.deletedAt !== null,
         },
         lastMessage: lastMessage
           ? { text: lastMessage.text, createdAt: lastMessage.createdAt }
@@ -347,8 +349,8 @@ router.get("/:id", async (req: Request, res: Response) => {
       where: { id: threadId },
       include: {
         request: { select: { id: true, title: true, status: true } },
-        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
-        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
+        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
       },
     });
 
@@ -365,19 +367,27 @@ router.get("/:id", async (req: Request, res: Response) => {
     const isClient = thread.clientId === userId;
     const otherUser = isClient ? thread.specialist : thread.client;
 
+    // Strip the raw `deletedAt` Date from the public payload — replace
+    // with the boolean `isDeleted` flag the FE consumes.
+    const stripDeletedAt = <T extends { deletedAt: Date | null }>(u: T) => {
+      const { deletedAt, ...rest } = u;
+      return { ...rest, isDeleted: deletedAt !== null };
+    };
+
     res.json({
       id: thread.id,
       requestId: thread.requestId,
       clientId: thread.clientId,
       specialistId: thread.specialistId,
       request: thread.request,
-      client: thread.client,
-      specialist: thread.specialist,
+      client: stripDeletedAt(thread.client),
+      specialist: stripDeletedAt(thread.specialist),
       otherUser: {
         id: otherUser.id,
         firstName: otherUser.firstName,
         lastName: otherUser.lastName,
         avatarUrl: otherUser.avatarUrl,
+        isDeleted: otherUser.deletedAt !== null,
       },
       createdAt: thread.createdAt,
     });
