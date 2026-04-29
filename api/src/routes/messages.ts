@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
 import { sendNewMessageEmail } from "../lib/email";
+import { firstNameInGenitive } from "../lib/ru";
 import type * as Minio from "minio";
 import { minioClient, MINIO_BUCKET } from "../lib/minio";
 
@@ -400,7 +401,7 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
     sendNotification({
       userId: recipientId,
       type: "new_message",
-      title: `Новое сообщение от ${senderName}`,
+      title: `Новое сообщение от ${firstNameInGenitive(senderName)}`,
       body: trimmedText ? trimmedText.slice(0, 200) : "Вложение",
       entityId: threadId,
     }).catch((err: Error) => console.warn("[notifications] new_message trigger failed:", err.message));

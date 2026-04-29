@@ -1,5 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { colors, overlay } from "@/lib/theme";
+import { pluralizeRu } from "@/lib/ru";
 
 interface SpecialistCTASectionProps {
   isDesktop: boolean;
@@ -128,7 +129,11 @@ export default function SpecialistCTASection({
           </Pressable>
           <Text style={{ color: overlay.white50, fontSize: 12, lineHeight: 18 }}>
             {specialistsCount > 0
-              ? `${specialistsCount} специалистов уже с нами`
+              ? `${specialistsCount} ${pluralizeRu(specialistsCount, [
+                  "специалист",
+                  "специалиста",
+                  "специалистов",
+                ])} уже с нами`
               : "Присоединяйтесь к растущему сообществу"}
           </Text>
         </View>

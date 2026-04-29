@@ -1,5 +1,6 @@
 import { View, Text } from "react-native";
 import { colors, textStyle } from "@/lib/theme";
+import { pluralizeRu } from "@/lib/ru";
 
 interface Props {
   isDesktop: boolean;
@@ -24,7 +25,7 @@ export default function CatalogHeader({ isDesktop, count }: Props) {
       </Text>
       {count !== null && count > 0 && (
         <Text className="text-xs" style={{ color: colors.textMuted }}>
-          {count} специалистов
+          {count} {pluralizeRu(count, ["специалист", "специалиста", "специалистов"])}
         </Text>
       )}
     </View>
