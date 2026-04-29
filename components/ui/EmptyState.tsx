@@ -1,4 +1,4 @@
-import { View, Text } from "react-native";
+import { useWindowDimensions, View, Text } from "react-native";
 import { Inbox, type LucideIcon } from "lucide-react-native";
 import Button from "./Button";
 import { colors } from "../../lib/theme";
@@ -18,6 +18,8 @@ export default function EmptyState({
   actionLabel,
   onAction,
 }: EmptyStateProps) {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 640;
   return (
     <View className="items-center justify-center py-12 px-8">
       <View
@@ -26,7 +28,10 @@ export default function EmptyState({
       >
         <Icon size={32} color={colors.accent} />
       </View>
-      <Text className="text-base font-semibold text-text-base mt-4 text-center">
+      <Text
+        className="font-bold text-text-base mt-4 text-center"
+        style={{ fontSize: 18, lineHeight: 22 }}
+      >
         {title}
       </Text>
       {subtitle && (
@@ -35,8 +40,8 @@ export default function EmptyState({
         </Text>
       )}
       {actionLabel && onAction && (
-        <View className="mt-5">
-          <Button variant="primary" label={actionLabel} onPress={onAction} fullWidth={false} />
+        <View className="mt-5" style={isDesktop ? { minWidth: 200 } : undefined}>
+          <Button variant="primary" label={actionLabel} onPress={onAction} fullWidth={isDesktop} />
         </View>
       )}
     </View>

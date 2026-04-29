@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, Pressable } from "react-native";
+import React, { useState } from "react";
+import { View, Text, Pressable, Platform } from "react-native";
 import { TrendingUp, TrendingDown, Minus, type LucideIcon } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
@@ -53,6 +53,10 @@ export default function KpiCard({
   accessibilityLabel,
 }: KpiCardProps) {
   const palette = TONE_MAP[tone];
+  const [hovered, setHovered] = useState(false);
+  const isWeb = Platform.OS === "web";
+  const interactive = !!onPress;
+  const showHover = isWeb && interactive && hovered;
 
   const content = (
     <View
@@ -61,6 +65,23 @@ export default function KpiCard({
         padding: 16,
         gap: 12,
         minHeight: 112,
+        // Subtle hover affordance on web only — mobile native is unaffected.
+        ...(isWeb && interactive
+          ? ({
+              transitionProperty: "transform, box-shadow",
+              transitionDuration: "150ms",
+              transitionTimingFunction: "ease-out",
+            } as Record<string, string>)
+          : null),
+        ...(showHover
+          ? {
+              transform: [{ scale: 1.01 }],
+              shadowColor: "#000",
+              shadowOpacity: 0.12,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+            }
+          : null),
       }}
     >
       <View className="flex-row items-center justify-between">
@@ -142,12 +163,22 @@ export default function KpiCard({
   );
 
   if (onPress) {
+    const webHoverHandlers = isWeb
+      ? {
+          onHoverIn: () => setHovered(true),
+          onHoverOut: () => setHovered(false),
+        }
+      : null;
     return (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? label}
         onPress={onPress}
-        style={({ pressed }) => (pressed ? { opacity: 0.85 } : undefined)}
+        {...webHoverHandlers}
+        style={({ pressed }) => ({
+          ...(pressed ? { opacity: 0.85 } : null),
+          ...(isWeb ? ({ cursor: "pointer" } as Record<string, string>) : null),
+        })}
       >
         {content}
       </Pressable>
