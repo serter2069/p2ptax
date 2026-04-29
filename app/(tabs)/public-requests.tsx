@@ -4,6 +4,7 @@ import {
   Text,
   FlatList,
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   useWindowDimensions,
 } from "react-native";
@@ -14,7 +15,7 @@ import HeaderHome from "@/components/HeaderHome";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import RequestCard from "@/components/RequestCard";
 import FilterBar from "@/components/FilterBar";
-import { TriangleAlert, FileText } from "lucide-react-native";
+import { TriangleAlert, FileText, Filter } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
@@ -52,6 +53,17 @@ interface RequestsResponse {
   hasMore: boolean;
 }
 
+interface FnsServiceItem {
+  fns: { id: string; name: string; code: string };
+  city: { id: string; name: string };
+  services: { id: string; name: string }[];
+}
+
+interface SpecialistProfileResponse {
+  id: string;
+  fnsServices: FnsServiceItem[];
+}
+
 export default function SpecialistPublicRequests() {
   const router = useRouter()
   const nav = useTypedRouter();
@@ -79,12 +91,22 @@ export default function SpecialistPublicRequests() {
 
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
+
+  // Specialist's own coverage (resolved on mount once auth is ready).
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [specialistFnsServices, setSpecialistFnsServices] = useState<FnsServiceItem[]>([]);
+  const hasFnsCoverage = specialistFnsServices.length > 0;
+  // True while the active filter equals "match my FNS" (default for specialists).
+  const isPrefiltered = !!selectedFnsId && hasFnsCoverage &&
+    specialistFnsServices.some((fs) => fs.fns.id === selectedFnsId);
 
   const fetchRequests = useCallback(
     async (pageNum: number, append = false) => {
       try {
         let path = `/api/requests/public?page=${pageNum}&limit=20`;
         if (selectedCityId) path += `&city_id=${selectedCityId}`;
+        if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
         if (selectedServiceId) path += `&service_id=${selectedServiceId}`;
 
         const res = await api<RequestsResponse>(path, { noAuth: true });
@@ -103,12 +125,12 @@ export default function SpecialistPublicRequests() {
         if (!append) setError("Не удалось загрузить заявки");
       }
     },
-    [selectedCityId, selectedServiceId]
+    [selectedCityId, selectedFnsId, selectedServiceId]
   );
 
+  // Load the catalog (cities + services) once.
   useEffect(() => {
     async function init() {
-      setLoading(true);
       try {
         const [citiesRes, servicesRes] = await Promise.all([
           api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
@@ -119,16 +141,46 @@ export default function SpecialistPublicRequests() {
       } catch (e) {
         console.error("Init error:", e);
       }
-      await fetchRequests(1);
-      setLoading(false);
     }
     init();
   }, []);
 
+  // Load specialist profile once auth is ready, then default the filter to
+  // their first FNS so the very first feed call is already pre-filtered.
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
+    if (!isSpecialistUser) {
+      setProfileLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api<SpecialistProfileResponse>("/api/specialist/profile");
+        if (cancelled) return;
+        const fnsServices = res.fnsServices ?? [];
+        setSpecialistFnsServices(fnsServices);
+        if (fnsServices.length > 0) {
+          setSelectedFnsId(fnsServices[0].fns.id);
+        }
+      } catch (e) {
+        console.error("specialist profile error:", e);
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, isAuthenticated, isSpecialistUser]);
+
+  // Run the feed call after profile resolution so the initial request already
+  // carries the specialist's first fns_id (avoids a flash of "all requests").
+  useEffect(() => {
+    if (profileLoading) return;
     setLoading(true);
     fetchRequests(1).finally(() => setLoading(false));
-  }, [selectedCityId, selectedServiceId, fetchRequests]);
+  }, [profileLoading, selectedCityId, selectedFnsId, selectedServiceId, fetchRequests]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -154,10 +206,28 @@ export default function SpecialistPublicRequests() {
     setSelectedServiceId((prev) => (prev === id ? null : id));
   }, []);
 
-  if (!ready || !isSpecialistUser) {
+  if (!ready || !isSpecialistUser || profileLoading) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <LoadingState />
+      </SafeAreaView>
+    );
+  }
+
+  // Specialist hasn't picked any FNS coverage yet — push them to onboarding.
+  if (!hasFnsCoverage) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+        <HeaderHome />
+        <DesktopScreen>
+          <EmptyState
+            icon={FileText}
+            title="Заявки появятся после настройки профиля"
+            subtitle="Завершите профиль чтобы видеть подходящие заявки"
+            actionLabel="Завершить профиль"
+            onAction={() => nav.any("/onboarding/work-area?from=public-requests")}
+          />
+        </DesktopScreen>
       </SafeAreaView>
     );
   }
@@ -175,10 +245,49 @@ export default function SpecialistPublicRequests() {
           )}
         </View>
 
+        {/* Pre-filter banner: badge while filtered, CTA "Show all" to clear. */}
+        <View className="flex-row items-center justify-between px-4 mb-2" style={{ gap: 8 }}>
+          {isPrefiltered ? (
+            <View
+              className="flex-row items-center px-3 h-9 rounded-full bg-white border border-border"
+              style={{ gap: 6 }}
+            >
+              <Filter size={14} color={colors.primary} />
+              <Text className="text-xs text-text-base">Фильтр по моим ФНС</Text>
+            </View>
+          ) : (
+            <View />
+          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isPrefiltered ? "Показать все заявки" : "Только мои ФНС"}
+            onPress={() => {
+              if (isPrefiltered) {
+                setSelectedFnsId(null);
+                setSelectedCityId(null);
+                setSelectedServiceId(null);
+              } else if (specialistFnsServices.length > 0) {
+                setSelectedFnsId(specialistFnsServices[0].fns.id);
+              }
+            }}
+            className="px-3 h-9 rounded-full border border-border bg-white items-center justify-center"
+          >
+            <Text className="text-xs text-text-base">
+              {isPrefiltered ? "Показать все" : "Только мои ФНС"}
+            </Text>
+          </Pressable>
+        </View>
+
         <FilterBar
           cities={cities}
           selectedCityId={selectedCityId}
           onCityChange={setSelectedCityId}
+          fnsOffices={specialistFnsServices.map((fs) => ({
+            id: fs.fns.id,
+            name: fs.fns.name,
+          }))}
+          selectedFnsId={selectedFnsId}
+          onFnsChange={setSelectedFnsId}
           services={services}
           selectedServiceIds={selectedServiceId ? [selectedServiceId] : []}
           onServiceToggle={handleServiceToggle}
@@ -212,6 +321,7 @@ export default function SpecialistPublicRequests() {
             onAction={() => {
               setSelectedCityId(null);
               setSelectedServiceId(null);
+              setSelectedFnsId(null);
             }}
           />
         ) : (
