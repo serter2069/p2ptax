@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useTypedRouter } from "@/lib/navigation";
-import { MapPin, ChevronLeft } from "lucide-react-native";
+import { useTypedRouter, ROUTES } from "@/lib/navigation";
+import { MapPin, ChevronLeft, Inbox } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -289,6 +289,38 @@ export default function CreateRequest() {
     );
   }
 
+  // Authenticated user at the active-request limit (5/5). Show EmptyState
+  // only — no form. Anonymous users still see the form (they haven't hit
+  // any limit yet). Wave 6 R3.
+  if (isAuthenticated && atLimit) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface2">
+        <View className="px-4 pt-4">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => router.back()}
+            className="flex-row items-center mb-2"
+            style={{ minHeight: 44 }}
+          >
+            <ChevronLeft size={20} color={colors.text} />
+            <Text className="text-text-base ml-1">Назад</Text>
+          </Pressable>
+          <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+        </View>
+        <View className="flex-1 items-center justify-center">
+          <EmptyState
+            icon={Inbox}
+            title="Лимит активных заявок исчерпан (5/5)"
+            subtitle="Закройте одну активную заявку, чтобы создать новую"
+            actionLabel="Открыть мои заявки"
+            onAction={() => nav.any(ROUTES.tabsRequests)}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <View className="px-4 pt-4">
@@ -325,17 +357,6 @@ export default function CreateRequest() {
               </Text>
               <Text className="text-sm text-accent">
                 Подтверждение по email кодом. Без паролей.
-              </Text>
-            </View>
-          )}
-
-          {atLimit && (
-            <View className="bg-danger-soft border border-danger rounded-xl p-4 mb-4">
-              <Text className="text-danger text-sm font-semibold mb-0.5">
-                Лимит заявок исчерпан
-              </Text>
-              <Text className="text-danger text-sm">
-                Закройте неактуальные заявки, чтобы создать новую.
               </Text>
             </View>
           )}
