@@ -275,7 +275,7 @@ export default function UnifiedSettings() {
       updateUser({ isAvailable: value });
     } catch {
       setIsAvailable(!value);
-      Alert.alert("Ошибка", "Не удалось изменить статус");
+      Alert.alert("Ошибка", "Не удалось обновить статус доступности");
     } finally {
       setAvailabilityLoading(false);
     }
