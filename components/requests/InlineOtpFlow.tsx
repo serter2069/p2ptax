@@ -27,7 +27,7 @@ interface Props {
 export default function InlineOtpFlow({
   onAuthenticated,
   parentSubmitting = false,
-  returnTo = "/requests/create",
+  returnTo = "/requests/new",
 }: Props) {
   const { isAuthenticated, signIn } = useAuth();
   const nav = useTypedRouter();
