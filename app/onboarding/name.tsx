@@ -8,9 +8,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { api } from "@/lib/api";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
+import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import LoadingState from "@/components/ui/LoadingState";
 import { colors, textStyle } from "@/lib/theme";
 
 export default function OnboardingNameScreen() {
@@ -116,7 +116,15 @@ export default function OnboardingNameScreen() {
   };
 
   if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent)) {
-    return <LoadingState />;
+    return (
+      <OnboardingShell
+        step={1}
+        title="Как вас зовут?"
+        subtitle="Это имя увидят клиенты в карточке специалиста и в переписке."
+        loading
+        onBack={() => router.back()}
+      />
+    );
   }
 
   return (

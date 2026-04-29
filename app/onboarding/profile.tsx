@@ -23,9 +23,9 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
+import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import LoadingState from "@/components/ui/LoadingState";
 import { colors, overlay, textStyle } from "@/lib/theme";
 
 export default function OnboardingProfileScreen() {
@@ -178,7 +178,15 @@ export default function OnboardingProfileScreen() {
   };
 
   if (!ready || isAdminUser || !isSpecialistUser) {
-    return <LoadingState />;
+    return (
+      <OnboardingShell
+        step={3}
+        title="Заполните профиль"
+        subtitle="Аватар, контакты и краткое описание помогут клиенту быстрее выбрать именно вас."
+        loading
+        onBack={() => router.back()}
+      />
+    );
   }
 
   return (
