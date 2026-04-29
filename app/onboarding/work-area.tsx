@@ -7,8 +7,8 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
+import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import Button from "@/components/ui/Button";
-import LoadingState from "@/components/ui/LoadingState";
 import { colors } from "@/lib/theme";
 import SpecialistSearchBar, {
   CityOpt,
@@ -279,7 +279,17 @@ export default function OnboardingWorkAreaScreen() {
   };
 
   if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent)) {
-    return <LoadingState />;
+    return (
+      <OnboardingShell
+        step={2}
+        title="Где вы работаете?"
+        subtitle="Выберите город и налоговую — клиенты найдут вас по подведомственности."
+        loading
+        onBack={() => router.back()}
+        hideProgress={fromSettings}
+        maxWidth={720}
+      />
+    );
   }
 
   return (
