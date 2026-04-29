@@ -66,7 +66,7 @@ export default function AppShell({ children }: AppShellProps) {
   const isDesktop = width >= SIDEBAR_BREAKPOINT;
   const group = detectSidebarGroup(pathname, segments as readonly string[]);
   // Anonymous users never see the auth sidebar — even on routes that fall
-  // into the "main" group (/specialists, /requests/create). They only
+  // into the "main" group (/specialists, /requests/new). They only
   // get marketing chrome from the page itself. Issue: anon sidebar leak.
   const showSidebar = isDesktop && group !== null && isAuthenticated;
 
