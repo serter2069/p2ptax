@@ -266,8 +266,7 @@ export default function UnifiedSettings() {
 
   const handleSave = isSpecialistUser ? handleSaveSpecialist : handleSaveClient;
 
-  const handleToggleAvailable = async (value: boolean) => {
-    if (availabilityLoading) return;
+  const applyAvailabilityChange = async (value: boolean) => {
     setIsAvailable(value);
     setAvailabilityLoading(true);
     try {
@@ -279,6 +278,28 @@ export default function UnifiedSettings() {
     } finally {
       setAvailabilityLoading(false);
     }
+  };
+
+  const handleToggleAvailable = (value: boolean) => {
+    if (availabilityLoading) return;
+    if (isAvailable && !value) {
+      Alert.alert(
+        "Скрыть профиль из каталога?",
+        "Новые клиенты не смогут вас найти. Существующие переписки сохранятся, и вы сможете отвечать как обычно. Включить обратно — в любой момент.",
+        [
+          { text: "Отмена", style: "cancel" },
+          {
+            text: "Скрыть",
+            style: "destructive",
+            onPress: () => {
+              void applyAvailabilityChange(value);
+            },
+          },
+        ],
+      );
+      return;
+    }
+    void applyAvailabilityChange(value);
   };
 
   const handleLogout = useCallback(() => {
