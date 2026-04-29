@@ -209,9 +209,23 @@ router.get("/services", async (_req: Request, res: Response) => {
   }
 });
 
+// In-memory cache for public landing counts (60s TTL).
+// Avoids running 3 COUNT queries on every public landing hit.
+let cachedLandingCounts: {
+  data: { specialistsCount: number; citiesCount: number; consultationsCount: number };
+  expiresAt: number;
+} | null = null;
+const LANDING_TTL_MS = 60_000;
+
 // GET /api/stats — public platform statistics
 router.get("/stats", async (_req: Request, res: Response) => {
   try {
+    const now = Date.now();
+    if (cachedLandingCounts && cachedLandingCounts.expiresAt > now) {
+      res.json(cachedLandingCounts.data);
+      return;
+    }
+
     const [specialistsCount, citiesCount, consultationsCount] = await Promise.all([
       // Iter11: specialists counted by flag, not retired role value.
       prisma.user.count({ where: { isSpecialist: true, isBanned: false } }),
@@ -219,7 +233,9 @@ router.get("/stats", async (_req: Request, res: Response) => {
       prisma.thread.count(),
     ]);
 
-    res.json({ specialistsCount, citiesCount, consultationsCount });
+    const data = { specialistsCount, citiesCount, consultationsCount };
+    cachedLandingCounts = { data, expiresAt: now + LANDING_TTL_MS };
+    res.json(data);
   } catch (error) {
     console.error("stats error:", error);
     res.status(500).json({ error: "Internal server error" });
