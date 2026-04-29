@@ -186,7 +186,7 @@ router.post(
   }
 );
 
-// DELETE /api/admin/users/:id — hard delete with proper FK dependency order
+// DELETE /api/admin/users/:id — soft-delete only (admin moderation must not lose audit trail)
 router.delete("/:id", adminWriteRateLimiter, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
@@ -231,11 +231,23 @@ router.delete("/:id", adminWriteRateLimiter, async (req: Request, res: Response)
       // 4. Delete threads where user is client or specialist (Thread → User has no cascade)
       await tx.thread.deleteMany({ where: { OR: [{ clientId: id }, { specialistId: id }] } });
 
-      // 5. Delete user record — remaining relations cascade automatically:
-      //    notifications, notificationPreferences, refreshTokens, complaints,
-      //    requests (→ threads that cascade from request), specialistFns,
-      //    specialistServices, specialistProfile (→ contactMethods)
-      await tx.user.delete({ where: { id } });
+      // 5. Soft-delete only — admin moderation must not lose audit trail.
+      //    Anonymize PII, mark deletedAt, ban + hide from catalog. The user
+      //    row is preserved so referential integrity (and audit history) holds.
+      await tx.user.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          email: `deleted-${id}@p2ptax.local`,
+          firstName: null,
+          lastName: null,
+          avatarUrl: null,
+          isAvailable: false,
+          isSpecialist: false,
+          isBanned: true,
+        },
+      });
+      await tx.refreshToken.deleteMany({ where: { userId: id } });
     });
 
     res.json({ ok: true });
