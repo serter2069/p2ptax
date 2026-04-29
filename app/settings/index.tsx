@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Constants from "expo-constants";
 import {
   View,
@@ -11,13 +11,12 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import {
   LogOut,
   Trash2,
   Pencil,
-  Briefcase,
   ChevronRight,
   FileText,
 } from "lucide-react-native";
@@ -28,7 +27,7 @@ import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiGet, apiPatch, apiPost } from "@/lib/api";
-import { colors, roleAccent } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import AvatarUploader from "@/components/settings/AvatarUploader";
 import ContactMethodsList, {
   ContactMethodItem,
@@ -37,18 +36,16 @@ import NotificationPreferences from "@/components/settings/NotificationPreferenc
 import RoleBadge from "@/components/layout/RoleBadge";
 
 /**
- * Unified Settings page — iter11 UI layer (PR 2/3).
+ * Unified Settings page — tabbed layout (Wave 2/F).
  *
- * Replaces the old split settings/client.tsx + settings/specialist.tsx. A
- * single progressive page with these sections:
- *   1. Личные данные   — name, email (readonly), avatar — always.
- *   2. Специалист       — progressive:
- *        - isSpecialist=false → Enable CTA → routes to specialist onboarding.
- *        - isSpecialist=true  → full specialist profile editor (description,
- *                               ИФНС/услуги, contacts, office, availability
- *                               toggle).
- *   3. Уведомления      — always.
- *   4. Аккаунт          — sign out, delete, legal.
+ * Four tabs:
+ *   1. Профиль       — Личные данные + Режим специалиста (toggle).
+ *   2. Специалист    — описание / ИФНС / контакты / офис (gated by isSpecialistUser).
+ *   3. Уведомления   — NotificationPreferences.
+ *   4. Аккаунт       — правовая информация + sign out / delete + версия.
+ *
+ * Sticky save-bar тянется к активной вкладке (только если есть несохранённые
+ * изменения в её полях). Deeplink через `?tab=specialist` поддерживается.
  *
  * ADMIN users are redirected to /admin/settings via the orchestrator; this
  * page is USER-focused.
@@ -78,6 +75,19 @@ interface SpecialistProfileData {
   fnsServices: FnsServiceItem[];
 }
 
+type SettingsTab = "profile" | "specialist" | "notifications" | "account";
+
+const VALID_TABS: SettingsTab[] = [
+  "profile",
+  "specialist",
+  "notifications",
+  "account",
+];
+
+function isValidTab(value: string | undefined): value is SettingsTab {
+  return !!value && (VALID_TABS as string[]).includes(value);
+}
+
 function IosToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
   useEffect(() => {
@@ -94,11 +104,96 @@ function IosToggle({ value, onChange }: { value: boolean; onChange: (v: boolean)
   );
 }
 
+interface SettingsTabsProps {
+  activeTab: SettingsTab;
+  onChange: (tab: SettingsTab) => void;
+  canEditSpecialist: boolean;
+}
+
+function SettingsTabs({ activeTab, onChange, canEditSpecialist }: SettingsTabsProps) {
+  const tabs: { id: SettingsTab; label: string; disabled?: boolean }[] = [
+    { id: "profile", label: "Профиль" },
+    { id: "specialist", label: "Специалист", disabled: !canEditSpecialist },
+    { id: "notifications", label: "Уведомления" },
+    { id: "account", label: "Аккаунт" },
+  ];
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 16 }}
+      style={{ flexGrow: 0, borderBottomWidth: 1, borderBottomColor: colors.border }}
+    >
+      <View style={{ flexDirection: "row" }}>
+        {tabs.map((t) => {
+          const active = activeTab === t.id;
+          return (
+            <Pressable
+              key={t.id}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active, disabled: t.disabled }}
+              onPress={() => {
+                if (t.disabled) {
+                  Alert.alert(
+                    "Недоступно",
+                    "Включите режим специалиста на вкладке Профиль, чтобы редактировать профиль специалиста.",
+                  );
+                  return;
+                }
+                onChange(t.id);
+              }}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderBottomWidth: 2,
+                borderBottomColor: active ? colors.accent : "transparent",
+                opacity: t.disabled ? 0.45 : 1,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: active ? "600" : "500",
+                  color: active ? colors.accent : colors.textMuted,
+                }}
+              >
+                {t.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+}
+
 export default function UnifiedSettings() {
-  const router = useRouter()
+  const router = useRouter();
   const nav = useTypedRouter();
+  const params = useLocalSearchParams<{ tab?: string }>();
   const { ready } = useRequireAuth();
   const { user, isSpecialistUser, isAdminUser, signOut, updateUser } = useAuth();
+
+  // Active tab — initial from ?tab= query, default 'profile'.
+  const initialTab: SettingsTab = isValidTab(params.tab) ? params.tab : "profile";
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+
+  // Sync tab from URL when query changes (e.g. browser back/forward).
+  useEffect(() => {
+    if (isValidTab(params.tab) && params.tab !== activeTab) {
+      setActiveTab(params.tab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.tab]);
+
+  const handleTabChange = useCallback(
+    (tab: SettingsTab) => {
+      setActiveTab(tab);
+      router.setParams({ tab });
+    },
+    [router],
+  );
 
   // Shared state for name/avatar (always editable).
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
@@ -174,22 +269,41 @@ export default function UnifiedSettings() {
     }
   }, [ready, isAdminUser, loadSpecialistData, router]);
 
+  // If user lands on specialist tab but mode is off, fall back to profile.
+  useEffect(() => {
+    if (activeTab === "specialist" && !isSpecialistUser && ready) {
+      // We still allow viewing the empty-state hint, so don't auto-redirect.
+      // The tab itself is disabled in the switcher, but a deeplink may bring
+      // them here — rendering the EmptyState keeps the link non-broken.
+    }
+  }, [activeTab, isSpecialistUser, ready]);
+
   const initials = [firstName, lastName]
     .map((n) => n?.charAt(0)?.toUpperCase())
     .filter(Boolean)
     .join("");
 
-  const hasChanges = isSpecialistUser
-    ? !!specData &&
-      (firstName !== (specData.firstName ?? "") ||
-        lastName !== (specData.lastName ?? "") ||
-        avatarUrl !== (specData.avatarUrl ?? null) ||
-        description !== (specData.profile?.description ?? "") ||
-        officeAddress !== (specData.profile?.officeAddress ?? "") ||
-        workingHours !== (specData.profile?.workingHours ?? ""))
-    : firstName !== (user?.firstName ?? "") ||
+  // Per-tab change tracking.
+  const hasProfileChanges = useMemo(
+    () =>
+      firstName !== (user?.firstName ?? "") ||
       lastName !== (user?.lastName ?? "") ||
-      avatarUrl !== (user?.avatarUrl ?? null);
+      avatarUrl !== (user?.avatarUrl ?? null),
+    [firstName, lastName, avatarUrl, user?.firstName, user?.lastName, user?.avatarUrl],
+  );
+
+  const hasSpecialistChanges = useMemo(
+    () =>
+      !!specData &&
+      (description !== (specData.profile?.description ?? "") ||
+        officeAddress !== (specData.profile?.officeAddress ?? "") ||
+        workingHours !== (specData.profile?.workingHours ?? "")),
+    [specData, description, officeAddress, workingHours],
+  );
+
+  const showSaveBar =
+    (activeTab === "profile" && hasProfileChanges) ||
+    (activeTab === "specialist" && hasSpecialistChanges);
 
   const handleSaveClient = useCallback(async () => {
     if (saving) return;
@@ -264,7 +378,15 @@ export default function UnifiedSettings() {
     loadSpecialistData,
   ]);
 
-  const handleSave = isSpecialistUser ? handleSaveSpecialist : handleSaveClient;
+  // Save handler chosen by active tab. For profile tab — specialists still
+  // route through specialist save (it patches name/avatar consistently).
+  const handleSave = useCallback(() => {
+    if (activeTab === "specialist") return handleSaveSpecialist();
+    if (activeTab === "profile") {
+      return isSpecialistUser ? handleSaveSpecialist() : handleSaveClient();
+    }
+    return undefined;
+  }, [activeTab, isSpecialistUser, handleSaveClient, handleSaveSpecialist]);
 
   const applyAvailabilityChange = async (value: boolean) => {
     setIsAvailable(value);
@@ -384,6 +506,9 @@ export default function UnifiedSettings() {
                 try {
                   await apiPost("/api/user/leave-specialist", {});
                   updateUser({ isSpecialist: false, isAvailable: false });
+                  if (activeTab === "specialist") {
+                    handleTabChange("profile");
+                  }
                 } catch {
                   Alert.alert("Ошибка", "Не удалось выключить режим специалиста");
                 }
@@ -393,7 +518,7 @@ export default function UnifiedSettings() {
         );
       }
     },
-    [specData, updateUser, loadSpecialistData, router]
+    [specData, updateUser, loadSpecialistData, router, activeTab, handleTabChange, nav]
   );
 
   if (!ready) {
@@ -408,10 +533,17 @@ export default function UnifiedSettings() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Настройки" />
+
+      <SettingsTabs
+        activeTab={activeTab}
+        onChange={handleTabChange}
+        canEditSpecialist={isSpecialistUser}
+      />
+
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: hasChanges ? 96 : 32 }}
+        contentContainerStyle={{ paddingBottom: showSaveBar ? 96 : 32 }}
       >
         <View
           style={{
@@ -422,307 +554,336 @@ export default function UnifiedSettings() {
             paddingTop: 16,
           }}
         >
-          {/* 1. Личные данные */}
-          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-4">
-              Личные данные
-            </Text>
-
-            <View className="items-center mb-4">
-              <AvatarUploader
-                avatarUrl={avatarUrl}
-                avatarUploading={avatarUploading}
-                initials={initials}
-                onAvatarChange={setAvatarUrl}
-                onUploadStart={() => setAvatarUploading(true)}
-                onUploadEnd={() => setAvatarUploading(false)}
-              />
-              {/* Iter11-b — single RoleBadge replaces legacy duplicate labels.
-                  Unified with the badge in Sidebar/Header via RoleBadge. */}
-              <View className="mt-2">
-                <RoleBadge
-                  role={user?.role ?? null}
-                  isSpecialist={isSpecialistUser}
-                  size="md"
-                />
-              </View>
-            </View>
-
-            <View className="mb-3">
-              <Input
-                label="Имя"
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="Введите имя"
-                maxLength={50}
-              />
-            </View>
-
-            <View className="mb-3">
-              <Input
-                label="Фамилия"
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Введите фамилию"
-                maxLength={50}
-              />
-            </View>
-
-            <Text className="text-sm font-medium text-text-base mb-1.5">
-              Email{" "}
-              <Text className="text-text-mute font-normal">
-                (нельзя изменить)
-              </Text>
-            </Text>
-            <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center">
-              <Text className="text-base text-text-mute">
-                {user?.email ?? ""}
-              </Text>
-            </View>
-          </View>
-
-          {/* 2. Режим специалиста — единый тумблер */}
-          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-              Режим специалиста
-            </Text>
-            {/* Toggle: включить/выключить специалиста */}
-            <View className="flex-row items-center justify-between py-2">
-              <View className="flex-1 mr-4">
-                <Text className="text-base font-semibold text-text-base">
-                  Я специалист
-                </Text>
-                <Text className="text-xs text-text-mute mt-0.5">
-                  {isSpecialistUser
-                    ? "Клиенты могут найти вас через каталог"
-                    : "Включите, чтобы принимать заявки от клиентов"}
-                </Text>
-              </View>
-              <IosToggle value={isSpecialistUser} onChange={handleToggleSpecialist} />
-            </View>
-
-            {/* Принимаю заявки — только когда режим включён */}
-            {isSpecialistUser && (
-              <View className="flex-row items-center justify-between py-2 border-t border-border mt-2">
-                <View className="flex-1 mr-4">
-                  <Text className="text-base font-semibold text-text-base">
-                    Принимаю заявки
-                  </Text>
-                  <Text className="text-xs text-text-mute mt-0.5">
-                    {isAvailable
-                      ? "Вы видны клиентам и получаете заявки"
-                      : "Вы скрыты от клиентов — новые заявки не поступают"}
-                  </Text>
-                </View>
-                {availabilityLoading ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <IosToggle value={isAvailable} onChange={handleToggleAvailable} />
-                )}
-              </View>
-            )}
-          </View>
-
-          {isSpecialistUser && (
+          {/* TAB: ПРОФИЛЬ */}
+          {activeTab === "profile" && (
             <>
-
-              {/* Описание */}
+              {/* 1. Личные данные */}
               <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-                  О себе
+                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-4">
+                  Личные данные
                 </Text>
-                <Input
-                  label="Описание"
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder="Расскажите о своём опыте и специализации..."
-                  multiline
-                  numberOfLines={4}
-                  maxLength={500}
-                />
-                <Text className="text-xs text-text-dim text-right mt-1">
-                  {description.length}/500
-                </Text>
-              </View>
 
-              {/* ИФНС и услуги */}
-              <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-                  ИФНС и услуги
-                </Text>
-                {specLoading ? (
-                  <LoadingState variant="skeleton" lines={3} />
-                ) : specData && specData.fnsServices.length === 0 ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Добавить рабочую зону"
-                    onPress={() =>
-                      nav.any("/onboarding/work-area?from=settings")
-                    }
-                    className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
-                  >
-                    <Text className="text-sm text-accent font-medium">
-                      + Добавить ИФНС и услуги
-                    </Text>
-                  </Pressable>
-                ) : (
-                  <>
-                    {specData?.fnsServices.map((item) => (
-                      <View
-                        key={item.fns.id}
-                        className="bg-surface2 rounded-xl p-3 mb-2 border border-border"
-                      >
-                        <Text className="text-sm font-semibold text-text-base">
-                          {item.city.name} — {item.fns.name}
-                        </Text>
-                        <Text className="text-xs text-text-mute mb-1">
-                          {item.fns.code}
-                        </Text>
-                        <View className="flex-row flex-wrap gap-1 mt-1">
-                          {item.services.map((s) => (
-                            <View
-                              key={s.id}
-                              className="bg-accent-soft px-2.5 py-0.5 rounded-full"
-                            >
-                              <Text className="text-xs font-medium text-accent">
-                                {s.name}
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-                    ))}
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Изменить рабочую зону"
-                      onPress={() =>
-                        nav.any("/onboarding/work-area?from=settings")
-                      }
-                      className="flex-row items-center justify-center py-2 mt-1"
-                    >
-                      <Pencil size={13} color={colors.accent} />
-                      <Text className="text-sm text-accent ml-1.5 font-medium">
-                        Изменить рабочую зону
-                      </Text>
-                    </Pressable>
-                  </>
-                )}
-              </View>
+                <View className="items-center mb-4">
+                  <AvatarUploader
+                    avatarUrl={avatarUrl}
+                    avatarUploading={avatarUploading}
+                    initials={initials}
+                    onAvatarChange={setAvatarUrl}
+                    onUploadStart={() => setAvatarUploading(true)}
+                    onUploadEnd={() => setAvatarUploading(false)}
+                  />
+                  <View className="mt-2">
+                    <RoleBadge
+                      role={user?.role ?? null}
+                      isSpecialist={isSpecialistUser}
+                      size="md"
+                    />
+                  </View>
+                </View>
 
-              {/* Контакты */}
-              <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-                  Контакты
-                </Text>
-                <ContactMethodsList
-                  contacts={contacts}
-                  addingContact={addingContact}
-                  newContactType={newContactType}
-                  newContactValue={newContactValue}
-                  contactSaving={contactSaving}
-                  showTypePicker={showTypePicker}
-                  onContactsChange={setContacts}
-                  onAddingContactChange={setAddingContact}
-                  onNewContactTypeChange={setNewContactType}
-                  onNewContactValueChange={setNewContactValue}
-                  onContactSavingChange={setContactSaving}
-                  onShowTypePickerChange={setShowTypePicker}
-                />
-              </View>
-
-              {/* Офис */}
-              <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-                  Офис
-                </Text>
                 <View className="mb-3">
                   <Input
-                    label="Адрес офиса"
-                    value={officeAddress}
-                    onChangeText={setOfficeAddress}
-                    placeholder="Город, улица, дом"
+                    label="Имя"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    placeholder="Введите имя"
+                    maxLength={50}
                   />
                 </View>
-                <Input
-                  label="Часы работы"
-                  value={workingHours}
-                  onChangeText={setWorkingHours}
-                  placeholder="Пн-Пт 9:00-18:00"
-                />
+
+                <View className="mb-3">
+                  <Input
+                    label="Фамилия"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    placeholder="Введите фамилию"
+                    maxLength={50}
+                  />
+                </View>
+
+                <Text className="text-sm font-medium text-text-base mb-1.5">
+                  Email{" "}
+                  <Text className="text-text-mute font-normal">
+                    (нельзя изменить)
+                  </Text>
+                </Text>
+                <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center">
+                  <Text className="text-base text-text-mute">
+                    {user?.email ?? ""}
+                  </Text>
+                </View>
               </View>
 
+              {/* 2. Режим специалиста — единый тумблер */}
+              <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                  Режим специалиста
+                </Text>
+                <View className="flex-row items-center justify-between py-2">
+                  <View className="flex-1 mr-4">
+                    <Text className="text-base font-semibold text-text-base">
+                      Я специалист
+                    </Text>
+                    <Text className="text-xs text-text-mute mt-0.5">
+                      {isSpecialistUser
+                        ? "Клиенты могут найти вас через каталог"
+                        : "Включите, чтобы принимать заявки от клиентов"}
+                    </Text>
+                  </View>
+                  <IosToggle value={isSpecialistUser} onChange={handleToggleSpecialist} />
+                </View>
+
+                {isSpecialistUser && (
+                  <View className="flex-row items-center justify-between py-2 border-t border-border mt-2">
+                    <View className="flex-1 mr-4">
+                      <Text className="text-base font-semibold text-text-base">
+                        Принимаю заявки
+                      </Text>
+                      <Text className="text-xs text-text-mute mt-0.5">
+                        {isAvailable
+                          ? "Вы видны клиентам и получаете заявки"
+                          : "Вы скрыты от клиентов — новые заявки не поступают"}
+                      </Text>
+                    </View>
+                    {availabilityLoading ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <IosToggle value={isAvailable} onChange={handleToggleAvailable} />
+                    )}
+                  </View>
+                )}
+              </View>
             </>
           )}
 
-          {/* 3. Уведомления (SA: email-only in MVP) */}
-          <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-              Уведомления
-            </Text>
-            <NotificationPreferences
-              pushEnabled={pushEnabled}
-              emailEnabled={emailEnabled}
-              onPushChange={setPushEnabled}
-              onEmailChange={setEmailEnabled}
-            />
-          </View>
+          {/* TAB: СПЕЦИАЛИСТ */}
+          {activeTab === "specialist" && (
+            <>
+              {!isSpecialistUser ? (
+                <View className="bg-white border border-border rounded-2xl px-5 py-8 mb-4 items-center">
+                  <Text className="text-base font-semibold text-text-base mb-2 text-center">
+                    Режим специалиста выключен
+                  </Text>
+                  <Text className="text-sm text-text-mute text-center mb-4">
+                    Включите его на вкладке Профиль, чтобы редактировать профиль специалиста.
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => handleTabChange("profile")}
+                    className="px-4 py-2 rounded-xl bg-accent-soft"
+                  >
+                    <Text className="text-sm font-medium text-accent">
+                      Перейти на Профиль
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  {/* Описание */}
+                  <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+                    <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                      О себе
+                    </Text>
+                    <Input
+                      label="Описание"
+                      value={description}
+                      onChangeText={setDescription}
+                      placeholder="Расскажите о своём опыте и специализации..."
+                      multiline
+                      numberOfLines={4}
+                      maxLength={500}
+                    />
+                    <Text className="text-xs text-text-dim text-right mt-1">
+                      {description.length}/500
+                    </Text>
+                  </View>
 
-          {/* 4. Правовая информация */}
-          <View className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 overflow-hidden">
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
-              Правовая информация
-            </Text>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Правовые документы"
-              onPress={() => nav.routes.legalIndex()}
-              className="flex-row items-center min-h-[44px]"
-            >
-              <FileText size={16} color={colors.placeholder} />
-              <Text className="text-base text-text-base ml-3 flex-1">Правовые документы</Text>
-              <ChevronRight size={14} color={colors.borderLight} />
-            </Pressable>
-          </View>
+                  {/* ИФНС и услуги */}
+                  <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+                    <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                      ИФНС и услуги
+                    </Text>
+                    {specLoading ? (
+                      <LoadingState variant="skeleton" lines={3} />
+                    ) : specData && specData.fnsServices.length === 0 ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Добавить рабочую зону"
+                        onPress={() =>
+                          nav.any("/onboarding/work-area?from=settings")
+                        }
+                        className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
+                      >
+                        <Text className="text-sm text-accent font-medium">
+                          + Добавить ИФНС и услуги
+                        </Text>
+                      </Pressable>
+                    ) : (
+                      <>
+                        {specData?.fnsServices.map((item) => (
+                          <View
+                            key={item.fns.id}
+                            className="bg-surface2 rounded-xl p-3 mb-2 border border-border"
+                          >
+                            <Text className="text-sm font-semibold text-text-base">
+                              {item.city.name} — {item.fns.name}
+                            </Text>
+                            <Text className="text-xs text-text-mute mb-1">
+                              {item.fns.code}
+                            </Text>
+                            <View className="flex-row flex-wrap gap-1 mt-1">
+                              {item.services.map((s) => (
+                                <View
+                                  key={s.id}
+                                  className="bg-accent-soft px-2.5 py-0.5 rounded-full"
+                                >
+                                  <Text className="text-xs font-medium text-accent">
+                                    {s.name}
+                                  </Text>
+                                </View>
+                              ))}
+                            </View>
+                          </View>
+                        ))}
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Изменить рабочую зону"
+                          onPress={() =>
+                            nav.any("/onboarding/work-area?from=settings")
+                          }
+                          className="flex-row items-center justify-center py-2 mt-1"
+                        >
+                          <Pencil size={13} color={colors.accent} />
+                          <Text className="text-sm text-accent ml-1.5 font-medium">
+                            Изменить рабочую зону
+                          </Text>
+                        </Pressable>
+                      </>
+                    )}
+                  </View>
 
-          {/* 5. Аккаунт */}
-          <View className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 overflow-hidden">
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
-              Аккаунт
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Выйти из аккаунта"
-              onPress={handleLogout}
-              className="flex-row items-center min-h-[44px] border-b border-border"
-            >
-              <LogOut size={16} color={colors.error} />
-              <Text className="text-base text-danger ml-3 flex-1">
-                Выйти из аккаунта
+                  {/* Контакты */}
+                  <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+                    <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                      Контакты
+                    </Text>
+                    <ContactMethodsList
+                      contacts={contacts}
+                      addingContact={addingContact}
+                      newContactType={newContactType}
+                      newContactValue={newContactValue}
+                      contactSaving={contactSaving}
+                      showTypePicker={showTypePicker}
+                      onContactsChange={setContacts}
+                      onAddingContactChange={setAddingContact}
+                      onNewContactTypeChange={setNewContactType}
+                      onNewContactValueChange={setNewContactValue}
+                      onContactSavingChange={setContactSaving}
+                      onShowTypePickerChange={setShowTypePicker}
+                    />
+                  </View>
+
+                  {/* Офис */}
+                  <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+                    <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                      Офис
+                    </Text>
+                    <View className="mb-3">
+                      <Input
+                        label="Адрес офиса"
+                        value={officeAddress}
+                        onChangeText={setOfficeAddress}
+                        placeholder="Город, улица, дом"
+                      />
+                    </View>
+                    <Input
+                      label="Часы работы"
+                      value={workingHours}
+                      onChangeText={setWorkingHours}
+                      placeholder="Пн-Пт 9:00-18:00"
+                    />
+                  </View>
+                </>
+              )}
+            </>
+          )}
+
+          {/* TAB: УВЕДОМЛЕНИЯ */}
+          {activeTab === "notifications" && (
+            <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+              <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                Уведомления
               </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Удалить аккаунт"
-              onPress={handleDeleteAccount}
-              className="flex-row items-center min-h-[44px]"
-            >
-              <Trash2 size={16} color={colors.error} />
-              <Text className="text-base text-danger ml-3 flex-1">
-                Удалить аккаунт
-              </Text>
-            </Pressable>
-            <Text className="text-xs text-text-mute mt-1">
-              Аккаунт будет анонимизирован и скрыт. Восстановление невозможно. История переписок останется у других участников.
-            </Text>
-          </View>
+              <NotificationPreferences
+                pushEnabled={pushEnabled}
+                emailEnabled={emailEnabled}
+                onPushChange={setPushEnabled}
+                onEmailChange={setEmailEnabled}
+              />
+            </View>
+          )}
 
-          <Text className="text-xs text-text-dim text-center mb-4">
-            Версия {Constants.expoConfig?.version ?? "1.0.0"}
-          </Text>
+          {/* TAB: АККАУНТ */}
+          {activeTab === "account" && (
+            <>
+              {/* Правовая информация */}
+              <View className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 overflow-hidden">
+                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
+                  Правовая информация
+                </Text>
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Правовые документы"
+                  onPress={() => nav.routes.legalIndex()}
+                  className="flex-row items-center min-h-[44px]"
+                >
+                  <FileText size={16} color={colors.placeholder} />
+                  <Text className="text-base text-text-base ml-3 flex-1">Правовые документы</Text>
+                  <ChevronRight size={14} color={colors.borderLight} />
+                </Pressable>
+              </View>
+
+              {/* Аккаунт */}
+              <View className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 overflow-hidden">
+                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
+                  Аккаунт
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Выйти из аккаунта"
+                  onPress={handleLogout}
+                  className="flex-row items-center min-h-[44px] border-b border-border"
+                >
+                  <LogOut size={16} color={colors.error} />
+                  <Text className="text-base text-danger ml-3 flex-1">
+                    Выйти из аккаунта
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Удалить аккаунт"
+                  onPress={handleDeleteAccount}
+                  className="flex-row items-center min-h-[44px]"
+                >
+                  <Trash2 size={16} color={colors.error} />
+                  <Text className="text-base text-danger ml-3 flex-1">
+                    Удалить аккаунт
+                  </Text>
+                </Pressable>
+                <Text className="text-xs text-text-mute mt-1">
+                  Аккаунт будет анонимизирован и скрыт. Восстановление невозможно. История переписок останется у других участников.
+                </Text>
+              </View>
+
+              <Text className="text-xs text-text-dim text-center mb-4">
+                Версия {Constants.expoConfig?.version ?? "1.0.0"}
+              </Text>
+            </>
+          )}
         </View>
       </ScrollView>
 
-      {hasChanges ? (
+      {showSaveBar ? (
         <View
           className="border-t border-border bg-white px-6 py-3 flex-row justify-end items-center"
           style={{
