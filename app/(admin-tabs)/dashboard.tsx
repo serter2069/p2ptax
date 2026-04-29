@@ -21,6 +21,7 @@ import {
   UserPlus,
 } from "lucide-react-native";
 import DesktopScreen from "@/components/layout/DesktopScreen";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import ErrorState from "@/components/ui/ErrorState";
 import {
   DashboardGrid,
@@ -135,7 +136,7 @@ export default function AdminDashboard() {
         const recents = await api<{ items: AdminUser[] }>(
           "/api/admin/users?limit=5"
         );
-        setRecentUsers(recents.items ?? []);
+        setRecentUsers(Array.isArray(recents?.items) ? recents.items : []);
       } catch {
         setRecentUsers([]);
       }
@@ -144,7 +145,7 @@ export default function AdminDashboard() {
         const c = await api<{ items: ComplaintItem[]; total: number }>(
           "/api/admin/complaints?status=PENDING&limit=5"
         );
-        setComplaints(c.items ?? []);
+        setComplaints(Array.isArray(c?.items) ? c.items : []);
       } catch {
         setComplaints([]);
       }
@@ -169,7 +170,7 @@ export default function AdminDashboard() {
 
   const recentUsersItems: FeedItem[] = useMemo(
     () =>
-      recentUsers.map((u) => ({
+      (recentUsers ?? []).map((u) => ({
         id: u.id,
         title: formatUserName(u),
         meta: `${u.role} · ${formatDateShort(u.createdAt)}`,
@@ -183,7 +184,7 @@ export default function AdminDashboard() {
 
   const complaintsItems: FeedItem[] = useMemo(
     () =>
-      complaints.map((c) => ({
+      (complaints ?? []).map((c) => ({
         id: c.id,
         title: c.reason.length > 60 ? `${c.reason.slice(0, 60)}…` : c.reason,
         meta: `от ${formatUserName(c.reporter)} · ${formatDateShort(c.createdAt)}`,
@@ -195,7 +196,8 @@ export default function AdminDashboard() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
+    <ErrorBoundary fallbackMessage="Не удалось загрузить панель">
+      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <ScrollView
         className="flex-1"
         refreshControl={
@@ -281,7 +283,7 @@ export default function AdminDashboard() {
                 <DashboardGrid.Col span={8} tabletSpan={2}>
                   <DashboardWidget
                     title="Recent signups"
-                    subtitle={`${recentUsers.length} последних`}
+                    subtitle={`${recentUsers?.length ?? 0} последних`}
                     icon={UserCheck}
                     actionLabel="Все →"
                     onActionPress={() =>
@@ -332,7 +334,7 @@ export default function AdminDashboard() {
                       title="Требуют реакции"
                       subtitle="Топ жалоб для модерации"
                       icon={AlertOctagon}
-                      accentBar={complaints.length > 0 ? "danger" : "success"}
+                      accentBar={(complaints?.length ?? 0) > 0 ? "danger" : "success"}
                       actionLabel="Все →"
                       onActionPress={() =>
                         nav.routes.adminComplaints()
@@ -415,6 +417,7 @@ export default function AdminDashboard() {
         </DesktopScreen>
       </ScrollView>
     </SafeAreaView>
+    </ErrorBoundary>
   );
 }
 
