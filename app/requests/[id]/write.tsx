@@ -6,20 +6,47 @@ import {
   ScrollView,
   useWindowDimensions,
   Platform,
+  Pressable,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import * as DocumentPicker from "expo-document-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTypedRouter } from "@/lib/navigation";
 import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import { Send } from "lucide-react-native";
-import { api, ApiError } from "@/lib/api";
+import { Send, Paperclip, X } from "lucide-react-native";
+import { api, ApiError, API_URL } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, radiusValue, fontSizeValue, BREAKPOINT } from "@/lib/theme";
+
+interface PendingFile {
+  uri: string;
+  name: string;
+  size: number;
+  mimeType: string;
+}
+
+const CHAT_FILE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB — must match api/src/routes/upload.ts (chatFileUpload)
+const TOKEN_KEY = "p2ptax_access_token";
+
+function chatUploadErrorMessage(status: number): string {
+  if (status === 413) return "Файл слишком большой. Максимум 10 МБ.";
+  if (status === 429) return "Слишком много загрузок. Попробуйте через минуту.";
+  if (status === 0) return "Нет связи с сервером.";
+  return "Не удалось загрузить файл. Попробуйте ещё раз.";
+}
+
+function generateUploadToken(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 interface RequestSummary {
   id: string;
@@ -55,6 +82,8 @@ export default function SpecialistConfirmWrite() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<PendingFile | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -87,17 +116,107 @@ export default function SpecialistConfirmWrite() {
     }
   }, [ready, isSpecialistUser, load]);
 
+  const handleAttachFile = useCallback(async () => {
+    if (pendingFile) {
+      Alert.alert("Лимит файлов", "Можно прикрепить только один файл к первому сообщению");
+      return;
+    }
+    setUploadError(null);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/jpeg", "image/png"],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      const fileSize = asset.size ?? 0;
+      if (fileSize > CHAT_FILE_MAX_BYTES) {
+        Alert.alert("Файл слишком большой", "Максимальный размер файла — 10 МБ");
+        return;
+      }
+      setPendingFile({
+        uri: asset.uri,
+        name: asset.name,
+        size: fileSize,
+        mimeType: asset.mimeType ?? "application/octet-stream",
+      });
+    } catch (e) {
+      console.error("document picker error:", e);
+    }
+  }, [pendingFile]);
+
+  const handleRemoveFile = useCallback(() => {
+    setPendingFile(null);
+    setUploadError(null);
+  }, []);
+
+  const uploadPendingFile = useCallback(
+    async (file: PendingFile): Promise<string> => {
+      const uploadToken = generateUploadToken();
+      const formData = new FormData();
+      formData.append("file", {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType,
+      } as unknown as Blob);
+      formData.append("uploadToken", uploadToken);
+      // NOTE: no threadId — the upload endpoint stores under chat-files/_pending/
+      // and threads.ts links it to the first message when the thread is created.
+
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      let res: Response;
+      try {
+        res = await fetch(`${API_URL}/api/upload/chat-file`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
+        });
+      } catch {
+        throw new ApiError(0, chatUploadErrorMessage(0));
+      }
+
+      if (!res.ok) {
+        throw new ApiError(res.status, chatUploadErrorMessage(res.status));
+      }
+
+      const data = (await res.json()) as { uploadToken: string };
+      return data.uploadToken;
+    },
+    []
+  );
+
   const handleSend = async () => {
     if (message.length < MIN_CHARS || sending) return;
     if (rateLimit && rateLimit.writesToday >= DAILY_LIMIT) return;
 
     setSending(true);
     setSubmitError(null);
+    setUploadError(null);
 
     try {
+      let uploadToken: string | undefined;
+      if (pendingFile) {
+        try {
+          uploadToken = await uploadPendingFile(pendingFile);
+        } catch (uploadErr) {
+          if (uploadErr instanceof ApiError) {
+            setUploadError(uploadErr.message);
+          } else {
+            setUploadError(chatUploadErrorMessage(0));
+          }
+          setSending(false);
+          return;
+        }
+      }
+
       const result = await api<{ id: string }>("/api/threads", {
         method: "POST",
-        body: { requestId: id, firstMessage: message },
+        body: {
+          requestId: id,
+          firstMessage: message,
+          ...(uploadToken ? { uploadToken } : {}),
+        },
       });
       nav.replaceAny(`/threads/${result.id}`);
     } catch (err) {
@@ -279,6 +398,44 @@ export default function SpecialistConfirmWrite() {
             >
               {message.length}/{MAX_CHARS}
             </Text>
+          </View>
+
+          {/* File attachment row */}
+          <View className="mt-3">
+            {pendingFile ? (
+              <View className="flex-row items-center justify-between bg-slate-100 border border-slate-200 rounded-xl px-3 py-2">
+                <View className="flex-1 mr-2">
+                  <Text className="text-sm text-slate-900" numberOfLines={1}>
+                    {pendingFile.name}
+                  </Text>
+                  <Text className="text-xs text-slate-500">
+                    {(pendingFile.size / 1024).toFixed(0)} КБ
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Удалить файл"
+                  onPress={handleRemoveFile}
+                  hitSlop={8}
+                  className="p-1"
+                >
+                  <X size={18} color={colors.text} />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                accessibilityLabel="Прикрепить файл"
+                onPress={handleAttachFile}
+                disabled={isLimitReached || sending}
+                className="flex-row items-center self-start px-3 py-2 rounded-xl border border-slate-200 bg-white"
+                style={{ opacity: isLimitReached || sending ? 0.5 : 1 }}
+              >
+                <Paperclip size={16} color={colors.text} />
+                <Text className="text-sm text-slate-700 ml-2">Прикрепить файл</Text>
+              </Pressable>
+            )}
+            {uploadError && (
+              <Text className="text-xs text-red-500 mt-2">{uploadError}</Text>
+            )}
           </View>
 
           {/* Submit error */}

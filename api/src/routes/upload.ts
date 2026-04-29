@@ -157,16 +157,17 @@ router.post("/chat-file", authMiddleware, uploadRateLimiter, chatFileUpload.sing
       return;
     }
 
-    if (!threadId || typeof threadId !== "string") {
-      res.status(400).json({ error: "threadId is required" });
-      return;
-    }
+    // threadId is OPTIONAL — when omitted, the upload goes to a "_pending" namespace
+    // so the file can be linked later when the thread is created (specialist's first response).
+    const hasThread = typeof threadId === "string" && threadId.length > 0;
 
     await ensureMinioBucket();
 
     // Sanitize filename: replace unsafe chars, preserve extension
     const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const key = `chat-files/${threadId}/${uploadToken}_${safeName}`;
+    const key = hasThread
+      ? `chat-files/${threadId}/${uploadToken}_${safeName}`
+      : `chat-files/_pending/${uploadToken}_${safeName}`;
 
     await minioClient.putObject(MINIO_BUCKET, key, req.file.buffer, req.file.size, {
       "Content-Type": req.file.mimetype,

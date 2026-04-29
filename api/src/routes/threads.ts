@@ -1,9 +1,53 @@
 import { Router, Request, Response } from "express";
+import * as Minio from "minio";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
 
 const router = Router();
+
+const BUCKET = process.env.MINIO_BUCKET || "p2ptax";
+
+function getMinioClient(): Minio.Client {
+  return new Minio.Client({
+    endPoint: process.env.MINIO_ENDPOINT || "localhost",
+    port: parseInt(process.env.MINIO_PORT || "9000", 10),
+    useSSL: process.env.MINIO_USE_SSL === "true",
+    accessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
+    secretKey: process.env.MINIO_SECRET_KEY || "minioadmin",
+  });
+}
+
+// Resolve a pending uploadToken (uploaded before the thread existed) to its MinIO object key.
+// Returns null if not found.
+async function resolvePendingUpload(
+  uploadToken: string
+): Promise<{ key: string; filename: string } | null> {
+  const client = getMinioClient();
+  const prefix = `chat-files/_pending/${uploadToken}_`;
+  try {
+    return await new Promise((resolve, reject) => {
+      const stream = client.listObjects(BUCKET, prefix, false);
+      let found: Minio.BucketItem | null = null;
+      stream.on("data", (obj: Minio.BucketItem) => {
+        if (!found) found = obj;
+      });
+      stream.on("end", () => {
+        if (found && found.name) {
+          const rawName = found.name.split("/").pop() ?? "file";
+          const underscoreIdx = rawName.indexOf("_");
+          const filename = underscoreIdx >= 0 ? rawName.slice(underscoreIdx + 1) : rawName;
+          resolve({ key: found.name, filename });
+        } else {
+          resolve(null);
+        }
+      });
+      stream.on("error", reject);
+    });
+  } catch {
+    return null;
+  }
+}
 
 // GET /api/threads/sample — dev helper: first thread ID for metromap URL resolver
 router.get("/sample", async (_req: Request, res: Response) => {
@@ -391,7 +435,11 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { requestId, firstMessage } = req.body;
+    const { requestId, firstMessage, uploadToken } = req.body as {
+      requestId?: string;
+      firstMessage?: string;
+      uploadToken?: string;
+    };
 
     if (!requestId || !firstMessage) {
       res.status(400).json({ error: "requestId and firstMessage are required" });
@@ -486,6 +534,7 @@ router.post("/", async (req: Request, res: Response) => {
         },
         include: {
           request: { select: { id: true, title: true, status: true } },
+          messages: { select: { id: true }, take: 1 },
         },
       });
 
@@ -498,6 +547,30 @@ router.post("/", async (req: Request, res: Response) => {
     });
 
     const thread = result;
+
+    // If specialist attached a pending file (uploaded before the thread existed),
+    // link it to the first message. Failures are silent — the thread+message must succeed
+    // even if the upload step has trouble.
+    if (uploadToken && typeof uploadToken === "string" && uploadToken.length >= 8) {
+      try {
+        const resolved = await resolvePendingUpload(uploadToken);
+        const firstMessageId = thread.messages[0]?.id;
+        if (resolved && firstMessageId) {
+          await prisma.file.create({
+            data: {
+              entityType: "message",
+              entityId: firstMessageId,
+              url: `/${BUCKET}/${resolved.key}`,
+              filename: resolved.filename,
+              size: 0,
+              mimeType: "application/octet-stream",
+            },
+          });
+        }
+      } catch (linkErr) {
+        console.warn("[threads] failed to link uploadToken file:", linkErr);
+      }
+    }
 
     // Notify client: specialist started a new thread on their request
     // SA: «Специалист X написал по вашей заявке 'TITLE'»
