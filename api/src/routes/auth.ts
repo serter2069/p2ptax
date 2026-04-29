@@ -155,6 +155,9 @@ router.post("/verify-otp", verifyOtpRateLimiter, async (req: Request, res: Respo
         isSpecialist: user.isSpecialist,
         firstName: user.firstName,
         lastName: user.lastName,
+        specialistProfileCompletedAt: user.specialistProfileCompletedAt
+          ? user.specialistProfileCompletedAt.toISOString()
+          : null,
       },
     });
   } catch (error) {
@@ -213,6 +216,9 @@ router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) 
         isSpecialist: storedToken.user.isSpecialist,
         firstName: storedToken.user.firstName,
         lastName: storedToken.user.lastName,
+        specialistProfileCompletedAt: storedToken.user.specialistProfileCompletedAt
+          ? storedToken.user.specialistProfileCompletedAt.toISOString()
+          : null,
       },
     });
   } catch (error) {
