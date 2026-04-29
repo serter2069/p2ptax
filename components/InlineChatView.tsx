@@ -95,6 +95,8 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
+  const PAGE_SIZE = 50;
+
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [thread, setThread] = useState<ThreadInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,6 +106,9 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [hasMoreOlder, setHasMoreOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [oldestMessageId, setOldestMessageId] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -114,15 +119,46 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const otherUser = thread?.otherUser ?? null;
   const otherName = otherUser ? displayName(otherUser) : "Чат";
 
+  // Initial fetch / refresh: pulls the latest PAGE_SIZE messages.
+  // Polling reuses this; older pages stay in `messages` only on the first poll
+  // (refresh resets the paged window — acceptable trade-off for poll simplicity).
   const fetchMessages = useCallback(async () => {
     if (!threadId) return;
     try {
-      const res = await api<{ messages: MessageItem[] }>(`/api/messages/${threadId}`);
+      const res = await api<{
+        messages: MessageItem[];
+        hasMore?: boolean;
+        nextCursor?: string | null;
+      }>(`/api/messages/${threadId}?limit=${PAGE_SIZE}`);
       setMessages(res.messages);
+      setHasMoreOlder(Boolean(res.hasMore));
+      setOldestMessageId(res.nextCursor ?? (res.messages[0]?.id ?? null));
     } catch (e) {
       // ignore
     }
   }, [threadId]);
+
+  // Load one page of older messages, prepending to `messages`.
+  const loadOlder = useCallback(async () => {
+    if (!threadId || !oldestMessageId || loadingOlder || !hasMoreOlder) return;
+    setLoadingOlder(true);
+    try {
+      const res = await api<{
+        messages: MessageItem[];
+        hasMore?: boolean;
+        nextCursor?: string | null;
+      }>(`/api/messages/${threadId}?limit=${PAGE_SIZE}&before=${encodeURIComponent(oldestMessageId)}`);
+      if (res.messages.length > 0) {
+        setMessages((prev) => [...res.messages, ...prev]);
+      }
+      setHasMoreOlder(Boolean(res.hasMore));
+      setOldestMessageId(res.nextCursor ?? (res.messages[0]?.id ?? oldestMessageId));
+    } catch (e) {
+      console.error("load older messages error:", e);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [threadId, oldestMessageId, loadingOlder, hasMoreOlder]);
 
   const fetchThread = useCallback(async () => {
     if (!threadId) return;
@@ -417,8 +453,39 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           renderItem={renderMessage}
           contentContainerStyle={{ padding: 16, flexGrow: 1, justifyContent: "flex-end" }}
           onContentSizeChange={() => {
-            flatListRef.current?.scrollToEnd({ animated: false });
+            // Scroll to bottom only on initial load / new messages.
+            // When loading older messages, prepended items would otherwise
+            // jerk the list to the bottom. `loadingOlder` short-circuits that.
+            if (!loadingOlder) {
+              flatListRef.current?.scrollToEnd({ animated: false });
+            }
           }}
+          ListHeaderComponent={
+            hasMoreOlder ? (
+              <View className="items-center py-3">
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Загрузить старые сообщения"
+                  onPress={loadOlder}
+                  disabled={loadingOlder}
+                  className="px-4 py-2 rounded-xl border border-slate-200"
+                  style={({ pressed }) => [
+                    { backgroundColor: "#f8fafc" },
+                    pressed && { opacity: 0.7 },
+                    loadingOlder && { opacity: 0.6 },
+                  ]}
+                >
+                  {loadingOlder ? (
+                    <ActivityIndicator size="small" color="#1e3a8a" />
+                  ) : (
+                    <Text className="text-sm font-medium" style={{ color: "#1e3a8a" }}>
+                      Загрузить старые сообщения
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-16">
               <FontAwesome name="comments-o" size={48} color={colors.textSecondary} />

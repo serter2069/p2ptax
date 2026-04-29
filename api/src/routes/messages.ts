@@ -151,6 +151,17 @@ router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // GET /api/messages/:threadId — get messages in thread (with file attachments)
+//
+// Pagination (cursor-based, opt-in):
+//   ?limit=50          → return latest 50 messages (ASC for display)
+//   ?limit=50&before=X → return 50 messages older than message id X (ASC for display)
+//
+// Backward compatibility: if `limit` is NOT provided, returns ALL messages
+// (legacy behavior) so older clients continue to work.
+//
+// Response shape (paginated): { messages, hasMore, nextCursor }
+//   nextCursor = id of the OLDEST message in the returned page (use as `before` for next page)
+//   hasMore    = whether more older messages likely exist (page filled exactly to limit)
 router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -170,15 +181,63 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
       return;
     }
 
-    const messages = await prisma.message.findMany({
-      where: { threadId },
-      include: {
-        sender: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+    // Parse pagination params. `limit` presence = paginated mode.
+    const limitRaw = param(req.query.limit as string | string[] | undefined);
+    const beforeRaw = param(req.query.before as string | string[] | undefined);
+    const paginated = limitRaw !== "";
+    let limit = 50;
+    if (paginated) {
+      const parsed = parseInt(limitRaw, 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        limit = Math.min(parsed, 100);
+      }
+    }
+
+    type MessageRow = Awaited<ReturnType<typeof prisma.message.findMany>>[number];
+    let messages: MessageRow[];
+
+    if (!paginated) {
+      // Legacy: return ALL messages, ASC order.
+      messages = await prisma.message.findMany({
+        where: { threadId },
+        include: {
+          sender: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+          },
         },
-      },
-      orderBy: { createdAt: "asc" },
-    });
+        orderBy: { createdAt: "asc" },
+      });
+    } else if (beforeRaw) {
+      // Older page: messages older than `before` cursor.
+      // Strategy: order DESC by createdAt, use cursor on the `before` id, skip 1, take limit.
+      // Then reverse client-side response so frontend gets ASC.
+      const olderDesc = await prisma.message.findMany({
+        where: { threadId },
+        include: {
+          sender: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        cursor: { id: beforeRaw },
+        skip: 1,
+        take: limit,
+      });
+      messages = olderDesc.reverse();
+    } else {
+      // First page: latest `limit` messages, returned ASC for display.
+      const latestDesc = await prisma.message.findMany({
+        where: { threadId },
+        include: {
+          sender: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+      });
+      messages = latestDesc.reverse();
+    }
 
     // Attach files for each message
     const messageIds = messages.map((m) => m.id);
@@ -200,7 +259,16 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
       files: filesByMessage[m.id] || [],
     }));
 
-    res.json({ messages: result });
+    if (!paginated) {
+      res.json({ messages: result });
+      return;
+    }
+
+    res.json({
+      messages: result,
+      hasMore: result.length === limit,
+      nextCursor: result.length > 0 ? result[0].id : null,
+    });
   } catch (error) {
     console.error("get messages error:", error);
     res.status(500).json({ error: "Internal server error" });
