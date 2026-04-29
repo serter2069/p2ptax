@@ -33,17 +33,31 @@ interface RequestItem {
   threadsCount: number;
 }
 
-// ── Toast ──────────────────────────────────────────────────────────────
-function Toast({ message, visible }: { message: string; visible: boolean }) {
+// ── Undo Toast ─────────────────────────────────────────────────────────
+function UndoToast({
+  message,
+  visible,
+  onUndo,
+}: {
+  message: string;
+  visible: boolean;
+  onUndo: () => void;
+}) {
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.delay(1800),
-        Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-      ]).start();
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
     }
   }, [visible, opacity]);
 
@@ -53,10 +67,18 @@ function Toast({ message, visible }: { message: string; visible: boolean }) {
     <Animated.View
       style={{ opacity }}
       className="absolute bottom-24 left-0 right-0 items-center z-50 px-4"
-      pointerEvents="none"
     >
-      <View className="bg-text-base px-4 py-2 rounded-full">
+      <View className="bg-text-base px-4 py-2 rounded-full flex-row items-center gap-3">
         <Text className="text-white text-sm font-medium">{message}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Отменить"
+          onPress={onUndo}
+          className="px-2 py-1"
+          style={{ minHeight: 32, justifyContent: "center" }}
+        >
+          <Text className="text-accent text-sm font-bold uppercase">Отменить</Text>
+        </Pressable>
       </View>
     </Animated.View>
   );
@@ -237,12 +259,12 @@ export default function MyRequests() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState(false);
-
-  const showToast = useCallback(() => {
-    setToast(true);
-    setTimeout(() => setToast(false), 2400);
-  }, []);
+  const [undoVisible, setUndoVisible] = useState(false);
+  const pendingRef = useRef<{
+    id: string;
+    prevStatus: RequestItem["status"];
+    timer: ReturnType<typeof setTimeout> | null;
+  } | null>(null);
 
   const fetchRequests = useCallback(async () => {
     setError(null);
@@ -265,35 +287,111 @@ export default function MyRequests() {
     setRefreshing(false);
   }, [fetchRequests]);
 
-  const handleClose = useCallback(
-    (id: string, title: string) => {
-      Alert.alert(
-        "Закрыть заявку",
-        "Закрыть заявку? Это действие нельзя отменить.",
-        [
-          { text: "Отмена", style: "cancel" },
+  // Cross-platform confirm: native uses Alert, web uses window.confirm.
+  const confirmDestructive = useCallback(
+    (title: string, message: string): Promise<boolean> => {
+      if (Platform.OS === "web") {
+        // Avoid blocking promise return inside Alert callbacks on web.
+        const ok =
+          typeof window !== "undefined" && typeof window.confirm === "function"
+            ? window.confirm(`${title}\n\n${message}`)
+            : true;
+        return Promise.resolve(ok);
+      }
+      return new Promise((resolve) => {
+        Alert.alert(title, message, [
+          { text: "Отмена", style: "cancel", onPress: () => resolve(false) },
           {
-            text: "Да, закрыть",
+            text: "Удалить",
             style: "destructive",
-            onPress: async () => {
-              try {
-                await apiPatch(`/api/requests/${id}/status`, { status: "CLOSED" });
-                setRequests((prev) =>
-                  prev.map((r) =>
-                    r.id === id ? { ...r, status: "CLOSED" as const } : r
-                  )
-                );
-                showToast();
-              } catch (e) {
-                Alert.alert("Ошибка", "Не удалось закрыть заявку");
-              }
-            },
+            onPress: () => resolve(true),
           },
-        ]
-      );
+        ]);
+      });
     },
-    [showToast]
+    []
   );
+
+  const commitClose = useCallback(async () => {
+    const pending = pendingRef.current;
+    if (!pending) return;
+    pendingRef.current = null;
+    setUndoVisible(false);
+    try {
+      await apiPatch(`/api/requests/${pending.id}/status`, { status: "CLOSED" });
+    } catch (e) {
+      // Roll back optimistic state on failure
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === pending.id ? { ...r, status: pending.prevStatus } : r
+        )
+      );
+      Alert.alert("Ошибка", "Не удалось закрыть заявку");
+    }
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    const pending = pendingRef.current;
+    if (!pending) return;
+    if (pending.timer) clearTimeout(pending.timer);
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.id === pending.id ? { ...r, status: pending.prevStatus } : r
+      )
+    );
+    pendingRef.current = null;
+    setUndoVisible(false);
+  }, []);
+
+  const handleClose = useCallback(
+    async (id: string, _title: string) => {
+      const ok = await confirmDestructive(
+        "Удалить заявку?",
+        "Заявка будет закрыта. У вас будет 5 секунд, чтобы отменить."
+      );
+      if (!ok) return;
+
+      // If another close is pending, commit it immediately to keep state clean.
+      if (pendingRef.current) {
+        const prev = pendingRef.current;
+        if (prev.timer) clearTimeout(prev.timer);
+        await commitClose();
+      }
+
+      const target = requests.find((r) => r.id === id);
+      const prevStatus: RequestItem["status"] = target ? target.status : "ACTIVE";
+
+      // Optimistic update
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, status: "CLOSED" as const } : r
+        )
+      );
+
+      const timer = setTimeout(() => {
+        commitClose();
+      }, 5000);
+
+      pendingRef.current = { id, prevStatus, timer };
+      setUndoVisible(true);
+    },
+    [confirmDestructive, commitClose, requests]
+  );
+
+  // Cleanup on unmount: commit any pending close so user's intent survives.
+  useEffect(() => {
+    return () => {
+      const pending = pendingRef.current;
+      if (pending?.timer) {
+        clearTimeout(pending.timer);
+        // Fire-and-forget commit; component unmounting.
+        apiPatch(`/api/requests/${pending.id}/status`, { status: "CLOSED" }).catch(
+          () => {}
+        );
+        pendingRef.current = null;
+      }
+    };
+  }, []);
 
   const handleRequestPress = useCallback(
     (id: string) => {
@@ -376,8 +474,12 @@ export default function MyRequests() {
         {renderContent()}
       </DesktopScreen>
 
-      {/* Toast */}
-      <Toast message="Заявка закрыта" visible={toast} />
+      {/* Undo toast: 5-sec window to revert the close */}
+      <UndoToast
+        message="Заявка удалена"
+        visible={undoVisible}
+        onUndo={handleUndo}
+      />
     </SafeAreaView>
   );
 }
