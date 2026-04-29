@@ -33,6 +33,7 @@ export const ROUTES = {
   // Tabs (user)
   tabs: "/(tabs)",
   tabsHome: "/(tabs)",
+  dashboard: "/(tabs)/dashboard",
   tabsRequests: "/(tabs)/requests",
   tabsMessages: "/(tabs)/messages",
   tabsPublicRequests: "/(tabs)/public-requests",

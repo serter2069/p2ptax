@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, ScrollView, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, ScrollView, useWindowDimensions, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -14,9 +14,7 @@ import ServicesSection from "@/components/landing/ServicesSection";
 import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import CasesSection from "@/components/landing/CasesSection";
 import type { CaseCardData } from "@/components/landing/CaseCard";
-import FearTimeline from "@/components/landing/FearTimeline";
 import SpecialistCTASection from "@/components/landing/SpecialistCTASection";
-import FinalCTA from "@/components/landing/FinalCTA";
 import FooterSection from "@/components/landing/FooterSection";
 import { colors } from "@/lib/theme";
 
@@ -159,7 +157,7 @@ export default function LandingScreen() {
   }, [router]);
 
   const goBecomeSpecialist = useCallback(() => {
-    nav.routes.login();
+    nav.any('/login?intent=specialist');
   }, [router]);
 
   const goLegal = useCallback(
@@ -194,6 +192,29 @@ export default function LandingScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ backgroundColor: colors.white }}
       >
+        {isAuthenticated ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Перейти в дашборд"
+            onPress={() => nav.routes.dashboard()}
+            style={{
+              backgroundColor: colors.primary,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 50,
+              ...(Platform.OS === "web"
+                ? ({ position: "sticky", top: 0 } as object)
+                : {}),
+            }}
+          >
+            <Text style={{ color: colors.white, fontSize: 14, fontWeight: "700" }}>
+              Перейти в дашборд →
+            </Text>
+          </Pressable>
+        ) : null}
+
         <LandingHeader
           isDesktop={isDesktop}
           onHome={goHome}
@@ -230,18 +251,10 @@ export default function LandingScreen() {
           onCreateRequest={goCreateRequest}
         />
 
-        <FearTimeline isDesktop={isDesktop} />
-
         <SpecialistCTASection
           isDesktop={isDesktop}
           onBecomeSpecialist={goBecomeSpecialist}
           specialistsCount={counts?.specialistsCount ?? 0}
-        />
-
-        <FinalCTA
-          isDesktop={isDesktop}
-          onCreateRequest={goCreateRequest}
-          onViewCatalog={goCatalog}
         />
 
         <FooterSection

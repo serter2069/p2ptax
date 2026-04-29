@@ -112,7 +112,7 @@ export const USER_CLIENT_EXTRA: NavItem[] = [
 // Specialist-only addition: appended to USER_BASE when isSpecialist=true.
 export const USER_SPECIALIST_EXTRA: NavItem[] = [
   {
-    label: "Заявки клиентов",
+    label: "Открытые заявки",
     href: "/(tabs)/public-requests",
     icon: Inbox,
     // Only match the public-requests tab — do NOT match "/requests" which is
