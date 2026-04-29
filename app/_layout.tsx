@@ -180,6 +180,10 @@ export default function RootLayout() {
             <Stack.Screen name="requests/[id]" />
             <Stack.Screen name="requests" />
             <Stack.Screen name="specialists" />
+            <Stack.Screen name="legal" />
+            <Stack.Screen name="mosaic-d" />
+            <Stack.Screen name="mosaic-m" />
+            <Stack.Screen name="saved-specialists" />
           </Stack>
         </AuthenticatedHeaderGate>
       </AppShell>
