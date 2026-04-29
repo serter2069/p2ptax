@@ -201,6 +201,8 @@ export default function LandingScreen() {
           onLogin={goLogin}
           onCreateRequest={goCreateRequest}
           onFindSpecialist={goCatalog}
+          isAuthenticated={isAuthenticated}
+          onOpenDashboard={() => nav.routes.tabs()}
         />
 
         <HeroBlock

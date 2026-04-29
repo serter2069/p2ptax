@@ -9,6 +9,8 @@ interface LandingHeaderProps {
   onCreateRequest: () => void;
   transparent?: boolean;
   onFindSpecialist?: () => void;
+  isAuthenticated?: boolean;
+  onOpenDashboard?: () => void;
 }
 
 /**
@@ -24,6 +26,8 @@ export default function LandingHeader({
   onCreateRequest,
   transparent = true,
   onFindSpecialist,
+  isAuthenticated = false,
+  onOpenDashboard,
 }: LandingHeaderProps) {
   return (
     <View
@@ -96,16 +100,29 @@ export default function LandingHeader({
               </Text>
             </Pressable>
           ) : null)}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Войти"
-            onPress={onLogin}
-            className="min-h-[44px] items-center justify-center px-3"
-          >
-            <Text className="font-medium" style={{ color: colors.textSecondary, fontSize: 14 }}>
-              Войти
-            </Text>
-          </Pressable>
+          {isAuthenticated ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Перейти в личный кабинет"
+              onPress={onOpenDashboard ?? onLogin}
+              className="min-h-[44px] items-center justify-center px-3"
+            >
+              <Text className="font-medium" style={{ color: colors.text, fontSize: 14 }}>
+                В кабинет
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Войти"
+              onPress={onLogin}
+              className="min-h-[44px] items-center justify-center px-3"
+            >
+              <Text className="font-medium" style={{ color: colors.textSecondary, fontSize: 14 }}>
+                Войти
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"
