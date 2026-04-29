@@ -1,28 +1,20 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  Pressable,
-  useWindowDimensions,
-} from "react-native";
+import { View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
 import { useLocalSearchParams, router } from "expo-router";
-import SpecialistCard from "@/components/SpecialistCard";
 import SpecialistSearchBar, {
   CityOpt,
   FnsOpt,
 } from "@/components/filters/SpecialistSearchBar";
 import { AlertCircle, Search, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
-import LoadingState from "@/components/ui/LoadingState";
+import CatalogHeader from "@/components/specialists/CatalogHeader";
+import CatalogSkeleton from "@/components/specialists/CatalogSkeleton";
+import ServiceChipsRow from "@/components/specialists/ServiceChipsRow";
+import SpecialistsGrid from "@/components/specialists/SpecialistsGrid";
 import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors, textStyle } from "@/lib/theme";
 
 interface ServiceOption {
   id: string;
@@ -311,31 +303,9 @@ export default function SpecialistsCatalog() {
     return total > 0 ? total : specialists.length;
   }, [loading, total, specialists.length]);
 
-  const allServicesActive = selectedServiceIds.length === 0;
-
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      {/* Compact header — Row 1: title + count */}
-      <View
-        className={`flex-row items-center justify-between px-4 ${
-          isDesktop ? "pt-4" : "pt-2"
-        } pb-1`}
-      >
-        <Text
-          style={
-            isDesktop
-              ? { ...textStyle.h3, color: colors.text }
-              : { ...textStyle.h4, color: colors.text }
-          }
-        >
-          Специалисты
-        </Text>
-        {headerCount !== null && headerCount > 0 && (
-          <Text className="text-xs" style={{ color: colors.textMuted }}>
-            {headerCount} специалистов
-          </Text>
-        )}
-      </View>
+      <CatalogHeader isDesktop={isDesktop} count={headerCount} />
 
       {/* Row 2: typeahead search bar */}
       <View className="px-4 pt-2" style={{ zIndex: 20 }}>
@@ -351,72 +321,16 @@ export default function SpecialistsCatalog() {
       </View>
 
       {/* Row 3: compact service chips — always visible */}
-      {services.length > 0 && (
-        <View className="pt-2 pb-2" style={{ zIndex: 1 }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              gap: 8,
-              paddingHorizontal: 16,
-            }}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Не знаю — все услуги"
-              onPress={handleClearServices}
-              className={`px-3 h-8 items-center justify-center rounded-full border ${
-                allServicesActive
-                  ? "bg-accent border-accent"
-                  : "bg-white border-border"
-              }`}
-            >
-              <Text
-                className={`text-xs ${
-                  allServicesActive ? "text-white font-medium" : "text-text-base"
-                }`}
-              >
-                Не знаю
-              </Text>
-            </Pressable>
-            {services.map((s) => {
-              const active = selectedServiceIds.includes(s.id);
-              return (
-                <Pressable
-                  key={s.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={s.name}
-                  onPress={() => handleServiceToggle(s.id)}
-                  className={`px-3 h-8 items-center justify-center rounded-full border ${
-                    active ? "bg-accent border-accent" : "bg-white border-border"
-                  }`}
-                >
-                  <Text
-                    className={`text-xs ${
-                      active ? "text-white font-medium" : "text-text-base"
-                    }`}
-                  >
-                    {s.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
+      <ServiceChipsRow
+        services={services}
+        selectedServiceIds={selectedServiceIds}
+        onToggle={handleServiceToggle}
+        onClearAll={handleClearServices}
+      />
 
       {/* Specialist list */}
       {loading && specialists.length === 0 ? (
-        <View className="py-4 px-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <View
-              key={i}
-              className="mb-3 bg-white rounded-2xl overflow-hidden border border-border"
-            >
-              <LoadingState variant="skeleton" lines={4} />
-            </View>
-          ))}
-        </View>
+        <CatalogSkeleton count={5} />
       ) : error && specialists.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
@@ -450,57 +364,18 @@ export default function SpecialistsCatalog() {
           />
         )
       ) : (
-        <FlatList
-          key={`grid-${gridCols}`}
-          data={specialists}
-          keyExtractor={(item) => item.id}
-          numColumns={gridCols}
-          columnWrapperStyle={
-            gridCols > 1
-              ? { gap: 16, paddingHorizontal: isWide ? 32 : 16 }
-              : undefined
-          }
-          contentContainerStyle={{
-            paddingHorizontal: gridCols > 1 ? 0 : 16,
-            paddingBottom: 48,
-            paddingTop: 8,
-            maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined,
-            alignSelf: isDesktop ? ("center" as const) : undefined,
-            width: "100%" as const,
-          }}
-          renderItem={({ item }) => (
-            <View style={gridCols > 1 ? { flex: 1 } : undefined}>
-              <SpecialistCard
-                id={item.id}
-                firstName={item.firstName}
-                lastName={item.lastName}
-                avatarUrl={item.avatarUrl}
-                createdAt={item.createdAt}
-                services={item.services}
-                cities={item.cities}
-                specialistFns={item.specialistFns}
-                description={item.description}
-                onPress={handleSpecialistPress}
-                onBookmark={handleBookmark}
-                bookmarked={bookmarkedIds.has(item.id)}
-                variant="vertical"
-              />
-            </View>
-          )}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            loadingMore ? (
-              <ActivityIndicator
-                size="small"
-                color={colors.primary}
-                style={{ paddingVertical: 16 }}
-              />
-            ) : null
-          }
+        <SpecialistsGrid
+          specialists={specialists}
+          gridCols={gridCols}
+          isDesktop={isDesktop}
+          isWide={isWide}
+          refreshing={refreshing}
+          loadingMore={loadingMore}
+          bookmarkedIds={bookmarkedIds}
+          onRefresh={handleRefresh}
+          onLoadMore={handleLoadMore}
+          onPress={handleSpecialistPress}
+          onBookmark={handleBookmark}
         />
       )}
     </SafeAreaView>

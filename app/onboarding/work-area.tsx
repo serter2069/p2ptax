@@ -1,23 +1,25 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus, ChevronLeft } from "lucide-react-native";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import { colors, textStyle } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import SpecialistSearchBar, {
   CityOpt,
   FnsOpt,
 } from "@/components/filters/SpecialistSearchBar";
-import WorkAreaEntry, {
-  WorkAreaEntryData,
-} from "@/components/onboarding/WorkAreaEntry";
+import { WorkAreaEntryData } from "@/components/onboarding/WorkAreaEntry";
+import BackHeader from "@/components/onboarding/workarea/BackHeader";
+import WorkAreaIntro from "@/components/onboarding/workarea/WorkAreaIntro";
+import PendingFnsPicker from "@/components/onboarding/workarea/PendingFnsPicker";
+import EntriesList from "@/components/onboarding/workarea/EntriesList";
+import { saveWorkArea } from "@/components/onboarding/workarea/saveWorkArea";
 
 interface ServiceItem {
   id: string;
@@ -251,60 +253,18 @@ export default function OnboardingWorkAreaScreen() {
     setError("");
     setIsLoading(true);
     try {
-      // Build cityIds / fnsIds / services-matrix from entries.
-      const cityIdSet = new Set<string>();
-      const fnsIds: string[] = [];
-      const fnsServices: { fnsId: string; serviceIds: string[] }[] = [];
-      const allServiceIds = services.map((s) => s.id);
-
-      for (const e of entries) {
-        cityIdSet.add(e.cityId);
-        fnsIds.push(e.fnsId);
-        // "Не знаю" / any-service → expand to ALL service ids so the API
-        // (which skips entries with empty serviceIds) still persists the row.
-        const sids = e.isAnyService ? allServiceIds : e.serviceIds;
-        fnsServices.push({ fnsId: e.fnsId, serviceIds: sids });
-      }
-      const cityIds = Array.from(cityIdSet);
-
-      if (!isSpecialistUser) {
-        const res = await api<{
-          user: {
-            isSpecialist: boolean;
-            specialistProfileCompletedAt: string | null;
-          };
-        }>("/api/user/become-specialist", {
-          method: "POST",
-          body: {
-            cities: cityIds,
-            fns: fnsIds,
-            services: fnsServices,
-          },
-        });
-        if (res.user) {
-          updateUser({
-            isSpecialist: res.user.isSpecialist,
-            specialistProfileCompletedAt:
-              res.user.specialistProfileCompletedAt ?? null,
-          });
-        }
-      } else {
-        await api("/api/onboarding/work-area", {
-          method: "PUT",
-          body: {
-            cities: cityIds,
-            fns: fnsIds,
-            fnsServices,
-            specialist_services: fnsServices.flatMap((f) =>
-              f.serviceIds.map((sid) => ({
-                fns_id: f.fnsId,
-                service_id: sid,
-              }))
-            ),
-          },
+      const { user: updatedUser } = await saveWorkArea({
+        entries,
+        allServiceIds: services.map((s) => s.id),
+        isSpecialistUser,
+      });
+      if (updatedUser) {
+        updateUser({
+          isSpecialist: updatedUser.isSpecialist,
+          specialistProfileCompletedAt:
+            updatedUser.specialistProfileCompletedAt ?? null,
         });
       }
-
       if (fromSettings) {
         nav.routes.settings();
       } else {
@@ -324,18 +284,7 @@ export default function OnboardingWorkAreaScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <View className="px-6 pt-4 pb-2">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={fromSettings ? "Назад к настройкам" : "Назад"}
-          onPress={() => router.back()}
-          className="flex-row items-center"
-          style={{ minHeight: 44 }}
-        >
-          <ChevronLeft size={20} color={colors.text} />
-          <Text className="text-text-base ml-1">{fromSettings ? "Назад к настройкам" : "Назад"}</Text>
-        </Pressable>
-      </View>
+      <BackHeader fromSettings={fromSettings} onBack={() => router.back()} />
 
       {!fromSettings && (
         <View className="px-6 pb-4">
@@ -356,42 +305,7 @@ export default function OnboardingWorkAreaScreen() {
             paddingHorizontal: 24,
           }}
         >
-          {/* Heading */}
-          <Text
-            style={{
-              ...textStyle.h1,
-              color: colors.text,
-              fontSize: 32,
-              lineHeight: 38,
-              marginTop: 16,
-              marginBottom: 12,
-            }}
-          >
-            Где вы работаете?
-          </Text>
-          <Text
-            style={{
-              ...textStyle.body,
-              color: colors.textSecondary,
-              fontSize: 16,
-              lineHeight: 24,
-              marginBottom: 20,
-            }}
-          >
-            Добавьте инспекции ФНС, в которых ведёте дела, и услуги по
-            каждой. По этим данным клиенты вас найдут.
-          </Text>
-
-          {catalogError && (
-            <View
-              className="mb-4 px-4 py-3 rounded-xl"
-              style={{ backgroundColor: colors.errorBg }}
-            >
-              <Text className="text-sm text-danger leading-5">
-                {catalogError}
-              </Text>
-            </View>
-          )}
+          <WorkAreaIntro catalogError={catalogError} />
 
           {/* Step 1 — search */}
           <View style={{ zIndex: 20 }}>
@@ -408,124 +322,20 @@ export default function OnboardingWorkAreaScreen() {
 
           {/* Step 2 — service picker (only after FNS picked) */}
           {pendingFns && (
-            <View
-              className="mt-4 border border-border rounded-xl p-4"
-              style={{ backgroundColor: colors.surface2 }}
-            >
-              <Text
-                className="text-xs font-semibold uppercase tracking-wide mb-1"
-                style={{ color: colors.textMuted }}
-              >
-                Услуги в этой инспекции
-              </Text>
-              <Text className="text-sm text-text-base mb-3">
-                {pendingFns.code ? `${pendingFns.code} · ` : ""}
-                {pendingFns.name}
-              </Text>
-
-              <View className="flex-row flex-wrap" style={{ gap: 8 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Не знаю — любая услуга"
-                  onPress={pickAnyService}
-                  className={`px-3 h-9 items-center justify-center rounded-full border ${
-                    pendingAnyService
-                      ? "bg-accent border-accent"
-                      : "bg-white border-border"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm ${
-                      pendingAnyService
-                        ? "text-white font-medium"
-                        : "text-text-base"
-                    }`}
-                  >
-                    Не знаю
-                  </Text>
-                </Pressable>
-                {services.map((svc) => {
-                  const active = pendingServiceIds.includes(svc.id);
-                  return (
-                    <Pressable
-                      key={svc.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={svc.name}
-                      onPress={() => toggleService(svc.id)}
-                      className={`px-3 h-9 items-center justify-center rounded-full border ${
-                        active
-                          ? "bg-accent border-accent"
-                          : "bg-white border-border"
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm ${
-                          active
-                            ? "text-white font-medium"
-                            : "text-text-base"
-                        }`}
-                      >
-                        {svc.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <View className="mt-4 flex-row" style={{ gap: 8 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Добавить запись"
-                  onPress={addEntry}
-                  disabled={!canAddEntry}
-                  className={`flex-row items-center justify-center px-4 h-10 rounded-xl ${
-                    canAddEntry ? "bg-accent" : "bg-border"
-                  }`}
-                  style={{ gap: 6 }}
-                >
-                  <Plus
-                    size={16}
-                    color={canAddEntry ? "#ffffff" : colors.textMuted}
-                  />
-                  <Text
-                    className="text-sm font-medium"
-                    style={{
-                      color: canAddEntry ? "#ffffff" : colors.textMuted,
-                    }}
-                  >
-                    Добавить
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Отменить выбор инспекции"
-                  onPress={handleClearLocation}
-                  className="flex-row items-center justify-center px-4 h-10 rounded-xl border border-border bg-white"
-                >
-                  <Text className="text-sm text-text-base">Отменить</Text>
-                </Pressable>
-              </View>
-            </View>
+            <PendingFnsPicker
+              pendingFns={pendingFns}
+              services={services}
+              pendingServiceIds={pendingServiceIds}
+              pendingAnyService={pendingAnyService}
+              canAddEntry={canAddEntry}
+              onPickAny={pickAnyService}
+              onToggleService={toggleService}
+              onAdd={addEntry}
+              onCancel={handleClearLocation}
+            />
           )}
 
-          {/* Entries list */}
-          {entries.length > 0 && (
-            <View className="mt-6">
-              <Text
-                className="text-xs font-semibold uppercase tracking-wide mb-3"
-                style={{ color: colors.textMuted }}
-              >
-                Добавлено ({entries.length})
-              </Text>
-              {entries.map((e) => (
-                <WorkAreaEntry
-                  key={e.fnsId}
-                  entry={e}
-                  onRemove={() => removeEntry(e.fnsId)}
-                />
-              ))}
-            </View>
-          )}
+          <EntriesList entries={entries} onRemove={removeEntry} />
 
           {error ? (
             <View
