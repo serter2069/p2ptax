@@ -2,10 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
-  TextInput,
   ScrollView,
   useWindowDimensions,
-  Platform,
   Pressable,
   Alert,
 } from "react-native";
@@ -17,19 +15,17 @@ import { useTypedRouter } from "@/lib/navigation";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import { Send, Paperclip, X, UserCheck, ChevronLeft } from "lucide-react-native";
+import { Send, UserCheck, ChevronLeft } from "lucide-react-native";
 import { api, ApiError, API_URL } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import EmptyState from "@/components/ui/EmptyState";
-import { colors, radiusValue, fontSizeValue, BREAKPOINT } from "@/lib/theme";
+import RequestPreviewCard, { RequestPreviewData } from "@/components/requests/RequestPreviewCard";
+import MessageComposer from "@/components/requests/MessageComposer";
+import FileAttachmentRow, { PendingFileInfo } from "@/components/requests/FileAttachmentRow";
+import { colors, BREAKPOINT } from "@/lib/theme";
 
-interface PendingFile {
-  uri: string;
-  name: string;
-  size: number;
-  mimeType: string;
-}
+type PendingFile = PendingFileInfo;
 
 const CHAT_FILE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB — must match api/src/routes/upload.ts (chatFileUpload)
 const TOKEN_KEY = "p2ptax_access_token";
@@ -48,13 +44,7 @@ function generateUploadToken(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-interface RequestSummary {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  city: { id: string; name: string };
-  fns: { id: string; name: string; code: string };
+interface RequestSummary extends RequestPreviewData {
   user: { id: string; firstName: string | null; lastName: string | null };
 }
 
@@ -68,7 +58,7 @@ const MIN_CHARS = 10;
 const DAILY_LIMIT = 20;
 
 export default function SpecialistConfirmWrite() {
-  const router = useRouter()
+  const router = useRouter();
   const nav = useTypedRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { ready } = useRequireAuth();
@@ -342,140 +332,26 @@ export default function SpecialistConfirmWrite() {
           )}
 
           {/* Request summary card */}
-          {request && (
-            <View
-              className="bg-white rounded-2xl border border-border p-4 mb-4"
-              style={{
-                shadowColor: colors.text,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 12,
-                elevation: 3,
-              }}
-            >
-              <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-                Заявка клиента
-              </Text>
-              <Text className="text-base font-semibold text-text-base mb-2 leading-snug">
-                {request.title}
-              </Text>
-              <View className="flex-row flex-wrap gap-1.5 mb-3">
-                <View className="bg-surface2 border border-border px-2.5 py-1 rounded-lg">
-                  <Text className="text-xs text-text-mute">{request.city.name}</Text>
-                </View>
-                <View className="bg-surface2 border border-border px-2.5 py-1 rounded-lg">
-                  <Text className="text-xs text-text-mute">{request.fns.name}</Text>
-                </View>
-              </View>
-              <Text className="text-sm text-text-mute leading-5" numberOfLines={3}>
-                {request.description}
-              </Text>
-            </View>
-          )}
+          {request && <RequestPreviewCard request={request} />}
 
           {/* Message textarea */}
-          <Text className="text-sm font-semibold text-text-base mb-2">
-            Ваше сообщение
-          </Text>
-          {/* Outer View owns all visual styling — prevents double-input on web (NativeWind wraps
-              TextInput in an extra div when className is used; keeping className off TextInput
-              and border/bg on the parent View avoids the double-box artifact). */}
-          <View
-            style={{
-              minHeight: 140,
-              borderWidth: 1,
-              borderColor: isLimitReached ? colors.border : colors.borderLight,
-              borderRadius: radiusValue.md,
-              backgroundColor: isLimitReached ? colors.background : colors.surface,
-              opacity: isLimitReached ? 0.5 : 1,
-            }}
-          >
-            <TextInput
-              accessibilityLabel="Ваше сообщение"
-              value={message}
-              maxLength={MAX_CHARS}
-              onChangeText={(t) => {
-                if (t.length <= MAX_CHARS) setMessage(t);
-              }}
-              placeholder="Здравствуйте! Я специалист по... Могу помочь с вашей ситуацией. Расскажите подробнее..."
-              placeholderTextColor={colors.placeholder}
-              multiline
-              editable={!isLimitReached}
-              style={{
-                flex: 1,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                fontSize: fontSizeValue.base,
-                color: colors.text,
-                textAlignVertical: "top",
-                borderWidth: 0,
-                backgroundColor: "transparent",
-                // appearance:none + outlineStyle:none kill the default
-                // browser <textarea> chrome that creates the double-border
-                // artifact when the outer View owns the visible border.
-                ...(Platform.OS === "web" ? {
-                  borderColor: "transparent",
-                  outlineStyle: "none" as never,
-                  outlineWidth: 0,
-                  appearance: "none" as never,
-                } : {}),
-              }}
-            />
-          </View>
-
-          {/* Counter + min-length hint */}
-          <View className="flex-row justify-between items-center mt-1 mb-1">
-            {message.length > 0 && message.length < MIN_CHARS ? (
-              <Text className="text-xs text-danger">Минимум 10 символов</Text>
-            ) : (
-              <View />
-            )}
-            <Text
-              className={`text-xs ml-auto ${
-                message.length >= MAX_CHARS ? "text-danger" : "text-text-mute"
-              }`}
-            >
-              {message.length}/{MAX_CHARS}
-            </Text>
-          </View>
+          <MessageComposer
+            value={message}
+            onChange={setMessage}
+            placeholder="Здравствуйте! Я специалист по... Могу помочь с вашей ситуацией. Расскажите подробнее..."
+            maxLength={MAX_CHARS}
+            minLength={MIN_CHARS}
+            disabled={isLimitReached}
+          />
 
           {/* File attachment row */}
-          <View className="mt-3">
-            {pendingFile ? (
-              <View className="flex-row items-center justify-between bg-slate-100 border border-slate-200 rounded-xl px-3 py-2">
-                <View className="flex-1 mr-2">
-                  <Text className="text-sm text-slate-900" numberOfLines={1}>
-                    {pendingFile.name}
-                  </Text>
-                  <Text className="text-xs text-slate-500">
-                    {(pendingFile.size / 1024).toFixed(0)} КБ
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityLabel="Удалить файл"
-                  onPress={handleRemoveFile}
-                  hitSlop={8}
-                  className="p-1"
-                >
-                  <X size={18} color={colors.text} />
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable
-                accessibilityLabel="Прикрепить файл"
-                onPress={handleAttachFile}
-                disabled={isLimitReached || sending}
-                className="flex-row items-center self-start px-3 py-2 rounded-xl border border-slate-200 bg-white"
-                style={{ opacity: isLimitReached || sending ? 0.5 : 1 }}
-              >
-                <Paperclip size={16} color={colors.text} />
-                <Text className="text-sm text-slate-700 ml-2">Прикрепить файл</Text>
-              </Pressable>
-            )}
-            {uploadError && (
-              <Text className="text-xs text-red-500 mt-2">{uploadError}</Text>
-            )}
-          </View>
+          <FileAttachmentRow
+            pendingFile={pendingFile}
+            onAttach={handleAttachFile}
+            onRemove={handleRemoveFile}
+            disabled={isLimitReached || sending}
+            error={uploadError}
+          />
 
           {/* Submit error */}
           {submitError && (

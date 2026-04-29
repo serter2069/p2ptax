@@ -1,21 +1,21 @@
 import {
   View,
   Text,
-  TextInput,
   Pressable,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth, UserData } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import Button from "@/components/ui/Button";
-import { colors, radiusValue, textStyle } from "@/lib/theme";
+import OtpCodeInput from "@/components/auth/OtpCodeInput";
+import ResendCountdown from "@/components/auth/ResendCountdown";
+import { colors, textStyle } from "@/lib/theme";
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -34,14 +34,8 @@ function maskEmail(email: string): string {
   return `${local.charAt(0)}***@${domain}`;
 }
 
-function formatCountdown(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 export default function AuthOtpScreen() {
-  const router = useRouter()
+  const router = useRouter();
   const nav = useTypedRouter();
   const params = useLocalSearchParams<{ email: string; returnTo?: string; intent?: string }>();
   const email =
@@ -64,7 +58,7 @@ export default function AuthOtpScreen() {
         : undefined;
   const { signIn } = useAuth();
 
-  const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -72,7 +66,6 @@ export default function AuthOtpScreen() {
   const [showRoleChoice, setShowRoleChoice] = useState(false);
   const [pendingAuth, setPendingAuth] = useState<PendingAuth | null>(null);
 
-  const inputRefs = useRef<(TextInput | null)[]>([]);
   const isSubmitting = useRef(false);
 
   useEffect(() => {
@@ -80,12 +73,6 @@ export default function AuthOtpScreen() {
     const t = setTimeout(() => setResendTimer((v) => v - 1), 1000);
     return () => clearTimeout(t);
   }, [resendTimer]);
-
-  useEffect(() => {
-    if (!email) return;
-    const t = setTimeout(() => inputRefs.current[0]?.focus(), 150);
-    return () => clearTimeout(t);
-  }, [email]);
 
   const routeByRole = useCallback(
     (user: UserData) => {
@@ -128,8 +115,8 @@ export default function AuthOtpScreen() {
   );
 
   const handleVerify = useCallback(
-    async (code: string) => {
-      if (code.length !== CODE_LENGTH) return;
+    async (codeValue: string) => {
+      if (codeValue.length !== CODE_LENGTH) return;
       if (isSubmitting.current) return;
       isSubmitting.current = true;
       setIsLoading(true);
@@ -142,7 +129,7 @@ export default function AuthOtpScreen() {
           user: UserData;
         }>("/api/auth/verify-otp", {
           method: "POST",
-          body: { email, code },
+          body: { email, code: codeValue },
           noAuth: true,
         });
 
@@ -157,8 +144,7 @@ export default function AuthOtpScreen() {
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Неверный код";
         setError(msg);
-        setDigits(Array(CODE_LENGTH).fill(""));
-        setTimeout(() => inputRefs.current[0]?.focus(), 50);
+        setCode("");
         isSubmitting.current = false;
       } finally {
         setIsLoading(false);
@@ -167,50 +153,10 @@ export default function AuthOtpScreen() {
     [email, signIn, routeByRole]
   );
 
-  useEffect(() => {
-    if (digits.every(d => d !== "") && !isLoading) {
-      handleVerify(digits.join(""));
-    }
-  }, [digits, isLoading, handleVerify]);
-
-  const handleDigitChange = (index: number, value: string) => {
-    if (value.length > 1) {
-      const pasted = value.replace(/\D/g, "").slice(0, CODE_LENGTH);
-      const newDigits = Array(CODE_LENGTH)
-        .fill("")
-        .map((_, i) => pasted[i] ?? "");
-      setDigits(newDigits);
-      setError("");
-      const lastIdx = Math.min(pasted.length, CODE_LENGTH - 1);
-      inputRefs.current[lastIdx]?.focus();
-      if (pasted.length === CODE_LENGTH) {
-        handleVerify(pasted);
-      }
-      return;
-    }
-
-    if (!/^\d*$/.test(value)) return;
-
-    setDigits(prev => {
-      const newDigits = [...prev];
-      newDigits[index] = value.slice(-1);
-      return newDigits;
-    });
+  const handleCodeChange = useCallback((next: string) => {
+    setCode(next);
     setError("");
-
-    if (value && index < CODE_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyPress = (index: number, key: string) => {
-    if (key === "Backspace" && !digits[index] && index > 0) {
-      const newDigits = [...digits];
-      newDigits[index - 1] = "";
-      setDigits(newDigits);
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
+  }, []);
 
   const handleResend = async () => {
     if (resendTimer > 0 || isResending) return;
@@ -223,8 +169,7 @@ export default function AuthOtpScreen() {
         noAuth: true,
       });
       setResendTimer(RESEND_SECONDS);
-      setDigits(Array(CODE_LENGTH).fill(""));
-      setTimeout(() => inputRefs.current[0]?.focus(), 50);
+      setCode("");
     } catch {
       setError("Не удалось отправить код. Попробуйте ещё раз.");
     } finally {
@@ -265,7 +210,7 @@ export default function AuthOtpScreen() {
     }
   };
 
-  const isCodeFull = digits.join("").length === CODE_LENGTH;
+  const isCodeFull = code.length === CODE_LENGTH;
 
   if (showRoleChoice) {
     return (
@@ -322,8 +267,6 @@ export default function AuthOtpScreen() {
       </SafeAreaView>
     );
   }
-
-  const canResend = resendTimer <= 0;
 
   // Iter11-b — if the user landed here without an email query param (direct
   // URL / session lost), show a distinct notice state with a CTA back to
@@ -404,68 +347,14 @@ export default function AuthOtpScreen() {
               </Text>
             </Pressable>
 
-            <View className="flex-row justify-center gap-2 mb-4">
-              {digits.length === 0 ? null : digits.map((digit, i) => (
-                // Outer View owns border/bg — prevents double-input on web
-                // (NativeWind wraps TextInput in extra div when className is present;
-                // keeping className off TextInput and visual styling on parent View
-                // avoids the double-box artifact).
-                <View
-                  key={i}
-                  style={{
-                    width: 48,
-                    height: 56,
-                    borderRadius: radiusValue.md,
-                    borderWidth: error ? 2 : digit ? 2 : 1.5,
-                    borderColor: error
-                      ? colors.error
-                      : digit
-                        ? colors.accent
-                        : colors.border,
-                    backgroundColor: error
-                      ? colors.errorBg
-                      : digit
-                        ? colors.accentSoft
-                        : colors.surface,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <TextInput
-                    accessibilityLabel={`Цифра ${i + 1} кода подтверждения`}
-                    ref={(ref) => {
-                      inputRefs.current[i] = ref;
-                    }}
-                    // @ts-expect-error — outlineStyle/appearance are web-only CSS; RN drops unknown style keys safely
-                    style={{
-                      width: 48,
-                      height: 56,
-                      textAlign: "center",
-                      fontSize: 24,
-                      fontWeight: "700",
-                      color: error ? colors.error : colors.text,
-                      borderWidth: 0,
-                      backgroundColor: "transparent",
-                      ...(Platform.OS === "web" ? {
-                        borderColor: "transparent",
-                        outlineStyle: "none",
-                        outlineWidth: 0,
-                        appearance: "none",
-                      } : {}),
-                    }}
-                    value={digit}
-                    onChangeText={(v) => handleDigitChange(i, v)}
-                    onKeyPress={({ nativeEvent }) =>
-                      handleKeyPress(i, nativeEvent.key)
-                    }
-                    keyboardType="number-pad"
-                    maxLength={CODE_LENGTH}
-                    editable={!isLoading}
-                    selectTextOnFocus
-                  />
-                </View>
-              ))}
-            </View>
+            <OtpCodeInput
+              code={code}
+              onChange={handleCodeChange}
+              onSubmit={handleVerify}
+              error={!!error}
+              disabled={isLoading}
+              length={CODE_LENGTH}
+            />
 
             {error ? (
               <Text className="text-sm text-danger text-center mb-4" style={{ fontSize: 13 }}>
@@ -477,38 +366,17 @@ export default function AuthOtpScreen() {
 
             <Button
               label="Подтвердить"
-              onPress={() => handleVerify(digits.join(""))}
+              onPress={() => handleVerify(code)}
               disabled={isLoading || !isCodeFull}
               loading={isLoading}
               testID="verify-otp"
             />
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                canResend
-                  ? "Отправить код повторно"
-                  : `Повторная отправка через ${resendTimer} секунд`
-              }
-              onPress={handleResend}
-              disabled={!canResend || isResending}
-              className="mt-5 py-2 items-center"
-            >
-              {isResending ? (
-                <ActivityIndicator color={colors.textSecondary} size="small" />
-              ) : canResend ? (
-                <Text className="text-sm text-accent font-semibold">
-                  Отправить снова
-                </Text>
-              ) : (
-                <Text className="text-sm text-text-mute">
-                  Новый код через{" "}
-                  <Text className="font-semibold text-text-base">
-                    {formatCountdown(resendTimer)}
-                  </Text>
-                </Text>
-              )}
-            </Pressable>
+            <ResendCountdown
+              cooldownSec={resendTimer}
+              onResend={handleResend}
+              isResending={isResending}
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
