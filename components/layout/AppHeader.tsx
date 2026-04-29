@@ -54,13 +54,19 @@ function toAccentKey(
 }
 
 // Shallow breadcrumb mapping — exact-prefix first, then longest-prefix wins.
+//
+// T3 (Wave 6): consistent breadcrumbs on ALL tab screens — Expo Router strips
+// the (tabs) group from `usePathname()`, so the dashboard tab arrives as "/"
+// and other tabs as "/messages", "/dashboard" etc. We add explicit entries so
+// every tab gets a label (no more inconsistent "Заявки" but blank dashboard).
 const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   // Iter11 — unified (tabs) replaces split groups.
-  { prefix: "/(tabs)/public-requests", label: "Публичные заявки" },
-  { prefix: "/(tabs)/requests", label: "Мои заявки" },
+  { prefix: "/(tabs)/public-requests", label: "Открытые заявки" },
+  { prefix: "/(tabs)/requests", label: "Заявки" },
   { prefix: "/(tabs)/messages", label: "Сообщения" },
-  { prefix: "/(tabs)/profile", label: "Профиль" },
-  { prefix: "/(tabs)", label: "Дашборд" },
+  { prefix: "/(tabs)/dashboard", label: "Главная" },
+  { prefix: "/(tabs)/profile", label: "Настройки" },
+  { prefix: "/(tabs)", label: "Главная" },
   { prefix: "/(admin-tabs)/dashboard", label: "Админ · Обзор" },
   { prefix: "/(admin-tabs)/users", label: "Пользователи" },
   { prefix: "/(admin-tabs)/moderation", label: "Модерация" },
@@ -71,10 +77,17 @@ const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/requests", label: "Заявки" },
   { prefix: "/threads", label: "Переписки" },
   { prefix: "/settings", label: "Настройки" },
+  // Bare paths (Expo Router strips (tabs) group from usePathname()).
+  { prefix: "/dashboard", label: "Главная" },
+  { prefix: "/messages", label: "Сообщения" },
+  { prefix: "/public-requests", label: "Открытые заявки" },
+  { prefix: "/profile", label: "Настройки" },
 ];
 
 function inferBreadcrumb(pathname: string): string | null {
   if (!pathname) return null;
+  // Root "/" → dashboard label (Expo Router emits "/" for /(tabs)/index).
+  if (pathname === "/") return "Главная";
   const sorted = [...BREADCRUMB_MAP].sort((a, b) => b.prefix.length - a.prefix.length);
   for (const entry of sorted) {
     // Normalise paren-group markers: Expo Router may emit either form.
