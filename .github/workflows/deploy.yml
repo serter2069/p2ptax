@@ -36,6 +36,23 @@ jobs:
             # Backend
             cd api
             npm ci
+
+            # One-shot baseline _prisma_migrations (idempotent — fixes #1510).
+            # `migrate resolve --applied` is a no-op when the row already exists,
+            # so this stays safe on every subsequent deploy. After all 7 rows are
+            # registered, the regular `migrate deploy` below runs cleanly.
+            for m in \
+              20250417000000_add_complaints_table \
+              20250419000000_add_schema_fields \
+              20250428000000_add_is_specialist \
+              20260423000000_iter5_credibility_stack \
+              20260424000000_unify_roles_user_and_specialist \
+              20260428000000_add_saved_specialists \
+              20260428120000_add_user_soft_delete; do
+              echo "==> resolving $m"
+              npx prisma migrate resolve --applied "$m" || echo "  (already applied or harmless skip)"
+            done
+
             npx prisma migrate deploy || echo "WARN P3005 — DB unbaselined, migrations skipped (see issue #1510 for baseline plan)"
             npx prisma generate
             npm run build
