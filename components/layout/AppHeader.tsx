@@ -14,6 +14,7 @@ import { Menu, Search, Settings, LogOut, User } from "lucide-react-native";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import { colors, roleAccent, type RoleAccentKey, gray, spacing } from "@/lib/theme";
 import MobileMenu from "@/components/MobileMenu";
+import NotificationsBell from "./NotificationsBell";
 import RoleBadge from "./RoleBadge";
 
 /**
@@ -180,7 +181,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
             )}
           </View>
 
-          <View className="w-11 h-11" />
+          <NotificationsBell />
         </View>
 
         <MobileMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -271,6 +272,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
 
       {/* Right cluster */}
       <View className="flex-row items-center" style={{ gap: spacing.sm, marginLeft: "auto" }}>
+        <NotificationsBell />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Меню профиля"

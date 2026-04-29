@@ -17,6 +17,7 @@ import { MessageSquare } from "lucide-react-native";
 import MessengerEmptyPane from "@/components/MessengerEmptyPane";
 import ErrorState from "@/components/ui/ErrorState";
 import Avatar from "@/components/ui/Avatar";
+import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import InlineChatView from "@/components/InlineChatView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -258,7 +259,7 @@ export default function UnifiedInbox() {
           <View className="flex-1 min-w-0 py-3.5">
             <View className="flex-row items-center justify-between gap-2">
               <Text
-                className={`text-base flex-1 flex-shrink ${
+                className={`text-base flex-shrink ${
                   hasUnread
                     ? "font-bold text-text-base"
                     : "font-semibold text-text-base"
@@ -267,6 +268,12 @@ export default function UnifiedInbox() {
               >
                 {name}
               </Text>
+              {item.perspective ? (
+                <View className="ml-2 flex-shrink-0">
+                  <PerspectiveBadge perspective={item.perspective} />
+                </View>
+              ) : null}
+              <View style={{ flex: 1 }} />
               {item.lastMessage && (
                 <Text
                   className={`text-xs flex-shrink-0 ${

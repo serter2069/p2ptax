@@ -18,6 +18,7 @@ import { FileText, ChevronRight } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
 import { Avatar } from "@/components/ui";
 import Input from "@/components/ui/Input";
+import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import { API_URL, api, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -362,10 +363,17 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
             <FontAwesome name="user" size={16} color={colors.textSecondary} />
           </View>
         )}
-        <View className="ml-3 flex-1">
-          <Text className="text-base font-semibold" style={{ color: colors.text }} numberOfLines={1}>
+        <View className="ml-3 flex-1 flex-row items-center" style={{ gap: 8 }}>
+          <Text className="text-base font-semibold flex-shrink" style={{ color: colors.text }} numberOfLines={1}>
             {otherName}
           </Text>
+          {thread && myId ? (
+            thread.clientId === myId ? (
+              <PerspectiveBadge perspective="as_client" />
+            ) : thread.specialistId === myId ? (
+              <PerspectiveBadge perspective="as_specialist" />
+            ) : null
+          ) : null}
         </View>
       </View>
 
