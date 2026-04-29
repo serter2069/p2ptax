@@ -18,10 +18,11 @@ import HeaderBack from "@/components/HeaderBack";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import { Send, Paperclip, X } from "lucide-react-native";
+import { Send, Paperclip, X, UserCheck } from "lucide-react-native";
 import { api, ApiError, API_URL } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
+import EmptyState from "@/components/ui/EmptyState";
 import { colors, radiusValue, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 
 interface PendingFile {
@@ -72,9 +73,15 @@ export default function SpecialistConfirmWrite() {
   const nav = useTypedRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { ready } = useRequireAuth();
-  const { isSpecialistUser } = useAuth();
+  const { isSpecialistUser, user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
+
+  // Wave 2/G — hard gate for stranded specialists. They can browse, but
+  // before they can write to a client they MUST finish onboarding (ИФНС,
+  // services, description). Otherwise the message goes out from a profile
+  // that's invisible in the catalog.
+  const isStrandedSpecialist = isSpecialistUser && !user?.specialistProfileCompletedAt;
 
   const [request, setRequest] = useState<RequestSummary | null>(null);
   const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);
@@ -262,6 +269,23 @@ export default function SpecialistConfirmWrite() {
       <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
         <HeaderBack title="Написать клиенту" />
         <LoadingState />
+      </SafeAreaView>
+    );
+  }
+
+  if (isStrandedSpecialist) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface2" edges={["top", "bottom"]}>
+        <HeaderBack title="Написать клиенту" />
+        <View className="flex-1 justify-center">
+          <EmptyState
+            icon={UserCheck}
+            title="Завершите профиль специалиста"
+            subtitle="Перед тем как написать клиенту, нужно указать ИФНС, услуги и описание."
+            actionLabel="Завершить"
+            onAction={() => router.replace("/onboarding/name" as never)}
+          />
+        </View>
       </SafeAreaView>
     );
   }

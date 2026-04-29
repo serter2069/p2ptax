@@ -91,6 +91,16 @@ async function storeTokens(accessToken: string, refreshToken: string) {
 async function clearTokens() {
   await AsyncStorage.removeItem(TOKEN_KEY);
   await AsyncStorage.removeItem(REFRESH_KEY);
+  // Wave 2/G — clear stranded-specialist banner dismissal flag on logout
+  // so it shows again on next login if the user is still stranded.
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.removeItem("p2ptax_stranded_dismissed_v1");
+    }
+    await AsyncStorage.removeItem("p2ptax_stranded_dismissed_v1");
+  } catch {
+    // ignore
+  }
 }
 
 /**

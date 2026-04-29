@@ -1,11 +1,12 @@
 import "../global.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useWindowDimensions, Platform, View, ActivityIndicator } from "react-native";
-import { Stack, usePathname, useRouter } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppShell from "@/components/layout/AppShell";
 import AppHeader, { shouldShowAppHeader } from "@/components/layout/AppHeader";
 import MobileDrawer from "@/components/layout/MobileDrawer";
+import StrandedSpecialistBanner from "@/components/layout/StrandedSpecialistBanner";
 import { colors } from "@/lib/theme";
 
 import MetroBridge from "@/components/MetroBridge";
@@ -13,41 +14,40 @@ import MetroBridge from "@/components/MetroBridge";
 const MOBILE_BREAKPOINT = 768;
 
 /**
- * Runtime guard for stranded specialists.
+ * Read-only computed signal for "stranded specialist" state.
  *
  * A user who picks "Я специалист" and abandons after step 1 has
  * `isSpecialist=true` but `specialistProfileCompletedAt=null`. They
- * cannot appear in the catalog or write threads — so they must finish
- * onboarding before doing anything else. This effect catches every
- * authenticated entry point (deep links, token-only restore, browser
- * back nav) and bounces them to /onboarding/name. Allowed pass-through:
- * onboarding screens themselves, auth flow, legal pages, and the public
- * landing page (which redirects on its own).
+ * cannot appear in the catalog or write threads. Previously we hard-
+ * redirected them to /onboarding/name from any route — that turned
+ * the app into a trap. Now we expose this as a flag so the parent can
+ * render a soft persistent banner. The hard gate lives only on actual
+ * write actions (chat send / requests/[id]/write).
+ *
+ * Returns `false` on auth/onboarding/legal/landing routes so the banner
+ * doesn't appear during the very flow that resolves the condition.
  */
-function useStrandedSpecialistGuard() {
+function useStrandedSpecialistInfo(): { stranded: boolean } {
   const { user, isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname() ?? "";
-  const router = useRouter();
 
-  useEffect(() => {
-    if (isLoading || !isAuthenticated || !user) return;
-    if (!user.isSpecialist) return;
-    if (user.specialistProfileCompletedAt) return;
+  if (isLoading || !isAuthenticated || !user) return { stranded: false };
+  if (!user.isSpecialist) return { stranded: false };
+  if (user.specialistProfileCompletedAt) return { stranded: false };
 
-    if (
-      pathname.startsWith("/onboarding") ||
-      pathname.startsWith("/auth") ||
-      pathname.startsWith("/legal") ||
-      pathname === "/login" ||
-      pathname === "/otp" ||
-      pathname === "/" ||
-      pathname === ""
-    ) {
-      return;
-    }
+  if (
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/legal") ||
+    pathname === "/login" ||
+    pathname === "/otp" ||
+    pathname === "/" ||
+    pathname === ""
+  ) {
+    return { stranded: false };
+  }
 
-    router.replace("/onboarding/name" as never);
-  }, [isLoading, isAuthenticated, user, pathname, router]);
+  return { stranded: true };
 }
 
 /**
@@ -69,9 +69,10 @@ function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
   const { width } = useWindowDimensions();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Bounce stranded specialists (incomplete onboarding) to /onboarding/name
-  // regardless of how they reached the current route.
-  useStrandedSpecialistGuard();
+  // Wave 2/G — soft guard. Render a persistent banner for stranded
+  // specialists instead of force-redirecting them. The hard gate lives
+  // on the actual write actions (chat send + /requests/[id]/write).
+  const { stranded } = useStrandedSpecialistInfo();
 
   // Block rendering until AsyncStorage token restoration is complete.
   // Without this, authenticated users briefly see the public landing page.
@@ -111,10 +112,14 @@ function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
               : { flex: 1 }
           }
         >
+          <StrandedSpecialistBanner stranded={stranded} />
           {children}
         </View>
       ) : (
-        children
+        <>
+          <StrandedSpecialistBanner stranded={stranded} />
+          {children}
+        </>
       )}
       {showDrawer && (
         <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />

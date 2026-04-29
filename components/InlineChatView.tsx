@@ -94,7 +94,7 @@ interface InlineChatViewProps {
 }
 
 export default function InlineChatView({ threadId }: InlineChatViewProps) {
-  const { user } = useAuth();
+  const { user, isSpecialistUser } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
@@ -288,6 +288,23 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if ((!trimmed && pendingFiles.length === 0) || sending || !threadId) return;
+
+    // Wave 2/G — hard gate: stranded specialists (isSpecialist=true,
+    // specialistProfileCompletedAt=null) cannot send messages because
+    // they're invisible in the catalog. Force them to finish onboarding
+    // before the message leaves the client.
+    if (isSpecialistUser && !user?.specialistProfileCompletedAt) {
+      Alert.alert(
+        "Завершите профиль",
+        "Перед тем как писать клиенту, завершите профиль специалиста.",
+        [
+          { text: "Отмена", style: "cancel" },
+          { text: "Завершить", onPress: () => router.push("/onboarding/name" as never) },
+        ]
+      );
+      return;
+    }
+
     setSending(true);
     try {
       let uploadToken: string | undefined;
@@ -314,7 +331,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     } finally {
       setSending(false);
     }
-  }, [text, pendingFiles, sending, threadId, uploadChatFile]);
+  }, [text, pendingFiles, sending, threadId, uploadChatFile, isSpecialistUser, user?.specialistProfileCompletedAt]);
 
   const handleFilePress = useCallback((file: FileAttachment) => {
     const fullUrl = file.url.startsWith("http") ? file.url : `${API_URL}${file.url}`;
