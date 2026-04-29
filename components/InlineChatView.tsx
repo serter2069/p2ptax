@@ -384,8 +384,8 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header with avatar + other party name + request title */}
-      <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
+      {/* Header with avatar + other party name + perspective badge + counterparty hint */}
+      <View className="flex-row items-start px-4 py-3 border-b border-border bg-white">
         {!isDesktop && (
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
             <FontAwesome name="chevron-left" size={18} color={colors.primary} />
@@ -402,16 +402,43 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
             <FontAwesome name="user" size={16} color={colors.textSecondary} />
           </View>
         )}
-        <View className="ml-3 flex-1 flex-row items-center" style={{ gap: 8 }}>
-          <Text className="text-base font-semibold flex-shrink" style={{ color: colors.text }} numberOfLines={1}>
-            {otherName}
-          </Text>
+        <View className="ml-3 flex-1" style={{ gap: 4 }}>
+          <View className="flex-row items-center" style={{ gap: 8 }}>
+            <Text className="text-base font-semibold flex-shrink" style={{ color: colors.text }} numberOfLines={1}>
+              {otherName}
+            </Text>
+            {thread && myId ? (
+              thread.clientId === myId ? (
+                <PerspectiveBadge perspective="as_client" size="md" />
+              ) : thread.specialistId === myId ? (
+                <PerspectiveBadge perspective="as_specialist" size="md" />
+              ) : null
+            ) : null}
+          </View>
           {thread && myId ? (
-            thread.clientId === myId ? (
-              <PerspectiveBadge perspective="as_client" />
-            ) : thread.specialistId === myId ? (
-              <PerspectiveBadge perspective="as_specialist" />
-            ) : null
+            (() => {
+              const myPerspective: "as_client" | "as_specialist" | null =
+                thread.clientId === myId
+                  ? "as_client"
+                  : thread.specialistId === myId
+                    ? "as_specialist"
+                    : null;
+              if (!myPerspective) return null;
+              const counterpartyFallback =
+                myPerspective === "as_client" ? "Специалистом" : "Клиентом";
+              const namedCounterparty = otherUser && !otherUser.isDeleted
+                ? displayName(otherUser)
+                : counterpartyFallback;
+              return (
+                <Text
+                  className="text-xs"
+                  style={{ color: colors.textSecondary }}
+                  numberOfLines={1}
+                >
+                  Вы переписываетесь с {namedCounterparty}
+                </Text>
+              );
+            })()
           ) : null}
         </View>
       </View>

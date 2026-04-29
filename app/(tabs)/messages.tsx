@@ -114,7 +114,7 @@ export default function UnifiedInbox() {
   const router = useRouter()
   const nav = useTypedRouter();
   const { ready } = useRequireAuth();
-  const { isSpecialistUser } = useAuth();
+  const { isSpecialistUser, user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
   const params = useLocalSearchParams<{ thread?: string }>();
@@ -127,6 +127,15 @@ export default function UnifiedInbox() {
   const [error, setError] = useState<string | null>(null);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "client" | "specialist">("all");
+
+  /**
+   * Dual-role users (USER.isSpecialist === true) can have threads in both
+   * `as_client` and `as_specialist` perspectives. Show the second filter
+   * chip row only for them — single-role users would never see anything
+   * but "all".
+   */
+  const isDualRole = user?.isSpecialist === true;
 
   const fetchThreads = useCallback(async () => {
     setError(null);
@@ -166,8 +175,16 @@ export default function UnifiedInbox() {
   }, [fetchThreads]);
 
   const sorted = sortThreads(threads);
-  const filtered =
+  const afterUnread =
     filter === "unread" ? sorted.filter((t) => t.unreadCount > 0) : sorted;
+  const filtered =
+    roleFilter === "all"
+      ? afterUnread
+      : afterUnread.filter(
+          (t) =>
+            t.perspective ===
+            (roleFilter === "client" ? "as_client" : "as_specialist")
+        );
   const unreadTotal = threads.reduce((sum, t) => sum + t.unreadCount, 0);
 
   const renderThread = useCallback(
@@ -273,7 +290,7 @@ export default function UnifiedInbox() {
               </Text>
               {item.perspective ? (
                 <View className="ml-2 flex-shrink-0">
-                  <PerspectiveBadge perspective={item.perspective} />
+                  <PerspectiveBadge perspective={item.perspective} size="sm" />
                 </View>
               ) : null}
               <View style={{ flex: 1 }} />
@@ -432,6 +449,25 @@ export default function UnifiedInbox() {
                     onPress={() => setFilter("unread")}
                   />
                 </View>
+                {isDualRole && (
+                  <View className="flex-row gap-2 mt-2">
+                    <FilterChip
+                      label="Все"
+                      active={roleFilter === "all"}
+                      onPress={() => setRoleFilter("all")}
+                    />
+                    <FilterChip
+                      label="Как клиент"
+                      active={roleFilter === "client"}
+                      onPress={() => setRoleFilter("client")}
+                    />
+                    <FilterChip
+                      label="Как специалист"
+                      active={roleFilter === "specialist"}
+                      onPress={() => setRoleFilter("specialist")}
+                    />
+                  </View>
+                )}
               </View>
               <FlatList
                 data={filtered}
@@ -541,6 +577,25 @@ export default function UnifiedInbox() {
                 </View>
               )}
             </View>
+            {isDualRole && (
+              <View className="flex-row gap-2 pb-2">
+                <FilterChip
+                  label="Все"
+                  active={roleFilter === "all"}
+                  onPress={() => setRoleFilter("all")}
+                />
+                <FilterChip
+                  label="Как клиент"
+                  active={roleFilter === "client"}
+                  onPress={() => setRoleFilter("client")}
+                />
+                <FilterChip
+                  label="Как специалист"
+                  active={roleFilter === "specialist"}
+                  onPress={() => setRoleFilter("specialist")}
+                />
+              </View>
+            )}
           </View>
         }
         ListEmptyComponent={emptyState}
