@@ -89,7 +89,12 @@ router.get("/featured", async (_req: Request, res: Response) => {
         isBanned: false,
       },
       take: 10,
-      orderBy: { createdAt: "desc" },
+      // Catalog ranking: specialists with avatar photos first, then newest.
+      // `avatarUrl` desc + nulls:last puts non-null URLs before null ones (Prisma 6.x).
+      orderBy: [
+        { avatarUrl: { sort: "desc", nulls: "last" } },
+        { createdAt: "desc" },
+      ],
       select: specialistListSelect,
     });
 
@@ -203,7 +208,12 @@ router.get("/", async (req: Request, res: Response) => {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        // Catalog ranking: specialists with avatar photos first, then newest.
+        // `avatarUrl` desc + nulls:last puts non-null URLs before null ones (Prisma 6.x).
+        orderBy: [
+          { avatarUrl: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" },
+        ],
         select: specialistListSelect,
       }),
       prisma.user.count({ where }),
