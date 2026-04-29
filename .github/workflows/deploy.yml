@@ -19,20 +19,37 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -euo pipefail
             cd /var/www/p2ptax
-            git pull origin development
+
+            # Save any local/untracked state on the server (.env backups, start.sh, web/)
+            git stash push --include-untracked --quiet --message "auto-deploy-stash-$(date -u +%Y%m%dT%H%M%SZ)" || true
+
+            # Force-clean checkout to remote tip
+            git fetch origin development
+            git reset --hard origin/development
+
+            # Frontend build
             npm ci
             npx expo export --platform web
+
+            # Backend
             cd api
             npm ci
             npx prisma migrate deploy
             npx prisma generate
             npm run build
             cd ..
+
+            # Restart and verify
             pm2 restart ecosystem.config.js
             sleep 3
-            curl -sf http://localhost:3812/api/health || echo "Health check failed"
+            curl -sf http://localhost:3812/api/health || { echo "Health check FAILED"; exit 1; }
+
+            # Stamp version.json with actual deployed SHA
             echo '{"version":"'$(git rev-parse --short HEAD)'","deployed":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > dist/version.json
-            # Landing is a static React prototype served directly from landing/ — no build
+
+            # nginx
             cp nginx-p2ptax.conf /etc/nginx/sites-enabled/p2ptax.smartlaunchhub.com
-            nginx -t && systemctl reload nginx
+            nginx -t
+            systemctl reload nginx
