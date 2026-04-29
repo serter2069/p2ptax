@@ -62,6 +62,8 @@ interface OtherUser {
   firstName: string | null;
   lastName: string | null;
   avatarUrl: string | null;
+  /** Soft-deleted account — render "Аккаунт удалён" instead of the name. */
+  isDeleted?: boolean;
 }
 
 interface ThreadInfo {
@@ -70,12 +72,13 @@ interface ThreadInfo {
   clientId: string;
   specialistId: string;
   request: { id: string; title: string; status: string };
-  client: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null };
-  specialist: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null };
+  client: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null; isDeleted?: boolean };
+  specialist: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null; isDeleted?: boolean };
   otherUser: OtherUser;
 }
 
-function displayName(user: { firstName: string | null; lastName: string | null }): string {
+function displayName(user: { firstName: string | null; lastName: string | null; isDeleted?: boolean }): string {
+  if (user.isDeleted) return "Аккаунт удалён";
   const parts = [user.firstName, user.lastName].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : "Пользователь";
 }

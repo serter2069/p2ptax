@@ -82,11 +82,12 @@ router.get("/featured", async (_req: Request, res: Response) => {
       where: {
         // Iter11: specialist catalog is driven by the flag, not the legacy
         // role enum. Require completed profile so we never surface half-seeded
-        // users who are still onboarding.
+        // users who are still onboarding. Hide soft-deleted accounts.
         isSpecialist: true,
         specialistProfileCompletedAt: { not: null },
         isAvailable: true,
         isBanned: false,
+        deletedAt: null,
       },
       take: 10,
       // Catalog ranking: specialists with avatar photos first, then newest.
@@ -173,6 +174,8 @@ router.get("/", async (req: Request, res: Response) => {
       specialistProfileCompletedAt: { not: null },
       isAvailable: true,
       isBanned: false,
+      // Hide soft-deleted accounts from the public catalog.
+      deletedAt: null,
       ...(callerId ? { id: { not: callerId } } : {}),
     };
 
@@ -380,8 +383,10 @@ router.get("/:id", async (req: Request, res: Response) => {
       where: {
         id,
         // Iter11: specialist detail checks the flag, not the legacy role.
+        // Hide soft-deleted accounts from the public detail page.
         isSpecialist: true,
         isBanned: false,
+        deletedAt: null,
       },
       include: {
         specialistProfile: true,

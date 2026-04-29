@@ -27,6 +27,8 @@ interface ThreadItem {
     firstName: string | null;
     lastName: string | null;
     avatarUrl: string | null;
+    /** Soft-deleted account — render "Аккаунт удалён" instead of the name. */
+    isDeleted?: boolean;
   };
   lastMessage: {
     text: string;
@@ -36,7 +38,8 @@ interface ThreadItem {
   createdAt: string;
 }
 
-function displayName(user: { firstName: string | null; lastName: string | null }): string {
+function displayName(user: { firstName: string | null; lastName: string | null; isDeleted?: boolean }): string {
+  if (user.isDeleted) return "Аккаунт удалён";
   const parts = [user.firstName, user.lastName].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : "Специалист";
 }

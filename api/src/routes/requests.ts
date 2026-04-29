@@ -36,6 +36,8 @@ async function notifyMatchingSpecialists(args: {
         specialistProfileCompletedAt: { not: null },
         isAvailable: true,
         isBanned: false,
+        // Skip soft-deleted accounts when fanning-out notifications.
+        deletedAt: null,
         id: { not: clientUserId },
         specialistFns: { some: { fnsId } },
       },

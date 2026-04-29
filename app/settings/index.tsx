@@ -316,25 +316,40 @@ export default function UnifiedSettings() {
     ]);
   }, [signOut, router]);
 
+  // Soft-delete the account: anonymize PII server-side, sign out everywhere,
+  // navigate to home. The DB row is preserved so threads/messages keep
+  // referencing a valid user — other participants will see "Аккаунт удалён".
   const handleDeleteAccount = useCallback(() => {
     Alert.alert(
-      "Удалить аккаунт",
-      "Это действие необратимо. Все ваши данные будут удалены.",
+      "Удалить аккаунт навсегда?",
+      "Аккаунт будет анонимизирован и скрыт. Восстановление невозможно. История переписок останется у других участников.",
       [
         { text: "Отмена", style: "cancel" },
         {
           text: "Удалить",
           style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              "Запрос отправлен",
-              "Ваш запрос на удаление аккаунта принят. Мы свяжемся с вами по email."
-            );
+          onPress: async () => {
+            const email = user?.email;
+            if (!email) {
+              Alert.alert("Ошибка", "Не удалось определить email аккаунта");
+              return;
+            }
+            try {
+              await apiPost("/api/account/delete", { confirm: email });
+              await signOut();
+              nav.replaceRoutes.home();
+            } catch (err) {
+              console.error("delete account error:", err);
+              Alert.alert(
+                "Ошибка",
+                "Не удалось удалить аккаунт. Попробуйте ещё раз."
+              );
+            }
           },
         },
       ]
     );
-  }, []);
+  }, [user?.email, signOut, nav]);
 
   // Toggle specialist mode on/off.
   // ON → if no FNS data configured yet, redirect to work-area; otherwise enable directly.
@@ -696,6 +711,9 @@ export default function UnifiedSettings() {
                 Удалить аккаунт
               </Text>
             </Pressable>
+            <Text className="text-xs text-text-mute mt-1">
+              Аккаунт будет анонимизирован и скрыт. Восстановление невозможно. История переписок останется у других участников.
+            </Text>
           </View>
 
           <Text className="text-xs text-text-dim text-center mb-4">

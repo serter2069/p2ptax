@@ -26,7 +26,12 @@ router.get("/full", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const saved = await prisma.savedSpecialist.findMany({
-      where: { userId },
+      where: {
+        userId,
+        // Hide soft-deleted specialists from the saved list (their PII has
+        // been anonymized — surfacing them would be confusing).
+        specialist: { deletedAt: null },
+      },
       orderBy: { savedAt: "desc" },
       include: {
         specialist: {
@@ -80,12 +85,12 @@ router.post("/:specialistId", async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const specialistId = String(req.params.specialistId);
 
-    // Verify target is a specialist
+    // Verify target is a specialist (and not soft-deleted)
     const target = await prisma.user.findUnique({
       where: { id: specialistId },
-      select: { isSpecialist: true },
+      select: { isSpecialist: true, deletedAt: true },
     });
-    if (!target) {
+    if (!target || target.deletedAt) {
       res.status(404).json({ error: "Specialist not found" });
       return;
     }
