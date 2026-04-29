@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Search, FileText } from "lucide-react-native";
 import {
@@ -14,12 +14,18 @@ import {
 } from "../components/ui";
 import HeaderBack from "../components/HeaderBack";
 import HeaderHome from "../components/HeaderHome";
-import { colors, tw, typography, spacing, radius } from "../lib/theme";
+import ResponsiveContainer from "../components/ResponsiveContainer";
+import { colors, tw, typography, spacing, radius, BREAKPOINT } from "../lib/theme";
 
+// Spacing rhythm is unified on `gap-4` (16px) for all section content. Old
+// design had a mix of mb-4 (16), mb-2 (8) and gap-5 (20) on the same level —
+// the 16/8/20 trio that auditors flag as inconsistent rhythm. We use 16px
+// throughout and rely on `gap` on parents instead of per-child margins, so
+// removing/reordering items doesn't break the rhythm.
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View className="mb-10">
-      <Text className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
+      <Text className="text-sm font-semibold text-text-mute uppercase tracking-wider mb-4">
         {title}
       </Text>
       {children}
@@ -28,44 +34,57 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function BrandScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= BREAKPOINT;
   const [inputDefault, setInputDefault] = useState("");
   const [inputFocused, setInputFocused] = useState("ivan@mail.ru");
   const [inputError, setInputError] = useState("not-email");
   const [inputIcon, setInputIcon] = useState("");
 
+  // Issue GH-1293 (regression): /brand must never render in production.
+  // The `{__DEV__ && <Stack.Screen />}` gate in `app/_layout.tsx` only hides
+  // the route registration — Expo Router file-based routing still discovers
+  // `app/brand.tsx` and serves the page. The only bulletproof guard is to
+  // short-circuit the component itself when `__DEV__` is false (production
+  // builds, staging export, etc). Hooks above this guard so React hook
+  // ordering stays stable across renders.
+  if (!__DEV__) return null;
+
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Design System" />
-      <ScrollView className="flex-1" contentContainerClassName="px-4 py-6 pb-20">
+      <ScrollView className="flex-1">
+      <ResponsiveContainer>
+      <View className="py-6 pb-20">
         <Text className={`${typography.h2} ${tw.text} mb-1`}>P2PTax</Text>
         <Text className={`${typography.small} mb-8`}>Design System</Text>
 
         {/* ====== COLORS ====== */}
         <Section title="Colors">
-          <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+          <Text className="text-xs font-semibold text-text-mute mb-4 uppercase tracking-wide">
             Base
           </Text>
-          <View className="flex-row flex-wrap gap-3 mb-4">
+          <View className="flex-row flex-wrap gap-4 mb-4">
             {([
               { name: "primary", cls: tw.primary, label: "blue-900" },
               { name: "accent", cls: tw.accent, label: "amber-700" },
-              { name: "background", cls: `${tw.background} border border-slate-200`, label: "slate-50" },
-              { name: "surface", cls: `${tw.surface} border border-slate-100`, label: "white" },
-              { name: "text", cls: "bg-slate-900", label: "slate-900" },
-              { name: "textSecondary", cls: "bg-slate-500", label: "slate-500" },
+              { name: "background", cls: `${tw.background} border border-border`, label: "slate-50" },
+              { name: "surface", cls: `${tw.surface} border border-border`, label: "white" },
+              { name: "text", cls: "bg-text-base", label: "slate-900" },
+              { name: "textSecondary", cls: "bg-text-mute", label: "slate-500" },
             ] as const).map((c) => (
               <View key={c.name} className="w-[30%]">
                 <View className={`h-20 ${radius.sm} ${c.cls}`} />
-                <Text className="text-xs font-bold text-slate-900 mt-1">{c.name}</Text>
+                <Text className="text-xs font-bold text-text-base mt-1">{c.name}</Text>
                 <Text className={typography.small}>{c.label}</Text>
               </View>
             ))}
           </View>
 
-          <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+          <Text className="text-xs font-semibold text-text-mute mb-4 uppercase tracking-wide">
             Semantic
           </Text>
-          <View className="flex-row gap-3">
+          <View className="flex-row gap-4">
             {([
               { name: "error", cls: tw.errorBg, label: "red-600" },
               { name: "success", cls: tw.successBg, label: "emerald-600" },
@@ -73,7 +92,7 @@ export default function BrandScreen() {
             ] as const).map((c) => (
               <View key={c.name} className="flex-1">
                 <View className={`h-16 ${radius.sm} ${c.cls}`} />
-                <Text className="text-xs font-bold text-slate-900 mt-1">{c.name}</Text>
+                <Text className="text-xs font-bold text-text-base mt-1">{c.name}</Text>
                 <Text className={typography.small}>{c.label}</Text>
               </View>
             ))}
@@ -82,7 +101,7 @@ export default function BrandScreen() {
 
         {/* ====== TYPOGRAPHY ====== */}
         <Section title="Typography">
-          <View className="gap-3">
+          <View className="gap-4">
             {([
               { key: "h1", label: "h1 · 30px extrabold", example: "Найдите специалиста" },
               { key: "h2", label: "h2 · 24px bold", example: "Мои заявки" },
@@ -91,7 +110,7 @@ export default function BrandScreen() {
               { key: "caption", label: "caption · 14px", example: "3 специалиста · 2 часа назад" },
               { key: "small", label: "small · 12px", example: "ИФНС №15 · Москва" },
             ] as const).map((t) => (
-              <View key={t.key} className="pb-3 border-b border-slate-100">
+              <View key={t.key} className="pb-3 border-b border-border">
                 <Text className={`text-xs ${tw.accentText} font-bold mb-1`}>{t.label}</Text>
                 <Text className={`${typography[t.key]} ${tw.text}`}>{t.example}</Text>
               </View>
@@ -101,10 +120,10 @@ export default function BrandScreen() {
 
         {/* ====== SPACING ====== */}
         <Section title="Spacing">
-          <View className="gap-2">
+          <View className="gap-4">
             {(Object.entries(spacing) as [string, number][]).map(([name, size]) => (
               <View key={name} className="flex-row items-center gap-3">
-                <Text className="text-xs text-slate-400 w-6">{name}</Text>
+                <Text className="text-xs text-text-mute w-6">{name}</Text>
                 <View
                   className={`h-4 ${radius.sm} ${tw.accent}`}
                   style={{ width: size }}
@@ -117,7 +136,7 @@ export default function BrandScreen() {
 
         {/* ====== BUTTONS ====== */}
         <Section title="Buttons">
-          <View className="gap-3">
+          <View className="gap-4">
             <Button label="Создать заявку" />
             <Button label="Создать заявку" disabled />
             <Button label="Загрузка..." loading />
@@ -129,7 +148,7 @@ export default function BrandScreen() {
 
         {/* ====== INPUTS ====== */}
         <Section title="Inputs">
-          <View className="gap-3">
+          <View className="gap-4">
             <Input
               label="Email"
               placeholder="your@email.com"
@@ -159,7 +178,7 @@ export default function BrandScreen() {
 
         {/* ====== CARDS ====== */}
         <Section title="Cards">
-          <View className="gap-3">
+          <View className="gap-4">
             <Card>
               <Text className={`${typography.h3} ${tw.text} mb-1`}>
                 Камеральная проверка по НДС
@@ -181,7 +200,7 @@ export default function BrandScreen() {
 
         {/* ====== AVATARS ====== */}
         <Section title="Avatars">
-          <View className="flex-row items-end gap-5">
+          <View className="flex-row items-end gap-4">
             <View className="items-center">
               <Avatar name="Ivan" size="sm" />
               <Text className={`${typography.small} mt-1`}>sm 36</Text>
@@ -199,7 +218,7 @@ export default function BrandScreen() {
 
         {/* ====== BADGES ====== */}
         <Section title="Badges">
-          <View className="flex-row flex-wrap items-center gap-3">
+          <View className="flex-row flex-wrap items-center gap-4">
             <Badge variant="error" label="Ошибка" />
             <Badge variant="success" label="Успех" />
             <Badge variant="warning" label="Внимание" />
@@ -210,8 +229,15 @@ export default function BrandScreen() {
         </Section>
 
         {/* ====== STATES ====== */}
+        {/*
+          Audit fix: previous layout used `mb-4` on each child wrapper which
+          mixed with the implicit 0px gap of the last child — auditors flagged
+          this as inconsistent rhythm at Y~3102. Now we drive spacing from the
+          parent `gap-4`, no per-child margins, so adding/removing items keeps
+          the 16px rhythm intact.
+        */}
         <Section title="States">
-          <View className="mb-3">
+          <View className="gap-4">
             <EmptyState
               icon={FileText}
               title="Нет заявок"
@@ -219,33 +245,30 @@ export default function BrandScreen() {
               actionLabel="Создать"
               onAction={() => {}}
             />
-          </View>
-
-          <View className="mb-3">
             <ErrorState
               message="Ошибка загрузки"
               onRetry={() => {}}
             />
-          </View>
-
-          <View className="mb-3">
             <LoadingState variant="spinner" />
+            <Card>
+              <LoadingState variant="skeleton" lines={3} />
+            </Card>
           </View>
-
-          <Card>
-            <LoadingState variant="skeleton" lines={3} />
-          </Card>
         </Section>
 
         {/* ====== HEADERS ====== */}
+        {/*
+          Audit fix (Y~3422): same treatment as States — gap-4 on the parent
+          replaces per-child mb-4. Single source of spacing truth.
+        */}
         <Section title="Headers">
-          <View className="mb-3">
+          <View className="gap-4">
             <HeaderBack title="Header-Back" />
-          </View>
-          <View className="mb-3">
             <HeaderHome notificationCount={2} />
           </View>
         </Section>
+      </View>
+      </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );

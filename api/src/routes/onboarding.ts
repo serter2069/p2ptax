@@ -29,27 +29,23 @@ router.put("/name", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    // Guard: role can only be set once (during onboarding)
-    const existing = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-      select: { role: true },
-    });
-    if (existing?.role !== null && existing?.role !== undefined) {
-      res.status(400).json({ error: "Role already set" });
-      return;
-    }
-
+    // Iter11 — /onboarding/name is part of the specialist signup flow.
+    // After unification everyone is role=USER; specialist identity is opt-in
+    // via isSpecialist=true. Profile completion timestamp is set only once
+    // the specialist has filled out their full profile (see /profile route).
     const user = await prisma.user.update({
       where: { id: req.user!.userId },
       data: {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        role: "SPECIALIST",
+        role: "USER",
+        isSpecialist: true,
       },
       select: {
         id: true,
         email: true,
         role: true,
+        isSpecialist: true,
         firstName: true,
         lastName: true,
       },
@@ -63,32 +59,68 @@ router.put("/name", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // PUT /api/onboarding/work-area
+// Accepts two payload shapes for forward/back compat:
+//   A) { fnsServices: [{ fnsId, serviceIds: [...] }, ...] }  (legacy/client)
+//   B) { cities: [...], fns: [...], specialist_services: [{ fns_id, service_id }, ...] }
+//      — new shape used by the CityFnsCascade-based onboarding UI.
 router.put("/work-area", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { fnsServices } = req.body;
+    const { fnsServices, specialist_services: specialistServicesRaw } = req.body as {
+      fnsServices?: { fnsId?: string; serviceIds?: string[] }[];
+      cities?: string[];
+      fns?: string[];
+      specialist_services?: { fns_id?: string; service_id?: string }[];
+    };
 
-    if (!Array.isArray(fnsServices) || fnsServices.length === 0) {
-      res.status(400).json({ error: "At least one FNS office with services is required" });
+    // Normalise to the internal shape: Array<{ fnsId, serviceIds }>
+    let normalized: { fnsId: string; serviceIds: string[] }[] = [];
+
+    if (Array.isArray(fnsServices) && fnsServices.length > 0) {
+      normalized = fnsServices
+        .filter((x) => x && typeof x.fnsId === "string")
+        .map((x) => ({
+          fnsId: x.fnsId as string,
+          serviceIds: Array.isArray(x.serviceIds) ? x.serviceIds : [],
+        }));
+    } else if (Array.isArray(specialistServicesRaw) && specialistServicesRaw.length > 0) {
+      const grouped = new Map<string, string[]>();
+      for (const item of specialistServicesRaw) {
+        if (!item?.fns_id || !item?.service_id) continue;
+        const arr = grouped.get(item.fns_id) || [];
+        if (!arr.includes(item.service_id)) arr.push(item.service_id);
+        grouped.set(item.fns_id, arr);
+      }
+      normalized = [...grouped.entries()].map(([fnsId, serviceIds]) => ({
+        fnsId,
+        serviceIds,
+      }));
+    }
+
+    if (normalized.length === 0) {
+      res.status(400).json({
+        error: "At least one FNS office with services is required",
+      });
       return;
     }
 
     const userId = req.user!.userId;
 
-    // Verify user is specialist
+    // Verify user has specialist features enabled (Iter11 — flag-based).
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { isSpecialist: true },
     });
 
-    if (!user || user.role !== "SPECIALIST") {
+    if (!user || !user.isSpecialist) {
       res.status(403).json({ error: "Only specialists can set work area" });
       return;
     }
 
-    // Validate all fnsIds and serviceIds exist
-    for (const item of fnsServices) {
-      if (!item.fnsId || !Array.isArray(item.serviceIds) || item.serviceIds.length === 0) {
-        res.status(400).json({ error: "Each FNS must have at least one service" });
+    for (const item of normalized) {
+      if (!item.fnsId || item.serviceIds.length === 0) {
+        res
+          .status(400)
+          .json({ error: "Each FNS must have at least one service" });
         return;
       }
     }
@@ -98,7 +130,7 @@ router.put("/work-area", authMiddleware, async (req: Request, res: Response) => 
       await tx.specialistService.deleteMany({ where: { specialistId: userId } });
       await tx.specialistFns.deleteMany({ where: { specialistId: userId } });
 
-      for (const item of fnsServices) {
+      for (const item of normalized) {
         const specialistFns = await tx.specialistFns.create({
           data: {
             specialistId: userId,
@@ -133,13 +165,13 @@ router.put("/profile", authMiddleware, async (req: Request, res: Response) => {
     const { description, phone, telegram, whatsapp, officeAddress, workingHours, avatarUrl } =
       req.body;
 
-    // Verify user is specialist
+    // Verify user has specialist features enabled (Iter11 — flag-based).
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { isSpecialist: true },
     });
 
-    if (!user || user.role !== "SPECIALIST") {
+    if (!user || !user.isSpecialist) {
       res.status(403).json({ error: "Only specialists can set profile" });
       return;
     }
@@ -166,18 +198,21 @@ router.put("/profile", authMiddleware, async (req: Request, res: Response) => {
       },
     });
 
-    // Update avatar on user if provided
+    // Iter11: mark profile complete once the specialist finishes onboarding —
+    // specialistProfileCompletedAt is the gate for canWriteThreads() + appearing
+    // in the catalog. We set it on the first /profile call and never revert it.
+    const nowCompletion = new Date();
+    const userPatch: Record<string, unknown> = {
+      isAvailable: true,
+      specialistProfileCompletedAt: nowCompletion,
+    };
     if (avatarUrl !== undefined) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { avatarUrl: avatarUrl || null, isAvailable: true },
-      });
-    } else {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { isAvailable: true },
-      });
+      userPatch.avatarUrl = avatarUrl || null;
     }
+    await prisma.user.update({
+      where: { id: userId },
+      data: userPatch,
+    });
 
     res.json({ success: true });
   } catch (error) {

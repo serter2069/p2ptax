@@ -14,14 +14,22 @@ function normalizeQuery(q: string): string {
 }
 
 // GET /api/cities — list all cities (with offices count)
-router.get("/cities", async (_req: Request, res: Response) => {
+router.get("/cities", async (req: Request, res: Response) => {
   try {
-    const cities = await prisma.city.findMany({
-      orderBy: { name: "asc" },
-      include: {
-        _count: { select: { fnsOffices: true } },
-      },
-    });
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 100));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+
+    const [cities, total] = await Promise.all([
+      prisma.city.findMany({
+        orderBy: { name: "asc" },
+        skip: offset,
+        take: limit,
+        include: {
+          _count: { select: { fnsOffices: true } },
+        },
+      }),
+      prisma.city.count(),
+    ]);
 
     res.json({
       items: cities.map((c) => ({
@@ -30,6 +38,10 @@ router.get("/cities", async (_req: Request, res: Response) => {
         slug: c.slug,
         officesCount: c._count.fnsOffices,
       })),
+      total,
+      limit,
+      offset,
+      hasMore: offset + limit < total,
     });
   } catch (error) {
     console.error("cities error:", error);
@@ -58,13 +70,21 @@ router.get("/cities/:slug/ifns", async (req: Request, res: Response) => {
       ];
     }
 
-    const offices = await prisma.fnsOffice.findMany({
-      where,
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, code: true, address: true, cityId: true },
-    });
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 100));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
-    res.json({ city: { id: city.id, name: city.name, slug: city.slug }, items: offices });
+    const [offices, total] = await Promise.all([
+      prisma.fnsOffice.findMany({
+        where,
+        orderBy: { name: "asc" },
+        skip: offset,
+        take: limit,
+        select: { id: true, name: true, code: true, address: true, cityId: true },
+      }),
+      prisma.fnsOffice.count({ where }),
+    ]);
+
+    res.json({ city: { id: city.id, name: city.name, slug: city.slug }, items: offices, total, limit, offset, hasMore: offset + limit < total });
   } catch (error) {
     console.error("cities/:slug/ifns error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -130,21 +150,44 @@ router.get("/ifns/search", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/fns?city_id=X — legacy endpoint, kept for compatibility
+// GET /api/fns?city_id=X or ?city_ids=X,Y — offices for one or many cities
 router.get("/fns", async (req: Request, res: Response) => {
   try {
-    const cityId = req.query.city_id as string;
+    const cityId = (req.query.city_id as string) || "";
+    const cityIdsParam = (req.query.city_ids as string) || "";
 
-    if (!cityId) {
-      res.status(400).json({ error: "city_id is required" });
+    const ids = cityIdsParam
+      ? cityIdsParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : cityId
+      ? [cityId]
+      : [];
+
+    if (ids.length === 0) {
+      res.status(400).json({ error: "city_id or city_ids is required" });
       return;
     }
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    for (const id of ids) {
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({ error: "Invalid city id format: must be a valid UUID" });
+        return;
+      }
+    }
+
     const offices = await prisma.fnsOffice.findMany({
-      where: { cityId },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, code: true, cityId: true, address: true },
+      where: { cityId: { in: ids } },
+      orderBy: [{ city: { name: "asc" } }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        cityId: true,
+        address: true,
+        city: { select: { id: true, name: true } },
+      },
     });
+
     res.json({ offices });
   } catch (error) {
     console.error("fns error:", error);
@@ -166,16 +209,33 @@ router.get("/services", async (_req: Request, res: Response) => {
   }
 });
 
+// In-memory cache for public landing counts (60s TTL).
+// Avoids running 3 COUNT queries on every public landing hit.
+let cachedLandingCounts: {
+  data: { specialistsCount: number; citiesCount: number; consultationsCount: number };
+  expiresAt: number;
+} | null = null;
+const LANDING_TTL_MS = 60_000;
+
 // GET /api/stats — public platform statistics
 router.get("/stats", async (_req: Request, res: Response) => {
   try {
+    const now = Date.now();
+    if (cachedLandingCounts && cachedLandingCounts.expiresAt > now) {
+      res.json(cachedLandingCounts.data);
+      return;
+    }
+
     const [specialistsCount, citiesCount, consultationsCount] = await Promise.all([
-      prisma.user.count({ where: { role: "SPECIALIST", isBanned: false } }),
+      // Iter11: specialists counted by flag, not retired role value.
+      prisma.user.count({ where: { isSpecialist: true, isBanned: false } }),
       prisma.city.count(),
       prisma.thread.count(),
     ]);
 
-    res.json({ specialistsCount, citiesCount, consultationsCount });
+    const data = { specialistsCount, citiesCount, consultationsCount };
+    cachedLandingCounts = { data, expiresAt: now + LANDING_TTL_MS };
+    res.json(data);
   } catch (error) {
     console.error("stats error:", error);
     res.status(500).json({ error: "Internal server error" });

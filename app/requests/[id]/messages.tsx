@@ -5,16 +5,19 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import HeaderBack from "@/components/HeaderBack";
+import { useTypedRouter } from "@/lib/navigation";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
-import { MessageCircle } from "lucide-react-native";
+import { MessageCircle, ChevronLeft } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import { api, ApiError } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { useRequireAuth } from "@/lib/useRequireAuth";
+import { colors, BREAKPOINT } from "@/lib/theme";
 
 interface ThreadItem {
   id: string;
@@ -23,6 +26,8 @@ interface ThreadItem {
     firstName: string | null;
     lastName: string | null;
     avatarUrl: string | null;
+    /** Soft-deleted account — render "Аккаунт удалён" instead of the name. */
+    isDeleted?: boolean;
   };
   lastMessage: {
     text: string;
@@ -32,7 +37,8 @@ interface ThreadItem {
   createdAt: string;
 }
 
-function displayName(user: { firstName: string | null; lastName: string | null }): string {
+function displayName(user: { firstName: string | null; lastName: string | null; isDeleted?: boolean }): string {
+  if (user.isDeleted) return "Аккаунт удалён";
   const parts = [user.firstName, user.lastName].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : "Специалист";
 }
@@ -61,7 +67,11 @@ function truncate(str: string, maxLen: number): string {
 
 export default function RequestMessages() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= BREAKPOINT;
+  const { ready } = useRequireAuth();
 
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +90,6 @@ export default function RequestMessages() {
       } else {
         setError("Проверьте соединение с интернетом и попробуйте снова");
       }
-      console.error("fetch request threads error:", e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -88,8 +97,8 @@ export default function RequestMessages() {
   }, [id]);
 
   useEffect(() => {
-    fetchThreads();
-  }, [fetchThreads]);
+    if (ready) fetchThreads();
+  }, [ready, fetchThreads]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -104,18 +113,18 @@ export default function RequestMessages() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Чат с ${name}`}
-          onPress={() => router.push(`/threads/${item.id}` as never)}
-          className="flex-row items-center py-3 border-b border-slate-100"
+          onPress={() => nav.any(`/threads/${item.id}`)}
+          className="flex-row items-center py-3 border-b border-border"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
           {/* Avatar */}
-          <View className="w-10 h-10 rounded-full bg-blue-900 items-center justify-center">
+          <View className="w-10 h-10 rounded-full bg-accent items-center justify-center">
             <Text className="text-white text-sm font-bold">
               {getInitials(item.otherUser)}
             </Text>
             {hasUnread && (
-              <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-600 items-center justify-center px-1">
-                <Text className="text-[10px] font-bold text-white">
+              <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-danger items-center justify-center px-1">
+                <Text className="text-xs font-bold text-white">
                   {item.unreadCount > 99 ? "99+" : item.unreadCount}
                 </Text>
               </View>
@@ -125,20 +134,20 @@ export default function RequestMessages() {
           {/* Content */}
           <View className="flex-1 ml-3">
             <Text
-              className={`text-base ${hasUnread ? "font-bold" : "font-semibold"} text-slate-900`}
+              className={`text-base ${hasUnread ? "font-bold" : "font-semibold"} text-text-base`}
               numberOfLines={1}
             >
               {name}
             </Text>
             {item.lastMessage ? (
               <Text
-                className={`text-sm mt-0.5 ${hasUnread ? "font-semibold text-slate-700" : "text-slate-400"}`}
+                className={`text-sm mt-0.5 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
                 numberOfLines={1}
               >
                 {truncate(item.lastMessage.text, 60)}
               </Text>
             ) : (
-              <Text className="text-sm mt-0.5 text-slate-400" numberOfLines={1}>
+              <Text className="text-sm mt-0.5 text-text-mute" numberOfLines={1}>
                 Нет сообщений
               </Text>
             )}
@@ -146,7 +155,7 @@ export default function RequestMessages() {
 
           {/* Time */}
           {item.lastMessage && (
-            <Text className="text-xs text-slate-400 ml-2">
+            <Text className="text-xs text-text-mute ml-2">
               {formatTime(item.lastMessage.createdAt)}
             </Text>
           )}
@@ -156,19 +165,44 @@ export default function RequestMessages() {
     [router]
   );
 
+  const backRow = !isDesktop ? (
+    <View className="px-4 pt-4">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Назад"
+        onPress={() => router.back()}
+        className="flex-row items-center mb-2"
+        style={{ minHeight: 44 }}
+      >
+        <ChevronLeft size={20} color={colors.text} />
+        <Text className="text-text-base ml-1">Назад</Text>
+      </Pressable>
+      <Text className="text-2xl font-extrabold text-text-base mb-3">Сообщения</Text>
+    </View>
+  ) : null;
+
+  if (!ready) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        {backRow}
+        <LoadingState />
+      </SafeAreaView>
+    );
+  }
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Сообщения" />
+        {backRow}
         <ResponsiveContainer>
           {[0, 1, 2, 3].map((i) => (
-            <View key={i} className="flex-row items-center py-3 border-b border-slate-100">
-              <View className="w-10 h-10 rounded-full bg-slate-200" />
+            <View key={i} className="flex-row items-center py-3 border-b border-border">
+              <View className="w-10 h-10 rounded-full bg-surface2" />
               <View className="flex-1 ml-3">
-                <View className="h-4 bg-slate-200 rounded mb-2" style={{ width: "55%" }} />
-                <View className="h-3 bg-slate-200 rounded" style={{ width: "80%" }} />
+                <View className="h-4 bg-surface2 rounded mb-2" style={{ width: "55%" }} />
+                <View className="h-3 bg-surface2 rounded" style={{ width: "80%" }} />
               </View>
-              <View className="h-3 bg-slate-200 rounded ml-2" style={{ width: 32 }} />
+              <View className="h-3 bg-surface2 rounded ml-2" style={{ width: 32 }} />
             </View>
           ))}
         </ResponsiveContainer>
@@ -179,7 +213,7 @@ export default function RequestMessages() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Сообщения" />
+        {backRow}
         <View className="flex-1 items-center justify-center">
           <ErrorState
             message={error}
@@ -195,7 +229,7 @@ export default function RequestMessages() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <HeaderBack title="Сообщения" />
+      {backRow}
       <ResponsiveContainer>
         <FlatList
           data={threads}
@@ -215,7 +249,7 @@ export default function RequestMessages() {
               subtitle="Специалисты увидят вашу заявку и напишут вам первыми"
             />
           }
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 24 : 0 }}
         />
       </ResponsiveContainer>
     </SafeAreaView>

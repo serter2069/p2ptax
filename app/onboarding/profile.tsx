@@ -8,22 +8,48 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { useState, useRef } from "react";
-import { Pencil, Camera } from "lucide-react-native";
-import HeaderBack from "@/components/HeaderBack";
-import { API_URL, api } from "@/lib/api";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
+import { useState, useRef, useEffect } from "react";
+import { Pencil, Camera, ChevronLeft } from "lucide-react-native";
+import {
+  api,
+  ApiError,
+  AVATAR_MAX_BYTES,
+  AVATAR_TOO_LARGE_MESSAGE,
+  avatarUploadErrorMessage,
+  uploadAvatarFile,
+} from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { useRequireAuth } from "@/lib/useRequireAuth";
+import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors } from "@/lib/theme";
-
+import LoadingState from "@/components/ui/LoadingState";
+import { colors, overlay, textStyle } from "@/lib/theme";
 
 export default function OnboardingProfileScreen() {
-  const router = useRouter();
-  const { updateUser } = useAuth();
+  const router = useRouter()
+  const nav = useTypedRouter();
+  const params = useLocalSearchParams<{ from?: string }>();
+  const fromSettings = params.from === "settings";
+  const { ready, user } = useRequireAuth();
+  const { updateUser, isSpecialistUser, isAdminUser } = useAuth();
+
+  useEffect(() => {
+    if (!ready) return;
+    if (isAdminUser) {
+      nav.replaceRoutes.adminDashboard();
+      return;
+    }
+    if (!isSpecialistUser) {
+      nav.replaceRoutes.tabs();
+      return;
+    }
+    if (!fromSettings && user?.specialistProfileCompletedAt) {
+      nav.replaceRoutes.tabs();
+    }
+  }, [ready, isAdminUser, isSpecialistUser, user, fromSettings, nav]);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -41,7 +67,6 @@ export default function OnboardingProfileScreen() {
     description?: string;
   }>({});
 
-  // Web-only hidden file input ref
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const formatPhone = (text: string) => {
@@ -61,32 +86,20 @@ export default function OnboardingProfileScreen() {
   };
 
   const uploadAvatar = async (file: File) => {
+    // Pre-check size before any network call
+    if (file.size > AVATAR_MAX_BYTES) {
+      setError(AVATAR_TOO_LARGE_MESSAGE);
+      return;
+    }
+
     setAvatarUploading(true);
     setError("");
     try {
-      const token = await AsyncStorage.getItem("p2ptax_access_token");
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch(`${API_URL}/api/upload/avatar`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || "Не удалось загрузить фото");
-      }
-
-      const data = (await res.json()) as { url: string; key: string };
-      // Build full URL from relative path returned by server
-      const fullUrl = data.url.startsWith("http")
-        ? data.url
-        : `${API_URL}${data.url}`;
+      const fullUrl = await uploadAvatarFile(file);
       setAvatarUrl(fullUrl);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Ошибка загрузки фото";
+      const msg =
+        e instanceof ApiError ? e.message : avatarUploadErrorMessage(-1);
       setError(msg);
     } finally {
       setAvatarUploading(false);
@@ -97,14 +110,12 @@ export default function OnboardingProfileScreen() {
     if (Platform.OS === "web" && fileInputRef.current) {
       fileInputRef.current.click();
     }
-    // Native: expo-image-picker not installed — web-only upload for now
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       void uploadAvatar(file);
-      // Reset so the same file can be re-selected
       e.target.value = "";
     }
   };
@@ -132,24 +143,32 @@ export default function OnboardingProfileScreen() {
     setIsLoading(true);
 
     try {
-      await api("/api/onboarding/profile", {
-        method: "PUT",
-        body: {
-          description: description.trim() || null,
-          phone: phone.trim() || null,
-          telegram: telegram.trim() || null,
-          whatsapp: whatsapp.trim() || null,
-          officeAddress: officeAddress.trim() || null,
-          workingHours: workingHours.trim() || null,
-          avatarUrl: avatarUrl || null,
-        },
+      const result = await api<{ success: boolean; specialistProfileCompletedAt?: string }>(
+        "/api/onboarding/profile",
+        {
+          method: "PUT",
+          body: {
+            description: description.trim() || null,
+            phone: phone.trim() || null,
+            telegram: telegram.trim() || null,
+            whatsapp: whatsapp.trim() || null,
+            officeAddress: officeAddress.trim() || null,
+            workingHours: workingHours.trim() || null,
+            avatarUrl: avatarUrl || null,
+          },
+        }
+      );
+
+      // Mark user as specialist locally + record onboarding completion so
+      // useStrandedSpecialistGuard stops bouncing back to /onboarding/name.
+      const completedAt = result.specialistProfileCompletedAt ?? new Date().toISOString();
+      updateUser({
+        isSpecialist: true,
+        specialistProfileCompletedAt: completedAt,
+        ...(avatarUrl ? { avatarUrl } : {}),
       });
 
-      if (avatarUrl) {
-        updateUser({ avatarUrl });
-      }
-
-      router.replace("/(specialist-tabs)/dashboard" as never);
+      nav.replaceRoutes.tabs();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);
@@ -158,208 +177,256 @@ export default function OnboardingProfileScreen() {
     }
   };
 
+  if (!ready || isAdminUser || !isSpecialistUser) {
+    return <LoadingState />;
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <HeaderBack title="" />
-      <ResponsiveContainer>
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 40 }}
-          keyboardShouldPersistTaps="handled"
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <View className="px-6 pt-4 pb-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="flex-row items-center"
+          style={{ minHeight: 44 }}
         >
-          <View className="pt-6">
-            {/* Step indicator */}
-            <Text className="text-sm text-amber-700 text-center mb-2">
-              Шаг 3 из 3
-            </Text>
-            <Text className="text-2xl font-bold text-slate-900 text-center mb-1">
-              Профиль
-            </Text>
-            <Text className="text-sm text-slate-500 text-center mb-6">
-              Всё необязательно — можно заполнить позже
-            </Text>
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+      </View>
 
-            {/* Avatar upload */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Добавить фото"
-              onPress={handleAvatarPress}
-              className="items-center mb-6"
-            >
-              {avatarUploading ? (
-                <View
-                  className="items-center justify-center rounded-full bg-slate-100"
-                  style={{ width: 80, height: 80 }}
-                >
-                  <ActivityIndicator color={colors.primary} />
-                </View>
-              ) : avatarUrl ? (
-                <View>
-                  <Image
-                    source={{ uri: avatarUrl }}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: 40,
-                      borderWidth: 2,
-                      borderColor: colors.border,
-                    }}
-                  />
-                  <View
-                    className="absolute bottom-0 right-0 bg-blue-900 rounded-full items-center justify-center"
-                    style={{ width: 24, height: 24 }}
-                  >
-                    <Pencil size={12} color={colors.surface} />
-                  </View>
-                </View>
-              ) : (
-                <View
-                  className="rounded-full bg-slate-100 items-center justify-center"
+      <View className="px-6 pb-4">
+        <OnboardingProgress step={3} />
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={{ width: "100%", maxWidth: 640, alignSelf: "center" }}>
+          <Text
+            style={{
+              ...textStyle.h1,
+              color: colors.text,
+              fontSize: 32,
+              lineHeight: 38,
+              marginTop: 16,
+              marginBottom: 12,
+            }}
+          >
+            Заполните профиль
+          </Text>
+          <Text
+            style={{
+              ...textStyle.body,
+              color: colors.textSecondary,
+              fontSize: 16,
+              lineHeight: 24,
+              marginBottom: 24,
+            }}
+          >
+            Всё необязательно — можно заполнить позже. Аватар помогает клиенту
+            быстрее выбрать именно вас.
+          </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Добавить фото"
+            onPress={handleAvatarPress}
+            className="items-center mb-6"
+          >
+            {avatarUploading ? (
+              <View
+                className="items-center justify-center rounded-full bg-accent-soft"
+                style={{ width: 96, height: 96 }}
+              >
+                <ActivityIndicator color={colors.primary} />
+              </View>
+            ) : avatarUrl ? (
+              <View>
+                <Image
+                  source={{ uri: avatarUrl }}
                   style={{
-                    width: 80,
-                    height: 80,
+                    width: 96,
+                    height: 96,
+                    borderRadius: 48,
                     borderWidth: 2,
-                    borderColor: colors.borderLight,
-                    borderStyle: "dashed",
+                    borderColor: colors.border,
                   }}
+                />
+                <View
+                  className="absolute bottom-0 right-0 bg-accent rounded-full items-center justify-center"
+                  style={{ width: 28, height: 28 }}
                 >
-                  <Camera size={24} color={colors.placeholder} />
+                  <Pencil size={14} color={colors.surface} />
                 </View>
-              )}
-              <Text className="text-sm text-slate-400 mt-2">
-                {avatarUrl ? "Изменить фото" : "Нажмите, чтобы загрузить фото"}
-              </Text>
-            </Pressable>
-
-            {/* Hidden web file input */}
-            {Platform.OS === "web" && (
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
-              />
+              </View>
+            ) : (
+              <View
+                className="rounded-full bg-accent-soft items-center justify-center"
+                style={{
+                  width: 96,
+                  height: 96,
+                  borderWidth: 2,
+                  borderColor: colors.borderLight,
+                  borderStyle: "dashed",
+                }}
+              >
+                <Camera size={28} color={colors.primary} />
+              </View>
             )}
+            <Text className="text-sm text-text-mute mt-2">
+              {avatarUrl ? "Изменить фото" : "Нажмите, чтобы загрузить фото"}
+            </Text>
+          </Pressable>
 
-            {/* Contacts note */}
-            <View className="bg-blue-50 rounded-xl px-4 py-3 mb-4">
-              <Text className="text-xs text-blue-800 text-center">
-                Контакты будут видны всем посетителям платформы
-              </Text>
-            </View>
-
-            {/* About */}
-            <View className="mb-4">
-              <Input
-                label="О себе"
-                placeholder="Расскажите о своём опыте: сколько лет в профессии, какие вопросы решаете, с какими инспекциями работаете"
-                value={description}
-                onChangeText={(t) => {
-                  if (t.length <= 1000) setDescription(t);
-                  if (fieldErrors.description) setFieldErrors((e) => ({ ...e, description: undefined }));
-                }}
-                multiline
-                editable={!isLoading}
-                error={fieldErrors.description}
-              />
-              <Text className="text-xs text-slate-400 text-right mt-1">
-                {description.length}/1000
-              </Text>
-            </View>
-
-            {/* Phone */}
-            <View className="mb-4">
-              <Input
-                label="Телефон"
-                placeholder="+7 (___) ___-__-__"
-                value={phone}
-                onChangeText={(t) => {
-                  setPhone(formatPhone(t));
-                  if (fieldErrors.phone) setFieldErrors((e) => ({ ...e, phone: undefined }));
-                }}
-                keyboardType="phone-pad"
-                editable={!isLoading}
-                error={fieldErrors.phone}
-              />
-            </View>
-
-            {/* Telegram */}
-            <View className="mb-4">
-              <Input
-                label="Telegram"
-                placeholder="@username"
-                value={telegram}
-                onChangeText={(t) => {
-                  setTelegram(t);
-                  if (fieldErrors.telegram) setFieldErrors((e) => ({ ...e, telegram: undefined }));
-                }}
-                autoCapitalize="none"
-                editable={!isLoading}
-                error={fieldErrors.telegram}
-              />
-            </View>
-
-            {/* WhatsApp */}
-            <View className="mb-4">
-              <Input
-                label="WhatsApp"
-                placeholder="+7 (___) ___-__-__"
-                value={whatsapp}
-                onChangeText={(t) => setWhatsapp(formatPhone(t))}
-                keyboardType="phone-pad"
-                editable={!isLoading}
-              />
-            </View>
-
-            {/* Office address */}
-            <View className="mb-4">
-              <Input
-                label="Адрес офиса"
-                placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"
-                value={officeAddress}
-                onChangeText={setOfficeAddress}
-                editable={!isLoading}
-              />
-            </View>
-
-            {/* Working hours */}
-            <View className="mb-6">
-              <Input
-                label="Часы работы"
-                placeholder="Пн-Пт 9:00-18:00"
-                value={workingHours}
-                onChangeText={setWorkingHours}
-                editable={!isLoading}
-              />
-            </View>
-
-            {error ? (
-              <Text className="text-xs text-red-600 text-center mb-4">
-                {error}
-              </Text>
-            ) : null}
-
-            <Button
-              label="Завершить регистрацию"
-              onPress={handleSubmit}
-              disabled={isLoading || avatarUploading}
-              loading={isLoading}
+          {Platform.OS === "web" && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
             />
+          )}
 
-            {/* Skip link */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Пропустить"
-              onPress={handleSubmit}
-              disabled={isLoading || avatarUploading}
-              className="items-center mt-4 py-2"
-            >
-              <Text className="text-sm text-slate-400">Пропустить</Text>
-            </Pressable>
+          <View
+            className="bg-accent-soft rounded-xl px-4 py-3 mb-4"
+            style={{ borderWidth: 1, borderColor: overlay.accent10 }}
+          >
+            <Text className="text-xs text-accent text-center font-medium">
+              Контакты будут видны всем посетителям платформы
+            </Text>
           </View>
-        </ScrollView>
-      </ResponsiveContainer>
+
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+            О себе
+          </Text>
+
+          <View className="mb-4">
+            <Input
+              label="О себе"
+              placeholder="Расскажите о своём опыте: сколько лет в профессии, какие вопросы решаете, с какими инспекциями работаете"
+              value={description}
+              onChangeText={(t) => {
+                if (t.length <= 1000) setDescription(t);
+                if (fieldErrors.description)
+                  setFieldErrors((e) => ({ ...e, description: undefined }));
+              }}
+              multiline
+              editable={!isLoading}
+              error={fieldErrors.description}
+            />
+            <Text className="text-xs text-text-mute text-right mt-1">
+              {description.length}/1000
+            </Text>
+          </View>
+
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3 mt-2">
+            Контакты
+          </Text>
+
+          <View className="mb-4">
+            <Input
+              label="Телефон"
+              placeholder="+7 (___) ___-__-__"
+              value={phone}
+              onChangeText={(t) => {
+                setPhone(formatPhone(t));
+                if (fieldErrors.phone)
+                  setFieldErrors((e) => ({ ...e, phone: undefined }));
+              }}
+              keyboardType="phone-pad"
+              editable={!isLoading}
+              error={fieldErrors.phone}
+            />
+          </View>
+
+          <View className="mb-4">
+            <Input
+              label="Telegram"
+              placeholder="@username"
+              value={telegram}
+              onChangeText={(t) => {
+                setTelegram(t);
+                if (fieldErrors.telegram)
+                  setFieldErrors((e) => ({ ...e, telegram: undefined }));
+              }}
+              autoCapitalize="none"
+              editable={!isLoading}
+              error={fieldErrors.telegram}
+            />
+          </View>
+
+          <View className="mb-4">
+            <Input
+              label="WhatsApp"
+              placeholder="+7 (___) ___-__-__"
+              value={whatsapp}
+              onChangeText={(t) => setWhatsapp(formatPhone(t))}
+              keyboardType="phone-pad"
+              editable={!isLoading}
+            />
+          </View>
+
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3 mt-2">
+            Офис
+          </Text>
+
+          <View className="mb-4">
+            <Input
+              label="Адрес офиса"
+              placeholder="г. Москва, ул. Примерная, д. 1, оф. 100"
+              value={officeAddress}
+              onChangeText={setOfficeAddress}
+              editable={!isLoading}
+            />
+          </View>
+
+          <View className="mb-6">
+            <Input
+              label="Часы работы"
+              placeholder="Пн-Пт 9:00-18:00"
+              value={workingHours}
+              onChangeText={setWorkingHours}
+              editable={!isLoading}
+            />
+          </View>
+
+          {error ? (
+            <View
+              className="mb-3 px-4 py-3 rounded-xl"
+              style={{
+                backgroundColor: colors.errorBg,
+                borderWidth: 1,
+                borderColor: colors.danger,
+              }}
+            >
+              <Text className="text-sm text-danger leading-5">{error}</Text>
+            </View>
+          ) : null}
+
+          <Button
+            label="Завершить регистрацию"
+            onPress={handleSubmit}
+            disabled={isLoading || avatarUploading}
+            loading={isLoading}
+          />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Пропустить"
+            onPress={handleSubmit}
+            disabled={isLoading || avatarUploading}
+            className="items-center mt-4"
+            style={{ minHeight: 44, justifyContent: "center" }}
+          >
+            <Text className="text-sm text-text-mute">Пропустить</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

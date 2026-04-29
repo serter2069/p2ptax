@@ -1,100 +1,210 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { useRef } from "react";
+import { View, Text, ScrollView, Pressable, useWindowDimensions, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
-import { colors } from "@/lib/theme";
+import { ChevronLeft } from "lucide-react-native";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { colors, overlay, spacing } from "@/lib/theme";
 
-function SectionHeading({ children }: { children: string }) {
-  return (
-    <Text className="text-lg font-bold text-slate-900 mt-6 mb-2">
-      {children}
-    </Text>
-  );
+interface Section {
+  id: string;
+  title: string;
+  body: string;
 }
 
-function Paragraph({ children }: { children: string }) {
-  return (
-    <Text className="text-base text-slate-500 leading-7 mb-3">{children}</Text>
-  );
-}
+const SECTIONS: Section[] = [
+  {
+    id: "intro",
+    title: "Введение",
+    body:
+      "Настоящая Политика конфиденциальности описывает, как P2PTax собирает, использует и защищает ваши персональные данные при использовании нашей платформы.",
+  },
+  {
+    id: "collected",
+    title: "1. Собираемые данные",
+    body:
+      "Мы собираем данные, которые вы предоставляете при регистрации и использовании платформы: адрес электронной почты, имя, контактную информацию и данные о профессиональной деятельности.",
+  },
+  {
+    id: "usage",
+    title: "2. Использование данных",
+    body:
+      "Данные используются для предоставления и улучшения наших услуг, обработки запросов, отправки уведомлений и обеспечения безопасности платформы.",
+  },
+  {
+    id: "sharing",
+    title: "3. Передача данных",
+    body:
+      "Мы не продаём ваши персональные данные третьим лицам. Данные могут передаваться только поставщикам услуг, обеспечивающим работу платформы, а также по требованию закона.",
+  },
+  {
+    id: "security",
+    title: "4. Безопасность",
+    body:
+      "Мы принимаем разумные меры для защиты ваших данных. Все данные передаются по зашифрованным каналам (TLS/SSL).",
+  },
+  {
+    id: "rights",
+    title: "5. Ваши права",
+    body:
+      "Вы имеете право на доступ, исправление или удаление своих персональных данных. Для этого обратитесь к нам через приложение или по адресу: privacy@p2ptax.ru",
+  },
+  {
+    id: "contact",
+    title: "6. Контакты",
+    body:
+      "По вопросам, связанным с Политикой конфиденциальности, обращайтесь по адресу: privacy@p2ptax.ru",
+  },
+];
 
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktopWeb = Platform.OS === "web" && width >= 1024;
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionOffsets = useRef<Record<string, number>>({});
+
+  const handleJump = (id: string) => {
+    const y = sectionOffsets.current[id];
+    if (typeof y === "number" && scrollRef.current) {
+      scrollRef.current.scrollTo({ y: Math.max(0, y - 16), animated: true });
+    }
+  };
+
+  const body = (
+    <ScrollView
+      ref={scrollRef}
+      className="flex-1"
+      contentContainerStyle={{ paddingBottom: 48 }}
+    >
+      {!isDesktopWeb && (
+        <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
+          <Text className="text-xl font-bold text-white mb-0.5">Политика конфиденциальности</Text>
+          <Text className="text-sm" style={{ color: overlay.white90 }}>Как P2PTax собирает, хранит и защищает ваши данные</Text>
+        </View>
+      )}
+
+      <View style={isDesktopWeb ? { paddingHorizontal: 0, paddingTop: spacing.xl } : undefined}>
+        {isDesktopWeb ? (
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text className="text-3xl font-bold text-text-base mb-2">
+              Политика конфиденциальности
+            </Text>
+            <Text className="text-base text-text-mute">
+              Как P2PTax собирает, хранит и защищает ваши данные
+            </Text>
+            <Text className="text-xs text-text-dim mt-3">
+              Последнее обновление: апрель 2026
+            </Text>
+          </View>
+        ) : (
+          <View className="mx-4 mt-4">
+            <Text className="text-xs text-text-dim text-center mb-2">
+              Последнее обновление: апрель 2026
+            </Text>
+          </View>
+        )}
+
+        <View
+          className={isDesktopWeb ? "" : "mx-4 bg-white border border-border rounded-2xl p-6"}
+          style={isDesktopWeb ? { maxWidth: 720 } : undefined}
+        >
+          {SECTIONS.length === 0 ? null : SECTIONS.map((section, idx) => (
+            <View
+              key={section.id}
+              onLayout={(e) => {
+                sectionOffsets.current[section.id] = e.nativeEvent.layout.y;
+              }}
+            >
+              {idx > 0 && (
+                <View
+                  className="border-t border-border"
+                  style={{ marginVertical: spacing.md }}
+                />
+              )}
+              <Text className="text-base font-semibold text-text-base mb-2">
+                {section.title}
+              </Text>
+              <Text className="text-base text-text-mute leading-7 mb-2">
+                {section.body}
+              </Text>
+            </View>
+          ))}
+
+          <Text className="text-xs text-text-dim text-center mt-6">
+            P2PTax — ваши данные под защитой
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-row items-center h-14 bg-white border-b border-slate-200 px-4">
+    <SafeAreaView className="flex-1 bg-surface2">
+      <View className="px-4 pt-4">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Назад"
           onPress={() => router.back()}
-          className="w-11 h-11 items-center justify-center -ml-2"
+          className="flex-row items-center mb-2"
+          style={{ minHeight: 44 }}
         >
-          <ArrowLeft size={18} color={colors.text} />
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
         </Pressable>
-        <Text className="flex-1 text-center text-base font-semibold text-slate-900">
-          Политика конфиденциальности
-        </Text>
-        <View className="w-10" />
+        <Text className="text-2xl font-extrabold text-text-base mb-3">Политика конфиденциальности</Text>
       </View>
-
-      <ResponsiveContainer maxWidth={720}>
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 0, paddingBottom: 48 }}
+      {isDesktopWeb ? (
+        <View
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            paddingHorizontal: spacing.xl,
+            paddingVertical: spacing.lg,
+            gap: spacing.xl,
+          }}
         >
-          <Text className="text-sm text-slate-400 mt-4 mb-4">
-            Последнее обновление: апрель 2026
-          </Text>
+          {/* TOC rail */}
+          <View style={{ width: 220, paddingTop: spacing.xl }}>
+            <Text
+              className="text-xs font-semibold uppercase mb-3"
+              style={{ color: colors.textMuted, letterSpacing: 1 }}
+            >
+              Содержание
+            </Text>
+            <View style={{ gap: 2 }}>
+              {SECTIONS.map((section) => (
+                <Pressable
+                  key={section.id}
+                  accessibilityRole="link"
+                  accessibilityLabel={section.title}
+                  onPress={() => handleJump(section.id)}
+                  style={{
+                    paddingVertical: spacing.xs,
+                    paddingHorizontal: spacing.sm,
+                    borderRadius: 6,
+                    minHeight: 44,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    className="text-sm"
+                    style={{ color: colors.textSecondary }}
+                    numberOfLines={1}
+                  >
+                    {section.title}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
-          <Paragraph>
-            Настоящая Политика конфиденциальности описывает, как P2PTax собирает,
-            использует и защищает ваши персональные данные при использовании нашей
-            платформы.
-          </Paragraph>
-
-          <SectionHeading>1. Собираемые данные</SectionHeading>
-          <Paragraph>
-            Мы собираем данные, которые вы предоставляете при регистрации и
-            использовании платформы: адрес электронной почты, имя, контактную
-            информацию и данные о профессиональной деятельности.
-          </Paragraph>
-
-          <SectionHeading>2. Использование данных</SectionHeading>
-          <Paragraph>
-            Данные используются для предоставления и улучшения наших услуг,
-            обработки запросов, отправки уведомлений и обеспечения безопасности
-            платформы.
-          </Paragraph>
-
-          <SectionHeading>3. Передача данных</SectionHeading>
-          <Paragraph>
-            Мы не продаём ваши персональные данные третьим лицам. Данные могут
-            передаваться только поставщикам услуг, обеспечивающим работу
-            платформы, а также по требованию закона.
-          </Paragraph>
-
-          <SectionHeading>4. Безопасность</SectionHeading>
-          <Paragraph>
-            Мы принимаем разумные меры для защиты ваших данных. Все данные
-            передаются по зашифрованным каналам (TLS/SSL).
-          </Paragraph>
-
-          <SectionHeading>5. Ваши права</SectionHeading>
-          <Paragraph>
-            Вы имеете право на доступ, исправление или удаление своих
-            персональных данных. Для этого обратитесь к нам через приложение или
-            по адресу: privacy@p2ptax.ru
-          </Paragraph>
-
-          <SectionHeading>6. Контакты</SectionHeading>
-          <Paragraph>
-            По вопросам, связанным с Политикой конфиденциальности, обращайтесь по
-            адресу: privacy@p2ptax.ru
-          </Paragraph>
-        </ScrollView>
-      </ResponsiveContainer>
+          {/* Reading column — capped at 720px for comfortable line length */}
+          <View style={{ flex: 1, maxWidth: 720 }}>{body}</View>
+        </View>
+      ) : (
+        <ResponsiveContainer maxWidth={720}>{body}</ResponsiveContainer>
+      )}
     </SafeAreaView>
   );
 }

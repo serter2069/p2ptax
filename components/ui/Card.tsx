@@ -20,10 +20,9 @@ export default function Card({
   variant = "default",
   padding = "md",
 }: CardProps) {
-  const variantClass =
-    variant === "default"
-      ? "bg-white rounded-2xl border border-slate-100"
-      : "bg-white rounded-2xl border border-slate-200";
+  const variantClass = "bg-white rounded-2xl border";
+
+  const variantBorderColor = variant === "default" ? colors.border : colors.border;
 
   const shadowStyle =
     variant === "default"
@@ -39,7 +38,7 @@ export default function Card({
   const content = (
     <View
       className={variantClass}
-      style={[{ padding: paddingMap[padding] }, shadowStyle]}
+      style={[{ padding: paddingMap[padding], borderColor: variantBorderColor, backgroundColor: colors.surface }, shadowStyle]}
     >
       {children}
     </View>

@@ -102,32 +102,32 @@ export default function FileUploadSection({
 
   return (
     <View className="mb-6">
-      <Text className="text-sm font-medium text-slate-700 mb-1">Документы</Text>
-      <Text className="text-xs text-slate-400 mb-3">
+      <Text className="text-sm font-medium text-text-base mb-1">Документы</Text>
+      <Text className="text-xs text-text-mute mb-3">
         PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов
       </Text>
 
       {files.map((file, index) => (
         <View
           key={`file-${index}`}
-          className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 mb-2"
+          className="flex-row items-center bg-surface2 border border-border rounded-xl px-3 py-2.5 mb-2"
         >
           {file.mimeType === "application/pdf"
             ? <File size={18} color={file.error ? colors.error : colors.primary} />
             : <FileImage size={18} color={file.error ? colors.error : colors.primary} />
           }
           <View className="flex-1 mx-2">
-            <Text className="text-sm text-slate-900" numberOfLines={1}>
+            <Text className="text-sm text-text-base" numberOfLines={1}>
               {file.name}
             </Text>
             {file.uploading && (
-              <Text className="text-xs text-slate-400">Загрузка...</Text>
+              <Text className="text-xs text-text-mute">Загрузка...</Text>
             )}
             {file.error && (
-              <Text className="text-xs text-red-600">{file.error}</Text>
+              <Text className="text-xs text-danger">{file.error}</Text>
             )}
             {file.uploadedUrl && !file.uploading && (
-              <Text className="text-xs text-emerald-600">Загружен</Text>
+              <Text className="text-xs text-success">Загружен</Text>
             )}
           </View>
           {file.uploading ? (
@@ -150,10 +150,13 @@ export default function FileUploadSection({
           accessibilityRole="button"
           accessibilityLabel="Прикрепить файл"
           onPress={handleAddFilePress}
-          className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl active:bg-slate-50"
+          className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl active:bg-surface2"
         >
           <Plus size={13} color={colors.accent} />
-          <Text className="text-sm text-amber-700 ml-2 font-medium">
+          <Text
+            className="text-sm ml-2 font-medium"
+            style={{ color: colors.warningInkStrong }}
+          >
             + Прикрепить файл
           </Text>
         </Pressable>

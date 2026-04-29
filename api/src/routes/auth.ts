@@ -10,13 +10,32 @@ import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
 
+// POST /login equivalent: max 10 req per 15 min per IP (relaxed in dev)
 const otpRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 5 : 1000,
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Слишком много запросов. Попробуйте через 15 минут." },
   skip: (req) => req.headers['x-smoke-test'] === 'metromap',
+});
+
+// POST /verify-otp: max 5 req per 15 min per IP
+const verifyOtpRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 5 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много попыток. Попробуйте через 15 минут." },
+  skip: (req) => req.headers['x-smoke-test'] === 'metromap',
+});
+
+const refreshRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много запросов обновления токена. Попробуйте через минуту." },
 });
 
 // POST /api/auth/request-otp
@@ -74,7 +93,7 @@ router.post("/request-otp", otpRateLimiter, async (req: Request, res: Response) 
 });
 
 // POST /api/auth/verify-otp
-router.post("/verify-otp", async (req: Request, res: Response) => {
+router.post("/verify-otp", verifyOtpRateLimiter, async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
 
@@ -133,8 +152,12 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         role: user.role,
+        isSpecialist: user.isSpecialist,
         firstName: user.firstName,
         lastName: user.lastName,
+        specialistProfileCompletedAt: user.specialistProfileCompletedAt
+          ? user.specialistProfileCompletedAt.toISOString()
+          : null,
       },
     });
   } catch (error) {
@@ -144,7 +167,7 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/refresh
-router.post("/refresh", async (req: Request, res: Response) => {
+router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
 
@@ -190,8 +213,12 @@ router.post("/refresh", async (req: Request, res: Response) => {
         id: storedToken.user.id,
         email: storedToken.user.email,
         role: storedToken.user.role,
+        isSpecialist: storedToken.user.isSpecialist,
         firstName: storedToken.user.firstName,
         lastName: storedToken.user.lastName,
+        specialistProfileCompletedAt: storedToken.user.specialistProfileCompletedAt
+          ? storedToken.user.specialistProfileCompletedAt.toISOString()
+          : null,
       },
     });
   } catch (error) {
@@ -227,6 +254,8 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
         id: true,
         email: true,
         role: true,
+        isSpecialist: true,
+        specialistProfileCompletedAt: true,
         firstName: true,
         lastName: true,
         avatarUrl: true,
@@ -248,12 +277,18 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/set-role — set role for new users (auth required, one-time only)
+//
+// Accepts role tokens:
+//   - "CLIENT" / "USER" -> role=CLIENT, isSpecialist=false
+//   - "SPECIALIST"      -> role=CLIENT, isSpecialist=true
 router.post("/set-role", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const { role } = req.body;
 
-    if (role !== "CLIENT" && role !== "SPECIALIST") {
+    const ALLOWED_TOKENS = new Set(["CLIENT", "SPECIALIST", "USER"]);
+    const roleToken: string | undefined = role;
+    if (!roleToken || !ALLOWED_TOKENS.has(roleToken)) {
       res.status(400).json({ error: "Role must be CLIENT or SPECIALIST" });
       return;
     }
@@ -274,13 +309,19 @@ router.post("/set-role", authMiddleware, async (req: Request, res: Response) => 
       return;
     }
 
+    const wantsSpecialist = roleToken === "SPECIALIST";
+
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { role },
+      data: {
+        role: "USER",
+        isSpecialist: wantsSpecialist,
+      },
       select: {
         id: true,
         email: true,
         role: true,
+        isSpecialist: true,
         firstName: true,
         lastName: true,
       },

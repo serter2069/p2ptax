@@ -4,69 +4,83 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import HeaderBack from "@/components/HeaderBack";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTypedRouter, ROUTES } from "@/lib/navigation";
+import { MapPin, ChevronLeft, Inbox } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import EmptyState from "@/components/ui/EmptyState";
 import { api, apiPost } from "@/lib/api";
-import { useRequireAuth } from "@/lib/useRequireAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
 import CityFnsServicePicker, {
   CityOption,
   FnsOption,
   ServiceOption,
 } from "@/components/requests/CityFnsServicePicker";
-import FileUploadSection, { AttachedFile } from "@/components/requests/FileUploadSection";
+import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
+import { draftStorage } from "@/lib/draftStorage";
 
-export default function NewRequest() {
+// Single canonical key (v1). Replaces legacy "pending_request_draft".
+const DRAFT_KEY = "p2ptax_request_draft_v1";
+const LEGACY_DRAFT_KEY = "pending_request_draft";
+
+interface RequestDraft {
+  title: string;
+  description: string;
+  cityId: string | null;
+  citySlug: string | null;
+  fnsId: string | null;
+  serviceId: string | null;
+}
+
+export default function CreateRequest() {
   const router = useRouter();
-  const { ready } = useRequireAuth();
+  const nav = useTypedRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const params = useLocalSearchParams<{ restore?: string }>();
+  const restoreMode = params.restore === "1";
 
-  // Form fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
-  const [files, setFiles] = useState<AttachedFile[]>([]);
 
-  // Data
   const [cities, setCities] = useState<CityOption[]>([]);
   const [fnsOffices, setFnsOffices] = useState<FnsOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
 
-  // UI state
   const [cityOpen, setCityOpen] = useState(false);
   const [fnsOpen, setFnsOpen] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
   const [loadingFns, setLoadingFns] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingInit, setLoadingInit] = useState(true);
-  const [atLimit, setAtLimit] = useState(false);
-  const [limitInfo, setLimitInfo] = useState({ used: 0, limit: 5 });
+  const [loadError, setLoadError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [atLimit, setAtLimit] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [showOtpFlow, setShowOtpFlow] = useState(false);
 
-  // Load cities, services, and check limit on mount
+  // Load cities/services — public, no auth required.
   useEffect(() => {
     async function init() {
       try {
-        const [citiesRes, servicesRes, statsRes] = await Promise.all([
+        const [citiesRes, servicesRes] = await Promise.all([
           api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
           api<{ items: ServiceOption[] }>("/api/services", { noAuth: true }),
-          api<{ requestsUsed: number; requestsLimit: number }>("/api/dashboard/stats"),
         ]);
         setCities(citiesRes.items);
         setServices(servicesRes.items);
-        setLimitInfo({ used: statsRes.requestsUsed, limit: statsRes.requestsLimit });
-        if (statsRes.requestsUsed >= statsRes.requestsLimit) {
-          setAtLimit(true);
-        }
-      } catch (e) {
-        console.error("Init error:", e);
+      } catch {
+        setLoadError(true);
       } finally {
         setLoadingInit(false);
       }
@@ -74,29 +88,108 @@ export default function NewRequest() {
     init();
   }, []);
 
-  // Load FNS offices when city changes
+  // Check request limit when authenticated.
+  useEffect(() => {
+    if (!isAuthenticated || authLoading) return;
+    api<{ requestsUsed: number; requestsLimit: number }>("/api/dashboard/stats")
+      .then((stats) => {
+        if (stats.requestsUsed >= stats.requestsLimit) {
+          setAtLimit(true);
+        }
+      })
+      .catch(() => {});
+  }, [isAuthenticated, authLoading]);
+
   const loadFnsForCity = useCallback(async (citySlug: string) => {
     setLoadingFns(true);
     setFnsOffices([]);
     try {
-      const data = await api<{ city: { id: string; name: string; slug: string }; items: FnsOption[] }>(
-        `/api/cities/${citySlug}/ifns`,
-        { noAuth: true }
-      );
+      const data = await api<{
+        city: { id: string; name: string; slug: string };
+        items: FnsOption[];
+      }>(`/api/cities/${citySlug}/ifns`, { noAuth: true });
       setFnsOffices(data.items);
     } catch {
-      // silent — user can retry by reselecting city
+      /* silent */
     } finally {
       setLoadingFns(false);
     }
   }, []);
 
-  const handleCitySelect = useCallback((city: CityOption) => {
-    setSelectedCityId(city.id);
-    setSelectedFnsId(null);
-    setCityOpen(false);
-    loadFnsForCity(city.slug);
-  }, [loadFnsForCity]);
+  // Restore draft on mount (anyone — anon or returning post-login).
+  // Reads new key first, falls back to legacy key for in-flight users.
+  useEffect(() => {
+    if (loadingInit || draftLoaded) return;
+    (async () => {
+      try {
+        let raw = await draftStorage.get(DRAFT_KEY);
+        if (!raw) {
+          raw = await draftStorage.get(LEGACY_DRAFT_KEY);
+          if (raw) {
+            // Migrate legacy → v1 key, then drop the old one.
+            await draftStorage.set(DRAFT_KEY, raw);
+            await draftStorage.del(LEGACY_DRAFT_KEY);
+          }
+        }
+        if (raw) {
+          const draft: RequestDraft = JSON.parse(raw);
+          if (draft.title) setTitle(draft.title);
+          if (draft.description) setDescription(draft.description);
+          if (draft.cityId) setSelectedCityId(draft.cityId);
+          if (draft.fnsId) setSelectedFnsId(draft.fnsId);
+          if (draft.serviceId) setSelectedServiceId(draft.serviceId);
+          if (draft.citySlug) loadFnsForCity(draft.citySlug);
+        }
+      } catch {
+        /* ignore parse / storage errors */
+      } finally {
+        setDraftLoaded(true);
+        if (restoreMode) {
+          // legacy returnTo path — already restored, nothing else to do.
+        }
+      }
+    })();
+  }, [loadingInit, draftLoaded, restoreMode, loadFnsForCity]);
+
+  // Persist draft on every form-field change (after initial load to avoid wiping).
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const selectedCity = cities.find((c) => c.id === selectedCityId);
+    const draft: RequestDraft = {
+      title,
+      description,
+      cityId: selectedCityId,
+      citySlug: selectedCity?.slug ?? null,
+      fnsId: selectedFnsId,
+      serviceId: selectedServiceId,
+    };
+    const isEmpty =
+      !draft.title &&
+      !draft.description &&
+      !draft.cityId &&
+      !draft.fnsId &&
+      !draft.serviceId;
+    if (isEmpty) return;
+    draftStorage.set(DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    draftLoaded,
+    title,
+    description,
+    selectedCityId,
+    selectedFnsId,
+    selectedServiceId,
+    cities,
+  ]);
+
+  const handleCitySelect = useCallback(
+    (city: CityOption) => {
+      setSelectedCityId(city.id);
+      setSelectedFnsId(null);
+      setCityOpen(false);
+      loadFnsForCity(city.slug);
+    },
+    [loadFnsForCity]
+  );
 
   const handleFnsSelect = useCallback((fns: FnsOption) => {
     setSelectedFnsId(fns.id);
@@ -108,41 +201,41 @@ export default function NewRequest() {
     setServiceOpen(false);
   }, []);
 
-  // Validation
   const titleValid = title.trim().length >= 3 && title.trim().length <= 100;
-  const descriptionValid = description.trim().length >= 10 && description.trim().length <= 2000;
-  const filesReady = files.every((f) => !f.uploading && !f.error);
+  const descriptionValid =
+    description.trim().length >= 10 && description.trim().length <= 2000;
 
   const formValid =
-    titleValid &&
-    descriptionValid &&
-    !!selectedCityId &&
-    !!selectedFnsId &&
-    !atLimit &&
-    filesReady;
+    titleValid && descriptionValid && !!selectedCityId && !!selectedFnsId && !atLimit;
 
-  const handleSubmit = useCallback(async () => {
-    setSubmitted(true);
-    setSubmitError("");
-
-    if (!formValid || submitting) return;
-
+  // Actually post the request — used by both auth and post-OTP paths.
+  const submitRequestAuthed = useCallback(async () => {
     setSubmitting(true);
+    setSubmitError("");
     try {
-      const fileUrls = files
-        .filter((f) => f.uploadedUrl)
-        .map((f) => f.uploadedUrl as string);
-
       const result = await apiPost<{ id: string }>("/api/requests", {
         title: title.trim(),
         cityId: selectedCityId,
         fnsId: selectedFnsId,
         serviceId: selectedServiceId || undefined,
         description: description.trim(),
-        files: fileUrls,
+        files: [],
       });
+      // Clear draft on success.
+      await draftStorage.del(DRAFT_KEY).catch(() => {});
+      await draftStorage.del(LEGACY_DRAFT_KEY).catch(() => {});
 
-      router.replace(`/requests/${result.id}/detail` as never);
+      const goToDetail = () => nav.replaceAny(`/requests/${result.id}/detail`);
+      if (Platform.OS === "web") {
+        goToDetail();
+      } else {
+        Alert.alert(
+          "Заявка опубликована",
+          "Специалисты по вашей ФНС увидят её и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
+          [{ text: "OK", onPress: goToDetail }],
+          { onDismiss: goToDetail }
+        );
+      }
     } catch (e: unknown) {
       const msg =
         e instanceof Error
@@ -152,16 +245,29 @@ export default function NewRequest() {
     } finally {
       setSubmitting(false);
     }
-  }, [formValid, submitting, title, selectedCityId, selectedFnsId, selectedServiceId, description, files, router]);
+  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav]);
+
+  const handleSubmit = useCallback(async () => {
+    setSubmitted(true);
+    setSubmitError("");
+    if (!formValid || submitting) return;
+
+    if (isAuthenticated) {
+      await submitRequestAuthed();
+      return;
+    }
+
+    // Anonymous path — open inline OTP block.
+    setShowOtpFlow(true);
+  }, [formValid, submitting, isAuthenticated, submitRequestAuthed]);
 
   const selectedCity = cities.find((c) => c.id === selectedCityId);
   const selectedFns = fnsOffices.find((f) => f.id === selectedFnsId);
   const selectedService = services.find((s) => s.id === selectedServiceId);
 
-  if (!ready || loadingInit) {
+  if (authLoading || loadingInit) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Новая заявка" />
+      <SafeAreaView className="flex-1 bg-surface2">
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -169,42 +275,122 @@ export default function NewRequest() {
     );
   }
 
+  if (loadError && cities.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface2">
+        <View className="flex-1 items-center justify-center">
+          <EmptyState
+            icon={MapPin}
+            title="Не удалось загрузить данные"
+            subtitle="Проверьте соединение и попробуйте снова"
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Authenticated user at the active-request limit (5/5). Show EmptyState
+  // only — no form. Anonymous users still see the form (they haven't hit
+  // any limit yet). Wave 6 R3.
+  if (isAuthenticated && atLimit) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface2">
+        <View className="px-4 pt-4">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => router.back()}
+            className="flex-row items-center mb-2"
+            style={{ minHeight: 44 }}
+          >
+            <ChevronLeft size={20} color={colors.text} />
+            <Text className="text-text-base ml-1">Назад</Text>
+          </Pressable>
+          <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+        </View>
+        <View className="flex-1 items-center justify-center">
+          <EmptyState
+            icon={Inbox}
+            title="Лимит активных заявок исчерпан (5/5)"
+            subtitle="Закройте одну активную заявку, чтобы создать новую"
+            actionLabel="Открыть мои заявки"
+            onAction={() => nav.any(ROUTES.tabsRequests)}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <HeaderBack title="Новая заявка" />
+    <SafeAreaView className="flex-1 bg-surface2">
+      <View className="px-4 pt-4">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="flex-row items-center mb-2"
+          style={{ minHeight: 44 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+        <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+      </View>
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
-        <ResponsiveContainer>
-          <View className="py-4">
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            alignSelf: "center",
+            paddingHorizontal: 16,
+            paddingTop: 16,
+          }}
+        >
+          {!isAuthenticated && (
+            <View className="bg-accent-soft border border-accent rounded-xl p-4 mb-4">
+              <Text className="text-sm font-semibold text-accent mb-0.5">
+                Заполните заявку — войдёте в один шаг при отправке
+              </Text>
+              <Text className="text-sm text-accent">
+                Подтверждение по email кодом. Без паролей.
+              </Text>
+            </View>
+          )}
 
-            {/* Limit banner */}
-            {atLimit && (
-              <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                <Text className="text-red-600 text-sm font-medium">
-                  Лимит заявок исчерпан ({limitInfo.used}/{limitInfo.limit}). Закройте неактуальные заявки, чтобы создать новую.
-                </Text>
-              </View>
-            )}
+          <View className="bg-white border border-border rounded-2xl px-4 pt-4 pb-4 mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+              Описание заявки
+            </Text>
 
-            {/* Title */}
             <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-1.5">
-                Заголовок <Text className="text-red-500">*</Text>
+              <Text className="text-sm font-medium text-text-base mb-1.5">
+                Заголовок <Text className="text-danger">*</Text>
               </Text>
               <Input
                 placeholder="Кратко опишите суть проблемы"
                 value={title}
                 onChangeText={setTitle}
-                error={(submitted || title.length > 0) && !titleValid
-                  ? (title.trim().length < 3 ? "Минимум 3 символа" : "Максимум 100 символов")
-                  : undefined}
+                error={
+                  (submitted || title.length > 0) && !titleValid
+                    ? title.trim().length < 3
+                      ? "Минимум 3 символа"
+                      : "Максимум 100 символов"
+                    : undefined
+                }
                 maxLength={100}
                 editable={!atLimit && !submitting}
               />
-              <Text className="text-xs text-slate-400 text-right mt-1">{title.length}/100</Text>
+              <Text
+                className={`text-xs text-right mt-1 ${
+                  title.length >= 100 ? "text-danger" : "text-text-dim"
+                }`}
+              >
+                {title.length}/100
+              </Text>
             </View>
 
             <CityFnsServicePicker
@@ -223,61 +409,79 @@ export default function NewRequest() {
               onCitySelect={handleCitySelect}
               onFnsSelect={handleFnsSelect}
               onServiceSelect={handleServiceSelect}
-              onServiceClear={() => { setSelectedServiceId(null); setServiceOpen(false); }}
+              onServiceClear={() => {
+                setSelectedServiceId(null);
+                setServiceOpen(false);
+              }}
               onCityOpenChange={setCityOpen}
               onFnsOpenChange={setFnsOpen}
               onServiceOpenChange={setServiceOpen}
             />
 
-            {/* Description */}
             <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-1.5">
-                Описание <Text className="text-red-500">*</Text>
+              <Text className="text-sm font-medium text-text-base mb-1.5">
+                Описание <Text className="text-danger">*</Text>
               </Text>
               <Input
                 placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
                 value={description}
                 onChangeText={setDescription}
                 multiline
-                error={(submitted || description.length > 0) && !descriptionValid
-                  ? (description.trim().length < 10 ? "Минимум 10 символов" : "Максимум 2000 символов")
-                  : undefined}
+                error={
+                  (submitted || description.length > 0) && !descriptionValid
+                    ? description.trim().length < 10
+                      ? "Минимум 10 символов"
+                      : "Максимум 2000 символов"
+                    : undefined
+                }
                 maxLength={2000}
                 editable={!atLimit && !submitting}
                 containerStyle={{ minHeight: 120 }}
               />
-              <Text className="text-xs text-slate-400 text-right mt-1">{description.length}/2000</Text>
+              <Text
+                className={`text-xs text-right mt-1 ${
+                  description.length >= 2000 ? "text-danger" : "text-text-dim"
+                }`}
+              >
+                {description.length}/2000
+              </Text>
             </View>
-
-            <FileUploadSection
-              files={files}
-              disabled={atLimit || submitting}
-              onFilesChange={setFiles}
-            />
-
-            {/* Submit error */}
-            {submitError ? (
-              <View className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                <Text className="text-sm font-medium text-red-700 mb-0.5">Ошибка публикации</Text>
-                <Text className="text-sm text-red-600">{submitError}</Text>
-              </View>
-            ) : null}
-
           </View>
-        </ResponsiveContainer>
-      </ScrollView>
 
-      {/* Sticky submit button */}
-      <View className="border-t border-slate-200 px-4 py-3 bg-white">
-        <View style={{ maxWidth: 520, width: "100%", alignSelf: "center" }}>
-          <Button
-            label="Опубликовать заявку"
-            onPress={handleSubmit}
-            disabled={submitting || atLimit}
-            loading={submitting}
-          />
+          {submitError ? (
+            <View className="bg-danger-soft border border-danger rounded-xl p-3 mb-4">
+              <Text className="text-sm font-semibold text-danger mb-0.5">
+                Ошибка публикации
+              </Text>
+              <Text className="text-sm text-danger">{submitError}</Text>
+            </View>
+          ) : null}
+
+          {/* Inline OTP block — anon submit only */}
+          {!isAuthenticated && showOtpFlow && (
+            <InlineOtpFlow
+              onAuthenticated={submitRequestAuthed}
+              onCancel={() => setShowOtpFlow(false)}
+              parentSubmitting={submitting}
+              returnTo="/requests/new"
+            />
+          )}
+
+          {/* Primary submit button — hidden once inline OTP block is open. */}
+          {(isAuthenticated || !showOtpFlow) && (
+            <Button
+              label={
+                isAuthenticated
+                  ? "Опубликовать заявку"
+                  : "Отправить заявку"
+              }
+              onPress={handleSubmit}
+              disabled={submitting || atLimit}
+              loading={submitting}
+            />
+          )}
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

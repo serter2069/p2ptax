@@ -11,14 +11,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Trash2, File, FileImage, Download } from "lucide-react-native";
-import HeaderBack from "@/components/HeaderBack";
+import { useTypedRouter } from "@/lib/navigation";
+import { Trash2, File, FileImage, Download, ChevronLeft } from "lucide-react-native";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
+import LoadingState from "@/components/ui/LoadingState";
 import { api, apiPost, apiDelete } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { useRequireAuth } from "@/lib/useRequireAuth";
+import { colors, BREAKPOINT } from "@/lib/theme";
 import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
 import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface FileItem {
   id: string;
@@ -46,9 +49,11 @@ interface RequestDetailData {
 
 export default function MyRequestDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
+  const { ready } = useRequireAuth();
 
   const [request, setRequest] = useState<RequestDetailData | null>(null);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
@@ -72,15 +77,14 @@ export default function MyRequestDetail() {
         .catch(() => {/* silent — not critical */});
     } catch (e) {
       setError("Не удалось загрузить заявку");
-      console.error("Request detail error:", e);
     } finally {
       setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    if (id) fetchAll();
-  }, [id, fetchAll]);
+    if (id && ready) fetchAll();
+  }, [id, ready, fetchAll]);
 
   const handleDelete = useCallback(() => {
     Alert.alert(
@@ -96,7 +100,6 @@ export default function MyRequestDetail() {
               await apiDelete(`/api/requests/${id}`);
               router.back();
             } catch (e) {
-              console.error("Delete error:", e);
               Alert.alert("Ошибка", "Не удалось удалить заявку");
             }
           },
@@ -137,17 +140,14 @@ export default function MyRequestDetail() {
       );
       await Linking.openURL(res.url);
     } catch (e) {
-      console.error("File open error:", e);
+      // ignore
     }
   }, []);
 
-  if (loading) {
+  if (!ready || loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Заявка" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <LoadingState />
       </SafeAreaView>
     );
   }
@@ -155,9 +155,8 @@ export default function MyRequestDetail() {
   if (error || !request) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <HeaderBack title="Заявка" />
         <View className="flex-1 items-center justify-center px-4">
-          <Text className="text-base text-red-600 text-center">
+          <Text className="text-base text-danger text-center">
             {error || "Заявка не найдена"}
           </Text>
           <View className="mt-4">
@@ -187,37 +186,45 @@ export default function MyRequestDetail() {
     : undefined;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <HeaderBack
-        title={request.title}
-        rightAction={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Удалить заявку"
-            onPress={handleDelete}
-            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-          >
-            <Trash2 size={18} color={colors.error} />
-          </Pressable>
-        }
-      />
+    <SafeAreaView className="flex-1 bg-surface2">
       <ScrollView className="flex-1">
         <View style={containerStyle} className={isDesktop ? "" : "px-4"}>
+          <View className="flex-row items-center justify-between pt-4 pb-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Назад"
+              onPress={() => router.back()}
+              className="flex-row items-center"
+              style={{ minHeight: 44 }}
+            >
+              <ChevronLeft size={20} color={colors.text} />
+              <Text className="text-text-base ml-1">Назад</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Удалить заявку"
+              onPress={handleDelete}
+              className="p-2"
+              style={({ pressed }) => [{ minHeight: 44, minWidth: 44, alignItems: "center", justifyContent: "center" }, pressed && { opacity: 0.7 }]}
+            >
+              <Trash2 size={18} color={colors.error} />
+            </Pressable>
+          </View>
           <View className="py-4">
 
             {/* Status + date */}
             <View className="flex-row items-center mb-3">
               <StatusBadge status={request.status} />
-              <Text className="text-sm text-slate-400 ml-3">{createdDate}</Text>
+              <Text className="text-sm text-text-mute ml-3">{createdDate}</Text>
             </View>
 
             {/* City + FNS chips */}
             <View className="flex-row flex-wrap gap-2 mb-4">
-              <View className="bg-white border border-slate-200 px-3 py-1 rounded-lg">
-                <Text className="text-sm text-slate-700">{request.city.name}</Text>
+              <View className="bg-white border border-border px-3 py-1 rounded-lg">
+                <Text className="text-sm text-text-base">{request.city.name}</Text>
               </View>
-              <View className="bg-white border border-slate-200 px-3 py-1 rounded-lg">
-                <Text className="text-sm text-slate-700">
+              <View className="bg-white border border-border px-3 py-1 rounded-lg">
+                <Text className="text-sm text-text-base">
                   {request.fns.name} ({request.fns.code})
                 </Text>
               </View>
@@ -234,36 +241,38 @@ export default function MyRequestDetail() {
                 elevation: 2,
               }}
             >
-              <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+              <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
                 Описание
               </Text>
-              <Text className="text-base text-slate-900 leading-6">
+              <Text className="text-base text-text-base leading-6">
                 {request.description}
               </Text>
             </View>
 
             {/* Files */}
-            {request.files.length > 0 && (
-              <View
-                className="bg-white rounded-2xl p-4 mb-4"
-                style={{
-                  shadowColor: colors.text,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 8,
-                  elevation: 2,
-                }}
-              >
-                <Text className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">
-                  Прикреплённые документы
-                </Text>
-                {request.files.map((file) => (
+            <View
+              className="bg-white rounded-2xl p-4 mb-4"
+              style={{
+                shadowColor: colors.text,
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
+            >
+              <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
+                Прикреплённые документы
+              </Text>
+              {request.files.length === 0 ? (
+                <EmptyState title="Нет документов" subtitle="К этой заявке не прикреплены файлы" />
+              ) : (
+                request.files.map((file) => (
                   <Pressable
                     accessibilityRole="button"
                     key={file.id}
                     accessibilityLabel={`Открыть файл ${file.filename}`}
                     onPress={() => handleFilePress(file)}
-                    className="flex-row items-center bg-slate-50 rounded-xl p-3 mb-2"
+                    className="flex-row items-center bg-surface2 rounded-xl p-3 mb-2"
                     style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                   >
                     {file.mimeType === "application/pdf"
@@ -271,18 +280,18 @@ export default function MyRequestDetail() {
                       : <FileImage size={20} color={colors.primary} />
                     }
                     <View className="ml-3 flex-1">
-                      <Text className="text-sm text-slate-900" numberOfLines={1}>
+                      <Text className="text-sm text-text-base" numberOfLines={1}>
                         {file.filename}
                       </Text>
-                      <Text className="text-xs text-slate-400">
+                      <Text className="text-xs text-text-mute">
                         {(file.size / 1024).toFixed(0)} КБ
                       </Text>
                     </View>
                     <Download size={14} color={colors.placeholder} />
                   </Pressable>
-                ))}
-              </View>
-            )}
+                ))
+              )}
+            </View>
 
             {/* Extend button */}
             {canExtend && (
@@ -291,7 +300,7 @@ export default function MyRequestDetail() {
                 accessibilityLabel="Продлить заявку"
                 onPress={handleExtend}
                 disabled={extending}
-                className="bg-amber-500 rounded-xl py-3 items-center mb-4"
+                className="bg-warning rounded-xl py-3 items-center mb-4"
                 style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
               >
                 {extending ? (
@@ -308,8 +317,8 @@ export default function MyRequestDetail() {
             {/* Extend limit banner */}
             {request.status === "CLOSING_SOON" &&
               request.extensionsCount >= request.maxExtensions && (
-                <View className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-                  <Text className="text-sm text-amber-700 text-center font-medium">
+                <View className="bg-warning-soft border border-amber-200 rounded-xl px-4 py-3 mb-4">
+                  <Text className="text-sm text-warning text-center font-medium">
                     Продление использовано ({request.extensionsCount}/
                     {request.maxExtensions})
                   </Text>
@@ -321,12 +330,12 @@ export default function MyRequestDetail() {
               requestId={id}
               threadsCount={request.threadsCount}
               unreadMessages={request.unreadMessages}
-              onOpenThread={(threadId) => router.push(`/threads/${threadId}` as never)}
+              onOpenThread={(threadId) => nav.any(`/threads/${threadId}`)}
             />
 
             <SpecialistRecommendations
               recommendations={recommendations}
-              onContact={(specialistId) => router.push(`/specialists/${specialistId}` as never)}
+              onContact={(specialistId) => nav.any(`/specialists/${specialistId}`)}
             />
 
             {/* Meta stats */}
@@ -341,20 +350,20 @@ export default function MyRequestDetail() {
               }}
             >
               <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-slate-400">Откликов</Text>
-                <Text className="text-sm text-slate-900">
+                <Text className="text-sm text-text-mute">Сообщений</Text>
+                <Text className="text-sm text-text-base">
                   {request.threadsCount}
                 </Text>
               </View>
               <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-slate-400">Продлений</Text>
-                <Text className="text-sm text-slate-900">
+                <Text className="text-sm text-text-mute">Продлений</Text>
+                <Text className="text-sm text-text-base">
                   {request.extensionsCount}/{request.maxExtensions}
                 </Text>
               </View>
               <View className="flex-row justify-between">
-                <Text className="text-sm text-slate-400">Город</Text>
-                <Text className="text-sm text-slate-900">{request.city.name}</Text>
+                <Text className="text-sm text-text-mute">Город</Text>
+                <Text className="text-sm text-text-base">{request.city.name}</Text>
               </View>
             </View>
 

@@ -1,4 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
+import { faker } from "@faker-js/faker/locale/ru";
 
 const prisma = new PrismaClient();
 
@@ -314,7 +315,7 @@ async function main() {
       citySlug: "saint-petersburg",
       name: "Межрайонная ИФНС №12 по г. Санкт-Петербургу",
       code: "7812",
-      address: "г. Санкт-Петербург, Звёздная ул., 13",
+      address: "г. Санкт-Петербург, Московский пр., 13",
       searchAliases: "ифнс 12 спб санкт-петербург фнс 7812",
     },
     {
@@ -812,8 +813,60 @@ async function main() {
     },
   });
 
+  // Clean up legacy mosaic/metromap garbage accounts (those without names).
+  // Keeps real dev accounts intact (they have firstName/lastName set).
+  const purged = await prisma.user.deleteMany({
+    where: {
+      email: { contains: "@metromap.test" },
+      firstName: null,
+      lastName: null,
+    },
+  });
+
+  // Iter11: realistic demo users. After role unification everyone non-admin is
+  // role=USER; specialist identity is opt-in via `isSpecialist=true`.
+  //   - 9 USER non-specialist (former CLIENT)
+  //   - 3 USER specialist (former SPECIALIST, with completed profile)
+  //   - 1 ADMIN (replaces previous 8C/3S/1A split = 12 total).
+  // Deterministic via faker.seed(42) so re-runs produce same 12 users.
+  faker.seed(42);
+
+  const now = new Date();
+  const demoUsers = Array.from({ length: 13 }, (_, i) => {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const isAdmin = i === 12;
+    const isSpecialistSeed = i >= 9 && i < 12;
+    const role: Role = isAdmin ? "ADMIN" : "USER";
+    const email = faker.internet.email({ firstName, lastName }).toLowerCase();
+    return {
+      email,
+      firstName,
+      lastName,
+      role,
+      isSpecialist: isSpecialistSeed,
+      specialistProfileCompletedAt: isSpecialistSeed ? now : null,
+      avatarUrl: `https://i.pravatar.cc/200?u=${faker.string.uuid()}`,
+      createdAt: faker.date.recent({ days: 90 }),
+    };
+  });
+
+  for (const u of demoUsers) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: {
+        firstName: u.firstName,
+        lastName: u.lastName,
+        role: u.role,
+        isSpecialist: u.isSpecialist,
+        specialistProfileCompletedAt: u.specialistProfileCompletedAt,
+      },
+      create: u,
+    });
+  }
+
   console.log(
-    `Seed complete: 10 cities, ${fnsCount} FNS offices, 3 services, 7 settings, 2 admins`
+    `Seed complete: 10 cities, ${fnsCount} FNS offices, 3 services, 7 settings, 2 admins, ${demoUsers.length} demo users (purged ${purged.count} garbage accounts)`
   );
 }
 

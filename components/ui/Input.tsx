@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { View, Text, TextInput, type TextInputProps, type ViewStyle } from "react-native";
+import { View, Text, TextInput, Platform, type TextInputProps, type ViewStyle } from "react-native";
 import { type LucideIcon } from "lucide-react-native";
-import { colors, radiusValue } from "../../lib/theme";
+import { colors, radiusValue, fontSizeValue, spacing } from "../../lib/theme";
 
 export interface InputProps {
   label?: string;
@@ -50,36 +50,58 @@ export default function Input({
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
+  // On web `colors.border` (#e8ebf0) on `colors.surface` (#ffffff) is barely
+  // visible — auditors flag the field as "naked input". We bump to
+  // `colors.borderStrong` (#c7ccd4) on web to give the input a clear frame
+  // even at default state. Native keeps the soft border (high-DPI displays
+  // already render it crisp enough).
   const borderColor = error
     ? colors.error
     : focused
       ? colors.accent
-      : colors.border;
-  const bgColor = error ? colors.errorBg : !editable ? colors.background : colors.surface;
+      : Platform.OS === "web"
+        ? colors.borderStrong
+        : colors.border;
+  // On web inputs sit on a slightly off-white background (`surface2`,
+  // #fafbfc) so the frame is reinforced by background contrast. Native
+  // keeps the standard surface white.
+  const bgColor = error
+    ? colors.errorBg
+    : !editable
+      ? colors.background
+      : Platform.OS === "web"
+        ? colors.surface2
+        : colors.surface;
 
   return (
     <View style={style}>
       {label && (
-        <Text className="text-sm font-medium text-slate-700 mb-1.5">{label}</Text>
+        <Text className="text-sm font-medium text-text-base mb-1.5">{label}</Text>
       )}
       <View
         style={[{
           flexDirection: "row",
           alignItems: "center",
-          height: multiline ? undefined : 48,
-          minHeight: multiline ? 96 : undefined,
+          minHeight: multiline ? 96 : 48,
           borderRadius: radiusValue.md,
+          // Outer View owns the border on ALL platforms — eliminates the
+          // "box in a box" artifact on web where the inner <input> previously
+          // had its own border while the wrapper added a background+radius.
           borderWidth: 1,
           borderColor,
           backgroundColor: bgColor,
-          paddingHorizontal: 12,
+          paddingHorizontal: spacing.md, // token: 12
+          // web-only 3px accent ring on focus — ignored on native
+          ...(Platform.OS === "web" && focused
+            ? { boxShadow: `0 0 0 3px ${colors.accent}33` }
+            : {}),
         }, containerStyle]}
       >
         {Icon && (
           <Icon
             size={18}
             color={colors.placeholder}
-            style={{ marginRight: 8 }}
+            style={{ marginRight: spacing.sm }}
           />
         )}
         <TextInput
@@ -102,20 +124,47 @@ export default function Input({
           textAlignVertical={multiline ? "top" : undefined}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          // @ts-expect-error — TextInput's `style` prop is typed as
+          // `StyleProp<TextStyle>`, which doesn't include web-only CSS
+          // properties. We use several non-standard keys here:
+          //   alignSelf: 'stretch' — forces the web <input> to fill its
+          //     flex-row parent vertically (RN ignores on native).
+          //   outlineStyle: 'none' — removes default browser outline on
+          //     focus; the focus ring is rendered on the outer View via
+          //     boxShadow instead.
+          //   appearance: 'none' — strips UA-default chrome on
+          //     <input> AND <textarea> (multiline). Without this Safari
+          //     renders an inset border on textarea even when borderWidth
+          //     is 0, producing the double-border artifact.
+          // All are safe: RN drops unknown style keys, and on web they
+          // produce the intended CSS.
           style={{
             flex: 1,
-            fontSize: 16,
+            // On web the <input> intrinsic height is ~18px. We force a
+            // minHeight of 44 so the full tap target area is interactive
+            // (Apple HIG / WCAG 2.5.5 — minimum 44x44 touch target).
+            ...(Platform.OS === 'web' && !multiline ? {
+              minHeight: 44,
+              alignSelf: 'stretch',
+            } : {}),
+            fontSize: fontSizeValue.base,
             color: colors.text,
-            paddingVertical: multiline ? 8 : 0,
+            paddingVertical: multiline ? spacing.sm : 0,
+            // Inner TextInput never owns a border — the outer View does.
+            // This prevents the double-border artifact on web.
             borderWidth: 0,
-            outlineWidth: 0,
-            outlineStyle: 'none' as any,
+            borderColor: 'transparent',
             backgroundColor: 'transparent',
+            ...(Platform.OS === 'web' ? {
+              outlineWidth: 0,
+              outlineStyle: 'none',
+              appearance: 'none',
+            } : {}),
           }}
         />
       </View>
       {error && (
-        <Text className="text-xs text-red-600 mt-1">{error}</Text>
+        <Text className="text-xs text-danger mt-1">{error}</Text>
       )}
     </View>
   );

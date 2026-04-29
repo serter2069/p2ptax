@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable } from "react-native";
 
 interface SelectOption {
   id: string;
@@ -31,12 +31,12 @@ function FilterChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`px-3 min-h-[44px] items-center justify-center rounded-full mr-2 mb-1 border ${
-        active ? "bg-blue-900 border-blue-900" : "bg-white border-slate-200"
+      className={`px-3 h-11 items-center justify-center rounded-full border ${
+        active ? "bg-accent border-accent" : "bg-white border-border"
       }`}
     >
       <Text
-        className={`text-sm ${active ? "text-white font-medium" : "text-slate-900"}`}
+        className={`text-sm ${active ? "text-white font-medium" : "text-text-base"}`}
       >
         {label}
       </Text>
@@ -57,36 +57,30 @@ export default function FilterBar({
 }: FilterBarProps) {
   return (
     <View className="py-2">
-      {/* City filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="px-4"
-      >
-        <FilterChip
-          label="Все города"
-          active={!selectedCityId}
-          onPress={() => onCityChange(null)}
-        />
-        {cities.map((city) => (
+      {/* City filter (hidden when caller passes empty city list) */}
+      {cities.length > 0 && (
+        <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
           <FilterChip
-            key={city.id}
-            label={city.name}
-            active={selectedCityId === city.id}
-            onPress={() =>
-              onCityChange(selectedCityId === city.id ? null : city.id)
-            }
+            label="Все города"
+            active={!selectedCityId}
+            onPress={() => onCityChange(null)}
           />
-        ))}
-      </ScrollView>
+          {cities.map((city) => (
+            <FilterChip
+              key={city.id}
+              label={city.name}
+              active={selectedCityId === city.id}
+              onPress={() =>
+                onCityChange(selectedCityId === city.id ? null : city.id)
+              }
+            />
+          ))}
+        </View>
+      )}
 
       {/* FNS filter (cascade from city) */}
       {fnsOffices && fnsOffices.length > 0 && onFnsChange && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="px-4 mt-1"
-        >
+        <View className="flex-row flex-wrap px-4 mt-2" style={{ gap: 8 }}>
           <FilterChip
             label="Все ИФНС"
             active={!selectedFnsId}
@@ -102,22 +96,20 @@ export default function FilterBar({
               }
             />
           ))}
-        </ScrollView>
+        </View>
       )}
 
       {/* Services filter */}
       {services && services.length > 0 && onServiceToggle && (
-        <View className="px-4 mt-1">
-          <View className="flex-row flex-wrap">
-            {services.map((s) => (
-              <FilterChip
-                key={s.id}
-                label={s.name}
-                active={selectedServiceIds.includes(s.id)}
-                onPress={() => onServiceToggle(s.id)}
-              />
-            ))}
-          </View>
+        <View className="flex-row flex-wrap px-4 mt-2" style={{ gap: 8 }}>
+          {services.map((s) => (
+            <FilterChip
+              key={s.id}
+              label={s.name}
+              active={selectedServiceIds.includes(s.id)}
+              onPress={() => onServiceToggle(s.id)}
+            />
+          ))}
         </View>
       )}
     </View>

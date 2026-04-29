@@ -1,0 +1,12 @@
+# AUTH: login as client (OTP flow, dev code 000000)
+# role choice always appears — test.client role is not persisted between logins
+goto http://localhost:8081/auth/email
+wait-for [aria-label="Email адрес"]
+fill [placeholder="your@email.com"] test.client@p2ptax-seed.ru
+click [aria-label="Продолжить"]
+wait-for input[maxlength="6"]
+type input[maxlength="6"] 000000
+wait-for [aria-label="Мне нужна помощь с налоговой"]
+click [aria-label="Мне нужна помощь с налоговой"]
+wait 2000
+assert-url /dashboard

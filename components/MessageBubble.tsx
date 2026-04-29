@@ -54,7 +54,7 @@ export default function MessageBubble({
         style={{
           maxWidth: "80%",
           borderRadius: 16,
-          backgroundColor: isOwn ? "#1e3a8a" : "#f1f5f9",
+          backgroundColor: isOwn ? colors.primary : colors.surface2,
           ...(isOwn
             ? { borderBottomRightRadius: 4 }
             : { borderBottomLeftRadius: 4 }),
@@ -69,13 +69,13 @@ export default function MessageBubble({
             onPress={() => onImagePress?.(img.url)}
             className="mb-1"
           >
-            <View className="w-[200px] h-[200px] bg-slate-200 rounded-xl items-center justify-center">
+            <View className="w-[200px] h-[200px] bg-surface2 rounded-xl items-center justify-center">
               <ImageIcon
                 size={32}
                 color={isOwn ? colors.surface : colors.textSecondary}
               />
               <Text
-                className={`text-xs mt-1 ${isOwn ? "text-blue-200" : "text-slate-400"}`}
+                className={`text-xs mt-1 ${isOwn ? "text-accent-soft" : "text-text-mute"}`}
                 numberOfLines={1}
               >
                 {img.filename}
@@ -92,40 +92,40 @@ export default function MessageBubble({
             accessibilityLabel={`Файл ${file.filename}`}
             onPress={() => onFilePress?.(file)}
             className={`flex-row items-center rounded-lg p-2 mb-1 ${
-              isOwn ? "bg-blue-800" : "bg-slate-100"
+              isOwn ? "bg-accent" : "bg-surface2"
             }`}
           >
             {file.mimeType === "application/pdf"
-              ? <FileText size={18} color={isOwn ? "#93c5fd" : colors.primary} />
-              : <File size={18} color={isOwn ? "#93c5fd" : colors.primary} />
+              ? <FileText size={18} color={isOwn ? colors.blue300 : colors.primary} />
+              : <File size={18} color={isOwn ? colors.blue300 : colors.primary} />
             }
             <View className="ml-2 flex-1">
               <Text
-                className={`text-sm ${isOwn ? "text-white" : "text-slate-900"}`}
+                className={`text-sm ${isOwn ? "text-white" : "text-text-base"}`}
                 numberOfLines={1}
               >
                 {file.filename}
               </Text>
               <Text
-                className={`text-xs ${isOwn ? "text-blue-200" : "text-slate-400"}`}
+                className={`text-xs ${isOwn ? "text-accent-soft" : "text-text-mute"}`}
               >
                 {formatFileSize(file.size)}
               </Text>
             </View>
-            <Download size={12} color={isOwn ? "#93c5fd" : colors.placeholder} />
+            <Download size={12} color={isOwn ? colors.blue300 : colors.placeholder} />
           </Pressable>
         ))}
 
         {/* Text */}
         {text ? (
-          <Text className="text-base" style={{ color: isOwn ? "#ffffff" : "#0f172a" }}>
+          <Text className="text-base" style={{ color: isOwn ? colors.surface : colors.text }}>
             {text}
           </Text>
         ) : null}
       </View>
 
       {/* Time */}
-      <Text className="text-xs text-slate-400 mt-1 px-1">
+      <Text className="text-xs text-text-mute mt-1 px-1">
         {formatTime(createdAt)}
       </Text>
     </View>

@@ -1,11 +1,13 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import { authMiddleware, roleGuard } from "../middleware/auth";
+import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
 
 const router = Router();
 
-// All routes require auth + SPECIALIST role
-router.use(authMiddleware, roleGuard("SPECIALIST"));
+// Iter11: specialist-only routes now gated by `isSpecialist` flag instead of
+// the retired SPECIALIST role value. requireSpecialistFeatures wraps the same
+// isBanned + existence checks roleGuard used to perform.
+router.use(authMiddleware, requireSpecialistFeatures);
 
 // GET /api/specialist/stats
 router.get("/stats", async (req: Request, res: Response) => {
@@ -20,18 +22,31 @@ router.get("/stats", async (req: Request, res: Response) => {
       },
     });
 
-    let newMessages = 0;
-    for (const thread of threads) {
-      const unread = await prisma.message.count({
+    // Batch unread counts: parallelize threads with lastReadAt, use groupBy for those without
+    const threadsWithRead = threads.filter(t => t.specialistLastReadAt !== null);
+    const threadsWithoutRead = threads.filter(t => t.specialistLastReadAt === null);
+
+    const readCounts = await Promise.all(
+      threadsWithRead.map(t =>
+        prisma.message.count({
+          where: {
+            threadId: t.id,
+            senderId: { not: userId },
+            createdAt: { gt: t.specialistLastReadAt! },
+          },
+        })
+      )
+    );
+
+    let newMessages = readCounts.reduce((s, c) => s + c, 0);
+
+    if (threadsWithoutRead.length > 0) {
+      newMessages += await prisma.message.count({
         where: {
-          threadId: thread.id,
+          threadId: { in: threadsWithoutRead.map(t => t.id) },
           senderId: { not: userId },
-          ...(thread.specialistLastReadAt
-            ? { createdAt: { gt: thread.specialistLastReadAt } }
-            : {}),
         },
       });
-      newMessages += unread;
     }
 
     res.json({ threadsTotal: threads.length, newMessages });
@@ -41,8 +56,28 @@ router.get("/stats", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/specialist/requests — matching requests for this specialist
-router.get("/requests", async (req: Request, res: Response) => {
+// GET /api/specialist/threads-today — how many threads this specialist
+// created since midnight (for the 20/day limit progress bar on dashboard).
+router.get("/threads-today", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const count = await prisma.thread.count({
+      where: {
+        specialistId: userId,
+        createdAt: { gte: startOfDay },
+      },
+    });
+    res.json({ count, limit: 20 });
+  } catch (error) {
+    console.error("specialist/threads-today error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Shared handler for GET /api/specialist/requests and /matched alias.
+async function matchedRequestsHandler(req: Request, res: Response) {
   try {
     const userId = req.user!.userId;
 
@@ -117,6 +152,7 @@ router.get("/requests", async (req: Request, res: Response) => {
       fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
       threadsCount: r._count.threads,
       isMyRegion,
+      hasThread: threadByRequest.has(r.id),
       existingThreadId: threadByRequest.get(r.id) || null,
     });
 
@@ -130,7 +166,13 @@ router.get("/requests", async (req: Request, res: Response) => {
     console.error("specialist/requests error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
-});
+}
+
+// GET /api/specialist/requests — matching requests for this specialist
+router.get("/requests", matchedRequestsHandler);
+
+// GET /api/specialist/matched — preferred name (alias of /requests)
+router.get("/matched", matchedRequestsHandler);
 
 // GET /api/specialist/profile — full profile for editing
 router.get("/profile", async (req: Request, res: Response) => {

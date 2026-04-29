@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from "react-native";
+import { colors, textStyle } from "@/lib/theme";
 
 interface ProfileHeroProps {
   name: string;
@@ -31,7 +32,7 @@ export default function ProfileHero({
       {/* Avatar */}
       <View
         className="rounded-full items-center justify-center mr-4 flex-shrink-0"
-        style={{ width: 80, height: 80, backgroundColor: "#1e3a8a" }}
+        style={{ width: 80, height: 80, backgroundColor: colors.primary }}
       >
         <Text className="text-white font-bold text-2xl">{initials}</Text>
       </View>
@@ -40,14 +41,14 @@ export default function ProfileHero({
       <View className="flex-1">
         {/* Name row with CTA */}
         <View className="flex-row items-start justify-between">
-          <Text className="text-2xl font-bold flex-1 mr-2" style={{ color: "#0f172a" }}>{name}</Text>
+          <Text style={{ ...textStyle.h2, color: colors.text, flex: 1, marginRight: 8 }}>{name}</Text>
           {!isOwnProfile && !isSpecialist && (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Написать"
               onPress={onWritePress}
               className="rounded-xl px-4 min-h-[44px] items-center justify-center flex-row"
-              style={{ backgroundColor: "#b45309" }}
+              style={{ backgroundColor: colors.primary }}
             >
               <Text className="text-white font-semibold text-sm">Написать →</Text>
             </Pressable>
@@ -56,21 +57,21 @@ export default function ProfileHero({
 
         {/* City */}
         {cities.length > 0 && (
-          <Text className="text-sm mt-0.5" style={{ color: "#64748B" }}>{cities.join(", ")}</Text>
+          <Text className="text-sm mt-0.5" style={{ color: colors.textSecondary }}>{cities.join(", ")}</Text>
         )}
 
         {/* Availability */}
         <View className="flex-row items-center mt-2 flex-wrap" style={{ gap: 8 }}>
           <View className="flex-row items-center">
-            <View className={`w-2 h-2 rounded-full mr-1 ${isAvailable ? "bg-emerald-500" : "bg-slate-300"}`} />
+            <View className={`w-2 h-2 rounded-full mr-1 ${isAvailable ? "bg-success" : "bg-surface2"}`} />
             <Text
               className="text-xs font-semibold uppercase"
-              style={{ letterSpacing: 1, color: isAvailable ? "#059669" : "#94a3b8" }}
+              style={{ letterSpacing: 1, color: isAvailable ? colors.success : colors.textSecondary }}
             >
               {isAvailable ? "На связи" : "Недоступен"}
             </Text>
           </View>
-          <Text className="text-xs" style={{ color: "#94a3b8" }}>
+          <Text className="text-xs" style={{ color: colors.textSecondary }}>
             · на P2PTax с {formatDate(createdAt)}
           </Text>
         </View>

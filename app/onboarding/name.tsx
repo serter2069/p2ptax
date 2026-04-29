@@ -1,37 +1,75 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import HeaderBack from "@/components/HeaderBack";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
+import { useState, useEffect } from "react";
+import { ChevronLeft } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import { api } from "@/lib/api";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import LoadingState from "@/components/ui/LoadingState";
+import { colors, textStyle } from "@/lib/theme";
 
 export default function OnboardingNameScreen() {
-  const router = useRouter();
-  const { updateUser } = useAuth();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const router = useRouter()
+  const nav = useTypedRouter();
+  const params = useLocalSearchParams<{ from?: string; role?: string }>();
+  const fromSettings = params.from === "settings";
+  const role =
+    typeof params.role === "string"
+      ? params.role
+      : Array.isArray(params.role)
+        ? params.role[0]
+        : undefined;
+  const isSpecialistIntent = role === "specialist";
+  const { ready, user } = useRequireAuth();
+  const { updateUser, isSpecialistUser, isAdminUser } = useAuth();
+  const [firstName, setFirstName] = useState(user?.firstName ?? "");
+  const [lastName, setLastName] = useState(user?.lastName ?? "");
+
+  useEffect(() => {
+    if (!ready) return;
+    if (isAdminUser) {
+      nav.replaceRoutes.adminDashboard();
+      return;
+    }
+    // Wave 1/B — landing CTA "Я специалист" routes here with ?role=specialist
+    // even when isSpecialist is still false. Allow the screen to render so
+    // the user can fill name first; work-area then flips isSpecialist via
+    // /api/user/become-specialist.
+    if (!isSpecialistUser && !isSpecialistIntent) {
+      nav.replaceRoutes.tabs();
+      return;
+    }
+    if (!fromSettings && user?.specialistProfileCompletedAt) {
+      nav.replaceRoutes.tabs();
+    }
+  }, [ready, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings]);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const firstNameTrimmed = firstName.trim();
   const lastNameTrimmed = lastName.trim();
-  const firstNameError = firstNameTrimmed.length > 0 && firstNameTrimmed.length < 2
-    ? "Минимум 2 символа"
-    : firstNameTrimmed.length > 50
-      ? "Максимум 50 символов"
-      : "";
-  const lastNameError = lastNameTrimmed.length > 0 && lastNameTrimmed.length < 2
-    ? "Минимум 2 символа"
-    : lastNameTrimmed.length > 50
-      ? "Максимум 50 символов"
-      : "";
-  const firstNameValid = firstNameTrimmed.length >= 2 && firstNameTrimmed.length <= 50;
-  const lastNameValid = lastNameTrimmed.length >= 2 && lastNameTrimmed.length <= 50;
+  const firstNameError =
+    firstNameTrimmed.length > 0 && firstNameTrimmed.length < 2
+      ? "Минимум 2 символа"
+      : firstNameTrimmed.length > 50
+        ? "Максимум 50 символов"
+        : "";
+  const lastNameError =
+    lastNameTrimmed.length > 0 && lastNameTrimmed.length < 2
+      ? "Минимум 2 символа"
+      : lastNameTrimmed.length > 50
+        ? "Максимум 50 символов"
+        : "";
+  const firstNameValid =
+    firstNameTrimmed.length >= 2 && firstNameTrimmed.length <= 50;
+  const lastNameValid =
+    lastNameTrimmed.length >= 2 && lastNameTrimmed.length <= 50;
   const canProceed = firstNameValid && lastNameValid && agreed;
 
   const handleNext = async () => {
@@ -41,19 +79,34 @@ export default function OnboardingNameScreen() {
 
     try {
       const data = await api<{
-        user: { id: string; email: string; role: string; firstName: string; lastName: string };
+        user: {
+          id: string;
+          email: string;
+          role: string;
+          firstName: string;
+          lastName: string;
+        };
       }>("/api/onboarding/name", {
         method: "PUT",
         body: { firstName: firstNameTrimmed, lastName: lastNameTrimmed },
       });
 
+      // Iter11 — role stays USER; specialist mode is toggled by /set-role
+      // (which set `isSpecialist=true` already) and finalised by
+      // /onboarding/profile setting specialistProfileCompletedAt.
       updateUser({
         firstName: data.user.firstName,
         lastName: data.user.lastName,
-        role: "SPECIALIST",
       });
 
-      router.push("/onboarding/work-area" as never);
+      if (isSpecialistIntent) {
+        nav.replaceAny({
+          pathname: "/onboarding/work-area",
+          params: { role: "specialist" },
+        });
+      } else {
+        nav.routes.onboardingWorkArea();
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);
@@ -62,19 +115,61 @@ export default function OnboardingNameScreen() {
     }
   };
 
+  if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent)) {
+    return <LoadingState />;
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <HeaderBack title="" />
-      <ResponsiveContainer>
-        <View className="flex-1 pt-10">
-          <Text className="text-sm text-amber-700 text-center mb-2">
-            Шаг 1 из 3
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <View className="px-6 pt-4 pb-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="flex-row items-center"
+          style={{ minHeight: 44 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+      </View>
+
+      <View className="px-6 pb-4">
+        <OnboardingProgress step={1} />
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={{ width: "100%", maxWidth: 640, alignSelf: "center" }}>
+          <Text
+            style={{
+              ...textStyle.h1,
+              color: colors.text,
+              fontSize: 32,
+              lineHeight: 38,
+              marginTop: 16,
+              marginBottom: 12,
+            }}
+          >
+            Как вас зовут?
           </Text>
-          <Text className="text-2xl font-bold text-slate-900 text-center mb-6">
-            Ваше имя
+          <Text
+            style={{
+              ...textStyle.body,
+              color: colors.textSecondary,
+              fontSize: 16,
+              lineHeight: 24,
+              marginBottom: 32,
+            }}
+          >
+            Это имя увидят клиенты в карточке специалиста и в переписке. Пишите
+            реальное — доверие выше.
           </Text>
 
-          <View className="mb-3">
+          <View className="mb-4">
             <Input
               label="Имя"
               placeholder="Иван"
@@ -83,10 +178,11 @@ export default function OnboardingNameScreen() {
               error={firstNameError}
               editable={!isLoading}
               autoCapitalize="words"
+              containerStyle={{ height: 56 }}
             />
           </View>
 
-          <View className="mb-4">
+          <View className="mb-6">
             <Input
               label="Фамилия"
               placeholder="Петров"
@@ -95,42 +191,54 @@ export default function OnboardingNameScreen() {
               error={lastNameError}
               editable={!isLoading}
               autoCapitalize="words"
+              containerStyle={{ height: 56 }}
             />
           </View>
 
-          {/* Terms checkbox */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Принять условия использования"
             onPress={() => setAgreed(!agreed)}
-            className="flex-row items-start mb-6"
+            className="flex-row items-center mb-6"
+            style={{ minHeight: 44 }}
           >
             <View
-              className={`w-5 h-5 rounded border mt-0.5 items-center justify-center ${
-                agreed
-                  ? "bg-blue-900 border-blue-900"
-                  : "border-slate-300 bg-white"
+              className={`w-5 h-5 rounded border-2 items-center justify-center ${
+                agreed ? "bg-accent border-accent" : "border-border bg-white"
               }`}
             >
               {agreed && (
                 <Text className="text-white text-xs font-bold">✓</Text>
               )}
             </View>
-            <Text className="flex-1 ml-3 text-sm text-slate-500 leading-5">
-              Я принимаю{" "}
-              <Text
-                className="text-blue-900 underline"
-                onPress={() => router.push("/legal/terms" as never)}
-              >
-                Условия использования
+            <View className="flex-1 ml-3 flex-row flex-wrap">
+              <Text className="text-xs text-text-mute leading-5">
+                Я принимаю{" "}
               </Text>
-            </Text>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Условия использования"
+                onPress={() => nav.routes.legalTerms()}
+                style={{ minHeight: 44, justifyContent: "center" }}
+              >
+                <Text className="text-accent font-medium underline text-xs leading-5">
+                  Условия использования
+                </Text>
+              </Pressable>
+            </View>
           </Pressable>
 
           {error ? (
-            <Text className="text-xs text-red-600 text-center mb-4">
-              {error}
-            </Text>
+            <View
+              className="mb-4 px-4 py-3 rounded-xl"
+              style={{
+                backgroundColor: colors.errorBg,
+                borderWidth: 1,
+                borderColor: colors.danger,
+              }}
+            >
+              <Text className="text-sm text-danger leading-5">{error}</Text>
+            </View>
           ) : null}
 
           <Button
@@ -140,7 +248,7 @@ export default function OnboardingNameScreen() {
             loading={isLoading}
           />
         </View>
-      </ResponsiveContainer>
+      </ScrollView>
     </SafeAreaView>
   );
 }

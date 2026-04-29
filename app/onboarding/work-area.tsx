@@ -1,148 +1,275 @@
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-} from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { useState, useEffect, useCallback } from "react";
-import { X, Plus } from "lucide-react-native";
-import HeaderBack from "@/components/HeaderBack";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { api } from "@/lib/api";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/lib/useRequireAuth";
+import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import Button from "@/components/ui/Button";
+import LoadingState from "@/components/ui/LoadingState";
 import { colors } from "@/lib/theme";
-
-interface City {
-  id: string;
-  name: string;
-}
-
-interface FnsOffice {
-  id: string;
-  name: string;
-  code: string;
-  cityId: string;
-}
+import SpecialistSearchBar, {
+  CityOpt,
+  FnsOpt,
+} from "@/components/filters/SpecialistSearchBar";
+import { WorkAreaEntryData } from "@/components/onboarding/WorkAreaEntry";
+import BackHeader from "@/components/onboarding/workarea/BackHeader";
+import WorkAreaIntro from "@/components/onboarding/workarea/WorkAreaIntro";
+import PendingFnsPicker from "@/components/onboarding/workarea/PendingFnsPicker";
+import EntriesList from "@/components/onboarding/workarea/EntriesList";
+import { saveWorkArea } from "@/components/onboarding/workarea/saveWorkArea";
 
 interface ServiceItem {
   id: string;
   name: string;
 }
 
-interface SelectedFns {
-  fnsId: string;
-  fnsName: string;
-  cityName: string;
-  serviceIds: string[];
+interface CitiesResponse {
+  items: { id: string; name: string }[];
 }
 
+interface FnsResponse {
+  offices: {
+    id: string;
+    name: string;
+    code: string;
+    cityId: string;
+    city?: { id: string; name: string };
+  }[];
+}
+
+/**
+ * OnboardingWorkAreaScreen — entry-based work area picker.
+ *
+ * Replaces the old all-cities-at-once cascade with:
+ *   1. Single typeahead search (cities + FNS).
+ *   2. After picking an FNS, choose services (or "Не знаю" = any).
+ *   3. Press "+ Добавить" to push the row into the entries list.
+ *   4. Submit when ≥1 entry exists.
+ *
+ * Persistence is unchanged — we still POST /api/user/become-specialist
+ * (or PUT /api/onboarding/work-area) with cities/fns/services derived
+ * from the entries list.
+ */
 export default function OnboardingWorkAreaScreen() {
+  const nav = useTypedRouter();
   const router = useRouter();
+  const params = useLocalSearchParams<{ from?: string; role?: string }>();
+  const fromSettings = params.from === "settings";
+  const role =
+    typeof params.role === "string"
+      ? params.role
+      : Array.isArray(params.role)
+        ? params.role[0]
+        : undefined;
+  const isSpecialistIntent = role === "specialist";
+  const { ready, user } = useRequireAuth();
+  const { isSpecialistUser, isAdminUser, updateUser } = useAuth();
 
-  const [cities, setCities] = useState<City[]>([]);
+  useEffect(() => {
+    if (!ready) return;
+    if (isAdminUser) {
+      nav.replaceRoutes.adminDashboard();
+      return;
+    }
+    // Wave 1/B — when user arrives here from "Я специалист" landing CTA,
+    // isSpecialist is still false; the form's submit will call
+    // /api/user/become-specialist which flips the flag. Allow render.
+    if (!isSpecialistUser && !isSpecialistIntent) {
+      nav.replaceRoutes.tabs();
+      return;
+    }
+    if (!fromSettings && user?.specialistProfileCompletedAt) {
+      nav.replaceRoutes.tabs();
+    }
+  }, [ready, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings, nav]);
+
+  // Catalogs (loaded once)
+  const [cities, setCities] = useState<CityOpt[]>([]);
+  const [fnsAll, setFnsAll] = useState<FnsOpt[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const [fnsOffices, setFnsOffices] = useState<FnsOffice[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  const [showCityPicker, setShowCityPicker] = useState(false);
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  const [showFnsPicker, setShowFnsPicker] = useState(false);
+  // Step 1 — search bar state (controlled selection)
+  const [pendingCityId, setPendingCityId] = useState<string | null>(null);
+  const [pendingFns, setPendingFns] = useState<FnsOpt | null>(null);
 
-  const [selectedFns, setSelectedFns] = useState<SelectedFns[]>([]);
+  // Step 2 — service picker state for the pending entry
+  const [pendingServiceIds, setPendingServiceIds] = useState<string[]>([]);
+  const [pendingAnyService, setPendingAnyService] = useState(false);
+
+  // Accepted entries
+  const [entries, setEntries] = useState<WorkAreaEntryData[]>([]);
+
+  // Submission state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Load cities and services on mount
+  // Initial load — cities + services + all FNS for typeahead.
   useEffect(() => {
-    const loadData = async () => {
+    let cancelled = false;
+    (async () => {
       try {
         const [citiesRes, servicesRes] = await Promise.all([
-          api<{ items: City[] }>("/api/cities", { noAuth: true }),
+          api<CitiesResponse>("/api/cities", { noAuth: true }),
           api<{ items: ServiceItem[] }>("/api/services", { noAuth: true }),
         ]);
-        setCities(citiesRes.items);
+        if (cancelled) return;
+        const cityList = citiesRes.items.map((c) => ({
+          id: c.id,
+          name: c.name,
+        }));
+        setCities(cityList);
         setServices(servicesRes.items);
+
+        if (cityList.length > 0) {
+          const ids = cityList.map((c) => c.id).join(",");
+          try {
+            const fnsRes = await api<FnsResponse>(
+              `/api/fns?city_ids=${ids}`,
+              { noAuth: true }
+            );
+            if (cancelled) return;
+            setFnsAll(
+              fnsRes.offices.map((f) => ({
+                id: f.id,
+                name: f.name,
+                code: f.code,
+                cityId: f.cityId,
+                cityName: f.city?.name,
+              }))
+            );
+          } catch {
+            /* typeahead degrades — still usable via city → city-FNS chips */
+          }
+        }
       } catch {
-        setError("Не удалось загрузить данные");
+        if (!cancelled) setCatalogError("Не удалось загрузить справочники");
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    loadData();
   }, []);
 
-  // Load FNS offices when city selected
-  const loadFnsForCity = useCallback(async (cityId: string) => {
-    try {
-      const data = await api<{ offices: FnsOffice[] }>(
-        `/api/fns?city_id=${cityId}`,
-        { noAuth: true }
-      );
-      setFnsOffices(data.offices);
-    } catch {
-      setError("Не удалось загрузить отделения ФНС");
-    }
+  const handlePickCity = useCallback((cityId: string) => {
+    setPendingCityId(cityId);
+    setPendingFns(null);
   }, []);
 
-  const handleCitySelect = (city: City) => {
-    setSelectedCityId(city.id);
-    setShowCityPicker(false);
-    setShowFnsPicker(true);
-    loadFnsForCity(city.id);
-  };
+  const handlePickFns = useCallback((fns: FnsOpt) => {
+    setPendingCityId(fns.cityId);
+    setPendingFns(fns);
+    setPendingServiceIds([]);
+    setPendingAnyService(false);
+  }, []);
 
-  const handleFnsSelect = (fns: FnsOffice) => {
-    // Don't add if already selected
-    if (selectedFns.some((s) => s.fnsId === fns.id)) return;
+  const handleClearLocation = useCallback(() => {
+    setPendingCityId(null);
+    setPendingFns(null);
+    setPendingServiceIds([]);
+    setPendingAnyService(false);
+  }, []);
 
-    const cityName = cities.find((c) => c.id === fns.cityId)?.name || "";
-    setSelectedFns((prev) => [
-      ...prev,
-      { fnsId: fns.id, fnsName: fns.name, cityName, serviceIds: [] },
-    ]);
-    setShowFnsPicker(false);
-    setSelectedCityId(null);
-  };
-
-  const toggleService = (fnsId: string, serviceId: string) => {
-    setSelectedFns((prev) =>
-      prev.map((item) => {
-        if (item.fnsId !== fnsId) return item;
-        const has = item.serviceIds.includes(serviceId);
-        return {
-          ...item,
-          serviceIds: has
-            ? item.serviceIds.filter((id) => id !== serviceId)
-            : [...item.serviceIds, serviceId],
-        };
-      })
+  const toggleService = useCallback((id: string) => {
+    setPendingAnyService(false);
+    setPendingServiceIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
-  };
+  }, []);
 
-  const removeFns = (fnsId: string) => {
-    setSelectedFns((prev) => prev.filter((item) => item.fnsId !== fnsId));
-  };
+  const pickAnyService = useCallback(() => {
+    setPendingServiceIds([]);
+    setPendingAnyService(true);
+  }, []);
 
-  const canProceed =
-    selectedFns.length > 0 &&
-    selectedFns.every((item) => item.serviceIds.length > 0);
+  const canAddEntry =
+    pendingFns !== null &&
+    (pendingAnyService || pendingServiceIds.length > 0);
+
+  const addEntry = useCallback(() => {
+    if (!pendingFns) return;
+    if (!pendingAnyService && pendingServiceIds.length === 0) return;
+
+    // Prevent duplicate FNS rows — replace existing if present.
+    const cityName =
+      pendingFns.cityName ||
+      cities.find((c) => c.id === pendingFns.cityId)?.name ||
+      "";
+
+    const serviceNames = pendingAnyService
+      ? []
+      : services
+          .filter((s) => pendingServiceIds.includes(s.id))
+          .map((s) => s.name);
+
+    const next: WorkAreaEntryData = {
+      fnsId: pendingFns.id,
+      fnsName: pendingFns.name,
+      fnsCode: pendingFns.code,
+      cityId: pendingFns.cityId,
+      cityName,
+      serviceIds: pendingAnyService ? [] : pendingServiceIds,
+      serviceNames,
+      isAnyService: pendingAnyService,
+    };
+
+    setEntries((prev) => {
+      const filtered = prev.filter((e) => e.fnsId !== next.fnsId);
+      return [...filtered, next];
+    });
+
+    // Reset pending picker so user can add the next entry.
+    setPendingCityId(null);
+    setPendingFns(null);
+    setPendingServiceIds([]);
+    setPendingAnyService(false);
+  }, [
+    pendingFns,
+    pendingAnyService,
+    pendingServiceIds,
+    cities,
+    services,
+  ]);
+
+  const removeEntry = useCallback((fnsId: string) => {
+    setEntries((prev) => prev.filter((e) => e.fnsId !== fnsId));
+  }, []);
+
+  const canProceed = entries.length > 0 && !isLoading;
+
+  // FNS catalog memo for the search bar — exclude already-added FNS so the
+  // user can't pick the same office twice through the typeahead.
+  const fnsAllForSearch = useMemo(() => {
+    if (entries.length === 0) return fnsAll;
+    const taken = new Set(entries.map((e) => e.fnsId));
+    return fnsAll.filter((f) => !taken.has(f.id));
+  }, [fnsAll, entries]);
 
   const handleNext = async () => {
-    if (!canProceed || isLoading) return;
+    if (!canProceed) return;
     setError("");
     setIsLoading(true);
-
     try {
-      const fnsServices = selectedFns.map((item) => ({
-        fnsId: item.fnsId,
-        serviceIds: item.serviceIds,
-      }));
-
-      await api("/api/onboarding/work-area", {
-        method: "PUT",
-        body: { fnsServices },
+      const { user: updatedUser } = await saveWorkArea({
+        entries,
+        allServiceIds: services.map((s) => s.id),
+        isSpecialistUser,
       });
-
-      router.push("/onboarding/profile" as never);
+      if (updatedUser) {
+        updateUser({
+          isSpecialist: updatedUser.isSpecialist,
+          specialistProfileCompletedAt:
+            updatedUser.specialistProfileCompletedAt ?? null,
+        });
+      }
+      if (fromSettings) {
+        nav.routes.settings();
+      } else {
+        nav.routes.onboardingProfile();
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);
@@ -151,200 +278,86 @@ export default function OnboardingWorkAreaScreen() {
     }
   };
 
+  if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent)) {
+    return <LoadingState />;
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <HeaderBack title="" />
-      <ResponsiveContainer>
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
-          <View className="pt-6">
-            <Text className="text-sm text-amber-700 text-center mb-2">
-              Шаг 2 из 3
-            </Text>
-            <Text className="text-2xl font-bold text-slate-900 text-center mb-6">
-              Рабочая зона
-            </Text>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <BackHeader fromSettings={fromSettings} onBack={() => router.back()} />
 
-            {/* Selected FNS offices with services */}
-            {selectedFns.map((item) => (
-              <View
-                key={item.fnsId}
-                className="border border-slate-200 rounded-xl p-3 mb-3"
-              >
-                <View className="flex-row items-center justify-between mb-2">
-                  <View className="flex-1 mr-2">
-                    <Text className="text-sm font-semibold text-slate-900">
-                      {item.fnsName}
-                    </Text>
-                    <Text className="text-xs text-slate-400">{item.cityName}</Text>
-                  </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel="Удалить отделение" onPress={() => removeFns(item.fnsId)}>
-                    <X size={16} color={colors.placeholder} />
-                  </Pressable>
-                </View>
+      {!fromSettings && (
+        <View className="px-6 pb-4">
+          <OnboardingProgress step={2} />
+        </View>
+      )}
 
-                {/* Service checkboxes */}
-                {services.map((svc) => {
-                  const isChecked = item.serviceIds.includes(svc.id);
-                  return (
-                    <Pressable
-                      accessibilityRole="button"
-                      key={svc.id}
-                      accessibilityLabel={svc.name}
-                      onPress={() => toggleService(item.fnsId, svc.id)}
-                      className="flex-row items-center py-1.5"
-                    >
-                      <View
-                        className={`w-5 h-5 rounded border items-center justify-center ${
-                          isChecked
-                            ? "bg-blue-900 border-blue-900"
-                            : "border-slate-300 bg-white"
-                        }`}
-                      >
-                        {isChecked && (
-                          <Text className="text-white text-xs font-bold">
-                            ✓
-                          </Text>
-                        )}
-                      </View>
-                      <Text className="ml-2 text-sm text-slate-700">
-                        {svc.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 32 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            alignSelf: "center",
+            paddingHorizontal: 24,
+          }}
+        >
+          <WorkAreaIntro catalogError={catalogError} />
 
-                {item.serviceIds.length === 0 && (
-                  <Text className="text-xs text-red-600 mt-1">
-                    Выберите хотя бы одну услугу
-                  </Text>
-                )}
-              </View>
-            ))}
+          {/* Step 1 — search */}
+          <View style={{ zIndex: 20 }}>
+            <SpecialistSearchBar
+              cities={cities}
+              fnsAll={fnsAllForSearch}
+              selectedCityId={pendingCityId}
+              selectedFnsId={pendingFns?.id ?? null}
+              onPickCity={handlePickCity}
+              onPickFns={handlePickFns}
+              onClear={handleClearLocation}
+            />
+          </View>
 
-            {/* City picker dropdown */}
-            {showCityPicker && (
-              <View className="border border-slate-200 rounded-xl mb-3 max-h-60 overflow-hidden">
-                <ScrollView nestedScrollEnabled>
-                  {cities.map((city) => (
-                    <Pressable
-                      accessibilityRole="button"
-                      key={city.id}
-                      accessibilityLabel={city.name}
-                      onPress={() => handleCitySelect(city)}
-                      className="px-4 py-3 border-b border-slate-100 active:bg-slate-50"
-                    >
-                      <Text className="text-sm text-slate-900">{city.name}</Text>
-                    </Pressable>
-                  ))}
-                  {cities.length === 0 && (
-                    <View className="px-4 py-3">
-                      <Text className="text-sm text-slate-400">
-                        Загрузка городов...
-                      </Text>
-                    </View>
-                  )}
-                </ScrollView>
-              </View>
-            )}
+          {/* Step 2 — service picker (only after FNS picked) */}
+          {pendingFns && (
+            <PendingFnsPicker
+              pendingFns={pendingFns}
+              services={services}
+              pendingServiceIds={pendingServiceIds}
+              pendingAnyService={pendingAnyService}
+              canAddEntry={canAddEntry}
+              onPickAny={pickAnyService}
+              onToggleService={toggleService}
+              onAdd={addEntry}
+              onCancel={handleClearLocation}
+            />
+          )}
 
-            {/* FNS picker dropdown */}
-            {showFnsPicker && selectedCityId && (
-              <View className="border border-slate-200 rounded-xl mb-3 max-h-60 overflow-hidden">
-                <ScrollView nestedScrollEnabled>
-                  {fnsOffices
-                    .filter(
-                      (fns) =>
-                        !selectedFns.some((s) => s.fnsId === fns.id)
-                    )
-                    .map((fns) => (
-                      <Pressable
-                        accessibilityRole="button"
-                        key={fns.id}
-                        accessibilityLabel={fns.name}
-                        onPress={() => handleFnsSelect(fns)}
-                        className="px-4 py-3 border-b border-slate-100 active:bg-slate-50"
-                      >
-                        <Text className="text-sm text-slate-900">
-                          {fns.name}
-                        </Text>
-                        <Text className="text-xs text-slate-400">
-                          {fns.code}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  {fnsOffices.length === 0 && (
-                    <View className="px-4 py-3">
-                      <Text className="text-sm text-slate-400">
-                        Загрузка отделений...
-                      </Text>
-                    </View>
-                  )}
-                </ScrollView>
-              </View>
-            )}
+          <EntriesList entries={entries} onRemove={removeEntry} />
 
-            {/* Add city button */}
-            {!showCityPicker && !showFnsPicker && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Добавить город"
-                onPress={() => {
-                  setShowCityPicker(true);
-                  setShowFnsPicker(false);
-                }}
-                className="flex-row items-center justify-center py-3 border border-dashed border-slate-300 rounded-xl mb-6"
-              >
-                <Plus size={14} color={colors.accent} />
-                <Text className="text-sm text-amber-700 ml-2 font-medium">
-                  Добавить город
-                </Text>
-              </Pressable>
-            )}
-
-            {showCityPicker && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Отмена"
-                onPress={() => setShowCityPicker(false)}
-                className="mb-4"
-              >
-                <Text className="text-sm text-slate-400 text-center">
-                  Отмена
-                </Text>
-              </Pressable>
-            )}
-
-            {showFnsPicker && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Отмена"
-                onPress={() => {
-                  setShowFnsPicker(false);
-                  setSelectedCityId(null);
-                }}
-                className="mb-4"
-              >
-                <Text className="text-sm text-slate-400 text-center">
-                  Отмена
-                </Text>
-              </Pressable>
-            )}
-
-            {error ? (
-              <Text className="text-xs text-red-600 text-center mb-4">
+          {error ? (
+            <View
+              className="mt-4 mb-4 px-4 py-3 rounded-xl"
+              style={{ backgroundColor: colors.errorBg }}
+            >
+              <Text className="text-sm text-danger text-center leading-5">
                 {error}
               </Text>
-            ) : null}
+            </View>
+          ) : null}
 
+          <View className="mt-6">
             <Button
               label="Далее"
               onPress={handleNext}
-              disabled={!canProceed || isLoading}
+              disabled={!canProceed}
               loading={isLoading}
             />
           </View>
-        </ScrollView>
-      </ResponsiveContainer>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

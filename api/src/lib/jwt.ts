@@ -1,9 +1,6 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-
-function getJwtSecret(): string {
-  return process.env.JWT_SECRET || "dev-secret-change-in-production";
-}
+import { config } from "./config";
 
 export interface JwtPayload {
   userId: string;
@@ -11,11 +8,11 @@ export interface JwtPayload {
 }
 
 export function signAccessToken(payload: JwtPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: "15m" });
+  return jwt.sign(payload, config.jwtSecret, { expiresIn: "15m", algorithm: "HS256" });
 }
 
 export function verifyAccessToken(token: string): JwtPayload {
-  return jwt.verify(token, getJwtSecret()) as JwtPayload;
+  return jwt.verify(token, config.jwtSecret, { algorithms: ["HS256"] }) as JwtPayload;
 }
 
 export function generateRefreshToken(): string {
@@ -23,7 +20,7 @@ export function generateRefreshToken(): string {
 }
 
 export function generateOtpCode(): string {
-  if (process.env.NODE_ENV === "development") {
+  if (config.nodeEnv === "development") {
     return "000000";
   }
   return Math.floor(100000 + Math.random() * 900000).toString();

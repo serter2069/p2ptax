@@ -39,6 +39,7 @@ cycles:
     total_runs: 0
     escalations_to_opus: 0
     stops: 0
+reference_page: app/(tabs)/index
 autopilot:
   mode: manual
   paused: false
@@ -172,20 +173,26 @@ Font family: system default
 
 ### TabBar
 
-Client tabs: Dashboard | My Requests | Messages
-Specialist tabs: Dashboard | Public Requests | My Threads
+User tabs (unified, iter11): Dashboard | My Requests | Messages | Public Requests* | Profile
+  *"Public Requests" tab visible only when `isSpecialistUser=true` (specialist opt-in).
 Admin tabs: Dashboard | Users | Moderation
 Active: blue-900, inactive: slate-400, height 60 + safe area
+Desktop (>=640px): tab bar hidden, navigation via SidebarNav.
 
 ---
 
 ## Roles & Access
 
+iter11 (commit 25deb4a) consolidated CLIENT and SPECIALIST into a single
+USER role. Specialist capabilities are gated by `isSpecialistUser` — true
+when the user has completed the 3-step onboarding and toggled "Принимаю
+заявки" on. UI and routes are shared; specialist-only widgets/tabs render
+conditionally.
+
 | Role | Description | Assigned |
 |------|-------------|----------|
 | guest | Not logged in | Default |
-| client | Creates requests, receives messages from specialists | First login without specialist onboarding |
-| specialist | Browses requests, writes to clients | After completing 3-step onboarding |
+| user | Creates requests; can also browse public requests + write to clients when `isSpecialistUser=true` | All authenticated users |
 | admin | Full control, stats, moderation | Manually via DB |
 
 ---
@@ -245,7 +252,7 @@ Visual Structure:
           title: "Проверенные специалисты"
           description: "Консультанты с реальным опытом работы в налоговых инспекциях вашего города"
         - icon: "clock"
-          title: "Быстрый отклик"
+          title: "Быстрый ответ"
           description: "Специалисты отвечают в течение нескольких часов, а не дней"
         - icon: "banknotes-off"
           title: "Полностью бесплатно"
@@ -259,7 +266,7 @@ Visual Structure:
           title: "Опишите проблему"
           description: "Укажите город, инспекцию и тип проверки. Добавьте описание ситуации."
         - number: "2"
-          title: "Получите отклики"
+          title: "Получите сообщения"
           description: "Специалисты из вашего города увидят заявку и напишут вам первыми."
         - number: "3"
           title: "Выберите специалиста"
@@ -337,7 +344,7 @@ Content:
     chips: "{city.name} · {fns.name}"
     service_chip: "{service.name}"
     description: "{request.description} (2 строки)"
-    counter: "{count} специалистов откликнулись"
+    counter: "{count} специалистов написали"
   sort_options: ["Сначала новые", "Сначала старые"]
   empty_title: "Заявок не найдено"
   empty_description: "Попробуйте изменить фильтры или сбросить их"
@@ -353,7 +360,7 @@ Layout:
 
 UI elements:
   - Filter bar: city (select), service (select — one of 3)
-  - Request card: title (h3), city+FNS (chips caption), service (chip), description truncated (body 2 lines), counter "X specialists responded" (caption)
+  - Request card: title (h3), city+FNS (chips caption), service (chip), description truncated (body 2 lines), counter "X specialists wrote" (caption)
   - Card tap → PublicRequestDetail
   - Infinite scroll (20 per page)
   - Empty state (no results): "No requests found" + reset filters link
@@ -398,13 +405,13 @@ Content:
     service: "Тип проверки"
     status: "Статус"
     created: "Создана"
-    responses: "{count} специалистов откликнулись"
+    responses: "{count} специалистов написали"
   status_labels:
     active: "Активна"
     closing_soon: "Скоро закроется"
     closed: "Закрыта"
   action_buttons:
-    guest: "Войдите, чтобы откликнуться"
+    guest: "Войдите, чтобы написать"
     specialist_write: "Написать клиенту"
     specialist_open_chat: "Открыть чат"
   badge_not_your_region: "Не ваш регион"
@@ -415,7 +422,7 @@ Content:
 Layout:
   - Header: Header-Back, title "Request"
   - Body: scroll
-  - Footer: sticky Button "Write to Client" (specialist) / "Sign in to respond" (guest)
+  - Footer: sticky Button "Write to Client" (specialist) / "Sign in to write" (guest)
 
 UI elements:
   - Title (h1)
@@ -431,7 +438,7 @@ UI elements:
 
 Acceptance Criteria:
   - [ ] User opens /requests/[id] → full request details (title, city, FNS, service, description, status badge) visible
-  - [ ] Guest sees "Sign in to respond" footer button → tap navigates to /auth/email
+  - [ ] Guest sees "Sign in to write" footer button → tap navigates to /auth/email
   - [ ] Specialist sees "Write to Client" button → tap navigates to /requests/[id]/write
   - [ ] Specialist with existing thread sees "Open Chat" → tap navigates to /threads/[threadId]
   - [ ] Request status badge matches: active=green, closing_soon=amber, closed=gray
@@ -910,16 +917,24 @@ Dependencies: OnboardingWorkArea
 
 ---
 
-### CLIENT TABS
+### USER TABS (UNIFIED — iter11)
+
+Single set of authenticated tabs (`app/(tabs)/`). Specialist-only widgets
+and the "Публичные заявки" tab render only when `isSpecialistUser=true`.
+Legacy `(client-tabs)` and `(specialist-tabs)` groups removed in iter11
+(commits 25deb4a, 7f5e0b9, 1059e6d).
 
 ---
-**Screen: ClientDashboard**
+**Screen: UserDashboard**
 Status: DONE
 Type: showcase
-Route: /(client-tabs)/dashboard
-Access: auth required, role: client
+Route: /(tabs)/index
+Access: auth required, role: user
 
-Description: Client home — stats + recent requests
+Description: Unified home (was ClientDashboard + SpecialistDashboard,
+merged in iter11). Stats + recent requests for everyone, plus
+specialist-only widgets (thread-limit gauge, public-requests feed,
+availability toggle, specialist KPIs) when `isSpecialistUser=true`.
 
 Content:
   welcome_message: "Здравствуйте, {firstName}!"
@@ -929,7 +944,7 @@ Content:
     unread_messages: "Непрочитанных сообщений"
   action_cards:
     create_request: "Создать заявку"
-    create_request_subtitle: "Опишите проблему — специалисты откликнутся сами"
+    create_request_subtitle: "Опишите проблему — специалисты напишут сами"
     limit_reached: "Лимит заявок исчерпан"
   section_titles:
     my_requests: "Мои заявки"
@@ -977,10 +992,10 @@ Dependencies: none
 **Screen: MyRequests**
 Status: DONE
 Type: list
-Route: /(client-tabs)/requests
-Access: auth required, role: client
+Route: /(tabs)/requests
+Access: auth required, role: user
 
-Description: All client's requests
+Description: All user's own requests
 
 Content:
   page_title: "Мои заявки"
@@ -1253,13 +1268,15 @@ Response: [{threadId, specialist: {id, name, avatar}, lastMessage, unreadCount, 
 Dependencies: MyRequestDetail
 
 ---
-**Screen: ClientMessages**
+**Screen: UserMessages**
 Status: DONE
 Type: chat
-Route: /(client-tabs)/messages
-Access: auth required, role: client
+Route: /(tabs)/messages
+Access: auth required, role: user
 
-Description: All client's threads (across all requests)
+Description: All user's threads — was ClientMessages + SpecialistMyThreads,
+merged in iter11. Both as a client (specialists wrote to my requests) and
+as a specialist (threads I started with clients) — unified single view.
 
 Content:
   page_title: "Сообщения"
@@ -1270,7 +1287,7 @@ Content:
     timestamp: "{time_ago}"
     unread_badge: "{unreadCount}"
   empty_title: "Нет сообщений"
-  empty_description: "Когда специалисты откликнутся на ваши заявки, сообщения появятся здесь"
+  empty_description: "Когда специалисты напишут по вашим заявкам, сообщения появятся здесь"
   empty_cta: "Посмотреть специалистов"
   error_title: "Не удалось загрузить сообщения"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
@@ -1311,13 +1328,19 @@ Business rules:
 Dependencies: none
 
 ---
-**Screen: ClientSettings**
+**Screen: Settings**
 Status: DONE
 Type: settings
-Route: /settings/client
-Access: auth required, role: client
+Route: /settings
+Access: auth required, role: user
 
-Description: Client profile settings
+Description: Unified profile settings — was ClientSettings + SpecialistSettings,
+merged in iter11 (commit 1059e6d, file `app/settings/index.tsx`).
+Progressive disclosure — base profile fields for everyone;
+specialist-only sections (FNS multiselect, services, contact details,
+working hours, "Приём заявок" toggle) render only when
+`isSpecialistUser=true` or after the user opts into specialist
+onboarding from this screen.
 
 Content:
   page_title: "Настройки"
@@ -1397,16 +1420,23 @@ Dependencies: ClientDashboard
 
 ---
 
-### SPECIALIST TABS
+### SPECIALIST FEATURES (merged into unified user routes — iter11)
+
+The legacy `(specialist-tabs)` group was removed in iter11 (commits
+25deb4a + 7f5e0b9). The screens below describe the specialist-only
+behaviour now folded into the unified routes. Every "Route:" pointer
+in this section reflects where that behaviour now lives.
 
 ---
-**Screen: SpecialistDashboard**
-Status: DONE
+**Screen: SpecialistDashboard widgets**
+Status: DONE (merged into UserDashboard)
 Type: showcase
-Route: /(specialist-tabs)/dashboard
-Access: auth required, role: specialist
+Route: /(tabs)/index (specialist-only widgets — gated by `isSpecialistUser`)
+Access: auth required, `isSpecialistUser=true`
 
-Description: Specialist home — matching requests feed
+Description: Specialist-only blocks rendered on UserDashboard —
+matching requests feed, thread-limit gauge, availability toggle,
+specialist KPIs.
 
 Content:
   welcome_message: "{firstName}, вот заявки для вас"
@@ -1420,7 +1450,7 @@ Content:
   action_cards:
     write: "Написать клиенту"
     open_chat: "Открыть чат"
-  badge_already_wrote: "Вы уже откликнулись"
+  badge_already_wrote: "Вы уже написали"
   badge_not_your_region: "Не ваш регион"
   link_my_threads: "Мои диалоги"
   empty_title: "Нет подходящих заявок"
@@ -1471,10 +1501,10 @@ Dependencies: none
 **Screen: SpecialistConfirmWrite**
 Status: DONE
 Type: form
-Route: /requests/[id]/write (modal)
-Access: auth required, role: specialist
+Route: /requests/[id]/write
+Access: auth required, `isSpecialistUser=true`
 
-Description: Confirm modal before starting a thread with client
+Description: Confirm screen before starting a thread with client
 
 Content:
   page_title: "Написать клиенту"
@@ -1488,9 +1518,9 @@ Content:
     message_error_min: "Минимум 10 символов"
   button_submit: "Отправить сообщение"
   button_cancel: "Отмена"
-  error_request_closed: "Заявка закрыта — отклик невозможен"
+  error_request_closed: "Заявка закрыта — написать невозможно"
   error_thread_exists: "Вы уже писали по этой заявке"
-  error_rate_limit: "Лимит откликов на сегодня исчерпан (20 в день). Попробуйте завтра."
+  error_rate_limit: "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
   error_title: "Ошибка отправки"
   error_description: "Не удалось отправить сообщение. Попробуйте ещё раз."
   error_button: "Повторить"
@@ -1540,13 +1570,16 @@ Business rules:
 Dependencies: SpecialistDashboard, PublicRequestsFeed
 
 ---
-**Screen: SpecialistMyThreads**
-Status: DONE
+**Screen: SpecialistMyThreads view**
+Status: DONE (merged into UserMessages)
 Type: list
-Route: /(specialist-tabs)/threads
-Access: auth required, role: specialist
+Route: /(tabs)/messages (unified — both client and specialist threads)
+Access: auth required, `isSpecialistUser=true` (for specialist-side threads)
 
-Description: All specialist's threads
+Description: Threads where the user wrote first (specialist side).
+In the unified UserMessages list these appear alongside threads
+where specialists wrote to the user's own requests. Filter chips
+let users narrow to one side.
 
 Content:
   page_title: "Мои диалоги"
@@ -1609,13 +1642,16 @@ Business rules:
 Dependencies: none
 
 ---
-**Screen: SpecialistSettings**
-Status: DONE
+**Screen: SpecialistSettings sections**
+Status: DONE (merged into Settings)
 Type: settings
-Route: /settings/specialist
-Access: auth required, role: specialist
+Route: /settings (specialist-only sections — gated by `isSpecialistUser`)
+Access: auth required, `isSpecialistUser=true`
 
-Description: Specialist profile editing
+Description: Specialist-only sections rendered inside the unified
+`/settings` screen — FNS multiselect, services per FNS, contact
+fields (phone/Telegram/WhatsApp/office address/working hours), the
+"Приём заявок" instant toggle.
 
 Content:
   page_title: "Настройки"
@@ -1790,10 +1826,11 @@ Dependencies: ClientMessages, MessagesGrouped, SpecialistMyThreads
 **Screen: TermsScreen**
 Status: DONE
 Type: detail
-Route: /terms (modal)
+Route: /legal/terms
 Access: public
 
-Description: Terms of use (static content)
+Description: Terms of use (static content). Sibling: `/legal/privacy`
+for privacy policy. Rendered as a regular Stack screen, not a modal.
 
 Content:
   page_title: "Условия использования"
@@ -2030,7 +2067,7 @@ Content:
       label: "Макс. заявок на клиента"
       hint: "Лимит заявок за всё время для каждого клиента"
     max_threads_per_request:
-      label: "Макс. откликов на заявку"
+      label: "Макс. диалогов на заявку"
       hint: "Сколько специалистов могут написать по одной заявке"
     auto_close_days:
       label: "Автозакрытие (дни)"
@@ -2766,7 +2803,7 @@ Example messages:
 | sender_role | text (example) |
 |-------------|----------------|
 | specialist | Здравствуйте! Я специалист по камеральным проверкам с опытом 8 лет. Могу помочь с вашей ситуацией. Расскажите подробнее, какие документы запросила инспекция? |
-| client | Добрый день! Спасибо за отклик. Инспекция запросила книгу продаж и счета-фактуры за 3 квартал 2025 года. |
+| client | Добрый день! Спасибо за сообщение. Инспекция запросила книгу продаж и счета-фактуры за 3 квартал 2025 года. |
 | specialist | Понял. Это стандартный запрос при камеральной проверке НДС. Вам нужно подготовить ответ в течение 10 рабочих дней. Давайте я помогу составить пояснение. |
 | client | Да, было бы отлично. Сколько времени это займёт? |
 | specialist | Обычно на подготовку ответа уходит 2-3 дня. Пришлите мне сканы запроса и имеющихся документов, я посмотрю. |

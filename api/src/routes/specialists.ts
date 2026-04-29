@@ -1,20 +1,28 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
+import { verifyAccessToken } from "../lib/jwt";
+import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
 
 const router = Router();
+
+/** Optional auth — returns the caller's userId if a valid Bearer token is present. */
+function resolveCallerId(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  try {
+    return verifyAccessToken(authHeader.slice(7)).userId;
+  } catch {
+    return null;
+  }
+}
 
 const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
   id: true,
   firstName: true,
   lastName: true,
   avatarUrl: true,
-  specialistServices: {
-    select: {
-      service: { select: { id: true, name: true } },
-    },
-    distinct: ["serviceId"],
-  },
+  createdAt: true,
   specialistFns: {
     select: {
       fns: {
@@ -24,6 +32,11 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
           city: { select: { id: true, name: true } },
         },
       },
+      services: {
+        select: {
+          service: { select: { id: true, name: true } },
+        },
+      },
     },
   },
 });
@@ -31,18 +44,34 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
 type SpecialistListItem = Prisma.UserGetPayload<{ select: typeof specialistListSelect }>;
 
 function mapSpecialist(s: SpecialistListItem) {
-  const services = s.specialistServices.map((ss) => ss.service);
   const citiesMap = new Map<string, { id: string; name: string }>();
-  for (const sf of s.specialistFns) {
+  const specialistFns = s.specialistFns.map((sf) => {
     citiesMap.set(sf.fns.city.id, sf.fns.city);
+    return {
+      fnsId: sf.fns.id,
+      fnsName: sf.fns.name,
+      city: sf.fns.city,
+      services: sf.services.map((sv) => sv.service),
+    };
+  });
+
+  // Flat deduped services list (for backward compat with horizontal card variant)
+  const servicesMap = new Map<string, { id: string; name: string }>();
+  for (const sf of specialistFns) {
+    for (const svc of sf.services) {
+      servicesMap.set(svc.id, svc);
+    }
   }
+
   return {
     id: s.id,
     firstName: s.firstName,
     lastName: s.lastName,
     avatarUrl: s.avatarUrl,
-    services,
+    createdAt: s.createdAt,
+    services: [...servicesMap.values()],
     cities: [...citiesMap.values()],
+    specialistFns,
   };
 }
 
@@ -51,12 +80,22 @@ router.get("/featured", async (_req: Request, res: Response) => {
   try {
     const specialists = await prisma.user.findMany({
       where: {
-        role: "SPECIALIST",
+        // Iter11: specialist catalog is driven by the flag, not the legacy
+        // role enum. Require completed profile so we never surface half-seeded
+        // users who are still onboarding. Hide soft-deleted accounts.
+        isSpecialist: true,
+        specialistProfileCompletedAt: { not: null },
         isAvailable: true,
         isBanned: false,
+        deletedAt: null,
       },
       take: 10,
-      orderBy: { createdAt: "desc" },
+      // Catalog ranking: specialists with avatar photos first, then newest.
+      // `avatarUrl` desc + nulls:last puts non-null URLs before null ones (Prisma 6.x).
+      orderBy: [
+        { avatarUrl: { sort: "desc", nulls: "last" } },
+        { createdAt: "desc" },
+      ],
       select: specialistListSelect,
     });
 
@@ -81,6 +120,18 @@ router.get("/", async (req: Request, res: Response) => {
     const q = ((req.query.q as string) || "").trim().slice(0, 100);
     const cityId = (req.query.city_id as string) || undefined;
     const fnsId = (req.query.fns_id as string) || undefined;
+    const cityIdsParam = (req.query.city_ids as string) || "";
+    const fnsIdsParam = (req.query.fns_ids as string) || "";
+    const cityIdsList = cityIdsParam
+      ? cityIdsParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : cityId
+      ? [cityId]
+      : [];
+    const fnsIdsList = fnsIdsParam
+      ? fnsIdsParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : fnsId
+      ? [fnsId]
+      : [];
     const servicesParam = (req.query.services as string) || undefined;
     const serviceIds = servicesParam
       ? servicesParam.split(",").filter(Boolean)
@@ -94,25 +145,38 @@ router.get("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Validate city_id and fns_id are UUID format to prevent DB crashes
+    // Validate every city/fns id is UUID to prevent DB crashes
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (cityId && !uuidRegex.test(cityId)) {
-      res.status(400).json({
-        error: "Invalid city_id format: must be a valid UUID",
-      });
-      return;
+    for (const id of cityIdsList) {
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({
+          error: "Invalid city_id format: must be a valid UUID",
+        });
+        return;
+      }
     }
-    if (fnsId && !uuidRegex.test(fnsId)) {
-      res.status(400).json({
-        error: "Invalid fns_id format: must be a valid UUID",
-      });
-      return;
+    for (const id of fnsIdsList) {
+      if (!uuidRegex.test(id)) {
+        res.status(400).json({
+          error: "Invalid fns_id format: must be a valid UUID",
+        });
+        return;
+      }
     }
 
+    // Iter11: catalog is gated by isSpecialist flag + completed onboarding,
+    // not by the retired SPECIALIST role value. Also exclude the caller from
+    // their own catalog view — showing yourself as a specialist you could
+    // contact is a bug, not a feature.
+    const callerId = resolveCallerId(req);
     const where: Prisma.UserWhereInput = {
-      role: "SPECIALIST",
+      isSpecialist: true,
+      specialistProfileCompletedAt: { not: null },
       isAvailable: true,
       isBanned: false,
+      // Hide soft-deleted accounts from the public catalog.
+      deletedAt: null,
+      ...(callerId ? { id: { not: callerId } } : {}),
     };
 
     // Name search — uses Prisma `contains` (parameterized ILIKE under the hood)
@@ -123,11 +187,15 @@ router.get("/", async (req: Request, res: Response) => {
       ];
     }
 
-    if (cityId || fnsId) {
+    if (cityIdsList.length > 0 || fnsIdsList.length > 0) {
       where.specialistFns = {
         some: {
-          ...(cityId ? { fns: { cityId } } : {}),
-          ...(fnsId ? { fnsId } : {}),
+          ...(cityIdsList.length > 0
+            ? { fns: { cityId: { in: cityIdsList } } }
+            : {}),
+          ...(fnsIdsList.length > 0
+            ? { fnsId: { in: fnsIdsList } }
+            : {}),
         },
       };
     }
@@ -143,7 +211,12 @@ router.get("/", async (req: Request, res: Response) => {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        // Catalog ranking: specialists with avatar photos first, then newest.
+        // `avatarUrl` desc + nulls:last puts non-null URLs before null ones (Prisma 6.x).
+        orderBy: [
+          { avatarUrl: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" },
+        ],
         select: specialistListSelect,
       }),
       prisma.user.count({ where }),
@@ -158,6 +231,138 @@ router.get("/", async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("specialists list error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/specialists/dashboard — specialist's own dashboard data (auth required)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get("/dashboard", authMiddleware, requireSpecialistFeatures, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+
+    // Get specialist user info and isAvailable flag
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isAvailable: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Get all threads for this specialist
+    const threads = await prisma.thread.findMany({
+      where: { specialistId: userId },
+      select: { id: true, requestId: true, specialistLastReadAt: true },
+    });
+
+    // Count unread messages (new messages since specialist last read each thread)
+    let newMessages = 0;
+    for (const thread of threads) {
+      const unread = await prisma.message.count({
+        where: {
+          threadId: thread.id,
+          senderId: { not: userId },
+          ...(thread.specialistLastReadAt
+            ? { createdAt: { gt: thread.specialistLastReadAt } }
+            : {}),
+        },
+      });
+      newMessages += unread;
+    }
+
+    const threadByRequest = new Map(threads.map((t) => [t.requestId, t.id]));
+
+    // Get specialist's covered FNS/city ids for region matching
+    const specialistFns = await prisma.specialistFns.findMany({
+      where: { specialistId: userId },
+      select: { fnsId: true, fns: { select: { cityId: true } } },
+    });
+
+    const fnsIds = specialistFns.map((sf) => sf.fnsId);
+    const cityIds = [...new Set(specialistFns.map((sf) => sf.fns.cityId))];
+
+    const requestInclude = {
+      city: true,
+      fns: true,
+    } as const;
+
+    const [myRequests, otherRequests] = await Promise.all([
+      fnsIds.length > 0
+        ? prisma.request.findMany({
+            where: { status: { not: "CLOSED" }, fnsId: { in: fnsIds }, cityId: { in: cityIds } },
+            orderBy: { createdAt: "desc" },
+            include: requestInclude,
+          })
+        : Promise.resolve([]),
+      prisma.request.findMany({
+        where: {
+          status: { not: "CLOSED" },
+          ...(fnsIds.length > 0
+            ? { NOT: { fnsId: { in: fnsIds }, cityId: { in: cityIds } } }
+            : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        include: requestInclude,
+      }),
+    ]);
+
+    const mapRequest = (r: (typeof myRequests)[number], isMyRegion: boolean) => {
+      const threadId = threadByRequest.get(r.id) ?? null;
+      return {
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        status: r.status,
+        createdAt: r.createdAt,
+        city: { id: r.city.id, name: r.city.name },
+        fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
+        isMyRegion,
+        hasThread: threadId !== null,
+        threadId,
+      };
+    };
+
+    const matchingRequests = [
+      ...myRequests.map((r) => mapRequest(r, true)),
+      ...otherRequests.map((r) => mapRequest(r, false)),
+    ];
+
+    res.json({
+      isAvailable: user.isAvailable,
+      activeThreads: threads.length,
+      matchingRequests,
+      stats: { threadsTotal: threads.length, newMessages },
+    });
+  } catch (error) {
+    console.error("specialists/dashboard error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /api/specialists/availability — toggle specialist availability (auth required)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.patch("/availability", authMiddleware, requireSpecialistFeatures, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { isAvailable } = req.body as { isAvailable?: unknown };
+
+    if (typeof isAvailable !== "boolean") {
+      res.status(400).json({ error: "isAvailable must be a boolean" });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isAvailable },
+      select: { isAvailable: true },
+    });
+
+    res.json({ isAvailable: updated.isAvailable });
+  } catch (error) {
+    console.error("specialists/availability error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -177,8 +382,11 @@ router.get("/:id", async (req: Request, res: Response) => {
     const specialist = await prisma.user.findFirst({
       where: {
         id,
-        role: "SPECIALIST",
+        // Iter11: specialist detail checks the flag, not the legacy role.
+        // Hide soft-deleted accounts from the public detail page.
+        isSpecialist: true,
         isBanned: false,
+        deletedAt: null,
       },
       include: {
         specialistProfile: true,
@@ -230,7 +438,15 @@ router.get("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    const requestsCount = await prisma.thread.count({ where: { specialistId: id } });
+    const [requestsCount, cases] = await Promise.all([
+      prisma.thread.count({ where: { specialistId: id } }),
+      prisma.specialistCase.findMany({
+        where: { specialistId: id },
+        orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      }),
+    ]);
+
+    const profile = specialist.specialistProfile;
 
     res.json({
       id: specialist.id,
@@ -240,17 +456,33 @@ router.get("/:id", async (req: Request, res: Response) => {
       isAvailable: specialist.isAvailable,
       createdAt: specialist.createdAt,
       requestsCount,
-      profile: specialist.specialistProfile
+      profile: profile
         ? {
-            description: specialist.specialistProfile.description,
-            phone: specialist.specialistProfile.phone,
-            telegram: specialist.specialistProfile.telegram,
-            whatsapp: specialist.specialistProfile.whatsapp,
-            officeAddress: specialist.specialistProfile.officeAddress,
-            workingHours: specialist.specialistProfile.workingHours,
+            description: profile.description,
+            phone: profile.phone,
+            telegram: profile.telegram,
+            whatsapp: profile.whatsapp,
+            officeAddress: profile.officeAddress,
+            workingHours: profile.workingHours,
+            exFnsStartYear: profile.exFnsStartYear,
+            exFnsEndYear: profile.exFnsEndYear,
+            yearsOfExperience: profile.yearsOfExperience,
+            specializations: (profile.specializations as string[] | null) ?? null,
+            certifications: (profile.certifications as string[] | null) ?? null,
           }
         : null,
       fnsServices: [...fnsMap.values()],
+      cases: cases.map((c) => ({
+        id: c.id,
+        title: c.title,
+        category: c.category,
+        amount: c.amount,
+        resolvedAmount: c.resolvedAmount,
+        days: c.days,
+        status: c.status,
+        description: c.description,
+        year: c.year,
+      })),
     });
   } catch (error) {
     console.error("specialist detail error:", error);

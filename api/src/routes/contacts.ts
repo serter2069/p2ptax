@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import { authMiddleware, roleGuard } from "../middleware/auth";
+import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
 
 const router = Router();
 
@@ -33,8 +33,8 @@ router.get("/specialists/:id/contacts", async (req: Request, res: Response) => {
   }
 });
 
-// All routes below require SPECIALIST auth
-router.use(authMiddleware, roleGuard("SPECIALIST"));
+// All routes below require specialist features (Iter11 — flag-based).
+router.use(authMiddleware, requireSpecialistFeatures);
 
 // GET /api/profile/contacts — own contacts
 router.get("/profile/contacts", async (req: Request, res: Response) => {

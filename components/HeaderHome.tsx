@@ -1,5 +1,6 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, useWindowDimensions, Platform } from "react-native";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { Bell, Settings } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
@@ -8,23 +9,37 @@ interface HeaderHomeProps {
   onSettingsPress?: () => void;
 }
 
+/**
+ * HeaderHome — top bar for tab-group screens.
+ *
+ * iter10 Phase 3a: on desktop web (>=768px) AppShell + AppHeader own the
+ * chrome — HeaderHome renders `null` to avoid double chrome. On mobile
+ * we keep the full-bleed blue brand bar because the sidebar isn't shown.
+ */
 export default function HeaderHome({ notificationCount = 0, onSettingsPress }: HeaderHomeProps) {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
+  const { width } = useWindowDimensions();
+  const isDesktopWeb = Platform.OS === "web" && width >= 768;
+
+  if (isDesktopWeb) {
+    return null;
+  }
 
   return (
-    <View className="flex-row items-center justify-between h-14 bg-blue-900 px-4">
+    <View className="flex-row items-center justify-between h-14 px-4" style={{ backgroundColor: colors.primary }}>
       <Text className="text-lg font-bold text-white">P2PTax</Text>
       <View className="flex-row items-center gap-4">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Уведомления"
-          onPress={() => router.push("/notifications" as never)}
+          onPress={() => nav.routes.notifications()}
           className="w-11 h-11 items-center justify-center"
         >
           <Bell size={18} color={colors.surface} />
           {notificationCount > 0 && (
-            <View className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-amber-500 items-center justify-center px-1">
-              <Text className="text-[9px] font-bold text-white">
+            <View className="absolute top-1 right-1 min-w-[18px] h-[18px] rounded-full bg-warning items-center justify-center px-1">
+              <Text className="text-xs font-bold text-white">
                 {notificationCount > 99 ? "99+" : notificationCount}
               </Text>
             </View>

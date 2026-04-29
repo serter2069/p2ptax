@@ -1,18 +1,21 @@
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
+import { useTypedRouter } from "@/lib/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Redirects unauthenticated users to /auth/email.
+ * Redirects unauthenticated users to /auth/email with a returnTo param
+ * so the user is redirected back after login.
  * Returns { user, isLoading, isAuthenticated } for rendering guards.
  */
 export function useRequireAuth() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace("/auth/email" as never);
+      nav.replaceRoutes.authEmail();
     }
   }, [isLoading, isAuthenticated, router]);
 

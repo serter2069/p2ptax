@@ -1,28 +1,20 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  Pressable,
-  ActivityIndicator,
-  RefreshControl,
-  useWindowDimensions,
-} from "react-native";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import SpecialistCard from "@/components/SpecialistCard";
-import FilterBar from "@/components/FilterBar";
-import { AlertCircle, UserX, ChevronLeft, Search } from "lucide-react-native";
+import { useTypedRouter } from "@/lib/navigation";
+import { useLocalSearchParams, router } from "expo-router";
+import SpecialistSearchBar, {
+  CityOpt,
+  FnsOpt,
+} from "@/components/filters/SpecialistSearchBar";
+import { AlertCircle, Search, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
-import LoadingState from "@/components/ui/LoadingState";
-import { api } from "@/lib/api";
-
-interface CityOption {
-  id: string;
-  name: string;
-  fnsOffices: { id: string; name: string; code: string }[];
-}
+import CatalogHeader from "@/components/specialists/CatalogHeader";
+import CatalogSkeleton from "@/components/specialists/CatalogSkeleton";
+import ServiceChipsRow from "@/components/specialists/ServiceChipsRow";
+import SpecialistsGrid from "@/components/specialists/SpecialistsGrid";
+import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ServiceOption {
   id: string;
@@ -34,8 +26,15 @@ interface SpecialistItem {
   firstName: string | null;
   lastName: string | null;
   avatarUrl: string | null;
+  createdAt: string;
   services: { id: string; name: string }[];
   cities: { id: string; name: string }[];
+  specialistFns?: {
+    fnsId: string;
+    fnsName: string;
+    city: { id: string; name: string };
+    services: { id: string; name: string }[];
+  }[];
   description?: string | null;
 }
 
@@ -47,12 +46,41 @@ interface SpecialistsResponse {
   hasMore: boolean;
 }
 
-export default function SpecialistsCatalog() {
-  const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+interface CitiesResponse {
+  items: { id: string; name: string; slug: string; officesCount: number }[];
+}
 
-  const [cities, setCities] = useState<CityOption[]>([]);
+interface FnsResponse {
+  offices: {
+    id: string;
+    name: string;
+    code: string;
+    cityId: string;
+    address?: string | null;
+    city?: { id: string; name: string };
+  }[];
+}
+
+const PAGE_SIZE = 12;
+
+export default function SpecialistsCatalog() {
+  const nav = useTypedRouter();
+  const { isAuthenticated } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const isWide = width >= 1024;
+  const gridCols = isWide ? 3 : isDesktop ? 2 : 1;
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+
+  // URL params for shareable filtered catalog
+  const urlParams = useLocalSearchParams<{
+    city?: string;
+    fns?: string;
+    services?: string;
+  }>();
+
+  const [cities, setCities] = useState<CityOpt[]>([]);
+  const [fnsAll, setFnsAll] = useState<FnsOpt[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,39 +89,43 @@ export default function SpecialistsCatalog() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-
-  const [search, setSearch] = useState("");
   const [total, setTotal] = useState(0);
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Initialize filter state from URL params (read once on mount).
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(
+    urlParams.city || null
+  );
+  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(
+    urlParams.fns || null
+  );
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
+    urlParams.services ? urlParams.services.split(",").filter(Boolean) : []
+  );
 
   const hasFilters =
     selectedCityId !== null ||
     selectedFnsId !== null ||
     selectedServiceIds.length > 0;
 
-  const selectedCity = cities.find((c) => c.id === selectedCityId);
-  const fnsOffices = selectedCity?.fnsOffices || [];
-
   const resetFilters = useCallback(() => {
     setSelectedCityId(null);
     setSelectedFnsId(null);
     setSelectedServiceIds([]);
+    router.setParams({
+      city: undefined,
+      fns: undefined,
+      services: undefined,
+    });
   }, []);
 
   const fetchSpecialists = useCallback(
-    async (pageNum: number, append = false, q?: string) => {
+    async (pageNum: number, append = false) => {
       try {
-        const searchQ = q ?? search;
-        let path = `/api/specialists?page=${pageNum}&limit=20`;
-        if (selectedCityId) path += `&city_id=${selectedCityId}`;
-        if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
+        let path = `/api/specialists?page=${pageNum}&limit=${PAGE_SIZE}`;
+        if (selectedCityId) path += `&city_ids=${selectedCityId}`;
+        if (selectedFnsId) path += `&fns_ids=${selectedFnsId}`;
         if (selectedServiceIds.length > 0)
           path += `&services=${selectedServiceIds.join(",")}`;
-        if (searchQ.trim()) path += `&q=${encodeURIComponent(searchQ.trim())}`;
 
         const res = await api<SpecialistsResponse>(path, { noAuth: true });
 
@@ -107,61 +139,107 @@ export default function SpecialistsCatalog() {
         setPage(pageNum);
         setError(null);
       } catch (e) {
-        console.error("Fetch specialists error:", e);
         setError("Не удалось загрузить список");
       }
     },
-    [selectedCityId, selectedFnsId, selectedServiceIds, search]
+    [selectedCityId, selectedFnsId, selectedServiceIds]
   );
 
+  const fetchSpecialistsRef = useRef(fetchSpecialists);
+  fetchSpecialistsRef.current = fetchSpecialists;
+
+  // Load saved IDs for authenticated users
   useEffect(() => {
+    if (!isAuthenticated) return;
+    apiGet<{ ids: string[] }>("/api/saved-specialists")
+      .then((r) => setBookmarkedIds(new Set(r.ids)))
+      .catch(() => {});
+  }, [isAuthenticated]);
+
+  // Initial load: cities, services, FNS list for typeahead.
+  useEffect(() => {
+    let cancelled = false;
     async function init() {
-      setLoading(true);
       try {
         const [citiesRes, servicesRes] = await Promise.all([
-          api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
+          api<CitiesResponse>("/api/cities", { noAuth: true }),
           api<{ items: ServiceOption[] }>("/api/services", { noAuth: true }),
         ]);
-        setCities(citiesRes.items);
+        if (cancelled) return;
+        setCities(citiesRes.items.map((c) => ({ id: c.id, name: c.name })));
         setServices(servicesRes.items);
+
+        if (citiesRes.items.length > 0) {
+          const ids = citiesRes.items.map((c) => c.id).join(",");
+          try {
+            const fnsRes = await api<FnsResponse>(
+              `/api/fns?city_ids=${ids}`,
+              { noAuth: true }
+            );
+            if (cancelled) return;
+            setFnsAll(
+              fnsRes.offices.map((f) => ({
+                id: f.id,
+                name: f.name,
+                code: f.code,
+                cityId: f.cityId,
+                cityName: f.city?.name,
+              }))
+            );
+          } catch {
+            /* typeahead degrades gracefully — empty FNS list */
+          }
+        }
       } catch (e) {
-        console.error("Init error:", e);
+        // ignore — page still renders, fetchSpecialists below handles its own errors
       }
-      await fetchSpecialists(1);
-      setLoading(false);
     }
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Refetch on filter change
+  // Fetch specialists on mount and on filter change.
+  // Catalog is open by default — no FNS gate.
   useEffect(() => {
     setLoading(true);
     fetchSpecialists(1).finally(() => setLoading(false));
   }, [selectedCityId, selectedFnsId, selectedServiceIds, fetchSpecialists]);
 
-  // Debounced search
-  useEffect(() => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => {
-      setLoading(true);
-      fetchSpecialists(1, false, search).finally(() => setLoading(false));
-    }, 400);
-    return () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
-
-  const handleCityChange = useCallback((id: string | null) => {
-    setSelectedCityId(id);
+  const handlePickCity = useCallback((cityId: string) => {
+    setSelectedCityId(cityId);
     setSelectedFnsId(null);
+    router.setParams({ city: cityId, fns: undefined });
+  }, []);
+
+  const handlePickFns = useCallback((fns: FnsOpt) => {
+    setSelectedCityId(fns.cityId);
+    setSelectedFnsId(fns.id);
+    router.setParams({ city: fns.cityId, fns: fns.id });
+  }, []);
+
+  const handleClearLocation = useCallback(() => {
+    setSelectedCityId(null);
+    setSelectedFnsId(null);
+    router.setParams({ city: undefined, fns: undefined });
   }, []);
 
   const handleServiceToggle = useCallback((id: string) => {
-    setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setSelectedServiceIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((s) => s !== id)
+        : [...prev, id];
+      router.setParams({
+        services: next.length > 0 ? next.join(",") : undefined,
+      });
+      return next;
+    });
+  }, []);
+
+  const handleClearServices = useCallback(() => {
+    setSelectedServiceIds([]);
+    router.setParams({ services: undefined });
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -179,41 +257,81 @@ export default function SpecialistsCatalog() {
 
   const handleSpecialistPress = useCallback(
     (id: string) => {
-      router.push(`/specialists/${id}` as never);
+      nav.any(`/specialists/${id}`);
     },
-    [router]
+    [nav]
   );
 
-  if (loading && specialists.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-white">
-        {/* Page header */}
-        <View className="bg-white px-4 pt-4 pb-2">
-          <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-            <ChevronLeft size={16} color="#1e3a8a" />
-          </Pressable>
-          <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
-        </View>
-        <View className="py-4 px-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
-              <LoadingState variant="skeleton" lines={4} />
-            </View>
-          ))}
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const handleBookmark = useCallback(async (id: string) => {
+    if (!isAuthenticated) {
+      nav.any("/login");
+      return;
+    }
+    const isSaved = bookmarkedIds.has(id);
+    // Optimistic update
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (isSaved) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+    try {
+      if (isSaved) {
+        await apiDelete(`/api/saved-specialists/${id}`);
+      } else {
+        await apiPost(`/api/saved-specialists/${id}`, {});
+      }
+    } catch {
+      // Revert on error
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (isSaved) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+        return next;
+      });
+    }
+  }, [isAuthenticated, bookmarkedIds, nav]);
 
-  if (error && specialists.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-white">
-        <View className="bg-white px-4 pt-4 pb-2">
-          <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-            <ChevronLeft size={16} color="#1e3a8a" />
-          </Pressable>
-          <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
-        </View>
+  const headerCount = useMemo(() => {
+    if (loading) return null;
+    return total > 0 ? total : specialists.length;
+  }, [loading, total, specialists.length]);
+
+  return (
+    <SafeAreaView className="flex-1 bg-surface2">
+      <CatalogHeader isDesktop={isDesktop} count={headerCount} />
+
+      {/* Row 2: typeahead search bar */}
+      <View className="px-4 pt-2" style={{ zIndex: 20 }}>
+        <SpecialistSearchBar
+          cities={cities}
+          fnsAll={fnsAll}
+          selectedCityId={selectedCityId}
+          selectedFnsId={selectedFnsId}
+          onPickCity={handlePickCity}
+          onPickFns={handlePickFns}
+          onClear={handleClearLocation}
+        />
+      </View>
+
+      {/* Row 3: compact service chips — always visible */}
+      <ServiceChipsRow
+        services={services}
+        selectedServiceIds={selectedServiceIds}
+        onToggle={handleServiceToggle}
+        onClearAll={handleClearServices}
+      />
+
+      {/* Specialist list */}
+      {loading && specialists.length === 0 ? (
+        <CatalogSkeleton count={5} />
+      ) : error && specialists.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title="Не удалось загрузить список"
@@ -224,100 +342,40 @@ export default function SpecialistsCatalog() {
             fetchSpecialists(1).finally(() => setLoading(false));
           }}
         />
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView className="flex-1 bg-white">
-      {/* Page header */}
-      <View className="bg-white px-4 pt-4 pb-2">
-        <Pressable onPress={() => router.back()} className="min-h-[44px] justify-center mb-2 self-start">
-          <ChevronLeft size={16} color="#1e3a8a" />
-        </Pressable>
-        <Text className="font-extrabold text-3xl" style={{ color: "#0f172a" }}>Каталог специалистов</Text>
-        <Text className="text-sm mt-1 mb-3" style={{ color: "#64748B" }}>
-          Практики с опытом в вашей ИФНС. Выбирайте по инспекции, городу и типу проверки.
-        </Text>
-      </View>
-
-      {/* Search bar */}
-      <View className="flex-row items-center bg-white border border-slate-200 rounded-xl mx-4 mb-3 px-4 min-h-[48px]">
-        <Search size={14} color="#94a3b8" style={{ marginRight: 8 }} />
-        <TextInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Поиск по имени, роли, ФНС..."
-          placeholderTextColor="#94a3b8"
-          style={{ flex: 1, fontSize: 15, color: "#0f172a", height: 48 }}
-        />
-        {total > 0 && (
-          <Text className="text-sm" style={{ color: "#64748B" }}>{total} специалистов</Text>
-        )}
-      </View>
-
-      {/* FilterBar */}
-      <FilterBar
-        cities={cities}
-        selectedCityId={selectedCityId}
-        onCityChange={handleCityChange}
-        services={services}
-        selectedServiceIds={selectedServiceIds}
-        onServiceToggle={handleServiceToggle}
-        fnsOffices={fnsOffices.map((f) => ({ id: f.id, name: f.name }))}
-        selectedFnsId={selectedFnsId}
-        onFnsChange={setSelectedFnsId}
-      />
-
-      {/* Specialist list */}
-      {specialists.length === 0 && !loading ? (
-        <EmptyState
-          icon={UserX}
-          title="Специалистов не найдено"
-          subtitle="Попробуйте изменить фильтры или выбрать другой город"
-          actionLabel={hasFilters ? "Сбросить фильтры" : undefined}
-          onAction={hasFilters ? resetFilters : undefined}
-        />
+      ) : specialists.length === 0 && !loading ? (
+        hasFilters ? (
+          <EmptyState
+            icon={UserX}
+            title="По выбранным фильтрам никого не нашли"
+            subtitle="Попробуйте расширить поиск или сбросить фильтры."
+            actionLabel="Сбросить фильтры"
+            onAction={resetFilters}
+          />
+        ) : (
+          <EmptyState
+            icon={Search}
+            title="Пока нет специалистов"
+            subtitle="Загляните позже — каталог пополняется."
+            actionLabel="Обновить"
+            onAction={() => {
+              setLoading(true);
+              fetchSpecialists(1).finally(() => setLoading(false));
+            }}
+          />
+        )
       ) : (
-        <FlatList
-          key={isDesktop ? "grid-2" : "grid-1"}
-          data={specialists}
-          keyExtractor={(item) => item.id}
-          numColumns={isDesktop ? 2 : 1}
-          columnWrapperStyle={isDesktop ? { gap: 12, paddingHorizontal: 16 } : undefined}
-          contentContainerStyle={{
-            paddingHorizontal: isDesktop ? 0 : 16,
-            paddingBottom: 32,
-            paddingTop: 8,
-            maxWidth: isDesktop ? 900 : undefined,
-            alignSelf: isDesktop ? ("center" as const) : undefined,
-            width: "100%" as const,
-          }}
-          renderItem={({ item }) => (
-            <View style={isDesktop ? { flex: 1 } : undefined}>
-              <SpecialistCard
-                id={item.id}
-                firstName={item.firstName}
-                lastName={item.lastName}
-                avatarUrl={item.avatarUrl}
-                services={item.services}
-                cities={item.cities}
-                description={item.description}
-                onPress={handleSpecialistPress}
-                variant="vertical"
-              />
-            </View>
-          )}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            loadingMore ? (
-              <ActivityIndicator size="small" color="#1e3a8a" style={{ paddingVertical: 16 }} />
-            ) : null
-          }
+        <SpecialistsGrid
+          specialists={specialists}
+          gridCols={gridCols}
+          isDesktop={isDesktop}
+          isWide={isWide}
+          refreshing={refreshing}
+          loadingMore={loadingMore}
+          bookmarkedIds={bookmarkedIds}
+          onRefresh={handleRefresh}
+          onLoadMore={handleLoadMore}
+          onPress={handleSpecialistPress}
+          onBookmark={handleBookmark}
         />
       )}
     </SafeAreaView>

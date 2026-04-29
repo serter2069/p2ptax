@@ -373,7 +373,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
             </div>
 
             <div className="field">
-              <label>Бюджет <span style={{color:'var(--text-dim)', fontWeight:400, textTransform:'none', letterSpacing:0}}>(необязательно — поможет отсеять лишние отклики)</span></label>
+              <label>Бюджет <span style={{color:'var(--text-dim)', fontWeight:400, textTransform:'none', letterSpacing:0}}>(необязательно — поможет отсеять лишние сообщения)</span></label>
               <div className="row">
                 {['до 10 000 ₽', '10–40 тыс. ₽', '40–100 тыс. ₽', '100+ тыс. ₽', 'Готов обсудить'].map(b => (
                   <Pill2 key={b} active={form.budget===b} onClick={()=>set('budget', b===form.budget?'':b)}>{b}</Pill2>
@@ -387,7 +387,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
                 <button className={`pub-opt ${form.visibility==='public'?'active':''}`} onClick={()=>set('visibility','public')}>
                   <div className="pub-icon">Публично</div>
                   <div className="pub-title">Видят все специалисты платформы</div>
-                  <div className="pub-sub">Быстрее получите отклики. Ваши контакты, ИНН и файлы — скрыты до того, как вы сами откроете чат.</div>
+                  <div className="pub-sub">Быстрее получите сообщения. Ваши контакты, ИНН и файлы — скрыты до того, как вы сами откроете чат.</div>
                 </button>
                 <button className={`pub-opt ${form.visibility==='private'?'active':''}`} onClick={()=>set('visibility','private')}>
                   <div className="pub-icon">Только по выбору</div>
@@ -403,7 +403,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
           <div className="fade-in">
             <div className="section-kicker">Шаг 3 · Контакт</div>
             <h4 style={{fontFamily:'var(--fs-serif)', fontSize: 30, marginTop: 6, marginBottom: 20, fontWeight: 400, letterSpacing: '-0.02em'}}>
-              Куда присылать отклики?
+              Куда присылать сообщения?
             </h4>
 
             <div className="field">
@@ -569,14 +569,14 @@ function RequestSuccessModal({ onClose, onOpenChat, data }) {
             </div>
 
             <div style={{padding: 14, background:'var(--surface-2)', borderRadius: 10, display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap: 12}}>
-              <div><div className="stat-val" style={{fontSize: 22}}>{incoming.length}</div><div className="stat-label">откликов</div></div>
+              <div><div className="stat-val" style={{fontSize: 22}}>{incoming.length}</div><div className="stat-label">сообщений</div></div>
               <div><div className="stat-val" style={{fontSize: 22}}>7</div><div className="stat-label">просмотров</div></div>
               <div><div className="stat-val" style={{fontSize: 22}}>28</div><div className="stat-label">дней до закрытия</div></div>
             </div>
           </div>
 
           <div>
-            <div className="section-kicker">Отклики в реальном времени</div>
+            <div className="section-kicker">Сообщения в реальном времени</div>
             <div style={{marginTop: 10, display:'grid', gap: 10}}>
               {incoming.length === 0 && (
                 <div style={{padding: 16, border:'1px dashed var(--line)', borderRadius: 10, textAlign:'center'}}>
@@ -600,12 +600,12 @@ function RequestSuccessModal({ onClose, onOpenChat, data }) {
                     </div>
                   );
                 }
-                // Real response but we don't know the specialist yet — show a placeholder
+                // Real reply but we don't know the specialist yet — show a placeholder
                 return (
                   <div key={id} className="spec-card fade-in" style={{cursor:'pointer'}}>
                     <Avatar2 init="?" online={true} />
                     <div className="spec-meta">
-                      <div className="spec-name">Новый отклик</div>
+                      <div className="spec-name">Новое сообщение</div>
                       <div className="spec-desc">откройте диалог, чтобы посмотреть</div>
                     </div>
                     <span className="xs mono" style={{color:'var(--accent)'}}>В ЧАТ →</span>
@@ -614,7 +614,7 @@ function RequestSuccessModal({ onClose, onOpenChat, data }) {
               })}
               {apiDown && incoming.length === 0 && (
                 <div style={{padding:'10px 12px', fontSize:12, color:'var(--text-mute)', background:'var(--surface-2)', borderRadius:8}}>
-                  Не удалось обновить список откликов. Проверим ещё раз через 5 секунд.
+                  Не удалось обновить список сообщений. Проверим ещё раз через 5 секунд.
                 </div>
               )}
             </div>
@@ -629,7 +629,7 @@ function RequestSuccessModal({ onClose, onOpenChat, data }) {
       <div className="modal-foot">
         <button className="btn btn-ghost" onClick={onClose}>В личный кабинет</button>
         <button className="btn btn-primary" onClick={() => onOpenChat(incoming[0] || 'am')}>
-          {incoming.length > 0 ? 'Открыть чат с первым откликом →' : 'Подождать ещё…'}
+          {incoming.length > 0 ? 'Открыть чат с первым сообщением →' : 'Подождать ещё…'}
         </button>
       </div>
     </Modal>

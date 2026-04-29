@@ -1,9 +1,67 @@
 import { Router, Request, Response } from "express";
+import * as Minio from "minio";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
 
 const router = Router();
+
+const BUCKET = process.env.MINIO_BUCKET || "p2ptax";
+
+function getMinioClient(): Minio.Client {
+  return new Minio.Client({
+    endPoint: process.env.MINIO_ENDPOINT || "localhost",
+    port: parseInt(process.env.MINIO_PORT || "9000", 10),
+    useSSL: process.env.MINIO_USE_SSL === "true",
+    accessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
+    secretKey: process.env.MINIO_SECRET_KEY || "minioadmin",
+  });
+}
+
+// Resolve a pending uploadToken (uploaded before the thread existed) to its MinIO object key.
+// Returns null if not found.
+async function resolvePendingUpload(
+  uploadToken: string
+): Promise<{ key: string; filename: string } | null> {
+  const client = getMinioClient();
+  const prefix = `chat-files/_pending/${uploadToken}_`;
+  try {
+    return await new Promise((resolve, reject) => {
+      const stream = client.listObjects(BUCKET, prefix, false);
+      let found: Minio.BucketItem | null = null;
+      stream.on("data", (obj: Minio.BucketItem) => {
+        if (!found) found = obj;
+      });
+      stream.on("end", () => {
+        if (found && found.name) {
+          const rawName = found.name.split("/").pop() ?? "file";
+          const underscoreIdx = rawName.indexOf("_");
+          const filename = underscoreIdx >= 0 ? rawName.slice(underscoreIdx + 1) : rawName;
+          resolve({ key: found.name, filename });
+        } else {
+          resolve(null);
+        }
+      });
+      stream.on("error", reject);
+    });
+  } catch {
+    return null;
+  }
+}
+
+// GET /api/threads/sample — dev helper: first thread ID for metromap URL resolver
+router.get("/sample", async (_req: Request, res: Response) => {
+  try {
+    const first = await prisma.thread.findFirst({
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    res.json({ items: first ? [{ id: first.id }] : [] });
+  } catch (error) {
+    console.error("threads/sample error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 router.use(authMiddleware);
 
@@ -35,7 +93,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { isSpecialist: true },
     });
 
     if (!user) {
@@ -43,35 +101,50 @@ router.get("/", async (req: Request, res: Response) => {
       return;
     }
 
-    const isSpecialist = user.role === "SPECIALIST";
+    // Iter11: specialist-mode view is gated by the opt-in flag, not role.
+    const isSpecialist = user.isSpecialist;
 
     const requestIdFilter = req.query.request_id as string | undefined;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
-    const threads = await prisma.thread.findMany({
-      where: {
-        ...(isSpecialist
-          ? { specialistId: userId }
-          : { clientId: userId }),
-        ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
-      },
-      orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
-      include: {
-        request: {
-          select: { id: true, title: true, status: true },
+    const [threads, total] = await Promise.all([
+      prisma.thread.findMany({
+        where: {
+          ...(isSpecialist
+            ? { specialistId: userId }
+            : { clientId: userId }),
+          ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
         },
-        client: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+        orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
+        skip: offset,
+        take: limit,
+        include: {
+          request: {
+            select: { id: true, title: true, status: true },
+          },
+          client: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true },
+          },
+          specialist: {
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true },
+          },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { text: true, createdAt: true, senderId: true },
+          },
         },
-        specialist: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+      }),
+      prisma.thread.count({
+        where: {
+          ...(isSpecialist
+            ? { specialistId: userId }
+            : { clientId: userId }),
+          ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
         },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { text: true, createdAt: true, senderId: true },
-        },
-      },
-    });
+      }),
+    ]);
 
     const mapped = threads.map((t) => {
       const lastReadAt = isSpecialist
@@ -96,6 +169,7 @@ router.get("/", async (req: Request, res: Response) => {
           firstName: otherUser.firstName,
           lastName: otherUser.lastName,
           avatarUrl: otherUser.avatarUrl,
+          isDeleted: otherUser.deletedAt !== null,
         },
         lastMessage: lastMessage
           ? {
@@ -108,25 +182,202 @@ router.get("/", async (req: Request, res: Response) => {
       };
     });
 
-    // Enrich with actual unread counts
-    for (const item of mapped) {
-      const thread = threads.find((t) => t.id === item.id)!;
-      const lastReadAt = isSpecialist
-        ? thread.specialistLastReadAt
-        : thread.clientLastReadAt;
+    // Enrich with actual unread counts — batch into parallel queries
+    // Threads with lastReadAt need per-thread counts; threads without can be batched.
+    const threadsWithRead = threads.filter(t => {
+      const lastReadAt = isSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
+      return lastReadAt !== null;
+    });
+    const threadsWithoutRead = threads.filter(t => {
+      const lastReadAt = isSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
+      return lastReadAt === null;
+    });
 
-      item.unreadCount = await prisma.message.count({
+    const readCounts = await Promise.all(
+      threadsWithRead.map(async (thread) => {
+        const lastReadAt = isSpecialist
+          ? thread.specialistLastReadAt
+          : thread.clientLastReadAt;
+        return prisma.message.count({
+          where: {
+            threadId: thread.id,
+            senderId: { not: userId },
+            ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+          },
+        });
+      })
+    );
+
+    // Build a map from thread id to unread count
+    const unreadMap = new Map<string, number>();
+    threadsWithRead.forEach((t, i) => unreadMap.set(t.id, readCounts[i]));
+
+    // Use groupBy for the threadsWithoutRead to get per-thread counts in one query
+    if (threadsWithoutRead.length > 0) {
+      const groupCounts = await prisma.message.groupBy({
+        by: ['threadId'],
+        _count: { id: true },
         where: {
-          threadId: item.id,
+          threadId: { in: threadsWithoutRead.map(t => t.id) },
           senderId: { not: userId },
-          ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
         },
       });
+      groupCounts.forEach(g => unreadMap.set(g.threadId, g._count.id));
     }
 
-    res.json({ items: mapped });
+    // Map counts back to items
+    const itemThreadMap = new Map(mapped.map((item, i) => [threads[i].id, item]));
+    threads.forEach((t, i) => {
+      itemThreadMap.get(t.id)!.unreadCount = unreadMap.get(t.id) ?? 0;
+    });
+
+    res.json({ items: mapped, total, limit, offset, hasMore: offset + limit < total });
   } catch (error) {
     console.error("threads list error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+// GET /api/threads/my — unified inbox.
+//
+// Iter11 PR 3 — replaces the legacy perspective-split `/api/threads` for
+// the UI inbox. Returns threads where the caller is EITHER the client
+// (request author) OR the specialist (thread writer), grouped by request
+// so a single USER who sent a request AND later became a specialist can
+// see both sides of the same request in one list.
+router.get("/my", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+
+    const [threads, total] = await Promise.all([
+      prisma.thread.findMany({
+        where: {
+          OR: [
+            { specialistId: userId },
+            { clientId: userId },
+          ],
+        },
+        orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
+        skip: offset,
+        take: limit,
+        include: {
+          request: { select: { id: true, title: true, status: true, userId: true } },
+          client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
+          specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { text: true, createdAt: true, senderId: true },
+          },
+        },
+      }),
+      prisma.thread.count({
+        where: {
+          OR: [
+            { specialistId: userId },
+            { clientId: userId },
+          ],
+        },
+      }),
+    ]);
+
+    // Enrich with actual unread counts — batch with groupBy for threads
+    // that share the same lastReadAt pattern. Each thread has its own
+    // lastReadAt so we still need per-thread queries, but we parallelize
+    // them in a single Promise.all (no sequential for-await).
+    const threadsWithRead = threads.filter(t => {
+      const asSpecialist = t.specialistId === userId;
+      const lastReadAt = asSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
+      return lastReadAt !== null;
+    });
+    const threadsWithoutRead = threads.filter(t => {
+      const asSpecialist = t.specialistId === userId;
+      const lastReadAt = asSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
+      return lastReadAt === null;
+    });
+
+    const readCounts = await Promise.all(
+      threadsWithRead.map(async (thread) => {
+        const asSpecialist = thread.specialistId === userId;
+        const lastReadAt = asSpecialist
+          ? thread.specialistLastReadAt!
+          : thread.clientLastReadAt!;
+        return prisma.message.count({
+          where: {
+            threadId: thread.id,
+            senderId: { not: userId },
+            createdAt: { gt: lastReadAt },
+          },
+        });
+      })
+    );
+
+    // Build per-thread unread map
+    const unreadMap = new Map<string, number>();
+    threadsWithRead.forEach((t, i) => unreadMap.set(t.id, readCounts[i]));
+
+    // For threads never read, use groupBy to get per-thread counts in one query
+    if (threadsWithoutRead.length > 0) {
+      const groupCounts = await prisma.message.groupBy({
+        by: ['threadId'],
+        _count: { id: true },
+        where: {
+          threadId: { in: threadsWithoutRead.map(t => t.id) },
+          senderId: { not: userId },
+        },
+      });
+      groupCounts.forEach(g => unreadMap.set(g.threadId, g._count.id));
+    }
+
+    // Build enriched results with correct unread counts
+    const enriched = threads.map((thread) => {
+      const asSpecialist = thread.specialistId === userId;
+      const otherUser = asSpecialist ? thread.client : thread.specialist;
+      const lastMessage = thread.messages[0] ?? null;
+      return {
+        id: thread.id,
+        requestId: thread.requestId,
+        request: thread.request,
+        perspective: asSpecialist ? "as_specialist" : "as_client",
+        otherUser: {
+          id: otherUser.id,
+          firstName: otherUser.firstName,
+          lastName: otherUser.lastName,
+          avatarUrl: otherUser.avatarUrl,
+          isDeleted: otherUser.deletedAt !== null,
+        },
+        lastMessage: lastMessage
+          ? { text: lastMessage.text, createdAt: lastMessage.createdAt }
+          : null,
+        unreadCount: unreadMap.get(thread.id) ?? 0,
+        createdAt: thread.createdAt,
+      };
+    });
+
+    // Group by request. Same request seen from both perspectives (client
+    // + specialist) lands in the same group — useful for the dual-role
+    // case post-iter11.
+    type Group = {
+      request: typeof enriched[number]["request"];
+      threads: typeof enriched;
+    };
+    const groups = new Map<string, Group>();
+    for (const th of enriched) {
+      if (!th.requestId) continue;
+      const existing = groups.get(th.requestId);
+      if (existing) {
+        existing.threads.push(th);
+      } else {
+        groups.set(th.requestId, { request: th.request, threads: [th] });
+      }
+    }
+
+    res.json({ groups: Array.from(groups.values()), total, limit, offset, hasMore: offset + limit < total });
+  } catch (error) {
+    console.error("threads/my error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -142,8 +393,8 @@ router.get("/:id", async (req: Request, res: Response) => {
       where: { id: threadId },
       include: {
         request: { select: { id: true, title: true, status: true } },
-        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
-        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
+        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
       },
     });
 
@@ -160,19 +411,27 @@ router.get("/:id", async (req: Request, res: Response) => {
     const isClient = thread.clientId === userId;
     const otherUser = isClient ? thread.specialist : thread.client;
 
+    // Strip the raw `deletedAt` Date from the public payload — replace
+    // with the boolean `isDeleted` flag the FE consumes.
+    const stripDeletedAt = <T extends { deletedAt: Date | null }>(u: T) => {
+      const { deletedAt, ...rest } = u;
+      return { ...rest, isDeleted: deletedAt !== null };
+    };
+
     res.json({
       id: thread.id,
       requestId: thread.requestId,
       clientId: thread.clientId,
       specialistId: thread.specialistId,
       request: thread.request,
-      client: thread.client,
-      specialist: thread.specialist,
+      client: stripDeletedAt(thread.client),
+      specialist: stripDeletedAt(thread.specialist),
       otherUser: {
         id: otherUser.id,
         firstName: otherUser.firstName,
         lastName: otherUser.lastName,
         avatarUrl: otherUser.avatarUrl,
+        isDeleted: otherUser.deletedAt !== null,
       },
       createdAt: thread.createdAt,
     });
@@ -186,7 +445,11 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { requestId, firstMessage } = req.body;
+    const { requestId, firstMessage, uploadToken } = req.body as {
+      requestId?: string;
+      firstMessage?: string;
+      uploadToken?: string;
+    };
 
     if (!requestId || !firstMessage) {
       res.status(400).json({ error: "requestId and firstMessage are required" });
@@ -198,13 +461,16 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify user is specialist
+    // Verify user has specialist features enabled. Iter11: CLIENT+SPECIALIST
+    // unified into USER — writing threads requires isSpecialist=true AND a
+    // completed specialist profile (so clients don't get half-filled profiles
+    // showing up in their inbox).
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { isSpecialist: true, specialistProfileCompletedAt: true },
     });
 
-    if (!user || user.role !== "SPECIALIST") {
+    if (!user || !user.isSpecialist) {
       res.status(403).json({ error: "Only specialists can create threads" });
       return;
     }
@@ -259,41 +525,72 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Create thread + first message in transaction
+    // Create thread + first message + update request in a single transaction
     const now = new Date();
-    const thread = await prisma.thread.create({
-      data: {
-        requestId,
-        clientId: request.userId,
-        specialistId: userId,
-        lastMessageAt: now,
-        specialistLastReadAt: now,
-        messages: {
-          create: {
-            senderId: userId,
-            text: firstMessage,
+    const result = await prisma.$transaction(async (tx) => {
+      const thread = await tx.thread.create({
+        data: {
+          requestId,
+          clientId: request.userId,
+          specialistId: userId,
+          lastMessageAt: now,
+          specialistLastReadAt: now,
+          messages: {
+            create: {
+              senderId: userId,
+              text: firstMessage,
+            },
           },
         },
-      },
-      include: {
-        request: { select: { id: true, title: true, status: true } },
-      },
+        include: {
+          request: { select: { id: true, title: true, status: true } },
+          messages: { select: { id: true }, take: 1 },
+        },
+      });
+
+      await tx.request.update({
+        where: { id: requestId },
+        data: { lastActivityAt: now },
+      });
+
+      return thread;
     });
 
-    // Update request lastActivityAt
-    await prisma.request.update({
-      where: { id: requestId },
-      data: { lastActivityAt: now },
-    });
+    const thread = result;
 
-    // Notify client: new response on their request
+    // If specialist attached a pending file (uploaded before the thread existed),
+    // link it to the first message. Failures are silent — the thread+message must succeed
+    // even if the upload step has trouble.
+    if (uploadToken && typeof uploadToken === "string" && uploadToken.length >= 8) {
+      try {
+        const resolved = await resolvePendingUpload(uploadToken);
+        const firstMessageId = thread.messages[0]?.id;
+        if (resolved && firstMessageId) {
+          await prisma.file.create({
+            data: {
+              entityType: "message",
+              entityId: firstMessageId,
+              url: `/${BUCKET}/${resolved.key}`,
+              filename: resolved.filename,
+              size: 0,
+              mimeType: "application/octet-stream",
+            },
+          });
+        }
+      } catch (linkErr) {
+        console.warn("[threads] failed to link uploadToken file:", linkErr);
+      }
+    }
+
+    // Notify client: specialist started a new thread on their request
+    // SA: «Специалист X написал по вашей заявке 'TITLE'»
     sendNotification({
       userId: request.userId,
-      type: "new_response",
-      title: "Новый отклик на вашу заявку",
+      type: "new_message_from_specialist",
+      title: `Новое сообщение от специалиста по заявке «${thread.request.title}»`,
       body: firstMessage.slice(0, 200),
       entityId: thread.id,
-    }).catch((err: Error) => console.warn("[notifications] new_response trigger failed:", err.message));
+    }).catch((err: Error) => console.warn("[notifications] new_message_from_specialist trigger failed:", err.message));
 
     res.status(201).json({
       id: thread.id,

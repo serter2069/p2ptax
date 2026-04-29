@@ -1,64 +1,85 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
-import { Home, Search, PlusSquare, MessageCircle, User } from "lucide-react-native";
-import Header from "@/components/Header";
-import { colors } from "@/lib/theme";
+import {
+  LayoutGrid,
+  FileText,
+  MessageCircle,
+  User,
+} from "lucide-react-native";
+import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 
+/**
+ * Unified (tabs) navigator — task #1379 cleanup.
+ *
+ * Exactly 4 tabs on mobile: Главная / Заявки / Сообщения / Настройки.
+ * "Публичные заявки" is hidden from the tab bar (href: null) — accessible
+ * via the mobile drawer / sidebar only.
+ *
+ * Tab bar is hidden on desktop (≥768px) — SidebarNav carries navigation there.
+ */
 export default function TabLayout() {
   const { width } = useWindowDimensions();
-  const isMobile = width < 640;
+  const isMobile = width < BREAKPOINT;
 
   return (
-    <>
-      <Header />
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: "#2563eb",
-          tabBarInactiveTintColor: colors.textSecondary,
-          tabBarStyle: {
-            display: isMobile ? "flex" : "none",
-            borderTopWidth: 1,
-            borderTopColor: "#f3f4f6",
-          },
-          headerShown: false,
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: isMobile
+          ? {
+              height: 60,
+              paddingBottom: 8,
+              paddingTop: 6,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }
+          : { display: "none" },
+        tabBarLabelStyle: {
+          fontSize: fontSizeValue.tabBar,
+          lineHeight: 14,
+          fontWeight: "500",
+          marginTop: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 0,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: "Главная",
+          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
         }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: "Home",
-            tabBarIcon: ({ color }) => <Home size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="search"
-          options={{
-            title: "Search",
-            tabBarIcon: ({ color }) => <Search size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="create"
-          options={{
-            title: "Create",
-            tabBarIcon: ({ color }) => <PlusSquare size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="messages"
-          options={{
-            title: "Messages",
-            tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: "Profile",
-            tabBarIcon: ({ color }) => <User size={22} color={color} />,
-          }}
-        />
-      </Tabs>
-    </>
+      />
+      <Tabs.Screen
+        name="requests"
+        options={{
+          title: "Заявки",
+          tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: "Сообщения",
+          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Настройки",
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+        }}
+      />
+      {/* Hidden from tab bar — accessible via mobile drawer / sidebar. */}
+      <Tabs.Screen name="public-requests" options={{ href: null }} />
+      {/* STRUCT-1 — redirect-only tabs, hidden from tab bar. */}
+      <Tabs.Screen name="create" options={{ href: null }} />
+      <Tabs.Screen name="search" options={{ href: null }} />
+    </Tabs>
   );
 }

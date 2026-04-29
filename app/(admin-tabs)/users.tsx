@@ -11,15 +11,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Users } from "lucide-react-native";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
+import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
-import { colors, radiusValue } from "@/lib/theme";
+import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
 
 
-type RoleFilter = "ALL" | "CLIENT" | "SPECIALIST" | "BANNED";
+/**
+ * Iter11 unified role model: guest/user/admin + isSpecialist flag.
+ * Filter tokens sent to `/api/admin/users?role=…`:
+ *   ALL         → no role filter (returns user + admin rows)
+ *   USERS       → role=USER isSpecialist=false  (maps to backend "USER")
+ *   SPECIALISTS → role=USER isSpecialist=true   (maps to backend "SPECIALIST")
+ *   ADMINS      → role=ADMIN                    (maps to backend "ADMIN")
+ */
+type RoleFilter = "ALL" | "USERS" | "SPECIALISTS" | "ADMINS";
 
 interface UserItem {
   id: string;
@@ -27,23 +36,45 @@ interface UserItem {
   firstName: string | null;
   lastName: string | null;
   role: string | null;
+  /** Iter11 PR 3 — specialist opt-in flag returned by /api/admin/users. */
+  isSpecialist?: boolean;
   isBanned: boolean;
   createdAt: string;
   avatarUrl: string | null;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  CLIENT: "Клиент",
-  SPECIALIST: "Специалист",
-  ADMIN: "Админ",
-};
+/**
+ * Iter11 PR 3 — backend returns role=USER | ADMIN now. Specialist/client
+ * distinction is derived from the `isSpecialist` flag on USER rows.
+ */
+function displayRoleLabel(role: string | null, isSpecialist?: boolean): string {
+  if (role === "ADMIN") return "Админ";
+  if (role === "USER") return isSpecialist ? "Специалист" : "Клиент";
+  return role ?? "";
+}
 
 const FILTER_OPTIONS: { key: RoleFilter; label: string }[] = [
   { key: "ALL", label: "Все" },
-  { key: "CLIENT", label: "Клиенты" },
-  { key: "SPECIALIST", label: "Специалисты" },
-  { key: "BANNED", label: "Заблокированные" },
+  { key: "USERS", label: "Пользователи" },
+  { key: "SPECIALISTS", label: "Специалисты" },
+  { key: "ADMINS", label: "Админы" },
 ];
+
+/** Maps frontend RoleFilter to the backend role query param value. */
+function toApiRoleParam(filter: RoleFilter): string | undefined {
+  if (filter === "USERS") return "USER";
+  if (filter === "SPECIALISTS") return "SPECIALIST";
+  if (filter === "ADMINS") return "ADMIN";
+  return undefined; // ALL → no filter
+}
+
+const cardShadow = {
+  shadowColor: colors.text,
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.06,
+  shadowRadius: 4,
+  elevation: 2,
+};
 
 function getInitials(firstName: string | null, lastName: string | null, email: string): string {
   if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
@@ -83,7 +114,8 @@ export default function AdminUsers() {
       try {
         const params = new URLSearchParams();
         if (q) params.set("q", q);
-        if (role !== "ALL") params.set("role", role);
+        const apiRole = toApiRoleParam(role);
+        if (apiRole) params.set("role", apiRole);
         params.set("page", String(p));
         params.set("limit", "20");
 
@@ -211,76 +243,101 @@ export default function AdminUsers() {
     return layoutMeasurement.height + contentOffset.y >= contentSize.height - 200;
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
-      {/* Search header */}
-      <View className="bg-blue-900 px-4 pb-3 pt-2">
+  const filterBar = (
+    <View style={{ gap: 12 }}>
+      {/* Outer View owns all visual styling — prevents double-input on web (NativeWind wraps
+          TextInput in an extra div when className is used; keeping className off TextInput
+          and border/bg on the parent View avoids the double-box artifact). */}
+      <View
+        style={{
+          backgroundColor: colors.surface2,
+          borderRadius: radiusValue.md,
+          height: 44,
+          paddingHorizontal: 14,
+          borderWidth: 1,
+          borderColor: colors.border,
+          justifyContent: "center",
+        }}
+      >
         <TextInput
           accessibilityLabel="Поиск по email или имени"
           style={{
-            backgroundColor: "rgba(255,255,255,0.15)",
-            borderRadius: radiusValue.md,
-            height: 40,
-            paddingHorizontal: 14,
-            color: colors.surface,
-            fontSize: 15,
+            flex: 1,
+            color: colors.text,
+            fontSize: fontSizeValue.md,
+            borderWidth: 0,
+            backgroundColor: "transparent",
+            ...(Platform.OS === "web" ? {
+              borderColor: "transparent",
+              outlineStyle: "none" as never,
+              outlineWidth: 0,
+              appearance: "none" as never,
+            } : {}),
           }}
           placeholder="Поиск по email или имени..."
-          placeholderTextColor="rgba(255,255,255,0.5)"
+          placeholderTextColor={colors.placeholder}
           value={search}
           onChangeText={setSearch}
           autoCapitalize="none"
         />
       </View>
-
-      {/* Filter chips */}
-      <View className="bg-white border-b border-slate-200 px-4 py-2">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {FILTER_OPTIONS.map((opt) => (
-            <Pressable
-              accessibilityRole="button"
-              key={opt.key}
-              accessibilityLabel={opt.label}
-              onPress={() => setFilter(opt.key)}
-              className={`px-3 py-1.5 rounded-full border ${
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8 }}
+      >
+        {FILTER_OPTIONS.map((opt) => (
+          <Pressable
+            accessibilityRole="button"
+            key={opt.key}
+            accessibilityLabel={opt.label}
+            onPress={() => setFilter(opt.key)}
+            className={`px-3 rounded-full border active:opacity-70 ${
+              filter === opt.key
+                ? "bg-accent border-accent"
+                : "bg-surface2 border-border"
+            }`}
+            style={{ minHeight: 36, justifyContent: "center" }}
+          >
+            <Text
+              className={`text-sm ${
                 filter === opt.key
-                  ? "bg-blue-900 border-blue-900"
-                  : "bg-white border-slate-200"
+                  ? "text-white font-medium"
+                  : "text-text-mute"
               }`}
-              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
-              <Text
-                className={`text-sm ${
-                  filter === opt.key
-                    ? "text-white font-medium"
-                    : "text-slate-900"
-                }`}
-              >
-                {opt.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
+              {opt.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
 
+  return (
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       {loading ? (
-        <ResponsiveContainer>
+        <DesktopScreen
+          title="Пользователи"
+          subtitle="Управление аккаунтами платформы"
+          filters={filterBar}
+        >
           <View className="py-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
+              <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-border">
                 <LoadingState variant="skeleton" lines={4} />
               </View>
             ))}
           </View>
-        </ResponsiveContainer>
+        </DesktopScreen>
       ) : error ? (
-        <View className="flex-1 items-center justify-center">
+        <DesktopScreen
+          title="Пользователи"
+          subtitle="Управление аккаунтами платформы"
+          filters={filterBar}
+        >
           <ErrorState message="Не удалось загрузить пользователей" onRetry={() => fetchUsers(search, filter, 1)} />
-        </View>
+        </DesktopScreen>
       ) : (
         <ScrollView
           className="flex-1"
@@ -289,31 +346,34 @@ export default function AdminUsers() {
           }}
           scrollEventThrottle={400}
         >
-          <ResponsiveContainer>
+          <DesktopScreen
+            title="Пользователи"
+            subtitle="Управление аккаунтами платформы"
+            filters={filterBar}
+          >
             <View className="py-2">
               {users.length === 0 ? (
-                <View className="items-center py-16">
-                  <Users size={48} color={colors.placeholder} />
-                  <Text className="text-base text-slate-400 mt-3">
-                    Пользователи не найдены
-                  </Text>
-                </View>
+                <EmptyState
+                  icon={Users}
+                  title="Пользователи не найдены"
+                  subtitle="Попробуйте изменить фильтры или поисковый запрос"
+                />
               ) : (
                 users.map((user) => (
-                  <View key={user.id}>
+                  <View key={user.id} className="mb-2">
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`${[user.firstName, user.lastName].filter(Boolean).join(" ") || user.email}`}
                       onPress={() =>
                         setExpandedId(expandedId === user.id ? null : user.id)
                       }
-                      className="bg-white border-b border-slate-100 px-4 py-3"
-                      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                      className="bg-white border border-border rounded-xl p-4 active:opacity-70"
+                      style={cardShadow}
                     >
                       <View className="flex-row items-center">
-                        {/* Avatar */}
-                        <View className="w-8 h-8 rounded-full bg-blue-900 items-center justify-center mr-3">
-                          <Text className="text-xs font-bold text-white">
+                        {/* Avatar initials chip */}
+                        <View className="bg-accent-soft rounded-full w-11 h-11 items-center justify-center mr-3">
+                          <Text className="text-accent font-bold text-base">
                             {getInitials(user.firstName, user.lastName, user.email)}
                           </Text>
                         </View>
@@ -321,7 +381,7 @@ export default function AdminUsers() {
                         {/* Name + email */}
                         <View className="flex-1 mr-2">
                           <Text
-                            className="text-sm font-medium text-slate-900"
+                            className="text-base font-semibold text-text-base"
                             numberOfLines={1}
                           >
                             {[user.firstName, user.lastName]
@@ -329,7 +389,7 @@ export default function AdminUsers() {
                               .join(" ") || "Без имени"}
                           </Text>
                           <Text
-                            className="text-xs text-slate-400"
+                            className="text-sm text-text-mute"
                             numberOfLines={1}
                           >
                             {user.email}
@@ -339,41 +399,36 @@ export default function AdminUsers() {
                         {/* Badges */}
                         <View className="flex-row items-center gap-2">
                           {user.role && (
-                            <View className="bg-slate-100 px-2 py-0.5 rounded-full">
-                              <Text className="text-xs text-slate-600">
-                                {ROLE_LABELS[user.role] || user.role}
+                            <View className="bg-accent-soft rounded-full px-2.5 py-0.5">
+                              <Text className="text-xs font-medium text-accent">
+                                {displayRoleLabel(user.role, user.isSpecialist)}
                               </Text>
                             </View>
                           )}
                           {user.isBanned && (
-                            <View className="bg-red-600 px-2 py-0.5 rounded-full">
-                              <Text className="text-xs text-white font-medium">
+                            <View className="bg-danger-soft rounded-full px-2.5 py-0.5">
+                              <Text className="text-xs text-danger font-medium">
                                 Бан
                               </Text>
                             </View>
                           )}
                         </View>
-
-                        {/* Date */}
-                        <Text className="text-xs text-slate-400 ml-2">
-                          {formatDate(user.createdAt)}
-                        </Text>
                       </View>
                     </Pressable>
 
                     {/* Expanded section */}
                     {expandedId === user.id && (
-                      <View className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                        <Text className="text-xs text-slate-500 mb-1">
+                      <View className="bg-surface2 px-4 py-3 border border-t-0 border-border rounded-b-xl">
+                        <Text className="text-xs text-text-mute mb-1">
                           ID: {user.id}
                         </Text>
-                        <Text className="text-xs text-slate-500 mb-1">
+                        <Text className="text-xs text-text-mute mb-1">
                           Email: {user.email}
                         </Text>
-                        <Text className="text-xs text-slate-500 mb-1">
-                          Роль: {user.role ? ROLE_LABELS[user.role] || user.role : "Не назначена"}
+                        <Text className="text-xs text-text-mute mb-1">
+                          Роль: {user.role ? displayRoleLabel(user.role, user.isSpecialist) : "Не назначена"}
                         </Text>
-                        <Text className="text-xs text-slate-500 mb-3">
+                        <Text className="text-xs text-text-mute mb-3">
                           Регистрация: {formatDate(user.createdAt)}
                         </Text>
 
@@ -382,23 +437,23 @@ export default function AdminUsers() {
                             accessibilityRole="button"
                             accessibilityLabel={user.isBanned ? "Разблокировать" : "Заблокировать"}
                             onPress={() => toggleBan(user)}
-                            className={`px-3 py-2 rounded-lg ${
-                              user.isBanned ? "bg-emerald-600" : "bg-red-600"
+                            className={`px-3 rounded-lg active:opacity-70 ${
+                              user.isBanned ? "bg-success" : "bg-danger"
                             }`}
-                            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                            style={{ minHeight: 44, justifyContent: "center" }}
                           >
                             <Text className="text-xs text-white font-medium">
                               {user.isBanned ? "Разблокировать" : "Заблокировать"}
                             </Text>
                           </Pressable>
 
-                          {user.role === "CLIENT" && (
+                          {user.role !== "ADMIN" && !user.isSpecialist && (
                             <Pressable
                               accessibilityRole="button"
                               accessibilityLabel="Закрыть все заявки"
                               onPress={() => closeAllRequests(user)}
-                              className="px-3 py-2 rounded-lg bg-amber-500"
-                              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                              className="px-3 rounded-lg bg-warning active:opacity-70"
+                              style={{ minHeight: 36, justifyContent: "center" }}
                             >
                               <Text className="text-xs text-white font-medium">
                                 Закрыть все заявки
@@ -418,7 +473,7 @@ export default function AdminUsers() {
                 </View>
               )}
             </View>
-          </ResponsiveContainer>
+          </DesktopScreen>
         </ScrollView>
       )}
     </SafeAreaView>

@@ -1,8 +1,10 @@
 import { Router, Request, Response } from "express";
+import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { verifyAccessToken } from "../lib/jwt";
+import { sendNotification } from "../notifications/notification.service";
 
 // Strip all HTML tags to prevent XSS
 function stripHtml(str: string): string {
@@ -10,6 +12,66 @@ function stripHtml(str: string): string {
 }
 
 const router = Router();
+
+/**
+ * Notifies all specialists who cover the request's FNS, regardless of
+ * which specific services they offer. This is intentional: when a client
+ * picks "Не знаю" for service, we still want their request visible to
+ * any qualified specialist at the FNS. Specialists can self-filter via
+ * the public-requests feed.
+ *
+ * Side-effect only — never crashes the request flow.
+ */
+async function notifyMatchingSpecialists(args: {
+  requestId: string;
+  fnsId: string;
+  title: string;
+  clientUserId: string;
+}): Promise<number> {
+  const { requestId, fnsId, title, clientUserId } = args;
+  try {
+    const matchingSpecialists = await prisma.user.findMany({
+      where: {
+        isSpecialist: true,
+        specialistProfileCompletedAt: { not: null },
+        isAvailable: true,
+        isBanned: false,
+        // Skip soft-deleted accounts when fanning-out notifications.
+        deletedAt: null,
+        id: { not: clientUserId },
+        specialistFns: { some: { fnsId } },
+      },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      matchingSpecialists.map((s) =>
+        sendNotification({
+          userId: s.id,
+          type: "new_request_in_city",
+          title: "Новая заявка по вашему отделению ФНС",
+          body: title.slice(0, 200),
+          entityId: requestId,
+        }).catch((err: Error) =>
+          console.error("[notifications] new_request_in_city fan-out failed:", err.message)
+        )
+      )
+    );
+
+    return matchingSpecialists.length;
+  } catch (err) {
+    console.error("[notifications] fan-out query failed:", (err as Error).message);
+    return 0;
+  }
+}
+
+const createRequestRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много запросов. Попробуйте через минуту." },
+});
 
 // GET /api/requests/public — active requests feed
 router.get("/public", async (req: Request, res: Response) => {
@@ -19,14 +81,14 @@ router.get("/public", async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
 
     const cityId = (req.query.city_id as string) || undefined;
+    const fnsId = (req.query.fns_id as string) || undefined;
 
     const where: Prisma.RequestWhereInput = {
       status: { in: ["ACTIVE", "CLOSING_SOON"] },
     };
 
-    if (cityId) {
-      where.cityId = cityId;
-    }
+    if (cityId) where.cityId = cityId;
+    if (fnsId) where.fnsId = fnsId;
 
     const [items, total] = await Promise.all([
       prisma.request.findMany({
@@ -63,6 +125,20 @@ router.get("/public", async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("requests/public error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/requests/sample — dev helper: first request ID for metromap URL resolver
+router.get("/sample", async (_req: Request, res: Response) => {
+  try {
+    const first = await prisma.request.findFirst({
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    res.json({ items: first ? [{ id: first.id }] : [] });
+  } catch (error) {
+    console.error("requests/sample error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -138,20 +214,16 @@ router.get("/:id/public", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/requests/public — quick request from landing
-router.post("/public", async (req: Request, res: Response) => {
+// POST /api/requests/public — quick request from landing (auth required)
+router.post("/public", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
-    const { title, cityId, fnsId, description, userId } = req.body;
+    const { title, cityId, fnsId, description } = req.body;
+    const userId = req.user!.userId;
 
     if (!title || !cityId || !fnsId || !description) {
       res.status(400).json({
         error: "Title, city, FNS office, and description are required",
       });
-      return;
-    }
-
-    if (!userId) {
-      res.status(401).json({ error: "Authentication required to create a request" });
       return;
     }
 
@@ -181,6 +253,14 @@ router.post("/public", async (req: Request, res: Response) => {
       },
     });
 
+    // Fire-and-forget: notify matching specialists. Never blocks the response.
+    void notifyMatchingSpecialists({
+      requestId: request.id,
+      fnsId,
+      title: request.title,
+      clientUserId: userId,
+    });
+
     res.status(201).json(request);
   } catch (error) {
     console.error("requests/public create error:", error);
@@ -195,17 +275,22 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
-    const items = await prisma.request.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      include: {
-        city: true,
-        fns: true,
-        _count: { select: { threads: true } },
-      },
-    });
+    const [items, total] = await Promise.all([
+      prisma.request.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        skip: offset,
+        take: limit,
+        include: {
+          city: true,
+          fns: true,
+          _count: { select: { threads: true } },
+        },
+      }),
+      prisma.request.count({ where: { userId } }),
+    ]);
 
     const mapped = items.map((r) => ({
       id: r.id,
@@ -220,7 +305,7 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
       threadsCount: r._count.threads,
     }));
 
-    res.json({ items: mapped });
+    res.json({ items: mapped, total, limit, offset, hasMore: offset + limit < total });
   } catch (error) {
     console.error("requests/my error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -228,7 +313,7 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // POST /api/requests — create request (auth required, client)
-router.post("/", authMiddleware, async (req: Request, res: Response) => {
+router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const { title, cityId, fnsId, description, fileIds } = req.body;
@@ -295,6 +380,14 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
         data: { requestId: request.id, entityType: "request", entityId: request.id },
       });
     }
+
+    // Fire-and-forget: notify matching specialists. Never blocks the response.
+    void notifyMatchingSpecialists({
+      requestId: request.id,
+      fnsId: request.fnsId,
+      title: request.title,
+      clientUserId: userId,
+    });
 
     res.status(201).json({
       id: request.id,
@@ -374,25 +467,43 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
       },
     });
 
+    // Batch unread count: one query per group (has lastReadAt vs no lastReadAt)
     let unreadMessages = 0;
-    for (const thread of threads) {
-      if (thread.clientLastReadAt) {
-        const count = await prisma.message.count({
-          where: {
-            threadId: thread.id,
-            createdAt: { gt: thread.clientLastReadAt },
-            senderId: { not: userId },
-          },
-        });
-        unreadMessages += count;
-      } else {
-        const count = await prisma.message.count({
-          where: {
-            threadId: thread.id,
-            senderId: { not: userId },
-          },
-        });
-        unreadMessages += count;
+    const threadIds = threads.map((t) => t.id);
+    if (threadIds.length > 0) {
+      const threadsWithReadAt = threads.filter((t) => t.clientLastReadAt);
+      const threadsWithoutReadAt = threads.filter((t) => !t.clientLastReadAt);
+
+      const counts = await Promise.all([
+        // Threads where client has read — count messages after lastReadAt
+        ...(threadsWithReadAt.length > 0
+          ? threadsWithReadAt.map((t) =>
+              prisma.message.count({
+                where: {
+                  threadId: t.id,
+                  createdAt: { gt: t.clientLastReadAt! },
+                  senderId: { not: userId },
+                },
+              })
+            )
+          : []),
+        // Threads never read — count all messages from others
+        ...(threadsWithoutReadAt.length > 0
+          ? [
+              prisma.message.count({
+                where: {
+                  threadId: { in: threadsWithoutReadAt.map((t) => t.id) },
+                  senderId: { not: userId },
+                },
+              }),
+            ]
+          : []),
+      ]);
+
+      const withoutIdx = threadsWithReadAt.length;
+      unreadMessages = counts.slice(0, withoutIdx).reduce((s, c) => s + c, 0);
+      if (threadsWithoutReadAt.length > 0) {
+        unreadMessages += counts[withoutIdx];
       }
     }
 

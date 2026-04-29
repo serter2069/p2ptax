@@ -3,7 +3,7 @@ import { getNotificationQueue } from "./notification.queue";
 
 export interface SendNotificationData {
   userId: string;
-  type: string; // new_response | new_message | new_request_in_city | promo_expiring
+  type: string; // new_message_from_specialist | new_message | new_request_in_city | promo_expiring
   title: string;
   body: string;
   entityId?: string;

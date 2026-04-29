@@ -10,16 +10,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import HeaderBack from "@/components/HeaderBack";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import { useTypedRouter } from "@/lib/navigation";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import FilterBar from "@/components/FilterBar";
+import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import { Inbox } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import RequestCard from "@/components/RequestCard";
 import { api } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, overlay, textStyle, BREAKPOINT } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -54,9 +55,10 @@ interface RequestsResponse {
 const LIMIT = 20;
 
 export default function PublicRequestsFeed() {
-  const router = useRouter();
+  const router = useRouter()
+  const nav = useTypedRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 640;
+  const isDesktop = width >= BREAKPOINT;
 
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -70,8 +72,10 @@ export default function PublicRequestsFeed() {
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
 
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   const loadingMoreRef = useRef(false);
@@ -82,6 +86,7 @@ export default function PublicRequestsFeed() {
       try {
         let path = `/api/requests/public?page=${pageNum}&limit=${LIMIT}`;
         if (selectedCityId) path += `&city_id=${selectedCityId}`;
+        if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
 
         const res = await api<RequestsResponse>(path, { noAuth: true });
 
@@ -91,14 +96,18 @@ export default function PublicRequestsFeed() {
           setRequests(res.items);
         }
         setHasMore(res.hasMore);
+        setTotal(res.total);
         setPage(pageNum);
         setError(null);
       } catch {
         setError("Не удалось загрузить заявки");
       }
     },
-    [selectedCityId]
+    [selectedCityId, selectedFnsId]
   );
+
+  const fetchRequestsRef = useRef(fetchRequests);
+  fetchRequestsRef.current = fetchRequests;
 
   // Initial load: fetch cities, services, and first page of requests
   useEffect(() => {
@@ -120,7 +129,7 @@ export default function PublicRequestsFeed() {
         // Non-fatal: filters will just be empty
       }
       if (!cancelled) {
-        await fetchRequests(1);
+        await fetchRequestsRef.current(1);
         setInitLoading(false);
       }
     }
@@ -129,7 +138,6 @@ export default function PublicRequestsFeed() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-fetch when city filter changes (skip on first mount since init handles it)
@@ -141,7 +149,7 @@ export default function PublicRequestsFeed() {
     setListLoading(true);
     setPage(1);
     fetchRequests(1).finally(() => setListLoading(false));
-  }, [selectedCityId, fetchRequests]);
+  }, [selectedCityId, selectedFnsId, fetchRequests]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -166,26 +174,37 @@ export default function PublicRequestsFeed() {
 
   const handleResetFilters = useCallback(() => {
     setSelectedCityId(null);
+    setSelectedFnsId(null);
     setSelectedServiceIds([]);
   }, []);
 
+  const handleCascadeChange = useCallback(
+    (v: { cities: string[]; fns: string[] }) => {
+      setSelectedCityId(v.cities[0] ?? null);
+      setSelectedFnsId(v.fns[0] ?? null);
+    },
+    []
+  );
+
   const handleRequestPress = useCallback(
     (id: string) => {
-      router.push(`/requests/${id}` as never);
+      nav.any(`/requests/${id}/detail`);
     },
     [router]
   );
 
-  const hasFilters = selectedCityId !== null || selectedServiceIds.length > 0;
+  const hasFilters =
+    selectedCityId !== null ||
+    selectedFnsId !== null ||
+    selectedServiceIds.length > 0;
 
   // Skeleton on initial load
   if (initLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
-        <HeaderBack title="Заявки" />
+      <SafeAreaView className="flex-1 bg-surface2">
         <View className="flex-1 pt-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-slate-100">
+            <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-border">
               <LoadingState variant="skeleton" lines={4} />
             </View>
           ))}
@@ -195,15 +214,31 @@ export default function PublicRequestsFeed() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <HeaderBack title="Заявки" />
+    <SafeAreaView className="flex-1 bg-surface2">
+      {/* Accent hero */}
+      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
+        <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>Открытые заявки</Text>
+        <Text style={{ ...textStyle.small, color: overlay.white90 }}>Задайте вопрос — получите предложения от специалистов</Text>
+        {total > 0 && (
+          <Text className="text-sm font-semibold text-white mt-2">{total} активных заявок</Text>
+        )}
+      </View>
 
-      {/* Filter bar */}
-      <View className="bg-white border-b border-slate-100">
+      {/* Filter bar: city → FNS cascade + services chips */}
+      <View className="bg-white border-b border-border py-2">
+        <CityFnsCascade
+          mode="single"
+          value={{
+            cities: selectedCityId ? [selectedCityId] : [],
+            fns: selectedFnsId ? [selectedFnsId] : [],
+          }}
+          onChange={handleCascadeChange}
+          citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
+        />
         <FilterBar
-          cities={cities}
-          selectedCityId={selectedCityId}
-          onCityChange={setSelectedCityId}
+          cities={[]}
+          selectedCityId={null}
+          onCityChange={() => {}}
           services={services}
           selectedServiceIds={selectedServiceIds}
           onServiceToggle={handleServiceToggle}
@@ -277,13 +312,13 @@ export default function PublicRequestsFeed() {
                   onPress={handleLoadMore}
                   className="py-4 items-center"
                 >
-                  <Text className="text-sm font-medium text-blue-900">
+                  <Text className="text-sm font-medium text-accent">
                     Загрузить ещё
                   </Text>
                 </Pressable>
               ) : (
                 <View className="py-4 items-center">
-                  <Text className="text-xs text-slate-400">
+                  <Text className="text-xs text-text-mute">
                     Все заявки загружены
                   </Text>
                 </View>

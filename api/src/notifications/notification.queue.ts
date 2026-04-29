@@ -1,25 +1,7 @@
 import { Queue } from "bullmq";
+import { getRedisConnection } from "../lib/config";
 
 const QUEUE_NAME = "notifications";
-
-function getRedisConnection() {
-  const redisUrl = process.env.REDIS_URL;
-  if (redisUrl) {
-    // Parse redis://host:port or redis://:password@host:port
-    const url = new URL(redisUrl);
-    return {
-      host: url.hostname || "127.0.0.1",
-      port: parseInt(url.port || "6379"),
-      password: url.password || undefined,
-      keyPrefix: "p2ptax:bull:",
-    };
-  }
-  return {
-    host: process.env.REDIS_HOST || "127.0.0.1",
-    port: parseInt(process.env.REDIS_PORT || "6379"),
-    keyPrefix: "p2ptax:bull:",
-  };
-}
 
 let _queue: Queue | null = null;
 
@@ -42,4 +24,4 @@ export function getNotificationQueue(): Queue | null {
   }
 }
 
-export { QUEUE_NAME, getRedisConnection };
+export { QUEUE_NAME };

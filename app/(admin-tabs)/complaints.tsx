@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ChevronUp, ChevronDown, Flag } from "lucide-react-native";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
+import DesktopScreen from "@/components/layout/DesktopScreen";
 import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
@@ -127,7 +127,7 @@ export default function AdminComplaints() {
     const doIt = async () => {
       setReviewingId(complaint.id);
       try {
-        const res = await fetch(`${API_URL}/api/admin/complaints/${complaint.id}/review`, {
+        const res = await fetch(`${API_URL}/api/admin/complaints/${complaint.id}/resolve`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -159,23 +159,40 @@ export default function AdminComplaints() {
     const isReviewing = reviewingId === item.id;
 
     return (
-      <View>
+      <View
+        className="bg-white border border-border rounded-xl mb-3 overflow-hidden"
+        style={{
+          borderLeftWidth: 3,
+          borderLeftColor: item.status === "NEW" ? colors.warning : colors.success,
+          shadowColor: colors.text,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 6,
+          elevation: 3,
+        }}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Жалоба от ${userName(item.reporter)}`}
           onPress={() => setExpandedId(isExpanded ? null : item.id)}
-          className="bg-white border-b border-slate-100 px-4 py-3"
+          className="bg-white px-4 py-3 min-h-[44px] gap-2"
         >
-          <View className="flex-row items-start justify-between mb-1">
-            <View className="flex-1 mr-3">
-              <Text className="text-xs text-slate-500 mb-0.5">
-                От: <Text className="font-medium text-slate-900">{userName(item.reporter)}</Text>
+          {/*
+            Audit fix: previously had mb-1 on header row, mt-1 on body, mt-2
+            on footer — three different rhythms in one card. Parent now uses
+            `gap-2` (8px) and the meta stack inside the header uses `gap-0.5`
+            (2px) for the dense reporter/target lines.
+          */}
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 mr-3 gap-0.5">
+              <Text className="text-xs text-text-mute">
+                От: <Text className="font-medium text-text-base">{userName(item.reporter)}</Text>
               </Text>
-              <Text className="text-xs text-slate-500">
+              <Text className="text-xs text-text-mute">
                 На:{" "}
-                <Text className="font-medium text-slate-900">{userName(item.targetUser)}</Text>
+                <Text className="font-medium text-text-base">{userName(item.targetUser)}</Text>
                 {item.targetUser.role ? (
-                  <Text className="text-slate-400">
+                  <Text className="text-text-mute">
                     {" "}({ROLE_LABELS[item.targetUser.role] || item.targetUser.role})
                   </Text>
                 ) : null}
@@ -188,12 +205,12 @@ export default function AdminComplaints() {
             />
           </View>
 
-          <Text className="text-sm text-slate-700 mt-1" numberOfLines={isExpanded ? undefined : 2}>
+          <Text className="text-sm text-text-base" numberOfLines={isExpanded ? undefined : 2}>
             {item.text}
           </Text>
 
-          <View className="flex-row items-center justify-between mt-2">
-            <Text className="text-xs text-slate-400">{formatDate(item.createdAt)}</Text>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-xs text-text-mute">{formatDate(item.createdAt)}</Text>
             {isExpanded
               ? <ChevronUp size={11} color={colors.placeholder} />
               : <ChevronDown size={11} color={colors.placeholder} />
@@ -202,23 +219,30 @@ export default function AdminComplaints() {
         </Pressable>
 
         {isExpanded && (
-          <View className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-            <Text className="text-xs text-slate-500 mb-1">
-              ID жалобы: <Text className="text-slate-700">{item.id}</Text>
-            </Text>
-            <Text className="text-xs text-slate-500 mb-1">
-              Жалобщик: <Text className="text-slate-700">{item.reporter.email}</Text>
-            </Text>
-            <Text className="text-xs text-slate-500 mb-1">
-              На пользователя: <Text className="text-slate-700">{item.targetUser.email}</Text>
-            </Text>
-            {item.reviewedAt && (
-              <Text className="text-xs text-slate-500 mb-1">
-                Рассмотрена: <Text className="text-slate-700">{formatDate(item.reviewedAt)}</Text>
+          // Audit fix: expanded panel previously mixed mb-1/mb-2/mt-1 on
+          // sibling Text rows and mb-3/mt-3 on container — auditors flagged
+          // inconsistent vertical rhythm. Parent now drives spacing via
+          // `gap-3` (12px) for the outer block and `gap-1` (4px) inside the
+          // metadata stack. No per-child margins.
+          <View className="border-t border-border p-3 gap-3">
+            <View className="bg-surface2 p-3 rounded-xl gap-1">
+              <Text className="text-xs text-text-mute">
+                ID жалобы: <Text className="text-text-base">{item.id}</Text>
               </Text>
-            )}
-            <Text className="text-xs text-slate-500 mb-3 mt-1">Текст жалобы:</Text>
-            <Text className="text-sm text-slate-800 mb-3">{item.text}</Text>
+              <Text className="text-xs text-text-mute">
+                Жалобщик: <Text className="text-text-base">{item.reporter.email}</Text>
+              </Text>
+              <Text className="text-xs text-text-mute">
+                На пользователя: <Text className="text-text-base">{item.targetUser.email}</Text>
+              </Text>
+              {item.reviewedAt && (
+                <Text className="text-xs text-text-mute">
+                  Рассмотрена: <Text className="text-text-base">{formatDate(item.reviewedAt)}</Text>
+                </Text>
+              )}
+              <Text className="text-xs text-text-mute">Текст жалобы:</Text>
+              <Text className="text-sm text-text-base">{item.text}</Text>
+            </View>
 
             {item.status === "NEW" && (
               <Pressable
@@ -226,14 +250,14 @@ export default function AdminComplaints() {
                 accessibilityLabel="Рассмотрено"
                 onPress={() => markReviewed(item)}
                 disabled={isReviewing}
-                className={`px-3 py-2 rounded-lg self-start ${
-                  isReviewing ? "bg-slate-300" : "bg-emerald-600"
+                className={`rounded-xl h-11 items-center justify-center ${
+                  isReviewing ? "bg-surface2" : "bg-success"
                 }`}
               >
                 {isReviewing ? (
                   <ActivityIndicator size="small" color={colors.surface} />
                 ) : (
-                  <Text className="text-xs text-white font-medium">Рассмотрено</Text>
+                  <Text className="text-sm text-white font-semibold">Рассмотрено</Text>
                 )}
               </Pressable>
             )}
@@ -243,55 +267,65 @@ export default function AdminComplaints() {
     );
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
-      {/* Header */}
-      <View className="bg-blue-900 px-4 h-14 flex-row items-center justify-between">
-        <Text className="text-lg font-bold text-white">Жалобы</Text>
-      </View>
-
-      {/* Filter tabs */}
-      <View className="bg-white border-b border-slate-200 px-4 py-2 flex-row gap-2">
-        {FILTER_OPTIONS.map((opt) => (
-          <Pressable
-            accessibilityRole="button"
-            key={opt.key}
-            accessibilityLabel={opt.label}
-            onPress={() => setFilter(opt.key)}
-            className={`px-3 py-1.5 rounded-full border ${
-              filter === opt.key
-                ? "bg-blue-900 border-blue-900"
-                : "bg-white border-slate-200"
+  const filterBar = (
+    <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+      {FILTER_OPTIONS.map((opt) => (
+        <Pressable
+          accessibilityRole="button"
+          key={opt.key}
+          accessibilityLabel={opt.label}
+          onPress={() => setFilter(opt.key)}
+          className={`px-3 py-1.5 rounded-full border min-h-[44px] justify-center ${
+            filter === opt.key
+              ? "bg-accent border-accent"
+              : "bg-surface2 border-border"
+          }`}
+        >
+          <Text
+            className={`text-sm ${
+              filter === opt.key ? "text-white font-medium" : "text-text-mute"
             }`}
           >
-            <Text
-              className={`text-sm ${
-                filter === opt.key ? "text-white font-medium" : "text-slate-900"
-              }`}
-            >
-              {opt.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+            {opt.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
 
+  return (
+    <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       {loading ? (
-        <ResponsiveContainer>
+        <DesktopScreen
+          title="Жалобы"
+          subtitle="Управление жалобами пользователей"
+          filters={filterBar}
+        >
           <LoadingState variant="skeleton" lines={5} />
           <LoadingState variant="skeleton" lines={5} />
-        </ResponsiveContainer>
+        </DesktopScreen>
       ) : error ? (
-        <ErrorState
-          message="Не удалось загрузить жалобы"
-          onRetry={() => fetchComplaints(filter, 1)}
-        />
+        <DesktopScreen
+          title="Жалобы"
+          subtitle="Управление жалобами пользователей"
+          filters={filterBar}
+        >
+          <ErrorState
+            message="Не удалось загрузить жалобы"
+            onRetry={() => fetchComplaints(filter, 1)}
+          />
+        </DesktopScreen>
       ) : (
-        <ResponsiveContainer>
+        <DesktopScreen
+          title="Жалобы"
+          subtitle="Управление жалобами пользователей"
+          filters={filterBar}
+        >
           <FlatList
             data={complaints}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
-            contentContainerStyle={{ flexGrow: 1 }}
+            contentContainerStyle={{ flexGrow: 1, paddingVertical: 8 }}
             onEndReached={loadMore}
             onEndReachedThreshold={0.3}
             ListEmptyComponent={
@@ -315,7 +349,7 @@ export default function AdminComplaints() {
               ) : null
             }
           />
-        </ResponsiveContainer>
+        </DesktopScreen>
       )}
     </SafeAreaView>
   );
