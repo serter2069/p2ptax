@@ -35,8 +35,13 @@ function textClassFor(wh: number): string {
 }
 
 function getInitials(name: string): string {
+  // IMPORTANT: use plain `.toUpperCase()` (locale-agnostic). Never use
+  // `toLocaleUpperCase('en')` here — it would strip Cyrillic ("С" → "C")
+  // and break Russian-language fallbacks. Initials must preserve the
+  // original alphabet of the user's name.
   return name
     .split(" ")
+    .filter(Boolean)
     .map((w) => w[0])
     .join("")
     .toUpperCase()

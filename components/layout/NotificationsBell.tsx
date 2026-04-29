@@ -4,6 +4,7 @@ import { Bell } from "lucide-react-native";
 import { useTypedRouter } from "@/lib/navigation";
 import { apiGet } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * Notifications bell — header trigger that opens `/notifications` and
@@ -22,6 +23,7 @@ const POLL_INTERVAL_MS = 30_000;
 
 export default function NotificationsBell() {
   const nav = useTypedRouter();
+  const { isAuthenticated } = useAuth();
   const [unread, setUnread] = useState(0);
 
   const fetchUnread = useCallback(async () => {
@@ -42,11 +44,18 @@ export default function NotificationsBell() {
     }
   }, []);
 
+  // Defensive: when the user logs out (token cleared), zero the badge
+  // immediately so it does not flash a stale count if this component
+  // re-mounts before AppHeader gating tears it down.
   useEffect(() => {
+    if (!isAuthenticated) {
+      setUnread(0);
+      return;
+    }
     fetchUnread();
     const id = setInterval(fetchUnread, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [fetchUnread]);
+  }, [fetchUnread, isAuthenticated]);
 
   const display = unread > 99 ? "99+" : String(unread);
 
