@@ -1,5 +1,4 @@
 import { View, Text, Pressable, Image } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Bookmark } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
@@ -40,11 +39,9 @@ export default function SpecialistCard({
   firstName,
   lastName,
   avatarUrl,
-  createdAt,
   services,
   cities,
   specialistFns,
-  description,
   onPress,
   variant,
   horizontal = false,
@@ -54,7 +51,6 @@ export default function SpecialistCard({
   const resolvedVariant = variant ?? (horizontal ? "horizontal" : "vertical");
   const name = [firstName, lastName].filter(Boolean).join(" ") || "Специалист";
   const initials = getInitials(firstName, lastName);
-  const joinYear = createdAt ? new Date(createdAt).getFullYear() : null;
 
   if (resolvedVariant === "horizontal") {
     return (
@@ -90,37 +86,76 @@ export default function SpecialistCard({
     );
   }
 
-  // Vertical variant (new default for catalog grid)
+  // Vertical variant — compact 3-row layout (T2 redesign):
+  //   Row 1: avatar + name (bold) + city (muted) + bookmark
+  //   Row 2: ИФНС text (1 line, truncated)
+  //   Row 3: up to 3 service chips ("+N" if more)
+  const cityLabel = cities.length > 0 ? cities.map((c) => c.name).join(", ") : null;
+
+  // Resolve flat list of services + ИФНС label (prefer specialistFns when available).
+  const fnsLabel = specialistFns && specialistFns.length > 0
+    ? specialistFns.map((g) => g.fnsName).join(", ")
+    : null;
+  const flatServices = specialistFns && specialistFns.length > 0
+    ? specialistFns.flatMap((g) => g.services)
+    : services;
+
+  // Dedupe services by id (FNS groups can repeat the same service across offices).
+  const uniqueServices = flatServices.filter(
+    (svc, idx, arr) => arr.findIndex((s) => s.id === svc.id) === idx
+  );
+  const visibleServices = uniqueServices.slice(0, 3);
+  const overflow = uniqueServices.length - visibleServices.length;
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={name}
       onPress={() => onPress(id)}
-      className="bg-white border border-border rounded-2xl p-4 mb-3"
+      className="bg-white border border-border rounded-2xl p-3 mb-3"
       style={({ pressed }) => [
         { shadowColor: colors.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
         pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
       ]}
     >
-      {/* Top row: avatar + bookmark */}
-      <View className="flex-row items-start justify-between">
-        {/* Avatar */}
+      {/* Row 1: avatar + name + city (same line) + bookmark */}
+      <View className="flex-row items-center" style={{ gap: 10 }}>
         {avatarUrl ? (
           <Image
             source={{ uri: avatarUrl }}
-            style={{ width: 56, height: 56, borderRadius: 28 }}
+            style={{ width: 40, height: 40, borderRadius: 20 }}
             accessibilityLabel={name}
           />
         ) : (
           <View
             className="rounded-full items-center justify-center"
-            style={{ width: 56, height: 56, backgroundColor: colors.primary }}
+            style={{ width: 40, height: 40, backgroundColor: colors.primary }}
           >
-            <Text className="text-white font-bold text-lg">{initials}</Text>
+            <Text className="text-white font-bold text-sm">{initials}</Text>
           </View>
         )}
 
-        {/* Bookmark button */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View className="flex-row items-baseline" style={{ gap: 6 }}>
+            <Text
+              className="text-sm font-bold flex-shrink"
+              style={{ color: colors.text }}
+              numberOfLines={1}
+            >
+              {name}
+            </Text>
+            {cityLabel ? (
+              <Text
+                className="text-xs flex-shrink"
+                style={{ color: colors.textMuted }}
+                numberOfLines={1}
+              >
+                · {cityLabel}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
         {onBookmark && (
           <Pressable
             accessibilityRole="button"
@@ -137,96 +172,38 @@ export default function SpecialistCard({
         )}
       </View>
 
-      {/* Name */}
-      <Text className="text-base font-bold mt-2" style={{ color: colors.text }} numberOfLines={1}>
-        {name}
-      </Text>
-
-      {/* Join year */}
-      {joinYear && (
-        <Text className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
-          На сайте с {joinYear}
-        </Text>
-      )}
-
-      {/* Description */}
-      {description ? (
-        <Text className="text-sm mt-2" style={{ color: colors.textSecondary }} numberOfLines={2}>
-          {description}
+      {/* Row 2: ИФНС (1 line, truncated) */}
+      {fnsLabel ? (
+        <Text
+          className="text-xs mt-1.5"
+          style={{ color: colors.textMuted }}
+          numberOfLines={1}
+        >
+          {fnsLabel}
         </Text>
       ) : null}
 
-      {/* FNS-grouped services (vertical variant) */}
-      {specialistFns && specialistFns.length > 0
-        ? (() => {
-            // Show max 2 FNS groups, max 3 services each; rest as overflow pill
-            const visibleFns = specialistFns.slice(0, 2);
-            const totalServices = specialistFns.reduce((acc, g) => acc + g.services.length, 0);
-            const shownServices = visibleFns.reduce(
-              (acc, g) => acc + Math.min(g.services.length, 3),
-              0
-            );
-            const overflow = totalServices - shownServices;
-            return (
-              <View className="mt-2" style={{ gap: 8 }}>
-                {visibleFns.map((group) => (
-                  <View key={group.fnsId}>
-                    {/* FNS label */}
-                    <View className="flex-row items-center mb-1" style={{ gap: 4 }}>
-                      <FontAwesome name="map-marker" size={10} color={colors.textMuted} />
-                      <Text className="text-xs" style={{ color: colors.textMuted }} numberOfLines={1}>
-                        {group.city.name} — {group.fnsName}
-                      </Text>
-                    </View>
-                    {/* Service pills for this FNS */}
-                    <View className="flex-row flex-wrap" style={{ gap: 6 }}>
-                      {group.services.slice(0, 3).map((s) => (
-                        <View
-                          key={s.id}
-                          className="px-2.5 py-1 rounded-full"
-                          style={{ backgroundColor: colors.accentSoft }}
-                        >
-                          <Text className="text-xs font-medium" style={{ color: colors.primary }}>{s.name}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                ))}
-                {overflow > 0 && (
-                  <Text className="text-xs mt-1" style={{ color: colors.textMuted }}>
-                    +{overflow} ещё
-                  </Text>
-                )}
-              </View>
-            );
-          })()
-        : (
-          <>
-            {/* Fallback: flat service pills */}
-            {services.length > 0 && (
-              <View className="flex-row flex-wrap mt-2" style={{ gap: 8 }}>
-                {services.map((s) => (
-                  <View
-                    key={s.id}
-                    className="px-2.5 py-1 rounded-full"
-                    style={{ backgroundColor: colors.accentSoft }}
-                  >
-                    <Text className="text-xs font-medium" style={{ color: colors.primary }}>{s.name}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-            {/* City */}
-            {cities.length > 0 && (
-              <View className="flex-row items-center mt-2">
-                <FontAwesome name="map-marker" size={12} color={colors.textMuted} />
-                <Text className="text-xs ml-1" style={{ color: colors.textMuted }} numberOfLines={1}>
-                  {cities.map((c) => c.name).join(", ")}
-                </Text>
-              </View>
-            )}
-          </>
-        )}
+      {/* Row 3: up to 3 service chips + "+N" */}
+      {visibleServices.length > 0 ? (
+        <View className="flex-row flex-wrap items-center mt-1.5" style={{ gap: 6 }}>
+          {visibleServices.map((s) => (
+            <View
+              key={s.id}
+              className="px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: colors.accentSoft }}
+            >
+              <Text className="text-xs" style={{ color: colors.primary }} numberOfLines={1}>
+                {s.name}
+              </Text>
+            </View>
+          ))}
+          {overflow > 0 && (
+            <Text className="text-xs" style={{ color: colors.textMuted }}>
+              +{overflow}
+            </Text>
+          )}
+        </View>
+      ) : null}
     </Pressable>
   );
 }

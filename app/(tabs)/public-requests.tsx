@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   useWindowDimensions,
 } from "react-native";
@@ -13,8 +12,8 @@ import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import RequestCard from "@/components/RequestCard";
-import FilterBar from "@/components/FilterBar";
-import { TriangleAlert, FileText, Filter } from "lucide-react-native";
+import FilterPanel from "@/components/public-requests/FilterPanel";
+import { TriangleAlert, FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
 import { api } from "@/lib/api";
@@ -242,40 +241,7 @@ export default function SpecialistPublicRequests() {
           )}
         </View>
 
-        {/* Pre-filter banner: badge while filtered, CTA "Show all" to clear. */}
-        <View className="flex-row items-center justify-between px-4 mb-2" style={{ gap: 8 }}>
-          {isPrefiltered ? (
-            <View
-              className="flex-row items-center px-3 h-9 rounded-full bg-white border border-border"
-              style={{ gap: 6 }}
-            >
-              <Filter size={14} color={colors.primary} />
-              <Text className="text-xs text-text-base">Фильтр по моим ФНС</Text>
-            </View>
-          ) : (
-            <View />
-          )}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={isPrefiltered ? "Показать все заявки" : "Только мои ФНС"}
-            onPress={() => {
-              if (isPrefiltered) {
-                setSelectedFnsId(null);
-                setSelectedCityId(null);
-                setSelectedServiceId(null);
-              } else if (specialistFnsServices.length > 0) {
-                setSelectedFnsId(specialistFnsServices[0].fns.id);
-              }
-            }}
-            className="px-3 h-9 rounded-full border border-border bg-white items-center justify-center"
-          >
-            <Text className="text-xs text-text-base">
-              {isPrefiltered ? "Показать все" : "Только мои ФНС"}
-            </Text>
-          </Pressable>
-        </View>
-
-        <FilterBar
+        <FilterPanel
           cities={cities}
           selectedCityId={selectedCityId}
           onCityChange={setSelectedCityId}
@@ -286,8 +252,20 @@ export default function SpecialistPublicRequests() {
           selectedFnsId={selectedFnsId}
           onFnsChange={setSelectedFnsId}
           services={services}
-          selectedServiceIds={selectedServiceId ? [selectedServiceId] : []}
+          selectedServiceId={selectedServiceId}
           onServiceToggle={handleServiceToggle}
+          fnsToggle={{
+            isPrefiltered,
+            onToggle: () => {
+              if (isPrefiltered) {
+                setSelectedFnsId(null);
+                setSelectedCityId(null);
+                setSelectedServiceId(null);
+              } else if (specialistFnsServices.length > 0) {
+                setSelectedFnsId(specialistFnsServices[0].fns.id);
+              }
+            },
+          }}
         />
 
         {loading ? (
