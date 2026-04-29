@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { verifyAccessToken } from "../lib/jwt";
+import { sendNotification } from "../notifications/notification.service";
 
 // Strip all HTML tags to prevent XSS
 function stripHtml(str: string): string {
@@ -11,6 +12,51 @@ function stripHtml(str: string): string {
 }
 
 const router = Router();
+
+/**
+ * Fan-out: notify every specialist whose FNS coverage matches this request's
+ * FNS. Side-effect only — never crashes the request flow.
+ */
+async function notifyMatchingSpecialists(args: {
+  requestId: string;
+  fnsId: string;
+  title: string;
+  clientUserId: string;
+}): Promise<number> {
+  const { requestId, fnsId, title, clientUserId } = args;
+  try {
+    const matchingSpecialists = await prisma.user.findMany({
+      where: {
+        isSpecialist: true,
+        specialistProfileCompletedAt: { not: null },
+        isAvailable: true,
+        isBanned: false,
+        id: { not: clientUserId },
+        specialistFns: { some: { fnsId } },
+      },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      matchingSpecialists.map((s) =>
+        sendNotification({
+          userId: s.id,
+          type: "new_request_in_city",
+          title: "Новая заявка по вашему отделению ФНС",
+          body: title.slice(0, 200),
+          entityId: requestId,
+        }).catch((err: Error) =>
+          console.error("[notifications] new_request_in_city fan-out failed:", err.message)
+        )
+      )
+    );
+
+    return matchingSpecialists.length;
+  } catch (err) {
+    console.error("[notifications] fan-out query failed:", (err as Error).message);
+    return 0;
+  }
+}
 
 const createRequestRateLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -200,6 +246,14 @@ router.post("/public", authMiddleware, createRequestRateLimiter, async (req: Req
       },
     });
 
+    // Fire-and-forget: notify matching specialists. Never blocks the response.
+    void notifyMatchingSpecialists({
+      requestId: request.id,
+      fnsId,
+      title: request.title,
+      clientUserId: userId,
+    });
+
     res.status(201).json(request);
   } catch (error) {
     console.error("requests/public create error:", error);
@@ -319,6 +373,14 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
         data: { requestId: request.id, entityType: "request", entityId: request.id },
       });
     }
+
+    // Fire-and-forget: notify matching specialists. Never blocks the response.
+    void notifyMatchingSpecialists({
+      requestId: request.id,
+      fnsId: request.fnsId,
+      title: request.title,
+      clientUserId: userId,
+    });
 
     res.status(201).json({
       id: request.id,
