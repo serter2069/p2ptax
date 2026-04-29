@@ -75,7 +75,6 @@ interface ProfileTabProps {
   email: string;
   avatarUrl: string | null;
   avatarUploading: boolean;
-  initials: string;
   isSpecialistUser: boolean;
   isAvailable: boolean;
   availabilityLoading: boolean;
@@ -95,7 +94,6 @@ export default function ProfileTab({
   email,
   avatarUrl,
   avatarUploading,
-  initials,
   isSpecialistUser,
   isAvailable,
   availabilityLoading,
@@ -120,7 +118,8 @@ export default function ProfileTab({
           <AvatarUploader
             avatarUrl={avatarUrl}
             avatarUploading={avatarUploading}
-            initials={initials}
+            name={`${firstName} ${lastName}`.trim()}
+            fallback={email}
             onAvatarChange={onAvatarChange}
             onUploadStart={onUploadStart}
             onUploadEnd={onUploadEnd}

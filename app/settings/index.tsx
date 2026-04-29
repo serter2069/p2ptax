@@ -206,11 +206,6 @@ export default function UnifiedSettings() {
     }
   }, [ready, isAdminUser, loadSpecialistData, router]);
 
-  const initials = [firstName, lastName]
-    .map((n) => n?.charAt(0)?.toUpperCase())
-    .filter(Boolean)
-    .join("");
-
   // Per-tab change tracking.
   const hasProfileChanges = useMemo(
     () =>
@@ -502,7 +497,6 @@ export default function UnifiedSettings() {
               email={user?.email ?? ""}
               avatarUrl={avatarUrl}
               avatarUploading={avatarUploading}
-              initials={initials}
               isSpecialistUser={isSpecialistUser}
               isAvailable={isAvailable}
               availabilityLoading={availabilityLoading}

@@ -22,20 +22,50 @@ import { colors } from "@/lib/theme";
 interface AvatarUploaderProps {
   avatarUrl: string | null;
   avatarUploading: boolean;
-  initials: string;
+  /**
+   * Full display name (e.g. "Сергей Терещенко") used to derive initials
+   * when no avatarUrl is set. Cyrillic-safe — uses plain `.toUpperCase()`,
+   * never `toLocaleUpperCase('en')` (which would strip Cyrillic).
+   *
+   * Pattern mirrors components/ui/Avatar.tsx (Wave 3).
+   */
+  name?: string;
+  /** Fallback identifier (typically email) when name is empty. */
+  fallback?: string;
   onAvatarChange: (url: string) => void;
   onUploadStart: () => void;
   onUploadEnd: () => void;
 }
 
+/**
+ * Cyrillic-safe initials extractor — IMPORTANT: use plain `.toUpperCase()`
+ * (locale-agnostic). Never use `toLocaleUpperCase('en')` here — it would
+ * strip Cyrillic ("С" → "C") and break Russian-language fallbacks.
+ */
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 export default function AvatarUploader({
   avatarUrl,
   avatarUploading,
-  initials,
+  name,
+  fallback,
   onAvatarChange,
   onUploadStart,
   onUploadEnd,
 }: AvatarUploaderProps) {
+  const trimmedName = (name ?? "").trim();
+  const initials =
+    getInitials(trimmedName) ||
+    (fallback ? fallback.charAt(0).toUpperCase() : "") ||
+    "?";
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [lastFile, setLastFile] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -131,7 +161,7 @@ export default function AvatarUploader({
             style={{ width: 80, height: 80 }}
           >
             <Text className="text-white text-2xl font-bold">
-              {initials || "?"}
+              {initials}
             </Text>
           </View>
         )}

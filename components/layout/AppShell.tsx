@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { View, useWindowDimensions, Platform } from "react-native";
 import { usePathname, useSegments } from "expo-router";
 import { colors, overlay } from "@/lib/theme";
+import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav, { detectSidebarGroup, SIDEBAR_WIDTH } from "./SidebarNav";
 
 /**
@@ -51,6 +52,7 @@ export default function AppShell({ children }: AppShellProps) {
   const { width } = useWindowDimensions();
   const pathname = usePathname() ?? "";
   const segments = useSegments();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (Platform.OS === "web") installFocusRingCSS();
@@ -63,7 +65,10 @@ export default function AppShell({ children }: AppShellProps) {
 
   const isDesktop = width >= SIDEBAR_BREAKPOINT;
   const group = detectSidebarGroup(pathname, segments as readonly string[]);
-  const showSidebar = isDesktop && group !== null;
+  // Anonymous users never see the auth sidebar — even on routes that fall
+  // into the "main" group (/specialists, /requests/create). They only
+  // get marketing chrome from the page itself. Issue: anon sidebar leak.
+  const showSidebar = isDesktop && group !== null && isAuthenticated;
 
   // Mobile web or public-chrome routes: pass-through.
   if (!showSidebar) {
