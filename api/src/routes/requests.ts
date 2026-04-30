@@ -755,6 +755,8 @@ router.post("/:id/extend", authMiddleware, async (req: Request, res: Response) =
 });
 
 // GET /api/requests/:id/recommendations — matching specialists (auth required, client owner)
+// Filters: matching FNS, available, not banned, NO existing thread with current user
+// (for any request — issue #1550 wants to surface only "fresh" specialists).
 router.get("/:id/recommendations", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -775,13 +777,26 @@ router.get("/:id/recommendations", authMiddleware, async (req: Request, res: Res
       return;
     }
 
+    // Specialists with whom the current client already has a thread —
+    // exclude from recommendations (issue #1550: only surface fresh specialists).
+    const existingThreads = await prisma.thread.findMany({
+      where: { clientId: userId },
+      select: { specialistId: true },
+    });
+    const excludedSpecialistIds = Array.from(
+      new Set(existingThreads.map((t) => t.specialistId))
+    );
+    // Also exclude self (in case the client is also a specialist).
+    excludedSpecialistIds.push(userId);
+
     // Find available specialists who cover this FNS — filter at DB level
     const specialistFnsList = await prisma.specialistFns.findMany({
       where: {
         fnsId: request.fnsId,
+        specialistId: { notIn: excludedSpecialistIds },
         specialist: { isAvailable: true, isBanned: false },
       },
-      take: 3,
+      take: 12,
       include: {
         specialist: {
           select: {
