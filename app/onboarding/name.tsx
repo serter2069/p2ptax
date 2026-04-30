@@ -192,11 +192,11 @@ export default function OnboardingNameScreen() {
               error={firstNameError}
               editable={!isLoading}
               autoCapitalize="words"
-              containerStyle={{ height: 56 }}
+              variant="bordered"
             />
           </View>
 
-          <View className="mb-6">
+          <View className="mb-4">
             <Input
               label="Фамилия"
               placeholder="Петров"
@@ -205,7 +205,7 @@ export default function OnboardingNameScreen() {
               error={lastNameError}
               editable={!isLoading}
               autoCapitalize="words"
-              containerStyle={{ height: 56 }}
+              variant="bordered"
             />
           </View>
 

@@ -331,6 +331,7 @@ export default function OnboardingProfileScreen() {
               multiline
               editable={!isLoading}
               error={fieldErrors.description}
+              variant="bordered"
             />
             <Text className="text-xs text-text-mute text-right mt-1">
               {description.length}/1000
@@ -354,6 +355,7 @@ export default function OnboardingProfileScreen() {
               keyboardType="phone-pad"
               editable={!isLoading}
               error={fieldErrors.phone}
+              variant="bordered"
             />
           </View>
 
@@ -370,6 +372,7 @@ export default function OnboardingProfileScreen() {
               autoCapitalize="none"
               editable={!isLoading}
               error={fieldErrors.telegram}
+              variant="bordered"
             />
           </View>
 
@@ -381,6 +384,7 @@ export default function OnboardingProfileScreen() {
               onChangeText={(t) => setWhatsapp(formatPhone(t))}
               keyboardType="phone-pad"
               editable={!isLoading}
+              variant="bordered"
             />
           </View>
 
@@ -395,16 +399,18 @@ export default function OnboardingProfileScreen() {
               value={officeAddress}
               onChangeText={setOfficeAddress}
               editable={!isLoading}
+              variant="bordered"
             />
           </View>
 
-          <View className="mb-6">
+          <View className="mb-4">
             <Input
               label="Часы работы"
               placeholder="Пн-Пт 9:00-18:00"
               value={workingHours}
               onChangeText={setWorkingHours}
               editable={!isLoading}
+              variant="bordered"
             />
           </View>
 
