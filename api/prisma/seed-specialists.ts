@@ -1226,6 +1226,7 @@ async function main() {
         isSpecialist: true,
         specialistProfileCompletedAt: nowSeed,
         isAvailable: true,
+        isPublicProfile: true,
       },
       create: {
         email: spec.email,
@@ -1236,6 +1237,7 @@ async function main() {
         isSpecialist: true,
         specialistProfileCompletedAt: nowSeed,
         isAvailable: true,
+        isPublicProfile: true,
       },
     });
 
@@ -1545,6 +1547,7 @@ async function main() {
         isSpecialist: true,
         specialistProfileCompletedAt: nowSeed,
         isAvailable: true,
+        isPublicProfile: true,
       },
       create: {
         email: spec.email,
@@ -1555,6 +1558,7 @@ async function main() {
         isSpecialist: true,
         specialistProfileCompletedAt: nowSeed,
         isAvailable: true,
+        isPublicProfile: true,
       },
     });
 
