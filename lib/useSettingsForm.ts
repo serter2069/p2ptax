@@ -96,7 +96,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     if (ready && !isAdminUser) {
       loadSpecialistData();
     }
-  }, [ready, isAdminUser, loadSpecialistData, nav]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, isAdminUser, loadSpecialistData]);
 
   // Per-tab change tracking.
   const hasProfileChanges = useMemo(
@@ -174,7 +175,11 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
       await loadSpecialistData();
       Alert.alert("Сохранено", "Профиль обновлён");
     } catch {
-      Alert.alert("Ошибка", "Не удалось сохранить");
+      if (Platform.OS === "web") {
+        window.alert("Не удалось сохранить");
+      } else {
+        Alert.alert("Ошибка", "Не удалось сохранить");
+      }
     } finally {
       setSaving(false);
     }
@@ -283,44 +288,51 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   }, [user?.email, signOut, nav]);
 
   const handleToggleSpecialist = useCallback(
-    (value: boolean) => {
+    async (value: boolean) => {
       if (value) {
         const hasData = specData && specData.fnsServices.length > 0;
         if (!hasData) {
           nav.any("/onboarding/work-area?from=settings");
           return;
         }
-        apiPost("/api/user/leave-specialist-toggle", { enable: true })
-          .then(async () => {
-            updateUser({ isSpecialist: true });
-            await loadSpecialistData();
-          })
-          .catch(() =>
-            Alert.alert("Ошибка", "Не удалось включить режим специалиста"),
-          );
+        try {
+          await apiPost("/api/user/leave-specialist-toggle", { enable: true });
+          updateUser({ isSpecialist: true });
+          await loadSpecialistData();
+        } catch {
+          if (Platform.OS === "web") {
+            window.alert("Не удалось включить режим специалиста");
+          } else {
+            Alert.alert("Ошибка", "Не удалось включить режим специалиста");
+          }
+        }
       } else {
-        Alert.alert(
-          "Выключить режим специалиста?",
-          "Вы исчезнете из каталога, новые заявки не будут поступать. История переписок сохранится.",
-          [
-            { text: "Отмена", style: "cancel" },
-            {
-              text: "Выключить",
-              style: "destructive",
-              onPress: async () => {
-                try {
-                  await apiPost("/api/user/leave-specialist", {});
-                  updateUser({ isSpecialist: false, isAvailable: false });
-                  if (activeTab === "specialist") {
-                    onTabChange("profile");
-                  }
-                } catch {
-                  Alert.alert("Ошибка", "Не удалось выключить режим специалиста");
-                }
-              },
-            },
-          ],
-        );
+        const confirmed = Platform.OS === "web"
+          ? window.confirm("Выключить режим специалиста? Вы исчезнете из каталога, новые заявки не будут поступать. История переписок сохранится.")
+          : await new Promise<boolean>((resolve) =>
+              Alert.alert(
+                "Выключить режим специалиста?",
+                "Вы исчезнете из каталога, новые заявки не будут поступать. История переписок сохранится.",
+                [
+                  { text: "Отмена", onPress: () => resolve(false), style: "cancel" },
+                  { text: "Выключить", onPress: () => resolve(true), style: "destructive" },
+                ],
+              )
+            );
+        if (!confirmed) return;
+        try {
+          await apiPost("/api/user/leave-specialist", {});
+          updateUser({ isSpecialist: false, isAvailable: false });
+          if (activeTab === "specialist") {
+            onTabChange("profile");
+          }
+        } catch {
+          if (Platform.OS === "web") {
+            window.alert("Не удалось выключить режим специалиста");
+          } else {
+            Alert.alert("Ошибка", "Не удалось выключить режим специалиста");
+          }
+        }
       }
     },
     [specData, updateUser, loadSpecialistData, activeTab, onTabChange, nav],
