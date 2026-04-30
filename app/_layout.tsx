@@ -114,7 +114,6 @@ export default function RootLayout() {
             {/* Public screens */}
             <Stack.Screen name="requests/index" />
             <Stack.Screen name="requests/new" />
-            <Stack.Screen name="requests/create" />
             <Stack.Screen name="requests/[id]/detail" />
             <Stack.Screen name="requests/[id]/messages" />
             <Stack.Screen name="specialists/index" />
@@ -140,8 +139,6 @@ export default function RootLayout() {
             <Stack.Screen name="requests" />
             <Stack.Screen name="specialists" />
             <Stack.Screen name="legal" />
-            <Stack.Screen name="mosaic-d" />
-            <Stack.Screen name="mosaic-m" />
             <Stack.Screen name="saved-specialists" />
           </Stack>
         </AuthenticatedHeaderGate>
