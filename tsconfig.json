@@ -19,6 +19,7 @@
     "node_modules",
     "api",
     "landing",
-    "worktrees"
+    "worktrees",
+    "scripts"
   ]
 }
