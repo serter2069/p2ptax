@@ -3,6 +3,7 @@ import Avatar from "@/components/ui/Avatar";
 import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import { colors, overlay } from "@/lib/theme";
 import { displayName, formatTime } from "@/lib/threadDisplay";
+import { API_URL } from "@/lib/api";
 
 export interface LastMessageAttachment {
   id: string;
@@ -153,10 +154,13 @@ export default function ThreadCard({
               (a) => a.mimeType.startsWith("image/")
             );
             if (firstImage) {
+              const imageUri = firstImage.url.startsWith("http")
+                ? firstImage.url
+                : `${API_URL}${firstImage.url}`;
               return (
                 <View className="flex-row items-center mt-1" style={{ gap: 6 }}>
                   <Image
-                    source={{ uri: firstImage.url }}
+                    source={{ uri: imageUri }}
                     style={{ width: 40, height: 40, borderRadius: 6 }}
                     resizeMode="cover"
                     accessibilityLabel={firstImage.filename}

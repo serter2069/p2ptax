@@ -306,13 +306,13 @@ export default function RequestsFeed({
         return (
           <EmptyState
             icon={FileText}
-            title={activeTab === "active" ? "Активных заявок нет" : "Закрытых заявок нет"}
+            title={activeTab === "active" ? "Активных запросов нет" : "Закрытых запросов нет"}
             subtitle={
               activeTab === "active"
-                ? "Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
-                : "Закрытые заявки появятся здесь"
+                ? "Создайте первый запрос — специалисты из вашего города увидят его и предложат помощь"
+                : "Закрытые запросы появятся здесь"
             }
-            actionLabel={activeTab === "active" ? "Создать заявку" : undefined}
+            actionLabel={activeTab === "active" ? "Создать запрос" : undefined}
             onAction={
               activeTab === "active" ? () => nav.routes.requestsNew() : undefined
             }
@@ -420,7 +420,7 @@ export default function RequestsFeed({
         <View className="px-4 pt-2 pb-3">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Создать заявку"
+            accessibilityLabel="Создать запрос"
             onPress={() => nav.routes.requestsNew()}
             style={{
               backgroundColor: colors.primary,
@@ -433,7 +433,7 @@ export default function RequestsFeed({
               marginBottom: 12,
             }}
           >
-            <Text className="text-white font-semibold text-sm">+ Создать заявку</Text>
+            <Text className="text-white font-semibold text-sm">+ Создать запрос</Text>
           </Pressable>
 
           <View
@@ -444,7 +444,7 @@ export default function RequestsFeed({
               <Pressable
                 key={tab}
                 accessibilityRole="tab"
-                accessibilityLabel={tab === "active" ? "Активные заявки" : "Закрытые заявки"}
+                accessibilityLabel={tab === "active" ? "Активные запросы" : "Закрытые запросы"}
                 onPress={() => setActiveTab(tab)}
                 style={[
                   { flex: 1, paddingVertical: 10, alignItems: "center", minHeight: 40 },

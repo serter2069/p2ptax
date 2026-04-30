@@ -68,10 +68,10 @@ export const topLevelMatch = (ctx: MatchContext, prefix: string): boolean => {
 
 // ─────────────────────────────────────────── nav item arrays
 
-// #1615 — unified USER nav: public Заявки + Мои заявки for everyone.
+// #1615 — unified USER nav: public Запросы + Мои запросы for everyone.
 export const USER_BASE_ITEMS: NavItem[] = [
   {
-    label: "Заявки",
+    label: "Запросы",
     href: "/(tabs)/requests",
     icon: Inbox,
     match: (ctx) =>
@@ -109,7 +109,7 @@ export const USER_CLIENT_EXTRA: NavItem[] = [
 ];
 
 // Specialist-only addition: empty after #1615 — specialists already see the
-// public bourse via the base "Заявки" item; the legacy public-requests link
+// public bourse via the base "Запросы" item; the legacy public-requests link
 // is no longer surfaced separately.
 export const USER_SPECIALIST_EXTRA: NavItem[] = [];
 
