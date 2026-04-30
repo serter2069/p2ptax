@@ -525,7 +525,6 @@ export default function MyRequestDetail() {
               )}
             </View>
 
-<<<<<<< HEAD
             {/* Recommended specialists feed (horizontal scroll) — issue #1550.
                 Placed under main info, before actions (per acceptance criteria). */}
             {recommendations.length > 0 && (
@@ -538,32 +537,6 @@ export default function MyRequestDetail() {
               </View>
             )}
 
-            {/* Close button — mobile */}
-            {isActive && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Закрыть заявку"
-                onPress={handleCloseRequest}
-                disabled={closing}
-                className="flex-row items-center justify-center rounded-xl py-3 mb-4"
-                style={({ pressed }) => [
-                  { backgroundColor: colors.danger, minHeight: 44 },
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                {closing ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <X size={16} color="#fff" />
-                    <Text className="text-white font-semibold text-base ml-2">
-                      Закрыть заявку
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            )}
-=======
             {/* Actions card — mobile (matches desktop, prominent border + shadow) */}
             <View
               className="bg-white rounded-2xl p-4 mb-4"
@@ -626,7 +599,6 @@ export default function MyRequestDetail() {
                 </View>
               )}
             </View>
->>>>>>> 00b398d (refactor(i18n): rename 'заявка' to 'запрос' across UI strings)
 
             <ThreadsList
               threads={threads}
