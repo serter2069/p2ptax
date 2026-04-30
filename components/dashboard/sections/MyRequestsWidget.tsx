@@ -29,11 +29,11 @@ function RequestsEmptyState({ onCreateRequest }: { onCreateRequest: () => void }
       <Text
         style={{ fontSize: 14, color: colors.textMuted, textAlign: "center" }}
       >
-        У вас нет активных заявок
+        У вас нет активных запросов
       </Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Создать заявку"
+        accessibilityLabel="Создать запрос"
         onPress={onCreateRequest}
         style={({ pressed }) => ({
           opacity: pressed ? 0.7 : 1,
@@ -49,7 +49,7 @@ function RequestsEmptyState({ onCreateRequest }: { onCreateRequest: () => void }
       >
         <Plus size={15} color={colors.primary} />
         <Text style={{ fontSize: 14, color: colors.primary, fontWeight: "600" }}>
-          Создать заявку
+          Создать запрос
         </Text>
       </Pressable>
     </View>
@@ -64,7 +64,7 @@ export default function MyRequestsWidget({
 }: Props) {
   return (
     <DashboardWidget
-      title="Мои заявки"
+      title="Мои запросы"
       subtitle={
         clientFeedItems.length > 0
           ? `Всего ${clientFeedItems.length}`

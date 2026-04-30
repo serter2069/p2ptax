@@ -166,7 +166,7 @@ function Nav({ onAuth, onCreate, onCatalog }) {
           ) : (
             <button className="btn btn-subtle" onClick={onAuth}>Войти</button>
           )}
-          <button className="btn btn-primary" onClick={onCreate}>Создать заявку</button>
+          <button className="btn btn-primary" onClick={onCreate}>Создать запрос</button>
         </div>
       </div>
     </nav>
@@ -298,7 +298,7 @@ function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }
             </div>
 
             <div className="row" style={{marginTop: 24, gap: 20}}>
-              <button className="btn btn-ghost btn-lg" onClick={onCreate}>Создать заявку бесплатно</button>
+              <button className="btn btn-ghost btn-lg" onClick={onCreate}>Создать запрос бесплатно</button>
               <span className="small dim">или <a onClick={onCatalog} style={{cursor:'pointer', textDecoration:'underline'}}>смотрите каталог</a></span>
             </div>
           </div>
@@ -376,7 +376,7 @@ function HowItWorks({ onCreate }) {
             <h2 className="section-title">Три шага<br/><em>вместо обзвона</em></h2>
           </div>
           <p className="section-sub">
-            Не вы ищете специалистов — они сами приходят к вам. Платформа показывает вашу заявку только тем, кто работает с вашей инспекцией и именно с этим типом проверки.
+            Не вы ищете специалистов — они сами приходят к вам. Платформа показывает ваш запрос только тем, кто работает с вашей инспекцией и именно с этим типом проверки.
           </p>
         </div>
 
@@ -394,7 +394,7 @@ function HowItWorks({ onCreate }) {
           <div className="step">
             <div className="step-num">[ ШАГ 02 ]</div>
             <div className="step-title">Специалисты пишут первыми</div>
-            <div className="step-desc">Обычно 2–5 сообщений в течение часа. Они смотрят заявку и решают, берутся или нет — уже с планом.</div>
+            <div className="step-desc">Обычно 2–5 сообщений в течение часа. Они смотрят запрос и решают, берутся или нет — уже с планом.</div>
             <div className="step-preview" style={{flexDirection:'column', alignItems:'flex-start', gap:6}}>
               <div>◉ Алексей М. · ИФНС №7 · ответил через 18 мин</div>
               <div>◉ Ирина К. · ИФНС №1 · ответила через 32 мин</div>
@@ -413,7 +413,7 @@ function HowItWorks({ onCreate }) {
         </div>
 
         <div style={{marginTop: 40, textAlign:'center'}}>
-          <button className="btn btn-primary btn-lg" onClick={onCreate}>Начать с заявки →</button>
+          <button className="btn btn-primary btn-lg" onClick={onCreate}>Начать с запроса →</button>
         </div>
       </div>
     </section>
@@ -521,7 +521,7 @@ function Coverage() {
             <h2 className="section-title">12 городов,<br/><em>78+ инспекций</em></h2>
           </div>
           <p className="section-sub">
-            Добавляем новые города каждую неделю. Не нашли свою — оставьте заявку, подтянем специалиста под неё за 5–7 дней.
+            Добавляем новые города каждую неделю. Не нашли свою — оставьте запрос, подтянем специалиста под неё за 5–7 дней.
           </p>
         </div>
 
@@ -686,7 +686,7 @@ function SpecialistsCTA({ onJoin }) {
             <div className="spec-stat">
               <div>
                 <div className="stat-val">20</div>
-                <div className="stat-label">новых заявок в день на пике</div>
+                <div className="stat-label">новых запросов в день на пике</div>
               </div>
               <div>
                 <div className="stat-val">0%</div>
@@ -743,10 +743,10 @@ function FinalCTA({ onCreate }) {
           <em>уведомление?</em>
         </h2>
         <p className="section-sub" style={{margin:'0 auto 32px', textAlign:'center', maxWidth: '48ch'}}>
-          Опишите ситуацию. Специалисты по вашей ФНС получат заявку и напишут сами. Бесплатно, 3 минуты, без регистрации заранее.
+          Опишите ситуацию. Специалисты по вашей ФНС получат запрос и напишут сами. Бесплатно, 3 минуты, без регистрации заранее.
         </p>
         <button className="btn btn-primary btn-lg" onClick={onCreate} style={{padding:'18px 28px', fontSize: 16}}>
-          Создать заявку →
+          Создать запрос →
         </button>
       </div>
     </section>

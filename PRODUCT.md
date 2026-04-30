@@ -6,13 +6,13 @@
 
 **Target users** (Iter11 — role unification):
 
-Роли в БД теперь 3: `GUEST / USER / ADMIN`. Роль `SPECIALIST` отдельно больше не существует — вместо этого у пользователя есть opt-in флаг `isSpecialist` + `specialistProfileCompletedAt`. Это позволяет специалисту одновременно быть клиентом (т.е. создавать собственные заявки про налоги), убирает искусственное дублирование UI и двух дашбордов.
+Роли в БД теперь 3: `GUEST / USER / ADMIN`. Роль `SPECIALIST` отдельно больше не существует — вместо этого у пользователя есть opt-in флаг `isSpecialist` + `specialistProfileCompletedAt`. Это позволяет специалисту одновременно быть клиентом (т.е. создавать собственные запросы про налоги), убирает искусственное дублирование UI и двух дашбордов.
 
 - **USER (primary)**: Любой авторизованный человек. Emotional driver для большинства — русский гражданин / ИП / представитель юрлица, который только что получил уведомление/требование ФНС. Паника + растерянность + страх штрафов и блокировок. Не tech-savvy. Не юрист. Нужен trust и чёткий next step.
-  - **USER с `isSpecialist=true` (sub-mode «специалист»)**: Практикующий налоговый консультант с опытом в камеральных, выездных или оперативных проверках. Часто бывшие сотрудники ФНС (ex-инспекторы). Ищет клиентов напрямую, без юридических фирм-посредников. **Opportunity (Iter11)**: может сам создавать заявки — раньше было запрещено, теперь специалист тоже человек, может получить требование ФНС на свой личный ИНН.
+  - **USER с `isSpecialist=true` (sub-mode «специалист»)**: Практикующий налоговый консультант с опытом в камеральных, выездных или оперативных проверках. Часто бывшие сотрудники ФНС (ex-инспекторы). Ищет клиентов напрямую, без юридических фирм-посредников. **Opportunity (Iter11)**: может сам создавать запросы — раньше было запрещено, теперь специалист тоже человек, может получить требование ФНС на свой личный ИНН.
   - **USER с `isSpecialist=false`**: «Обычный клиент». Ищет специалиста по своей ФНС. Не видит публичного фида лидов.
 - **ADMIN**: Платформенный модератор — управляет пользователями, городами/ФНС, правилами модерации, настройками системы.
-- **GUEST**: Неавторизованный посетитель — может смотреть публичные заявки и каталог специалистов, не видит контактов.
+- **GUEST**: Неавторизованный посетитель — может смотреть публичные запросы и каталог специалистов, не видит контактов.
 
 **Value proposition**: «Специалисты по вашей ФНС. Не юристы из интернета.» Практики с опытом решают реальные проблемы налоговых проверок напрямую с клиентом. Бесплатно для клиента и специалиста в MVP. Без подписок, без комиссий, без premium.
 
@@ -26,7 +26,7 @@
 - 3 канонические услуги (из SA `services` table): **Выездная проверка**, **Камеральная проверка**, **Отдел оперативного контроля**.
 - Города РФ (seeded list) + ИФНС (до ~210 офисов, relation city_has_many fns_offices).
 - Специалисты: имя, опыт, город(а), ФНС (по которым работает), услуги, phone/telegram/whatsapp (public для авторизованных), office address, working hours.
-- Заявки: title, city, ФНС, service, description, status (active / closing_soon / closed), threads count.
+- Запросы: title, city, ФНС, service, description, status (active / closing_soon / closed), threads count.
 - Threads: 1:1 диалоги client ↔ specialist, SA daily limit 20 threads/day для specialist.
 
 **FORBIDDEN content** (эти вещи killed in MVP per SA):
@@ -40,9 +40,9 @@
 - **E-commerce patterns** — cart, checkout, купить в один клик. Это сервисный marketplace, не магазин.
 
 **Key business rules (from SA, non-negotiable)** — обновлено после Iter11 role-unification:
-- **Guest**: смотрит публичные заявки + каталог + профили. НЕ видит контактов, НЕ пишет, НЕ создаёт заявки.
-- **USER (все авторизованные)**: создаёт заявки (лимит default 5), читает messages от специалистов, отвечает, закрывает свои заявки. **НЕ** пишет первым specialists по чужим заявкам (если `isSpecialist=false`).
-- **USER + isSpecialist=true** (и `specialistProfileCompletedAt != null`): всё что USER + пишет клиенту по публичной заявке (создаёт thread, лимит 20/день), ведёт переписку, управляет профилем специалиста, видит публичный фид лидов. **Не** видит private-данные других specialists. В отличие от старой схемы — специалист теперь **может** создавать собственные заявки (он тоже может получить требование ФНС на свой ИНН).
+- **Guest**: смотрит публичные запросы + каталог + профили. НЕ видит контактов, НЕ пишет, НЕ создаёт запросы.
+- **USER (все авторизованные)**: создаёт запросы (лимит default 5), читает messages от специалистов, отвечает, закрывает свои запросы. **НЕ** пишет первым specialists по чужим запросам (если `isSpecialist=false`).
+- **USER + isSpecialist=true** (и `specialistProfileCompletedAt != null`): всё что USER + пишет клиенту по публичному запросу (создаёт thread, лимит 20/день), ведёт переписку, управляет профилем специалиста, видит публичный фид лидов. **Не** видит private-данные других specialists. В отличие от старой схемы — специалист теперь **может** создавать собственные запросы (он тоже может получить требование ФНС на свой ИНН).
 - **Admin**: всё выше + блокировка/разблокировка users, CRUD городов/ФНС, modification rules, limit_requests editor.
 - **Исключение в каталоге**: пользователь не видит себя в `/api/specialists` (если сам специалист) — нельзя связаться самому с собой.
 - **Notifications**: только email (SMTP/Resend). События: NEW_MESSAGE_FROM_SPECIALIST, NEW_MESSAGE, REQUEST_CLOSING_SOON (27 days inactivity), REQUEST_CLOSED.
@@ -53,7 +53,7 @@
 - Dark-mode возможен как optional theme, но primary = light (fintech trust reads better on white).
 - Spacing scale: 4/8/12/16/24/32/48/64 tokens only.
 - Typography: H1 32-56px (hero), H2 32-40px (sections), H3 20-24px, body 16px, small 14px, caption 12px. Manrope / Inter / system sans-serif.
-- Role-signalling: subtle accent color per role — USER non-specialist=blue (default), USER isSpecialist=emerald, admin=amber. Chrome остаётся нейтральным. Для специалиста, который одновременно просматривает свою личную заявку как клиент, accent может мягко переключаться по контексту страницы (решение дизайна в PR 2 UI-merge).
+- Role-signalling: subtle accent color per role — USER non-specialist=blue (default), USER isSpecialist=emerald, admin=amber. Chrome остаётся нейтральным. Для специалиста, который одновременно просматривает свою личный запрос как клиент, accent может мягко переключаться по контексту страницы (решение дизайна в PR 2 UI-merge).
 - Components barrel: `components/ui/`, `components/layout/`, `components/landing/`, `components/dashboard/`, `components/specialist/`, `components/filters/`.
 
 **Key differentiators**:

@@ -9,10 +9,10 @@
  * Russian plural form selector (one / few / many).
  *
  * Examples:
- *   pluralizeRu(1, ['заявка', 'заявки', 'заявок']) -> 'заявка'
- *   pluralizeRu(2, ['заявка', 'заявки', 'заявок']) -> 'заявки'
- *   pluralizeRu(5, ['заявка', 'заявки', 'заявок']) -> 'заявок'
- *   pluralizeRu(0, ['заявка', 'заявки', 'заявок']) -> 'заявок'
+ *   pluralizeRu(1, ['запрос', 'запросы', 'запросов']) -> 'запрос'
+ *   pluralizeRu(2, ['запрос', 'запросы', 'запросов']) -> 'запросы'
+ *   pluralizeRu(5, ['запрос', 'запросы', 'запросов']) -> 'запросов'
+ *   pluralizeRu(0, ['запрос', 'запросы', 'запросов']) -> 'запросов'
  */
 export function pluralizeRu(n: number, forms: [string, string, string]): string {
   const abs = Math.abs(n) % 100;

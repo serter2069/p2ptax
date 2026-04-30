@@ -72,7 +72,7 @@ export default function FooterSection({
           <FooterColumn title="О сервисе">
             <FooterLink label="Главная" onPress={onHome} />
             <FooterLink label="Специалисты" onPress={onViewCatalog} />
-            <FooterLink label="Создать заявку" onPress={onCreateRequest} />
+            <FooterLink label="Создать запрос" onPress={onCreateRequest} />
           </FooterColumn>
 
           <FooterColumn title="Для специалистов">

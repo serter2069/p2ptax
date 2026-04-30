@@ -125,7 +125,7 @@ export default function LandingHeader({
           )}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Создать заявку"
+            accessibilityLabel="Создать запрос"
             onPress={onCreateRequest}
             className="rounded-xl items-center justify-center"
             style={{
@@ -135,7 +135,7 @@ export default function LandingHeader({
             }}
           >
             <Text className="text-white font-semibold" style={{ fontSize: 14 }}>
-              Создать заявку
+              Создать запрос
             </Text>
           </Pressable>
         </View>

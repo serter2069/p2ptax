@@ -104,11 +104,11 @@ export default function CasesSection({ isDesktop, cases, onCreateRequest }: Case
                 maxWidth: 440,
               }}
             >
-              Создайте заявку — специалисты в вашей ФНС напишут первыми.
+              Создайте запрос — специалисты в вашей ФНС напишут первыми.
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Создать заявку"
+              accessibilityLabel="Создать запрос"
               onPress={onCreateRequest}
               className="rounded-xl items-center justify-center"
               style={{
@@ -119,7 +119,7 @@ export default function CasesSection({ isDesktop, cases, onCreateRequest }: Case
               }}
             >
               <Text className="text-white font-semibold" style={{ fontSize: 15 }}>
-                Создать заявку
+                Создать запрос
               </Text>
             </Pressable>
           </View>

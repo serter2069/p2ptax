@@ -246,7 +246,7 @@ export default function RequestMessages() {
             <EmptyState
               icon={MessageCircle}
               title="Пока нет сообщений"
-              subtitle="Специалисты увидят вашу заявку и напишут вам первыми"
+              subtitle="Специалисты увидят ваш запрос и напишут вам первыми"
             />
           }
           contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 24 : 0 }}

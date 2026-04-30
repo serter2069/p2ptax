@@ -196,9 +196,9 @@ export default function AdminUsers() {
         if (res.ok) {
           const data = await res.json();
           if (Platform.OS === "web") {
-            window.alert(`Закрыто заявок: ${data.closed}`);
+            window.alert(`Закрыто запросов: ${data.closed}`);
           } else {
-            Alert.alert("Готово", `Закрыто заявок: ${data.closed}`);
+            Alert.alert("Готово", `Закрыто запросов: ${data.closed}`);
           }
         }
       } catch {
@@ -207,13 +207,13 @@ export default function AdminUsers() {
     };
 
     if (Platform.OS === "web") {
-      if (window.confirm(`Закрыть все активные заявки пользователя ${user.email}?`)) {
+      if (window.confirm(`Закрыть все активные запросы пользователя ${user.email}?`)) {
         await doIt();
       }
     } else {
       Alert.alert(
         "Подтверждение",
-        `Закрыть все активные заявки ${user.email}?`,
+        `Закрыть все активные запросы ${user.email}?`,
         [
           { text: "Отмена", style: "cancel" },
           { text: "Да", onPress: doIt },
@@ -441,13 +441,13 @@ export default function AdminUsers() {
                           {user.role !== "ADMIN" && !user.isSpecialist && (
                             <Pressable
                               accessibilityRole="button"
-                              accessibilityLabel="Закрыть все заявки"
+                              accessibilityLabel="Закрыть все запросы"
                               onPress={() => closeAllRequests(user)}
                               className="px-3 rounded-lg bg-warning active:opacity-70"
                               style={{ minHeight: 36, justifyContent: "center" }}
                             >
                               <Text className="text-xs text-white font-medium">
-                                Закрыть все заявки
+                                Закрыть все запросы
                               </Text>
                             </Pressable>
                           )}

@@ -77,7 +77,7 @@ export default function NotificationPreferences({
         <View className="flex-1 mr-3">
           <Text className="text-base text-text-base">Push-уведомления</Text>
           <Text className="text-xs text-text-mute mt-0.5">
-            Новые заявки и сообщения
+            Новые запросы и сообщения
           </Text>
         </View>
         <IosToggle value={pushEnabled} onChange={onPushChange} />

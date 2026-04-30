@@ -5,7 +5,7 @@
  * runs, and manual QA (titles like "TEST notify", "fыафыа", "asg",
  * emails like "smoke+...@metromap.test", "mosaic+...@metromap.test").
  * Those rows must NOT leak onto user-facing surfaces (public requests
- * feed, "Мои заявки", thread/message previews, public profiles).
+ * feed, "Мои запросы", thread/message previews, public profiles).
  *
  * The filter is enabled by default and can be disabled per environment
  * via `ALLOW_SEED_DATA=1` (e.g. for local dev when you actually want

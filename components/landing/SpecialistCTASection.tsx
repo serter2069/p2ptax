@@ -11,7 +11,7 @@ interface SpecialistCTASectionProps {
 const BULLETS = [
   "Прямой контакт с клиентами",
   "Ваше расписание и ваши цены",
-  "Любое количество заявок",
+  "Любое количество запросов",
 ];
 
 export default function SpecialistCTASection({
@@ -110,7 +110,7 @@ export default function SpecialistCTASection({
             Станьте специалистом
           </Text>
           <Text style={{ color: overlay.white70, fontSize: 14, lineHeight: 20 }}>
-            Заполните профиль: ФНС, услуги, опыт. Заявки начнут
+            Заполните профиль: ФНС, услуги, опыт. Запросы начнут
             приходить в течение суток.
           </Text>
           <Pressable

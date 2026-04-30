@@ -41,7 +41,7 @@ export default function RequestForm({
   return (
     <View className="bg-white border border-border rounded-2xl px-4 pt-4 pb-4 mb-4">
       <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-        Описание заявки
+        Описание запроса
       </Text>
 
       <View className="mb-4">
@@ -129,7 +129,7 @@ export function TipsSection({ tipsOpen, setTipsOpen }: { tipsOpen: boolean; setT
         className="flex-row items-center justify-between px-4 py-3 active:bg-surface2"
       >
         <Text className="text-sm font-semibold text-text-base">
-          Советы: что указать в заявке
+          Советы: что указать в запросе
         </Text>
         {tipsOpen
           ? <ChevronUp size={16} color={colors.textMuted} />
@@ -139,7 +139,7 @@ export function TipsSection({ tipsOpen, setTipsOpen }: { tipsOpen: boolean; setT
       {tipsOpen && (
         <View className="px-4 py-3 border-t border-border" style={{ gap: 10 }}>
           <Tip title="Вид проверки" text="Камеральная, выездная или оперативный контроль — специалисты фильтруют по этому полю." />
-          <Tip title="Регион ФНС" text="Инспекция и город определяют, кому покажут заявку в первую очередь." />
+          <Tip title="Регион ФНС" text="Инспекция и город определяют, кому покажут запрос в первую очередь." />
           <Tip title="Текущий этап" text="Требование получено, назначен выезд, решение вручено — это сужает круг экспертов." />
           <Tip title="Сроки и бюджет" text="Опишите рамки — так специалисты сразу напишут, берутся или нет." />
           <Tip title="Контакт" text="Телефон не обязателен: вся связь идёт через чат внутри сервиса." />

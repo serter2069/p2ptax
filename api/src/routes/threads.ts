@@ -580,7 +580,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     if (request.status === "CLOSED") {
-      res.status(409).json({ error: "Заявка закрыта" });
+      res.status(409).json({ error: "Запрос закрыт" });
       return;
     }
 
@@ -676,11 +676,11 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     // Notify client: specialist started a new thread on their request
-    // SA: «Специалист X написал по вашей заявке 'TITLE'»
+    // SA: «Специалист X написал по вашему запросу 'TITLE'»
     sendNotification({
       userId: request.userId,
       type: "new_message_from_specialist",
-      title: `Новое сообщение от специалиста по заявке «${thread.request.title}»`,
+      title: `Новое сообщение от специалиста по запросу «${thread.request.title}»`,
       body: firstMessage.slice(0, 200),
       entityId: thread.id,
     }).catch((err: Error) => console.warn("[notifications] new_message_from_specialist trigger failed:", err.message));

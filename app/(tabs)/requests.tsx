@@ -159,13 +159,13 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Закрыть заявку"
+            accessibilityLabel="Закрыть запрос"
             onPress={closeAndReset}
             className="flex-1 w-full items-center justify-center"
             style={{ minHeight: 44 }}
           >
             <Text className="text-white text-xs font-semibold text-center px-2">
-              Закрыть{"\n"}заявку
+              Закрыть{"\n"}запрос
             </Text>
           </Pressable>
         </View>
@@ -201,7 +201,7 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
             {isActive && Platform.OS === "web" && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Закрыть заявку"
+                accessibilityLabel="Закрыть запрос"
                 onPress={(e) => {
                   e.stopPropagation();
                   onClose(item.id, item.title);
@@ -280,7 +280,7 @@ export default function MyRequests() {
       const res = await api<{ items: RequestItem[] }>("/api/requests/my");
       setRequests(res.items);
     } catch (e) {
-      setError("Не удалось загрузить заявки");
+      setError("Не удалось загрузить запросы");
     }
   }, []);
 
@@ -336,10 +336,10 @@ export default function MyRequests() {
       );
       if (Platform.OS === "web") {
         if (typeof window !== "undefined" && typeof window.alert === "function") {
-          window.alert("Ошибка: не удалось закрыть заявку");
+          window.alert("Ошибка: не удалось закрыть запрос");
         }
       } else {
-        Alert.alert("Ошибка", "Не удалось закрыть заявку");
+        Alert.alert("Ошибка", "Не удалось закрыть запрос");
       }
     }
   }, []);
@@ -360,8 +360,8 @@ export default function MyRequests() {
   const handleClose = useCallback(
     async (id: string, _title: string) => {
       const ok = await confirmDestructive(
-        "Удалить заявку?",
-        "Заявка будет закрыта. У вас будет 5 секунд, чтобы отменить."
+        "Удалить запрос?",
+        "Запрос будет закрыт. У вас будет 5 секунд, чтобы отменить."
       );
       if (!ok) return;
 
@@ -454,13 +454,13 @@ export default function MyRequests() {
       return (
         <EmptyState
           icon={FileText}
-          title={activeTab === "active" ? "Активных заявок нет" : "Закрытых заявок нет"}
+          title={activeTab === "active" ? "Активных запросов нет" : "Закрытых запросов нет"}
           subtitle={
             activeTab === "active"
-              ? "Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
-              : "Закрытые заявки появятся здесь"
+              ? "Создайте первый запрос — специалисты из вашего города увидят его и предложат помощь"
+              : "Закрытые запросы появятся здесь"
           }
-          actionLabel={activeTab === "active" ? "Создать заявку" : undefined}
+          actionLabel={activeTab === "active" ? "Создать запрос" : undefined}
           onAction={activeTab === "active" ? () => nav.routes.requestsNew() : undefined}
         />
       );
@@ -484,11 +484,11 @@ export default function MyRequests() {
       <DesktopScreen>
         <View className="flex-row items-center justify-between mb-4">
           {!isDesktop && (
-            <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
+            <Text className="text-xl font-bold text-text-base">Мои запросы</Text>
           )}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Создать заявку"
+            accessibilityLabel="Создать запрос"
             onPress={() => nav.routes.requestsNew()}
             className="flex-row items-center gap-1.5 px-4 rounded-xl"
             style={{ backgroundColor: colors.primary, minHeight: 40, justifyContent: "center", marginLeft: isDesktop ? "auto" : 0 }}
@@ -504,7 +504,7 @@ export default function MyRequests() {
         >
           <Pressable
             accessibilityRole="tab"
-            accessibilityLabel="Активные заявки"
+            accessibilityLabel="Активные запросы"
             onPress={() => setActiveTab("active")}
             style={[
               { flex: 1, paddingVertical: 10, alignItems: "center", minHeight: 40 },
@@ -523,7 +523,7 @@ export default function MyRequests() {
           </Pressable>
           <Pressable
             accessibilityRole="tab"
-            accessibilityLabel="Закрытые заявки"
+            accessibilityLabel="Закрытые запросы"
             onPress={() => setActiveTab("closed")}
             style={[
               { flex: 1, paddingVertical: 10, alignItems: "center", minHeight: 40 },
@@ -547,7 +547,7 @@ export default function MyRequests() {
 
       {/* Undo toast: 5-sec window to revert the close */}
       <UndoToast
-        message="Заявка удалена"
+        message="Запрос удалён"
         visible={undoVisible}
         onUndo={handleUndo}
       />

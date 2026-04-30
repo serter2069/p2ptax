@@ -13,8 +13,8 @@ import { apiGet } from "@/lib/api";
 /**
  * Unified (tabs) navigator — task #1379 cleanup.
  *
- * Exactly 4 tabs on mobile: Главная / Заявки / Сообщения / Настройки.
- * "Публичные заявки" is hidden from the tab bar (href: null) — accessible
+ * Exactly 4 tabs on mobile: Главная / Запросы / Сообщения / Настройки.
+ * "Публичные запросы" is hidden from the tab bar (href: null) — accessible
  * via the mobile drawer / sidebar only.
  *
  * Tab bar is hidden on desktop (≥768px) — SidebarNav carries navigation there.
@@ -72,7 +72,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="requests"
         options={{
-          title: "Мои заявки",
+          title: "Мои запросы",
           tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
         }}
       />

@@ -220,7 +220,7 @@ export default function SpecialistPublicProfile() {
           marginTop: 8,
         }}
       >
-        Специалист сейчас не принимает заявки.
+        Специалист сейчас не принимает запросы.
       </Text>
     </View>
   );

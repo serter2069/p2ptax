@@ -82,7 +82,7 @@ export default function MyRequestDetail() {
           .catch(() => {/* silent — not critical */});
       }
     } catch (e) {
-      setError("Не удалось загрузить заявку");
+      setError("Не удалось загрузить запрос");
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ export default function MyRequestDetail() {
         await apiPatch(`/api/requests/${id}/status`, { status: "CLOSED" });
         setRequest((prev) => prev ? { ...prev, status: "CLOSED" } : null);
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Не удалось закрыть заявку";
+        const msg = e instanceof Error ? e.message : "Не удалось закрыть запрос";
         if (Platform.OS === "web") {
           if (typeof window !== "undefined" && typeof window.alert === "function") {
             window.alert(`Ошибка: ${msg}`);
@@ -123,13 +123,13 @@ export default function MyRequestDetail() {
     };
 
     if (typeof window !== "undefined" && typeof window.confirm === "function") {
-      if (window.confirm("Закрыть заявку? Специалисты больше не смогут откликнуться.")) {
+      if (window.confirm("Закрыть запрос? Специалисты больше не смогут откликнуться.")) {
         await doClose();
       }
     } else {
       Alert.alert(
-        "Закрыть заявку",
-        "Специалисты больше не смогут откликнуться на эту заявку.",
+        "Закрыть запрос",
+        "Специалисты больше не смогут откликнуться на этот запрос.",
         [
           { text: "Отмена", style: "cancel" },
           { text: "Закрыть", style: "destructive", onPress: doClose },
@@ -170,7 +170,7 @@ export default function MyRequestDetail() {
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 items-center justify-center px-4">
           <Text className="text-base text-danger text-center">
-            {error || "Заявка не найдена"}
+            {error || "Запрос не найден"}
           </Text>
           <View className="mt-4">
             <Button
@@ -277,7 +277,7 @@ export default function MyRequestDetail() {
                     Прикреплённые документы
                   </Text>
                   {request.files.length === 0 ? (
-                    <EmptyState title="Нет документов" subtitle="К этой заявке не прикреплены файлы" />
+                    <EmptyState title="Нет документов" subtitle="К этому запросу не прикреплены файлы" />
                   ) : (
                     request.files.map((file) => (
                       <Pressable
@@ -329,46 +329,65 @@ export default function MyRequestDetail() {
 
               {/* RIGHT: actions + meta stats */}
               <View style={{ flex: 1, minWidth: 280, maxWidth: 360 }}>
-                {/* Actions card */}
+                {/* Actions card — visually prominent (border + stronger shadow) */}
                 <View
                   className="bg-white rounded-2xl p-5 mb-4"
                   style={{
+                    borderWidth: 1,
+                    borderColor: colors.border,
                     shadowColor: colors.text,
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 10,
-                    elevation: 3,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 12,
+                    elevation: 4,
                   }}
                 >
-                  <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
+                  <Text className="text-xs font-bold text-text-base mb-3 uppercase tracking-wide">
                     Действия
                   </Text>
                   {isActive ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Закрыть заявку"
+                      accessibilityLabel="Закрыть запрос"
                       onPress={handleCloseRequest}
                       disabled={closing}
                       className="flex-row items-center justify-center rounded-xl py-3 px-4"
                       style={({ pressed }) => [
-                        { backgroundColor: colors.danger, minHeight: 44 },
-                        pressed && { opacity: 0.8 },
+                        {
+                          backgroundColor: colors.danger,
+                          minHeight: 44,
+                          shadowColor: colors.danger,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 4,
+                          elevation: 3,
+                        },
+                        pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
                       ]}
                     >
                       {closing ? (
-                        <ActivityIndicator color="#fff" size="small" />
+                        <ActivityIndicator color={colors.white} size="small" />
                       ) : (
                         <>
-                          <X size={16} color="#fff" />
+                          <X size={16} color={colors.white} />
                           <Text className="text-white font-semibold text-sm ml-2">
-                            Закрыть заявку
+                            Закрыть запрос
                           </Text>
                         </>
                       )}
                     </Pressable>
                   ) : (
-                    <View className="bg-surface2 rounded-xl py-3 px-4 items-center">
-                      <Text className="text-sm text-text-mute">Заявка закрыта</Text>
+                    <View
+                      className="rounded-xl py-3 px-4 items-center"
+                      style={{
+                        backgroundColor: colors.surface2,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        minHeight: 44,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text className="text-sm font-medium text-text-base">Запрос закрыт</Text>
                     </View>
                   )}
                 </View>
@@ -477,7 +496,7 @@ export default function MyRequestDetail() {
                 Прикреплённые документы
               </Text>
               {request.files.length === 0 ? (
-                <EmptyState title="Нет документов" subtitle="К этой заявке не прикреплены файлы" />
+                <EmptyState title="Нет документов" subtitle="К этому запросу не прикреплены файлы" />
               ) : (
                 request.files.map((file) => (
                   <Pressable
@@ -506,6 +525,7 @@ export default function MyRequestDetail() {
               )}
             </View>
 
+<<<<<<< HEAD
             {/* Recommended specialists feed (horizontal scroll) — issue #1550.
                 Placed under main info, before actions (per acceptance criteria). */}
             {recommendations.length > 0 && (
@@ -543,6 +563,70 @@ export default function MyRequestDetail() {
                 )}
               </Pressable>
             )}
+=======
+            {/* Actions card — mobile (matches desktop, prominent border + shadow) */}
+            <View
+              className="bg-white rounded-2xl p-4 mb-4"
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                shadowColor: colors.text,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 4,
+              }}
+            >
+              <Text className="text-xs font-bold text-text-base mb-3 uppercase tracking-wide">
+                Действия
+              </Text>
+              {isActive ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Закрыть запрос"
+                  onPress={handleCloseRequest}
+                  disabled={closing}
+                  className="flex-row items-center justify-center rounded-xl py-3 px-4"
+                  style={({ pressed }) => [
+                    {
+                      backgroundColor: colors.danger,
+                      minHeight: 44,
+                      shadowColor: colors.danger,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 4,
+                      elevation: 3,
+                    },
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                  ]}
+                >
+                  {closing ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <>
+                      <X size={16} color={colors.white} />
+                      <Text className="text-white font-semibold text-base ml-2">
+                        Закрыть запрос
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              ) : (
+                <View
+                  className="rounded-xl py-3 px-4 items-center"
+                  style={{
+                    backgroundColor: colors.surface2,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    minHeight: 44,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text className="text-sm font-medium text-text-base">Запрос закрыт</Text>
+                </View>
+              )}
+            </View>
+>>>>>>> 00b398d (refactor(i18n): rename 'заявка' to 'запрос' across UI strings)
 
             <ThreadsList
               threads={threads}
