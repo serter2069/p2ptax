@@ -320,22 +320,24 @@ export default function SpecialistPublicProfile() {
           className="w-full items-center"
           style={{ paddingHorizontal: isDesktop ? 32 : 16, paddingTop: 16 }}
         >
-          <View
-            className="w-full flex-row items-center justify-between mb-3"
-            style={{ maxWidth: 720 }}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Назад"
-              onPress={() => router.back()}
-              className="flex-row items-center"
-              style={{ minHeight: 44 }}
+          {!isDesktop && (
+            <View
+              className="w-full flex-row items-center justify-between mb-3"
+              style={{ maxWidth: 720 }}
             >
-              <ChevronLeft size={20} color={colors.text} />
-              <Text className="text-text-base ml-1">Назад</Text>
-            </Pressable>
-            {rightAction}
-          </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Назад"
+                onPress={() => router.back()}
+                className="flex-row items-center"
+                style={{ minHeight: 44 }}
+              >
+                <ChevronLeft size={20} color={colors.text} />
+                <Text className="text-text-base ml-1">Назад</Text>
+              </Pressable>
+              {rightAction}
+            </View>
+          )}
           <View
             className={`${isDesktop ? "flex-row" : "flex-col"} w-full`}
             style={{ maxWidth: 1200, gap: isDesktop ? spacing.xl : 0 }}
@@ -345,6 +347,21 @@ export default function SpecialistPublicProfile() {
               className="flex-1"
               style={{ maxWidth: isDesktop ? 860 : undefined }}
             >
+              {isDesktop && (
+                <View className="flex-row items-center justify-between mb-4">
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Назад"
+                    onPress={() => router.back()}
+                    className="flex-row items-center"
+                    style={{ minHeight: 44 }}
+                  >
+                    <ChevronLeft size={20} color={colors.text} />
+                    <Text className="text-text-base ml-1">Назад</Text>
+                  </Pressable>
+                  {rightAction}
+                </View>
+              )}
               {mainContent}
             </View>
 
