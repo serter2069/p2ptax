@@ -7,6 +7,7 @@ validateConfig();
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { minioClient, MINIO_BUCKET } from "./lib/minio";
 import authRoutes from "./routes/auth";
 import uploadRoutes from "./routes/upload";
 import messagesRoutes from "./routes/messages";
@@ -29,9 +30,28 @@ import { runRequestLifecycleCron } from "./cron/requestLifecycle";
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  // Allow cross-origin image/file loading (avatars, chat attachments).
+  // Without this, helmet's default CORP: same-origin blocks <img> from other origins.
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",").map(s => s.trim()) : [/^http:\/\/localhost:(8081|8082)$/] }));
 app.use(express.json({ limit: "1mb" }));
+
+// Proxy MinIO objects at /<bucket>/<key> so that avatarUrls stored as
+// http://localhost:3812/p2ptax/... load correctly in dev.
+app.get(`/${MINIO_BUCKET}/*`, async (req, res) => {
+  const key = req.path.slice(`/${MINIO_BUCKET}/`.length);
+  if (!key) { res.status(404).json({ error: "Not found" }); return; }
+  try {
+    const stream = await minioClient.getObject(MINIO_BUCKET, key);
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    stream.pipe(res);
+  } catch {
+    res.status(404).json({ error: "Not found" });
+  }
+});
 
 // Health check
 app.get("/api/health", (_req, res) => {
