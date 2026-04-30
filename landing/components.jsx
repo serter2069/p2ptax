@@ -135,8 +135,7 @@ function Nav({ onAuth, onCreate, onCatalog }) {
     <nav className="nav">
       <div className="container nav-inner">
         <a href="#" className="logo">
-          <span className="dot"></span>
-          P2PTax
+          <img src="./p2ptax-logo.png" alt="P2PTax" style={{height: 32, width: 'auto', verticalAlign: 'middle'}} />
         </a>
         <div className="nav-links">
           <a onClick={onCatalog} style={{cursor:'pointer'}}>Специалисты</a>
@@ -770,7 +769,7 @@ function Footer() {
         <div className="footer-grid">
           <div>
             <div className="logo" style={{marginBottom: 16}}>
-              <span className="dot"></span> P2PTax
+              <img src="./p2ptax-logo.png" alt="P2PTax" style={{height: 32, width: 'auto'}} />
             </div>
             <div className="small muted" style={{maxWidth: '38ch'}}>
               Маркетплейс специалистов по проверкам ФНС. Платформа связывает клиентов со специалистами — юридические услуги оказывают сами специалисты.
