@@ -153,8 +153,10 @@ export const ADMIN_ITEMS: NavItem[] = [
 // ─────────────────────────────────────────── build helpers
 
 export function buildUserItems(isSpecialist: boolean): NavItem[] {
+  // Issue #1603 — specialists can also search for other specialists and save
+  // favourites, so CLIENT_EXTRA items are included for both roles.
   return isSpecialist
-    ? [...USER_BASE_ITEMS, ...USER_SPECIALIST_EXTRA, ...USER_TAIL_ITEMS]
+    ? [...USER_BASE_ITEMS, ...USER_SPECIALIST_EXTRA, ...USER_CLIENT_EXTRA, ...USER_TAIL_ITEMS]
     : [...USER_BASE_ITEMS, ...USER_CLIENT_EXTRA, ...USER_TAIL_ITEMS];
 }
 

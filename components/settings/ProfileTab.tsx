@@ -5,7 +5,8 @@ import AvatarUploader from "@/components/settings/AvatarUploader";
 import RoleBadge from "@/components/layout/RoleBadge";
 import type { UserRole } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
-import { Share2 } from "lucide-react-native";
+import { Share2, ExternalLink } from "lucide-react-native";
+import { router } from "expo-router";
 
 /**
  * Внутренний iOS-style toggle. Дублируется здесь чтобы tab был самодостаточным
@@ -226,33 +227,60 @@ export default function ProfileTab({
               )}
             </View>
             {isAvailable && userId && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Поделиться профилем"
-                onPress={handleShareProfile}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  backgroundColor: colors.surface2,
-                  alignSelf: "flex-start",
-                  marginBottom: 4,
-                }}
-              >
-                <Share2 size={14} color={colors.accent} />
-                <Text
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Посмотреть мой профиль"
+                  onPress={() => router.push(`/specialists/${userId}` as never)}
                   style={{
-                    marginLeft: 6,
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: colors.accent,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    backgroundColor: colors.surface2,
+                    alignSelf: "flex-start",
                   }}
                 >
-                  Поделиться профилем
-                </Text>
-              </Pressable>
+                  <ExternalLink size={14} color={colors.accent} />
+                  <Text
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: colors.accent,
+                    }}
+                  >
+                    Посмотреть мой профиль
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Поделиться профилем"
+                  onPress={handleShareProfile}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    backgroundColor: colors.surface2,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <Share2 size={14} color={colors.accent} />
+                  <Text
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: colors.accent,
+                    }}
+                  >
+                    Поделиться профилем
+                  </Text>
+                </Pressable>
+              </View>
             )}
           </View>
         )}
