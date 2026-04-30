@@ -28,7 +28,7 @@ import type {
   ContactMethodItem,
 } from "@/components/specialist/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
 import { colors, textStyle, spacing, BREAKPOINT } from "@/lib/theme";
 
 export default function SpecialistPublicProfile() {
@@ -72,6 +72,14 @@ export default function SpecialistPublicProfile() {
     if (id) load();
   }, [id]);
 
+  // Load initial saved state for authenticated users
+  useEffect(() => {
+    if (!isAuthenticated || !id) return;
+    apiGet<{ ids: string[] }>("/api/saved-specialists")
+      .then((r) => setSavedBookmark(r.ids.includes(id)))
+      .catch(() => {});
+  }, [isAuthenticated, id]);
+
   const handleWritePress = useCallback(() => {
     if (!isAuthenticated) {
       router.push(`/login?returnTo=/specialists/${id}` as never);
@@ -80,14 +88,24 @@ export default function SpecialistPublicProfile() {
     }
   }, [isAuthenticated, router, id, nav]);
 
-  const handleSavePress = useCallback(() => {
+  const handleSavePress = useCallback(async () => {
     if (!isAuthenticated) {
       router.push(`/login?returnTo=/specialists/${id}` as never);
       return;
     }
-    setSavedBookmark((prev) => !prev);
-    // Future: POST /api/bookmarks
-  }, [isAuthenticated, router, id]);
+    const next = !savedBookmark;
+    setSavedBookmark(next);
+    try {
+      if (next) {
+        await apiPost(`/api/saved-specialists/${id}`, {});
+      } else {
+        await apiDelete(`/api/saved-specialists/${id}`);
+      }
+    } catch {
+      // Revert on error
+      setSavedBookmark(!next);
+    }
+  }, [isAuthenticated, router, id, savedBookmark]);
 
   if (loading) {
     return (
