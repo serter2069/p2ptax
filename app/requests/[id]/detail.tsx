@@ -4,54 +4,31 @@ import {
   Text,
   ScrollView,
   Pressable,
-  ActivityIndicator,
   Alert,
   Linking,
   Platform,
   useWindowDimensions,
 } from "react-native";
-import StyledSwitch from "@/components/ui/StyledSwitch";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { File, FileImage, Download, ChevronLeft, X, Link } from "lucide-react-native";
-import StatusBadge from "@/components/StatusBadge";
+import { ChevronLeft } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
+import { type PendingFile } from "@/components/ChatComposer";
 import { api, apiPatch, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, BREAKPOINT } from "@/lib/theme";
-import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
+import { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
+
+import RequestHeader from "@/components/requests/detail/RequestHeader";
+import RequestActions from "@/components/requests/detail/RequestActions";
+import RequestDocuments from "@/components/requests/detail/RequestDocuments";
+import RequestSpecialists from "@/components/requests/detail/RequestSpecialists";
+import { RequestDetailData, FileItem } from "@/components/requests/detail/types";
 
 const FIRST_MESSAGE_MIN = 10;
 const FIRST_MESSAGE_MAX = 2000;
-
-interface FileItem {
-  id: string;
-  url: string;
-  filename: string;
-  size: number;
-  mimeType: string;
-}
-
-interface RequestDetailData {
-  id: string;
-  title: string;
-  description: string;
-  status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
-  isPublic: boolean;
-  createdAt: string;
-  lastActivityAt: string;
-  extensionsCount: number;
-  maxExtensions: number;
-  city: { id: string; name: string };
-  fns: { id: string; name: string; code: string };
-  service?: { id: string; name: string } | null;
-  files: FileItem[];
-  threadsCount: number;
-  unreadMessages: number;
-}
 
 export default function MyRequestDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -141,9 +118,6 @@ export default function MyRequestDetail() {
   }, [isAuthenticated, nav, pathname]);
 
   // Inline composer send — creates a thread (mirrors /requests/:id/write).
-  // Files are uploaded immediately on pick by FileUploadZone, so by send-time
-  // each "done" file already has its uploadedToken (single-attachment first
-  // message — limit enforced by maxFiles=1 below).
   const handleComposerSend = useCallback(async () => {
     if (!isAuthenticated) {
       nav.replaceAny({ pathname: "/login", params: { returnTo: pathname } });
@@ -195,7 +169,6 @@ export default function MyRequestDetail() {
           const existingThreadId =
             typeof err.data?.threadId === "string" ? err.data.threadId : null;
           if (existingThreadId) {
-            // Already wrote to this request — open the existing thread.
             nav.replaceAny(`/threads/${existingThreadId}`);
           } else {
             setComposerError("Запрос закрыт — сообщение отправить невозможно");
@@ -215,14 +188,7 @@ export default function MyRequestDetail() {
     } finally {
       setComposerSending(false);
     }
-  }, [
-    composerText,
-    composerFiles,
-    id,
-    isAuthenticated,
-    nav,
-    pathname,
-  ]);
+  }, [composerText, composerFiles, id, isAuthenticated, nav, pathname]);
 
   const handleCloseRequest = useCallback(async () => {
     if (closing) return;
@@ -316,57 +282,14 @@ export default function MyRequestDetail() {
   const isActive = request.status !== "CLOSED";
 
   // Service is shown in the chip only when actually selected — issue #1578.
-  // Backend may return null/undefined or an object with empty name; treat all
-  // those cases as "not selected" so the chip falls back to plain [ФНС].
   const serviceName = request.service?.name?.trim() || null;
 
   // Inline composer eligibility — specialist with completed profile, request open.
-  // Non-specialists / unauth users / closed requests don't see the composer.
   const showInlineComposer =
     isActive &&
     isAuthenticated &&
     isSpecialistUser &&
     !!user?.specialistProfileCompletedAt;
-
-  const inlineComposerSection = showInlineComposer ? (
-    <View
-      className="bg-white rounded-2xl mb-4 overflow-hidden"
-      style={{
-        shadowColor: colors.text,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-      }}
-    >
-      <View className="px-4 pt-4 pb-2">
-        <Text className="text-xs font-semibold text-text-mute mb-1 uppercase tracking-wide">
-          Написать клиенту
-        </Text>
-        <Text className="text-xs text-text-mute mb-2">
-          Минимум {FIRST_MESSAGE_MIN} символов · можно прикрепить один файл (PDF, JPG, PNG до 10 МБ)
-        </Text>
-      </View>
-      <ChatComposer
-        value={composerText}
-        onChangeText={setComposerText}
-        files={composerFiles}
-        onFilesChange={setComposerFiles}
-        onSend={handleComposerSend}
-        sending={composerSending}
-        authToken={token}
-        maxFiles={1}
-        maxLength={FIRST_MESSAGE_MAX}
-        placeholder="Напишите первое сообщение клиенту..."
-        accessibilityLabel="Сообщение клиенту"
-      />
-      {composerError ? (
-        <View className="px-4 py-2">
-          <Text className="text-xs text-danger">{composerError}</Text>
-        </View>
-      ) : null}
-    </View>
-  ) : null;
 
   // ── DESKTOP LAYOUT ────────────────────────────────────────────────────
   if (isDesktop) {
@@ -398,29 +321,12 @@ export default function MyRequestDetail() {
             <View className="flex-row gap-6" style={{ alignItems: "flex-start" }}>
               {/* LEFT: main info */}
               <View style={{ flex: 2, minWidth: 0 }}>
-                {/* Status + date */}
-                <View className="flex-row items-center mb-3 gap-3">
-                  <StatusBadge status={request.status} />
-                  <Text className="text-sm text-text-mute">{createdDate}</Text>
-                </View>
-
-                {/* Title */}
-                <Text className="text-2xl font-extrabold text-text-base mb-4">
-                  {request.title}
-                </Text>
-
-                {/* Unified FNS · service chip — issue #1578.
-                    City already lives inside FNS name (e.g. "ИФНС №1 по г. Москве"),
-                    so we never include it separately. Service is appended only
-                    when it is actually selected. */}
-                <View className="flex-row flex-wrap gap-2 mb-5">
-                  <View className="bg-white border border-border rounded-lg px-2.5 py-1">
-                    <Text className="text-xs font-medium text-text-base">
-                      {request.fns.name}
-                      {serviceName ? ` · ${serviceName}` : ""}
-                    </Text>
-                  </View>
-                </View>
+                <RequestHeader
+                  request={request}
+                  createdDate={createdDate}
+                  serviceName={serviceName}
+                  isDesktop
+                />
 
                 {/* Description */}
                 <View
@@ -441,205 +347,41 @@ export default function MyRequestDetail() {
                   </Text>
                 </View>
 
-                {/* Files — issue #1610: hide block entirely when no files attached */}
-                {request.files.length > 0 && (
-                  <View
-                    className="bg-white rounded-2xl p-5 mb-4"
-                    style={{
-                      shadowColor: colors.text,
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 8,
-                      elevation: 2,
-                    }}
-                  >
-                    <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
-                      Прикреплённые документы
-                    </Text>
-                    {request.files.map((file) => (
-                      <Pressable
-                        accessibilityRole="button"
-                        key={file.id}
-                        accessibilityLabel={`Открыть файл ${file.filename}`}
-                        onPress={() => handleFilePress(file)}
-                        className="flex-row items-center bg-surface2 rounded-xl p-3 mb-2"
-                        style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-                      >
-                        {file.mimeType === "application/pdf"
-                          ? <File size={20} color={colors.primary} />
-                          : <FileImage size={20} color={colors.primary} />
-                        }
-                        <View className="ml-3 flex-1">
-                          <Text className="text-sm text-text-base" numberOfLines={1}>
-                            {file.filename}
-                          </Text>
-                          <Text className="text-xs text-text-mute">
-                            {(file.size / 1024).toFixed(0)} КБ
-                          </Text>
-                        </View>
-                        <Download size={14} color={colors.placeholder} />
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
+                <RequestDocuments
+                  files={request.files}
+                  onFilePress={handleFilePress}
+                  isDesktop
+                />
 
-                {/* Recommended specialists feed (horizontal scroll) — issue #1550 */}
-                {recommendations.length > 0 && (
-                  <View className="mb-4">
-                    <SpecialistRecommendations
-                      recommendations={recommendations}
-                      onOpenProfile={handleOpenSpecialistProfile}
-                      onWrite={handleWriteSpecialist}
-                    />
-                  </View>
-                )}
-
-                {/* Inline message composer — issue #1566. Shown only for
-                    authenticated specialists with completed profile on
-                    non-closed requests. */}
-                {inlineComposerSection}
+                <RequestSpecialists
+                  recommendations={recommendations}
+                  onOpenProfile={handleOpenSpecialistProfile}
+                  onWrite={handleWriteSpecialist}
+                  showInlineComposer={showInlineComposer}
+                  composerText={composerText}
+                  composerFiles={composerFiles}
+                  composerSending={composerSending}
+                  composerError={composerError}
+                  authToken={token}
+                  onComposerChangeText={setComposerText}
+                  onComposerFilesChange={setComposerFiles}
+                  onComposerSend={handleComposerSend}
+                />
               </View>
 
               {/* RIGHT: actions + meta stats */}
               <View style={{ flex: 1, minWidth: 280, maxWidth: 360 }}>
-                {/* Actions card — visually prominent (border + stronger shadow) */}
-                <View
-                  className="bg-white rounded-2xl p-5 mb-4"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    shadowColor: colors.text,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.08,
-                    shadowRadius: 12,
-                    elevation: 4,
-                  }}
-                >
-                  <Text
-                    className="uppercase tracking-wide mb-3"
-                    style={{ fontSize: 13, fontWeight: "600", color: "#111" }}
-                  >
-                    Действия
-                  </Text>
-                  {isActive ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Закрыть запрос"
-                      onPress={handleCloseRequest}
-                      disabled={closing}
-                      className="flex-row items-center justify-center rounded-xl px-4"
-                      style={({ pressed }) => [
-                        {
-                          backgroundColor: colors.danger,
-                          minHeight: 48,
-                          paddingVertical: 14,
-                          shadowColor: colors.danger,
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.25,
-                          shadowRadius: 4,
-                          elevation: 3,
-                        },
-                        pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
-                      ]}
-                    >
-                      {closing ? (
-                        <ActivityIndicator color={colors.white} size="small" />
-                      ) : (
-                        <>
-                          <X size={16} color={colors.white} />
-                          <Text
-                            className="text-white ml-2"
-                            style={{ fontSize: 15, fontWeight: "600" }}
-                          >
-                            Закрыть запрос
-                          </Text>
-                        </>
-                      )}
-                    </Pressable>
-                  ) : (
-                    <View
-                      className="rounded-xl px-4 items-center"
-                      style={{
-                        backgroundColor: colors.surface2,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        minHeight: 48,
-                        paddingVertical: 14,
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, fontWeight: "500", color: "#111" }}>
-                        Запрос закрыт
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Copy link */}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Скопировать ссылку"
-                    onPress={handleCopyLink}
-                    className="flex-row items-center justify-center rounded-xl px-4 mt-2"
-                    style={({ pressed }) => [
-                      {
-                        backgroundColor: colors.surface2,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        minHeight: 48,
-                        paddingVertical: 14,
-                      },
-                      pressed && { opacity: 0.7 },
-                    ]}
-                  >
-                    <Link size={16} color={copied ? colors.success : colors.text} />
-                    <Text
-                      className="ml-2"
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: copied ? colors.success : "#111",
-                      }}
-                    >
-                      {copied ? "Скопировано!" : "Скопировать ссылку"}
-                    </Text>
-                  </Pressable>
-
-                  {/* Visibility toggle */}
-                  <View className="flex-row items-center justify-between mt-4 pt-3"
-                    style={{ borderTopWidth: 1, borderTopColor: colors.border }}
-                  >
-                    <View className="flex-1 mr-3">
-                      <View className="flex-row items-center gap-2 mb-0.5">
-                        <View
-                          className="rounded px-1.5 py-0.5"
-                          style={{
-                            backgroundColor: request.isPublic ? "#D1FAE5" : "#F3F4F6",
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              fontWeight: "600",
-                              color: request.isPublic ? "#065F46" : "#6B7280",
-                            }}
-                          >
-                            {request.isPublic ? "Доступно публично" : "Только для участников"}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
-                        {request.isPublic
-                          ? "Запрос виден всем пользователям интернета"
-                          : "Запрос виден только зарегистрированным пользователям"}
-                      </Text>
-                    </View>
-                    <StyledSwitch
-                      value={request.isPublic}
-                      onValueChange={handleToggleVisibility}
-                      disabled={togglingVisibility || !isActive}
-                    />
-                  </View>
-                </View>
+                <RequestActions
+                  request={request}
+                  isActive={isActive}
+                  closing={closing}
+                  copied={copied}
+                  togglingVisibility={togglingVisibility}
+                  onClose={handleCloseRequest}
+                  onCopyLink={handleCopyLink}
+                  onToggleVisibility={handleToggleVisibility}
+                  isDesktop
+                />
 
                 {/* Meta stats */}
                 <View
@@ -690,29 +432,11 @@ export default function MyRequestDetail() {
             </Pressable>
           </View>
           <View className="py-4">
-            {/* Status + date */}
-            <View className="flex-row items-center mb-3">
-              <StatusBadge status={request.status} />
-              <Text className="text-sm text-text-mute ml-3">{createdDate}</Text>
-            </View>
-
-            {/* Title */}
-            <Text className="text-xl font-bold text-text-base mb-3">
-              {request.title}
-            </Text>
-
-            {/* Unified FNS · service chip — issue #1578.
-                City already lives inside FNS name (e.g. "ИФНС №1 по г. Москве"),
-                so we never include it separately. Service is appended only
-                when it is actually selected. */}
-            <View className="flex-row flex-wrap gap-2 mb-4">
-              <View className="bg-white border border-border rounded-lg px-2.5 py-1">
-                <Text className="text-xs text-text-base">
-                  {request.fns.name}
-                  {serviceName ? ` · ${serviceName}` : ""}
-                </Text>
-              </View>
-            </View>
+            <RequestHeader
+              request={request}
+              createdDate={createdDate}
+              serviceName={serviceName}
+            />
 
             {/* Description */}
             <View
@@ -733,202 +457,36 @@ export default function MyRequestDetail() {
               </Text>
             </View>
 
-            {/* Files — issue #1610: hide block entirely when no files attached */}
-            {request.files.length > 0 && (
-              <View
-                className="bg-white rounded-2xl p-4 mb-4"
-                style={{
-                  shadowColor: colors.text,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 8,
-                  elevation: 2,
-                }}
-              >
-                <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
-                  Прикреплённые документы
-                </Text>
-                {request.files.map((file) => (
-                  <Pressable
-                    accessibilityRole="button"
-                    key={file.id}
-                    accessibilityLabel={`Открыть файл ${file.filename}`}
-                    onPress={() => handleFilePress(file)}
-                    className="flex-row items-center bg-surface2 rounded-xl p-3 mb-2"
-                    style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-                  >
-                    {file.mimeType === "application/pdf"
-                      ? <File size={20} color={colors.primary} />
-                      : <FileImage size={20} color={colors.primary} />
-                    }
-                    <View className="ml-3 flex-1">
-                      <Text className="text-sm text-text-base" numberOfLines={1}>
-                        {file.filename}
-                      </Text>
-                      <Text className="text-xs text-text-mute">
-                        {(file.size / 1024).toFixed(0)} КБ
-                      </Text>
-                    </View>
-                    <Download size={14} color={colors.placeholder} />
-                  </Pressable>
-                ))}
-              </View>
-            )}
+            <RequestDocuments
+              files={request.files}
+              onFilePress={handleFilePress}
+            />
 
-            {/* Recommended specialists feed (horizontal scroll) — issue #1550.
-                Placed under main info, before actions (per acceptance criteria). */}
-            {recommendations.length > 0 && (
-              <View className="mb-4">
-                <SpecialistRecommendations
-                  recommendations={recommendations}
-                  onOpenProfile={handleOpenSpecialistProfile}
-                  onWrite={handleWriteSpecialist}
-                />
-              </View>
-            )}
+            <RequestSpecialists
+              recommendations={recommendations}
+              onOpenProfile={handleOpenSpecialistProfile}
+              onWrite={handleWriteSpecialist}
+              showInlineComposer={showInlineComposer}
+              composerText={composerText}
+              composerFiles={composerFiles}
+              composerSending={composerSending}
+              composerError={composerError}
+              authToken={token}
+              onComposerChangeText={setComposerText}
+              onComposerFilesChange={setComposerFiles}
+              onComposerSend={handleComposerSend}
+            />
 
-            {/* Actions card — mobile (matches desktop, prominent border + shadow) */}
-            <View
-              className="bg-white rounded-2xl p-4 mb-4"
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                shadowColor: colors.text,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.08,
-                shadowRadius: 12,
-                elevation: 4,
-              }}
-            >
-              <Text
-                className="uppercase tracking-wide mb-3"
-                style={{ fontSize: 13, fontWeight: "600", color: "#111" }}
-              >
-                Действия
-              </Text>
-              {isActive ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Закрыть запрос"
-                  onPress={handleCloseRequest}
-                  disabled={closing}
-                  className="flex-row items-center justify-center rounded-xl px-4"
-                  style={({ pressed }) => [
-                    {
-                      backgroundColor: colors.danger,
-                      minHeight: 48,
-                      paddingVertical: 14,
-                      shadowColor: colors.danger,
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 4,
-                      elevation: 3,
-                    },
-                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
-                  ]}
-                >
-                  {closing ? (
-                    <ActivityIndicator color={colors.white} size="small" />
-                  ) : (
-                    <>
-                      <X size={16} color={colors.white} />
-                      <Text
-                        className="text-white ml-2"
-                        style={{ fontSize: 15, fontWeight: "600" }}
-                      >
-                        Закрыть запрос
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
-              ) : (
-                <View
-                  className="rounded-xl px-4 items-center"
-                  style={{
-                    backgroundColor: colors.surface2,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    minHeight: 48,
-                    paddingVertical: 14,
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: "500", color: "#111" }}>
-                    Запрос закрыт
-                  </Text>
-                </View>
-              )}
-
-              {/* Copy link */}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Скопировать ссылку"
-                onPress={handleCopyLink}
-                className="flex-row items-center justify-center rounded-xl px-4 mt-2"
-                style={({ pressed }) => [
-                  {
-                    backgroundColor: colors.surface2,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    minHeight: 48,
-                    paddingVertical: 14,
-                  },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Link size={16} color={copied ? colors.success : colors.text} />
-                <Text
-                  className="ml-2"
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: copied ? colors.success : "#111",
-                  }}
-                >
-                  {copied ? "Скопировано!" : "Скопировать ссылку"}
-                </Text>
-              </Pressable>
-
-              {/* Visibility toggle */}
-              <View className="flex-row items-center justify-between mt-4 pt-3"
-                style={{ borderTopWidth: 1, borderTopColor: colors.border }}
-              >
-                <View className="flex-1 mr-3">
-                  <View className="flex-row items-center gap-2 mb-0.5">
-                    <View
-                      className="rounded px-1.5 py-0.5"
-                      style={{
-                        backgroundColor: request.isPublic ? "#D1FAE5" : "#F3F4F6",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: "600",
-                          color: request.isPublic ? "#065F46" : "#6B7280",
-                        }}
-                      >
-                        {request.isPublic ? "Доступно публично" : "Только для участников"}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
-                    {request.isPublic
-                      ? "Запрос виден всем пользователям интернета"
-                      : "Запрос виден только зарегистрированным пользователям"}
-                  </Text>
-                </View>
-                <StyledSwitch
-                  value={request.isPublic}
-                  onValueChange={handleToggleVisibility}
-                  disabled={togglingVisibility || !isActive}
-                />
-              </View>
-            </View>
-
-            {/* Inline message composer — issue #1566. Specialist-only,
-                visible on non-closed requests for users with completed profile. */}
-            {inlineComposerSection}
+            <RequestActions
+              request={request}
+              isActive={isActive}
+              closing={closing}
+              copied={copied}
+              togglingVisibility={togglingVisibility}
+              onClose={handleCloseRequest}
+              onCopyLink={handleCopyLink}
+              onToggleVisibility={handleToggleVisibility}
+            />
 
             {/* Meta stats */}
             <View
