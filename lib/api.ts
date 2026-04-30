@@ -138,7 +138,7 @@ export function avatarUploadErrorMessage(status: number): string {
 }
 
 /**
- * Upload an avatar file. Performs client-side size pre-check, throws ApiError on
+ * Upload an avatar file (web). Performs client-side size pre-check, throws ApiError on
  * server error (with mapped Russian message), or a network ApiError(0, ...) on fetch failure.
  * Returns the absolute URL of the uploaded avatar.
  */
@@ -150,6 +150,45 @@ export async function uploadAvatarFile(file: File): Promise<string> {
   const token = await AsyncStorage.getItem(TOKEN_KEY);
   const formData = new FormData();
   formData.append("file", file);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/upload/avatar`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+  } catch {
+    throw new ApiError(0, avatarUploadErrorMessage(0));
+  }
+
+  if (!res.ok) {
+    throw new ApiError(res.status, avatarUploadErrorMessage(res.status));
+  }
+
+  const data = (await res.json()) as { url: string };
+  return data.url.startsWith("http") ? data.url : `${API_URL}${data.url}`;
+}
+
+/**
+ * Upload an avatar from a native URI (expo-document-picker / expo-image-picker asset).
+ * Uses the {uri, name, type} FormData form accepted by React Native's fetch polyfill.
+ * Returns the absolute URL of the uploaded avatar.
+ */
+export async function uploadAvatarNative(
+  uri: string,
+  name: string,
+  mimeType: string,
+  size: number,
+): Promise<string> {
+  if (size > AVATAR_MAX_BYTES) {
+    throw new ApiError(413, avatarUploadErrorMessage(413));
+  }
+
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const formData = new FormData();
+  // React Native fetch accepts {uri, name, type} as a Blob substitute
+  formData.append("file", { uri, name, type: mimeType } as unknown as Blob);
 
   let res: Response;
   try {

@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { Pencil } from "lucide-react-native";
+import * as DocumentPicker from "expo-document-picker";
 import {
   ApiError,
   AVATAR_MAX_BYTES,
@@ -16,6 +17,7 @@ import {
   AVATAR_TOO_LARGE_MESSAGE,
   avatarUploadErrorMessage,
   uploadAvatarFile,
+  uploadAvatarNative,
 } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
@@ -108,9 +110,49 @@ export default function AvatarUploader({
     }
   };
 
-  const handleAvatarPress = () => {
-    if (Platform.OS === "web" && fileInputRef.current) {
-      fileInputRef.current.click();
+  const handleAvatarPress = async () => {
+    if (Platform.OS === "web") {
+      fileInputRef.current?.click();
+      return;
+    }
+    // Native: use expo-document-picker to pick an image from gallery/files
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/jpeg", "image/png", "image/webp"],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      const fileSize = asset.size ?? 0;
+      if (fileSize > AVATAR_MAX_BYTES) {
+        Alert.alert(AVATAR_TOO_LARGE_TITLE, AVATAR_TOO_LARGE_MESSAGE);
+        return;
+      }
+      setErrorMessage(null);
+      onUploadStart();
+      try {
+        const fullUrl = await uploadAvatarNative(
+          asset.uri,
+          asset.name,
+          asset.mimeType ?? "image/jpeg",
+          fileSize,
+        );
+        onAvatarChange(fullUrl);
+      } catch (e: unknown) {
+        const status = e instanceof ApiError ? e.status : -1;
+        const msg =
+          e instanceof ApiError ? e.message : avatarUploadErrorMessage(-1);
+        if (status === 413) {
+          Alert.alert(AVATAR_TOO_LARGE_TITLE, AVATAR_TOO_LARGE_MESSAGE);
+        } else {
+          setErrorMessage(msg);
+        }
+      } finally {
+        onUploadEnd();
+      }
+    } catch {
+      // picker cancelled or unavailable
     }
   };
 

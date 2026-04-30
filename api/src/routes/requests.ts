@@ -570,8 +570,8 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const id = req.params.id as string;
 
-    // Whitelist: only title and description are editable
-    const ALLOWED_KEYS = ["title", "description"];
+    // Whitelist: title, description, isPublic are editable
+    const ALLOWED_KEYS = ["title", "description", "isPublic"];
     const bodyKeys = Object.keys(req.body);
     const unknownKeys = bodyKeys.filter((k) => !ALLOWED_KEYS.includes(k));
     if (unknownKeys.length > 0) {
@@ -579,11 +579,11 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const { title, description } = req.body;
+    const { title, description, isPublic } = req.body;
 
     // At least one field must be provided
-    if (title === undefined && description === undefined) {
-      res.status(400).json({ error: "At least one field (title or description) is required" });
+    if (title === undefined && description === undefined && isPublic === undefined) {
+      res.status(400).json({ error: "At least one field (title, description, or isPublic) is required" });
       return;
     }
 
@@ -601,6 +601,12 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
         res.status(400).json({ error: "Description must be 10-2000 characters" });
         return;
       }
+    }
+
+    // Validate isPublic if provided
+    if (isPublic !== undefined && typeof isPublic !== "boolean") {
+      res.status(400).json({ error: "isPublic must be a boolean" });
+      return;
     }
 
     const request = await prisma.request.findUnique({ where: { id } });
@@ -623,11 +629,12 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
     const data: Record<string, unknown> = {};
     if (title !== undefined) data.title = stripHtml(title);
     if (description !== undefined) data.description = stripHtml(description);
+    if (isPublic !== undefined) data.isPublic = isPublic;
 
     const updated = await prisma.request.update({
       where: { id },
       data,
-      select: { id: true, title: true, description: true, status: true },
+      select: { id: true, title: true, description: true, status: true, isPublic: true },
     });
 
     res.json(updated);
