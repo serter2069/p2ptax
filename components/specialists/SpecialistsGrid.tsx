@@ -54,6 +54,7 @@ interface Props {
   onLoadMore: () => void;
   onPress: (id: string) => void;
   onBookmark: (id: string) => void;
+  onWrite?: (id: string) => void;
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
@@ -69,12 +70,14 @@ function DesktopSpecialistRow({
   onPress,
   bookmarked,
   onBookmark,
+  onWrite,
   activeFnsId,
 }: {
   item: SpecialistItem;
   onPress: (id: string) => void;
   bookmarked: boolean;
   onBookmark: (id: string) => void;
+  onWrite?: (id: string) => void;
   activeFnsId?: string | null;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -269,7 +272,8 @@ function DesktopSpecialistRow({
             accessibilityLabel="Написать"
             onPress={(e) => {
               e.stopPropagation?.();
-              onPress(item.id);
+              if (onWrite) onWrite(item.id);
+              else onPress(item.id);
             }}
             style={({ pressed }) => [
               {
@@ -383,6 +387,7 @@ export default function SpecialistsGrid({
   onLoadMore,
   onPress,
   onBookmark,
+  onWrite,
   onScroll,
 }: Props) {
   // On desktop we always render 1 column of horizontal rows
@@ -407,6 +412,7 @@ export default function SpecialistsGrid({
             onPress={onPress}
             bookmarked={bookmarkedIds.has(item.id)}
             onBookmark={onBookmark}
+            onWrite={onWrite}
             activeFnsId={activeFnsId}
           />
         )}
@@ -464,6 +470,7 @@ export default function SpecialistsGrid({
             onPress={onPress}
             onBookmark={onBookmark}
             bookmarked={bookmarkedIds.has(item.id)}
+            onWrite={onWrite}
             variant="vertical"
             activeFnsId={activeFnsId}
           />

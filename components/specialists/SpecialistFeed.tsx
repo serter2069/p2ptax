@@ -350,6 +350,25 @@ export default function SpecialistFeed({ mode }: SpecialistFeedProps) {
     [nav]
   );
 
+  const handleWrite = useCallback(
+    async (specialistId: string) => {
+      if (!isAuthenticated) {
+        nav.routes.login();
+        return;
+      }
+      try {
+        const res = await apiPost<{ threadId: string; created: boolean }>(
+          "/api/threads/direct",
+          { specialistId }
+        );
+        nav.any(`/threads/${res.threadId}`);
+      } catch {
+        nav.dynamic.specialist(specialistId);
+      }
+    },
+    [nav, isAuthenticated]
+  );
+
   // ── Bookmark toggle ──
   const handleBookmark = useCallback(
     async (id: string) => {
@@ -514,6 +533,7 @@ export default function SpecialistFeed({ mode }: SpecialistFeedProps) {
         onLoadMore={handleLoadMore}
         onPress={handleSpecialistPress}
         onBookmark={handleBookmark}
+        onWrite={handleWrite}
         onScroll={handleScroll}
       />
     );

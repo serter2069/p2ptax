@@ -534,6 +534,55 @@ router.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/threads/direct — get or create a direct thread between caller and a specialist
+// Used by the catalog "Написать" button: no requestId, no firstMessage required.
+router.post("/direct", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { specialistId } = req.body as { specialistId?: string };
+
+    if (!specialistId || typeof specialistId !== "string") {
+      res.status(400).json({ error: "specialistId is required" });
+      return;
+    }
+
+    if (userId === specialistId) {
+      res.status(400).json({ error: "Cannot start a thread with yourself" });
+      return;
+    }
+
+    const specialist = await prisma.user.findUnique({
+      where: { id: specialistId },
+      select: { id: true, isSpecialist: true },
+    });
+
+    if (!specialist || !specialist.isSpecialist) {
+      res.status(404).json({ error: "Specialist not found" });
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existing = await (prisma.thread as any).findFirst({
+      where: { requestId: null, clientId: userId, specialistId },
+    }) as { id: string } | null;
+
+    if (existing) {
+      res.json({ threadId: existing.id, created: false });
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const thread = await (prisma.thread as any).create({
+      data: { requestId: null, clientId: userId, specialistId },
+    }) as { id: string };
+
+    res.status(201).json({ threadId: thread.id, created: true });
+  } catch (error) {
+    console.error("threads/direct error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/threads — create thread with first message (specialist only)
 router.post("/", async (req: Request, res: Response) => {
   try {
@@ -680,7 +729,7 @@ router.post("/", async (req: Request, res: Response) => {
     sendNotification({
       userId: request.userId,
       type: "new_message_from_specialist",
-      title: `Новое сообщение от специалиста по запросу «${thread.request.title}»`,
+      title: `Новое сообщение от специалиста по запросу «${thread.request?.title ?? ""}»`,
       body: firstMessage.slice(0, 200),
       entityId: thread.id,
     }).catch((err: Error) => console.warn("[notifications] new_message_from_specialist trigger failed:", err.message));
