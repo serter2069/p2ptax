@@ -229,25 +229,14 @@ export default function MyRequestDetail() {
                   {request.title}
                 </Text>
 
-                {/* FNS + service chips — prominent */}
+                {/* Unified FNS · service chip (city is already inside FNS name) */}
                 <View className="flex-row flex-wrap gap-2 mb-5">
-                  <View className="bg-accent-soft border border-accent rounded-xl px-3 py-1.5">
-                    <Text className="text-sm font-semibold text-accent">
-                      {request.city.name}
+                  <View className="bg-white border border-border rounded-lg px-2.5 py-1">
+                    <Text className="text-xs font-medium text-text-base">
+                      {request.fns.name}
+                      {request.service ? ` · ${request.service.name}` : ""}
                     </Text>
                   </View>
-                  <View className="bg-white border border-border rounded-xl px-3 py-1.5">
-                    <Text className="text-sm font-medium text-text-base">
-                      {request.fns.name} ({request.fns.code})
-                    </Text>
-                  </View>
-                  {request.service && (
-                    <View className="bg-white border border-border rounded-xl px-3 py-1.5">
-                      <Text className="text-sm font-medium text-text-base">
-                        {request.service.name}
-                      </Text>
-                    </View>
-                  )}
                 </View>
 
                 {/* Description */}
@@ -490,21 +479,14 @@ export default function MyRequestDetail() {
               {request.title}
             </Text>
 
-            {/* City + FNS chips */}
+            {/* Unified FNS · service chip (city is already inside FNS name) */}
             <View className="flex-row flex-wrap gap-2 mb-4">
-              <View className="bg-accent-soft border border-accent rounded-lg px-3 py-1">
-                <Text className="text-sm font-semibold text-accent">{request.city.name}</Text>
-              </View>
-              <View className="bg-white border border-border px-3 py-1 rounded-lg">
-                <Text className="text-sm text-text-base">
-                  {request.fns.name} ({request.fns.code})
+              <View className="bg-white border border-border rounded-lg px-2.5 py-1">
+                <Text className="text-xs text-text-base">
+                  {request.fns.name}
+                  {request.service ? ` · ${request.service.name}` : ""}
                 </Text>
               </View>
-              {request.service && (
-                <View className="bg-white border border-border px-3 py-1 rounded-lg">
-                  <Text className="text-sm text-text-base">{request.service.name}</Text>
-                </View>
-              )}
             </View>
 
             {/* Description */}

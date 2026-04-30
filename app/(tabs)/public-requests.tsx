@@ -72,7 +72,7 @@ export default function SpecialistPublicRequests() {
   const isDesktop = width >= BREAKPOINT;
   const { ready, isLoading: authLoading, isAuthenticated } = useRequireAuth();
   const { isSpecialistUser } = useAuth();
-  const segments = useSegments();
+  const segments = useSegments() as string[];
 
   // Only redirect away when the user is actually on this screen (active tab).
   // Without the segment guard this effect fires for background tab instances
