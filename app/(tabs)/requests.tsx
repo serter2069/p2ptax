@@ -459,7 +459,7 @@ export default function MyRequests() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <DesktopScreen>
         <View className="flex-row items-center justify-between mb-4">
-          <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
+          <Text className="text-xl font-bold text-text-base">Мои запросы</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"

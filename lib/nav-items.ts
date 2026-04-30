@@ -80,7 +80,7 @@ export const USER_BASE_ITEMS: NavItem[] = [
       (ctx.segments[0] === "(tabs)" && !ctx.segments[1]),
   },
   {
-    label: "Мои заявки",
+    label: "Мои запросы",
     href: "/(tabs)/requests",
     icon: FileText,
     match: (ctx) => groupMatch(ctx, "(tabs)", "requests"),

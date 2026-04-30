@@ -20,7 +20,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import RequestCard from "@/components/RequestCard";
 import { api } from "@/lib/api";
-import { colors, overlay, textStyle, BREAKPOINT } from "@/lib/theme";
+import { colors, textStyle, BREAKPOINT } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -217,11 +217,7 @@ export default function PublicRequestsFeed() {
     <SafeAreaView className="flex-1 bg-surface2">
       {/* Accent hero */}
       <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
-        <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>Открытые заявки</Text>
-        <Text style={{ ...textStyle.small, color: overlay.white90 }}>Задайте вопрос — получите предложения от специалистов</Text>
-        {total > 0 && (
-          <Text className="text-sm font-semibold text-white mt-2">{total} активных заявок</Text>
-        )}
+        <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>Запросы</Text>
       </View>
 
       {/* Filter bar: city → FNS cascade + services chips */}
