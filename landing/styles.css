@@ -32,10 +32,10 @@ body.modal-open .tweaks-btn { display: none !important; }
   --accent-ink: #ffffff;
   --accent-soft: #e8eefb;
   --accent-soft-ink: #1b3d8a;
-  --cta: #1f4cb0;
-  --cta-hover: #173d93;
+  --cta: #1e3a8a;
+  --cta-hover: #2563eb;
   --danger: #c6365a;
-  --success: #1f8a5e;
+  --success: #166534;
 
   --radius-sm: 6px;
   --radius: 10px;
@@ -557,18 +557,18 @@ img, svg { display: block; max-width: 100%; }
   min-height: 44px;
   border-radius: 999px;
   font-size: 13px;
-  color: var(--text-mute);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  color: var(--text);
+  background: #f0f0f0;
+  border: 1px solid var(--line-strong);
   cursor: pointer;
   transition: all .15s ease;
   font-family: var(--fs-sans);
 }
-.chip:hover { color: var(--text); border-color: var(--line-strong); }
+.chip:hover { color: var(--text); border-color: var(--text-mute); background: #e4e4e4; }
 .chip.active {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
+  background: var(--cta);
+  color: #ffffff;
+  border-color: var(--cta);
 }
 .chip .close { opacity: .6; }
 
