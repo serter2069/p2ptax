@@ -139,11 +139,28 @@ export default function SpecialistCard({
       onPress={() => onPress(id)}
       className="bg-white border border-border rounded-2xl p-3 mb-3"
       style={({ pressed }) => [
-        { shadowColor: colors.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+        { position: 'relative', shadowColor: colors.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
         pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
       ]}
     >
-      {/* Row 1: avatar + name + "На сайте с YYYY" + bookmark */}
+      {/* Bookmark: absolute top-right corner */}
+      {onBookmark && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={bookmarked ? "Убрать из сохранённых" : "Сохранить"}
+          onPress={(e) => { e.stopPropagation?.(); onBookmark(id); }}
+          hitSlop={8}
+          style={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}
+        >
+          <Bookmark
+            size={18}
+            color={bookmarked ? colors.primary : colors.textMuted}
+            fill={bookmarked ? colors.primary : "none"}
+          />
+        </Pressable>
+      )}
+
+      {/* Row 1: avatar + name + city (same line) */}
       <View className="flex-row items-center" style={{ gap: 10 }}>
         {avatarUrl ? (
           <Image
@@ -178,21 +195,6 @@ export default function SpecialistCard({
             </Text>
           ) : null}
         </View>
-
-        {onBookmark && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={bookmarked ? "Убрать из сохранённых" : "Сохранить"}
-            onPress={(e) => { e.stopPropagation?.(); onBookmark(id); }}
-            hitSlop={8}
-          >
-            <Bookmark
-              size={18}
-              color={bookmarked ? colors.primary : colors.textMuted}
-              fill={bookmarked ? colors.primary : "none"}
-            />
-          </Pressable>
-        )}
       </View>
 
       {/* Cascade rows: city · FNS + service chips per group */}
