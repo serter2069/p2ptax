@@ -72,9 +72,10 @@ export const topLevelMatch = (ctx: MatchContext, prefix: string): boolean => {
 export const USER_BASE_ITEMS: NavItem[] = [
   {
     label: "Дашборд",
-    href: "/(tabs)",
+    href: "/(tabs)/dashboard",
     icon: LayoutGrid,
     match: (ctx) =>
+      groupMatch(ctx, "(tabs)", "dashboard") ||
       groupMatch(ctx, "(tabs)", "index") ||
       (ctx.segments[0] === "(tabs)" && !ctx.segments[1]),
   },
