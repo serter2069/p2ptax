@@ -105,8 +105,9 @@ export default function RootLayout() {
             <Stack.Screen name="login" />
             <Stack.Screen name="otp" />
 
-            {/* Onboarding */}
+            {/* Onboarding — order: name → visibility → work-area → profile (#1602) */}
             <Stack.Screen name="onboarding/name" />
+            <Stack.Screen name="onboarding/visibility" />
             <Stack.Screen name="onboarding/work-area" />
             <Stack.Screen name="onboarding/profile" />
 
