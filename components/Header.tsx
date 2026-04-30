@@ -1,4 +1,4 @@
-import { View, Text, Pressable, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, useWindowDimensions, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { Menu, Bell } from "lucide-react-native";
@@ -32,7 +32,7 @@ export default function Header() {
             <Menu size={20} color={colors.text} />
           </Pressable>
 
-          <Text className="text-lg font-bold" style={{ color: colors.primary }}>P2PTax</Text>
+          <Image source={require("@/assets/images/logo.png")} resizeMode="contain" style={{ height: 28, width: 96 }} accessibilityLabel="P2PTax" />
 
           {isAuthenticated ? (
             <View className="flex-row items-center gap-3">
@@ -79,7 +79,7 @@ export default function Header() {
   return (
     <View className="flex-row items-center justify-between px-6 h-16 bg-white border-b" style={{ borderBottomColor: colors.border }}>
       <Pressable accessibilityRole="button" accessibilityLabel="Главная" onPress={() => nav.routes.home()} className="px-2 items-center justify-center" style={{ minHeight: 44 }}>
-        <Text className="text-xl font-bold" style={{ color: colors.primary }}>P2PTax</Text>
+        <Image source={require("@/assets/images/logo.png")} resizeMode="contain" style={{ height: 28, width: 96 }} accessibilityLabel="P2PTax" />
       </Pressable>
 
       {/* Desktop nav links */}

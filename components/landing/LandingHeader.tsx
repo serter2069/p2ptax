@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Image } from "react-native";
 import { colors, overlay } from "@/lib/theme";
 
 interface LandingHeaderProps {
@@ -55,25 +55,12 @@ export default function LandingHeader({
           onPress={onHome}
           className="flex-row items-center"
         >
-          <View
-            className="rounded-lg items-center justify-center"
-            style={{
-              width: 28,
-              height: 28,
-              backgroundColor: colors.primary,
-              marginRight: 10,
-            }}
-          >
-            <Text className="text-white font-extrabold" style={{ fontSize: 15 }}>
-              P
-            </Text>
-          </View>
-          <Text
-            className="font-extrabold"
-            style={{ color: colors.text, fontSize: 18, letterSpacing: -0.3 }}
-          >
-            P2PTax
-          </Text>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            resizeMode="contain"
+            style={{ height: 32, width: 110 }}
+            accessibilityLabel="P2PTax"
+          />
         </Pressable>
 
         <View className="flex-row items-center" style={{ gap: isDesktop ? 8 : 4 }}>
