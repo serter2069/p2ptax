@@ -14,8 +14,6 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import * as Linking from "expo-linking";
-import * as DocumentPicker from "expo-document-picker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { FileText, ChevronRight } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
@@ -175,12 +173,6 @@ function nameInInstrumental(fullName: string): string {
     .join(" ");
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 interface InlineChatViewProps {
   threadId: string;
 }
@@ -199,7 +191,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const [thread, setThread] = useState<ThreadInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [text, setText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -208,11 +199,8 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const [oldestMessageId, setOldestMessageId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
 
-  const [dragOver, setDragOver] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const chatContainerRef = useRef<View | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isClosed = thread?.request?.status === "CLOSED";
   const myId = user?.id;
@@ -307,135 +295,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     };
   }, [fetchMessages]);
 
-  const handleAttachFile = useCallback(async () => {
-    if (pendingFiles.length >= 3) {
-      Alert.alert("Лимит файлов", "Можно прикрепить не более 3 файлов");
-      return;
-    }
-    if (Platform.OS === "web") {
-      fileInputRef.current?.click();
-      return;
-    }
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf", "image/jpeg", "image/png"],
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-      const asset = result.assets[0];
-      const fileSize = asset.size ?? 0;
-      if (fileSize > 10 * 1024 * 1024) {
-        Alert.alert("Файл слишком большой", "Максимальный размер файла — 10 МБ");
-        return;
-      }
-      setPendingFiles((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          uri: asset.uri,
-          name: asset.name,
-          size: fileSize,
-          mimeType: asset.mimeType ?? "application/octet-stream",
-          status: "pending" as const,
-        },
-      ]);
-    } catch (e) {
-      // ignore
-    }
-  }, [pendingFiles.length]);
-
-  const handleRemovePendingFile = useCallback((index: number) => {
-    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const handleWebFileDrop = useCallback(async (file: File) => {
-    const MAX_SIZE = 10 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      if (typeof window !== "undefined" && typeof window.alert === "function") {
-        window.alert("Файл слишком большой\n\nМаксимум 10 МБ");
-      }
-      return;
-    }
-    if (pendingFiles.length >= 3) {
-      if (typeof window !== "undefined" && typeof window.alert === "function") {
-        window.alert("Лимит файлов\n\nМожно прикрепить не более 3 файлов");
-      }
-      return;
-    }
-    const pending: PendingFile = {
-      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      uri: URL.createObjectURL(file),
-      name: file.name,
-      mimeType: file.type || "application/octet-stream",
-      size: file.size,
-      webFile: file,
-      status: "pending",
-    };
-    setPendingFiles((prev) => [...prev, pending]);
-  }, [pendingFiles.length]);
-
-  // Web-only: real drag-and-drop on the entire chat container.
-  // RN-Web's `onDragOver`/`onDrop` View props are not always reliably wired,
-  // so we attach native DOM listeners on the underlying element instead.
-  useEffect(() => {
-    if (Platform.OS !== "web") return;
-    const node = chatContainerRef.current as unknown as HTMLElement | null;
-    if (!node || typeof node.addEventListener !== "function") return;
-
-    const onDragOver = (e: DragEvent) => {
-      e.preventDefault();
-      setDragOver(true);
-    };
-    const onDragLeave = (e: DragEvent) => {
-      // Only hide overlay when cursor leaves the container entirely,
-      // not when crossing into a child element.
-      if (!node.contains(e.relatedTarget as Node)) setDragOver(false);
-    };
-    const onDrop = (e: DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      const files = Array.from(e.dataTransfer?.files ?? []);
-      files.slice(0, 3).forEach((f) => handleWebFileDrop(f));
-    };
-
-    node.addEventListener("dragover", onDragOver);
-    node.addEventListener("dragleave", onDragLeave);
-    node.addEventListener("drop", onDrop);
-    return () => {
-      node.removeEventListener("dragover", onDragOver);
-      node.removeEventListener("dragleave", onDragLeave);
-      node.removeEventListener("drop", onDrop);
-    };
-  }, [handleWebFileDrop]);
-
-  const uploadChatFile = useCallback(async (file: PendingFile, tid: string): Promise<string> => {
-    const uploadToken = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const formData = new FormData();
-    if (Platform.OS === "web" && file.webFile) {
-      // On web, append the actual File so the browser sets correct
-      // Content-Type/boundary and serializes the binary payload.
-      formData.append("file", file.webFile, file.name);
-    } else {
-      formData.append("file", {
-        uri: file.uri,
-        name: file.name,
-        type: file.mimeType,
-      } as unknown as Blob);
-    }
-    formData.append("uploadToken", uploadToken);
-    formData.append("threadId", tid);
-    const token = await AsyncStorage.getItem("p2ptax_access_token");
-    const res = await fetch(`${API_URL}/api/upload/chat-file`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
-    if (!res.ok) throw new Error("Ошибка загрузки файла");
-    const data = (await res.json()) as { uploadToken: string };
-    return data.uploadToken;
-  }, []);
-
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if ((!trimmed && pendingFiles.length === 0) || sending || !threadId) return;
@@ -468,15 +327,29 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       return;
     }
 
+    // Files are uploaded immediately on pick by FileUploadZone, so by send-time
+    // each "done" file already has its uploadedToken. Only the first done file
+    // is sent (single-attachment messages — limit enforced upstream by maxFiles=3).
+    const readyFile = pendingFiles.find(
+      (f) => f.status === "done" && f.uploadedToken
+    );
+    const uploadToken = readyFile?.uploadedToken;
+
+    // Block send if user attached a file that is still uploading or errored.
+    const stillBusy = pendingFiles.some(
+      (f) => f.status === "uploading" || f.status === "pending"
+    );
+    if (stillBusy) {
+      if (Platform.OS === "web") {
+        window.alert("Файл ещё загружается. Подождите.");
+      } else {
+        Alert.alert("Подождите", "Файл ещё загружается");
+      }
+      return;
+    }
+
     setSending(true);
     try {
-      let uploadToken: string | undefined;
-      if (pendingFiles.length > 0) {
-        setUploading(true);
-        uploadToken = await uploadChatFile(pendingFiles[0], threadId);
-        setUploading(false);
-      }
-
       const res = await apiPost<{ message: MessageItem }>(`/api/messages/${threadId}`, {
         text: trimmed,
         ...(uploadToken ? { uploadToken } : {}),
@@ -488,7 +361,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (e: unknown) {
-      setUploading(false);
       const msg = e instanceof Error ? e.message : "Ошибка отправки";
       if (Platform.OS === "web") {
         if (typeof window !== "undefined" && typeof window.alert === "function") {
@@ -500,7 +372,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     } finally {
       setSending(false);
     }
-  }, [text, pendingFiles, sending, threadId, uploadChatFile, isSpecialistUser, user?.specialistProfileCompletedAt]);
+  }, [text, pendingFiles, sending, threadId, isSpecialistUser, user?.specialistProfileCompletedAt]);
 
   const handleFilePress = useCallback((file: FileAttachment) => {
     const fullUrl = file.url.startsWith("http") ? file.url : `${API_URL}${file.url}`;
@@ -621,51 +493,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const canViewSpecialistProfile = thread && myId && thread.clientId === myId;
 
   return (
-    <View ref={chatContainerRef} className="flex-1 bg-white">
-      {/* Hidden web file input — opened by paperclip Pressable on web */}
-      {Platform.OS === "web" && (
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
-          style={{ display: "none" }}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            const files = Array.from(e.target.files ?? []);
-            const slots = Math.max(0, 3 - pendingFiles.length);
-            files.slice(0, slots).forEach((f) => handleWebFileDrop(f));
-            // Reset so picking the same file twice still fires onChange.
-            e.target.value = "";
-          }}
-        />
-      )}
-
-      {/* Drag-over overlay covering the whole chat area */}
-      {dragOver && Platform.OS === "web" && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 100,
-            backgroundColor: "rgba(59,130,246,0.08)",
-            borderWidth: 2,
-            borderColor: colors.primary,
-            borderStyle: "dashed",
-            borderRadius: 12,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          pointerEvents="none"
-        >
-          <Text style={{ color: colors.primary, fontSize: 16, fontWeight: "600" }}>
-            Перетащите файлы сюда
-          </Text>
-        </View>
-      )}
-
+    <View className="flex-1 bg-white">
       {/* Header with avatar + other party name + perspective badge + counterparty hint */}
       <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
         {!isDesktop && (
@@ -900,50 +728,21 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           </View>
         )}
 
-        {/* Pending files preview strip */}
-        {pendingFiles.length > 0 && (
-          <View className="flex-row flex-wrap px-3 py-2 border-t border-border bg-surface2">
-            {pendingFiles.map((f, i) => (
-              <View
-                key={i}
-                className="flex-row items-center bg-white border border-border rounded-lg px-2 py-1 mr-2 mb-1"
-              >
-                <FontAwesome name="file-o" size={13} color={colors.primary} />
-                <Text className="text-xs mx-1 max-w-[90px]" style={{ color: colors.text }} numberOfLines={1}>
-                  {f.name}
-                </Text>
-                <Text className="text-xs mr-1" style={{ color: colors.textSecondary }}>{formatFileSize(f.size)}</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => handleRemovePendingFile(i)}
-                  accessibilityLabel={`Удалить файл ${f.name}`}
-                  style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-                >
-                  <FontAwesome name="times" size={11} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Input bar */}
+        {/* Input bar — paperclip + chip strip + drag overlay live inside FileUploadZone (compact) */}
         {!isClosed && (
           <View className="flex-row items-end border-t border-border px-3 py-2 bg-white">
-            {/* Attach button */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Прикрепить файл (PDF, JPG, PNG — до 10 МБ, не более 3)"
-              onPress={handleAttachFile}
-              disabled={pendingFiles.length >= 3 || sending}
-              className="w-11 h-11 items-center justify-center mr-1"
-              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-            >
-              <FontAwesome
-                name="paperclip"
-                size={20}
-                color={pendingFiles.length >= 3 ? colors.border : colors.textSecondary}
-              />
-            </Pressable>
+            {/* Shared upload control: paperclip button, chip preview strip,
+                immediate upload to /api/upload/chat-file, drag-and-drop overlay. */}
+            <FileUploadZone
+              files={pendingFiles}
+              onFilesChange={setPendingFiles}
+              uploadEndpoint="/api/upload/chat-file"
+              authToken={token}
+              maxFiles={3}
+              maxSizeMB={10}
+              compact
+              disabled={sending}
+            />
 
             {/* Text input — strip Input's bottom underline; the chat-strip's
                 top border (border-t border-border on parent) is the only
@@ -976,7 +775,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
               className="w-11 h-11 items-center justify-center ml-2"
               style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
-              {sending || uploading ? (
+              {sending ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <FontAwesome
