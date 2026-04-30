@@ -17,13 +17,12 @@ import * as Linking from "expo-linking";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { FileText, ChevronRight } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
+import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
 import { Avatar } from "@/components/ui";
-import Input from "@/components/ui/Input";
 import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
-import FileUploadZone, { type PendingFile } from "@/components/ui/FileUploadZone";
 import { API_URL, api, apiPost, apiPatch, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { colors, radiusValue } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 
 
 interface FileAttachment {
@@ -728,64 +727,17 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           </View>
         )}
 
-        {/* Input bar — paperclip + chip strip + drag overlay live inside FileUploadZone (compact) */}
+        {/* Unified chat composer (text + files + drag-and-drop). */}
         {!isClosed && (
-          <View className="flex-row items-end border-t border-border px-3 py-2 bg-white">
-            {/* Shared upload control: paperclip button, chip preview strip,
-                immediate upload to /api/upload/chat-file, drag-and-drop overlay. */}
-            <FileUploadZone
-              files={pendingFiles}
-              onFilesChange={setPendingFiles}
-              uploadEndpoint="/api/upload/chat-file"
-              authToken={token}
-              maxFiles={3}
-              maxSizeMB={10}
-              compact
-              disabled={sending}
-            />
-
-            {/* Text input — strip Input's bottom underline; the chat-strip's
-                top border (border-t border-border on parent) is the only
-                visible edge, otherwise web shows a stacked double-border. */}
-            <Input
-              accessibilityLabel="Введите сообщение"
-              placeholder="Введите сообщение..."
-              value={text}
-              onChangeText={setText}
-              multiline
-              maxLength={5000}
-              style={{ flex: 1 }}
-              containerStyle={{
-                borderRadius: radiusValue.xl,
-                minHeight: 40,
-                maxHeight: 120,
-                borderBottomWidth: 0,
-                borderTopWidth: 0,
-                borderLeftWidth: 0,
-                borderRightWidth: 0,
-              }}
-            />
-
-            {/* Send button */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Отправить сообщение"
-              onPress={handleSend}
-              disabled={(!text.trim() && pendingFiles.length === 0) || sending}
-              className="w-11 h-11 items-center justify-center ml-2"
-              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-            >
-              {sending ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <FontAwesome
-                  name="send"
-                  size={20}
-                  color={(text.trim() || pendingFiles.length > 0) ? colors.primary : colors.textSecondary}
-                />
-              )}
-            </Pressable>
-          </View>
+          <ChatComposer
+            value={text}
+            onChangeText={setText}
+            files={pendingFiles}
+            onFilesChange={setPendingFiles}
+            onSend={handleSend}
+            sending={sending}
+            authToken={token}
+          />
         )}
       </KeyboardAvoidingView>
 
