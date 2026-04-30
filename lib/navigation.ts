@@ -31,9 +31,9 @@ export const ROUTES = {
   notifications: "/notifications",
 
   // Tabs (user)
-  tabs: "/(tabs)/dashboard",
-  tabsHome: "/(tabs)/dashboard",
-  dashboard: "/(tabs)/dashboard",
+  tabs: "/(tabs)/my-requests",
+  tabsHome: "/(tabs)/my-requests",
+  dashboard: "/(tabs)/my-requests",
   tabsRequests: "/(tabs)/my-requests",
   tabsMessages: "/(tabs)/messages",
   tabsPublicRequests: "/(tabs)/public-requests",
