@@ -214,7 +214,7 @@ export default function PublicRequestsFeed() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       {/* Accent hero */}
-      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
+      <View className="bg-accent px-4 py-4">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Назад"

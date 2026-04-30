@@ -79,9 +79,17 @@ export default function SpecialistCard({
         className="bg-white border border-border rounded-xl p-4 mr-3"
         style={({ pressed }) => [{ maxWidth: 200, flex: 1 }, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
       >
-        <View className="w-12 h-12 rounded-full items-center justify-center mb-2" style={{ backgroundColor: colors.primary }}>
-          <Text className="text-white font-bold text-base">{initials}</Text>
-        </View>
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            className="w-12 h-12 rounded-full mb-2"
+            accessibilityLabel={name}
+          />
+        ) : (
+          <View className="w-12 h-12 rounded-full items-center justify-center mb-2" style={{ backgroundColor: colors.primary }}>
+            <Text className="text-white font-bold text-base">{initials}</Text>
+          </View>
+        )}
         <Text className="text-base font-semibold mb-1" style={{ color: colors.text }} numberOfLines={1}>
           {name}
         </Text>

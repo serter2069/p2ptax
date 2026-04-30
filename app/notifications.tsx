@@ -74,10 +74,13 @@ function NotificationRow({
       className="active:bg-surface2"
     >
       <View
-        className={`flex-row items-start px-4 py-4 bg-white border border-border rounded-xl mb-3${
-          !item.isRead ? " border-l-2" : ""
-        }`}
-        style={!item.isRead ? { borderLeftColor: colors.primary } : undefined}
+        className="flex-row items-start px-4 py-4 bg-white rounded-xl mb-3"
+        style={{
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderLeftWidth: !item.isRead ? 3 : 1,
+          borderLeftColor: !item.isRead ? colors.primary : colors.border,
+        }}
       >
         {/* Icon chip */}
         <View
@@ -246,7 +249,7 @@ export default function NotificationsScreen() {
       </View>
 
       {/* Accent hero */}
-      <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}>
+      <View className="bg-accent px-4 pt-5 pb-5">
         <Text className="text-xl font-bold text-white mb-0.5">Ваши уведомления</Text>
         <Text className="text-sm" style={{ color: overlay.white90 }}>Сообщения о новых ответах, запросах и обновлениях</Text>
         <View className="flex-row mt-4 gap-3">

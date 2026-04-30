@@ -271,7 +271,7 @@ export default function UserDashboard() {
             isSpecialistUser ? (
               <View className="flex-row items-center gap-2 bg-white border border-border rounded-full px-3 py-2">
                 <Text className="text-text-mute text-xs">Принимаю запросы</Text>
-                <View style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+                <View className="min-w-[44px] min-h-[44px] items-center justify-center">
                   <Switch
                     value={isAvailable}
                     onValueChange={handleToggleAvailability}

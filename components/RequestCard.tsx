@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Image } from "react-native";
 import StatusBadge from "./StatusBadge";
 import { colors, AVATAR_COLORS } from "@/lib/theme";
 import { pluralizeRu } from "@/lib/ru";
@@ -84,17 +84,21 @@ export default function RequestCard({
       {/* Header row: avatar + name + date + status */}
       <View className="flex-row items-center mb-2" style={{ gap: 8 }}>
         {/* Avatar */}
-        <View
-          className="items-center justify-center rounded-full"
-          style={{ width: 32, height: 32, backgroundColor: avatarBg, flexShrink: 0 }}
-        >
-          {user?.avatarUrl ? (
-            // If avatarUrl exists, show initials as fallback (image loading not needed here)
+        {user?.avatarUrl ? (
+          <Image
+            source={{ uri: user.avatarUrl }}
+            className="rounded-full"
+            style={{ width: 32, height: 32, flexShrink: 0 }}
+            accessibilityLabel={displayName ?? "Аватар"}
+          />
+        ) : (
+          <View
+            className="items-center justify-center rounded-full"
+            style={{ width: 32, height: 32, backgroundColor: avatarBg, flexShrink: 0 }}
+          >
             <Text className="text-xs font-semibold text-white">{initials}</Text>
-          ) : (
-            <Text className="text-xs font-semibold text-white">{initials}</Text>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Name + member since */}
         <View className="flex-1 min-w-0">
