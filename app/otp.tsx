@@ -235,14 +235,23 @@ export default function AuthOtpScreen() {
   if (showRoleChoice) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+        {/* Logo — top-left corner, links to landing */}
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Перейти на главную"
+          onPress={() => router.push("/" as never)}
+          className="absolute top-4 left-4 z-10 min-h-[44px] min-w-[44px] items-start justify-center"
+        >
+          <Text
+            className="font-extrabold text-accent"
+            style={{ fontSize: 22, letterSpacing: -0.5 }}
+          >
+            P2PTax
+          </Text>
+        </Pressable>
+
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Text
-              className="text-center font-extrabold text-accent mb-10"
-              style={{ fontSize: 32, letterSpacing: -0.5 }}
-            >
-              P2PTax
-            </Text>
             <Text
               style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}
             >
@@ -296,15 +305,24 @@ export default function AuthOtpScreen() {
   if (!email) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+        {/* Logo — top-left corner, links to landing */}
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Перейти на главную"
+          onPress={() => router.push("/" as never)}
+          className="absolute top-4 left-4 z-10 min-h-[44px] min-w-[44px] items-start justify-center"
+        >
+          <Text
+            className="font-extrabold text-accent"
+            style={{ fontSize: 22, letterSpacing: -0.5 }}
+          >
+            P2PTax
+          </Text>
+        </Pressable>
+
         <HeaderBack title="" />
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Text
-              className="text-center font-extrabold text-accent mb-10"
-              style={{ fontSize: 32, letterSpacing: -0.5 }}
-            >
-              P2PTax
-            </Text>
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
@@ -329,6 +347,21 @@ export default function AuthOtpScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      {/* Logo — top-left corner, links to landing */}
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="Перейти на главную"
+        onPress={() => router.push("/" as never)}
+        className="absolute top-4 left-4 z-10 min-h-[44px] min-w-[44px] items-start justify-center"
+      >
+        <Text
+          className="font-extrabold text-accent"
+          style={{ fontSize: 22, letterSpacing: -0.5 }}
+        >
+          P2PTax
+        </Text>
+      </Pressable>
+
       <HeaderBack title="" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -336,13 +369,6 @@ export default function AuthOtpScreen() {
       >
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Text
-              className="text-center font-extrabold text-accent mb-10"
-              style={{ fontSize: 32, letterSpacing: -0.5 }}
-            >
-              P2PTax
-            </Text>
-
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
