@@ -134,8 +134,9 @@ router.post("/avatar", authMiddleware, uploadRateLimiter, avatarUpload.single("f
   }
 });
 
-// POST /api/upload/documents — upload document files (max 5)
-router.post("/documents", authMiddleware, uploadRateLimiter, documentUpload.array("files", 5), async (req: Request, res: Response) => {
+// POST /api/upload/documents — upload document files (max 10).
+// Limit raised from 5 → 10 to match the chat composer (#bug 3).
+router.post("/documents", authMiddleware, uploadRateLimiter, documentUpload.array("files", 10), async (req: Request, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[] | undefined;
     if (!files || files.length === 0) {

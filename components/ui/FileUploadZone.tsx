@@ -404,60 +404,11 @@ export default function FileUploadZone({
 
   const canAddMore = files.length < maxFiles && !disabled;
 
-  // ---- Chip list (shared between compact + full) -------------------------
-  // For the compact (chat) variant we render chips compactly as horizontal
-  // pills so multiple files don't push the chat input off-screen. The full
-  // form variant keeps the original stacked rows.
+  // ---- Chip list (full form variant only) --------------------------------
+  // Compact (chat) mode renders chips externally via FileUploadChips so the
+  // composer can place them above the input row.
   const renderChips = () => {
     if (files.length === 0) return null;
-    if (compact) {
-      return (
-        <View className="flex-row flex-wrap" style={{ gap: 6 }}>
-          {files.map((f) => {
-            const isPdf = f.mimeType === "application/pdf";
-            const isError = f.status === "error";
-            const isBusy = f.status === "uploading" || f.status === "pending";
-            return (
-              <View
-                key={f.id}
-                className="flex-row items-center bg-surface2 border border-border rounded-full pl-2 pr-1 py-1"
-                style={{ maxWidth: 220 }}
-              >
-                {isPdf ? (
-                  <FileIcon size={14} color={isError ? colors.error : colors.primary} />
-                ) : (
-                  <FileImage size={14} color={isError ? colors.error : colors.primary} />
-                )}
-                <Text
-                  className="text-xs text-text-base ml-1.5 flex-shrink"
-                  numberOfLines={1}
-                  style={{ maxWidth: 140 }}
-                >
-                  {f.name}
-                </Text>
-                {isBusy ? (
-                  <ActivityIndicator
-                    size="small"
-                    color={colors.placeholder}
-                    style={{ marginLeft: 4, marginRight: 4 }}
-                  />
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Удалить ${f.name}`}
-                    onPress={() => handleRemove(f.id)}
-                    className="w-6 h-6 items-center justify-center ml-1"
-                    hitSlop={6}
-                  >
-                    <X size={12} color={isError ? colors.error : colors.placeholder} />
-                  </Pressable>
-                )}
-              </View>
-            );
-          })}
-        </View>
-      );
-    }
     return (
       <View style={{ gap: 8, marginTop: 12 }}>
         {files.map((f) => {
@@ -509,8 +460,14 @@ export default function FileUploadZone({
     );
   };
 
-  // ---- Compact variant: paperclip + chips + drag overlay -----------------
+  // ---- Compact variant: paperclip-only button -----------------------------
+  // The chat composer is responsible for laying out chips (above the input
+  // row) and the drag-over overlay (across its own bounds) — we don't render
+  // those here when the composer passes an external dropTargetRef. This
+  // prevents the file list from expanding INSIDE the input row and breaking
+  // the chat layout. (Bug fix: layout/styles broken on file upload.)
   if (compact) {
+    const usingExternalDrop = !!dropTargetRef;
     return (
       <View ref={containerRef} style={{ position: "relative" }}>
         {Platform.OS === "web" && (
@@ -524,8 +481,10 @@ export default function FileUploadZone({
           />
         )}
 
-        {/* Drag-over overlay */}
-        {isDragOver && Platform.OS === "web" && (
+        {/* Internal drag overlay — only shown when there is no external
+            drop target. ChatComposer paints its own composer-wide overlay
+            via onDragStateChange. */}
+        {!usingExternalDrop && isDragOver && Platform.OS === "web" && (
           <View
             style={{
               position: "absolute",
@@ -548,11 +507,6 @@ export default function FileUploadZone({
               Отпустите чтобы прикрепить
             </Text>
           </View>
-        )}
-
-        {/* Chip strip — only shown when there are files */}
-        {files.length > 0 && (
-          <View className="px-2 py-1">{renderChips()}</View>
         )}
 
         {/* Paperclip button — caller is responsible for placing this row */}
@@ -659,6 +613,71 @@ export default function FileUploadZone({
       ) : null}
 
       {renderChips()}
+    </View>
+  );
+}
+
+/**
+ * Compact horizontal chip strip — used by ChatComposer above the input row
+ * so the file list never expands inside the input itself. Mirrors the same
+ * status states (uploading / error / done) as the FileUploadZone internal
+ * chip list but is positioned and sized for the chat composer.
+ */
+export function FileUploadChips({
+  files,
+  onRemove,
+}: {
+  files: PendingFile[];
+  onRemove: (id: string) => void;
+}) {
+  if (files.length === 0) return null;
+  return (
+    <View
+      className="flex-row flex-wrap px-3 pt-2"
+      style={{ gap: 6 }}
+    >
+      {files.map((f) => {
+        const isPdf = f.mimeType === "application/pdf";
+        const isError = f.status === "error";
+        const isBusy = f.status === "uploading" || f.status === "pending";
+        return (
+          <View
+            key={f.id}
+            className="flex-row items-center bg-surface2 border border-border rounded-full pl-2 pr-1 py-1"
+            style={{ maxWidth: 220 }}
+          >
+            {isPdf ? (
+              <FileIcon size={14} color={isError ? colors.error : colors.primary} />
+            ) : (
+              <FileImage size={14} color={isError ? colors.error : colors.primary} />
+            )}
+            <Text
+              className="text-xs text-text-base ml-1.5 flex-shrink"
+              numberOfLines={1}
+              style={{ maxWidth: 140 }}
+            >
+              {f.name}
+            </Text>
+            {isBusy ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.placeholder}
+                style={{ marginLeft: 4, marginRight: 4 }}
+              />
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Удалить ${f.name}`}
+                onPress={() => onRemove(f.id)}
+                className="w-6 h-6 items-center justify-center ml-1"
+                hitSlop={6}
+              >
+                <X size={12} color={isError ? colors.error : colors.placeholder} />
+              </Pressable>
+            )}
+          </View>
+        );
+      })}
     </View>
   );
 }

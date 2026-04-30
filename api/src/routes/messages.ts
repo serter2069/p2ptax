@@ -18,9 +18,8 @@ const messageRateLimiter = rateLimit({
   message: { error: "Слишком много сообщений. Попробуйте через минуту." },
 });
 
-// Resolve uploadToken to MinIO object key by listing objects with matching prefix
-async function resolveUploadToken(threadId: string, uploadToken: string): Promise<{ key: string; fileUrl: string } | null> {
-  const prefix = `chat-files/${threadId}/${uploadToken}_`;
+// Look up a single object by exact prefix in MinIO. Returns the first match.
+async function findObjectByPrefix(prefix: string): Promise<Minio.BucketItem | null> {
   try {
     return await new Promise((resolve, reject) => {
       const stream = minioClient.listObjects(MINIO_BUCKET, prefix, false);
@@ -28,18 +27,62 @@ async function resolveUploadToken(threadId: string, uploadToken: string): Promis
       stream.on("data", (obj: Minio.BucketItem) => {
         if (!found) found = obj;
       });
-      stream.on("end", () => {
-        if (found && found.name) {
-          resolve({ key: found.name, fileUrl: `/${MINIO_BUCKET}/${found.name}` });
-        } else {
-          resolve(null);
-        }
-      });
+      stream.on("end", () => resolve(found));
       stream.on("error", reject);
     });
   } catch {
     return null;
   }
+}
+
+// Best-effort MinIO stat → returns size + content-type. Falls back gracefully
+// when the metadata is missing so we never block the message send on stat errors.
+async function statObject(
+  key: string
+): Promise<{ size: number; contentType: string } | null> {
+  try {
+    const stat = await minioClient.statObject(MINIO_BUCKET, key);
+    const meta = (stat.metaData ?? {}) as Record<string, string>;
+    const contentType =
+      meta["content-type"] ?? meta["Content-Type"] ?? "application/octet-stream";
+    return { size: stat.size ?? 0, contentType };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve a chat-file uploadToken to a MinIO object key.
+ *
+ * Files are uploaded BEFORE the message is sent. Two namespaces are checked
+ * because the upload route stores chat files under either:
+ *   - `chat-files/<threadId>/<token>_<name>`  (uploaded with threadId in body)
+ *   - `chat-files/_pending/<token>_<name>`    (uploaded without threadId — default)
+ *
+ * The chat composer (ChatComposer/FileUploadZone) uploads WITHOUT threadId, so
+ * the file always lives in `_pending` initially. Without the fallback below,
+ * `POST /api/messages/:threadId` returns 422 "Файл не найден, загрузите повторно".
+ *
+ * Returned `fileUrl` always points to wherever the object currently lives —
+ * we don't move it, the URL is a stable bucket-relative path.
+ */
+async function resolveUploadToken(
+  threadId: string,
+  uploadToken: string
+): Promise<{ key: string; fileUrl: string } | null> {
+  // Try the thread-scoped namespace first (covers future uploads that include threadId).
+  const threadPrefix = `chat-files/${threadId}/${uploadToken}_`;
+  const threadHit = await findObjectByPrefix(threadPrefix);
+  if (threadHit && threadHit.name) {
+    return { key: threadHit.name, fileUrl: `/${MINIO_BUCKET}/${threadHit.name}` };
+  }
+  // Fall back to the pending namespace (where ChatComposer actually puts files).
+  const pendingPrefix = `chat-files/_pending/${uploadToken}_`;
+  const pendingHit = await findObjectByPrefix(pendingPrefix);
+  if (pendingHit && pendingHit.name) {
+    return { key: pendingHit.name, fileUrl: `/${MINIO_BUCKET}/${pendingHit.name}` };
+  }
+  return null;
 }
 
 function param(val: string | string[] | undefined): string {
@@ -276,16 +319,27 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
   }
 });
 
+// Hard cap for attachments per message — must match the frontend ChatComposer
+// `maxFiles` default. Bumped from 3 → 10 (#bug 3).
+const MAX_FILES_PER_MESSAGE = 10;
+
 // POST /api/messages/:threadId — send message in thread (with optional file attachments)
-// Supports uploadToken (idempotency): if provided, verifies the file exists in MinIO
-// Fix #186: text (content) is optional when uploadToken or files are present.
-// Validation rule: at least one of (text, files, uploadToken) must be non-empty.
+// Supports uploadToken / uploadTokens (idempotency): if provided, verifies each
+// file exists in MinIO via resolveUploadToken (which checks both thread-scoped
+// and `_pending` namespaces).
+// Fix #186: text (content) is optional when tokens or files are present.
+// Validation rule: at least one of (text, files, uploadToken/uploadTokens) must be non-empty.
 router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const threadId = param(req.params.threadId);
     // text is intentionally optional — attachment-only messages are valid (#186)
-    const { text, files, uploadToken } = req.body as { text?: string; files?: FileInput[]; uploadToken?: string };
+    const { text, files, uploadToken, uploadTokens } = req.body as {
+      text?: string;
+      files?: FileInput[];
+      uploadToken?: string;
+      uploadTokens?: string[];
+    };
 
     // Validate content type and length
     if (text !== undefined && typeof text !== "string") {
@@ -305,22 +359,49 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
       res.status(400).json({ error: `Сообщение превышает ${MAX_TEXT_LEN} символов` });
       return;
     }
-    const attachedFiles: FileInput[] = Array.isArray(files) ? files.slice(0, 3) : [];
+    const attachedFiles: FileInput[] = Array.isArray(files)
+      ? files.slice(0, MAX_FILES_PER_MESSAGE)
+      : [];
 
-    // If uploadToken provided, resolve it to a file before any other validation.
-    // A message with only an uploadToken (no text) is valid — this resolves #186.
-    let tokenFile: { fileUrl: string } | null = null;
-    if (uploadToken && typeof uploadToken === "string" && uploadToken.length >= 8) {
-      const resolved = await resolveUploadToken(threadId, uploadToken);
+    // Normalize uploadToken (legacy single string) + uploadTokens (array) into
+    // a single deduped list. Each token is a UUID-ish opaque string written by
+    // the upload route — minimum length sanity-check is 8 chars.
+    const tokensRaw: string[] = [];
+    if (typeof uploadToken === "string") tokensRaw.push(uploadToken);
+    if (Array.isArray(uploadTokens)) {
+      for (const t of uploadTokens) {
+        if (typeof t === "string") tokensRaw.push(t);
+      }
+    }
+    const tokens = Array.from(
+      new Set(tokensRaw.filter((t) => t.length >= 8))
+    ).slice(0, MAX_FILES_PER_MESSAGE);
+
+    // Resolve every token before any DB writes. If ANY token cannot be
+    // resolved we 422 — the client already showed the file as "uploaded",
+    // so silently dropping it would lose data. Stat the object to capture
+    // real size + mime so the rendered chip shows accurate metadata.
+    const resolvedTokenFiles: {
+      fileUrl: string;
+      size: number;
+      mimeType: string;
+    }[] = [];
+    for (const t of tokens) {
+      const resolved = await resolveUploadToken(threadId, t);
       if (!resolved) {
         res.status(422).json({ error: "Файл не найден, загрузите повторно" });
         return;
       }
-      tokenFile = resolved;
+      const stat = await statObject(resolved.key);
+      resolvedTokenFiles.push({
+        fileUrl: resolved.fileUrl,
+        size: stat?.size ?? 0,
+        mimeType: stat?.contentType ?? "application/octet-stream",
+      });
     }
 
-    // Require at least one of: text, files array, or uploadToken-resolved file
-    if (!trimmedText && attachedFiles.length === 0 && !tokenFile) {
+    // Require at least one of: text, files array, or token-resolved file(s)
+    if (!trimmedText && attachedFiles.length === 0 && resolvedTokenFiles.length === 0) {
       res.status(400).json({ error: "Message text or at least one file is required" });
       return;
     }
@@ -361,10 +442,13 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
         },
       });
 
-      // Store file records — combine token-resolved file + legacy files array
+      // Store file records — combine token-resolved file(s) + legacy files array.
+      // Multiple uploadTokens are now supported (each chip in the chat composer
+      // becomes a separate file row). Size + mimeType come from the MinIO stat
+      // call above when available, so the rendered chip is accurate.
       let savedFiles: { id: string; url: string; filename: string; size: number; mimeType: string }[] = [];
       const allFilesToSave: FileInput[] = [...attachedFiles];
-      if (tokenFile) {
+      for (const tokenFile of resolvedTokenFiles) {
         const keyParts = tokenFile.fileUrl.split("/");
         const rawName = keyParts[keyParts.length - 1] ?? "file";
         const underscoreIdx = rawName.indexOf("_");
@@ -372,8 +456,8 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
         allFilesToSave.push({
           url: tokenFile.fileUrl,
           filename: resolvedFilename,
-          size: 0,
-          mimeType: "application/octet-stream",
+          size: tokenFile.size,
+          mimeType: tokenFile.mimeType,
         });
       }
       if (allFilesToSave.length > 0) {
