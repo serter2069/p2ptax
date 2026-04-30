@@ -373,6 +373,7 @@ export default function MyRequestDetail() {
               <View style={{ flex: 1, minWidth: 280, maxWidth: 360 }}>
                 <RequestActions
                   request={request}
+                  isOwner={request.isOwner}
                   isActive={isActive}
                   closing={closing}
                   copied={copied}
@@ -479,6 +480,7 @@ export default function MyRequestDetail() {
 
             <RequestActions
               request={request}
+              isOwner={request.isOwner}
               isActive={isActive}
               closing={closing}
               copied={copied}
