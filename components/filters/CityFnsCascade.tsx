@@ -37,12 +37,21 @@ export interface ServiceOption {
   name: string;
 }
 
+const TOP_CITIES_DEFAULT = [
+  "Москва",
+  "Санкт-Петербург",
+  "Новосибирск",
+  "Екатеринбург",
+];
+
 export interface CityFnsCascadeProps {
   mode: "single" | "multi";
   value: CityFnsValue;
   onChange: (v: CityFnsValue) => void;
   // Optional: external list of cities (skips internal fetch when provided)
   citiesSource?: CityCascadeOption[];
+  // Optional top-N city quick-pick chips rendered above full city list
+  topCities?: string[];
   // Future: filter offices by the specialists offering specific services
   serviceIds?: string[];
   showCounts?: boolean;
@@ -72,6 +81,7 @@ export default function CityFnsCascade({
   value,
   onChange,
   citiesSource,
+  topCities = TOP_CITIES_DEFAULT,
   serviceIds,
   showCounts = false,
   labelCities = "Город",
@@ -205,6 +215,14 @@ export default function CityFnsCascade({
       ? fnsAll.find((f) => f.id === value.fns[0])
       : undefined;
 
+  // Derive quick-pick city objects from topCities names (matched against loaded list)
+  const topCityChips = useMemo(() => {
+    if (!topCities || topCities.length === 0 || cities.length === 0) return [];
+    return topCities
+      .map((name) => cities.find((c) => c.name === name))
+      .filter(Boolean) as CityCascadeOption[];
+  }, [topCities, cities]);
+
   // --- render ---
 
   return (
@@ -216,6 +234,35 @@ export default function CityFnsCascade({
         <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2 px-4">
           {labelCities}
         </Text>
+        {/* Top-4 quick-pick chips */}
+        {topCityChips.length > 0 && (
+          <View className="flex-row flex-wrap px-4 mb-2" style={{ gap: 6 }}>
+            {topCityChips.map((city) => {
+              const active = value.cities.includes(city.id);
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={city.name}
+                  key={`top-${city.id}`}
+                  onPress={() => toggleCity(city.id)}
+                  className={`px-3 h-8 items-center justify-center rounded-full border ${
+                    active
+                      ? "bg-accent border-accent"
+                      : "bg-surface2 border-border"
+                  }`}
+                >
+                  <Text
+                    className={`text-xs ${
+                      active ? "text-white font-medium" : "text-text-mute"
+                    }`}
+                  >
+                    {city.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
         {isDesktop ? (
           <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
             {cities.length === 0 ? (
