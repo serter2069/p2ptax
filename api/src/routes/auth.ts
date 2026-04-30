@@ -7,6 +7,7 @@ import {
   generateOtpCode,
 } from "../lib/jwt";
 import { authMiddleware } from "../middleware/auth";
+import { presignAvatarUrl } from "../lib/minio";
 
 const router = Router();
 
@@ -167,7 +168,7 @@ router.post("/verify-otp", verifyOtpRateLimiter, async (req: Request, res: Respo
         isAvailable: user.isAvailable,
         firstName: user.firstName,
         lastName: user.lastName,
-        avatarUrl: user.avatarUrl,
+        avatarUrl: await presignAvatarUrl(user.avatarUrl),
         specialistProfileCompletedAt: user.specialistProfileCompletedAt
           ? user.specialistProfileCompletedAt.toISOString()
           : null,
@@ -246,7 +247,7 @@ router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) 
         isAvailable: storedToken.user.isAvailable,
         firstName: storedToken.user.firstName,
         lastName: storedToken.user.lastName,
-        avatarUrl: storedToken.user.avatarUrl,
+        avatarUrl: await presignAvatarUrl(storedToken.user.avatarUrl),
         specialistProfileCompletedAt: storedToken.user.specialistProfileCompletedAt
           ? storedToken.user.specialistProfileCompletedAt.toISOString()
           : null,
@@ -300,7 +301,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    res.json({ user });
+    res.json({ user: { ...user, avatarUrl: await presignAvatarUrl(user.avatarUrl) } });
   } catch (error) {
     console.error("me error:", error);
     res.status(500).json({ error: "Internal server error" });

@@ -31,6 +31,9 @@ export function useSettingsForm({ ready, activeTab, onTabChange, onStartInlineOn
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [lastName, setLastName] = useState(user?.lastName ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
+  // avatarKey: the storage key (e.g. "avatars/uuid.jpg") set after a successful upload.
+  // Sent to the profile PATCH so the DB stores the key, not a presigned URL.
+  const [avatarKey, setAvatarKey] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -106,8 +109,10 @@ export function useSettingsForm({ ready, activeTab, onTabChange, onStartInlineOn
     () =>
       firstName !== (user?.firstName ?? "") ||
       lastName !== (user?.lastName ?? "") ||
-      avatarUrl !== (user?.avatarUrl ?? null),
-    [firstName, lastName, avatarUrl, user?.firstName, user?.lastName, user?.avatarUrl],
+      // avatarKey is set only after a new upload — use it as the dirty flag for avatar.
+      avatarKey !== null ||
+      (!avatarKey && avatarUrl !== (user?.avatarUrl ?? null)),
+    [firstName, lastName, avatarUrl, avatarKey, user?.firstName, user?.lastName, user?.avatarUrl],
   );
 
   const hasSpecialistChanges = useMemo(
@@ -131,12 +136,18 @@ export function useSettingsForm({ ready, activeTab, onTabChange, onStartInlineOn
         firstName: firstName.trim(),
         lastName: lastName.trim(),
       };
-      if (avatarUrl !== (user?.avatarUrl ?? null)) {
+      // Send storage key (not presigned URL) to the profile PATCH — key never expires in DB.
+      // avatarKey is set by AvatarUploader after a successful upload.
+      if (avatarKey !== null) {
+        body.avatarUrl = avatarKey;
+      } else if (avatarUrl !== (user?.avatarUrl ?? null)) {
         body.avatarUrl = avatarUrl;
       }
       const res = await apiPatch<{
         user: { firstName: string; lastName: string; avatarUrl?: string | null };
       }>("/api/user/profile", body);
+      // Clear the pending key after save — the context now holds the fresh presigned URL.
+      setAvatarKey(null);
       updateUser({
         firstName: res.user.firstName,
         lastName: res.user.lastName,
@@ -397,6 +408,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange, onStartInlineOn
     setLastName,
     avatarUrl,
     setAvatarUrl,
+    avatarKey,
+    setAvatarKey,
     avatarUploading,
     setAvatarUploading,
     // Save state

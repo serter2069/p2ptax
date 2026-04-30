@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { presignAvatarUrl } from "../lib/minio";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.patch("/profile", authMiddleware, async (req: Request, res: Response) => 
       },
     });
 
-    res.json({ user });
+    res.json({ user: { ...user, avatarUrl: await presignAvatarUrl(user.avatarUrl) } });
   } catch (error) {
     console.error("user/profile error:", error);
     res.status(500).json({ error: "Internal server error" });

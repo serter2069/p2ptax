@@ -5,7 +5,7 @@ import crypto from "crypto";
 import path from "path";
 import sharp from "sharp";
 import { authMiddleware } from "../middleware/auth";
-import { minioClient, MINIO_BUCKET, ensureBucket as ensureMinioBucket } from "../lib/minio";
+import { minioClient, MINIO_BUCKET, ensureBucket as ensureMinioBucket, presignAvatarUrl } from "../lib/minio";
 import { prisma } from "../lib/prisma";
 
 const router = Router();
@@ -124,9 +124,14 @@ router.post("/avatar", authMiddleware, uploadRateLimiter, avatarUpload.single("f
       "Content-Type": "image/jpeg",
     });
 
-    // Return 1-year presigned URL so the avatar is directly usable in <Image>.
-    // The raw key is also returned so callers can re-presign on future loads.
-    const url = await minioClient.presignedGetObject(MINIO_BUCKET, key, 365 * 24 * 60 * 60);
+    // Save the storage key in user.avatarUrl so URLs never expire in the DB.
+    // Return a 7-day presigned URL (S3 max) for immediate display in <Image>.
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: { avatarUrl: key },
+    });
+
+    const url = await presignAvatarUrl(key);
     res.json({ url, key });
   } catch (error) {
     console.error("avatar upload error:", error);

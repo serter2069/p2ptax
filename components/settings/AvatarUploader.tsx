@@ -34,7 +34,12 @@ interface AvatarUploaderProps {
   name?: string;
   /** Fallback identifier (typically email) when name is empty. */
   fallback?: string;
-  onAvatarChange: (url: string) => void;
+  /**
+   * Called after successful upload with:
+   *   url  — 7-day presigned URL for immediate display in <Image>
+   *   key  — storage key (e.g. "avatars/uuid.jpg") that must be saved in the DB
+   */
+  onAvatarChange: (url: string, key: string) => void;
   onUploadStart: () => void;
   onUploadEnd: () => void;
 }
@@ -90,8 +95,8 @@ export default function AvatarUploader({
     setErrorMessage(null);
     onUploadStart();
     try {
-      const fullUrl = await uploadAvatarFile(file);
-      onAvatarChange(fullUrl);
+      const { url, key } = await uploadAvatarFile(file);
+      onAvatarChange(url, key);
       setLastFile(null);
     } catch (e: unknown) {
       const status = e instanceof ApiError ? e.status : -1;
