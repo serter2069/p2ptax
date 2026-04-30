@@ -134,6 +134,26 @@ export default function AuthOtpScreen() {
         });
 
         if (!data.user.role) {
+          // If intent=specialist is set, skip the picker and auto-assign the
+          // specialist role so the intent is not lost on first login.
+          if (intent === "specialist") {
+            const optimisticUser: UserData = {
+              ...data.user,
+              role: "USER",
+              isSpecialist: true,
+            };
+            await signIn(data.accessToken, data.refreshToken, optimisticUser);
+            try {
+              await api("/api/auth/set-role", {
+                method: "POST",
+                body: { role: "SPECIALIST" },
+              });
+            } catch {
+              // optimistic update already applied; next /me call will re-sync
+            }
+            nav.replaceRoutes.onboardingName();
+            return;
+          }
           setPendingAuth(data);
           setShowRoleChoice(true);
           return;

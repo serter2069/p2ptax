@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import * as Minio from "minio";
 import { prisma } from "../lib/prisma";
+import { minioClient, MINIO_BUCKET } from "../lib/minio";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
 
@@ -472,6 +473,59 @@ router.delete("/:id", async (req: Request, res: Response) => {
       where: { id: threadId },
       data: { deletedAt: new Date(), deletedBy: userId },
     });
+
+    // Delete associated files from MinIO and DB
+    try {
+      // Collect all message IDs for this thread
+      const messages = await prisma.message.findMany({
+        where: { threadId },
+        select: { id: true },
+      });
+      const messageIds = messages.map((m) => m.id);
+
+      if (messageIds.length > 0) {
+        // Find all File records attached to these messages
+        const files = await prisma.file.findMany({
+          where: {
+            entityType: "message",
+            entityId: { in: messageIds },
+          },
+          select: { id: true, url: true },
+        });
+
+        if (files.length > 0) {
+          // Extract MinIO object key from url: "/<bucket>/<key>" or "/<key>"
+          const objectKeys = files
+            .map((f) => {
+              // url stored as "/<bucket>/<key...>" — strip leading "/<bucket>/"
+              const prefix = `/${MINIO_BUCKET}/`;
+              if (f.url.startsWith(prefix)) {
+                return f.url.slice(prefix.length);
+              }
+              // fallback: strip leading slash
+              return f.url.replace(/^\//, "");
+            })
+            .filter(Boolean);
+
+          // Delete from MinIO (errors are non-fatal — thread already soft-deleted)
+          await Promise.allSettled(
+            objectKeys.map((key) =>
+              minioClient.removeObject(MINIO_BUCKET, key).catch((err: Error) =>
+                console.warn(`[threads] MinIO delete failed for key "${key}":`, err.message)
+              )
+            )
+          );
+
+          // Delete File records from DB
+          await prisma.file.deleteMany({
+            where: { id: { in: files.map((f) => f.id) } },
+          });
+        }
+      }
+    } catch (cleanupErr) {
+      // Non-fatal: log but don't fail — thread is already soft-deleted
+      console.warn("[threads] file cleanup error after soft-delete:", cleanupErr);
+    }
 
     res.json({ ok: true });
   } catch (error) {
