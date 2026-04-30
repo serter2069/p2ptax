@@ -30,6 +30,7 @@ import CatalogSkeleton from "@/components/specialists/CatalogSkeleton";
 import SpecialistFilter from "@/components/specialists/SpecialistFilter";
 import SpecialistsGrid from "@/components/specialists/SpecialistsGrid";
 import LandingHeader from "@/components/landing/LandingHeader";
+import PageTitle from "@/components/layout/PageTitle";
 import { CityOpt, FnsOpt } from "@/components/filters/SpecialistSearchBar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -86,13 +87,15 @@ interface FnsResponse {
 export interface SpecialistFeedProps {
   /** 'all' = public catalog; 'favorites' = current user's saved list */
   mode: "all" | "favorites";
+  title?: string;
+  subtitle?: string;
 }
 
 const PAGE_SIZE = 12;
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function SpecialistFeed({ mode }: SpecialistFeedProps) {
+export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeedProps) {
   const nav = useTypedRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { width } = useWindowDimensions();
@@ -555,36 +558,29 @@ export default function SpecialistFeed({ mode }: SpecialistFeedProps) {
 
       {/* Page header */}
       {mode === "all" ? (
-        <CatalogHeader isDesktop={isDesktop} count={null} />
+        <>
+          {title && <PageTitle title={title} subtitle={subtitle} />}
+          <CatalogHeader isDesktop={isDesktop} count={null} />
+        </>
       ) : (
-        <View
-          className="flex-row items-center justify-between"
-          style={{
-            paddingHorizontal: 16,
-            paddingTop: 16,
-            paddingBottom: 4,
-            width: "100%",
-            maxWidth: isDesktop ? 1100 : undefined,
-            alignSelf: "center",
-          }}
-        >
-          <Text className="text-xl font-bold" style={{ color: colors.text }}>
-            Мои специалисты
-          </Text>
+        <>
+          {title && <PageTitle title={title} subtitle={subtitle} />}
           {hasFilters && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={resetFilters}
-              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-            >
-              <Text
-                style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}
+            <View style={{ paddingHorizontal: 16, paddingBottom: 4, alignItems: "flex-end" }}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={resetFilters}
+                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
-                Сбросить
-              </Text>
-            </Pressable>
+                <Text
+                  style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}
+                >
+                  Сбросить
+                </Text>
+              </Pressable>
+            </View>
           )}
-        </View>
+        </>
       )}
 
       {/* Cascade filter — hides on scroll-down, reveals on scroll-up */}
