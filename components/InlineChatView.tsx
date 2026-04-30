@@ -19,6 +19,7 @@ import { FileText, ChevronRight } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
 import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
 import { Avatar } from "@/components/ui";
+import Lightbox, { type LightboxFile } from "@/components/files/Lightbox";
 import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import { API_URL, api, apiPost, apiPatch, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,10 +34,11 @@ interface FileAttachment {
   mimeType: string;
 }
 
+// LightboxItem kept for internal state only; wired to <Lightbox> via LightboxFile.
 interface LightboxItem {
   url: string;
   filename: string;
-  isImage: boolean;
+  mimeType: string;
 }
 
 interface MessageSender {
@@ -375,12 +377,12 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
   const handleFilePress = useCallback((file: FileAttachment) => {
     const fullUrl = file.url.startsWith("http") ? file.url : `${API_URL}${file.url}`;
-    setLightbox({ url: fullUrl, filename: file.filename, isImage: false });
+    setLightbox({ url: fullUrl, filename: file.filename, mimeType: file.mimeType });
   }, []);
 
   const handleImagePress = useCallback((url: string, filename: string) => {
     const fullUrl = url.startsWith("http") ? url : `${API_URL}${url}`;
-    setLightbox({ url: fullUrl, filename, isImage: true });
+    setLightbox({ url: fullUrl, filename, mimeType: "image/jpeg" });
   }, []);
 
   const handleClearThread = useCallback(() => {
@@ -743,132 +745,16 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         )}
       </KeyboardAvoidingView>
 
-      {/* File / Image lightbox modal */}
-      <Modal
+      {/* File / Image lightbox — unified Lightbox component */}
+      <Lightbox
+        files={
+          lightbox
+            ? ([{ url: lightbox.url, filename: lightbox.filename, mimeType: lightbox.mimeType }] satisfies LightboxFile[])
+            : []
+        }
         visible={lightbox !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setLightbox(null)}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.92)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          {/* Close button */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Закрыть"
-            onPress={() => setLightbox(null)}
-            style={({ pressed }) => [
-              {
-                position: "absolute",
-                top: 48,
-                right: 20,
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "rgba(255,255,255,0.2)",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 10,
-              },
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <FontAwesome name="times" size={20} color="#fff" />
-          </Pressable>
-
-          {lightbox?.isImage ? (
-            /* Full-screen image view */
-            <View style={{ width: "100%", flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 16, paddingTop: 100, paddingBottom: 120 }}>
-              <Image
-                source={{ uri: lightbox.url }}
-                style={{ width: "100%", height: "100%" }}
-                resizeMode="contain"
-                accessibilityLabel={lightbox.filename}
-              />
-            </View>
-          ) : (
-            /* Non-image file: icon + filename */
-            <View style={{ alignItems: "center", paddingHorizontal: 32 }}>
-              <FontAwesome name="file-o" size={64} color="#fff" style={{ marginBottom: 16 }} />
-              <Text
-                style={{ color: "#fff", fontSize: 16, fontWeight: "600", textAlign: "center", marginBottom: 8 }}
-                numberOfLines={3}
-              >
-                {lightbox?.filename}
-              </Text>
-            </View>
-          )}
-
-          {/* Filename strip at bottom for images */}
-          {lightbox?.isImage && (
-            <View
-              style={{
-                position: "absolute",
-                bottom: 80,
-                left: 0,
-                right: 0,
-                alignItems: "center",
-                paddingHorizontal: 32,
-              }}
-            >
-              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "center" }} numberOfLines={1}>
-                {lightbox.filename}
-              </Text>
-            </View>
-          )}
-
-          {/* Download button */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Скачать файл"
-            onPress={() => {
-              if (!lightbox) return;
-              if (Platform.OS === "web") {
-                // Web: create anchor with download attribute
-                const a = document.createElement("a");
-                a.href = lightbox.url;
-                a.download = lightbox.filename;
-                a.target = "_blank";
-                a.rel = "noopener noreferrer";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-              } else {
-                Linking.openURL(lightbox.url).catch(() => {
-                  Alert.alert("Ошибка", "Не удалось открыть файл");
-                  // (Native-only branch — Web uses anchor click above.)
-                });
-              }
-            }}
-            style={({ pressed }) => [
-              {
-                position: "absolute",
-                bottom: 32,
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: colors.primary,
-                paddingHorizontal: 28,
-                paddingVertical: 14,
-                borderRadius: 12,
-                gap: 10,
-                minHeight: 48,
-              },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <FontAwesome name="download" size={16} color="#fff" />
-            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>
-              Скачать
-            </Text>
-          </Pressable>
-        </View>
-      </Modal>
+        onClose={() => setLightbox(null)}
+      />
 
       {/* Clear thread confirmation modal */}
       <Modal

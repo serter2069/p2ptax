@@ -8,7 +8,7 @@ export default function MyRequests() {
   return (
     <RequestsFeed
       mode="mine"
-      title="Мои заявки"
+      title="Мои запросы"
     />
   );
 }

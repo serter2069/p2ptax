@@ -383,29 +383,6 @@ export default function MyRequestDetail() {
                   isDesktop
                 />
 
-                {/* Meta stats */}
-                <View
-                  className="bg-white rounded-2xl p-5 mb-4"
-                  style={{
-                    shadowColor: colors.text,
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }}
-                >
-                  <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
-                    Статистика
-                  </Text>
-                  <View className="flex-row justify-between mb-2">
-                    <Text className="text-sm text-text-mute">Диалогов</Text>
-                    <Text className="text-sm text-text-base">{request.threadsCount}</Text>
-                  </View>
-                  <View className="flex-row justify-between">
-                    <Text className="text-sm text-text-mute">Непрочитанных</Text>
-                    <Text className="text-sm text-text-base">{request.unreadMessages}</Text>
-                  </View>
-                </View>
               </View>
             </View>
           </View>

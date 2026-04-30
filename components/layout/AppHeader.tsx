@@ -63,7 +63,7 @@ function toAccentKey(
 const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   // #1615 — (tabs)/requests = public bourse, (tabs)/my-requests = personal feed.
   { prefix: "/(tabs)/public-requests", label: "Заявки" },
-  { prefix: "/(tabs)/my-requests", label: "Мои заявки" },
+  { prefix: "/(tabs)/my-requests", label: "Мои запросы" },
   { prefix: "/(tabs)/requests", label: "Заявки" },
   { prefix: "/(tabs)/messages", label: "Сообщения" },
   { prefix: "/(tabs)/dashboard", label: "Главная" },
@@ -87,7 +87,7 @@ const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/dashboard", label: "Главная" },
   { prefix: "/messages", label: "Сообщения" },
   { prefix: "/public-requests", label: "Заявки" },
-  { prefix: "/my-requests", label: "Мои заявки" },
+  { prefix: "/my-requests", label: "Мои запросы" },
   { prefix: "/profile", label: "Настройки" },
 ];
 

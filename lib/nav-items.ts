@@ -79,7 +79,7 @@ export const USER_BASE_ITEMS: NavItem[] = [
       groupMatch(ctx, "(tabs)", "public-requests"),
   },
   {
-    label: "Мои заявки",
+    label: "Мои запросы",
     href: "/(tabs)/my-requests",
     icon: FileText,
     match: (ctx) => groupMatch(ctx, "(tabs)", "my-requests"),

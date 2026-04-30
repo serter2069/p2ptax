@@ -9,40 +9,22 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import * as DocumentPicker from "expo-document-picker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTypedRouter } from "@/lib/navigation";
 import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import { Send, UserCheck, ChevronLeft } from "lucide-react-native";
-import { api, ApiError, API_URL } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import EmptyState from "@/components/ui/EmptyState";
 import RequestPreviewCard, { RequestPreviewData } from "@/components/requests/RequestPreviewCard";
 import MessageComposer from "@/components/requests/MessageComposer";
-import FileAttachmentRow, { PendingFileInfo } from "@/components/requests/FileAttachmentRow";
+import FileUploadZone, { type PendingFile } from "@/components/ui/FileUploadZone";
+import { FileUploadChips } from "@/components/ui/FileUploadZone";
 import { colors, BREAKPOINT } from "@/lib/theme";
 
-type PendingFile = PendingFileInfo;
 
-const CHAT_FILE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB — must match api/src/routes/upload.ts (chatFileUpload)
-const TOKEN_KEY = "p2ptax_access_token";
-
-function chatUploadErrorMessage(status: number): string {
-  if (status === 413) return "Файл слишком большой. Максимум 10 МБ.";
-  if (status === 429) return "Слишком много загрузок. Попробуйте через минуту.";
-  if (status === 0) return "Нет связи с сервером.";
-  return "Не удалось загрузить файл. Попробуйте ещё раз.";
-}
-
-function generateUploadToken(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
 
 interface RequestSummary extends RequestPreviewData {
   user: { id: string; firstName: string | null; lastName: string | null };
@@ -62,7 +44,7 @@ export default function SpecialistConfirmWrite() {
   const nav = useTypedRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { ready } = useRequireAuth();
-  const { isSpecialistUser, user } = useAuth();
+  const { isSpecialistUser, user, token } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
 
@@ -78,8 +60,7 @@ export default function SpecialistConfirmWrite() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [pendingFile, setPendingFile] = useState<PendingFile | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<PendingFile[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -112,99 +93,27 @@ export default function SpecialistConfirmWrite() {
     }
   }, [ready, isSpecialistUser, load]);
 
-  const handleAttachFile = useCallback(async () => {
-    if (pendingFile) {
-      Alert.alert("Лимит файлов", "Можно прикрепить только один файл к первому сообщению");
-      return;
-    }
-    setUploadError(null);
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf", "image/jpeg", "image/png"],
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-      const asset = result.assets[0];
-      const fileSize = asset.size ?? 0;
-      if (fileSize > CHAT_FILE_MAX_BYTES) {
-        Alert.alert("Файл слишком большой", "Максимальный размер файла — 10 МБ");
-        return;
-      }
-      setPendingFile({
-        uri: asset.uri,
-        name: asset.name,
-        size: fileSize,
-        mimeType: asset.mimeType ?? "application/octet-stream",
-      });
-    } catch (e) {
-      if (__DEV__) console.error("document picker error:", e);
-    }
-  }, [pendingFile]);
-
-  const handleRemoveFile = useCallback(() => {
-    setPendingFile(null);
-    setUploadError(null);
-  }, []);
-
-  const uploadPendingFile = useCallback(
-    async (file: PendingFile): Promise<string> => {
-      const uploadToken = generateUploadToken();
-      const formData = new FormData();
-      formData.append("file", {
-        uri: file.uri,
-        name: file.name,
-        type: file.mimeType,
-      } as unknown as Blob);
-      formData.append("uploadToken", uploadToken);
-      // NOTE: no threadId — the upload endpoint stores under chat-files/_pending/
-      // and threads.ts links it to the first message when the thread is created.
-
-      const token = await AsyncStorage.getItem(TOKEN_KEY);
-      let res: Response;
-      try {
-        res = await fetch(`${API_URL}/api/upload/chat-file`, {
-          method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: formData,
-        });
-      } catch {
-        throw new ApiError(0, chatUploadErrorMessage(0));
-      }
-
-      if (!res.ok) {
-        throw new ApiError(res.status, chatUploadErrorMessage(res.status));
-      }
-
-      const data = (await res.json()) as { uploadToken: string };
-      return data.uploadToken;
-    },
-    []
-  );
-
   const handleSend = async () => {
     if (message.length < MIN_CHARS || sending) return;
     if (rateLimit && rateLimit.writesToday >= DAILY_LIMIT) return;
 
+    // Block send if any file is still uploading.
+    const uploading = attachedFiles.some(
+      (f) => f.status === "uploading" || f.status === "pending"
+    );
+    if (uploading) {
+      Alert.alert("Подождите", "Файл ещё загружается");
+      return;
+    }
+
     setSending(true);
     setSubmitError(null);
-    setUploadError(null);
 
     try {
-      let uploadToken: string | undefined;
-      if (pendingFile) {
-        try {
-          uploadToken = await uploadPendingFile(pendingFile);
-        } catch (uploadErr) {
-          if (uploadErr instanceof ApiError) {
-            setUploadError(uploadErr.message);
-          } else {
-            setUploadError(chatUploadErrorMessage(0));
-          }
-          setSending(false);
-          return;
-        }
-      }
+      // FileUploadZone uploads immediately on pick → take the token from the
+      // first done file (write screen supports one attachment in first message).
+      const doneFile = attachedFiles.find((f) => f.status === "done");
+      const uploadToken = doneFile?.uploadedToken;
 
       const result = await api<{ id: string }>("/api/threads", {
         method: "POST",
@@ -344,13 +253,21 @@ export default function SpecialistConfirmWrite() {
             disabled={isLimitReached}
           />
 
-          {/* File attachment row */}
-          <FileAttachmentRow
-            pendingFile={pendingFile}
-            onAttach={handleAttachFile}
-            onRemove={handleRemoveFile}
+          {/* File attachment — chips above the upload button */}
+          <FileUploadChips
+            files={attachedFiles}
+            onRemove={(fileId) =>
+              setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId))
+            }
+          />
+          <FileUploadZone
+            files={attachedFiles}
+            onFilesChange={setAttachedFiles}
+            uploadEndpoint="/api/upload/chat-file"
+            authToken={token}
+            maxFiles={1}
+            compact
             disabled={isLimitReached || sending}
-            error={uploadError}
           />
 
           {/* Submit error */}

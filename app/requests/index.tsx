@@ -8,8 +8,7 @@ export default function PublicRequestsFeed() {
   return (
     <RequestsFeed
       mode="catalog"
-      title="Открытые запросы"
-      subtitle="Задайте вопрос — получите предложения от специалистов"
+      title="Запросы"
     />
   );
 }

@@ -9,8 +9,7 @@ export default function PublicRequestsTab() {
   return (
     <RequestsFeed
       mode="catalog"
-      title="Биржа запросов"
-      subtitle="Открытая биржа: задайте вопрос — получите предложения от специалистов"
+      title="Запросы"
     />
   );
 }
