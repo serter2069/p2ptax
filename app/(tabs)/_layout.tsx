@@ -2,7 +2,6 @@ import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import { useState, useEffect } from "react";
 import {
-  LayoutGrid,
   FileText,
   MessageCircle,
   User,
@@ -62,13 +61,7 @@ export default function TabLayout() {
         },
       }}
     >
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: "Главная",
-          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="dashboard" options={{ href: null }} />
       <Tabs.Screen
         name="requests"
         options={{

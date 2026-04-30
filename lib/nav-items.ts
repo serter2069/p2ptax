@@ -5,7 +5,7 @@
  */
 
 import {
-  LayoutGrid,
+
   FileText,
   MessageCircle,
   BarChart2,
@@ -70,15 +70,6 @@ export const topLevelMatch = (ctx: MatchContext, prefix: string): boolean => {
 
 // Iter11 — unified USER nav (client-like items always present).
 export const USER_BASE_ITEMS: NavItem[] = [
-  {
-    label: "Дашборд",
-    href: "/(tabs)/dashboard",
-    icon: LayoutGrid,
-    match: (ctx) =>
-      groupMatch(ctx, "(tabs)", "dashboard") ||
-      groupMatch(ctx, "(tabs)", "index") ||
-      (ctx.segments[0] === "(tabs)" && !ctx.segments[1]),
-  },
   {
     label: "Мои запросы",
     href: "/(tabs)/my-requests",
