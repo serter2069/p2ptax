@@ -6,12 +6,14 @@ import {
   ScrollView,
   Image,
   Platform,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Pencil, Camera, ChevronLeft } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   api,
   ApiError,
@@ -22,6 +24,7 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { ONBOARDING_VISIBILITY_KEY } from "./visibility";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import Button from "@/components/ui/Button";
@@ -29,7 +32,7 @@ import Input from "@/components/ui/Input";
 import { colors, overlay, textStyle } from "@/lib/theme";
 
 export default function OnboardingProfileScreen() {
-  const router = useRouter()
+  const router = useRouter();
   const nav = useTypedRouter();
   const params = useLocalSearchParams<{ from?: string }>();
   const fromSettings = params.from === "settings";
@@ -40,6 +43,18 @@ export default function OnboardingProfileScreen() {
   // Without this guard, toggling specialist off from /settings causes this
   // background screen to fire nav.replaceRoutes.tabs() unintentionally.
   const isOnThisScreen = segments[0] === "onboarding" && segments[1] === "profile";
+
+  // Public-profile toggle — loaded from AsyncStorage (set by visibility step).
+  // Default true: most specialists want to be found.
+  const [isPublicProfile, setIsPublicProfile] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_VISIBILITY_KEY).then((val) => {
+      if (val !== null) {
+        setIsPublicProfile(val === "true");
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!ready || !isOnThisScreen) return;
@@ -141,8 +156,13 @@ export default function OnboardingProfileScreen() {
     return Object.keys(errors).length === 0;
   };
 
+  // Public profile requires name (set in name.tsx), private has no extra requirements here.
+  // Button is always enabled for private; for public no extra block needed since name
+  // was already collected in the name step.
+  const canSubmit = !isLoading && !avatarUploading;
+
   const handleSubmit = async () => {
-    if (isLoading) return;
+    if (!canSubmit) return;
     setError("");
     if (!validateFields()) return;
     setIsLoading(true);
@@ -160,6 +180,7 @@ export default function OnboardingProfileScreen() {
             officeAddress: officeAddress.trim() || null,
             workingHours: workingHours.trim() || null,
             avatarUrl: avatarUrl || null,
+            isPublicProfile,
           },
         }
       );
@@ -172,6 +193,9 @@ export default function OnboardingProfileScreen() {
         specialistProfileCompletedAt: completedAt,
         ...(avatarUrl ? { avatarUrl } : {}),
       });
+
+      // Clean up visibility key after successful onboarding
+      await AsyncStorage.removeItem(ONBOARDING_VISIBILITY_KEY);
 
       nav.replaceRoutes.tabs();
     } catch (e: unknown) {
@@ -240,9 +264,55 @@ export default function OnboardingProfileScreen() {
               marginBottom: 24,
             }}
           >
-            Всё необязательно — можно заполнить позже. Аватар помогает клиенту
-            быстрее выбрать именно вас.
+            {isPublicProfile
+              ? "Аватар помогает клиенту быстрее выбрать именно вас."
+              : "Всё необязательно — можно заполнить позже."}
           </Text>
+
+          {/* Visibility toggle */}
+          <View
+            className="flex-row items-center justify-between rounded-xl px-4 py-3 mb-6"
+            style={{
+              borderWidth: 1,
+              borderColor: isPublicProfile ? overlay.accent10 : colors.border,
+              backgroundColor: isPublicProfile
+                ? overlay.accent10
+                : colors.surface,
+            }}
+          >
+            <View className="flex-1 mr-3">
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "600",
+                  color: colors.text,
+                  marginBottom: 2,
+                }}
+              >
+                {isPublicProfile ? "Публичный профиль" : "Приватный профиль"}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                {isPublicProfile
+                  ? "Виден в каталоге специалистов"
+                  : "Скрыт из каталога"}
+              </Text>
+            </View>
+            <Switch
+              value={isPublicProfile}
+              onValueChange={(val) => {
+                setIsPublicProfile(val);
+                void AsyncStorage.setItem(
+                  ONBOARDING_VISIBILITY_KEY,
+                  val ? "true" : "false"
+                );
+              }}
+              trackColor={{
+                false: colors.border,
+                true: colors.accent,
+              }}
+              thumbColor={colors.surface}
+            />
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -305,14 +375,16 @@ export default function OnboardingProfileScreen() {
             />
           )}
 
-          <View
-            className="bg-accent-soft rounded-xl px-4 py-3 mb-4"
-            style={{ borderWidth: 1, borderColor: overlay.accent10 }}
-          >
-            <Text className="text-xs text-accent text-center font-medium">
-              Контакты будут видны всем посетителям платформы
-            </Text>
-          </View>
+          {isPublicProfile && (
+            <View
+              className="bg-accent-soft rounded-xl px-4 py-3 mb-4"
+              style={{ borderWidth: 1, borderColor: overlay.accent10 }}
+            >
+              <Text className="text-xs text-accent text-center font-medium">
+                Контакты будут видны всем посетителям платформы
+              </Text>
+            </View>
+          )}
 
           <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
             О себе
@@ -430,20 +502,22 @@ export default function OnboardingProfileScreen() {
           <Button
             label="Завершить регистрацию"
             onPress={handleSubmit}
-            disabled={isLoading || avatarUploading}
+            disabled={!canSubmit}
             loading={isLoading}
           />
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Пропустить"
-            onPress={handleSubmit}
-            disabled={isLoading || avatarUploading}
-            className="items-center mt-4"
-            style={{ minHeight: 44, justifyContent: "center" }}
-          >
-            <Text className="text-sm text-text-mute">Пропустить</Text>
-          </Pressable>
+          {isPublicProfile && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Пропустить"
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              className="items-center mt-4"
+              style={{ minHeight: 44, justifyContent: "center" }}
+            >
+              <Text className="text-sm text-text-mute">Пропустить</Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

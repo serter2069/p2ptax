@@ -109,8 +109,9 @@ export default function OnboardingNameScreen() {
 
       // Always replace so the back button doesn't return here and
       // re-trigger the guard redirect (#1522).
+      // Step order: name → visibility → work-area → profile (#1602).
       nav.replaceAny({
-        pathname: "/onboarding/work-area",
+        pathname: "/onboarding/visibility",
         params: { role: "specialist" },
       });
     } catch (e: unknown) {

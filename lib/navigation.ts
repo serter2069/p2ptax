@@ -51,6 +51,7 @@ export const ROUTES = {
   // Auth / onboarding
   authEmail: "/login",
   onboardingName: "/onboarding/name",
+  onboardingVisibility: "/onboarding/visibility",
   onboardingProfile: "/onboarding/profile",
   onboardingWorkArea: "/onboarding/work-area",
 

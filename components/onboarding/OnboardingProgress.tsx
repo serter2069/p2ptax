@@ -2,12 +2,12 @@ import { View, Text } from "react-native";
 import { colors } from "@/lib/theme";
 
 interface Props {
-  /** Current step: 1, 2, or 3 (matches Имя / Работа / Профиль). */
+  /** Current step: 1, 2, or 3 (matches Видимость / Работа / Профиль). */
   step: 1 | 2 | 3;
 }
 
 const STEPS: { label: string }[] = [
-  { label: "Имя" },
+  { label: "Видимость" },
   { label: "Работа" },
   { label: "Профиль" },
 ];
