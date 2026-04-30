@@ -43,3 +43,6 @@ yarn-error.*
 # API dist
 api/dist/
 .metro-map/
+
+# Visual audit screenshots (keep logs tracked)
+.audit/screenshots/*.png

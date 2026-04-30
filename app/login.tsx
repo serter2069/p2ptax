@@ -1,4 +1,4 @@
-import { View, Text, Image, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import Logo from "@/components/brand/Logo";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -82,12 +83,7 @@ export default function AuthEmailScreen() {
       <View className="flex-1 items-center justify-center bg-white px-6">
         <View style={{ width: "100%", maxWidth: 400 }}>
           {/* Wordmark */}
-          <Image
-            source={require("@/assets/images/logo.png")}
-            style={{ width: 240, height: 100, alignSelf: "center", borderRadius: 0, marginBottom: 40 }}
-            resizeMode="contain"
-            accessibilityLabel="P2PTax"
-          />
+          <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
 
           {/* Header */}
           <Text

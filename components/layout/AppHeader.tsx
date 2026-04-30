@@ -2,13 +2,13 @@ import { useState } from "react";
 import {
   View,
   Text,
-  Image,
   Pressable,
   TextInput,
   useWindowDimensions,
   Modal,
   Platform,
 } from "react-native";
+import Logo from "@/components/brand/Logo";
 import { useRouter, usePathname } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { Menu, Search, Settings, LogOut, User } from "lucide-react-native";
@@ -197,12 +197,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
                 {breadcrumb}
               </Text>
             ) : (
-              <Image
-                source={require("@/assets/images/logo.png")}
-                style={{ width: 100, height: 42 }}
-                resizeMode="contain"
-                accessibilityLabel="P2PTax"
-              />
+              <Logo size="sm" />
             )}
           </View>
 
@@ -245,12 +240,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
         }}
         style={{ minHeight: 44, justifyContent: "center" }}
       >
-        <Image
-          source={require("@/assets/images/logo.png")}
-          style={{ width: isMobile ? 100 : 130, height: isMobile ? 42 : 54 }}
-          resizeMode="contain"
-          accessibilityLabel="P2PTax"
-        />
+        <Logo size="lg" />
       </Pressable>
 
       {breadcrumb ? (

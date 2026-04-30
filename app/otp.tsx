@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  Image,
   Pressable,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +16,7 @@ import Button from "@/components/ui/Button";
 import OtpCodeInput from "@/components/auth/OtpCodeInput";
 import ResendCountdown from "@/components/auth/ResendCountdown";
 import { colors, textStyle } from "@/lib/theme";
+import Logo from "@/components/brand/Logo";
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -238,12 +238,7 @@ export default function AuthOtpScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={{ width: 240, height: 100, alignSelf: "center", borderRadius: 0, marginBottom: 40 }}
-              resizeMode="contain"
-              accessibilityLabel="P2PTax"
-            />
+            <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
             <Text
               style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}
             >
@@ -300,12 +295,7 @@ export default function AuthOtpScreen() {
         <HeaderBack title="" />
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={{ width: 240, height: 100, alignSelf: "center", borderRadius: 0, marginBottom: 40 }}
-              resizeMode="contain"
-              accessibilityLabel="P2PTax"
-            />
+            <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
@@ -337,12 +327,7 @@ export default function AuthOtpScreen() {
       >
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={{ width: 240, height: 100, alignSelf: "center", borderRadius: 0, marginBottom: 40 }}
-              resizeMode="contain"
-              accessibilityLabel="P2PTax"
-            />
+            <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}

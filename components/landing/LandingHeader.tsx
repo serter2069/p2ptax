@@ -1,5 +1,6 @@
-import { View, Text, Pressable, Image } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { colors, overlay } from "@/lib/theme";
+import Logo from "@/components/brand/Logo";
 
 interface LandingHeaderProps {
   isDesktop: boolean;
@@ -55,12 +56,7 @@ export default function LandingHeader({
           onPress={onHome}
           className="flex-row items-center"
         >
-          <Image
-            source={require("@/assets/images/logo.png")}
-            resizeMode="contain"
-            style={{ height: 32, width: 110 }}
-            accessibilityLabel="P2PTax"
-          />
+          <Logo size="md" />
         </Pressable>
 
         <View className="flex-row items-center" style={{ gap: isDesktop ? 8 : 4 }}>

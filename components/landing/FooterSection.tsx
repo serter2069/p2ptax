@@ -1,5 +1,6 @@
-import { View, Text, Image, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { colors, overlay } from "@/lib/theme";
+import Logo from "@/components/brand/Logo";
 
 interface FooterSectionProps {
   isDesktop: boolean;
@@ -52,12 +53,7 @@ export default function FooterSection({
               accessibilityLabel="P2PTax — главная"
               onPress={onHome}
             >
-              <Image
-                source={require("@/assets/images/logo-white.png")}
-                style={{ width: 120, height: 50, borderRadius: 0 }}
-                resizeMode="contain"
-                accessibilityLabel="P2PTax"
-              />
+              <Logo variant="white" size="md" />
             </Pressable>
             <Text style={{ color: overlay.white70, fontSize: 13, lineHeight: 20 }}>
               Маркетплейс практикующих специалистов по ФНС. Для

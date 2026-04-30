@@ -1,4 +1,4 @@
-import { View, Text, Pressable, useWindowDimensions, Image } from "react-native";
+import { View, Text, Pressable, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { Menu, Bell } from "lucide-react-native";
@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import MobileMenu from "./MobileMenu";
 import { colors } from "@/lib/theme";
+import Logo from "@/components/brand/Logo";
 
 const NAV_LINKS = [
   { label: "Специалисты", href: "/specialists" },
@@ -32,7 +33,7 @@ export default function Header() {
             <Menu size={20} color={colors.text} />
           </Pressable>
 
-          <Image source={require("@/assets/images/logo.png")} resizeMode="contain" style={{ height: 28, width: 96 }} accessibilityLabel="P2PTax" />
+          <Logo size="sm" />
 
           {isAuthenticated ? (
             <View className="flex-row items-center gap-3">
@@ -79,7 +80,7 @@ export default function Header() {
   return (
     <View className="flex-row items-center justify-between px-6 h-16 bg-white border-b" style={{ borderBottomColor: colors.border }}>
       <Pressable accessibilityRole="button" accessibilityLabel="Главная" onPress={() => nav.routes.home()} className="px-2 items-center justify-center" style={{ minHeight: 44 }}>
-        <Image source={require("@/assets/images/logo.png")} resizeMode="contain" style={{ height: 28, width: 96 }} accessibilityLabel="P2PTax" />
+        <Logo size="md" />
       </Pressable>
 
       {/* Desktop nav links */}
