@@ -516,6 +516,7 @@ export default function MyRequestDetail() {
                   onOpenThread={(threadId) =>
                     nav.any(`/threads/${threadId}?requestId=${id}`)
                   }
+                  onOpenSpecialistProfile={handleOpenSpecialistProfile}
                 />
               </View>
 
@@ -534,7 +535,10 @@ export default function MyRequestDetail() {
                     elevation: 4,
                   }}
                 >
-                  <Text className="text-xs font-bold text-text-base mb-3 uppercase tracking-wide">
+                  <Text
+                    className="uppercase tracking-wide mb-3"
+                    style={{ fontSize: 13, fontWeight: "600", color: "#111" }}
+                  >
                     Действия
                   </Text>
                   {isActive ? (
@@ -543,11 +547,12 @@ export default function MyRequestDetail() {
                       accessibilityLabel="Закрыть запрос"
                       onPress={handleCloseRequest}
                       disabled={closing}
-                      className="flex-row items-center justify-center rounded-xl py-3 px-4"
+                      className="flex-row items-center justify-center rounded-xl px-4"
                       style={({ pressed }) => [
                         {
                           backgroundColor: colors.danger,
-                          minHeight: 44,
+                          minHeight: 48,
+                          paddingVertical: 14,
                           shadowColor: colors.danger,
                           shadowOffset: { width: 0, height: 2 },
                           shadowOpacity: 0.25,
@@ -562,7 +567,10 @@ export default function MyRequestDetail() {
                       ) : (
                         <>
                           <X size={16} color={colors.white} />
-                          <Text className="text-white font-semibold text-sm ml-2">
+                          <Text
+                            className="text-white ml-2"
+                            style={{ fontSize: 15, fontWeight: "600" }}
+                          >
                             Закрыть запрос
                           </Text>
                         </>
@@ -570,16 +578,19 @@ export default function MyRequestDetail() {
                     </Pressable>
                   ) : (
                     <View
-                      className="rounded-xl py-3 px-4 items-center"
+                      className="rounded-xl px-4 items-center"
                       style={{
                         backgroundColor: colors.surface2,
                         borderWidth: 1,
                         borderColor: colors.border,
-                        minHeight: 44,
+                        minHeight: 48,
+                        paddingVertical: 14,
                         justifyContent: "center",
                       }}
                     >
-                      <Text className="text-sm font-medium text-text-base">Запрос закрыт</Text>
+                      <Text style={{ fontSize: 14, fontWeight: "500", color: "#111" }}>
+                        Запрос закрыт
+                      </Text>
                     </View>
                   )}
 
@@ -588,21 +599,26 @@ export default function MyRequestDetail() {
                     accessibilityRole="button"
                     accessibilityLabel="Скопировать ссылку"
                     onPress={handleCopyLink}
-                    className="flex-row items-center justify-center rounded-xl py-3 px-4 mt-2"
+                    className="flex-row items-center justify-center rounded-xl px-4 mt-2"
                     style={({ pressed }) => [
                       {
                         backgroundColor: colors.surface2,
                         borderWidth: 1,
                         borderColor: colors.border,
-                        minHeight: 44,
+                        minHeight: 48,
+                        paddingVertical: 14,
                       },
                       pressed && { opacity: 0.7 },
                     ]}
                   >
                     <Link size={16} color={copied ? colors.success : colors.text} />
                     <Text
-                      className="font-medium text-sm ml-2"
-                      style={{ color: copied ? colors.success : colors.text }}
+                      className="ml-2"
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "600",
+                        color: copied ? colors.success : "#111",
+                      }}
                     >
                       {copied ? "Скопировано!" : "Скопировать ссылку"}
                     </Text>
@@ -621,17 +637,20 @@ export default function MyRequestDetail() {
                           }}
                         >
                           <Text
-                            className="text-xs font-semibold"
-                            style={{ color: request.isPublic ? "#065F46" : "#6B7280" }}
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "600",
+                              color: request.isPublic ? "#065F46" : "#6B7280",
+                            }}
                           >
-                            {request.isPublic ? "Публичная" : "Только авторизованным"}
+                            {request.isPublic ? "Доступно публично" : "Только для участников"}
                           </Text>
                         </View>
                       </View>
-                      <Text className="text-xs text-text-mute">
+                      <Text style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
                         {request.isPublic
-                          ? "Видна всем в каталоге"
-                          : "Видна только авторизованным"}
+                          ? "Запрос виден всем пользователям интернета"
+                          : "Запрос виден только зарегистрированным пользователям"}
                       </Text>
                     </View>
                     <Switch
@@ -805,7 +824,10 @@ export default function MyRequestDetail() {
                 elevation: 4,
               }}
             >
-              <Text className="text-xs font-bold text-text-base mb-3 uppercase tracking-wide">
+              <Text
+                className="uppercase tracking-wide mb-3"
+                style={{ fontSize: 13, fontWeight: "600", color: "#111" }}
+              >
                 Действия
               </Text>
               {isActive ? (
@@ -814,11 +836,12 @@ export default function MyRequestDetail() {
                   accessibilityLabel="Закрыть запрос"
                   onPress={handleCloseRequest}
                   disabled={closing}
-                  className="flex-row items-center justify-center rounded-xl py-3 px-4"
+                  className="flex-row items-center justify-center rounded-xl px-4"
                   style={({ pressed }) => [
                     {
                       backgroundColor: colors.danger,
-                      minHeight: 44,
+                      minHeight: 48,
+                      paddingVertical: 14,
                       shadowColor: colors.danger,
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.25,
@@ -833,7 +856,10 @@ export default function MyRequestDetail() {
                   ) : (
                     <>
                       <X size={16} color={colors.white} />
-                      <Text className="text-white font-semibold text-base ml-2">
+                      <Text
+                        className="text-white ml-2"
+                        style={{ fontSize: 15, fontWeight: "600" }}
+                      >
                         Закрыть запрос
                       </Text>
                     </>
@@ -841,16 +867,19 @@ export default function MyRequestDetail() {
                 </Pressable>
               ) : (
                 <View
-                  className="rounded-xl py-3 px-4 items-center"
+                  className="rounded-xl px-4 items-center"
                   style={{
                     backgroundColor: colors.surface2,
                     borderWidth: 1,
                     borderColor: colors.border,
-                    minHeight: 44,
+                    minHeight: 48,
+                    paddingVertical: 14,
                     justifyContent: "center",
                   }}
                 >
-                  <Text className="text-sm font-medium text-text-base">Запрос закрыт</Text>
+                  <Text style={{ fontSize: 14, fontWeight: "500", color: "#111" }}>
+                    Запрос закрыт
+                  </Text>
                 </View>
               )}
 
@@ -859,21 +888,26 @@ export default function MyRequestDetail() {
                 accessibilityRole="button"
                 accessibilityLabel="Скопировать ссылку"
                 onPress={handleCopyLink}
-                className="flex-row items-center justify-center rounded-xl py-3 px-4 mt-2"
+                className="flex-row items-center justify-center rounded-xl px-4 mt-2"
                 style={({ pressed }) => [
                   {
                     backgroundColor: colors.surface2,
                     borderWidth: 1,
                     borderColor: colors.border,
-                    minHeight: 44,
+                    minHeight: 48,
+                    paddingVertical: 14,
                   },
                   pressed && { opacity: 0.7 },
                 ]}
               >
                 <Link size={16} color={copied ? colors.success : colors.text} />
                 <Text
-                  className="font-medium text-sm ml-2"
-                  style={{ color: copied ? colors.success : colors.text }}
+                  className="ml-2"
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: copied ? colors.success : "#111",
+                  }}
                 >
                   {copied ? "Скопировано!" : "Скопировать ссылку"}
                 </Text>
@@ -892,17 +926,20 @@ export default function MyRequestDetail() {
                       }}
                     >
                       <Text
-                        className="text-xs font-semibold"
-                        style={{ color: request.isPublic ? "#065F46" : "#6B7280" }}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: request.isPublic ? "#065F46" : "#6B7280",
+                        }}
                       >
-                        {request.isPublic ? "Публичная" : "Только авторизованным"}
+                        {request.isPublic ? "Доступно публично" : "Только для участников"}
                       </Text>
                     </View>
                   </View>
-                  <Text className="text-xs text-text-mute">
+                  <Text style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
                     {request.isPublic
-                      ? "Видна всем в каталоге"
-                      : "Видна только авторизованным"}
+                      ? "Запрос виден всем пользователям интернета"
+                      : "Запрос виден только зарегистрированным пользователям"}
                   </Text>
                 </View>
                 <Switch
@@ -927,6 +964,7 @@ export default function MyRequestDetail() {
               onOpenThread={(threadId) =>
                 nav.any(`/threads/${threadId}?requestId=${id}`)
               }
+              onOpenSpecialistProfile={handleOpenSpecialistProfile}
             />
 
             {/* Meta stats */}
