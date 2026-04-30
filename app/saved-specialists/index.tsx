@@ -1,5 +1,5 @@
 import SpecialistFeed from "@/components/specialists/SpecialistFeed";
 
 export default function SavedSpecialistsScreen() {
-  return <SpecialistFeed mode="favorites" />;
+  return <SpecialistFeed mode="favorites" title="Мои специалисты" />;
 }

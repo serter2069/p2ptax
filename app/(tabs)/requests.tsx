@@ -16,8 +16,9 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import RequestCard from "@/components/RequestCard";
+import PageTitle from "@/components/layout/PageTitle";
 import { api } from "@/lib/api";
-import { colors, overlay, textStyle, BREAKPOINT } from "@/lib/theme";
+import { colors, BREAKPOINT } from "@/lib/theme";
 
 interface CityOption {
   id: string;
@@ -214,20 +215,7 @@ export default function PublicRequestsTab() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      {/* Accent hero — no back button (this is a tab, not a stacked screen) */}
-      <View className="bg-accent px-4 py-4">
-        <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>
-          Заявки
-        </Text>
-        <Text style={{ ...textStyle.small, color: overlay.white90 }}>
-          Открытая биржа: задайте вопрос — получите предложения от специалистов
-        </Text>
-        {total > 0 && (
-          <Text className="text-sm font-semibold text-white mt-2">
-            {total} активных запросов
-          </Text>
-        )}
-      </View>
+      <PageTitle title="Биржа запросов" subtitle="Открытая биржа: задайте вопрос — получите предложения от специалистов" />
 
       {/* Filter bar: city → FNS cascade + services chips */}
       <View className="bg-white border-b border-border py-2">

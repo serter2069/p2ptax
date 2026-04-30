@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
 import { BREAKPOINT } from "@/lib/theme";
 import DesktopScreen from "@/components/layout/DesktopScreen";
+import PageTitle from "@/components/layout/PageTitle";
 import { FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -208,11 +209,9 @@ export default function MyRequests() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
+      <PageTitle title="Мои заявки" />
       <DesktopScreen>
         <View className="flex-row items-center justify-between mb-4">
-          {!isDesktop && (
-            <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
-          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"

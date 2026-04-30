@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import StyledSwitch from "@/components/ui/StyledSwitch";
 import LandingHeader from "@/components/landing/LandingHeader";
+import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -280,16 +281,8 @@ export default function CreateRequest() {
           ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 10 } as object) : {}),
         }}
       >
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 640,
-            alignSelf: "center",
-            paddingHorizontal: 16,
-            paddingTop: 16,
-          }}
-        >
-          {width < 640 && (
+        {width < 640 && (
+          <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Назад"
@@ -300,9 +293,9 @@ export default function CreateRequest() {
               <ChevronLeft size={20} color={colors.text} />
               <Text className="text-text-base ml-1">Назад</Text>
             </Pressable>
-          )}
-          <Text className="text-2xl font-extrabold text-text-base mb-3">Создать запрос</Text>
-        </View>
+          </View>
+        )}
+        <PageTitle title="Новая заявка" />
       </View>
       <ScrollView
         className="flex-1"

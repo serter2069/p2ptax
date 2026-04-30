@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import Constants from "expo-constants";
 import { View, Text, ScrollView, Pressable, Alert, Platform, useWindowDimensions } from "react-native";
+import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { ChevronLeft, LogOut, Trash2 } from "lucide-react-native";
@@ -150,8 +151,8 @@ export default function UnifiedSettings() {
   if (!ready) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        <View className="px-4 pt-4">
-          {!isDesktop && (
+        {!isDesktop && (
+          <View className="px-4 pt-4">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Назад"
@@ -162,9 +163,9 @@ export default function UnifiedSettings() {
               <ChevronLeft size={20} color={colors.text} />
               <Text className="text-text-base ml-1">Назад</Text>
             </Pressable>
-          )}
-          <Text className="text-2xl font-extrabold text-text-base mb-4">Настройки</Text>
-        </View>
+          </View>
+        )}
+        <PageTitle title="Настройки" />
         <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
     );
@@ -172,8 +173,8 @@ export default function UnifiedSettings() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <View className="px-4 pt-4">
-        {!isDesktop && (
+      {!isDesktop && (
+        <View className="px-4 pt-4">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Назад"
@@ -184,9 +185,9 @@ export default function UnifiedSettings() {
             <ChevronLeft size={20} color={colors.text} />
             <Text className="text-text-base ml-1">Назад</Text>
           </Pressable>
-        )}
-        <Text className="text-2xl font-extrabold text-text-base mb-3">Настройки</Text>
-      </View>
+        </View>
+      )}
+      <PageTitle title="Настройки" />
 
       {/* Tabs hidden during inline onboarding — content takes full screen */}
       {!inlineOnboarding && (
