@@ -474,4 +474,69 @@ router.patch("/:threadId/read", authMiddleware, async (req: Request, res: Respon
   }
 });
 
+// DELETE /api/messages/:threadId/clear — delete all messages in thread, keep thread intact
+router.delete("/:threadId/clear", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const threadId = param(req.params.threadId);
+
+    const thread = await prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, clientId: true, specialistId: true },
+    });
+
+    if (!thread) {
+      res.status(404).json({ error: "Thread not found" });
+      return;
+    }
+
+    if (thread.clientId !== userId && thread.specialistId !== userId) {
+      res.status(403).json({ error: "Not a participant" });
+      return;
+    }
+
+    // Collect message ids + attached files
+    const messages = await prisma.message.findMany({
+      where: { threadId },
+      select: { id: true },
+    });
+    const messageIds = messages.map((m) => m.id);
+
+    if (messageIds.length > 0) {
+      // Clean up MinIO objects for attached files
+      const files = await prisma.file.findMany({
+        where: { entityType: "message", entityId: { in: messageIds } },
+        select: { id: true, url: true },
+      });
+
+      if (files.length > 0) {
+        const objectKeys = files
+          .map((f) => {
+            const prefix = `/${MINIO_BUCKET}/`;
+            if (f.url.startsWith(prefix)) return f.url.slice(prefix.length);
+            return f.url.replace(/^\//, "");
+          })
+          .filter(Boolean);
+
+        await Promise.allSettled(
+          objectKeys.map((key) =>
+            minioClient.removeObject(MINIO_BUCKET, key).catch((err: Error) =>
+              console.warn(`[messages/clear] MinIO delete failed for key "${key}":`, err.message)
+            )
+          )
+        );
+
+        await prisma.file.deleteMany({ where: { id: { in: files.map((f) => f.id) } } });
+      }
+
+      await prisma.message.deleteMany({ where: { threadId } });
+    }
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("messages clear error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

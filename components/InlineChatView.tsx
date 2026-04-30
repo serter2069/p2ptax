@@ -392,10 +392,10 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     setShowClearModal(false);
     setClearingThread(true);
     try {
-      await apiDelete(`/api/threads/${threadId}`);
-      router.back();
+      await apiDelete(`/api/messages/${threadId}/clear`);
+      // Stay on the thread page — just clear local message list
+      setMessages([]);
     } catch (e) {
-      setClearingThread(false);
       if (Platform.OS === "web") {
         if (typeof window !== "undefined" && typeof window.alert === "function") {
           window.alert("Ошибка: Не удалось очистить переписку");
@@ -403,6 +403,8 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       } else {
         Alert.alert("Ошибка", "Не удалось очистить переписку");
       }
+    } finally {
+      setClearingThread(false);
     }
   }, [threadId]);
 
