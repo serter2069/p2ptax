@@ -83,7 +83,7 @@ export default function AuthOtpScreen() {
       // resume-onboarding / tabs logic below.
       if (intent === "specialist" && !user.isSpecialist) {
         nav.replaceAny({
-          pathname: "/onboarding/name",
+          pathname: "/onboarding/visibility",
           params: { role: "specialist" },
         });
         return;
@@ -106,7 +106,7 @@ export default function AuthOtpScreen() {
       // is the authoritative gate: it's set only after `/api/onboarding/profile`
       // succeeds, so any falsy value means onboarding is incomplete.
       if (user.isSpecialist && !user.specialistProfileCompletedAt) {
-        nav.replaceRoutes.onboardingName();
+        nav.replaceRoutes.onboardingVisibility();
         return;
       }
       nav.replaceRoutes.dashboard();
@@ -151,7 +151,7 @@ export default function AuthOtpScreen() {
             } catch {
               // optimistic update already applied; next /me call will re-sync
             }
-            nav.replaceRoutes.onboardingName();
+            nav.replaceRoutes.onboardingVisibility();
             return;
           }
           setPendingAuth(data);
@@ -222,7 +222,7 @@ export default function AuthOtpScreen() {
       // Silent: optimistic update keeps the UI responsive.
     }
     if (becomeSpecialist) {
-      nav.replaceRoutes.onboardingName();
+      nav.replaceRoutes.onboardingVisibility();
     } else if (returnTo) {
       nav.replaceAny(returnTo);
     } else {

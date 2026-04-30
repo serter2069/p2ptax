@@ -33,6 +33,9 @@ model User {
   avatarUrl   String?  @map("avatar_url")
   isAvailable Boolean  @default(false) @map("is_available")
   isBanned    Boolean  @default(false) @map("is_banned")
+  // Iter13 — specialist catalog visibility. When true, appears in public catalog.
+  // Default false; specialist opts in during onboarding or via settings.
+  isPublicProfile Boolean @default(false) @map("is_public_profile")
   // Soft-delete timestamp. When non-null the user is considered deleted —
   // PII is anonymized in-place and they're hidden from public catalog/queries
   // but the row is preserved so threads/messages keep a valid FK target.
