@@ -1,4 +1,4 @@
-import { View, Text, Pressable, useWindowDimensions, Platform } from "react-native";
+import { View, Text, Image, Pressable, useWindowDimensions, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { Bell, Settings } from "lucide-react-native";
@@ -28,7 +28,12 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
 
   return (
     <View className="flex-row items-center justify-between h-14 px-4" style={{ backgroundColor: colors.primary }}>
-      <Text className="text-lg font-bold text-white">P2PTax</Text>
+      <Image
+        source={require("@/assets/images/logo-white.png")}
+        style={{ height: 36, width: 110 }}
+        resizeMode="contain"
+        accessibilityLabel="P2PTax"
+      />
       <View className="flex-row items-center gap-4">
         <Pressable
           accessibilityRole="button"
