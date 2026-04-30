@@ -31,7 +31,7 @@ import SpecialistFilter from "@/components/specialists/SpecialistFilter";
 import SpecialistsGrid from "@/components/specialists/SpecialistsGrid";
 import LandingHeader from "@/components/landing/LandingHeader";
 import PageTitle from "@/components/layout/PageTitle";
-import { CityOpt, FnsOpt } from "@/components/filters/SpecialistSearchBar";
+import { CityFnsValue, FnsCascadeOption } from "@/components/filters/CityFnsCascade";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,6 +92,7 @@ export interface SpecialistFeedProps {
 }
 
 const PAGE_SIZE = 12;
+const EMPTY_FILTER: CityFnsValue = { cities: [], fns: [], fnsServices: {} };
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -106,26 +107,24 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
   const urlParams = useLocalSearchParams<{
     city?: string;
     fns?: string;
-    services?: string;
   }>();
 
   // ── Filter source data ──
-  const [cities, setCities] = useState<CityOpt[]>([]);
-  const [fnsAll, setFnsAll] = useState<FnsOpt[]>([]);
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
+  const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
 
-  // ── Active filter state ──
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(
-    mode === "all" ? (urlParams.city || null) : null
-  );
-  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(
-    mode === "all" ? (urlParams.fns || null) : null
-  );
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
-    mode === "all" && urlParams.services
-      ? urlParams.services.split(",").filter(Boolean)
-      : []
-  );
+  // ── Unified filter state ──
+  const [filterValue, setFilterValue] = useState<CityFnsValue>(() => ({
+    cities: mode === "all" && urlParams.city ? [urlParams.city] : [],
+    fns: mode === "all" && urlParams.fns ? [urlParams.fns] : [],
+    fnsServices: {},
+  }));
+
+  // Derive individual filter ids for API calls (backward compat)
+  const selectedCityId = filterValue.cities[0] ?? null;
+  const selectedFnsId = filterValue.fns[0] ?? null;
+  const fnsServicesParam = filterValue.fnsServices ?? {};
 
   // ── List state ──
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
@@ -140,9 +139,8 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
   const [hasMore, setHasMore] = useState(true);
 
   const hasFilters =
-    selectedCityId !== null ||
-    selectedFnsId !== null ||
-    selectedServiceIds.length > 0;
+    filterValue.cities.length > 0 ||
+    filterValue.fns.length > 0;
 
   // ── Auth guard for favorites mode ──
   useEffect(() => {
@@ -218,8 +216,12 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
         let path = `/api/specialists?page=${pageNum}&limit=${PAGE_SIZE}`;
         if (selectedCityId) path += `&city_ids=${selectedCityId}`;
         if (selectedFnsId) path += `&fns_ids=${selectedFnsId}`;
-        if (selectedServiceIds.length > 0)
-          path += `&services=${selectedServiceIds.join(",")}`;
+
+        // #1658: per-FNS services filter
+        const fnsServiceKeys = Object.keys(fnsServicesParam);
+        if (fnsServiceKeys.length > 0) {
+          path += `&fnsServices=${encodeURIComponent(JSON.stringify(fnsServicesParam))}`;
+        }
 
         const res = await api<SpecialistsResponse>(path, { noAuth: true });
 
@@ -231,7 +233,7 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
         setError("Не удалось загрузить список");
       }
     },
-    [selectedCityId, selectedFnsId, selectedServiceIds]
+    [selectedCityId, selectedFnsId, fnsServicesParam]
   );
 
   const fetchFavorites = useCallback(async () => {
@@ -239,8 +241,13 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
       const parts: string[] = ["savedOnly=true", "page=1", "limit=200"];
       if (selectedCityId) parts.push(`city_ids=${selectedCityId}`);
       if (selectedFnsId) parts.push(`fns_ids=${selectedFnsId}`);
-      if (selectedServiceIds.length > 0)
-        parts.push(`services=${selectedServiceIds.join(",")}`);
+
+      // #1658: per-FNS services filter
+      const fnsServiceKeys = Object.keys(fnsServicesParam);
+      if (fnsServiceKeys.length > 0) {
+        parts.push(`fnsServices=${encodeURIComponent(JSON.stringify(fnsServicesParam))}`);
+      }
+
       const res = await apiGet<{ items: SpecialistItem[] }>(
         `/api/specialists?${parts.join("&")}`
       );
@@ -252,7 +259,7 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
       setSpecialists([]);
       setError("Не удалось загрузить список");
     }
-  }, [selectedCityId, selectedFnsId, selectedServiceIds]);
+  }, [selectedCityId, selectedFnsId, fnsServicesParam]);
 
   const fetchAllRef = useRef(fetchAll);
   fetchAllRef.current = fetchAll;
@@ -268,66 +275,28 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
     isAuthenticated,
     selectedCityId,
     selectedFnsId,
-    selectedServiceIds,
+    fnsServicesParam,
     fetchAll,
     fetchFavorites,
   ]);
 
-  // ── Filter handlers ──
+  // ── Filter handler ──
+  const handleFilterChange = useCallback(
+    (v: CityFnsValue) => {
+      setFilterValue(v);
+      if (mode === "all") {
+        router.setParams({
+          city: v.cities[0] ?? undefined,
+          fns: v.fns[0] ?? undefined,
+        });
+      }
+    },
+    [mode]
+  );
+
   const resetFilters = useCallback(() => {
-    setSelectedCityId(null);
-    setSelectedFnsId(null);
-    setSelectedServiceIds([]);
-    if (mode === "all") {
-      router.setParams({ city: undefined, fns: undefined, services: undefined });
-    }
-  }, [mode]);
-
-  const handlePickCity = useCallback(
-    (cityId: string) => {
-      setSelectedCityId(cityId);
-      setSelectedFnsId(null);
-      if (mode === "all") router.setParams({ city: cityId, fns: undefined });
-    },
-    [mode]
-  );
-
-  const handlePickFns = useCallback(
-    (fns: FnsOpt) => {
-      setSelectedCityId(fns.cityId);
-      setSelectedFnsId(fns.id);
-      if (mode === "all") router.setParams({ city: fns.cityId, fns: fns.id });
-    },
-    [mode]
-  );
-
-  const handleClearLocation = useCallback(() => {
-    setSelectedCityId(null);
-    setSelectedFnsId(null);
-    if (mode === "all") router.setParams({ city: undefined, fns: undefined });
-  }, [mode]);
-
-  const handleServiceToggle = useCallback(
-    (id: string) => {
-      setSelectedServiceIds((prev) => {
-        const next = prev.includes(id)
-          ? prev.filter((s) => s !== id)
-          : [...prev, id];
-        if (mode === "all") {
-          router.setParams({
-            services: next.length > 0 ? next.join(",") : undefined,
-          });
-        }
-        return next;
-      });
-    },
-    [mode]
-  );
-
-  const handleClearServices = useCallback(() => {
-    setSelectedServiceIds([]);
-    if (mode === "all") router.setParams({ services: undefined });
-  }, [mode]);
+    handleFilterChange(EMPTY_FILTER);
+  }, [handleFilterChange]);
 
   // ── Pagination / refresh ──
   const handleRefresh = useCallback(async () => {
@@ -589,14 +558,8 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
           cities={cities}
           fnsAll={fnsAll}
           services={services}
-          selectedCityId={selectedCityId}
-          selectedFnsId={selectedFnsId}
-          selectedServiceIds={selectedServiceIds}
-          onPickCity={handlePickCity}
-          onPickFns={handlePickFns}
-          onClearLocation={handleClearLocation}
-          onToggleService={handleServiceToggle}
-          onClearServices={handleClearServices}
+          value={filterValue}
+          onChange={handleFilterChange}
         />
       </View>
 
