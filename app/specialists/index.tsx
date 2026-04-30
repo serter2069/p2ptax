@@ -307,8 +307,8 @@ export default function SpecialistsCatalog() {
     <SafeAreaView className="flex-1 bg-surface2">
       <CatalogHeader isDesktop={isDesktop} count={headerCount} />
 
-      {/* Row 2: typeahead search bar */}
-      <View className="px-4 pt-2" style={{ zIndex: 20 }}>
+      {/* Row 2: typeahead search bar — zIndex 100 so dropdown renders above FlatList */}
+      <View className="px-4 pt-2" style={{ zIndex: 100 }}>
         <SpecialistSearchBar
           cities={cities}
           fnsAll={fnsAll}

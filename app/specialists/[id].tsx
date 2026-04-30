@@ -28,7 +28,7 @@ import type {
   ContactMethodItem,
 } from "@/components/specialist/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { api, apiPost } from "@/lib/api";
 import { colors, textStyle, spacing, BREAKPOINT } from "@/lib/theme";
 
 export default function SpecialistPublicProfile() {
@@ -72,13 +72,25 @@ export default function SpecialistPublicProfile() {
     if (id) load();
   }, [id]);
 
-  const handleWritePress = useCallback(() => {
+  const [writeLoading, setWriteLoading] = useState(false);
+
+  const handleWritePress = useCallback(async () => {
     if (!isAuthenticated) {
       router.push(`/login?returnTo=/specialists/${id}` as never);
-    } else {
-      nav.routes.requestsNew();
+      return;
     }
-  }, [isAuthenticated, router, id, nav]);
+    if (writeLoading) return;
+    setWriteLoading(true);
+    try {
+      const res = await apiPost<{ threadId: string }>("/api/threads/direct", { specialistId: id });
+      nav.any(`/threads/${res.threadId}`);
+    } catch {
+      // Fallback: open new request form
+      nav.routes.requestsNew();
+    } finally {
+      setWriteLoading(false);
+    }
+  }, [isAuthenticated, router, id, nav, writeLoading]);
 
   const handleSavePress = useCallback(() => {
     if (!isAuthenticated) {

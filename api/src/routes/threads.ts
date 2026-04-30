@@ -441,6 +441,67 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/threads/direct — find or create a direct thread (client → specialist, no request)
+router.post("/direct", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { specialistId } = req.body as { specialistId?: string };
+
+    if (!specialistId) {
+      res.status(400).json({ error: "specialistId is required" });
+      return;
+    }
+
+    if (userId === specialistId) {
+      res.status(400).json({ error: "Cannot create a thread with yourself" });
+      return;
+    }
+
+    // Verify target is a specialist
+    const targetUser = await prisma.user.findUnique({
+      where: { id: specialistId },
+      select: { id: true, isSpecialist: true },
+    });
+
+    if (!targetUser || !targetUser.isSpecialist) {
+      res.status(404).json({ error: "Specialist not found" });
+      return;
+    }
+
+    // Find existing direct thread (requestId IS NULL)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existing = await (prisma.thread as any).findFirst({
+      where: {
+        requestId: null,
+        clientId: userId,
+        specialistId,
+      },
+      select: { id: true },
+    }) as { id: string } | null;
+
+    if (existing) {
+      res.json({ threadId: existing.id, created: false });
+      return;
+    }
+
+    // Create new direct thread
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const thread = await (prisma.thread as any).create({
+      data: {
+        requestId: null,
+        clientId: userId,
+        specialistId,
+      },
+      select: { id: true },
+    }) as { id: string };
+
+    res.status(201).json({ threadId: thread.id, created: true });
+  } catch (error) {
+    console.error("threads/direct error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/threads — create thread with first message (specialist only)
 router.post("/", async (req: Request, res: Response) => {
   try {
