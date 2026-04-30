@@ -409,7 +409,7 @@ export default function MyRequests() {
 
   const handleRequestPress = useCallback(
     (id: string) => {
-      nav.any(`/requests/${id}/detail`);
+      nav.dynamic.requestDetail(id);
     },
     [nav]
   );

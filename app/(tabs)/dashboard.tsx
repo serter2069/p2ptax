@@ -8,7 +8,6 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { FileText, Inbox, Clock } from "lucide-react-native";
 import DesktopScreen from "@/components/layout/DesktopScreen";
@@ -60,7 +59,6 @@ const TIPS: { title: string; text: string }[] = [
 ];
 
 export default function UserDashboard() {
-  const router = useRouter();
   const nav = useTypedRouter();
   const { ready } = useRequireAuth();
   const { user, isSpecialistUser, updateUser } = useAuth();
@@ -206,9 +204,9 @@ export default function UserDashboard() {
             : r.status === "CLOSED"
               ? "muted"
               : "primary",
-        onPress: () => nav.any(`/requests/${r.id}/detail`),
+        onPress: () => nav.dynamic.requestDetail(r.id),
       })),
-    [requests, router]
+    [requests, nav]
   );
 
   const matched = matchingRequests.filter((r) => r.status !== "CLOSED");
@@ -241,13 +239,13 @@ export default function UserDashboard() {
         onPress: () => {
           const existing = r.existingThreadId ?? r.threadId;
           if (r.hasThread && existing) {
-            nav.any(`/threads/${existing}`);
+            nav.dynamic.thread(existing);
           } else {
-            nav.any(`/requests/${r.id}/write`);
+            nav.dynamic.requestWrite(r.id);
           }
         },
       })),
-    [matched, router]
+    [matched, nav]
   );
 
   const subtitle = isSpecialistUser

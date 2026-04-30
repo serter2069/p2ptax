@@ -319,7 +319,7 @@ export default function MyRequestDetail() {
                   requestId={id}
                   threadsCount={request.threadsCount}
                   unreadMessages={request.unreadMessages}
-                  onOpenThread={(threadId) => nav.any(`/threads/${threadId}`)}
+                  onOpenThread={(threadId) => nav.dynamic.thread(threadId)}
                 />
               </View>
 
@@ -396,7 +396,7 @@ export default function MyRequestDetail() {
                             <Pressable
                               accessibilityRole="button"
                               accessibilityLabel={`Профиль ${name}`}
-                              onPress={() => nav.any(`/specialists/${spec.id}`)}
+                              onPress={() => nav.dynamic.specialist(spec.id)}
                               className="flex-1 mr-2"
                             >
                               <Text className="text-sm font-semibold text-text-base" numberOfLines={1}>

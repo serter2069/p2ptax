@@ -113,7 +113,7 @@ export default function RequestMessages() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Чат с ${name}`}
-          onPress={() => nav.any(`/threads/${item.id}`)}
+          onPress={() => nav.dynamic.thread(item.id)}
           className="flex-row items-center py-3 border-b border-border"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >

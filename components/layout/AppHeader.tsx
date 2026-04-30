@@ -134,7 +134,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
       nav.routes.specialists();
       return;
     }
-    nav.any(`/specialists?q=${encodeURIComponent(trimmed)}`);
+    nav.dynamic.specialistsSearch(trimmed);
   };
 
   const handleLogout = async () => {
@@ -147,9 +147,11 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
     setDropdownOpen(false);
     // Iter11 — unified /settings for all non-admin USERs. Admin still has
     // its own bespoke settings page.
-    const settingsPath =
-      user?.role === "ADMIN" ? "/admin/settings" : "/settings";
-    nav.any(settingsPath);
+    if (user?.role === "ADMIN") {
+      nav.routes.adminSettings();
+    } else {
+      nav.routes.settings();
+    }
   };
 
   // -------- Mobile --------

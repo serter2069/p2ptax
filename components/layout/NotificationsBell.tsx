@@ -67,7 +67,7 @@ export default function NotificationsBell() {
           ? `Уведомления, непрочитанных: ${display}`
           : "Уведомления"
       }
-      onPress={() => nav.any("/notifications")}
+      onPress={() => nav.routes.notifications()}
       className="items-center justify-center"
       style={{ width: 44, height: 44 }}
     >

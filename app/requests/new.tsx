@@ -19,11 +19,11 @@ import Input from "@/components/ui/Input";
 import { api, apiPost } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
-import CityFnsServicePicker, {
+import type {
   CityOption,
-  FnsOption,
   ServiceOption,
 } from "@/components/requests/CityFnsServicePicker";
+import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import { draftStorage } from "@/lib/draftStorage";
 import EmptyState from "@/components/ui/EmptyState";
@@ -56,13 +56,8 @@ export default function CreateRequest() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
   const [cities, setCities] = useState<CityOption[]>([]);
-  const [fnsOffices, setFnsOffices] = useState<FnsOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
 
-  const [cityOpen, setCityOpen] = useState(false);
-  const [fnsOpen, setFnsOpen] = useState(false);
-  const [serviceOpen, setServiceOpen] = useState(false);
-  const [loadingFns, setLoadingFns] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingInit, setLoadingInit] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -90,24 +85,9 @@ export default function CreateRequest() {
     init();
   }, []);
 
-  const loadFnsForCity = useCallback(async (citySlug: string) => {
-    setLoadingFns(true);
-    setFnsOffices([]);
-    try {
-      const data = await api<{
-        city: { id: string; name: string; slug: string };
-        items: FnsOption[];
-      }>(`/api/cities/${citySlug}/ifns`, { noAuth: true });
-      setFnsOffices(data.items);
-    } catch {
-      /* silent */
-    } finally {
-      setLoadingFns(false);
-    }
-  }, []);
-
   // Restore draft on mount (anyone — anon or returning post-login).
   // Reads new key first, falls back to legacy key for in-flight users.
+  // FNS list is fetched internally by CityFnsCascade once selectedCityId is set.
   useEffect(() => {
     if (loadingInit || draftLoaded) return;
     (async () => {
@@ -128,7 +108,6 @@ export default function CreateRequest() {
           if (draft.cityId) setSelectedCityId(draft.cityId);
           if (draft.fnsId) setSelectedFnsId(draft.fnsId);
           if (draft.serviceId) setSelectedServiceId(draft.serviceId);
-          if (draft.citySlug) loadFnsForCity(draft.citySlug);
         }
       } catch {
         /* ignore parse / storage errors */
@@ -139,7 +118,7 @@ export default function CreateRequest() {
         }
       }
     })();
-  }, [loadingInit, draftLoaded, restoreMode, loadFnsForCity]);
+  }, [loadingInit, draftLoaded, restoreMode]);
 
   // Persist draft on every form-field change (after initial load to avoid wiping).
   useEffect(() => {
@@ -171,25 +150,13 @@ export default function CreateRequest() {
     cities,
   ]);
 
-  const handleCitySelect = useCallback(
-    (city: CityOption) => {
-      setSelectedCityId(city.id);
-      setSelectedFnsId(null);
-      setCityOpen(false);
-      loadFnsForCity(city.slug);
+  const handleCascadeChange = useCallback(
+    (v: { cities: string[]; fns: string[] }) => {
+      setSelectedCityId(v.cities[0] ?? null);
+      setSelectedFnsId(v.fns[0] ?? null);
     },
-    [loadFnsForCity]
+    []
   );
-
-  const handleFnsSelect = useCallback((fns: FnsOption) => {
-    setSelectedFnsId(fns.id);
-    setFnsOpen(false);
-  }, []);
-
-  const handleServiceSelect = useCallback((svc: ServiceOption) => {
-    setSelectedServiceId(svc.id);
-    setServiceOpen(false);
-  }, []);
 
   const titleValid = title.trim().length >= 3 && title.trim().length <= 100;
   const descriptionValid =
@@ -251,10 +218,6 @@ export default function CreateRequest() {
     setShowOtpFlow(true);
   }, [formValid, submitting, isAuthenticated, submitRequestAuthed]);
 
-  const selectedCity = cities.find((c) => c.id === selectedCityId);
-  const selectedFns = fnsOffices.find((f) => f.id === selectedFnsId);
-  const selectedService = services.find((s) => s.id === selectedServiceId);
-
   if (authLoading || loadingInit) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
@@ -284,9 +247,9 @@ export default function CreateRequest() {
       {!isAuthenticated && (
         <LandingHeader
           isDesktop={width >= 768}
-          onHome={() => nav.any("/")}
-          onCatalog={() => nav.any("/specialists")}
-          onLogin={() => nav.any("/login")}
+          onHome={() => nav.routes.home()}
+          onCatalog={() => nav.routes.specialists()}
+          onLogin={() => nav.routes.login()}
           onCreateRequest={() => {}}
           isAuthenticated={false}
         />
@@ -297,16 +260,18 @@ export default function CreateRequest() {
           ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 10 } as object) : {}),
         }}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Назад"
-          onPress={() => router.back()}
-          className="flex-row items-center mb-2"
-          style={{ minHeight: 44 }}
-        >
-          <ChevronLeft size={20} color={colors.text} />
-          <Text className="text-text-base ml-1">Назад</Text>
-        </Pressable>
+        {width < 640 && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => router.back()}
+            className="flex-row items-center mb-2"
+            style={{ minHeight: 44 }}
+          >
+            <ChevronLeft size={20} color={colors.text} />
+            <Text className="text-text-base ml-1">Назад</Text>
+          </Pressable>
+        )}
         <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
       </View>
       <ScrollView
@@ -366,30 +331,28 @@ export default function CreateRequest() {
               </Text>
             </View>
 
-            <CityFnsServicePicker
-              cities={cities}
-              fnsOffices={fnsOffices}
-              services={services}
-              selectedCity={selectedCity}
-              selectedFns={selectedFns}
-              selectedService={selectedService}
-              cityOpen={cityOpen}
-              fnsOpen={fnsOpen}
-              serviceOpen={serviceOpen}
-              loadingFns={loadingFns}
-              submitted={submitted}
-              disabled={submitting}
-              onCitySelect={handleCitySelect}
-              onFnsSelect={handleFnsSelect}
-              onServiceSelect={handleServiceSelect}
-              onServiceClear={() => {
-                setSelectedServiceId(null);
-                setServiceOpen(false);
-              }}
-              onCityOpenChange={setCityOpen}
-              onFnsOpenChange={setFnsOpen}
-              onServiceOpenChange={setServiceOpen}
-            />
+            {/* Negative margin compensates for cascade's internal px-4 so its
+                chip rows align with the card's edge padding. */}
+            <View className="mb-4 -mx-4">
+              <CityFnsCascade
+                mode="single"
+                value={{
+                  cities: selectedCityId ? [selectedCityId] : [],
+                  fns: selectedFnsId ? [selectedFnsId] : [],
+                }}
+                onChange={handleCascadeChange}
+                citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
+                services={services}
+                selectedServiceId={selectedServiceId}
+                onServiceChange={setSelectedServiceId}
+              />
+              {submitted && !selectedCityId && (
+                <Text className="text-xs text-danger mt-1 px-4">Выберите город</Text>
+              )}
+              {submitted && selectedCityId && !selectedFnsId && (
+                <Text className="text-xs text-danger mt-1 px-4">Выберите инспекцию</Text>
+              )}
+            </View>
 
             <View className="mb-4">
               <Text className="text-sm font-medium text-text-base mb-1.5">

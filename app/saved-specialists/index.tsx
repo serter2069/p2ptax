@@ -105,7 +105,7 @@ export default function SavedSpecialistsScreen() {
 
   const handleSpecialistPress = useCallback(
     (id: string) => {
-      nav.any(`/specialists/${id}`);
+      nav.dynamic.specialist(id);
     },
     [nav]
   );
@@ -139,7 +139,7 @@ export default function SavedSpecialistsScreen() {
           title="Нет сохранённых специалистов"
           subtitle="Добавляйте специалистов в избранное на странице поиска"
           actionLabel="Найти специалиста"
-          onAction={() => nav.any("/specialists")}
+          onAction={() => nav.routes.specialists()}
         />
       ) : (
         <FlatList

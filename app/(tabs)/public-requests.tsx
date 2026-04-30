@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useSegments } from "expo-router";
+import { useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import RequestCard from "@/components/RequestCard";
@@ -67,7 +67,6 @@ interface SpecialistProfileResponse {
 }
 
 export default function SpecialistPublicRequests() {
-  const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
@@ -207,9 +206,9 @@ export default function SpecialistPublicRequests() {
 
   const handleRequestPress = useCallback(
     (id: string) => {
-      nav.any(`/requests/${id}/detail`);
+      nav.dynamic.requestDetail(id);
     },
-    [router]
+    [nav]
   );
 
   const handleReset = useCallback(() => {

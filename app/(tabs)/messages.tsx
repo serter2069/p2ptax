@@ -96,11 +96,11 @@ export default function UnifiedInbox() {
       <ThreadCard
         item={item}
         onSelect={
-          opts?.onSelect ?? (() => nav.any(`/threads/${item.id}`))
+          opts?.onSelect ?? (() => nav.dynamic.thread(item.id))
         }
         onUserPress={
           item.perspective === "as_client"
-            ? () => nav.any(`/specialists/${item.otherUser.id}`)
+            ? () => nav.dynamic.specialist(item.otherUser.id)
             : undefined
         }
         selected={opts?.selected}

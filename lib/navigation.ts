@@ -137,7 +137,12 @@ export function useTypedRouter() {
     ) as { [K in keyof typeof ROUTES]: () => void },
 
     /** Navigate forward — dynamic routes with params */
-    dynamic: DYNAMIC_ROUTES as {
+    dynamic: Object.fromEntries(
+      Object.entries(DYNAMIC_ROUTES).map(([key, fn]) => [
+        key,
+        (...args: unknown[]) => router.push((fn as (...a: unknown[]) => string)(...args) as never),
+      ])
+    ) as {
       [K in keyof typeof DYNAMIC_ROUTES]: (
         ...args: Parameters<(typeof DYNAMIC_ROUTES)[K]>
       ) => void;

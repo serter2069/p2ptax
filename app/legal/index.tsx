@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
-import { FileText, Shield, ChevronRight } from "lucide-react-native";
+import { FileText, Shield, ChevronRight, ChevronLeft } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 
@@ -27,6 +27,16 @@ export default function LegalIndexPage() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <DesktopScreen>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => nav.back()}
+            className="flex-row items-center mb-4"
+          >
+            <ChevronLeft size={20} color={colors.primary} />
+            <Text className="text-sm font-medium text-accent ml-1">Назад</Text>
+          </Pressable>
+
           <View className="mb-6">
             <Text className="text-2xl font-bold text-text-base mb-1">Правовая информация</Text>
             <Text className="text-sm text-text-mute">Документы и соглашения P2PTax</Text>

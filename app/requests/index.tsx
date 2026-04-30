@@ -9,12 +9,11 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import FilterBar from "@/components/FilterBar";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
-import { Inbox } from "lucide-react-native";
+import { Inbox, ChevronLeft } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -55,7 +54,6 @@ interface RequestsResponse {
 const LIMIT = 20;
 
 export default function PublicRequestsFeed() {
-  const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
@@ -188,9 +186,9 @@ export default function PublicRequestsFeed() {
 
   const handleRequestPress = useCallback(
     (id: string) => {
-      nav.any(`/requests/${id}/detail`);
+      nav.dynamic.requestDetail(id);
     },
-    [router]
+    [nav]
   );
 
   const hasFilters =
@@ -217,6 +215,15 @@ export default function PublicRequestsFeed() {
     <SafeAreaView className="flex-1 bg-surface2">
       {/* Accent hero */}
       <View style={{ backgroundColor: colors.accent, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => nav.back()}
+          className="flex-row items-center mb-2"
+        >
+          <ChevronLeft size={18} color="rgba(255,255,255,0.8)" />
+          <Text style={{ ...textStyle.small, color: overlay.white90, marginLeft: 2 }}>Назад</Text>
+        </Pressable>
         <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>Открытые заявки</Text>
         <Text style={{ ...textStyle.small, color: overlay.white90 }}>Задайте вопрос — получите предложения от специалистов</Text>
         {total > 0 && (

@@ -259,14 +259,14 @@ export default function SpecialistsCatalog() {
 
   const handleSpecialistPress = useCallback(
     (id: string) => {
-      nav.any(`/specialists/${id}`);
+      nav.dynamic.specialist(id);
     },
     [nav]
   );
 
   const handleBookmark = useCallback(async (id: string) => {
     if (!isAuthenticated) {
-      nav.any("/login");
+      nav.routes.login();
       return;
     }
     const isSaved = bookmarkedIds.has(id);
@@ -310,10 +310,10 @@ export default function SpecialistsCatalog() {
       {!isAuthenticated && (
         <LandingHeader
           isDesktop={isDesktop}
-          onHome={() => nav.any("/")}
-          onCatalog={() => nav.any("/specialists")}
-          onLogin={() => nav.any("/login")}
-          onCreateRequest={() => nav.any("/requests/new")}
+          onHome={() => nav.routes.home()}
+          onCatalog={() => nav.routes.specialists()}
+          onLogin={() => nav.routes.login()}
+          onCreateRequest={() => nav.routes.requestsNew()}
           isAuthenticated={false}
         />
       )}

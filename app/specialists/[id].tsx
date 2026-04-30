@@ -278,7 +278,7 @@ export default function SpecialistPublicProfile() {
         ) : (
           <SpecialistGuestLockedContacts
             cardShadow={legacyShadow}
-            onLogin={() => nav.any(`/login?returnTo=/specialists/${id}`)}
+            onLogin={() => nav.dynamic.loginWithReturnTo(`/specialists/${id}`)}
           />
         )}
       </View>

@@ -133,7 +133,7 @@ export default function ThreadsList({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Все сообщения"
-            onPress={() => nav.any(`/requests/${requestId}/messages`)}
+            onPress={() => nav.dynamic.requestMessages(requestId)}
             className="mt-3 border border-accent rounded-xl py-2.5 items-center"
             style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
           >

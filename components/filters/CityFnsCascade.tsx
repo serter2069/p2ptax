@@ -31,6 +31,11 @@ export interface CityFnsValue {
   fns: string[];
 }
 
+export interface ServiceOption {
+  id: string;
+  name: string;
+}
+
 export interface CityFnsCascadeProps {
   mode: "single" | "multi";
   value: CityFnsValue;
@@ -42,6 +47,11 @@ export interface CityFnsCascadeProps {
   showCounts?: boolean;
   labelCities?: string;
   labelFns?: string;
+  // Optional 3rd-step service picker (rendered as chip row, only when FNS selected)
+  services?: ServiceOption[];
+  selectedServiceId?: string | null;
+  onServiceChange?: (id: string | null) => void;
+  labelServices?: string;
 }
 
 /**
@@ -65,6 +75,10 @@ export default function CityFnsCascade({
   showCounts = false,
   labelCities = "Город",
   labelFns = "Инспекция ФНС",
+  services,
+  selectedServiceId,
+  onServiceChange,
+  labelServices = "Тип проверки",
 }: CityFnsCascadeProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
@@ -436,6 +450,61 @@ export default function CityFnsCascade({
               <Text className="text-sm text-text-mute ml-1">Сбросить</Text>
             </Pressable>
           )}
+        </View>
+      )}
+
+      {/* Service picker — chip row, shown only when an FNS is selected and a handler is wired */}
+      {onServiceChange && value.fns.length > 0 && (
+        <View className="mt-4 px-4">
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2">
+            {labelServices}
+          </Text>
+          <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Не знаю"
+              onPress={() => onServiceChange(null)}
+              className={`px-3 h-11 items-center justify-center rounded-full border ${
+                selectedServiceId == null
+                  ? "bg-accent border-accent"
+                  : "bg-white border-border"
+              }`}
+            >
+              <Text
+                className={`text-sm ${
+                  selectedServiceId == null
+                    ? "text-white font-medium"
+                    : "text-text-base"
+                }`}
+              >
+                Не знаю
+              </Text>
+            </Pressable>
+            {(services ?? []).map((svc) => {
+              const active = selectedServiceId === svc.id;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={svc.name}
+                  key={svc.id}
+                  onPress={() => onServiceChange(svc.id)}
+                  className={`px-3 h-11 items-center justify-center rounded-full border ${
+                    active
+                      ? "bg-accent border-accent"
+                      : "bg-white border-border"
+                  }`}
+                >
+                  <Text
+                    className={`text-sm ${
+                      active ? "text-white font-medium" : "text-text-base"
+                    }`}
+                  >
+                    {svc.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       )}
     </View>
