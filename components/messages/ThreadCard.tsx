@@ -1,8 +1,15 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Image } from "react-native";
 import Avatar from "@/components/ui/Avatar";
 import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import { colors, overlay } from "@/lib/theme";
 import { displayName, formatTime } from "@/lib/threadDisplay";
+
+export interface LastMessageAttachment {
+  id: string;
+  url: string;
+  filename: string;
+  mimeType: string;
+}
 
 export interface ThreadCardItem {
   id: string;
@@ -21,6 +28,7 @@ export interface ThreadCardItem {
   lastMessage: {
     text: string;
     createdAt: string;
+    attachments?: LastMessageAttachment[];
   } | null;
   unreadCount: number;
   createdAt: string;
@@ -140,12 +148,37 @@ export default function ThreadCard({
         </Text>
 
         {item.lastMessage ? (
-          <Text
-            className={`text-sm mt-1 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
-            numberOfLines={2}
-          >
-            {item.lastMessage.text}
-          </Text>
+          (() => {
+            const firstImage = item.lastMessage.attachments?.find(
+              (a) => a.mimeType.startsWith("image/")
+            );
+            if (firstImage) {
+              return (
+                <View className="flex-row items-center mt-1" style={{ gap: 6 }}>
+                  <Image
+                    source={{ uri: firstImage.url }}
+                    style={{ width: 40, height: 40, borderRadius: 6 }}
+                    resizeMode="cover"
+                    accessibilityLabel={firstImage.filename}
+                  />
+                  <Text
+                    className={`text-sm flex-1 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
+                    numberOfLines={1}
+                  >
+                    {item.lastMessage.text || `Файл: ${firstImage.filename}`}
+                  </Text>
+                </View>
+              );
+            }
+            return (
+              <Text
+                className={`text-sm mt-1 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
+                numberOfLines={2}
+              >
+                {item.lastMessage.text}
+              </Text>
+            );
+          })()
         ) : (
           <Text
             className="text-sm mt-1 italic text-text-dim"
