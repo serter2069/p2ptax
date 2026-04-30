@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import RequestCard from "@/components/RequestCard";
@@ -73,12 +73,22 @@ export default function SpecialistPublicRequests() {
   const isDesktop = width >= BREAKPOINT;
   const { ready, isLoading: authLoading, isAuthenticated } = useRequireAuth();
   const { isSpecialistUser } = useAuth();
+  const segments = useSegments();
+
+  // Only redirect away when the user is actually on this screen (active tab).
+  // Without the segment guard this effect fires for background tab instances
+  // (e.g. while user is on /settings toggling specialist mode off), causing an
+  // unwanted redirect to /(tabs). The tab is href:null so non-specialists
+  // never land here intentionally, but the component is still mounted by the
+  // Tabs navigator.
+  const isOnThisScreen =
+    segments[0] === "(tabs)" && segments[1] === "public-requests";
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated && !isSpecialistUser) {
+    if (!authLoading && isAuthenticated && !isSpecialistUser && isOnThisScreen) {
       nav.replaceRoutes.tabs();
     }
-  }, [authLoading, isAuthenticated, isSpecialistUser]);
+  }, [authLoading, isAuthenticated, isSpecialistUser, isOnThisScreen]);
 
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [requests, setRequests] = useState<RequestItem[]>([]);
