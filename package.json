@@ -9,7 +9,9 @@
     "web": "expo start --web",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "audit:visual": "node scripts/visual-audit.mjs"
+    "audit:visual": "node scripts/visual-audit.mjs",
+    "audit:structure": "echo 'See .audit/structure-audit.md'",
+    "check:chrome": "bash scripts/check-visual-touched.sh"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

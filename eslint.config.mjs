@@ -37,6 +37,25 @@ export default tseslint.config(
       },
     },
   },
+  // Guard: forbid raw TextInput outside components/ui/
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+    ignores: [
+      "components/ui/**",
+      "components/filters/CityFnsCascade.tsx",
+      "components/filters/SpecialistSearchBar.tsx",
+      "components/onboarding/OtpCodeInput.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": ["error", {
+        paths: [{
+          name: "react-native",
+          importNames: ["TextInput"],
+          message: "Use <Input> from @/components/ui/Input instead of raw TextInput. Add this file to ESLint ignores in eslint.config.mjs only if there's a strong reason."
+        }]
+      }]
+    }
+  },
   // TS/TSX files — full TS parser with project
   {
     files: ["**/*.ts", "**/*.tsx"],

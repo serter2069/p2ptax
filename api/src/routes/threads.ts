@@ -214,6 +214,8 @@ router.get("/", async (req: Request, res: Response) => {
           lastName: otherUser.lastName,
           avatarUrl: otherUser.avatarUrl,
           isDeleted: otherUser.deletedAt !== null,
+          // TODO: derive from lastSeenAt once User model tracks it
+          isOnline: false,
         },
         lastMessage: lastMessage
           ? {
@@ -421,6 +423,8 @@ router.get("/my", async (req: Request, res: Response) => {
           lastName: otherUser.lastName,
           avatarUrl: otherUser.avatarUrl,
           isDeleted: otherUser.deletedAt !== null,
+          // TODO: derive from lastSeenAt once User model tracks it
+          isOnline: false,
         },
         lastMessage: lastMessage
           ? {

@@ -1,5 +1,4 @@
 import { View, Text } from 'react-native';
-import { colors } from '@/lib/theme';
 
 interface PageTitleProps {
   title: string;
@@ -8,9 +7,9 @@ interface PageTitleProps {
 
 export default function PageTitle({ title, subtitle }: PageTitleProps) {
   return (
-    <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-      <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text }}>{title}</Text>
-      {subtitle ? <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>{subtitle}</Text> : null}
+    <View className="px-4 pt-4 pb-2">
+      <Text className="text-xl font-bold text-text-base">{title}</Text>
+      {subtitle ? <Text className="text-sm text-text-mute mt-0.5">{subtitle}</Text> : null}
     </View>
   );
 }

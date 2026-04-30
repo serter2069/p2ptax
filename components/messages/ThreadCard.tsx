@@ -20,6 +20,8 @@ export interface ThreadCardItem {
     lastName: string | null;
     avatarUrl: string | null;
     isDeleted?: boolean;
+    // TODO: populate from API once lastSeenAt is tracked on User model
+    isOnline?: boolean;
   };
   request: {
     id: string;
@@ -103,11 +105,28 @@ export default function ThreadCard({
           elevation: 3,
         }}
       >
-        <Avatar
-          name={name}
-          imageUrl={item.otherUser.avatarUrl ?? undefined}
-          size="md"
-        />
+        <View style={{ position: "relative" }}>
+          <Avatar
+            name={name}
+            imageUrl={item.otherUser.avatarUrl ?? undefined}
+            size="md"
+          />
+          {item.otherUser.isOnline && (
+            <View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                width: 12,
+                height: 12,
+                borderRadius: 6,
+                backgroundColor: "#10b981",
+                borderWidth: 2,
+                borderColor: colors.white,
+              }}
+            />
+          )}
+        </View>
       </Pressable>
 
       <View className="flex-1 min-w-0 py-3.5" style={{ paddingRight: hasUnread ? 8 : 0 }}>

@@ -14,6 +14,8 @@ import {
 } from "../components/ui";
 import HeaderBack from "../components/HeaderBack";
 import HeaderHome from "../components/HeaderHome";
+import LandingHeader from "../components/landing/LandingHeader";
+import Logo from "../components/brand/Logo";
 import ResponsiveContainer from "../components/ResponsiveContainer";
 import { colors, tw, typography, spacing, radius, BREAKPOINT } from "../lib/theme";
 
@@ -265,6 +267,86 @@ export default function BrandScreen() {
           <View className="gap-4">
             <HeaderBack title="Header-Back" />
             <HeaderHome notificationCount={2} />
+          </View>
+        </Section>
+
+        {/* ====== HEADER VARIANTS ====== */}
+        <Section title="Header variants">
+          <View className="gap-4">
+            <Text className={`${typography.caption} text-text-mute mb-1`}>LandingHeader (public, desktop)</Text>
+            <LandingHeader
+              isDesktop={true}
+              onHome={() => {}}
+              onCatalog={() => {}}
+              onLogin={() => {}}
+              onCreateRequest={() => {}}
+            />
+            <Text className={`${typography.caption} text-text-mute mb-1`}>LandingHeader (mobile)</Text>
+            <LandingHeader
+              isDesktop={false}
+              onHome={() => {}}
+              onCatalog={() => {}}
+              onLogin={() => {}}
+              onCreateRequest={() => {}}
+            />
+            <Text className={`${typography.caption} text-text-mute mb-1`}>HeaderHome (mobile blue bar)</Text>
+            <HeaderHome />
+          </View>
+        </Section>
+
+        {/* ====== LOGO VARIANTS ====== */}
+        <Section title="Logo variants">
+          <View className="gap-4">
+            <View className="flex-row flex-wrap gap-4 items-end">
+              <View className="items-center gap-1">
+                <Logo variant="dark" size="sm" />
+                <Text className={typography.small}>dark sm</Text>
+              </View>
+              <View className="items-center gap-1">
+                <Logo variant="dark" size="md" />
+                <Text className={typography.small}>dark md</Text>
+              </View>
+              <View className="items-center gap-1">
+                <Logo variant="dark" size="lg" />
+                <Text className={typography.small}>dark lg</Text>
+              </View>
+              <View className="items-center gap-1">
+                <Logo variant="dark" size="xl" />
+                <Text className={typography.small}>dark xl</Text>
+              </View>
+            </View>
+            <View className="flex-row flex-wrap gap-4 items-end" style={{ backgroundColor: colors.primary, padding: 12, borderRadius: 8 }}>
+              <View className="items-center gap-1">
+                <Logo variant="white" size="sm" />
+                <Text className={`${typography.small} text-white`}>white sm</Text>
+              </View>
+              <View className="items-center gap-1">
+                <Logo variant="white" size="md" />
+                <Text className={`${typography.small} text-white`}>white md</Text>
+              </View>
+              <View className="items-center gap-1">
+                <Logo variant="white" size="lg" />
+                <Text className={`${typography.small} text-white`}>white lg</Text>
+              </View>
+            </View>
+            <View className="flex-row flex-wrap gap-4 items-end">
+              <View className="items-center gap-1">
+                <Logo variant="icon" size="sm" />
+                <Text className={typography.small}>icon sm</Text>
+              </View>
+              <View className="items-center gap-1">
+                <Logo variant="icon" size="md" />
+                <Text className={typography.small}>icon md</Text>
+              </View>
+              <View className="items-center gap-1">
+                <Logo variant="icon" size="lg" />
+                <Text className={typography.small}>icon lg</Text>
+              </View>
+              <View className="items-center gap-1">
+                <Logo variant="icon" size="xl" />
+                <Text className={typography.small}>icon xl</Text>
+              </View>
+            </View>
           </View>
         </Section>
       </View>
