@@ -28,33 +28,59 @@ const VIEWPORTS = [
 ];
 
 async function authenticate(ctx) {
-  const p = await ctx.newPage();
-  await p.goto(`${BASE}/login`);
-  await p.waitForTimeout(1000);
-  // Try to type email — selector for the new unified Input
-  const emailInput = await p.locator('input[type="email"], input[placeholder*="email" i], input[placeholder*="@"]').first();
-  await emailInput.fill('serter2069@gmail.com');
-  await p.locator('text=Продолжить, text=Войти, button:has-text("Продолжить")').first().click().catch(() => {});
-  await p.waitForTimeout(1500);
-  // Type OTP 000000
-  const otpInputs = await p.locator('input[inputmode="numeric"], input[type="tel"], input[maxlength="1"]').all();
-  if (otpInputs.length === 6) {
-    for (let i = 0; i < 6; i++) await otpInputs[i].fill('0');
-  } else if (otpInputs.length === 1) {
-    await otpInputs[0].fill('000000');
+  const email = process.env.AUDIT_EMAIL || 'serter2069@gmail.com';
+  const code = '000000';
+  const apiBase = process.env.API_BASE || 'http://localhost:3812';
+
+  // Request OTP (dev mode: registers user, sends nothing)
+  await fetch(`${apiBase}/api/auth/request-otp`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }).catch((e) => console.log('WARN request-otp:', e.message));
+
+  // Verify with dev code 000000
+  const res = await fetch(`${apiBase}/api/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  }).catch((e) => { console.log('AUTH_FAIL verify-otp fetch:', e.message); return null; });
+
+  if (!res || !res.ok) {
+    const body = res ? await res.text().catch(() => '') : '';
+    console.log(`AUTH_FAIL HTTP ${res ? res.status : 'no-response'} ${body.slice(0, 200)}`);
+    return false;
   }
-  await p.waitForTimeout(2500);
-  await p.close();
+
+  const data = await res.json();
+  const accessToken = data.accessToken || data.token || data.access_token;
+  const refreshToken = data.refreshToken || data.refresh_token;
+
+  if (!accessToken) {
+    console.log('AUTH_FAIL no token in response:', JSON.stringify(data).slice(0, 200));
+    return false;
+  }
+
+  // Inject tokens into localStorage BEFORE any navigation.
+  // AuthContext uses keys: p2ptax_access_token / p2ptax_refresh_token
+  await ctx.addInitScript(({ accessToken, refreshToken }) => {
+    try {
+      localStorage.setItem('p2ptax_access_token', accessToken);
+      if (refreshToken) localStorage.setItem('p2ptax_refresh_token', refreshToken);
+    } catch {}
+  }, { accessToken, refreshToken });
+
+  console.log(`AUTH_OK email=${email} token=${accessToken.slice(0, 20)}...`);
+  return true;
 }
 
 (async () => {
   const browser = await chromium.launch();
   for (const vp of VIEWPORTS) {
     const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
-    await ctx.addInitScript(() => { try { localStorage.clear(); sessionStorage.clear(); } catch {} });
     let authed = false;
     for (const r of ROUTES) {
-      if (r.auth && !authed) { await authenticate(ctx); authed = true; }
+      if (r.auth && !authed) { authed = await authenticate(ctx); }
       const p = await ctx.newPage();
       await p.route('**/*', (route) => route.continue({ headers: { ...route.request().headers(), 'Cache-Control': 'no-cache, no-store' } }));
       try {
