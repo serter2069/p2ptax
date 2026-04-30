@@ -50,7 +50,7 @@ const DEFAULT_TYPES = [
 interface FileUploadZoneProps {
   files: PendingFile[];
   onFilesChange: (files: PendingFile[]) => void;
-  /** Default 5. */
+  /** Default 10. */
   maxFiles?: number;
   /** Default 10 MB. */
   maxSizeMB?: number;
@@ -63,11 +63,26 @@ interface FileUploadZoneProps {
   /**
    * compact=false (default) → big dashed drop-zone above the chip list
    *                            (request form variant).
-   * compact=true            → just a paperclip button + chip strip
-   *                            (chat composer variant).
+   * compact=true            → just a paperclip button + drag overlay; chips
+   *                            are rendered separately by the parent via
+   *                            <FileUploadChips/> so the composer can place
+   *                            them above the input row.
    */
   compact?: boolean;
   disabled?: boolean;
+  /**
+   * Optional external DOM element to use as the drag-and-drop target.
+   * The chat composer passes a ref to its outer wrapper so dropping
+   * anywhere over the composer (not just the paperclip button area)
+   * triggers the upload. When omitted, the internal containerRef is used.
+   */
+  dropTargetRef?: React.RefObject<HTMLElement | null>;
+  /**
+   * Optional drag-state notifier — fires `true` while a file is being
+   * dragged over the drop target, `false` otherwise. Lets the composer
+   * paint a full-width drag overlay across its own bounds.
+   */
+  onDragStateChange?: (isDragOver: boolean) => void;
 }
 
 function generateId(): string {
@@ -98,13 +113,15 @@ function buildAcceptAttr(types: string[]): string {
 export default function FileUploadZone({
   files,
   onFilesChange,
-  maxFiles = 5,
+  maxFiles = 10,
   maxSizeMB = 10,
   allowedTypes = DEFAULT_TYPES,
   uploadEndpoint,
   authToken,
   compact = false,
   disabled = false,
+  dropTargetRef,
+  onDragStateChange,
 }: FileUploadZoneProps) {
   const containerRef = useRef<View>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -290,24 +307,45 @@ export default function FileUploadZone({
     [validateAndQueue]
   );
 
-  // ---- Web: drag-and-drop on the underlying DOM node ---------------------
+  // ---- Web: drag-and-drop -----------------------------------------------
+  // The drop target defaults to the FileUploadZone's own container, but the
+  // chat composer passes an external `dropTargetRef` pointing at its outer
+  // wrapper so dragging anywhere over the composer registers — not just over
+  // the tiny paperclip button. (Bug fix: drag-and-drop didn't work in chat.)
   useEffect(() => {
     if (Platform.OS !== "web") return;
-    const node = containerRef.current as unknown as HTMLElement | null;
+    const externalNode = dropTargetRef?.current ?? null;
+    const internalNode = containerRef.current as unknown as HTMLElement | null;
+    const node = externalNode ?? internalNode;
     if (!node || typeof node.addEventListener !== "function") return;
 
+    const setDrag = (next: boolean) => {
+      setIsDragOver(next);
+      onDragStateChange?.(next);
+    };
+
     const onDragOver = (e: DragEvent) => {
+      // dragover MUST preventDefault so the browser actually fires `drop`.
+      // Without this, files dropped over the zone are opened in the tab.
       e.preventDefault();
       if (disabled) return;
-      setIsDragOver(true);
+      // Set dropEffect for a visible cursor hint (browsers reset to "none"
+      // unless we override here).
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      setDrag(true);
+    };
+    const onDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      if (disabled) return;
+      setDrag(true);
     };
     const onDragLeave = (e: DragEvent) => {
       // Only collapse overlay when leaving the container entirely.
-      if (!node.contains(e.relatedTarget as Node)) setIsDragOver(false);
+      if (!node.contains(e.relatedTarget as Node)) setDrag(false);
     };
     const onDrop = (e: DragEvent) => {
       e.preventDefault();
-      setIsDragOver(false);
+      setDrag(false);
       if (disabled) return;
       const list = e.dataTransfer?.files;
       if (!list || list.length === 0) return;
@@ -321,15 +359,17 @@ export default function FileUploadZone({
       validateAndQueue(incoming);
     };
 
+    node.addEventListener("dragenter", onDragEnter);
     node.addEventListener("dragover", onDragOver);
     node.addEventListener("dragleave", onDragLeave);
     node.addEventListener("drop", onDrop);
     return () => {
+      node.removeEventListener("dragenter", onDragEnter);
       node.removeEventListener("dragover", onDragOver);
       node.removeEventListener("dragleave", onDragLeave);
       node.removeEventListener("drop", onDrop);
     };
-  }, [disabled, validateAndQueue]);
+  }, [disabled, validateAndQueue, dropTargetRef, onDragStateChange]);
 
   // ---- Native: expo-document-picker --------------------------------------
   const openNativePicker = useCallback(async () => {
@@ -365,10 +405,61 @@ export default function FileUploadZone({
   const canAddMore = files.length < maxFiles && !disabled;
 
   // ---- Chip list (shared between compact + full) -------------------------
+  // For the compact (chat) variant we render chips compactly as horizontal
+  // pills so multiple files don't push the chat input off-screen. The full
+  // form variant keeps the original stacked rows.
   const renderChips = () => {
     if (files.length === 0) return null;
+    if (compact) {
+      return (
+        <View className="flex-row flex-wrap" style={{ gap: 6 }}>
+          {files.map((f) => {
+            const isPdf = f.mimeType === "application/pdf";
+            const isError = f.status === "error";
+            const isBusy = f.status === "uploading" || f.status === "pending";
+            return (
+              <View
+                key={f.id}
+                className="flex-row items-center bg-surface2 border border-border rounded-full pl-2 pr-1 py-1"
+                style={{ maxWidth: 220 }}
+              >
+                {isPdf ? (
+                  <FileIcon size={14} color={isError ? colors.error : colors.primary} />
+                ) : (
+                  <FileImage size={14} color={isError ? colors.error : colors.primary} />
+                )}
+                <Text
+                  className="text-xs text-text-base ml-1.5 flex-shrink"
+                  numberOfLines={1}
+                  style={{ maxWidth: 140 }}
+                >
+                  {f.name}
+                </Text>
+                {isBusy ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.placeholder}
+                    style={{ marginLeft: 4, marginRight: 4 }}
+                  />
+                ) : (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Удалить ${f.name}`}
+                    onPress={() => handleRemove(f.id)}
+                    className="w-6 h-6 items-center justify-center ml-1"
+                    hitSlop={6}
+                  >
+                    <X size={12} color={isError ? colors.error : colors.placeholder} />
+                  </Pressable>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      );
+    }
     return (
-      <View style={{ gap: 8, marginTop: compact ? 0 : 12 }}>
+      <View style={{ gap: 8, marginTop: 12 }}>
         {files.map((f) => {
           const isPdf = f.mimeType === "application/pdf";
           const isError = f.status === "error";
