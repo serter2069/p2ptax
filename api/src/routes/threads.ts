@@ -441,6 +441,67 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/threads/direct — get or create a direct thread between caller and a specialist
+// Used by the catalog "Написать" button: no requestId, no firstMessage required.
+router.post("/direct", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { specialistId } = req.body as { specialistId?: string };
+
+    if (!specialistId || typeof specialistId !== "string") {
+      res.status(400).json({ error: "specialistId is required" });
+      return;
+    }
+
+    if (userId === specialistId) {
+      res.status(400).json({ error: "Cannot start a thread with yourself" });
+      return;
+    }
+
+    // Verify specialist exists and has the specialist flag
+    const specialist = await prisma.user.findUnique({
+      where: { id: specialistId },
+      select: { id: true, isSpecialist: true },
+    });
+
+    if (!specialist || !specialist.isSpecialist) {
+      res.status(404).json({ error: "Specialist not found" });
+      return;
+    }
+
+    // Find existing direct thread between this user (as client) and the specialist.
+    // requestId: null finds rows where request_id IS NULL (requires nullable schema).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existing = await (prisma.thread as any).findFirst({
+      where: {
+        requestId: null,
+        clientId: userId,
+        specialistId,
+      },
+    }) as { id: string } | null;
+
+    if (existing) {
+      res.json({ threadId: existing.id, created: false });
+      return;
+    }
+
+    // Create new direct thread
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const thread = await (prisma.thread as any).create({
+      data: {
+        requestId: null,
+        clientId: userId,
+        specialistId,
+      },
+    }) as { id: string };
+
+    res.status(201).json({ threadId: thread.id, created: true });
+  } catch (error) {
+    console.error("threads/direct error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/threads — create thread with first message (specialist only)
 router.post("/", async (req: Request, res: Response) => {
   try {

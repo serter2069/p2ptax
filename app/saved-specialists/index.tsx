@@ -110,6 +110,21 @@ export default function SavedSpecialistsScreen() {
     [nav]
   );
 
+  const handleWrite = useCallback(
+    async (specialistId: string) => {
+      try {
+        const res = await apiPost<{ threadId: string; created: boolean }>(
+          "/api/threads/direct",
+          { specialistId }
+        );
+        nav.any(`/threads/${res.threadId}`);
+      } catch {
+        // Silently ignore
+      }
+    },
+    [nav]
+  );
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-surface2 items-center justify-center">
@@ -174,6 +189,7 @@ export default function SavedSpecialistsScreen() {
                 onPress={handleSpecialistPress}
                 onBookmark={handleBookmarkToggle}
                 bookmarked={savedIds.has(item.id)}
+                onWrite={handleWrite}
                 variant="vertical"
               />
             </View>

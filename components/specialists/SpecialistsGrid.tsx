@@ -31,6 +31,7 @@ interface Props {
   onLoadMore: () => void;
   onPress: (id: string) => void;
   onBookmark: (id: string) => void;
+  onWrite: (id: string) => void;
 }
 
 export default function SpecialistsGrid({
@@ -45,6 +46,7 @@ export default function SpecialistsGrid({
   onLoadMore,
   onPress,
   onBookmark,
+  onWrite,
 }: Props) {
   return (
     <FlatList
@@ -80,6 +82,7 @@ export default function SpecialistsGrid({
             onPress={onPress}
             onBookmark={onBookmark}
             bookmarked={bookmarkedIds.has(item.id)}
+            onWrite={onWrite}
             variant="vertical"
           />
         </View>

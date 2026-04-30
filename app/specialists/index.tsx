@@ -262,6 +262,22 @@ export default function SpecialistsCatalog() {
     [nav]
   );
 
+  const handleWrite = useCallback(async (specialistId: string) => {
+    if (!isAuthenticated) {
+      nav.any("/login");
+      return;
+    }
+    try {
+      const res = await apiPost<{ threadId: string; created: boolean }>(
+        "/api/threads/direct",
+        { specialistId }
+      );
+      nav.any(`/threads/${res.threadId}`);
+    } catch {
+      // Silently ignore — user will stay on page
+    }
+  }, [isAuthenticated, nav]);
+
   const handleBookmark = useCallback(async (id: string) => {
     if (!isAuthenticated) {
       nav.any("/login");
@@ -308,7 +324,7 @@ export default function SpecialistsCatalog() {
       <CatalogHeader isDesktop={isDesktop} count={headerCount} />
 
       {/* Row 2: typeahead search bar */}
-      <View className="px-4 pt-2" style={{ zIndex: 20 }}>
+      <View className="px-4 pt-2" style={{ zIndex: 100 }}>
         <SpecialistSearchBar
           cities={cities}
           fnsAll={fnsAll}
@@ -376,6 +392,7 @@ export default function SpecialistsCatalog() {
           onLoadMore={handleLoadMore}
           onPress={handleSpecialistPress}
           onBookmark={handleBookmark}
+          onWrite={handleWrite}
         />
       )}
     </SafeAreaView>

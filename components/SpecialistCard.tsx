@@ -1,5 +1,5 @@
 import { View, Text, Pressable, Image } from "react-native";
-import { Bookmark } from "lucide-react-native";
+import { Bookmark, MessageCircle } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 interface FnsGroup {
@@ -26,6 +26,7 @@ interface SpecialistCardProps {
   horizontal?: boolean;
   onBookmark?: (id: string) => void;
   bookmarked?: boolean;
+  onWrite?: (id: string) => void;
 }
 
 function getInitials(firstName: string | null, lastName: string | null): string {
@@ -47,6 +48,7 @@ export default function SpecialistCard({
   horizontal = false,
   onBookmark,
   bookmarked = false,
+  onWrite,
 }: SpecialistCardProps) {
   const resolvedVariant = variant ?? (horizontal ? "horizontal" : "vertical");
   const name = [firstName, lastName].filter(Boolean).join(" ") || "Специалист";
@@ -204,6 +206,22 @@ export default function SpecialistCard({
           )}
         </View>
       ) : null}
+
+      {/* Row 4: "Написать" CTA — direct chat without a request */}
+      {onWrite && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Написать специалисту"
+          onPress={(e) => { e.stopPropagation?.(); onWrite(id); }}
+          className="flex-row items-center justify-center mt-2 py-1.5 rounded-xl border border-border"
+          style={{ gap: 6 }}
+        >
+          <MessageCircle size={14} color={colors.primary} />
+          <Text className="text-xs font-medium" style={{ color: colors.primary }}>
+            Написать
+          </Text>
+        </Pressable>
+      )}
     </Pressable>
   );
 }
