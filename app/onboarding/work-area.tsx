@@ -1,23 +1,24 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { Plus } from "lucide-react-native";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
-import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import Button from "@/components/ui/Button";
+import LoadingState from "@/components/ui/LoadingState";
 import { colors } from "@/lib/theme";
-import SpecialistSearchBar, {
-  CityOpt,
-  FnsOpt,
-} from "@/components/filters/SpecialistSearchBar";
+import CityFnsCascade, {
+  CityFnsValue,
+  CityCascadeOption,
+  FnsCascadeOption,
+} from "@/components/filters/CityFnsCascade";
 import { WorkAreaEntryData } from "@/components/onboarding/WorkAreaEntry";
 import BackHeader from "@/components/onboarding/workarea/BackHeader";
 import WorkAreaIntro from "@/components/onboarding/workarea/WorkAreaIntro";
-import PendingFnsPicker from "@/components/onboarding/workarea/PendingFnsPicker";
 import EntriesList from "@/components/onboarding/workarea/EntriesList";
 import { saveWorkArea } from "@/components/onboarding/workarea/saveWorkArea";
 
@@ -40,18 +41,14 @@ interface FnsResponse {
   }[];
 }
 
+const EMPTY_CASCADE: CityFnsValue = { cities: [], fns: [], fnsServices: {} };
+
 /**
  * OnboardingWorkAreaScreen — entry-based work area picker.
  *
- * Replaces the old all-cities-at-once cascade with:
- *   1. Single typeahead search (cities + FNS).
- *   2. After picking an FNS, choose services (or "Не знаю" = any).
- *   3. Press "+ Добавить" to push the row into the entries list.
- *   4. Submit when ≥1 entry exists.
- *
- * Persistence is unchanged — we still POST /api/user/become-specialist
- * (or PUT /api/onboarding/work-area) with cities/fns/services derived
- * from the entries list.
+ * Uses CityFnsCascade (typeahead mode) for city + FNS + services selection.
+ * User adds multiple entries; each entry maps to one FNS + chosen services.
+ * Empty fnsServices = "Не знаю" (any service).
  */
 export default function OnboardingWorkAreaScreen() {
   const nav = useTypedRouter();
@@ -67,14 +64,9 @@ export default function OnboardingWorkAreaScreen() {
   const isSpecialistIntent = role === "specialist";
   const { ready, user } = useRequireAuth();
   const { isSpecialistUser, isAdminUser, updateUser } = useAuth();
-  const segments = useSegments() as string[];
-  // Only redirect when this screen is actually active in the navigation stack.
-  // Without this guard, toggling specialist off from /settings causes this
-  // background screen to fire nav.replaceRoutes.tabs() unintentionally.
-  const isOnThisScreen = segments[0] === "onboarding" && segments[1] === "work-area";
 
   useEffect(() => {
-    if (!ready || !isOnThisScreen) return;
+    if (!ready) return;
     if (isAdminUser) {
       nav.replaceRoutes.adminDashboard();
       return;
@@ -82,28 +74,23 @@ export default function OnboardingWorkAreaScreen() {
     // Wave 1/B — when user arrives here from "Я специалист" landing CTA,
     // isSpecialist is still false; the form's submit will call
     // /api/user/become-specialist which flips the flag. Allow render.
-    // fromSettings — client enabling specialist mode from Settings toggle, also allowed.
-    if (!isSpecialistUser && !isSpecialistIntent && !fromSettings) {
+    if (!isSpecialistUser && !isSpecialistIntent) {
       nav.replaceRoutes.tabs();
       return;
     }
     if (!fromSettings && user?.specialistProfileCompletedAt) {
       nav.replaceRoutes.tabs();
     }
-  }, [ready, isOnThisScreen, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings, nav]);
+  }, [ready, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings, nav]);
 
   // Catalogs (loaded once)
-  const [cities, setCities] = useState<CityOpt[]>([]);
-  const [fnsAll, setFnsAll] = useState<FnsOpt[]>([]);
+  const [cities, setCities] = useState<CityCascadeOption[]>([]);
+  const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  // Step 1 — search bar state (controlled selection)
-  const [pendingCityId, setPendingCityId] = useState<string | null>(null);
-  const [pendingFns, setPendingFns] = useState<FnsOpt | null>(null);
-
-  // Step 2 — service picker state for the pending entry
-  const [pendingServiceIds, setPendingServiceIds] = useState<string[]>([]);
+  // CityFnsCascade controlled value
+  const [cascadeValue, setCascadeValue] = useState<CityFnsValue>(EMPTY_CASCADE);
 
   // Accepted entries
   const [entries, setEntries] = useState<WorkAreaEntryData[]>([]);
@@ -159,54 +146,42 @@ export default function OnboardingWorkAreaScreen() {
     };
   }, []);
 
-  const handlePickCity = useCallback((cityId: string) => {
-    setPendingCityId(cityId);
-    setPendingFns(null);
-  }, []);
+  // Exclude already-added FNS from cascade so user can't pick same office twice.
+  const fnsForCascade = useMemo(() => {
+    if (entries.length === 0) return fnsAll;
+    const taken = new Set(entries.map((e) => e.fnsId));
+    return fnsAll.filter((f) => !taken.has(f.id));
+  }, [fnsAll, entries]);
 
-  const handlePickFns = useCallback((fns: FnsOpt) => {
-    setPendingCityId(fns.cityId);
-    setPendingFns(fns);
-    setPendingServiceIds([]);
-  }, []);
-
-  const handleClearLocation = useCallback(() => {
-    setPendingCityId(null);
-    setPendingFns(null);
-    setPendingServiceIds([]);
-  }, []);
-
-  const toggleService = useCallback((id: string) => {
-    setPendingServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-  }, []);
-
-  const canAddEntry = pendingFns !== null && pendingServiceIds.length > 0;
+  // "Добавить" is enabled when an FNS is selected in the cascade.
+  const selectedFnsId = cascadeValue.fns[0] ?? null;
+  const canAddEntry = selectedFnsId !== null;
 
   const addEntry = useCallback(() => {
-    if (!pendingFns) return;
-    if (pendingServiceIds.length === 0) return;
+    if (!selectedFnsId) return;
+    const fnsObj = fnsAll.find((f) => f.id === selectedFnsId);
+    if (!fnsObj) return;
 
-    // Prevent duplicate FNS rows — replace existing if present.
     const cityName =
-      pendingFns.cityName ||
-      cities.find((c) => c.id === pendingFns.cityId)?.name ||
+      fnsObj.cityName ||
+      cities.find((c) => c.id === fnsObj.cityId)?.name ||
       "";
 
-    const serviceNames = services
-      .filter((s) => pendingServiceIds.includes(s.id))
-      .map((s) => s.name);
+    const selectedSvcIds = (cascadeValue.fnsServices ?? {})[selectedFnsId] ?? [];
+    const isAnyService = selectedSvcIds.length === 0;
+    const serviceNames = isAnyService
+      ? []
+      : services.filter((s) => selectedSvcIds.includes(s.id)).map((s) => s.name);
 
     const next: WorkAreaEntryData = {
-      fnsId: pendingFns.id,
-      fnsName: pendingFns.name,
-      fnsCode: pendingFns.code,
-      cityId: pendingFns.cityId,
+      fnsId: fnsObj.id,
+      fnsName: fnsObj.name,
+      fnsCode: fnsObj.code,
+      cityId: fnsObj.cityId,
       cityName,
-      serviceIds: pendingServiceIds,
+      serviceIds: selectedSvcIds,
       serviceNames,
-      isAnyService: false,
+      isAnyService,
     };
 
     setEntries((prev) => {
@@ -214,30 +189,15 @@ export default function OnboardingWorkAreaScreen() {
       return [...filtered, next];
     });
 
-    // Reset pending picker so user can add the next entry.
-    setPendingCityId(null);
-    setPendingFns(null);
-    setPendingServiceIds([]);
-  }, [
-    pendingFns,
-    pendingServiceIds,
-    cities,
-    services,
-  ]);
+    // Reset cascade for next entry.
+    setCascadeValue(EMPTY_CASCADE);
+  }, [selectedFnsId, fnsAll, cities, services, cascadeValue]);
 
   const removeEntry = useCallback((fnsId: string) => {
     setEntries((prev) => prev.filter((e) => e.fnsId !== fnsId));
   }, []);
 
   const canProceed = entries.length > 0 && !isLoading;
-
-  // FNS catalog memo for the search bar — exclude already-added FNS so the
-  // user can't pick the same office twice through the typeahead.
-  const fnsAllForSearch = useMemo(() => {
-    if (entries.length === 0) return fnsAll;
-    const taken = new Set(entries.map((e) => e.fnsId));
-    return fnsAll.filter((f) => !taken.has(f.id));
-  }, [fnsAll, entries]);
 
   const handleNext = async () => {
     if (!canProceed) return;
@@ -269,18 +229,8 @@ export default function OnboardingWorkAreaScreen() {
     }
   };
 
-  if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent && !fromSettings)) {
-    return (
-      <OnboardingShell
-        step={2}
-        title="Где вы работаете?"
-        subtitle="Выберите город и налоговую — клиенты найдут вас по подведомственности."
-        loading
-        onBack={() => router.back()}
-        hideProgress={fromSettings}
-        maxWidth={720}
-      />
-    );
+  if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent)) {
+    return <LoadingState />;
   }
 
   return (
@@ -308,30 +258,30 @@ export default function OnboardingWorkAreaScreen() {
         >
           <WorkAreaIntro catalogError={catalogError} />
 
-          {/* Step 1 — search */}
+          {/* Cascade picker — city → FNS → services */}
           <View style={{ zIndex: 20 }}>
-            <SpecialistSearchBar
-              cities={cities}
-              fnsAll={fnsAllForSearch}
-              selectedCityId={pendingCityId}
-              selectedFnsId={pendingFns?.id ?? null}
-              onPickCity={handlePickCity}
-              onPickFns={handlePickFns}
-              onClear={handleClearLocation}
+            <CityFnsCascade
+              mode="typeahead"
+              value={cascadeValue}
+              onChange={setCascadeValue}
+              citiesSource={cities}
+              fnsSource={fnsForCascade}
+              services={services}
             />
           </View>
 
-          {/* Step 2 — service picker (only after FNS picked) */}
-          {pendingFns && (
-            <PendingFnsPicker
-              pendingFns={pendingFns}
-              services={services}
-              pendingServiceIds={pendingServiceIds}
-              canAddEntry={canAddEntry}
-              onToggleService={toggleService}
-              onAdd={addEntry}
-              onCancel={handleClearLocation}
-            />
+          {/* Add button — shown after FNS selected */}
+          {canAddEntry && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Добавить запись"
+              onPress={addEntry}
+              className="mt-3 flex-row items-center justify-center h-10 rounded-xl bg-accent"
+              style={{ gap: 6 }}
+            >
+              <Plus size={16} color="#ffffff" />
+              <Text className="text-sm font-medium text-white">Добавить</Text>
+            </Pressable>
           )}
 
           <EntriesList entries={entries} onRemove={removeEntry} />
