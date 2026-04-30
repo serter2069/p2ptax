@@ -3,23 +3,18 @@ import { View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
 import { useLocalSearchParams, router } from "expo-router";
-import SpecialistSearchBar, {
-  CityOpt,
-  FnsOpt,
-} from "@/components/filters/SpecialistSearchBar";
+import CityFnsCascade, {
+  CityFnsValue,
+  FnsCascadeOption,
+  ServiceOption,
+} from "@/components/filters/CityFnsCascade";
 import { AlertCircle, Search, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import CatalogHeader from "@/components/specialists/CatalogHeader";
 import CatalogSkeleton from "@/components/specialists/CatalogSkeleton";
-import ServiceChipsRow from "@/components/specialists/ServiceChipsRow";
 import SpecialistsGrid from "@/components/specialists/SpecialistsGrid";
 import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface ServiceOption {
-  id: string;
-  name: string;
-}
 
 interface SpecialistItem {
   id: string;
@@ -63,6 +58,8 @@ interface FnsResponse {
 
 const PAGE_SIZE = 12;
 
+const EMPTY_FNS_VALUE: CityFnsValue = { cities: [], fns: [], fnsServices: {} };
+
 export default function SpecialistsCatalog() {
   const nav = useTypedRouter();
   const { isAuthenticated } = useAuth();
@@ -79,8 +76,8 @@ export default function SpecialistsCatalog() {
     services?: string;
   }>();
 
-  const [cities, setCities] = useState<CityOpt[]>([]);
-  const [fnsAll, setFnsAll] = useState<FnsOpt[]>([]);
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
+  const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [specialists, setSpecialists] = useState<SpecialistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,26 +88,24 @@ export default function SpecialistsCatalog() {
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
 
-  // Initialize filter state from URL params (read once on mount).
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(
-    urlParams.city || null
-  );
-  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(
-    urlParams.fns || null
-  );
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
-    urlParams.services ? urlParams.services.split(",").filter(Boolean) : []
-  );
+  // Unified filter state via CityFnsValue
+  const [filterValue, setFilterValue] = useState<CityFnsValue>(() => ({
+    cities: urlParams.city ? [urlParams.city] : [],
+    fns: urlParams.fns ? [urlParams.fns] : [],
+    fnsServices: {},
+  }));
+
+  // Derive individual filter ids from unified state (backward compat with API params)
+  const selectedCityId = filterValue.cities[0] ?? null;
+  const selectedFnsId = filterValue.fns[0] ?? null;
+  const fnsServicesParam = filterValue.fnsServices ?? {};
 
   const hasFilters =
-    selectedCityId !== null ||
-    selectedFnsId !== null ||
-    selectedServiceIds.length > 0;
+    filterValue.cities.length > 0 ||
+    filterValue.fns.length > 0;
 
   const resetFilters = useCallback(() => {
-    setSelectedCityId(null);
-    setSelectedFnsId(null);
-    setSelectedServiceIds([]);
+    setFilterValue(EMPTY_FNS_VALUE);
     router.setParams({
       city: undefined,
       fns: undefined,
@@ -124,8 +119,12 @@ export default function SpecialistsCatalog() {
         let path = `/api/specialists?page=${pageNum}&limit=${PAGE_SIZE}`;
         if (selectedCityId) path += `&city_ids=${selectedCityId}`;
         if (selectedFnsId) path += `&fns_ids=${selectedFnsId}`;
-        if (selectedServiceIds.length > 0)
-          path += `&services=${selectedServiceIds.join(",")}`;
+
+        // #1658: per-FNS services filter
+        const fnsServiceKeys = Object.keys(fnsServicesParam);
+        if (fnsServiceKeys.length > 0) {
+          path += `&fnsServices=${encodeURIComponent(JSON.stringify(fnsServicesParam))}`;
+        }
 
         const res = await api<SpecialistsResponse>(path, { noAuth: true });
 
@@ -138,11 +137,11 @@ export default function SpecialistsCatalog() {
         setHasMore(res.hasMore);
         setPage(pageNum);
         setError(null);
-      } catch (e) {
+      } catch {
         setError("Не удалось загрузить список");
       }
     },
-    [selectedCityId, selectedFnsId, selectedServiceIds]
+    [selectedCityId, selectedFnsId, fnsServicesParam]
   );
 
   const fetchSpecialistsRef = useRef(fetchSpecialists);
@@ -190,7 +189,7 @@ export default function SpecialistsCatalog() {
             /* typeahead degrades gracefully — empty FNS list */
           }
         }
-      } catch (e) {
+      } catch {
         // ignore — page still renders, fetchSpecialists below handles its own errors
       }
     }
@@ -201,45 +200,18 @@ export default function SpecialistsCatalog() {
   }, []);
 
   // Fetch specialists on mount and on filter change.
-  // Catalog is open by default — no FNS gate.
   useEffect(() => {
     setLoading(true);
     fetchSpecialists(1).finally(() => setLoading(false));
-  }, [selectedCityId, selectedFnsId, selectedServiceIds, fetchSpecialists]);
+  }, [selectedCityId, selectedFnsId, fnsServicesParam, fetchSpecialists]);
 
-  const handlePickCity = useCallback((cityId: string) => {
-    setSelectedCityId(cityId);
-    setSelectedFnsId(null);
-    router.setParams({ city: cityId, fns: undefined });
-  }, []);
-
-  const handlePickFns = useCallback((fns: FnsOpt) => {
-    setSelectedCityId(fns.cityId);
-    setSelectedFnsId(fns.id);
-    router.setParams({ city: fns.cityId, fns: fns.id });
-  }, []);
-
-  const handleClearLocation = useCallback(() => {
-    setSelectedCityId(null);
-    setSelectedFnsId(null);
-    router.setParams({ city: undefined, fns: undefined });
-  }, []);
-
-  const handleServiceToggle = useCallback((id: string) => {
-    setSelectedServiceIds((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((s) => s !== id)
-        : [...prev, id];
-      router.setParams({
-        services: next.length > 0 ? next.join(",") : undefined,
-      });
-      return next;
+  // Sync URL params when filter changes
+  const handleFilterChange = useCallback((v: CityFnsValue) => {
+    setFilterValue(v);
+    router.setParams({
+      city: v.cities[0] ?? undefined,
+      fns: v.fns[0] ?? undefined,
     });
-  }, []);
-
-  const handleClearServices = useCallback(() => {
-    setSelectedServiceIds([]);
-    router.setParams({ services: undefined });
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -268,7 +240,6 @@ export default function SpecialistsCatalog() {
       return;
     }
     const isSaved = bookmarkedIds.has(id);
-    // Optimistic update
     setBookmarkedIds((prev) => {
       const next = new Set(prev);
       if (isSaved) {
@@ -285,7 +256,6 @@ export default function SpecialistsCatalog() {
         await apiPost(`/api/saved-specialists/${id}`, {});
       }
     } catch {
-      // Revert on error
       setBookmarkedIds((prev) => {
         const next = new Set(prev);
         if (isSaved) {
@@ -307,26 +277,17 @@ export default function SpecialistsCatalog() {
     <SafeAreaView className="flex-1 bg-surface2">
       <CatalogHeader isDesktop={isDesktop} count={headerCount} />
 
-      {/* Row 2: typeahead search bar */}
+      {/* Typeahead filter: city → FNS → per-FNS services */}
       <View className="px-4 pt-2" style={{ zIndex: 20 }}>
-        <SpecialistSearchBar
-          cities={cities}
-          fnsAll={fnsAll}
-          selectedCityId={selectedCityId}
-          selectedFnsId={selectedFnsId}
-          onPickCity={handlePickCity}
-          onPickFns={handlePickFns}
-          onClear={handleClearLocation}
+        <CityFnsCascade
+          mode="typeahead"
+          value={filterValue}
+          onChange={handleFilterChange}
+          citiesSource={cities}
+          fnsSource={fnsAll}
+          services={services}
         />
       </View>
-
-      {/* Row 3: compact service chips — always visible */}
-      <ServiceChipsRow
-        services={services}
-        selectedServiceIds={selectedServiceIds}
-        onToggle={handleServiceToggle}
-        onClearAll={handleClearServices}
-      />
 
       {/* Specialist list */}
       {loading && specialists.length === 0 ? (

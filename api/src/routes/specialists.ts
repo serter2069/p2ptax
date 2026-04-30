@@ -147,6 +147,28 @@ router.get("/", async (req: Request, res: Response) => {
 
     // Validate every city/fns id is UUID to prevent DB crashes
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    // #1658: per-FNS service filter — Record<fnsId, string[]>
+    let fnsServices: Record<string, string[]> | null = null;
+    const fnsServicesRaw = (req.query.fnsServices as string) || undefined;
+    if (fnsServicesRaw) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(fnsServicesRaw));
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          fnsServices = parsed as Record<string, string[]>;
+          // Validate each key is UUID and each value is an array of strings
+          for (const [fnsId, svcIds] of Object.entries(fnsServices)) {
+            if (!uuidRegex.test(fnsId) || !Array.isArray(svcIds)) {
+              res.status(400).json({ error: "Invalid fnsServices format" });
+              return;
+            }
+          }
+        }
+      } catch {
+        // malformed JSON — ignore, degrade gracefully
+        fnsServices = null;
+      }
+    }
     for (const id of cityIdsList) {
       if (!uuidRegex.test(id)) {
         res.status(400).json({
@@ -203,6 +225,21 @@ router.get("/", async (req: Request, res: Response) => {
     if (serviceIds.length > 0) {
       where.specialistServices = {
         some: { serviceId: { in: serviceIds } },
+      };
+    }
+
+    // #1658: per-FNS services filter — specialist must have at least one matching
+    // SpecialistFns entry with the requested services for that FNS.
+    if (fnsServices && Object.keys(fnsServices).length > 0) {
+      where.specialistFns = {
+        some: {
+          OR: Object.entries(fnsServices).map(([fnsId, svcIds]) => ({
+            fnsId,
+            ...(svcIds.length > 0
+              ? { services: { some: { serviceId: { in: svcIds } } } }
+              : {}),
+          })),
+        },
       };
     }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   TextInput,
   useWindowDimensions,
 } from "react-native";
-import { ChevronDown, ChevronUp, Search, X } from "lucide-react-native";
+import { ChevronDown, ChevronUp, Search, X, MapPin, Building2 } from "lucide-react-native";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
@@ -29,14 +29,25 @@ export interface FnsCascadeOption {
 export interface CityFnsValue {
   cities: string[];
   fns: string[];
+  /** Per-FNS service selection. Key = fnsId, value = selected serviceIds (empty = all). */
+  fnsServices?: Record<string, string[]>;
+}
+
+export interface ServiceOption {
+  id: string;
+  name: string;
 }
 
 export interface CityFnsCascadeProps {
-  mode: "single" | "multi";
+  mode: "single" | "multi" | "typeahead";
   value: CityFnsValue;
   onChange: (v: CityFnsValue) => void;
   // Optional: external list of cities (skips internal fetch when provided)
   citiesSource?: CityCascadeOption[];
+  // Optional: external list of all FNS (used in typeahead mode to skip internal fetch)
+  fnsSource?: FnsCascadeOption[];
+  // Services list for per-FNS service chips (typeahead + multi modes)
+  services?: ServiceOption[];
   // Future: filter offices by the specialists offering specific services
   serviceIds?: string[];
   showCounts?: boolean;
@@ -47,20 +58,18 @@ export interface CityFnsCascadeProps {
 /**
  * CityFnsCascade — reusable cascade filter component.
  *
- * Single mode: каталог, filter feed / form — exactly one city + one FNS.
- * Multi mode:  onboarding work-area / catalog multi-select — set of cities + subset of FNS.
- *
- * Behavior:
- *  - Renders cities as a chip row (fetched via /api/cities if citiesSource is not provided).
- *  - When at least one city is selected, expands an FNS selector.
- *  - FNS list is fetched via /api/fns?city_ids=... (multi) or /api/fns?city_id=... (single).
- *  - Removing a city from the multi-value prunes orphan FNS ids from `value.fns`.
+ * Single mode:    catalog, filter feed / form — exactly one city + one FNS.
+ * Multi mode:     onboarding work-area / catalog multi-select — set of cities + subset of FNS.
+ * Typeahead mode: single-line search (city or IFNS name/code) → chip row →
+ *                 per-FNS service toggles (for #1658).
  */
 export default function CityFnsCascade({
   mode,
   value,
   onChange,
   citiesSource,
+  fnsSource,
+  services = [],
   serviceIds,
   showCounts = false,
   labelCities = "Город",
@@ -70,10 +79,15 @@ export default function CityFnsCascade({
   const isDesktop = width >= 640;
 
   const [cities, setCities] = useState<CityCascadeOption[]>(citiesSource ?? []);
-  const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
+  const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>(fnsSource ?? []);
   const [loadingFns, setLoadingFns] = useState(false);
   const [fnsOpen, setFnsOpen] = useState(false);
   const [fnsSearch, setFnsSearch] = useState("");
+
+  // Typeahead-specific state
+  const [query, setQuery] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch cities only if caller hasn't supplied them
   useEffect(() => {
@@ -81,6 +95,7 @@ export default function CityFnsCascade({
       setCities(citiesSource);
       return;
     }
+    if (mode === "typeahead" && fnsSource) return; // typeahead with external fnsSource skips city fetch
     let cancelled = false;
     (async () => {
       try {
@@ -95,10 +110,22 @@ export default function CityFnsCascade({
     return () => {
       cancelled = true;
     };
-  }, [citiesSource]);
+  }, [citiesSource, mode, fnsSource]);
 
-  // Fetch FNS offices whenever the city selection changes
+  // For typeahead: use fnsSource if provided, otherwise fetch all FNS once
   useEffect(() => {
+    if (mode !== "typeahead") return;
+    if (fnsSource && fnsSource.length > 0) {
+      setFnsAll(fnsSource);
+      return;
+    }
+    // If no fnsSource, fetch all cities then all FNS
+    // (caller is responsible for providing fnsSource in typeahead mode for perf)
+  }, [mode, fnsSource]);
+
+  // Fetch FNS offices whenever the city selection changes (single/multi modes)
+  useEffect(() => {
+    if (mode === "typeahead") return;
     if (value.cities.length === 0) {
       setFnsAll([]);
       return;
@@ -124,17 +151,18 @@ export default function CityFnsCascade({
     return () => {
       cancelled = true;
     };
-  }, [value.cities]);
+  }, [value.cities, mode]);
 
   // Prune orphan FNS ids if cities change so parent state stays consistent
   useEffect(() => {
+    if (mode === "typeahead") return;
     if (value.fns.length === 0 || fnsAll.length === 0) return;
     const valid = new Set(fnsAll.map((f) => f.id));
     const filtered = value.fns.filter((id) => valid.has(id));
     if (filtered.length !== value.fns.length) {
-      onChange({ cities: value.cities, fns: filtered });
+      onChange({ cities: value.cities, fns: filtered, fnsServices: value.fnsServices });
     }
-  }, [fnsAll, value.cities, value.fns, onChange]);
+  }, [fnsAll, value.cities, value.fns, value.fnsServices, onChange, mode]);
 
   const toggleCity = useCallback(
     (id: string) => {
@@ -147,7 +175,7 @@ export default function CityFnsCascade({
       const next = has
         ? value.cities.filter((c) => c !== id)
         : [...value.cities, id];
-      onChange({ cities: next, fns: value.fns });
+      onChange({ cities: next, fns: value.fns, fnsServices: value.fnsServices });
     },
     [mode, value, onChange]
   );
@@ -164,15 +192,20 @@ export default function CityFnsCascade({
       const next = has
         ? value.fns.filter((f) => f !== id)
         : [...value.fns, id];
-      onChange({ cities: value.cities, fns: next });
+      // When removing an FNS in multi/typeahead, also prune its fnsServices entry
+      const newFnsServices = { ...(value.fnsServices ?? {}) };
+      if (has) delete newFnsServices[id];
+      onChange({ cities: value.cities, fns: next, fnsServices: newFnsServices });
     },
     [mode, value, onChange]
   );
 
   const clearAll = useCallback(() => {
-    onChange({ cities: [], fns: [] });
+    onChange({ cities: [], fns: [], fnsServices: {} });
     setFnsOpen(false);
     setFnsSearch("");
+    setQuery("");
+    setDropdownOpen(false);
   }, [onChange]);
 
   const filteredFns = useMemo(() => {
@@ -190,80 +223,428 @@ export default function CityFnsCascade({
       ? fnsAll.find((f) => f.id === value.fns[0])
       : undefined;
 
+  // ── Typeahead helpers ─────────────────────────────────────────────────────
+
+  const q = query.trim().toLowerCase();
+  const showTypeaheadResults = dropdownOpen && q.length >= 2;
+
+  const matchedCities = useMemo(() => {
+    if (mode !== "typeahead" || !showTypeaheadResults) return [];
+    return cities.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [cities, q, showTypeaheadResults, mode]);
+
+  const matchedFns = useMemo(() => {
+    if (mode !== "typeahead" || !showTypeaheadResults) return [];
+    return fnsAll
+      .filter(
+        (f) =>
+          f.name.toLowerCase().includes(q) ||
+          (f.code || "").toLowerCase().includes(q)
+      )
+      .slice(0, 12);
+  }, [fnsAll, q, showTypeaheadResults, mode]);
+
+  // In typeahead: when a city is selected but no FNS chosen, show FNS chips for that city
+  const fnsForSelectedCity = useMemo(() => {
+    if (mode !== "typeahead") return [];
+    if (value.cities.length !== 1 || value.fns.length > 0) return [];
+    return fnsAll.filter((f) => f.cityId === value.cities[0]);
+  }, [mode, fnsAll, value.cities, value.fns]);
+
+  const selectedCityInTypeahead = useMemo(() => {
+    if (mode !== "typeahead" || value.cities.length === 0) return null;
+    return cities.find((c) => c.id === value.cities[0]) ?? null;
+  }, [mode, cities, value.cities]);
+
+  const selectedFnsInTypeahead = useMemo(() => {
+    if (mode !== "typeahead" || value.fns.length === 0) return null;
+    return fnsAll.find((f) => f.id === value.fns[0]) ?? null;
+  }, [mode, fnsAll, value.fns]);
+
+  const tagLabel = useMemo(() => {
+    if (mode !== "typeahead") return null;
+    const selFns = selectedFnsInTypeahead;
+    const selCity = selectedCityInTypeahead;
+    if (selFns) {
+      const cityPart = selFns.cityName || selCity?.name || "";
+      return cityPart ? `${cityPart} · ${selFns.name}` : selFns.name;
+    }
+    if (selCity) return selCity.name;
+    return null;
+  }, [mode, selectedFnsInTypeahead, selectedCityInTypeahead]);
+
+  const handleTypeaheadPickCity = useCallback(
+    (cityId: string) => {
+      setQuery("");
+      setDropdownOpen(false);
+      onChange({ cities: [cityId], fns: [], fnsServices: {} });
+    },
+    [onChange]
+  );
+
+  const handleTypeaheadPickFns = useCallback(
+    (fns: FnsCascadeOption) => {
+      setQuery("");
+      setDropdownOpen(false);
+      onChange({ cities: [fns.cityId], fns: [fns.id], fnsServices: { [fns.id]: [] } });
+    },
+    [onChange]
+  );
+
+  const handleTypeaheadClearTag = useCallback(() => {
+    setQuery("");
+    onChange({ cities: [], fns: [], fnsServices: {} });
+  }, [onChange]);
+
+  const handleBlur = () => {
+    if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+    blurTimerRef.current = setTimeout(() => setDropdownOpen(false), 150);
+  };
+
+  // Toggle a service for a given FNS in typeahead/multi mode (#1658)
+  const toggleFnsService = useCallback(
+    (fnsId: string, serviceId: string) => {
+      const current = value.fnsServices ?? {};
+      const currentForFns = current[fnsId] ?? [];
+      const next = currentForFns.includes(serviceId)
+        ? currentForFns.filter((s) => s !== serviceId)
+        : [...currentForFns, serviceId];
+      onChange({
+        cities: value.cities,
+        fns: value.fns,
+        fnsServices: { ...current, [fnsId]: next },
+      });
+    },
+    [value, onChange]
+  );
+
   // --- render ---
+
+  // ── Typeahead mode ────────────────────────────────────────────────────────
+  if (mode === "typeahead") {
+    const selectedFns = selectedFnsInTypeahead;
+    const selectedCity = selectedCityInTypeahead;
+    const hasSelection = value.cities.length > 0 || value.fns.length > 0;
+
+    return (
+      <View style={{ width: "100%" }}>
+        {/* Active filter tag */}
+        {tagLabel && (
+          <View className="flex-row flex-wrap mb-2" style={{ gap: 8 }}>
+            <View
+              className="flex-row items-center bg-accent-soft rounded-full pl-3 pr-1 h-8"
+              style={{ gap: 6 }}
+            >
+              <Text className="text-xs font-medium text-accent">{tagLabel}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Сбросить фильтр"
+                onPress={handleTypeaheadClearTag}
+                className="w-6 h-6 rounded-full items-center justify-center"
+              >
+                <X size={12} color={colors.accent} />
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Search input — hide when FNS already picked */}
+        {!selectedFns && (
+          <View className="relative" style={{ zIndex: 10 }}>
+            <View className="flex-row items-center bg-white border border-border rounded-xl h-10 px-3">
+              <Search size={14} color={colors.placeholder} style={{ marginRight: 8 }} />
+              <TextInput
+                value={query}
+                onChangeText={(t) => {
+                  setQuery(t);
+                  if (t.trim().length >= 2) setDropdownOpen(true);
+                }}
+                onFocus={() => {
+                  if (query.trim().length >= 2) setDropdownOpen(true);
+                }}
+                onBlur={handleBlur}
+                placeholder="Введите город или ИФНС, например: Москва или №46"
+                placeholderTextColor={colors.placeholder}
+                style={{
+                  flex: 1,
+                  fontSize: 14,
+                  color: colors.text,
+                  height: 40,
+                  backgroundColor: "transparent",
+                  ...(Platform.OS === "web"
+                    ? {
+                        borderRadius: 8,
+                        paddingHorizontal: 4,
+                        outlineStyle: "none" as never,
+                      }
+                    : {}),
+                }}
+              />
+              {query.length > 0 && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Очистить ввод"
+                  onPress={() => {
+                    setQuery("");
+                    setDropdownOpen(false);
+                  }}
+                  className="ml-2 w-6 h-6 items-center justify-center"
+                >
+                  <X size={12} color={colors.placeholder} />
+                </Pressable>
+              )}
+            </View>
+
+            {/* Typeahead dropdown */}
+            {showTypeaheadResults && (
+              <View
+                className="absolute left-0 right-0 bg-white border border-border rounded-xl overflow-hidden"
+                style={{
+                  top: 44,
+                  maxHeight: 360,
+                  zIndex: 50,
+                  elevation: 8,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 12,
+                }}
+              >
+                <ScrollView
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {matchedCities.length === 0 && matchedFns.length === 0 ? (
+                    <View className="px-4 py-4">
+                      <Text className="text-sm text-text-mute">Ничего не найдено</Text>
+                    </View>
+                  ) : (
+                    <>
+                      {matchedCities.length > 0 && (
+                        <>
+                          <Text
+                            className="text-xs font-semibold uppercase tracking-wide px-4 pt-3 pb-1"
+                            style={{ color: colors.textMuted }}
+                          >
+                            Города
+                          </Text>
+                          {matchedCities.map((c) => (
+                            <Pressable
+                              key={`city-${c.id}`}
+                              accessibilityRole="button"
+                              accessibilityLabel={c.name}
+                              onPress={() => handleTypeaheadPickCity(c.id)}
+                              className="px-4 py-2 flex-row items-center"
+                              style={{ gap: 8 }}
+                            >
+                              <MapPin size={14} color={colors.textMuted} />
+                              <Text className="text-sm text-text-base">{c.name}</Text>
+                            </Pressable>
+                          ))}
+                        </>
+                      )}
+                      {matchedFns.length > 0 && (
+                        <>
+                          <Text
+                            className="text-xs font-semibold uppercase tracking-wide px-4 pt-3 pb-1"
+                            style={{ color: colors.textMuted }}
+                          >
+                            Инспекции ФНС
+                          </Text>
+                          {matchedFns.map((f) => (
+                            <Pressable
+                              key={`fns-${f.id}`}
+                              accessibilityRole="button"
+                              accessibilityLabel={f.name}
+                              onPress={() => handleTypeaheadPickFns(f)}
+                              className="px-4 py-2 flex-row items-start"
+                              style={{ gap: 8 }}
+                            >
+                              <Building2
+                                size={14}
+                                color={colors.textMuted}
+                                style={{ marginTop: 2 }}
+                              />
+                              <View style={{ flex: 1 }}>
+                                <Text className="text-sm text-text-base">{f.name}</Text>
+                                <Text className="text-xs" style={{ color: colors.textMuted }}>
+                                  {f.code ? `${f.code}` : ""}
+                                  {f.cityName
+                                    ? `${f.code ? " · " : ""}${f.cityName}`
+                                    : ""}
+                                </Text>
+                              </View>
+                            </Pressable>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  )}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Step 2: city picked, no FNS yet → show FNS chips for that city */}
+        {selectedCity && !selectedFns && fnsForSelectedCity.length > 0 && (
+          <View className="mt-2">
+            <Text
+              className="text-xs font-semibold uppercase tracking-wide mb-2"
+              style={{ color: colors.textMuted }}
+            >
+              Выберите инспекцию
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingRight: 16 }}
+            >
+              {fnsForSelectedCity.map((f) => (
+                <Pressable
+                  key={f.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={f.name}
+                  onPress={() => handleTypeaheadPickFns(f)}
+                  className="px-3 h-8 items-center justify-center rounded-full border bg-white border-border"
+                >
+                  <Text className="text-xs text-text-base">
+                    {f.code ? `${f.code} · ` : ""}
+                    {f.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Per-FNS services (shown when FNS is selected) — #1658 */}
+        {selectedFns && services.length > 0 && (
+          <View className="mt-2">
+            <Text
+              className="text-xs font-semibold uppercase tracking-wide mb-2"
+              style={{ color: colors.textMuted }}
+            >
+              Услуги
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingRight: 16 }}
+            >
+              {/* "Не знаю" chip = all services */}
+              {(() => {
+                const fnsId = selectedFns.id;
+                const selected = (value.fnsServices ?? {})[fnsId] ?? [];
+                const allActive = selected.length === 0;
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Не знаю — все услуги"
+                    onPress={() =>
+                      onChange({
+                        cities: value.cities,
+                        fns: value.fns,
+                        fnsServices: { ...(value.fnsServices ?? {}), [fnsId]: [] },
+                      })
+                    }
+                    className={`px-3 h-8 items-center justify-center rounded-full border ${
+                      allActive ? "bg-accent border-accent" : "bg-white border-border"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs ${
+                        allActive ? "text-white font-medium" : "text-text-base"
+                      }`}
+                    >
+                      Не знаю
+                    </Text>
+                  </Pressable>
+                );
+              })()}
+              {services.map((s) => {
+                const fnsId = selectedFns.id;
+                const selected = (value.fnsServices ?? {})[fnsId] ?? [];
+                const active = selected.includes(s.id);
+                return (
+                  <Pressable
+                    key={s.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={s.name}
+                    onPress={() => toggleFnsService(fnsId, s.id)}
+                    className={`px-3 h-8 items-center justify-center rounded-full border ${
+                      active ? "bg-accent border-accent" : "bg-white border-border"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs ${
+                        active ? "text-white font-medium" : "text-text-base"
+                      }`}
+                    >
+                      {s.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Clear button when something is selected and no tag shown */}
+        {hasSelection && !tagLabel && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Сбросить фильтры"
+            onPress={clearAll}
+            className="mt-2 self-start flex-row items-center px-3 h-8 rounded-full border border-border bg-white"
+          >
+            <X size={12} color={colors.textSecondary} />
+            <Text className="text-xs text-text-mute ml-1">Сбросить</Text>
+          </Pressable>
+        )}
+      </View>
+    );
+  }
+
+  // ── Single / Multi mode ───────────────────────────────────────────────────
 
   return (
     <View style={{ width: "100%" }}>
-      {/* Cities row — on desktop (>=640px) we wrap chips so long city lists
-          stay fully visible; on mobile we keep the horizontal scroller to
-          save vertical space. (iter11-b fix for work-area overflow critique.) */}
+      {/* Cities row */}
       <View className="mb-2">
         <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2 px-4">
           {labelCities}
         </Text>
-        {isDesktop ? (
-          <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
-            {cities.length === 0 ? (
-              <Text className="text-sm text-text-mute">Загрузка…</Text>
-            ) : (
-              cities.map((city) => {
-                const active = value.cities.includes(city.id);
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={city.name}
-                    key={city.id}
-                    onPress={() => toggleCity(city.id)}
-                    className={`px-3 h-11 items-center justify-center rounded-full border ${
-                      active
-                        ? "bg-accent border-accent"
-                        : "bg-white border-border"
+        <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
+          {cities.length === 0 ? (
+            <Text className="text-sm text-text-mute">Загрузка…</Text>
+          ) : (
+            cities.map((city) => {
+              const active = value.cities.includes(city.id);
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={city.name}
+                  key={city.id}
+                  onPress={() => toggleCity(city.id)}
+                  className={`px-3 h-11 items-center justify-center rounded-full border ${
+                    active
+                      ? "bg-accent border-accent"
+                      : "bg-white border-border"
+                  }`}
+                >
+                  <Text
+                    className={`text-sm ${
+                      active ? "text-white font-medium" : "text-text-base"
                     }`}
                   >
-                    <Text
-                      className={`text-sm ${
-                        active ? "text-white font-medium" : "text-text-base"
-                      }`}
-                    >
-                      {city.name}
-                    </Text>
-                  </Pressable>
-                );
-              })
-            )}
-          </View>
-        ) : (
-          <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
-            {cities.length === 0 ? (
-              <Text className="text-sm text-text-mute">Загрузка…</Text>
-            ) : (
-              cities.map((city) => {
-                const active = value.cities.includes(city.id);
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={city.name}
-                    key={city.id}
-                    onPress={() => toggleCity(city.id)}
-                    className={`px-3 h-11 items-center justify-center rounded-full border ${
-                      active
-                        ? "bg-accent border-accent"
-                        : "bg-white border-border"
-                    }`}
-                  >
-                    <Text
-                      className={`text-sm ${
-                        active ? "text-white font-medium" : "text-text-base"
-                      }`}
-                    >
-                      {city.name}
-                    </Text>
-                  </Pressable>
-                );
-              })
-            )}
-          </View>
-        )}
+                    {city.name}
+                  </Text>
+                </Pressable>
+              );
+            })
+          )}
+        </View>
       </View>
 
       {/* FNS combobox */}
@@ -441,4 +822,3 @@ export default function CityFnsCascade({
     </View>
   );
 }
-
