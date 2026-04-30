@@ -55,10 +55,18 @@ function SettingsTabs({ activeTab, onChange, canEditSpecialist }: SettingsTabsPr
               accessibilityState={{ selected: active, disabled: t.disabled }}
               onPress={() => {
                 if (t.disabled) {
-                  Alert.alert(
-                    "Недоступно",
-                    "Включите режим специалиста на вкладке Профиль, чтобы редактировать профиль специалиста.",
-                  );
+                  if (Platform.OS === "web") {
+                    if (typeof window !== "undefined" && typeof window.alert === "function") {
+                      window.alert(
+                        "Недоступно\n\nВключите режим специалиста на вкладке Профиль, чтобы редактировать профиль специалиста."
+                      );
+                    }
+                  } else {
+                    Alert.alert(
+                      "Недоступно",
+                      "Включите режим специалиста на вкладке Профиль, чтобы редактировать профиль специалиста.",
+                    );
+                  }
                   return;
                 }
                 onChange(t.id);

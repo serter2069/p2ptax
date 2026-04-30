@@ -140,13 +140,23 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         lastName: res.user.lastName,
         avatarUrl: res.user.avatarUrl,
       });
-      Alert.alert("Готово", "Изменения сохранены");
+      if (Platform.OS !== "web") {
+        Alert.alert("Готово", "Изменения сохранены");
+      }
+      // Web: rely on the form transitioning out of dirty state to confirm save
+      // (no blocking alert popup).
     } catch (err) {
       console.error("Save profile error:", err);
-      Alert.alert(
-        "Ошибка сохранения",
-        "Не удалось сохранить изменения. Попробуйте ещё раз.",
-      );
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined" && typeof window.alert === "function") {
+          window.alert("Ошибка сохранения\n\nНе удалось сохранить изменения. Попробуйте ещё раз.");
+        }
+      } else {
+        Alert.alert(
+          "Ошибка сохранения",
+          "Не удалось сохранить изменения. Попробуйте ещё раз.",
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -154,7 +164,13 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
 
   const handleSaveSpecialist = useCallback(async () => {
     if (!firstName.trim() || firstName.trim().length < 2) {
-      Alert.alert("Ошибка", "Имя должно быть от 2 до 50 символов");
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined" && typeof window.alert === "function") {
+          window.alert("Ошибка: имя должно быть от 2 до 50 символов");
+        }
+      } else {
+        Alert.alert("Ошибка", "Имя должно быть от 2 до 50 символов");
+      }
       return;
     }
     setSaving(true);
@@ -173,10 +189,15 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         avatarUrl: avatarUrl || null,
       });
       await loadSpecialistData();
-      Alert.alert("Сохранено", "Профиль обновлён");
+      if (Platform.OS !== "web") {
+        Alert.alert("Сохранено", "Профиль обновлён");
+      }
+      // Web: form transitions out of dirty state — no blocking alert.
     } catch {
       if (Platform.OS === "web") {
-        window.alert("Не удалось сохранить");
+        if (typeof window !== "undefined" && typeof window.alert === "function") {
+          window.alert("Не удалось сохранить");
+        }
       } else {
         Alert.alert("Ошибка", "Не удалось сохранить");
       }
@@ -210,7 +231,13 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         setIsAvailable(value);
         updateUser({ isAvailable: value });
       } catch {
-        Alert.alert("Ошибка", "Не удалось обновить статус доступности");
+        if (Platform.OS === "web") {
+          if (typeof window !== "undefined" && typeof window.alert === "function") {
+            window.alert("Ошибка: не удалось обновить статус доступности");
+          }
+        } else {
+          Alert.alert("Ошибка", "Не удалось обновить статус доступности");
+        }
       } finally {
         setAvailabilityLoading(false);
       }
@@ -222,20 +249,32 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     (value: boolean) => {
       if (availabilityLoading) return;
       if (isAvailable && !value) {
-        Alert.alert(
-          "Скрыть профиль из каталога?",
-          "Новые клиенты не смогут вас найти. Существующие переписки сохранятся, и вы сможете отвечать как обычно. Включить обратно — в любой момент.",
-          [
-            { text: "Отмена", style: "cancel" },
-            {
-              text: "Скрыть",
-              style: "destructive",
-              onPress: () => {
-                void applyAvailabilityChange(value);
+        if (Platform.OS === "web") {
+          const ok =
+            typeof window !== "undefined" && typeof window.confirm === "function"
+              ? window.confirm(
+                  "Скрыть профиль из каталога?\n\nНовые клиенты не смогут вас найти. Существующие переписки сохранятся, и вы сможете отвечать как обычно. Включить обратно — в любой момент."
+                )
+              : true;
+          if (ok) {
+            void applyAvailabilityChange(value);
+          }
+        } else {
+          Alert.alert(
+            "Скрыть профиль из каталога?",
+            "Новые клиенты не смогут вас найти. Существующие переписки сохранятся, и вы сможете отвечать как обычно. Включить обратно — в любой момент.",
+            [
+              { text: "Отмена", style: "cancel" },
+              {
+                text: "Скрыть",
+                style: "destructive",
+                onPress: () => {
+                  void applyAvailabilityChange(value);
+                },
               },
-            },
-          ],
-        );
+            ],
+          );
+        }
         return;
       }
       void applyAvailabilityChange(value);

@@ -334,7 +334,13 @@ export default function MyRequests() {
           r.id === pending.id ? { ...r, status: pending.prevStatus } : r
         )
       );
-      Alert.alert("Ошибка", "Не удалось закрыть заявку");
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined" && typeof window.alert === "function") {
+          window.alert("Ошибка: не удалось закрыть заявку");
+        }
+      } else {
+        Alert.alert("Ошибка", "Не удалось закрыть заявку");
+      }
     }
   }, []);
 

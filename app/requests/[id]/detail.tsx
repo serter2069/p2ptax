@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -109,7 +110,13 @@ export default function MyRequestDetail() {
         setRequest((prev) => prev ? { ...prev, status: "CLOSED" } : null);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Не удалось закрыть заявку";
-        Alert.alert("Ошибка", msg);
+        if (Platform.OS === "web") {
+          if (typeof window !== "undefined" && typeof window.alert === "function") {
+            window.alert(`Ошибка: ${msg}`);
+          }
+        } else {
+          Alert.alert("Ошибка", msg);
+        }
       } finally {
         setClosing(false);
       }

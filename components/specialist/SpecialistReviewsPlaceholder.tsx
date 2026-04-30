@@ -29,7 +29,7 @@ export default function SpecialistReviewsPlaceholder({
         style={{ backgroundColor: colors.surface, ...cardShadow }}
       >
         <Text className="text-sm text-center" style={{ color: gray[400] }}>
-          Отзывы появятся после MVP
+          Раздел отзывов скоро появится
         </Text>
       </View>
     </View>

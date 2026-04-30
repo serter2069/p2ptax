@@ -141,11 +141,9 @@ export default function UnifiedInbox() {
         isSpecialistUser ? "Посмотреть открытые заявки" : "Создать заявку"
       }
       onAction={() =>
-        router.push(
-          isSpecialistUser
-            ? ("/(tabs)/public-requests" as never)
-            : ("/requests/new" as never)
-        )
+        isSpecialistUser
+          ? nav.routes.tabsPublicRequests()
+          : nav.routes.requestsNew()
       }
     />
   );

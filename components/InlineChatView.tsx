@@ -350,11 +350,15 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const handleWebFileDrop = useCallback(async (file: File) => {
     const MAX_SIZE = 10 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      Alert.alert("Файл слишком большой", "Максимум 10 МБ");
+      if (typeof window !== "undefined" && typeof window.alert === "function") {
+        window.alert("Файл слишком большой\n\nМаксимум 10 МБ");
+      }
       return;
     }
     if (pendingFiles.length >= 3) {
-      Alert.alert("Лимит файлов", "Можно прикрепить не более 3 файлов");
+      if (typeof window !== "undefined" && typeof window.alert === "function") {
+        window.alert("Лимит файлов\n\nМожно прикрепить не более 3 файлов");
+      }
       return;
     }
     const pending: PendingFile = {
@@ -396,14 +400,26 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     // they're invisible in the catalog. Force them to finish onboarding
     // before the message leaves the client.
     if (isSpecialistUser && !user?.specialistProfileCompletedAt) {
-      Alert.alert(
-        "Завершите профиль",
-        "Перед тем как писать клиенту, завершите профиль специалиста.",
-        [
-          { text: "Отмена", style: "cancel" },
-          { text: "Завершить", onPress: () => router.push("/onboarding/name" as never) },
-        ]
-      );
+      if (Platform.OS === "web") {
+        if (
+          typeof window !== "undefined" &&
+          typeof window.confirm === "function" &&
+          window.confirm(
+            "Завершите профиль\n\nПеред тем как писать клиенту, завершите профиль специалиста."
+          )
+        ) {
+          router.push("/onboarding/name" as never);
+        }
+      } else {
+        Alert.alert(
+          "Завершите профиль",
+          "Перед тем как писать клиенту, завершите профиль специалиста.",
+          [
+            { text: "Отмена", style: "cancel" },
+            { text: "Завершить", onPress: () => router.push("/onboarding/name" as never) },
+          ]
+        );
+      }
       return;
     }
 
@@ -429,7 +445,13 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     } catch (e: unknown) {
       setUploading(false);
       const msg = e instanceof Error ? e.message : "Ошибка отправки";
-      Alert.alert("Ошибка", msg);
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined" && typeof window.alert === "function") {
+          window.alert(`Ошибка: ${msg}`);
+        }
+      } else {
+        Alert.alert("Ошибка", msg);
+      }
     } finally {
       setSending(false);
     }
@@ -458,7 +480,13 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       router.back();
     } catch (e) {
       setClearingThread(false);
-      Alert.alert("Ошибка", "Не удалось очистить переписку");
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined" && typeof window.alert === "function") {
+          window.alert("Ошибка: Не удалось очистить переписку");
+        }
+      } else {
+        Alert.alert("Ошибка", "Не удалось очистить переписку");
+      }
     }
   }, [threadId]);
 
@@ -983,6 +1011,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
               } else {
                 Linking.openURL(lightbox.url).catch(() => {
                   Alert.alert("Ошибка", "Не удалось открыть файл");
+                  // (Native-only branch — Web uses anchor click above.)
                 });
               }
             }}
