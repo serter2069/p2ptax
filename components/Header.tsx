@@ -142,12 +142,12 @@ export default function Header() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Создать заявку"
+            accessibilityLabel="Создать запрос"
             onPress={() => nav.routes.requestsNew()}
             className="px-5 h-11 rounded-lg items-center justify-center"
             style={{ backgroundColor: colors.primary }}
           >
-            <Text className="text-sm font-semibold text-white">Создать заявку</Text>
+            <Text className="text-sm font-semibold text-white">Создать запрос</Text>
           </Pressable>
         </View>
       )}

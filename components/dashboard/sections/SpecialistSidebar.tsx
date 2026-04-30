@@ -17,7 +17,7 @@ export default function SpecialistSidebar({
     <View style={{ gap: 16 }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Создать заявку"
+        accessibilityLabel="Создать запрос"
         onPress={onCreateRequest}
         disabled={atLimit}
         className={`rounded-2xl p-5 ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
@@ -38,15 +38,15 @@ export default function SpecialistSidebar({
               style={{ fontSize: 16 }}
             >
               {atLimit
-                ? "Лимит активных заявок исчерпан (5/5). Закройте одну."
-                : "Создать заявку"}
+                ? "Лимит активных запросов исчерпан (5/5). Закройте один."
+                : "Создать запрос"}
             </Text>
             <Text
               className={atLimit ? "text-text-dim" : "text-white/80"}
               style={{ fontSize: 12, marginTop: 2 }}
             >
               {atLimit
-                ? "Закройте одну, чтобы создать новую"
+                ? "Закройте один, чтобы создать новый"
                 : "Первые сообщения в течение 24 часов"}
             </Text>
           </View>
@@ -55,7 +55,7 @@ export default function SpecialistSidebar({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Все публичные заявки"
+        accessibilityLabel="Все публичные запросы"
         onPress={onPublicRequests}
         className="rounded-2xl bg-accent p-5"
       >
@@ -71,7 +71,7 @@ export default function SpecialistSidebar({
               className="font-extrabold text-white"
               style={{ fontSize: 16 }}
             >
-              Публичные заявки
+              Публичные запросы
             </Text>
             <Text
               className="text-white/80 mt-0.5"

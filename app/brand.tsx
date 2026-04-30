@@ -104,7 +104,7 @@ export default function BrandScreen() {
           <View className="gap-4">
             {([
               { key: "h1", label: "h1 · 30px extrabold", example: "Найдите специалиста" },
-              { key: "h2", label: "h2 · 24px bold", example: "Мои заявки" },
+              { key: "h2", label: "h2 · 24px bold", example: "Мои запросы" },
               { key: "h3", label: "h3 · 18px semibold", example: "Камеральная проверка" },
               { key: "body", label: "body · 16px", example: "Помощь с проверкой за 3 квартал." },
               { key: "caption", label: "caption · 14px", example: "3 специалиста · 2 часа назад" },
@@ -137,8 +137,8 @@ export default function BrandScreen() {
         {/* ====== BUTTONS ====== */}
         <Section title="Buttons">
           <View className="gap-4">
-            <Button label="Создать заявку" />
-            <Button label="Создать заявку" disabled />
+            <Button label="Создать запрос" />
+            <Button label="Создать запрос" disabled />
             <Button label="Загрузка..." loading />
             <Button variant="secondary" label="Отмена" />
             <Button variant="destructive" label="Удалить" />
@@ -240,8 +240,8 @@ export default function BrandScreen() {
           <View className="gap-4">
             <EmptyState
               icon={FileText}
-              title="Нет заявок"
-              subtitle="Создайте первую заявку"
+              title="Нет запросов"
+              subtitle="Создайте первый запрос"
               actionLabel="Создать"
               onAction={() => {}}
             />

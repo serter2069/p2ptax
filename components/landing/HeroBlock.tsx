@@ -171,7 +171,7 @@ export default function HeroBlock({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Создать заявку"
+              accessibilityLabel="Создать запрос"
               onPress={onPrimaryCta}
               className="rounded-xl items-center justify-center"
               style={{
@@ -183,7 +183,7 @@ export default function HeroBlock({
               }}
             >
               <Text className="font-semibold" style={{ fontSize: 16, color: colors.text }}>
-                Создать заявку
+                Создать запрос
               </Text>
             </Pressable>
           </View>

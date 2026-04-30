@@ -41,7 +41,7 @@ export default function SpecialistContactCTA({
         className="text-sm leading-5 mb-2"
         style={{ color: colors.textSecondary }}
       >
-        Ваша заявка будет прочитана в течение рабочего дня.
+        Ваш запрос будет прочитана в течение рабочего дня.
       </Text>
       <View
         className="flex-row items-center px-2.5 py-1.5 rounded-md self-start mb-4"

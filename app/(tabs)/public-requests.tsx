@@ -137,7 +137,7 @@ export default function SpecialistPublicRequests() {
         setError(null);
       } catch (e) {
         console.error("Fetch requests error:", e);
-        if (!append) setError("Не удалось загрузить заявки");
+        if (!append) setError("Не удалось загрузить запросы");
       }
     },
     [selectedCityIds, selectedFnsIds]
@@ -241,8 +241,8 @@ export default function SpecialistPublicRequests() {
         <DesktopScreen>
           <EmptyState
             icon={FileText}
-            title="Заявки появятся после настройки профиля"
-            subtitle="Завершите профиль чтобы видеть подходящие заявки"
+            title="Запросы появятся после настройки профиля"
+            subtitle="Завершите профиль чтобы видеть подходящие запросы"
             actionLabel="Завершить профиль"
             onAction={() => nav.any("/onboarding/work-area?from=public-requests")}
           />
@@ -256,13 +256,13 @@ export default function SpecialistPublicRequests() {
       <DesktopScreen>
         {/* Hero */}
         <View className="rounded-2xl px-5 py-5 mb-4 mt-2" style={{ backgroundColor: colors.accent }}>
-          <Text className="text-xl font-bold text-white mb-0.5">Заявки</Text>
+          <Text className="text-xl font-bold text-white mb-0.5">Запросы</Text>
           <Text className="text-sm" style={{ color: overlay.white90 }}>
             Находите клиентов по своей специализации
           </Text>
           {total > 0 && (
             <Text className="text-sm font-semibold text-white mt-2">
-              {total} {pluralizeRu(total, ["заявка", "заявки", "заявок"])} доступно
+              {total} {pluralizeRu(total, ["запрос", "запросы", "запросов"])} доступно
             </Text>
           )}
         </View>
@@ -305,7 +305,7 @@ export default function SpecialistPublicRequests() {
           ) : requests.length === 0 ? (
             <EmptyState
               icon={FileText}
-              title="Заявок не найдено"
+              title="Запросов не найдено"
               subtitle="Попробуйте изменить фильтры"
               actionLabel="Сбросить фильтры"
               onAction={handleReset}

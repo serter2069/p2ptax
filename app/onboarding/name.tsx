@@ -27,7 +27,7 @@ export default function OnboardingNameScreen() {
   const isSpecialistIntent = role === "specialist";
   const { ready, user } = useRequireAuth();
   const { updateUser, isSpecialistUser, isAdminUser } = useAuth();
-  const segments = useSegments();
+  const segments = useSegments() as string[];
   // Only redirect when this screen is actually active in the navigation stack.
   // Without this guard, toggling specialist off from /settings causes this
   // background screen to fire nav.replaceRoutes.tabs() unintentionally.

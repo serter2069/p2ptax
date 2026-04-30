@@ -230,7 +230,7 @@ export default function SpecialistConfirmWrite() {
               { onDismiss: goToThread }
             );
           } else {
-            setSubmitError("Заявка закрыта — сообщение отправить невозможно");
+            setSubmitError("Запрос закрыт — сообщение отправить невозможно");
           }
         } else if (err.status === 429) {
           setSubmitError(
@@ -307,7 +307,7 @@ export default function SpecialistConfirmWrite() {
         <ResponsiveContainer>
           {/* Subtitle */}
           <Text className="text-sm text-text-mute mt-4 mb-3">
-            Прочитайте заявку и напишите первое сообщение
+            Прочитайте запрос и напишите первое сообщение
           </Text>
 
           {/* Rate limit info */}

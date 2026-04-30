@@ -50,7 +50,7 @@ async function notifyMatchingSpecialists(args: {
         sendNotification({
           userId: s.id,
           type: "new_request_in_city",
-          title: "Новая заявка по вашему отделению ФНС",
+          title: "Новый запрос по вашему отделению ФНС",
           body: title.slice(0, 200),
           entityId: requestId,
         }).catch((err: Error) =>
@@ -435,7 +435,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
     });
 
     if (!request) {
-      res.status(404).json({ error: "Заявка не найдена" });
+      res.status(404).json({ error: "Запрос не найден" });
       return;
     }
 

@@ -46,7 +46,7 @@ const THREAD_LIMIT_PER_DAY = 20;
 const TIPS: { title: string; text: string }[] = [
   {
     title: "Укажите ФНС",
-    text: "Специалисты ищут заявки по своим инспекциям — без ФНС вас не увидят.",
+    text: "Специалисты ищут запросы по своим инспекциям — без ФНС вас не увидят.",
   },
   {
     title: "Опишите ситуацию",
@@ -251,10 +251,10 @@ export default function UserDashboard() {
   const subtitle = isSpecialistUser
     ? isAvailable
       ? newLeads.length > 0
-        ? `${newLeads.length} новых подходящих заявок`
-        : "Ваш рабочий стол: заявки, диалоги, лиды"
-      : "Вы скрыты из каталога — включите приём заявок"
-    : "Ваш рабочий стол: заявки, диалоги, сообщения";
+        ? `${newLeads.length} новых подходящих запросов`
+        : "Ваш рабочий стол: запросы, диалоги, лиды"
+      : "Вы скрыты из каталога — включите приём запросов"
+    : "Ваш рабочий стол: запросы, диалоги, сообщения";
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
@@ -270,7 +270,7 @@ export default function UserDashboard() {
           headerActions={
             isSpecialistUser ? (
               <View className="flex-row items-center gap-2 bg-white border border-border rounded-full px-3 py-2">
-                <Text className="text-text-mute text-xs">Принимаю заявки</Text>
+                <Text className="text-text-mute text-xs">Принимаю запросы</Text>
                 <View style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
                   <Switch
                     value={isAvailable}

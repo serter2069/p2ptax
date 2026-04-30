@@ -222,7 +222,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
   return (
     <Modal size="lg" onClose={onClose}>
       <div className="modal-head">
-        <h3>Новая заявка</h3>
+        <h3>Новый запрос</h3>
         <div className="step-dots">
           {stepInfo.map(s => (
             <span key={s.n} style={{color: s.n <= step ? 'var(--text)' : 'var(--text-dim)'}}>
@@ -334,7 +334,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
             </h4>
 
             <div className="field">
-              <label>Заголовок заявки *</label>
+              <label>Заголовок запроса *</label>
               <input className="input" placeholder="Например: «Пришло требование по НДС»"
                 value={form.title} onChange={(e)=>set('title', e.target.value)} />
             </div>
@@ -382,7 +382,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
             </div>
 
             <div className="field">
-              <label>Кто увидит заявку</label>
+              <label>Кто увидит запрос</label>
               <div className="pub-toggle">
                 <button className={`pub-opt ${form.visibility==='public'?'active':''}`} onClick={()=>set('visibility','public')}>
                   <div className="pub-icon">Публично</div>
@@ -392,7 +392,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
                 <button className={`pub-opt ${form.visibility==='private'?'active':''}`} onClick={()=>set('visibility','private')}>
                   <div className="pub-icon">Только по выбору</div>
                   <div className="pub-title">Я сам приглашу конкретных</div>
-                  <div className="pub-sub">Заявка закрыта. Смотрите каталог, отправляете приглашения адресно. Медленнее, но точнее.</div>
+                  <div className="pub-sub">Запрос закрыт. Смотрите каталог, отправляете приглашения адресно. Медленнее, но точнее.</div>
                 </button>
               </div>
             </div>
@@ -413,7 +413,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
             </div>
 
             <div style={{padding: 16, background:'var(--surface-2)', borderRadius: 10, marginBottom: 16}}>
-              <div className="xs mono dim" style={{marginBottom: 10, letterSpacing:'.08em'}}>ПРЕДПРОСМОТР ЗАЯВКИ</div>
+              <div className="xs mono dim" style={{marginBottom: 10, letterSpacing:'.08em'}}>ПРЕДПРОСМОТР ЗАПРОСЫ</div>
               <div style={{fontFamily:'var(--fs-serif)', fontSize: 20, letterSpacing:'-0.015em', marginBottom: 8}}>
                 {form.title || '(без заголовка)'}
               </div>
@@ -463,7 +463,7 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
                   requireAuth(form);
                   return;
                 }
-                setSubmitErr('Войдите в аккаунт, чтобы опубликовать заявку');
+                setSubmitErr('Войдите в аккаунт, чтобы опубликовать запрос');
                 return;
               }
               setSubmitting(true);
@@ -485,12 +485,12 @@ function NewRequestModal({ onClose, onDone, initial, requireAuth }) {
                 const created = await window.PT_API.createRequest(payload);
                 onDone({ ...form, requestId: created.id, apiResult: created });
               } catch (e) {
-                setSubmitErr(e.message || 'Не удалось опубликовать заявку');
+                setSubmitErr(e.message || 'Не удалось опубликовать запрос');
               } finally {
                 setSubmitting(false);
               }
             }}>
-            {submitting ? 'Публикуем…' : 'Опубликовать заявку →'}
+            {submitting ? 'Публикуем…' : 'Опубликовать запрос →'}
           </button>
         )}
       </div>
@@ -547,14 +547,14 @@ function RequestSuccessModal({ onClose, onOpenChat, data }) {
       <div className="modal-head">
         <h3 style={{display:'flex', gap: 10, alignItems:'center'}}>
           <span style={{color:'var(--accent)'}}>●</span>
-          Заявка опубликована
+          Запрос опубликован
         </h3>
         <button className="close-btn" onClick={onClose}>✕</button>
       </div>
       <div className="modal-body">
         <div style={{display:'grid', gridTemplateColumns:'1.2fr 1fr', gap: 24}}>
           <div>
-            <div className="section-kicker">Ваша заявка</div>
+            <div className="section-kicker">Ваш запрос</div>
             <h4 style={{fontFamily:'var(--fs-serif)', fontSize: 28, fontWeight: 400, letterSpacing:'-0.02em', marginTop: 8, marginBottom: 16, lineHeight: 1.1}}>
               {data?.title || OV_REQ.title}
             </h4>
@@ -1061,7 +1061,7 @@ function ChatPage({ specialistId, onBack, onProfile }) {
                   {s.first} {s.last}
                   {muted[s.id] && <span className="chat-mute-dot" title="Без уведомлений">🔕</span>}
                 </div>
-                <div className="chat-item-last">{s.id === initial.id ? 'Принял. Давайте уточним…' : 'Посмотрел вашу заявку…'}</div>
+                <div className="chat-item-last">{s.id === initial.id ? 'Принял. Давайте уточним…' : 'Посмотрел ваш запрос…'}</div>
                 <div className="chat-item-time">{s.id === initial.id ? '14:12' : 'вчера'}</div>
               </div>
             </div>

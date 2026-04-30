@@ -192,8 +192,8 @@ export default function CreateRequest() {
         goToDetail();
       } else {
         Alert.alert(
-          "Заявка опубликована",
-          "Специалисты по вашей ФНС увидят её и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
+          "Запрос опубликован",
+          "Специалисты по вашей ФНС увидят его и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
           [{ text: "OK", onPress: goToDetail }],
           { onDismiss: goToDetail }
         );
@@ -202,7 +202,7 @@ export default function CreateRequest() {
       const msg =
         e instanceof Error
           ? e.message
-          : "Не удалось опубликовать заявку. Проверьте данные и попробуйте ещё раз.";
+          : "Не удалось опубликовать запрос. Проверьте данные и попробуйте ещё раз.";
       setSubmitError(msg);
     } finally {
       setSubmitting(false);
@@ -286,7 +286,7 @@ export default function CreateRequest() {
               <Text className="text-text-base ml-1">Назад</Text>
             </Pressable>
           )}
-          <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+          <Text className="text-2xl font-extrabold text-text-base mb-3">Создать запрос</Text>
         </View>
       </View>
       <ScrollView
@@ -306,7 +306,7 @@ export default function CreateRequest() {
           {!isAuthenticated && (
             <View className="bg-accent-soft border border-accent rounded-xl p-4 mb-4">
               <Text className="text-sm font-semibold text-accent mb-0.5">
-                Заполните заявку — войдёте в один шаг при отправке
+                Заполните запрос — войдёте в один шаг при отправке
               </Text>
               <Text className="text-sm text-accent">
                 Подтверждение по email кодом. Без паролей.
@@ -319,7 +319,7 @@ export default function CreateRequest() {
             style={{ overflow: "hidden" }}
           >
             <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-              Описание заявки
+              Описание запроса
             </Text>
 
             <View className="mb-4">
@@ -434,8 +434,8 @@ export default function CreateRequest() {
             <Button
               label={
                 isAuthenticated
-                  ? "Опубликовать заявку"
-                  : "Отправить заявку"
+                  ? "Опубликовать запрос"
+                  : "Отправить запрос"
               }
               onPress={handleSubmit}
               disabled={submitting}

@@ -32,7 +32,7 @@ export default function RequestPreviewCard({ request }: RequestPreviewCardProps)
       }}
     >
       <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-        Заявка клиента
+        Запрос клиента
       </Text>
       <Text className="text-base font-semibold text-text-base mb-2 leading-snug">
         {request.title}

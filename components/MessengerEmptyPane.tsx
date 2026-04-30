@@ -8,8 +8,8 @@ import { colors } from "@/lib/theme";
  *
  * Replaces the previous grey "Выберите диалог" EmptyState that left half the
  * screen blank. Adds a gradient-ish backdrop, big illustration, hint text,
- * and an optional secondary CTA (e.g. "Создать заявку" for clients,
- * "Публичные заявки" for specialists). Mobile never renders this (mobile
+ * and an optional secondary CTA (e.g. "Создать запрос" for clients,
+ * "Публичные запросы" for specialists). Mobile never renders this (mobile
  * uses single-pane full-screen nav).
  */
 

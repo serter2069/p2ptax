@@ -98,7 +98,7 @@ export default function PublicRequestsFeed() {
         setPage(pageNum);
         setError(null);
       } catch {
-        setError("Не удалось загрузить заявки");
+        setError("Не удалось загрузить запросы");
       }
     },
     [selectedCityId, selectedFnsId]
@@ -224,10 +224,10 @@ export default function PublicRequestsFeed() {
           <ChevronLeft size={18} color="rgba(255,255,255,0.8)" />
           <Text style={{ ...textStyle.small, color: overlay.white90, marginLeft: 2 }}>Назад</Text>
         </Pressable>
-        <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>Открытые заявки</Text>
+        <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>Открытые запросы</Text>
         <Text style={{ ...textStyle.small, color: overlay.white90 }}>Задайте вопрос — получите предложения от специалистов</Text>
         {total > 0 && (
-          <Text className="text-sm font-semibold text-white mt-2">{total} активных заявок</Text>
+          <Text className="text-sm font-semibold text-white mt-2">{total} активных запросов</Text>
         )}
       </View>
 
@@ -255,7 +255,7 @@ export default function PublicRequestsFeed() {
       <View className="flex-1">
         {error ? (
           <ErrorState
-            message="Не удалось загрузить заявки. Проверьте соединение с интернетом и попробуйте снова."
+            message="Не удалось загрузить запросы. Проверьте соединение с интернетом и попробуйте снова."
             onRetry={() => {
               setError(null);
               setListLoading(true);
@@ -269,7 +269,7 @@ export default function PublicRequestsFeed() {
         ) : requests.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title="Заявок не найдено"
+            title="Запросов не найдено"
             subtitle="Попробуйте изменить фильтры или сбросить их"
             actionLabel={hasFilters ? "Сбросить фильтры" : undefined}
             onAction={hasFilters ? handleResetFilters : undefined}
@@ -326,7 +326,7 @@ export default function PublicRequestsFeed() {
               ) : (
                 <View className="py-4 items-center">
                   <Text className="text-xs text-text-mute">
-                    Все заявки загружены
+                    Все запросы загружены
                   </Text>
                 </View>
               )

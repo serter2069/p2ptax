@@ -22,7 +22,7 @@ export default function ClientEmptyState({ onCreate }: Props) {
           className="text-text-base font-extrabold"
           style={{ fontSize: 20 }}
         >
-          Создайте первую заявку
+          Создайте первый запрос
         </Text>
         <Text
           className="text-text-mute"
@@ -33,7 +33,7 @@ export default function ClientEmptyState({ onCreate }: Props) {
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Создать заявку"
+        accessibilityLabel="Создать запрос"
         onPress={onCreate}
         className="rounded-xl flex-row items-center justify-center"
         style={{
@@ -45,7 +45,7 @@ export default function ClientEmptyState({ onCreate }: Props) {
       >
         <Plus size={18} color={colors.white} />
         <Text className="font-bold text-white" style={{ fontSize: 15 }}>
-          Создать заявку
+          Создать запрос
         </Text>
       </Pressable>
     </View>

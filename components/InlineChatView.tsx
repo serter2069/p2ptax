@@ -722,7 +722,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       {thread?.requestId ? (
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel={`Открыть заявку ${thread.request?.title ?? ""}`}
+          accessibilityLabel={`Открыть запрос ${thread.request?.title ?? ""}`}
           onPress={() => router.push(`/requests/${thread.requestId}/detail` as never)}
           style={({ pressed }) => [
             {
@@ -740,7 +740,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         >
           <FileText size={14} color={colors.accent} />
           <Text style={{ flex: 1, fontSize: 13, color: colors.text }} numberOfLines={1}>
-            По заявке: {thread.request?.title || "Заявка"}
+            По запросу: {thread.request?.title || "Запрос"}
           </Text>
           <ChevronRight size={14} color={colors.textMuted} />
         </Pressable>
@@ -806,7 +806,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         {isClosed && (
           <View className="border-t px-4 py-3" style={{ backgroundColor: colors.yellowSoft, borderTopColor: colors.warning }}>
             <Text className="text-sm text-center" style={{ color: colors.primary }}>
-              Заявка закрыта. Чат доступен только для чтения.
+              Запрос закрыт. Чат доступен только для чтения.
             </Text>
           </View>
         )}

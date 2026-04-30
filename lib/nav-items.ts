@@ -79,7 +79,7 @@ export const USER_BASE_ITEMS: NavItem[] = [
       (ctx.segments[0] === "(tabs)" && !ctx.segments[1]),
   },
   {
-    label: "Мои заявки",
+    label: "Мои запросы",
     href: "/(tabs)/requests",
     icon: FileText,
     match: (ctx) => groupMatch(ctx, "(tabs)", "requests"),
@@ -92,7 +92,7 @@ export const USER_BASE_ITEMS: NavItem[] = [
   },
 ];
 
-// Client-only addition: injected after "Мои заявки" for non-specialist users.
+// Client-only addition: injected after "Мои запросы" for non-specialist users.
 export const USER_CLIENT_EXTRA: NavItem[] = [
   {
     label: "Специалисты",
@@ -111,11 +111,11 @@ export const USER_CLIENT_EXTRA: NavItem[] = [
 // Specialist-only addition: appended to USER_BASE when isSpecialist=true.
 export const USER_SPECIALIST_EXTRA: NavItem[] = [
   {
-    label: "Заявки",
+    label: "Запросы",
     href: "/(tabs)/public-requests",
     icon: Inbox,
     // Only match the public-requests tab — do NOT match "/requests" which is
-    // "Мои заявки" (the client-side tab). Previously this had an erroneous
+    // "Мои запросы" (the client-side tab). Previously this had an erroneous
     // topLevelMatch("/requests") that highlighted the wrong item.
     match: (ctx) => groupMatch(ctx, "(tabs)", "public-requests"),
   },

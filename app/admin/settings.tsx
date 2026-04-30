@@ -32,8 +32,8 @@ interface AdminExtra {
 }
 
 const SETTINGS_FIELDS: SettingField[] = [
-  { key: "requests_limit", label: "Макс. заявок на клиента", defaultValue: "5" },
-  { key: "threads_per_request_limit", label: "Макс. диалогов на заявку", defaultValue: "10" },
+  { key: "requests_limit", label: "Макс. запросов на клиента", defaultValue: "5" },
+  { key: "threads_per_request_limit", label: "Макс. диалогов на запрос", defaultValue: "10" },
   { key: "auto_close_days", label: "Автозакрытие через (дней)", defaultValue: "30" },
   { key: "max_extensions", label: "Макс. продлений", defaultValue: "3" },
   { key: "warning_days", label: "Предупреждение за (дней)", defaultValue: "3" },

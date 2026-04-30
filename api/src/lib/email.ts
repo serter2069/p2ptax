@@ -47,7 +47,7 @@ export async function sendNewMessageEmail(params: {
     from: `"P2PTax" <${config.smtpFrom}>`,
     to: params.toEmail,
     subject: `Вам написал ${params.fromName} — P2PTax`,
-    text: `Здравствуйте, ${params.toName}!\n\nВам написал ${params.fromName} по заявке «${params.requestTitle}».\n\nПрочитать сообщение: ${link}\n\nС уважением,\nP2PTax`,
-    html: `<p>Здравствуйте, ${params.toName}!</p><p>Вам написал <strong>${params.fromName}</strong> по заявке «${params.requestTitle}».</p><p><a href="${link}">Прочитать сообщение</a></p><p>С уважением,<br>P2PTax</p>`,
+    text: `Здравствуйте, ${params.toName}!\n\nВам написал ${params.fromName} по запросу «${params.requestTitle}».\n\nПрочитать сообщение: ${link}\n\nС уважением,\nP2PTax`,
+    html: `<p>Здравствуйте, ${params.toName}!</p><p>Вам написал <strong>${params.fromName}</strong> по запросу «${params.requestTitle}».</p><p><a href="${link}">Прочитать сообщение</a></p><p>С уважением,<br>P2PTax</p>`,
   });
 }

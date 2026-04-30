@@ -186,7 +186,7 @@ Desktop (>=640px): tab bar hidden, navigation via SidebarNav.
 iter11 (commit 25deb4a) consolidated CLIENT and SPECIALIST into a single
 USER role. Specialist capabilities are gated by `isSpecialistUser` — true
 when the user has completed the 3-step onboarding and toggled "Принимаю
-заявки" on. UI and routes are shared; specialist-only widgets/tabs render
+запросы" on. UI and routes are shared; specialist-only widgets/tabs render
 conditionally.
 
 | Role | Description | Assigned |
@@ -215,7 +215,7 @@ Description: Main landing page with featured specialists and quick request form
 Content:
   hero_title: "Налоговая проверка? Найдём специалиста за минуту"
   hero_subtitle: "Бесплатный сервис для связи с налоговыми консультантами по всей России. Выездные, камеральные проверки, оперативный контроль — получите помощь от практиков, а не теоретиков."
-  cta_primary: "Оставить заявку"
+  cta_primary: "Оставить запрос"
   cta_secondary: "Войти"
   quick_form_title: "Опишите вашу ситуацию"
   quick_form_city_label: "Город"
@@ -225,10 +225,10 @@ Content:
   quick_form_service_options: ["Выездная проверка", "Камеральная проверка", "Отдел оперативного контроля", "Не знаю"]
   quick_form_description_label: "Описание проблемы"
   quick_form_description_placeholder: "Кратко опишите вашу ситуацию: что случилось, какие документы пришли, что требует инспекция"
-  quick_form_submit: "Отправить заявку"
+  quick_form_submit: "Отправить запрос"
   featured_section_title: "Специалисты на платформе"
   featured_cta: "Все специалисты"
-  requests_link: "Все заявки"
+  requests_link: "Все запросы"
   signin_link: "Войти"
   footer_note: "Сервис бесплатный. Мы не берём комиссию и не передаём ваши данные третьим лицам."
   error_title: "Не удалось загрузить данные"
@@ -241,8 +241,8 @@ Visual Structure:
       layout: "Полноширинный блок, тёмный фон (blue-900), белый текст"
       headline: "Налоговая проверка? Найдём специалиста за минуту"
       subheadline: "Бесплатный сервис для связи с налоговыми консультантами по всей России. Выездные, камеральные проверки, оперативный контроль — получите помощь от практиков, а не теоретиков."
-      cta_button: "Оставить заявку"
-      cta_action: "Скролл к форме быстрой заявки"
+      cta_button: "Оставить запрос"
+      cta_action: "Скролл к форме быстрого запроса"
 
     - id: benefits
       layout: "3 карточки в ряд (desktop), вертикально (mobile)"
@@ -267,7 +267,7 @@ Visual Structure:
           description: "Укажите город, инспекцию и тип проверки. Добавьте описание ситуации."
         - number: "2"
           title: "Получите сообщения"
-          description: "Специалисты из вашего города увидят заявку и напишут вам первыми."
+          description: "Специалисты из вашего города увидят запрос и напишут вам первыми."
         - number: "3"
           title: "Выберите специалиста"
           description: "Общайтесь в чате, сравнивайте подходы и выбирайте того, кому доверяете."
@@ -276,7 +276,7 @@ Visual Structure:
       layout: "Форма на белом фоне, отступы xl, скруглённая карточка"
       title: "Опишите вашу ситуацию"
       fields: "Город (select), Тип проверки (select), Описание (textarea)"
-      submit_button: "Отправить заявку"
+      submit_button: "Отправить запрос"
 
     - id: featured_specialists
       layout: "Горизонтальный скролл карточек специалистов"
@@ -287,7 +287,7 @@ Visual Structure:
     - id: final_cta
       layout: "Полноширинный блок, фон surface, текст по центру"
       headline: "Не откладывайте — чем раньше обратитесь, тем больше шансов решить вопрос"
-      cta_button: "Оставить заявку бесплатно"
+      cta_button: "Оставить запрос бесплатно"
       subtext: "Сервис бесплатный. Мы не берём комиссию и не передаём ваши данные третьим лицам."
 
 Layout:
@@ -333,7 +333,7 @@ Access: public (guest, client, specialist, admin)
 Description: Feed of all active public requests
 
 Content:
-  page_title: "Заявки"
+  page_title: "Запросы"
   filter_labels:
     city: "Город"
     city_placeholder: "Все города"
@@ -346,10 +346,10 @@ Content:
     description: "{request.description} (2 строки)"
     counter: "{count} специалистов написали"
   sort_options: ["Сначала новые", "Сначала старые"]
-  empty_title: "Заявок не найдено"
+  empty_title: "Запросов не найдено"
   empty_description: "Попробуйте изменить фильтры или сбросить их"
   empty_cta: "Сбросить фильтры"
-  error_title: "Не удалось загрузить заявки"
+  error_title: "Не удалось загрузить запросы"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
   error_button: "Повторить"
 
@@ -395,10 +395,10 @@ Access: public (guest, client, specialist, admin)
 Description: Full details of a public request
 
 Content:
-  header_title: "Заявка"
+  header_title: "Запрос"
   section_titles:
     description: "Описание"
-    similar: "Похожие заявки"
+    similar: "Похожие запросы"
   meta_labels:
     city: "Город"
     fns: "Инспекция"
@@ -415,9 +415,9 @@ Content:
     specialist_write: "Написать клиенту"
     specialist_open_chat: "Открыть чат"
   badge_not_your_region: "Не ваш регион"
-  error_title: "Заявка не найдена"
+  error_title: "Запрос не найден"
   error_description: "Возможно, она была удалена или вы перешли по неверной ссылке"
-  error_button: "Назад к заявкам"
+  error_button: "Назад к запросам"
 
 Layout:
   - Header: Header-Back, title "Request"
@@ -532,8 +532,8 @@ Content:
     contacts: "Контакты"
     similar: "Похожие специалисты"
   meta_labels:
-    available: "Принимает заявки"
-    not_available: "Не принимает заявки"
+    available: "Принимает запросы"
+    not_available: "Не принимает запросы"
     phone: "Телефон"
     telegram: "Telegram"
     whatsapp: "WhatsApp"
@@ -543,7 +543,7 @@ Content:
   action_buttons:
     call: "Позвонить"
     edit: "Редактировать"
-    toggle_available: "Принимаю заявки"
+    toggle_available: "Принимаю запросы"
     toggle_unavailable: "На паузе"
   collapse_button: "Показать все"
   no_reviews_stub: "Отзывы появятся в следующих версиях"
@@ -920,7 +920,7 @@ Dependencies: OnboardingWorkArea
 ### USER TABS (UNIFIED — iter11)
 
 Single set of authenticated tabs (`app/(tabs)/`). Specialist-only widgets
-and the "Публичные заявки" tab render only when `isSpecialistUser=true`.
+and the "Публичные запросы" tab render only when `isSpecialistUser=true`.
 Legacy `(client-tabs)` and `(specialist-tabs)` groups removed in iter11
 (commits 25deb4a, 7f5e0b9, 1059e6d).
 
@@ -939,19 +939,19 @@ availability toggle, specialist KPIs) when `isSpecialistUser=true`.
 Content:
   welcome_message: "Здравствуйте, {firstName}!"
   stats_labels:
-    requests_used: "Заявок использовано"
+    requests_used: "Запросов использовано"
     requests_format: "{used} из {limit}"
     unread_messages: "Непрочитанных сообщений"
   action_cards:
-    create_request: "Создать заявку"
+    create_request: "Создать запрос"
     create_request_subtitle: "Опишите проблему — специалисты напишут сами"
-    limit_reached: "Лимит заявок исчерпан"
+    limit_reached: "Лимит запросов исчерпан"
   section_titles:
-    my_requests: "Мои заявки"
+    my_requests: "Мои запросы"
     view_all: "Смотреть все"
-  empty_title: "У вас пока нет заявок"
-  empty_description: "Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
-  empty_cta: "Создать первую заявку"
+  empty_title: "У вас пока нет запросов"
+  empty_description: "Создайте первый запрос — специалисты из вашего города увидят его и предложат помощь"
+  empty_cta: "Создать первый запрос"
   error_title: "Не удалось загрузить данные"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
   error_button: "Повторить"
@@ -998,7 +998,7 @@ Access: auth required, role: user
 Description: All user's own requests
 
 Content:
-  page_title: "Мои заявки"
+  page_title: "Мои запросы"
   card_template:
     title: "{request.title}"
     status_badge: "{status_label}"
@@ -1009,17 +1009,17 @@ Content:
     closing_soon: "Скоро закроется"
     closed: "Закрыта"
   swipe_action: "Закрыть"
-  swipe_confirm: "Закрыть заявку? Это действие нельзя отмени��ь."
+  swipe_confirm: "Закрыть запрос? Это действие нельзя отмени��ь."
   swipe_confirm_yes: "Да, за��рыть"
   swipe_confirm_no: "Отмена"
-  create_button: "Создать заявку"
-  empty_title: "Заявок пока нет"
-  empty_description: "Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
-  empty_cta: "Создать заявку"
-  error_title: "Не удалось загрузить заявки"
+  create_button: "Создать запрос"
+  empty_title: "Запросов пока нет"
+  empty_description: "Создайте первый запрос — специалисты из вашего города увидят его и предложат помощь"
+  empty_cta: "Создать запрос"
+  error_title: "Не удалось загрузить запросы"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
   error_button: "Повторить"
-  success_toast: "Заявка зак��ыта"
+  success_toast: "Запрос зак��ыта"
 
 Layout:
   - Header: Header-Home, title "My Requests"
@@ -1065,7 +1065,7 @@ Access: auth required, role: client
 Description: Create a new request
 
 Content:
-  page_title: "Новая заявка"
+  page_title: "Новый запрос"
   field_labels:
     title: "Заголовок"
     title_placeholder: "Кратко опишите суть пробле��ы"
@@ -1083,12 +1083,12 @@ Content:
     files: "Документы"
     files_hint: "PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов"
     files_add: "+ Прикрепить файл"
-  button_submit: "Опубликовать заявку"
-  limit_message: "Лимит заявок исчерпан ({used}/{limit}). Закройте неактуальные заявки, чтобы создать новую."
+  button_submit: "Опубликовать запрос"
+  limit_message: "Лимит запросов исчерпан ({used}/{limit}). Закройте неактуальные запросы, чтобы создать новую."
   error_title: "Ошибка публикации"
-  error_description: "Не удалось опубликовать заявку. Проверьте данные и попробуйте ещё р��з."
+  error_description: "Не удалось опубликовать запрос. Проверьте данные и попробуйте ещё р��з."
   error_button: "Повторить"
-  success_toast: "Заявка опубликована!"
+  success_toast: "Запрос опубликован!"
 
 Layout:
   - Header: Header-Back, title "New Request"
@@ -1161,17 +1161,17 @@ Content:
     closed: "Закрыта"
   action_buttons:
     messages: "Сообщения ({count})"
-    extend: "Продлить заявку"
+    extend: "Продлить запрос"
     extend_limit: "Продление использовано ({count}/3)"
-    delete: "Удалить заявку"
-  delete_confirm: "Удалить заявку? Все сообщения и файлы будут потеряны. Это действие нельзя отменить."
+    delete: "Удалить запрос"
+  delete_confirm: "Удалить запрос? Все сообщения и файлы будут потеряны. Это действие нельзя отменить."
   delete_confirm_yes: "Да, удалить"
   delete_confirm_no: "Отмена"
-  error_title: "Заявка не найдена"
+  error_title: "Запрос не найден"
   error_description: "Возможно, она была удалена"
   error_button: "Назад"
-  success_toast_extended: "Заявка продлена"
-  success_toast_deleted: "Заявка удалена"
+  success_toast_extended: "Запрос продлён"
+  success_toast_deleted: "Запрос удалён"
 
 Layout:
   - Header: Header-Back, title = request title, right: delete icon (trash)
@@ -1226,7 +1226,7 @@ Content:
     timestamp: "{time_ago}"
     unread_badge: "{unreadCount}"
   empty_title: "Пока нет сообщений"
-  empty_description: "Специалисты увидят вашу заявку и напишут вам первыми"
+  empty_description: "Специалисты увидят ваш запрос и напишут вам первыми"
   empty_cta: ""
   error_title: "Не удалось загрузить сообщения"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
@@ -1287,7 +1287,7 @@ Content:
     timestamp: "{time_ago}"
     unread_badge: "{unreadCount}"
   empty_title: "Нет сообщений"
-  empty_description: "Когда специалисты напишут по вашим заявкам, сообщения появятся здесь"
+  empty_description: "Когда специалисты напишут по вашим запросам, сообщения появятся здесь"
   empty_cta: "Посмотреть специалистов"
   error_title: "Не удалось загрузить сообщения"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
@@ -1338,7 +1338,7 @@ Description: Unified profile settings — was ClientSettings + SpecialistSetting
 merged in iter11 (commit 1059e6d, file `app/settings/index.tsx`).
 Progressive disclosure — base profile fields for everyone;
 specialist-only sections (FNS multiselect, services, contact details,
-working hours, "Приём заявок" toggle) render only when
+working hours, "Приём запросов" toggle) render only when
 `isSpecialistUser=true` or after the user opts into specialist
 onboarding from this screen.
 
@@ -1362,7 +1362,7 @@ Content:
         - label: "Новые сообщения"
           description: "Получать уведомления о новых сообщениях от специалистов по email"
         - label: "Предупреждения о закрытии"
-          description: "Предупреждать, когда заявка скоро закроется"
+          description: "Предупреждать, когда запрос скоро закроется"
     legal:
       title: "Правовая информация"
       items:
@@ -1439,13 +1439,13 @@ matching requests feed, thread-limit gauge, availability toggle,
 specialist KPIs.
 
 Content:
-  welcome_message: "{firstName}, вот заявки для вас"
+  welcome_message: "{firstName}, вот запросы для вас"
   stats_labels:
     threads_total: "Всего диалогов"
     new_messages: "Новых сообщений"
   standby_banner:
     title: "Вы на паузе"
-    description: "Клиенты не видят ваш профиль в каталоге. Включите приём заявок в настройках."
+    description: "Клиенты не видят ваш профиль в каталоге. Включите приём запросов в настройках."
     link: "Перейти в настройки"
   action_cards:
     write: "Написать клиенту"
@@ -1453,10 +1453,10 @@ Content:
   badge_already_wrote: "Вы уже написали"
   badge_not_your_region: "Не ваш регион"
   link_my_threads: "Мои диалоги"
-  empty_title: "Нет подходящих заявок"
-  empty_description: "Расширьте рабочую область, чтобы видеть больше заявок из других городов и инспекций"
+  empty_title: "Нет подходящих запросов"
+  empty_description: "Расширьте рабочую область, чтобы видеть больше запросов из других городов и инспекций"
   empty_cta: "Расширить рабочую область"
-  error_title: "Не удалось загрузить заявки"
+  error_title: "Не удалось загрузить запросы"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
   error_button: "Повторить"
 
@@ -1508,9 +1508,9 @@ Description: Confirm screen before starting a thread with client
 
 Content:
   page_title: "Написать клиенту"
-  page_subtitle: "Прочитайте заявку и напишите первое сообщение"
+  page_subtitle: "Прочитайте запрос и напишите первое сообщение"
   section_titles:
-    request_summary: "Заявка клиента"
+    request_summary: "Запрос клиента"
   field_labels:
     message: "Ваше сообщение"
     message_placeholder: "Здравствуйте! Я специалист по... Могу помочь с вашей ситуацией. Расскажите подробнее..."
@@ -1518,8 +1518,8 @@ Content:
     message_error_min: "Минимум 10 символов"
   button_submit: "Отправить сообщение"
   button_cancel: "Отмена"
-  error_request_closed: "Заявка закрыта — написать невозможно"
-  error_thread_exists: "Вы уже писали по этой заявке"
+  error_request_closed: "Запрос закрыт — написать невозможно"
+  error_thread_exists: "Вы уже писали по этому запросу"
   error_rate_limit: "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
   error_title: "Ошибка отправки"
   error_description: "Не удалось отправить сообщение. Попробуйте ещё раз."
@@ -1592,10 +1592,10 @@ Content:
     last_message: "{lastMessage} (60 символов)"
     timestamp: "{time_ago}"
     unread_badge: "{unreadCount}"
-    closed_badge: "Заявка закрыта"
+    closed_badge: "Запрос закрыт"
   empty_title: "Вы ещё не написали ни одному клиенту"
-  empty_description: "Откликнитесь на заявку — клиент увидит ваше сообщение и сможет ответить"
-  empty_cta: "Смотреть заявки"
+  empty_description: "Откликнитесь на запрос — клиент увидит ваше сообщение и сможет ответить"
+  empty_cta: "Смотреть запросы"
   error_title: "Не удалось загрузить диалоги"
   error_description: "Проверьте соединение с интернетом и попробуйте снова"
   error_button: "Повторить"
@@ -1651,7 +1651,7 @@ Access: auth required, `isSpecialistUser=true`
 Description: Specialist-only sections rendered inside the unified
 `/settings` screen — FNS multiselect, services per FNS, contact
 fields (phone/Telegram/WhatsApp/office address/working hours), the
-"Приём заявок" instant toggle.
+"Приём запросов" instant toggle.
 
 Content:
   page_title: "Настройки"
@@ -1676,8 +1676,8 @@ Content:
     working_hours: "Часы работы"
     working_hours_placeholder: "Пн-Пт 9:00-18:00"
   toggle_available:
-    label: "Приём заявок"
-    on: "Принимаю заявки"
+    label: "Приём запросов"
+    on: "Принимаю запросы"
     off: "На паузе"
     hint: "Когда выключено, ваш профиль скрыт из каталога"
   button_save: "Сохранить"
@@ -1766,7 +1766,7 @@ Content:
   read_receipt_sent: "Отправлено"
   read_receipt_delivered: "Доставлено"
   read_receipt_read: "Прочитано"
-  closed_banner: "Заявка закрыта. Чат доступен только для чтения."
+  closed_banner: "Запрос закрыт. Чат доступен только для чтения."
   image_viewer_download: "Скачать"
   empty_title: "Начните общение"
   empty_description: "Напишите сообщение, чтобы начать диалог"
@@ -1874,12 +1874,12 @@ Content:
   page_title: "Панель управления"
   welcome_message: "Администратор"
   stats_labels:
-    active_requests: "Активных заявок"
+    active_requests: "Активных запросов"
     new_users_week: "Новых пользователей за неделю"
     new_users_month: "Новых пользователей за месяц"
     threads_week: "Диалогов за неделю"
     threads_month: "Диалогов за месяц"
-    conversion: "Конверсия заявка → диалог"
+    conversion: "Конверсия запрос → диалог"
     top_cities: "Топ городов"
     top_specialists: "Топ специалистов по диалогам"
     registrations_chart: "Регистрации"
@@ -1948,7 +1948,7 @@ Content:
     ban: "Заблокировать"
     unban: "Разблокировать"
     edit: "Редактировать"
-    close_all_requests: "Закрыть все заявки"
+    close_all_requests: "Закрыть все запросы"
   ban_confirm: "Заблокировать пользователя {name}? Он не сможет входить в систему."
   ban_confirm_yes: "Заблокировать"
   ban_confirm_no: "Отмена"
@@ -2064,17 +2064,17 @@ Content:
   page_title: "Настройки системы"
   field_labels:
     max_requests_per_client:
-      label: "Макс. заявок на клиента"
-      hint: "Лимит заявок за всё время для каждого клиента"
+      label: "Макс. запросов на клиента"
+      hint: "Лимит запросов за всё время для каждого клиента"
     max_threads_per_request:
-      label: "Макс. диалогов на заявку"
-      hint: "Сколько специалистов могут написать по одной заявке"
+      label: "Макс. диалогов на запрос"
+      hint: "Сколько специалистов могут написать по одной запросе"
     auto_close_days:
       label: "Автозакрытие (дни)"
-      hint: "Через сколько дней без активности заявка закрывается автоматически"
+      hint: "Через сколько дней без активности запрос закрывается автоматически"
     max_extensions:
       label: "Макс. продлений"
-      hint: "Сколько раз клиент может продлить заявку"
+      hint: "Сколько раз клиент может продлить запрос"
     close_warning_days:
       label: "Предупреждение (дни)"
       hint: "За сколько дней до закрытия показывать предупреждение"
@@ -2085,7 +2085,7 @@ Content:
       label: "Макс. файлов в сообщении"
       hint: "Максимальное количество файлов в одном сообщении"
   button_save: "Сохранить настройки"
-  note: "Изменения применяются только к новым заявкам. Существующие заявки не пересчитываются."
+  note: "Изменения применяются только к новым запросам. Существующие запросы не пересчитываются."
   error_title: "Ошибка сохранения"
   error_description: "Не удалось сохранить настройки. Проверьте значения и попробуйте ещё раз."
   error_button: "Повторить"

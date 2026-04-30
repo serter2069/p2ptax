@@ -58,11 +58,11 @@ function toAccentKey(
 // T3 (Wave 6): consistent breadcrumbs on ALL tab screens — Expo Router strips
 // the (tabs) group from `usePathname()`, so the dashboard tab arrives as "/"
 // and other tabs as "/messages", "/dashboard" etc. We add explicit entries so
-// every tab gets a label (no more inconsistent "Заявки" but blank dashboard).
+// every tab gets a label (no more inconsistent "Запросы" but blank dashboard).
 const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   // Iter11 — unified (tabs) replaces split groups.
-  { prefix: "/(tabs)/public-requests", label: "Открытые заявки" },
-  { prefix: "/(tabs)/requests", label: "Заявки" },
+  { prefix: "/(tabs)/public-requests", label: "Открытые запросы" },
+  { prefix: "/(tabs)/requests", label: "Запросы" },
   { prefix: "/(tabs)/messages", label: "Сообщения" },
   { prefix: "/(tabs)/dashboard", label: "Главная" },
   { prefix: "/(tabs)/profile", label: "Настройки" },
@@ -77,14 +77,14 @@ const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   // "/specialists" entry below.
   { prefix: "/saved-specialists", label: "Мои специалисты" },
   { prefix: "/specialists", label: "Специалисты" },
-  { prefix: "/requests/new", label: "Новая заявка" },
-  { prefix: "/requests", label: "Заявки" },
+  { prefix: "/requests/new", label: "Новый запрос" },
+  { prefix: "/requests", label: "Запросы" },
   { prefix: "/threads", label: "Переписки" },
   { prefix: "/settings", label: "Настройки" },
   // Bare paths (Expo Router strips (tabs) group from usePathname()).
   { prefix: "/dashboard", label: "Главная" },
   { prefix: "/messages", label: "Сообщения" },
-  { prefix: "/public-requests", label: "Открытые заявки" },
+  { prefix: "/public-requests", label: "Открытые запросы" },
   { prefix: "/profile", label: "Настройки" },
 ];
 
@@ -270,7 +270,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={handleSearchSubmit}
-          placeholder="Найти специалиста, заявку…"
+          placeholder="Найти специалиста, запрос…"
           placeholderTextColor={colors.placeholder}
           returnKeyType="search"
           accessibilityLabel="Поиск"

@@ -56,7 +56,7 @@ export default function SpecialistMatchedWidget({
 }: Props) {
   return (
     <DashboardWidget
-      title="Подходящие публичные заявки"
+      title="Подходящие публичные запросы"
       subtitle={`Всего ${matchedCount}`}
       icon={Inbox}
       actionLabel="Все →"

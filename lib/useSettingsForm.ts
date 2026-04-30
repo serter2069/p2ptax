@@ -347,11 +347,11 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         }
       } else {
         const confirmed = Platform.OS === "web"
-          ? window.confirm("Выключить режим специалиста? Вы исчезнете из каталога, новые заявки не будут поступать. История переписок сохранится.")
+          ? window.confirm("Выключить режим специалиста? Вы исчезнете из каталога, новые запросы не будут поступать. История переписок сохранится.")
           : await new Promise<boolean>((resolve) =>
               Alert.alert(
                 "Выключить режим специалиста?",
-                "Вы исчезнете из каталога, новые заявки не будут поступать. История переписок сохранится.",
+                "Вы исчезнете из каталога, новые запросы не будут поступать. История переписок сохранится.",
                 [
                   { text: "Отмена", onPress: () => resolve(false), style: "cancel" },
                   { text: "Выключить", onPress: () => resolve(true), style: "destructive" },

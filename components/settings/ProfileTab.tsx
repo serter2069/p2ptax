@@ -202,7 +202,7 @@ export default function ProfileTab({
             <Text className="text-xs text-text-mute mt-0.5">
               {isSpecialistUser
                 ? "Клиенты могут найти вас через каталог"
-                : "Включите, чтобы принимать заявки от клиентов"}
+                : "Включите, чтобы принимать запросы от клиентов"}
             </Text>
           </View>
           <IosToggle value={isSpecialistUser} onChange={onToggleSpecialist} />

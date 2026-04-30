@@ -28,12 +28,12 @@ export default function SpecialistEmptyState({ onBrowse }: Props) {
           className="text-text-mute"
           style={{ fontSize: 14, lineHeight: 20 }}
         >
-          Просмотрите открытые заявки от клиентов и начните диалог
+          Просмотрите открытые запросы от клиентов и начните диалог
         </Text>
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Смотреть заявки"
+        accessibilityLabel="Смотреть запросы"
         onPress={onBrowse}
         className="rounded-xl flex-row items-center justify-center"
         style={{
@@ -45,7 +45,7 @@ export default function SpecialistEmptyState({ onBrowse }: Props) {
       >
         <ArrowRight size={18} color={colors.white} />
         <Text className="font-bold text-white" style={{ fontSize: 15 }}>
-          Смотреть заявки
+          Смотреть запросы
         </Text>
       </Pressable>
     </View>

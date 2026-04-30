@@ -39,8 +39,8 @@ export async function runRequestLifecycleCron(): Promise<void> {
       await sendNotification({
         userId: req.userId,
         type: "promo_expiring",
-        title: "Ваша заявка скоро закроется",
-        body: `Заявка «${req.title}» будет автоматически закрыта через ${CLOSE_AFTER_DAYS - WARN_AFTER_DAYS} дней. Продлите её, если хотите оставить активной.`,
+        title: "Ваш запрос скоро закроется",
+        body: `Запрос «${req.title}» будет автоматически закрыт через ${CLOSE_AFTER_DAYS - WARN_AFTER_DAYS} дней. Продлите его, если хотите оставить активным.`,
         entityId: req.id,
       });
     } catch (err) {
@@ -73,8 +73,8 @@ export async function runRequestLifecycleCron(): Promise<void> {
       await sendNotification({
         userId: req.userId,
         type: "promo_expiring",
-        title: "Заявка закрыта",
-        body: `Заявка «${req.title}» была автоматически закрыта по истечении срока. Вы можете создать новую заявку.`,
+        title: "Запрос закрыт",
+        body: `Запрос «${req.title}» был автоматически закрыт по истечении срока. Вы можете создать новый запрос.`,
         entityId: req.id,
       });
     } catch (err) {

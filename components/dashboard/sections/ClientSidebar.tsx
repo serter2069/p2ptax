@@ -19,7 +19,7 @@ export default function ClientSidebar({ atLimit, onCreateRequest, tips }: Props)
     <View style={{ gap: 16 }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Создать заявку"
+        accessibilityLabel="Создать запрос"
         onPress={onCreateRequest}
         disabled={atLimit}
         className={`rounded-2xl p-5 ${atLimit ? "bg-surface2 border border-border" : "bg-accent"}`}
@@ -40,15 +40,15 @@ export default function ClientSidebar({ atLimit, onCreateRequest, tips }: Props)
               style={{ fontSize: 16 }}
             >
               {atLimit
-                ? "Лимит активных заявок исчерпан (5/5). Закройте одну."
-                : "Создать заявку"}
+                ? "Лимит активных запросов исчерпан (5/5). Закройте один."
+                : "Создать запрос"}
             </Text>
             <Text
               className={atLimit ? "text-text-dim" : "text-white/80"}
               style={{ fontSize: 12, marginTop: 2 }}
             >
               {atLimit
-                ? "Закройте одну, чтобы создать новую"
+                ? "Закройте один, чтобы создать новый"
                 : "Первые сообщения в течение 24 часов"}
             </Text>
           </View>

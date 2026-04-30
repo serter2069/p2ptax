@@ -130,15 +130,15 @@ export default function UnifiedInbox() {
       title={
         isSpecialistUser
           ? "Пока нет диалогов с клиентами"
-          : "Создайте заявку, чтобы получать сообщения"
+          : "Создайте запрос, чтобы получать сообщения"
       }
       subtitle={
         isSpecialistUser
-          ? "Напишите по публичной заявке — переписка появится здесь"
-          : "Когда специалисты ответят на вашу заявку, сообщения появятся здесь"
+          ? "Напишите по публичному запросу — переписка появится здесь"
+          : "Когда специалисты ответят на ваш запрос, сообщения появятся здесь"
       }
       actionLabel={
-        isSpecialistUser ? "Посмотреть открытые заявки" : "Создать заявку"
+        isSpecialistUser ? "Посмотреть открытые запросы" : "Создать запрос"
       }
       onAction={() =>
         isSpecialistUser
@@ -155,11 +155,11 @@ export default function UnifiedInbox() {
       sorted.length > 0
         ? `У вас ${sorted.length} ${sorted.length === 1 ? "диалог" : sorted.length < 5 ? "диалога" : "диалогов"}. Нажмите любой, чтобы открыть переписку.`
         : isSpecialistUser
-          ? "Напишите по публичной заявке, чтобы начать переписку с клиентом."
-          : "Когда специалисты напишут по заявкам, переписки появятся слева.";
+          ? "Напишите по публичному запросу, чтобы начать переписку с клиентом."
+          : "Когда специалисты напишут по запросам, переписки появятся слева.";
     const emptyPanePrimary = isSpecialistUser
-      ? { label: "Публичные заявки", onPress: () => nav.routes.tabsPublicRequests(), icon: "sparkles" as const }
-      : { label: "Создать новую заявку", onPress: () => nav.routes.requestsNew(), icon: "plus" as const };
+      ? { label: "Публичные запросы", onPress: () => nav.routes.tabsPublicRequests(), icon: "sparkles" as const }
+      : { label: "Создать новый запрос", onPress: () => nav.routes.requestsNew(), icon: "plus" as const };
     const emptyPaneSecondary = isSpecialistUser
       ? undefined
       : { label: "Найти специалиста", onPress: () => nav.routes.specialists(), icon: "search" as const };
