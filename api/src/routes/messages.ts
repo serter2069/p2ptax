@@ -429,7 +429,7 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
       return;
     }
 
-    if (thread.request.status === "CLOSED") {
+    if (thread.request && thread.request.status === "CLOSED") {
       res.status(422).json({ error: "Request is closed. Chat is read-only." });
       return;
     }
@@ -518,7 +518,7 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
         toName,
         fromName: senderName,
         threadId,
-        requestTitle: thread.request.title,
+        requestTitle: thread.request?.title ?? "Прямое сообщение",
         recipientId,
       });
     }).catch((err: Error) => console.warn("[email] new_message email failed:", err.message));

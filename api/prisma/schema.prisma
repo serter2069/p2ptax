@@ -226,7 +226,7 @@ model Request {
 
 model Thread {
   id                   String    @id @default(uuid())
-  requestId            String    @map("request_id")
+  requestId            String?   @map("request_id")
   clientId             String    @map("client_id")
   specialistId         String    @map("specialist_id")
   lastMessageAt        DateTime? @map("last_message_at")
@@ -236,7 +236,7 @@ model Thread {
   deletedAt            DateTime? @map("deleted_at")
   deletedBy            String?   @map("deleted_by")
 
-  request    Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  request    Request?  @relation(fields: [requestId], references: [id], onDelete: Cascade)
   client     User      @relation("ClientThreads", fields: [clientId], references: [id])
   specialist User      @relation("SpecialistThreads", fields: [specialistId], references: [id])
   messages   Message[]

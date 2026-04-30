@@ -153,7 +153,7 @@ export default function SpecialistSearchBar({
 
       {/* Search input */}
       {!selectedFns && (
-        <View className="relative" style={{ zIndex: 10 }}>
+        <View className="relative" style={{ zIndex: 100 }}>
           <View className="flex-row items-center bg-white border border-border rounded-xl h-10 px-3">
             <Search size={14} color={colors.placeholder} style={{ marginRight: 8 }} />
             <TextInput
@@ -208,7 +208,7 @@ export default function SpecialistSearchBar({
               style={{
                 top: 44,
                 maxHeight: 360,
-                zIndex: 50,
+                zIndex: 200,
                 elevation: 8,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },

@@ -46,7 +46,7 @@ export default function SpecialistFilter({
 }: Props) {
   return (
     <View>
-      <View className="px-4 pt-2" style={{ zIndex: 20 }}>
+      <View className="px-4 pt-2" style={{ zIndex: 100 }}>
         <SpecialistSearchBar
           cities={cities}
           fnsAll={fnsAll}
