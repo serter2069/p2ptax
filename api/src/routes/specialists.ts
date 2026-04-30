@@ -137,6 +137,21 @@ router.get("/", async (req: Request, res: Response) => {
       ? servicesParam.split(",").filter(Boolean)
       : [];
 
+    // Per-FNS service filter: { fnsId: string[] } — from typeahead mode (#1658)
+    // Sent as ?fnsServices=<URL-encoded JSON>
+    let fnsServicesFilter: Record<string, string[]> = {};
+    const fnsServicesParam = (req.query.fnsServices as string) || undefined;
+    if (fnsServicesParam) {
+      try {
+        const parsed = JSON.parse(fnsServicesParam);
+        if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+          fnsServicesFilter = parsed as Record<string, string[]>;
+        }
+      } catch {
+        // ignore malformed JSON — filter degrades gracefully
+      }
+    }
+
     // Reject unknown city-related params to catch misuse (e.g. ?city=москва)
     if (req.query.city && !req.query.city_id) {
       res.status(400).json({
@@ -203,6 +218,35 @@ router.get("/", async (req: Request, res: Response) => {
     if (serviceIds.length > 0) {
       where.specialistServices = {
         some: { serviceId: { in: serviceIds } },
+      };
+    }
+
+    // Per-FNS service filter — each fnsId maps to required service ids.
+    // Empty array for a fnsId means "no service filter for that FNS" (matches all).
+    const fnsServicesEntries = Object.entries(fnsServicesFilter).filter(
+      ([fnsId, svcIds]) => fnsId && Array.isArray(svcIds) && svcIds.length > 0
+    );
+    const validFnsServicesEntries = fnsServicesEntries.filter(([fnsId]) =>
+      uuidRegex.test(fnsId)
+    );
+    if (validFnsServicesEntries.length > 0) {
+      // Specialist must have at least one SpecialistFns record matching (fnsId + service).
+      // This filter is OR-combined across FNS entries, but AND-combined with fns_ids filter above.
+      // Since typeahead always sends the same fnsId in both fns_ids and fnsServices,
+      // we replace the simpler specialistFns condition with the stricter per-service version.
+      where.specialistFns = {
+        some: {
+          OR: validFnsServicesEntries.map(([fnsId, svcIds]) => ({
+            fnsId,
+            services: {
+              some: {
+                serviceId: {
+                  in: svcIds.filter((id) => uuidRegex.test(id)),
+                },
+              },
+            },
+          })),
+        },
       };
     }
 
