@@ -42,6 +42,12 @@ interface PendingFile {
   mimeType: string;
 }
 
+interface LightboxItem {
+  url: string;
+  filename: string;
+  isImage: boolean;
+}
+
 interface MessageSender {
   id: string;
   firstName: string | null;
@@ -207,6 +213,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const [hasMoreOlder, setHasMoreOlder] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [oldestMessageId, setOldestMessageId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -430,9 +437,12 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
   const handleFilePress = useCallback((file: FileAttachment) => {
     const fullUrl = file.url.startsWith("http") ? file.url : `${API_URL}${file.url}`;
-    Linking.openURL(fullUrl).catch(() => {
-      Alert.alert("Ошибка", "Не удалось открыть файл");
-    });
+    setLightbox({ url: fullUrl, filename: file.filename, isImage: false });
+  }, []);
+
+  const handleImagePress = useCallback((url: string, filename: string) => {
+    const fullUrl = url.startsWith("http") ? url : `${API_URL}${url}`;
+    setLightbox({ url: fullUrl, filename, isImage: true });
   }, []);
 
   const handleClearThread = useCallback(() => {
@@ -468,9 +478,10 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         isOwn={item.senderId === myId}
         files={item.files}
         onFilePress={handleFilePress}
+        onImagePress={handleImagePress}
       />
     ),
-    [myId, handleFilePress]
+    [myId, handleFilePress, handleImagePress]
   );
 
   // S1 fix — render-time defensive sort: ascending by createdAt (Date timestamp).

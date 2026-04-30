@@ -337,6 +337,7 @@ export default function UserDashboard() {
                       clientFeedItems={clientFeedItems}
                       activeRequests={activeRequests}
                       onAllRequests={() => nav.routes.tabsRequests()}
+                      onCreateRequest={() => nav.routes.requestsNew()}
                     />
 
                     {isSpecialistUser ? (

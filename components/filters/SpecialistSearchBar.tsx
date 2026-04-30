@@ -173,12 +173,15 @@ export default function SpecialistSearchBar({
                 fontSize: 14,
                 color: colors.text,
                 height: 40,
+                borderWidth: 0,
                 backgroundColor: "transparent",
                 ...(Platform.OS === "web"
                   ? {
-                      borderRadius: 8,
+                      borderColor: "transparent",
                       paddingHorizontal: 4,
                       outlineStyle: "none" as never,
+                      outlineWidth: 0,
+                      appearance: "none" as never,
                     }
                   : {}),
               }}

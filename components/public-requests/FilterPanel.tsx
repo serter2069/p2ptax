@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Pressable, TextInput, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, TextInput, ActivityIndicator, Platform } from "react-native";
 import { ChevronDown, ChevronUp, Filter as FilterIcon, X, RotateCcw } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import { api } from "@/lib/api";
