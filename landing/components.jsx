@@ -33,8 +33,17 @@ function Pill({ children, active, onClick, className='' }) {
 }
 
 // stylized SVG portrait placeholder — deterministic from seed (name init)
-function Avatar({ init, online, size='md', seed }) {
+// if src is provided (avatarUrl), renders an <img> instead of the SVG
+function Avatar({ init, online, size='md', seed, src }) {
   const cls = size === 'lg' ? 'avatar lg' : size === 'xl' ? 'avatar xl' : 'avatar';
+  if (src) {
+    return (
+      <div className={cls}>
+        <img src={src} alt={init} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}}/>
+        {online && <span className="online"></span>}
+      </div>
+    );
+  }
   // simple hash
   const s = (seed || init || 'X').split('').reduce((a,c)=>a + c.charCodeAt(0), 0);
   // female vs male cue: first init char — last letter 'а/я/и' -> female-ish
@@ -309,7 +318,7 @@ function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }
             <div className="spec-stack">
               {getSpecialists().slice(0, 4).map(s => (
                 <div key={s.id} className="spec-card">
-                  <Avatar init={s.init} online={s.online} seed={s.id} />
+                  <Avatar init={s.init} online={s.online} seed={s.id} src={s.avatarUrl} />
                   <div className="spec-meta">
                     <div className="spec-name">{s.first} {s.last}</div>
                     <div className="spec-desc">{s.fnsLabel}</div>
@@ -466,7 +475,7 @@ function CatalogPreview({ onCatalog, onOpenSpecialist }) {
           {filtered.map(s => (
             <div className="cat-card" key={s.id} onClick={()=>onOpenSpecialist(s.id)}>
               <div className="cat-card-head">
-                <Avatar init={s.init} online={s.online} size="lg" />
+                <Avatar init={s.init} online={s.online} size="lg" src={s.avatarUrl} />
                 <div>
                   <div className="cat-card-name">{s.first} {s.last}</div>
                   <div className="cat-card-role">{s.role}</div>
