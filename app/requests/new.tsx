@@ -27,7 +27,7 @@ import type {
 } from "@/components/shared/CityFnsServicePicker";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
-import FileUploadZone, { type PendingFile } from "@/components/ui/FileUploadZone";
+import FileUploadSection, { type AttachedFile } from "@/components/requests/FileUploadSection";
 import { draftStorage } from "@/lib/draftStorage";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -70,7 +70,7 @@ export default function CreateRequest() {
   const [submitError, setSubmitError] = useState("");
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
-  const [attachedFiles, setAttachedFiles] = useState<PendingFile[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
   // Load cities/services — public, no auth required. Re-runs on retry.
   useEffect(() => {
@@ -179,7 +179,7 @@ export default function CreateRequest() {
     setSubmitError("");
     try {
       const fileIds = attachedFiles
-        .filter((f) => !!f.uploadedId && f.status === "done")
+        .filter((f) => !!f.uploadedId && !f.uploading && !f.error)
         .map((f) => f.uploadedId as string);
       const result = await apiPost<{ id: string }>("/api/requests", {
         title: title.trim(),
@@ -428,14 +428,13 @@ export default function CreateRequest() {
               />
             </View>
 
+            {/* File upload — only for authenticated users (endpoint requires auth). */}
             {isAuthenticated && (
-              <FileUploadZone
+              <FileUploadSection
                 files={attachedFiles}
                 disabled={submitting}
                 onFilesChange={setAttachedFiles}
-                uploadEndpoint="/api/upload/documents"
                 authToken={token}
-                compact={false}
               />
             )}
           </View>
