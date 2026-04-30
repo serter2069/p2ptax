@@ -457,8 +457,8 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/requests/:id/detail — request detail (auth required, accessible to owner AND specialists)
-// Returns isOwner: boolean so the frontend can gate edit controls without a second request.
+// GET /api/requests/:id/detail — request detail (auth required)
+// Returns owner view (full data + threads) or specialist view (preview + respond CTA).
 router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -470,6 +470,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         city: true,
         fns: true,
         files: true,
+        user: { select: { id: true, firstName: true, lastName: true } },
         _count: { select: { threads: true } },
       },
     });
@@ -481,10 +482,10 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
 
     const isOwner = request.userId === userId;
 
-    // Count unread messages across threads — only meaningful for the owner (client).
-    // Specialists do not track per-request unread counts here.
-    let unreadMessages = 0;
     if (isOwner) {
+      // Owner view: full detail + threads list + unread count
+
+      // Count unread messages across threads
       const threads = await prisma.thread.findMany({
         where: { requestId: id, clientId: userId },
         select: {
@@ -493,6 +494,8 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         },
       });
 
+      // Batch unread count: one query per group (has lastReadAt vs no lastReadAt)
+      let unreadMessages = 0;
       if (threads.length > 0) {
         const threadsWithReadAt = threads.filter((t) => t.clientLastReadAt);
         const threadsWithoutReadAt = threads.filter((t) => !t.clientLastReadAt);
@@ -529,38 +532,83 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
           unreadMessages += counts[withoutIdx];
         }
       }
+
+      // Get max extensions from settings
+      const extSetting = await prisma.setting.findUnique({
+        where: { key: "max_extensions" },
+      });
+      const maxExtensions = extSetting ? parseInt(extSetting.value, 10) : 3;
+
+      res.json({
+        viewType: "owner" as const,
+        id: request.id,
+        title: request.title,
+        description: request.description,
+        status: request.status,
+        createdAt: request.createdAt,
+        lastActivityAt: request.lastActivityAt,
+        extensionsCount: request.extensionsCount,
+        maxExtensions,
+        city: { id: request.city.id, name: request.city.name },
+        fns: { id: request.fns.id, name: request.fns.name, code: request.fns.code },
+        files: request.files.map((f) => ({
+          id: f.id,
+          url: f.url,
+          filename: f.filename,
+          size: f.size,
+          mimeType: f.mimeType,
+        })),
+        threadsCount: request._count.threads,
+        unreadMessages,
+        // owner-only fields
+        isOwner: true,
+        hasExistingThread: false,
+        existingThreadId: null,
+        client: null,
+      });
+    } else {
+      // Specialist view: check for existing thread with this request
+      const existingThread = await prisma.thread.findFirst({
+        where: { requestId: id, specialistId: userId },
+        select: { id: true },
+      });
+
+      // Mask client name: firstName + lastName[0] + "."
+      const clientName = [
+        request.user.firstName,
+        request.user.lastName ? request.user.lastName[0] + "." : null,
+      ]
+        .filter(Boolean)
+        .join(" ") || "Клиент";
+
+      res.json({
+        viewType: "specialist" as const,
+        id: request.id,
+        title: request.title,
+        description: request.description,
+        status: request.status,
+        createdAt: request.createdAt,
+        lastActivityAt: request.lastActivityAt,
+        extensionsCount: request.extensionsCount,
+        maxExtensions: 0,
+        city: { id: request.city.id, name: request.city.name },
+        fns: { id: request.fns.id, name: request.fns.name, code: request.fns.code },
+        files: request.files.map((f) => ({
+          id: f.id,
+          url: f.url,
+          filename: f.filename,
+          size: f.size,
+          mimeType: f.mimeType,
+        })),
+        threadsCount: request._count.threads,
+        unreadMessages: 0,
+        // specialist-only fields
+        isOwner: false,
+        hasExistingThread: !!existingThread,
+        existingThreadId: existingThread?.id ?? null,
+        client: { name: clientName },
+      });
     }
-
-    // Get max extensions from settings — only relevant for owner UI
-    const extSetting = isOwner
-      ? await prisma.setting.findUnique({ where: { key: "max_extensions" } })
-      : null;
-    const maxExtensions = extSetting ? parseInt(extSetting.value, 10) : 3;
-
-    res.json({
-      id: request.id,
-      userId: request.userId,
-      isOwner,
-      title: request.title,
-      description: request.description,
-      status: request.status,
-      isPublic: request.isPublic,
-      createdAt: request.createdAt,
-      lastActivityAt: request.lastActivityAt,
-      extensionsCount: request.extensionsCount,
-      maxExtensions,
-      city: { id: request.city.id, name: request.city.name },
-      fns: { id: request.fns.id, name: request.fns.name, code: request.fns.code },
-      files: request.files.map((f) => ({
-        id: f.id,
-        url: f.url,
-        filename: f.filename,
-        size: f.size,
-        mimeType: f.mimeType,
-      })),
-      threadsCount: request._count.threads,
-      unreadMessages,
-    });
   } catch (error) {
     console.error("requests/:id/detail error:", error);
     res.status(500).json({ error: "Internal server error" });
