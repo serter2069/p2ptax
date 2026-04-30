@@ -64,7 +64,7 @@ export default function SpecialistPublicProfile() {
         setContacts(contactsRes.items);
       } catch (e) {
         setError("Не удалось загрузить профиль");
-        console.error("Specialist detail error:", e);
+        if (__DEV__) console.error("Specialist detail error:", e);
       } finally {
         setLoading(false);
       }

@@ -35,7 +35,7 @@ export default class ErrorBoundary extends React.Component<
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
     // Surface the error to the JS console so it is still discoverable in
     // dev tools, but do not propagate to the global error overlay.
-    if (typeof console !== "undefined" && console.error) {
+    if (__DEV__ && typeof console !== "undefined" && console.error) {
       console.error("[ErrorBoundary]", error, info?.componentStack);
     }
   }
