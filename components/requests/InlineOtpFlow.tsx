@@ -127,12 +127,16 @@ export default function InlineOtpFlow({
           <Text className="text-sm font-medium text-text-base mb-1.5">
             Email <Text className="text-danger">*</Text>
           </Text>
+          {/* Email — line-style (bottom border only) */}
           <View
-            className="flex-row items-center rounded-xl border bg-white"
+            className="flex-row items-center"
             style={{
-              borderColor: emailError ? colors.error : colors.border,
-              height: 48,
-              paddingHorizontal: 14,
+              borderTopWidth: 0,
+              borderLeftWidth: 0,
+              borderRightWidth: 0,
+              borderBottomWidth: 1,
+              borderBottomColor: emailError ? colors.error : colors.borderStrong,
+              paddingBottom: 2,
               marginBottom: emailError ? 6 : 12,
             }}
           >
@@ -157,6 +161,7 @@ export default function InlineOtpFlow({
                 fontSize: 15,
                 color: colors.text,
                 borderWidth: 0,
+                backgroundColor: "transparent",
                 ...(Platform.OS === "web"
                   ? {
                       minHeight: 44,
@@ -198,42 +203,53 @@ export default function InlineOtpFlow({
           <Text className="text-sm font-medium text-text-base mb-1.5">
             Код <Text className="text-danger">*</Text>
           </Text>
-          <TextInput
-            accessibilityLabel="6-значный код"
-            placeholder="000000"
-            placeholderTextColor={colors.placeholder}
-            value={code}
-            onChangeText={(t) => {
-              const cleaned = t.replace(/\D/g, "").slice(0, CODE_LENGTH);
-              setCode(cleaned);
-              if (codeError) setCodeError("");
-            }}
-            keyboardType="number-pad"
-            inputMode="numeric"
-            maxLength={CODE_LENGTH}
-            editable={!verifying}
-            onSubmitEditing={handleVerifyOtp}
+          {/* Code — line-style wrapper + naked TextInput inside */}
+          <View
             style={{
-              borderWidth: 1,
-              borderColor: codeError ? colors.error : colors.border,
-              borderRadius: 12,
-              height: 48,
-              paddingHorizontal: 14,
-              fontSize: 18,
-              letterSpacing: 4,
-              textAlign: "center",
-              color: colors.text,
+              borderTopWidth: 0,
+              borderLeftWidth: 0,
+              borderRightWidth: 0,
+              borderBottomWidth: 1,
+              borderBottomColor: codeError ? colors.error : colors.borderStrong,
+              paddingBottom: 2,
               marginBottom: codeError ? 6 : 12,
-              ...(Platform.OS === "web"
-                ? {
-                    outlineStyle: "none" as never,
-                    outlineWidth: 0,
-                    appearance: "none" as never,
-                  }
-                : {}),
             }}
-            testID="inline-otp-code"
-          />
+          >
+            <TextInput
+              accessibilityLabel="6-значный код"
+              placeholder="000000"
+              placeholderTextColor={colors.placeholder}
+              value={code}
+              onChangeText={(t) => {
+                const cleaned = t.replace(/\D/g, "").slice(0, CODE_LENGTH);
+                setCode(cleaned);
+                if (codeError) setCodeError("");
+              }}
+              keyboardType="number-pad"
+              inputMode="numeric"
+              maxLength={CODE_LENGTH}
+              editable={!verifying}
+              onSubmitEditing={handleVerifyOtp}
+              style={{
+                height: 48,
+                paddingHorizontal: 0,
+                fontSize: 18,
+                letterSpacing: 4,
+                textAlign: "center",
+                color: colors.text,
+                borderWidth: 0,
+                backgroundColor: "transparent",
+                ...(Platform.OS === "web"
+                  ? {
+                      outlineStyle: "none" as never,
+                      outlineWidth: 0,
+                      appearance: "none" as never,
+                    }
+                  : {}),
+              }}
+              testID="inline-otp-code"
+            />
+          </View>
           {codeError ? (
             <Text className="text-sm text-danger mb-3" style={{ fontSize: 13 }}>
               {codeError}

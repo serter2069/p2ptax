@@ -41,6 +41,7 @@ export default function TabLayout() {
           lineHeight: 14,
           fontWeight: "500",
           marginTop: 2,
+          flexShrink: 1,
         },
         tabBarIconStyle: {
           marginTop: 0,

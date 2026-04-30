@@ -7,14 +7,15 @@ import {
   Alert,
   Platform,
   Pressable,
+  useWindowDimensions,
 } from "react-native";
+import LandingHeader from "@/components/landing/LandingHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useTypedRouter, ROUTES } from "@/lib/navigation";
-import { MapPin, ChevronLeft, Inbox } from "lucide-react-native";
+import { useTypedRouter } from "@/lib/navigation";
+import { MapPin, ChevronLeft } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import EmptyState from "@/components/ui/EmptyState";
 import { api, apiPost } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
@@ -25,6 +26,7 @@ import CityFnsServicePicker, {
 } from "@/components/requests/CityFnsServicePicker";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import { draftStorage } from "@/lib/draftStorage";
+import EmptyState from "@/components/ui/EmptyState";
 
 // Single canonical key (v1). Replaces legacy "pending_request_draft".
 const DRAFT_KEY = "p2ptax_request_draft_v1";
@@ -43,6 +45,7 @@ export default function CreateRequest() {
   const router = useRouter();
   const nav = useTypedRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ restore?: string }>();
   const restoreMode = params.restore === "1";
 
@@ -65,7 +68,6 @@ export default function CreateRequest() {
   const [loadError, setLoadError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [atLimit, setAtLimit] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
 
@@ -87,18 +89,6 @@ export default function CreateRequest() {
     }
     init();
   }, []);
-
-  // Check request limit when authenticated.
-  useEffect(() => {
-    if (!isAuthenticated || authLoading) return;
-    api<{ requestsUsed: number; requestsLimit: number }>("/api/dashboard/stats")
-      .then((stats) => {
-        if (stats.requestsUsed >= stats.requestsLimit) {
-          setAtLimit(true);
-        }
-      })
-      .catch(() => {});
-  }, [isAuthenticated, authLoading]);
 
   const loadFnsForCity = useCallback(async (citySlug: string) => {
     setLoadingFns(true);
@@ -206,7 +196,7 @@ export default function CreateRequest() {
     description.trim().length >= 10 && description.trim().length <= 2000;
 
   const formValid =
-    titleValid && descriptionValid && !!selectedCityId && !!selectedFnsId && !atLimit;
+    titleValid && descriptionValid && !!selectedCityId && !!selectedFnsId;
 
   // Actually post the request — used by both auth and post-OTP paths.
   const submitRequestAuthed = useCallback(async () => {
@@ -289,41 +279,24 @@ export default function CreateRequest() {
     );
   }
 
-  // Authenticated user at the active-request limit (5/5). Show EmptyState
-  // only — no form. Anonymous users still see the form (they haven't hit
-  // any limit yet). Wave 6 R3.
-  if (isAuthenticated && atLimit) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface2">
-        <View className="px-4 pt-4">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
-            onPress={() => router.back()}
-            className="flex-row items-center mb-2"
-            style={{ minHeight: 44 }}
-          >
-            <ChevronLeft size={20} color={colors.text} />
-            <Text className="text-text-base ml-1">Назад</Text>
-          </Pressable>
-          <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
-        </View>
-        <View className="flex-1 items-center justify-center">
-          <EmptyState
-            icon={Inbox}
-            title="Лимит активных заявок исчерпан (5/5)"
-            subtitle="Закройте одну активную заявку, чтобы создать новую"
-            actionLabel="Открыть мои заявки"
-            onAction={() => nav.any(ROUTES.tabsRequests)}
-          />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <View className="px-4 pt-4">
+      {!isAuthenticated && (
+        <LandingHeader
+          isDesktop={width >= 768}
+          onHome={() => nav.any("/")}
+          onCatalog={() => nav.any("/specialists")}
+          onLogin={() => nav.any("/login")}
+          onCreateRequest={() => {}}
+          isAuthenticated={false}
+        />
+      )}
+      <View
+        className="px-4 pt-4 bg-surface2"
+        style={{
+          ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 10 } as object) : {}),
+        }}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Назад"
@@ -382,7 +355,7 @@ export default function CreateRequest() {
                     : undefined
                 }
                 maxLength={100}
-                editable={!atLimit && !submitting}
+                editable={!submitting}
               />
               <Text
                 className={`text-xs text-right mt-1 ${
@@ -405,7 +378,7 @@ export default function CreateRequest() {
               serviceOpen={serviceOpen}
               loadingFns={loadingFns}
               submitted={submitted}
-              disabled={atLimit || submitting}
+              disabled={submitting}
               onCitySelect={handleCitySelect}
               onFnsSelect={handleFnsSelect}
               onServiceSelect={handleServiceSelect}
@@ -435,7 +408,7 @@ export default function CreateRequest() {
                     : undefined
                 }
                 maxLength={2000}
-                editable={!atLimit && !submitting}
+                editable={!submitting}
                 containerStyle={{ minHeight: 120 }}
               />
               <Text
@@ -476,7 +449,7 @@ export default function CreateRequest() {
                   : "Отправить заявку"
               }
               onPress={handleSubmit}
-              disabled={submitting || atLimit}
+              disabled={submitting}
               loading={submitting}
             />
           )}

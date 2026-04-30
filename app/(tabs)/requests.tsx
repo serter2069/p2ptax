@@ -9,12 +9,12 @@ import {
   Animated,
   PanResponder,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
+import { BREAKPOINT } from "@/lib/theme";
 import DesktopScreen from "@/components/layout/DesktopScreen";
-import StatusBadge from "@/components/StatusBadge";
 import { FileText, Trash2 } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -190,32 +190,38 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
             minHeight: 44,
           }}
         >
-          {/* Title + status (+ trash on web) */}
-          <View className="flex-row items-start justify-between mb-2 gap-2">
+          {/* Title + trash on web */}
+          <View className="flex-row items-start justify-between mb-1 gap-2">
             <Text
-              className="text-base font-semibold text-text-base flex-1 mb-1"
+              className="text-base font-semibold text-text-base flex-1"
               numberOfLines={2}
             >
               {item.title}
             </Text>
-            <View className="flex-row items-center gap-2">
-              <StatusBadge status={item.status} />
-              {isActive && Platform.OS === "web" && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Закрыть заявку"
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    onClose(item.id, item.title);
-                  }}
-                  className="p-2"
-                  style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
-                >
-                  <Trash2 size={18} color={colors.danger} />
-                </Pressable>
-              )}
-            </View>
+            {isActive && Platform.OS === "web" && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Закрыть заявку"
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onClose(item.id, item.title);
+                }}
+                className="p-2"
+                style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+              >
+                <Trash2 size={18} color={colors.danger} />
+              </Pressable>
+            )}
           </View>
+
+          {/* Description preview */}
+          {item.description ? (
+            <Text className="text-sm text-text-mute mb-2" numberOfLines={2}>
+              {item.description.length > 80
+                ? item.description.slice(0, 80) + "…"
+                : item.description}
+            </Text>
+          ) : null}
 
           {/* City + FNS */}
           <Text className="text-sm text-text-mute mb-2" numberOfLines={1}>
@@ -253,13 +259,15 @@ function SwipeableCard({ item, onPress, onClose }: SwipeableCardProps) {
 
 // ── Main screen ────────────────────────────────────────────────────────
 export default function MyRequests() {
-  const router = useRouter()
   const nav = useTypedRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= BREAKPOINT;
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<"active" | "closed">("active");
   const pendingRef = useRef<{
     id: string;
     prevStatus: RequestItem["status"];
@@ -397,7 +405,7 @@ export default function MyRequests() {
     (id: string) => {
       nav.any(`/requests/${id}/detail`);
     },
-    [router]
+    [nav]
   );
 
   const renderItem = useCallback(
@@ -405,6 +413,12 @@ export default function MyRequests() {
       <SwipeableCard item={item} onPress={handleRequestPress} onClose={handleClose} />
     ),
     [handleRequestPress, handleClose]
+  );
+
+  const filteredRequests = requests.filter((r) =>
+    activeTab === "active"
+      ? r.status === "ACTIVE" || r.status === "CLOSING_SOON"
+      : r.status === "CLOSED"
   );
 
   const renderContent = () => {
@@ -430,21 +444,25 @@ export default function MyRequests() {
       );
     }
 
-    if (requests.length === 0) {
+    if (filteredRequests.length === 0) {
       return (
         <EmptyState
           icon={FileText}
-          title="Заявок пока нет"
-          subtitle="Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
-          actionLabel="Создать заявку"
-          onAction={() => nav.routes.requestsNew()}
+          title={activeTab === "active" ? "Активных заявок нет" : "Закрытых заявок нет"}
+          subtitle={
+            activeTab === "active"
+              ? "Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
+              : "Закрытые заявки появятся здесь"
+          }
+          actionLabel={activeTab === "active" ? "Создать заявку" : undefined}
+          onAction={activeTab === "active" ? () => nav.routes.requestsNew() : undefined}
         />
       );
     }
 
     return (
       <FlatList
-        data={requests}
+        data={filteredRequests}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={{ paddingBottom: 100, paddingTop: 4 }}
@@ -459,15 +477,62 @@ export default function MyRequests() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <DesktopScreen>
         <View className="flex-row items-center justify-between mb-4">
-          <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
+          {!isDesktop && (
+            <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
+          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"
             onPress={() => nav.routes.requestsNew()}
             className="flex-row items-center gap-1.5 px-4 rounded-xl"
-            style={{ backgroundColor: colors.primary, minHeight: 40, justifyContent: "center" }}
+            style={{ backgroundColor: colors.primary, minHeight: 40, justifyContent: "center", marginLeft: isDesktop ? "auto" : 0 }}
           >
             <Text className="text-white font-semibold text-sm">+ Создать</Text>
+          </Pressable>
+        </View>
+
+        {/* Active / Closed tab switcher */}
+        <View
+          className="flex-row mb-4 rounded-xl overflow-hidden border border-border"
+          style={{ backgroundColor: colors.surface2 }}
+        >
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityLabel="Активные заявки"
+            onPress={() => setActiveTab("active")}
+            style={[
+              { flex: 1, paddingVertical: 10, alignItems: "center", minHeight: 40 },
+              activeTab === "active" ? { backgroundColor: colors.primary } : undefined,
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: activeTab === "active" ? "#fff" : colors.textSecondary,
+              }}
+            >
+              Активные
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityLabel="Закрытые заявки"
+            onPress={() => setActiveTab("closed")}
+            style={[
+              { flex: 1, paddingVertical: 10, alignItems: "center", minHeight: 40 },
+              activeTab === "closed" ? { backgroundColor: colors.primary } : undefined,
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: activeTab === "closed" ? "#fff" : colors.textSecondary,
+              }}
+            >
+              Закрытые
+            </Text>
           </Pressable>
         </View>
 

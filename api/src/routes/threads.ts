@@ -441,6 +441,45 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// DELETE /api/threads/:id — soft delete thread (participant only)
+router.delete("/:id", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const rawId = req.params.id;
+    const threadId = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    const thread = await prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, clientId: true, specialistId: true, deletedAt: true },
+    });
+
+    if (!thread) {
+      res.status(404).json({ error: "Thread not found" });
+      return;
+    }
+
+    if (thread.clientId !== userId && thread.specialistId !== userId) {
+      res.status(403).json({ error: "Not a participant" });
+      return;
+    }
+
+    if (thread.deletedAt) {
+      res.json({ ok: true });
+      return;
+    }
+
+    await prisma.thread.update({
+      where: { id: threadId },
+      data: { deletedAt: new Date(), deletedBy: userId },
+    });
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("threads delete error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/threads — create thread with first message (specialist only)
 router.post("/", async (req: Request, res: Response) => {
   try {

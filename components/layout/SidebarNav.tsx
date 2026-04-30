@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { View, Text, Pressable, Modal, Platform } from "react-native";
-import { useRouter, usePathname, useSegments } from "expo-router";
+import { View, Text, Pressable, Platform } from "react-native";
+import { usePathname, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { Settings, LogOut } from "lucide-react-native";
 import { colors, spacing, roleAccent, type RoleAccentKey } from "@/lib/theme";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import { apiGet } from "@/lib/api";
-import RoleBadge from "./RoleBadge";
 import {
   type MatchContext,
   itemsForGroup,
@@ -116,12 +114,10 @@ interface SidebarNavProps {
 }
 
 export default function SidebarNav({ group }: SidebarNavProps) {
-  const router = useRouter()
   const nav = useTypedRouter();
   const pathname = usePathname() ?? "";
   const segments = useSegments();
-  const { user, isSpecialistUser, signOut } = useAuth();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { user, isSpecialistUser } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -155,12 +151,6 @@ export default function SidebarNav({ group }: SidebarNavProps) {
     user?.email?.[0]?.toUpperCase() ||
     "U";
 
-  const handleLogout = async () => {
-    setDropdownOpen(false);
-    await signOut();
-    nav.replaceRoutes.login();
-  };
-
   const settingsPath =
     user?.role === "ADMIN" ? "/admin/settings" : "/settings";
 
@@ -179,9 +169,9 @@ export default function SidebarNav({ group }: SidebarNavProps) {
         ...(Platform.OS === "web"
           ? ({
               position: "fixed",
-              top: 56,
+              top: 0,
               left: 0,
-              height: "calc(100vh - 56px)",
+              height: "100vh",
               overflowY: "auto",
             } as object)
           : {}),
@@ -220,10 +210,6 @@ export default function SidebarNav({ group }: SidebarNavProps) {
           <Text style={{ color: accent.strong }}>Tax</Text>
         </Text>
       </Pressable>
-
-      <View style={{ paddingHorizontal: spacing.sm, marginBottom: spacing.md }}>
-        <RoleBadge role={user?.role ?? null} isSpecialist={isSpecialistUser} size="sm" />
-      </View>
 
       {/* Primary nav */}
       <View style={{ gap: 2, flex: 1 }}>
@@ -286,7 +272,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
         })}
       </View>
 
-      {/* Bottom identity cluster */}
+      {/* Bottom identity cluster — clicking goes directly to /settings */}
       <View
         style={{
           borderTopWidth: 1,
@@ -296,9 +282,9 @@ export default function SidebarNav({ group }: SidebarNavProps) {
         }}
       >
         <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Открыть меню профиля"
-          onPress={() => setDropdownOpen(true)}
+          accessibilityRole="link"
+          accessibilityLabel="Профиль"
+          onPress={() => nav.any(settingsPath)}
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -337,90 +323,6 @@ export default function SidebarNav({ group }: SidebarNavProps) {
           </View>
         </Pressable>
       </View>
-
-      {/* Dropdown modal */}
-      <Modal
-        visible={dropdownOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDropdownOpen(false)}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Закрыть меню"
-          onPress={() => setDropdownOpen(false)}
-          style={{ flex: 1 }}
-        >
-          <View
-            style={{
-              position: "absolute",
-              bottom: 72,
-              left: spacing.md,
-              width: SIDEBAR_WIDTH - spacing.md * 2,
-              backgroundColor: colors.surface,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: colors.border,
-              padding: spacing.xs,
-              shadowColor: colors.black,
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.08,
-              shadowRadius: 16,
-              elevation: 6,
-            }}
-          >
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Настройки"
-              onPress={() => {
-                setDropdownOpen(false);
-                nav.any(settingsPath);
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: spacing.sm,
-                paddingHorizontal: spacing.sm,
-                borderRadius: 8,
-              }}
-            >
-              <Settings size={16} color={colors.textSecondary} />
-              <Text
-                style={{
-                  marginLeft: spacing.sm,
-                  fontSize: 14,
-                  color: colors.text,
-                }}
-              >
-                Настройки
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Выйти"
-              onPress={handleLogout}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: spacing.sm,
-                paddingHorizontal: spacing.sm,
-                borderRadius: 8,
-              }}
-            >
-              <LogOut size={16} color={colors.danger} />
-              <Text
-                style={{
-                  marginLeft: spacing.sm,
-                  fontSize: 14,
-                  color: colors.danger,
-                }}
-              >
-                Выйти
-              </Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
     </View>
   );
 }

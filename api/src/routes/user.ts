@@ -304,4 +304,54 @@ router.post("/leave-specialist-toggle", authMiddleware, async (req: Request, res
   }
 });
 
+// DELETE /api/user/me — soft-delete the authenticated user's own account.
+// Sets deletedAt = now(); front-end must call signOut() on 200.
+// Full anonymization is handled by POST /api/account/delete (requires email
+// confirmation). This endpoint is a lightweight "one-click delete" that
+// marks the account deleted and revokes refresh tokens.
+router.delete("/me", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { deletedAt: true },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (existing.deletedAt) {
+      res.status(409).json({ error: "Account already deleted" });
+      return;
+    }
+
+    const now = new Date();
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          deletedAt: now,
+          email: `deleted-${userId}@p2ptax.local`,
+          firstName: null,
+          lastName: null,
+          avatarUrl: null,
+          isAvailable: false,
+          isSpecialist: false,
+          isBanned: true,
+        },
+      });
+      // Revoke all refresh tokens — forces sign-out on all devices.
+      await tx.refreshToken.deleteMany({ where: { userId } });
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("user/me delete error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

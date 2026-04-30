@@ -43,7 +43,7 @@ export default function AuthEmailScreen() {
       if (user.role === "ADMIN") {
         nav.replaceRoutes.adminDashboard();
       } else {
-        nav.replaceRoutes.tabs();
+        nav.replaceRoutes.dashboard();
       }
     }
   }, [isAuthenticated, user, router, returnTo]);
@@ -138,14 +138,16 @@ export default function AuthEmailScreen() {
             </View>
           ) : null}
 
-          {/* Email input with leading icon */}
+          {/* Email input — line-style (bottom border only) */}
           <View
-            className="flex-row items-center rounded-xl border bg-white"
+            className="flex-row items-center"
             style={{
-              borderWidth: focused ? 2 : 1,
-              borderColor: error ? colors.error : focused ? colors.accent : colors.border,
-              height: 48,
-              paddingHorizontal: 14,
+              borderTopWidth: 0,
+              borderLeftWidth: 0,
+              borderRightWidth: 0,
+              borderBottomWidth: focused ? 2 : 1,
+              borderBottomColor: error ? colors.error : focused ? colors.accent : colors.borderStrong,
+              paddingBottom: 2,
               marginBottom: error ? 6 : 16,
             }}
           >
@@ -172,11 +174,7 @@ export default function AuthEmailScreen() {
                 fontSize: 15,
                 color: colors.text,
                 borderWidth: 0,
-                // WCAG 2.5.5 — explicit 44px tap target on web; the
-                // <input> intrinsic height is ~18px otherwise.
-                // appearance:none + outlineStyle:none kill the default
-                // browser <input> chrome that creates the double-border
-                // artifact when the outer View owns the visible border.
+                backgroundColor: "transparent",
                 ...(Platform.OS === "web" ? {
                   minHeight: 44,
                   alignSelf: "stretch" as never,

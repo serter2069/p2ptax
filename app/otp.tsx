@@ -109,7 +109,7 @@ export default function AuthOtpScreen() {
         nav.replaceRoutes.onboardingName();
         return;
       }
-      nav.replaceRoutes.tabs();
+      nav.replaceRoutes.dashboard();
     },
     [router, returnTo, intent]
   );
@@ -206,7 +206,7 @@ export default function AuthOtpScreen() {
     } else if (returnTo) {
       nav.replaceAny(returnTo);
     } else {
-      nav.replaceRoutes.tabs();
+      nav.replaceRoutes.dashboard();
     }
   };
 

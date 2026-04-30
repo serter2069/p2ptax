@@ -17,7 +17,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
-import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
+import { colors, fontSizeValue } from "@/lib/theme";
 
 
 /**
@@ -235,18 +235,19 @@ export default function AdminUsers() {
 
   const filterBar = (
     <View style={{ gap: 12 }}>
-      {/* Outer View owns all visual styling — prevents double-input on web (NativeWind wraps
-          TextInput in an extra div when className is used; keeping className off TextInput
-          and border/bg on the parent View avoids the double-box artifact). */}
+      {/* Line-style search — bottom border only, no box */}
       <View
         style={{
-          backgroundColor: colors.surface2,
-          borderRadius: radiusValue.md,
+          borderTopWidth: 0,
+          borderLeftWidth: 0,
+          borderRightWidth: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.borderStrong,
           height: 44,
-          paddingHorizontal: 14,
-          borderWidth: 1,
-          borderColor: colors.border,
+          paddingHorizontal: 0,
+          paddingBottom: 2,
           justifyContent: "center",
+          backgroundColor: "transparent",
         }}
       >
         <TextInput

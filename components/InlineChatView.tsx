@@ -6,6 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Alert,
   useWindowDimensions,
@@ -19,7 +20,7 @@ import MessageBubble from "@/components/MessageBubble";
 import { Avatar } from "@/components/ui";
 import Input from "@/components/ui/Input";
 import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
-import { API_URL, api, apiPost, apiPatch } from "@/lib/api";
+import { API_URL, api, apiPost, apiPatch, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, radiusValue } from "@/lib/theme";
@@ -187,6 +188,9 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const { user, isSpecialistUser } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [clearingThread, setClearingThread] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const PAGE_SIZE = 50;
 
@@ -430,6 +434,31 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     });
   }, []);
 
+  const handleClearThread = useCallback(() => {
+    setMenuVisible(false);
+    setShowClearModal(true);
+  }, []);
+
+  const handleClearConfirm = useCallback(async () => {
+    setShowClearModal(false);
+    setClearingThread(true);
+    try {
+      await apiDelete(`/api/threads/${threadId}`);
+      router.back();
+    } catch (e) {
+      setClearingThread(false);
+      Alert.alert("Ошибка", "Не удалось очистить переписку");
+    }
+  }, [threadId]);
+
+  const handleOtherUserPress = useCallback(() => {
+    if (!thread) return;
+    // Navigate to specialist profile only when current user is the client
+    if (thread.clientId === myId && thread.specialistId) {
+      router.push(`/specialists/${thread.specialistId}` as never);
+    }
+  }, [thread, myId]);
+
   const renderMessage = useCallback(
     ({ item }: { item: MessageItem }) => (
       <MessageBubble
@@ -503,66 +532,151 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     );
   }
 
+  // Determine if current user is the client (can navigate to specialist profile)
+  const canViewSpecialistProfile = thread && myId && thread.clientId === myId;
+
   return (
     <View className="flex-1 bg-white">
       {/* Header with avatar + other party name + perspective badge + counterparty hint */}
-      <View className="flex-row items-start px-4 py-3 border-b border-border bg-white">
+      <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
         {!isDesktop && (
           <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
             <FontAwesome name="chevron-left" size={18} color={colors.primary} />
           </Pressable>
         )}
-        {otherUser ? (
-          <Avatar
-            name={displayName(otherUser)}
-            imageUrl={otherUser.avatarUrl ?? undefined}
-            size="sm"
-          />
-        ) : (
-          <View className="w-9 h-9 rounded-full items-center justify-center" style={{ backgroundColor: colors.border }}>
-            <FontAwesome name="user" size={16} color={colors.textSecondary} />
-          </View>
-        )}
-        <View className="ml-3 flex-1" style={{ gap: 4 }}>
-          <View className="flex-row items-center" style={{ gap: 8 }}>
-            <Text className="text-base font-semibold flex-shrink" style={{ color: colors.text }} numberOfLines={1}>
-              {otherName}
-            </Text>
+        {/* Avatar + name: tappable → specialist profile (client view only) */}
+        <Pressable
+          accessibilityRole={canViewSpecialistProfile ? "link" : "none"}
+          accessibilityLabel={canViewSpecialistProfile ? `Профиль специалиста ${otherName}` : undefined}
+          onPress={canViewSpecialistProfile ? handleOtherUserPress : undefined}
+          className="flex-row items-start flex-1 min-w-0"
+          style={({ pressed }) => [pressed && canViewSpecialistProfile ? { opacity: 0.7 } : undefined]}
+        >
+          {otherUser ? (
+            <Avatar
+              name={displayName(otherUser)}
+              imageUrl={otherUser.avatarUrl ?? undefined}
+              size="sm"
+            />
+          ) : (
+            <View className="w-9 h-9 rounded-full items-center justify-center" style={{ backgroundColor: colors.border }}>
+              <FontAwesome name="user" size={16} color={colors.textSecondary} />
+            </View>
+          )}
+          <View className="ml-3 flex-1 min-w-0" style={{ gap: 4 }}>
+            <View className="flex-row items-center" style={{ gap: 8 }}>
+              <Text className="text-base font-semibold flex-shrink" style={{ color: colors.text }} numberOfLines={1}>
+                {otherName}
+              </Text>
+              {thread && myId ? (
+                thread.clientId === myId ? (
+                  <PerspectiveBadge perspective="as_client" size="md" />
+                ) : thread.specialistId === myId ? (
+                  <PerspectiveBadge perspective="as_specialist" size="md" />
+                ) : null
+              ) : null}
+            </View>
             {thread && myId ? (
-              thread.clientId === myId ? (
-                <PerspectiveBadge perspective="as_client" size="md" />
-              ) : thread.specialistId === myId ? (
-                <PerspectiveBadge perspective="as_specialist" size="md" />
-              ) : null
+              (() => {
+                const myPerspective: "as_client" | "as_specialist" | null =
+                  thread.clientId === myId
+                    ? "as_client"
+                    : thread.specialistId === myId
+                      ? "as_specialist"
+                      : null;
+                if (!myPerspective) return null;
+                const counterpartyFallback =
+                  myPerspective === "as_client" ? "Специалистом" : "Клиентом";
+                const namedCounterparty = otherUser && !otherUser.isDeleted
+                  ? nameInInstrumental(displayName(otherUser))
+                  : counterpartyFallback;
+                return (
+                  <Text
+                    className="text-xs"
+                    style={{ color: colors.textSecondary }}
+                    numberOfLines={1}
+                  >
+                    Вы переписываетесь с {namedCounterparty}
+                  </Text>
+                );
+              })()
             ) : null}
           </View>
-          {thread && myId ? (
-            (() => {
-              const myPerspective: "as_client" | "as_specialist" | null =
-                thread.clientId === myId
-                  ? "as_client"
-                  : thread.specialistId === myId
-                    ? "as_specialist"
-                    : null;
-              if (!myPerspective) return null;
-              const counterpartyFallback =
-                myPerspective === "as_client" ? "Специалистом" : "Клиентом";
-              const namedCounterparty = otherUser && !otherUser.isDeleted
-                ? nameInInstrumental(displayName(otherUser))
-                : counterpartyFallback;
-              return (
-                <Text
-                  className="text-xs"
-                  style={{ color: colors.textSecondary }}
-                  numberOfLines={1}
-                >
-                  Вы переписываетесь с {namedCounterparty}
-                </Text>
-              );
-            })()
-          ) : null}
-        </View>
+        </Pressable>
+
+        {/* Three-dots menu button */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Меню чата"
+          onPress={() => setMenuVisible((v) => !v)}
+          disabled={clearingThread}
+          className="w-10 h-10 items-center justify-center ml-1"
+          style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+        >
+          {clearingThread ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={{ fontSize: 22, color: colors.textSecondary, lineHeight: 24 }}>
+              {"⋯"}
+            </Text>
+          )}
+        </Pressable>
       </View>
+
+      {/* Dropdown menu */}
+      {menuVisible && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setMenuVisible(false)}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 10,
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              top: 56,
+              right: 12,
+              backgroundColor: "#fff",
+              borderRadius: 10,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 8,
+              minWidth: 200,
+              zIndex: 20,
+            }}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Очистить переписку"
+              onPress={handleClearThread}
+              style={({ pressed }) => [
+                {
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  borderRadius: 10,
+                },
+                pressed && { backgroundColor: "#fef2f2" },
+              ]}
+            >
+              <FontAwesome name="trash-o" size={16} color={colors.danger} />
+              <Text style={{ color: colors.danger, fontSize: 15 }}>
+                Очистить переписку
+              </Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      )}
 
       {/* Source request link strip — visible when thread was created from a request */}
       {thread?.requestId ? (
@@ -757,6 +871,82 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      {/* Clear thread confirmation modal */}
+      <Modal
+        visible={showClearModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowClearModal(false)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", padding: 24 }}
+          onPress={() => setShowClearModal(false)}
+        >
+          <Pressable
+            onPress={() => {/* prevent dismiss on inner press */}}
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              width: "100%",
+              maxWidth: 360,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.15,
+              shadowRadius: 24,
+              elevation: 16,
+            }}
+          >
+            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text, marginBottom: 8 }}>
+              Очистить переписку?
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20, marginBottom: 24 }}>
+              Вы и ваш собеседник не сможете получить к ней доступ. Она будет удалена с серверов.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Отмена"
+                onPress={() => setShowClearModal(false)}
+                style={({ pressed }) => [
+                  {
+                    flex: 1,
+                    paddingVertical: 12,
+                    borderRadius: 10,
+                    alignItems: "center",
+                    backgroundColor: colors.surface2,
+                    minHeight: 44,
+                    justifyContent: "center",
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>Отмена</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Очистить переписку"
+                onPress={handleClearConfirm}
+                style={({ pressed }) => [
+                  {
+                    flex: 1,
+                    paddingVertical: 12,
+                    borderRadius: 10,
+                    alignItems: "center",
+                    backgroundColor: colors.danger,
+                    minHeight: 44,
+                    justifyContent: "center",
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}>Очистить</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

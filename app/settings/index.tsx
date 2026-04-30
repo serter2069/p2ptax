@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Constants from "expo-constants";
-import { View, Text, ScrollView, Pressable, Alert, Platform } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert, Platform, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, LogOut, Trash2 } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -11,18 +11,16 @@ import { colors } from "@/lib/theme";
 import { useSettingsForm, SettingsTab } from "@/lib/useSettingsForm";
 import ProfileTab from "@/components/settings/ProfileTab";
 import SpecialistTab from "@/components/settings/SpecialistTab";
-import NotificationsTab from "@/components/settings/NotificationsTab";
-import AccountTab from "@/components/settings/AccountTab";
 
 /**
  * Unified Settings page — tabbed layout (Wave 2/F, refactored Wave 4/J).
- * Tabs: Профиль / Специалист / Уведомления / Аккаунт. Bodies live in
- * `components/settings/{Profile,Specialist,Notifications,Account}Tab.tsx`.
+ * Tabs: Профиль / Специалист. Notifications and Account tabs removed —
+ * logout/delete actions are now inline at the bottom of the page.
  * Form state + per-tab save handlers live in `lib/useSettingsForm`.
  * ADMIN users are redirected to /admin/settings.
  */
 
-const VALID_TABS: SettingsTab[] = ["profile", "specialist", "notifications", "account"];
+const VALID_TABS: SettingsTab[] = ["profile", "specialist"];
 
 function isValidTab(value: string | undefined): value is SettingsTab {
   return !!value && (VALID_TABS as string[]).includes(value);
@@ -38,8 +36,6 @@ function SettingsTabs({ activeTab, onChange, canEditSpecialist }: SettingsTabsPr
   const tabs: { id: SettingsTab; label: string; disabled?: boolean }[] = [
     { id: "profile", label: "Профиль" },
     { id: "specialist", label: "Специалист", disabled: !canEditSpecialist },
-    { id: "notifications", label: "Уведомления" },
-    { id: "account", label: "Аккаунт" },
   ];
 
   return (
@@ -95,6 +91,8 @@ function SettingsTabs({ activeTab, onChange, canEditSpecialist }: SettingsTabsPr
 export default function UnifiedSettings() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const { ready } = useRequireAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   // Active tab — initial from ?tab= query, default 'profile'.
   const initialTab: SettingsTab = isValidTab(params.tab) ? params.tab : "profile";
@@ -123,16 +121,18 @@ export default function UnifiedSettings() {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
         <View className="px-4 pt-4">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
-            onPress={() => router.back()}
-            className="flex-row items-center mb-2"
-            style={{ minHeight: 44 }}
-          >
-            <ChevronLeft size={20} color={colors.text} />
-            <Text className="text-text-base ml-1">Назад</Text>
-          </Pressable>
+          {!isDesktop && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Назад"
+              onPress={() => router.back()}
+              className="flex-row items-center mb-2"
+              style={{ minHeight: 44 }}
+            >
+              <ChevronLeft size={20} color={colors.text} />
+              <Text className="text-text-base ml-1">Назад</Text>
+            </Pressable>
+          )}
           <Text className="text-2xl font-extrabold text-text-base mb-4">Настройки</Text>
         </View>
         <LoadingState variant="skeleton" lines={5} />
@@ -143,16 +143,18 @@ export default function UnifiedSettings() {
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       <View className="px-4 pt-4">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Назад"
-          onPress={() => router.back()}
-          className="flex-row items-center mb-2"
-          style={{ minHeight: 44 }}
-        >
-          <ChevronLeft size={20} color={colors.text} />
-          <Text className="text-text-base ml-1">Назад</Text>
-        </Pressable>
+        {!isDesktop && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => router.back()}
+            className="flex-row items-center mb-2"
+            style={{ minHeight: 44 }}
+          >
+            <ChevronLeft size={20} color={colors.text} />
+            <Text className="text-text-base ml-1">Назад</Text>
+          </Pressable>
+        )}
         <Text className="text-2xl font-extrabold text-text-base mb-3">Настройки</Text>
       </View>
 
@@ -187,6 +189,7 @@ export default function UnifiedSettings() {
               isAvailable={form.isAvailable}
               availabilityLoading={form.availabilityLoading}
               role={user?.role ?? null}
+              userId={user?.id}
               onFirstNameChange={form.setFirstName}
               onLastNameChange={form.setLastName}
               onAvatarChange={form.setAvatarUrl}
@@ -225,23 +228,31 @@ export default function UnifiedSettings() {
             />
           )}
 
-          {activeTab === "notifications" && (
-            <NotificationsTab
-              emailEnabled={form.emailEnabled}
-              pushEnabled={form.pushEnabled}
-              onEmailChange={form.setEmailEnabled}
-              onPushChange={form.setPushEnabled}
-            />
-          )}
+          {/* Logout / Delete — always visible at bottom, replacing the Account tab */}
+          <View className="bg-white border border-border rounded-2xl px-4 py-4 mt-2 mb-4 overflow-hidden">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Выйти из аккаунта"
+              onPress={form.handleLogout}
+              className="flex-row items-center min-h-[44px] border-b border-border"
+            >
+              <LogOut size={16} color={colors.error} />
+              <Text className="text-base text-danger ml-3 flex-1">Выйти из аккаунта</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Удалить аккаунт"
+              onPress={form.handleDeleteAccount}
+              className="flex-row items-center min-h-[44px]"
+            >
+              <Trash2 size={16} color={colors.error} />
+              <Text className="text-base text-danger ml-3 flex-1">Удалить аккаунт</Text>
+            </Pressable>
+          </View>
 
-          {activeTab === "account" && (
-            <AccountTab
-              appVersion={Constants.expoConfig?.version ?? "1.0.0"}
-              onLogout={form.handleLogout}
-              onDeleteAccount={form.handleDeleteAccount}
-              onLegal={() => nav.routes.legalIndex()}
-            />
-          )}
+          <Text className="text-xs text-text-dim text-center mb-4">
+            Версия {Constants.expoConfig?.version ?? "1.0.0"}
+          </Text>
         </View>
       </ScrollView>
 

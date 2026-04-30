@@ -89,14 +89,14 @@ export default function AppShell({ children }: AppShellProps) {
     >
       {/* SidebarNav renders itself as position:fixed — no layout slot needed here */}
       <SidebarNav group={group} />
-      {/* Content area: offset by sidebar (left) and header (top), scrolls independently */}
+      {/* Content area: offset by sidebar (left), full height (no fixed header on desktop). */}
       <View
         style={{
           ...(Platform.OS === "web"
             ? ({
                 marginLeft: SIDEBAR_WIDTH,
-                marginTop: 56,
-                height: "calc(100vh - 56px)",
+                marginTop: 0,
+                height: "100vh",
                 overflowY: "auto",
               } as object)
             : { flex: 1, minWidth: 0 }),

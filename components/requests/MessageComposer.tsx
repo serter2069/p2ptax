@@ -1,5 +1,5 @@
 import { View, Text, TextInput, Platform } from "react-native";
-import { colors, radiusValue, fontSizeValue } from "@/lib/theme";
+import { colors, fontSizeValue } from "@/lib/theme";
 
 interface MessageComposerProps {
   value: string;
@@ -35,17 +35,18 @@ export default function MessageComposer({
   return (
     <>
       <Text className="text-sm font-semibold text-text-base mb-2">{label}</Text>
-      {/* Outer View owns all visual styling — prevents double-input on web (NativeWind wraps
-          TextInput in an extra div when className is used; keeping className off TextInput
-          and border/bg on the parent View avoids the double-box artifact). */}
+      {/* Outer View — line-style (bottom border only). Prevents double-input on web. */}
       <View
         style={{
           minHeight: 140,
-          borderWidth: 1,
-          borderColor: disabled ? colors.border : colors.borderLight,
-          borderRadius: radiusValue.md,
-          backgroundColor: disabled ? colors.background : colors.surface,
+          borderTopWidth: 0,
+          borderLeftWidth: 0,
+          borderRightWidth: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: disabled ? colors.border : colors.borderStrong,
+          backgroundColor: "transparent",
           opacity: disabled ? 0.5 : 1,
+          paddingBottom: 2,
         }}
       >
         <TextInput
@@ -61,16 +62,13 @@ export default function MessageComposer({
           editable={!disabled}
           style={{
             flex: 1,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
+            paddingHorizontal: 0,
+            paddingVertical: 8,
             fontSize: fontSizeValue.base,
             color: colors.text,
             textAlignVertical: "top",
             borderWidth: 0,
             backgroundColor: "transparent",
-            // appearance:none + outlineStyle:none kill the default
-            // browser <textarea> chrome that creates the double-border
-            // artifact when the outer View owns the visible border.
             ...(Platform.OS === "web"
               ? {
                   borderColor: "transparent",

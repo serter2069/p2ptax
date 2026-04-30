@@ -1,17 +1,12 @@
 import "../global.css";
-import { useState } from "react";
-import { useWindowDimensions, Platform, View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { Stack, usePathname } from "expo-router";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppShell from "@/components/layout/AppShell";
-import AppHeader, { shouldShowAppHeader } from "@/components/layout/AppHeader";
-import MobileDrawer from "@/components/layout/MobileDrawer";
 import StrandedSpecialistBanner from "@/components/layout/StrandedSpecialistBanner";
 import { colors } from "@/lib/theme";
 
 import MetroBridge from "@/components/MetroBridge";
-
-const MOBILE_BREAKPOINT = 768;
 
 /**
  * Read-only computed signal for "stranded specialist" state.
@@ -64,10 +59,7 @@ function useStrandedSpecialistInfo(): { stranded: boolean } {
  * Issue GH-1367 — auth loading flash: show spinner while auth restores from storage.
  */
 function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const pathname = usePathname() ?? "";
-  const { width } = useWindowDimensions();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { isLoading } = useAuth();
 
   // Wave 2/G — soft guard. Render a persistent banner for stranded
   // specialists instead of force-redirecting them. The hard gate lives
@@ -84,46 +76,12 @@ function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const show = isAuthenticated && shouldShowAppHeader(pathname);
-  // MobileDrawer only on web mobile (native has bottom tabs; sidebar handles desktop)
-  const showDrawer = Platform.OS === "web" && width < MOBILE_BREAKPOINT;
-  // On desktop, AppShell's content pane already applies marginTop:56.
-  // On mobile web, the fixed header needs offsetting via paddingTop on the
-  // content container. Desktop web passes through here without extra padding.
-  const isMobileWeb = Platform.OS === "web" && width < MOBILE_BREAKPOINT;
-
+  // Mobile: bottom tab bar owns navigation. Desktop: sidebar owns navigation.
+  // No top AppHeader for authenticated users on any breakpoint.
   return (
     <>
-      {show && (
-        <AppHeader
-          onBurgerPress={showDrawer ? () => setDrawerOpen(true) : undefined}
-        />
-      )}
-      {isMobileWeb && show ? (
-        <View
-          style={
-            Platform.OS === "web"
-              ? ({
-                  paddingTop: 56,
-                  paddingBottom: 60,
-                  height: "100vh",
-                  overflowY: "auto",
-                } as object)
-              : { flex: 1 }
-          }
-        >
-          <StrandedSpecialistBanner stranded={stranded} />
-          {children}
-        </View>
-      ) : (
-        <>
-          <StrandedSpecialistBanner stranded={stranded} />
-          {children}
-        </>
-      )}
-      {showDrawer && (
-        <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-      )}
+      <StrandedSpecialistBanner stranded={stranded} />
+      {children}
     </>
   );
 }

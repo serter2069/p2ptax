@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Image } from "react-native";
 import { colors, gray, AVATAR_COLORS, shadowColor } from "@/lib/theme";
 
 export interface HeroSpecialistPreview {
@@ -227,7 +227,8 @@ function SpecialistCard({
   const rotation = index === 1 ? "1deg" : index === 2 ? "-1deg" : "0deg";
   const name = [specialist.firstName, specialist.lastName].filter(Boolean).join(" ") || "Специалист";
   const city = specialist.cities[0]?.name ?? null;
-  const services = specialist.services.slice(0, 3);
+  // Show only the first service to prevent card layout breaking.
+  const firstService = specialist.services[0] ?? null;
   const avatarBg = AVATAR_COLORS[index % AVATAR_COLORS.length];
 
   return (
@@ -248,18 +249,27 @@ function SpecialistCard({
         shadowOffset: { width: 0, height: 8 },
       }}
     >
-      <View
-        className="items-center justify-center rounded-full"
-        style={{
-          width: 56,
-          height: 56,
-          backgroundColor: avatarBg,
-        }}
-      >
-        <Text className="text-white font-extrabold" style={{ fontSize: 22 }}>
-          {(specialist.firstName?.[0] ?? "С").toUpperCase()}
-        </Text>
-      </View>
+      {specialist.avatarUrl ? (
+        <Image
+          source={{ uri: specialist.avatarUrl }}
+          className="rounded-full"
+          style={{ width: 56, height: 56 }}
+          accessibilityLabel={name}
+        />
+      ) : (
+        <View
+          className="items-center justify-center rounded-full"
+          style={{
+            width: 56,
+            height: 56,
+            backgroundColor: avatarBg,
+          }}
+        >
+          <Text className="text-white font-extrabold" style={{ fontSize: 22 }}>
+            {(specialist.firstName?.[0] ?? "С").toUpperCase()}
+          </Text>
+        </View>
+      )}
 
       <View style={{ flex: 1 }}>
         <View className="flex-row items-center justify-between">
@@ -297,14 +307,16 @@ function SpecialistCard({
         </View>
 
         <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 10 }}>
-          {city ? <Chip label={city} tone="default" /> : null}
-          {specialist.fnsName ? <Chip label={specialist.fnsName} tone="default" /> : null}
+          {/* Show FNS name if available, otherwise fall back to city */}
+          {specialist.fnsName
+            ? <Chip label={specialist.fnsName} tone="default" />
+            : city
+            ? <Chip label={city} tone="default" />
+            : null}
         </View>
 
         <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 8 }}>
-          {services.map((s) => (
-            <Chip key={s.id} label={s.name} tone="accent" />
-          ))}
+          {firstService && <Chip key={firstService.id} label={firstService.name} tone="accent" />}
         </View>
       </View>
     </View>

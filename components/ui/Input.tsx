@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Platform, type TextInputProps, type ViewStyle } from "react-native";
 import { type LucideIcon } from "lucide-react-native";
-import { colors, radiusValue, fontSizeValue, spacing } from "../../lib/theme";
+import { colors, fontSizeValue, spacing } from "../../lib/theme";
 
 export interface InputProps {
   label?: string;
@@ -50,28 +50,12 @@ export default function Input({
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
-  // On web `colors.border` (#e8ebf0) on `colors.surface` (#ffffff) is barely
-  // visible — auditors flag the field as "naked input". We bump to
-  // `colors.borderStrong` (#c7ccd4) on web to give the input a clear frame
-  // even at default state. Native keeps the soft border (high-DPI displays
-  // already render it crisp enough).
+  // Line-style: only bottom border changes color on focus/error.
   const borderColor = error
     ? colors.error
     : focused
       ? colors.accent
-      : Platform.OS === "web"
-        ? colors.borderStrong
-        : colors.border;
-  // On web inputs sit on a slightly off-white background (`surface2`,
-  // #fafbfc) so the frame is reinforced by background contrast. Native
-  // keeps the standard surface white.
-  const bgColor = error
-    ? colors.errorBg
-    : !editable
-      ? colors.background
-      : Platform.OS === "web"
-        ? colors.surface2
-        : colors.surface;
+      : colors.borderStrong;
 
   return (
     <View style={style}>
@@ -83,18 +67,15 @@ export default function Input({
           flexDirection: "row",
           alignItems: "center",
           minHeight: multiline ? 96 : 48,
-          borderRadius: radiusValue.md,
-          // Outer View owns the border on ALL platforms — eliminates the
-          // "box in a box" artifact on web where the inner <input> previously
-          // had its own border while the wrapper added a background+radius.
-          borderWidth: 1,
-          borderColor,
-          backgroundColor: bgColor,
-          paddingHorizontal: spacing.md, // token: 12
-          // web-only 3px accent ring on focus — ignored on native
-          ...(Platform.OS === "web" && focused
-            ? { boxShadow: `0 0 0 3px ${colors.accent}33` }
-            : {}),
+          // Line-style: no top/left/right border, no radius, transparent bg.
+          borderTopWidth: 0,
+          borderLeftWidth: 0,
+          borderRightWidth: 0,
+          borderBottomWidth: focused ? 2 : 1,
+          borderBottomColor: borderColor,
+          backgroundColor: "transparent",
+          paddingHorizontal: 0,
+          paddingBottom: 2,
         }, containerStyle]}
       >
         {Icon && (

@@ -235,7 +235,7 @@ export default function SpecialistPublicRequests() {
       <DesktopScreen>
         {/* Accent hero */}
         <View className="rounded-2xl px-5 py-5 mb-4 mt-2" style={{ backgroundColor: colors.accent }}>
-          <Text className="text-xl font-bold text-white mb-0.5">Публичные заявки</Text>
+          <Text className="text-xl font-bold text-white mb-0.5">Заявки</Text>
           <Text className="text-sm" style={{ color: overlay.white90 }}>Находите клиентов по своей специализации</Text>
           {total > 0 && (
             <Text className="text-sm font-semibold text-white mt-2">

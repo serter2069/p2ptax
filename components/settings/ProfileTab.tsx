@@ -1,10 +1,11 @@
 import { useRef, useEffect } from "react";
-import { View, Text, Pressable, Animated, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Animated, ActivityIndicator, Share, Platform } from "react-native";
 import Input from "@/components/ui/Input";
 import AvatarUploader from "@/components/settings/AvatarUploader";
 import RoleBadge from "@/components/layout/RoleBadge";
 import type { UserRole } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
+import { Share2 } from "lucide-react-native";
 
 /**
  * Внутренний iOS-style toggle. Дублируется здесь чтобы tab был самодостаточным
@@ -79,6 +80,7 @@ interface ProfileTabProps {
   isAvailable: boolean;
   availabilityLoading: boolean;
   role: UserRole;
+  userId?: string;
   onFirstNameChange: (v: string) => void;
   onLastNameChange: (v: string) => void;
   onAvatarChange: (url: string | null) => void;
@@ -98,6 +100,7 @@ export default function ProfileTab({
   isAvailable,
   availabilityLoading,
   role,
+  userId,
   onFirstNameChange,
   onLastNameChange,
   onAvatarChange,
@@ -106,6 +109,25 @@ export default function ProfileTab({
   onToggleSpecialist,
   onToggleAvailable,
 }: ProfileTabProps) {
+  const handleShareProfile = async () => {
+    const url =
+      Platform.OS === "web"
+        ? `${window.location.origin}/specialists/${userId}`
+        : `https://p2ptax.ru/specialists/${userId}`;
+    if (Platform.OS === "web") {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        // fallback — do nothing silently
+      }
+      return;
+    }
+    try {
+      await Share.share({ message: url, url });
+    } catch {
+      // cancelled or unsupported
+    }
+  };
   return (
     <>
       {/* 1. Личные данные */}
@@ -184,21 +206,50 @@ export default function ProfileTab({
         </View>
 
         {isSpecialistUser && (
-          <View className="flex-row items-center justify-between py-2 border-t border-border mt-2">
-            <View className="flex-1 mr-4">
-              <Text className="text-base font-semibold text-text-base">
-                Принимаю заявки
-              </Text>
-              <Text className="text-xs text-text-mute mt-0.5">
-                {isAvailable
-                  ? "Вы видны клиентам и получаете заявки"
-                  : "Вы скрыты от клиентов — новые заявки не поступают"}
-              </Text>
+          <View className="border-t border-border mt-2">
+            <View className="flex-row items-center justify-between py-2">
+              <View className="flex-1 mr-4">
+                <Text className="text-base font-semibold text-text-base">
+                  Публичный профиль
+                </Text>
+                <Text className="text-xs text-text-mute mt-0.5">
+                  Ваш профиль будет отображаться в поиске и доступен другим пользователям
+                </Text>
+              </View>
+              {availabilityLoading ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <IosToggle value={isAvailable} onChange={onToggleAvailable} />
+              )}
             </View>
-            {availabilityLoading ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <IosToggle value={isAvailable} onChange={onToggleAvailable} />
+            {isAvailable && userId && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Поделиться профилем"
+                onPress={handleShareProfile}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  backgroundColor: colors.surface2,
+                  alignSelf: "flex-start",
+                  marginBottom: 4,
+                }}
+              >
+                <Share2 size={14} color={colors.accent} />
+                <Text
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: colors.accent,
+                  }}
+                >
+                  Поделиться профилем
+                </Text>
+              </Pressable>
             )}
           </View>
         )}

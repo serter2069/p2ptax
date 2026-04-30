@@ -15,6 +15,7 @@ import ServiceChipsRow from "@/components/specialists/ServiceChipsRow";
 import SpecialistsGrid from "@/components/specialists/SpecialistsGrid";
 import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import LandingHeader from "@/components/landing/LandingHeader";
 
 interface ServiceOption {
   id: string;
@@ -69,7 +70,8 @@ export default function SpecialistsCatalog() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const isWide = width >= 1024;
-  const gridCols = isWide ? 3 : isDesktop ? 2 : 1;
+  // SpecialistsGrid handles desktop as 1-column horizontal rows internally
+  const gridCols = 1;
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
   // URL params for shareable filtered catalog
@@ -305,6 +307,16 @@ export default function SpecialistsCatalog() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
+      {!isAuthenticated && (
+        <LandingHeader
+          isDesktop={isDesktop}
+          onHome={() => nav.any("/")}
+          onCatalog={() => nav.any("/specialists")}
+          onLogin={() => nav.any("/login")}
+          onCreateRequest={() => nav.any("/requests/new")}
+          isAuthenticated={false}
+        />
+      )}
       <CatalogHeader isDesktop={isDesktop} count={headerCount} />
 
       {/* Row 2: typeahead search bar */}

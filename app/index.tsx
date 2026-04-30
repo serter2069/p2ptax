@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, Pressable, ScrollView, useWindowDimensions, Platform } from "react-native";
+import { View, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -33,6 +33,7 @@ interface FeaturedSpecialistsResponse {
     avatarUrl?: string | null;
     cities: Array<{ id: string; name: string }>;
     services: Array<{ id: string; name: string }>;
+    specialistFns?: Array<{ fnsId: string; fnsName: string }>;
   }>;
 }
 
@@ -95,16 +96,23 @@ export default function LandingScreen() {
           "/api/specialists/featured",
           { noAuth: true }
         );
-        const mapped: HeroSpecialistPreview[] = (sp.items ?? []).slice(0, 3).map((s) => ({
-          id: s.id,
-          firstName: s.firstName,
-          lastName: s.lastName,
-          avatarUrl: s.avatarUrl,
-          cities: s.cities,
-          services: s.services,
-          fnsName: null,
-          isOnline: true,
-        }));
+        const mapped: HeroSpecialistPreview[] = (sp.items ?? []).slice(0, 3).map((s) => {
+          // Pick up to 2 FNS names; fall back to null (card will show city instead)
+          const fnsEntries = s.specialistFns ?? [];
+          const fnsName = fnsEntries.length > 0
+            ? fnsEntries.slice(0, 2).map((f) => f.fnsName).join(", ")
+            : null;
+          return {
+            id: s.id,
+            firstName: s.firstName,
+            lastName: s.lastName,
+            avatarUrl: s.avatarUrl,
+            cities: s.cities,
+            services: s.services,
+            fnsName,
+            isOnline: true,
+          };
+        });
         setSpecialists(mapped);
       } catch {
         setSpecialists([]);
@@ -192,29 +200,6 @@ export default function LandingScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ backgroundColor: colors.white }}
       >
-        {isAuthenticated ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Перейти в дашборд"
-            onPress={() => nav.routes.dashboard()}
-            style={{
-              backgroundColor: colors.primary,
-              paddingVertical: 12,
-              paddingHorizontal: 16,
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 50,
-              ...(Platform.OS === "web"
-                ? ({ position: "sticky", top: 0 } as object)
-                : {}),
-            }}
-          >
-            <Text style={{ color: colors.white, fontSize: 14, fontWeight: "700" }}>
-              Перейти в дашборд →
-            </Text>
-          </Pressable>
-        ) : null}
-
         <LandingHeader
           isDesktop={isDesktop}
           onHome={goHome}

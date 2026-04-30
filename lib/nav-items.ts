@@ -14,7 +14,6 @@ import {
   Flag,
   Settings,
   Inbox,
-  Search,
   Bookmark,
   type LucideIcon,
 } from "lucide-react-native";
@@ -96,13 +95,13 @@ export const USER_BASE_ITEMS: NavItem[] = [
 // Client-only addition: injected after "Мои заявки" for non-specialist users.
 export const USER_CLIENT_EXTRA: NavItem[] = [
   {
-    label: "Найти специалиста",
+    label: "Специалисты",
     href: "/specialists",
-    icon: Search,
+    icon: Users,
     match: (ctx) => topLevelMatch(ctx, "/specialists"),
   },
   {
-    label: "Мои специалисты",
+    label: "Избранные",
     href: "/saved-specialists",
     icon: Bookmark,
     match: (ctx) => topLevelMatch(ctx, "/saved-specialists"),

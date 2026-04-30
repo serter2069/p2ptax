@@ -14,15 +14,12 @@ export default function CatalogHeader({ isDesktop, count }: Props) {
         isDesktop ? "pt-4" : "pt-2"
       } pb-1`}
     >
-      <Text
-        style={
-          isDesktop
-            ? { ...textStyle.h3, color: colors.text }
-            : { ...textStyle.h4, color: colors.text }
-        }
-      >
-        Специалисты
-      </Text>
+      {/* Hide "Специалисты" h1 on desktop — layout speaks for itself */}
+      {!isDesktop && (
+        <Text style={{ ...textStyle.h4, color: colors.text }}>
+          Специалисты
+        </Text>
+      )}
       {count !== null && count > 0 && (
         <Text className="text-xs" style={{ color: colors.textMuted }}>
           {count} {pluralizeRu(count, ["специалист", "специалиста", "специалистов"])}
