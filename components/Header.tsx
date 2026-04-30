@@ -103,7 +103,7 @@ export default function Header() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Личный кабинет"
-            onPress={() => router.push("/(tabs)" as never)}
+            onPress={() => router.push("/(tabs)/dashboard" as never)}
             className="px-4 h-11 rounded-lg items-center justify-center active:bg-slate-100"
           >
             <Text className="text-sm font-semibold text-blue-900">Личный кабинет</Text>
