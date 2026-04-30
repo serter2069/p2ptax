@@ -398,13 +398,6 @@ export default function RequestsFeed({
       {/* Catalog: total count + CityFnsCascade filter */}
       {mode === "catalog" && (
         <>
-          {total > 0 && (
-            <View className="px-4 pb-1">
-              <Text className="text-sm text-text-mute">
-                {total} активных запросов
-              </Text>
-            </View>
-          )}
           <View className="bg-white border-b border-border py-2">
             <CityFnsCascade
               mode="single"

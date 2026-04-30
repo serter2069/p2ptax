@@ -1,7 +1,7 @@
 import { View, Text, Pressable, Image } from "react-native";
 import { Bookmark, MessageCircle } from "lucide-react-native";
 import { colors } from "@/lib/theme";
-import { isAllCoreServicesSelected } from "@/lib/services";
+import { isAllCoreServicesSelected, getShortServiceName } from "@/lib/services";
 
 interface FnsGroup {
   fnsId: string;
@@ -231,7 +231,7 @@ export default function SpecialistCard({
                         style={{ backgroundColor: colors.accentSoft }}
                       >
                         <Text className="text-xs" style={{ color: colors.primary }} numberOfLines={1}>
-                          {s.name}
+                          {getShortServiceName(s.name)}
                         </Text>
                       </View>
                     ))

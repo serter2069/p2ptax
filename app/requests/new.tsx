@@ -295,7 +295,7 @@ export default function CreateRequest() {
             </Pressable>
           </View>
         )}
-        <PageTitle title="Новая заявка" />
+        <PageTitle title="Новый запрос" />
       </View>
       <ScrollView
         className="flex-1"
@@ -415,10 +415,10 @@ export default function CreateRequest() {
             <View className="flex-row items-center justify-between py-3 mb-1">
               <View className="flex-1 mr-4">
                 <Text className="text-sm font-medium text-text-base mb-0.5">
-                  Публичная заявка
+                  Публичный запрос
                 </Text>
                 <Text className="text-xs text-text-mute leading-4">
-                  Видна всем в каталоге. Выключите, если хотите показывать только авторизованным пользователям.
+                  Виден всем в каталоге. Выключите, если хотите показывать только авторизованным пользователям.
                 </Text>
               </View>
               <StyledSwitch
