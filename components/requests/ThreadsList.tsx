@@ -29,6 +29,8 @@ interface ThreadsListProps {
   threadsCount: number;
   unreadMessages: number;
   onOpenThread: (threadId: string) => void;
+  /** Navigate to a specialist's profile page. */
+  onOpenSpecialistProfile?: (specialistId: string) => void;
 }
 
 export default function ThreadsList({
@@ -37,6 +39,7 @@ export default function ThreadsList({
   threadsCount,
   unreadMessages,
   onOpenThread,
+  onOpenSpecialistProfile,
 }: ThreadsListProps) {
   const router = useRouter()
   const nav = useTypedRouter();
@@ -84,9 +87,16 @@ export default function ThreadsList({
           {threads.map((thread) => {
             const name = getSpecialistName(thread.otherUser);
             return (
-              <View
+              <Pressable
                 key={thread.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Профиль специалиста ${name}`}
+                onPress={() => onOpenSpecialistProfile
+                  ? onOpenSpecialistProfile(thread.otherUser.id)
+                  : nav.dynamic.specialist(thread.otherUser.id)
+                }
                 className="flex-row items-center py-3 border-b border-border"
+                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
               >
                 <Avatar
                   name={name}
@@ -117,7 +127,11 @@ export default function ThreadsList({
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Открыть чат с ${name}`}
-                    onPress={() => onOpenThread(thread.id)}
+                    onPress={(e) => {
+                      // Prevent card press from also triggering profile navigation.
+                      e.stopPropagation?.();
+                      onOpenThread(thread.id);
+                    }}
                     className="bg-accent rounded-lg px-3 py-1.5"
                     style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                   >
@@ -126,7 +140,7 @@ export default function ThreadsList({
                     </Text>
                   </Pressable>
                 </View>
-              </View>
+              </Pressable>
             );
           })}
 
