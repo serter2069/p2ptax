@@ -79,15 +79,23 @@ export default function AuthEmailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      {/* Logo — top-left corner, links to landing */}
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="Перейти на главную"
+        onPress={() => router.push("/" as never)}
+        className="absolute top-4 left-4 z-10 min-h-[44px] min-w-[44px] items-start justify-center"
+      >
+        <Text
+          className="font-extrabold text-accent"
+          style={{ fontSize: 22, letterSpacing: -0.5 }}
+        >
+          P2PTax
+        </Text>
+      </Pressable>
+
       <View className="flex-1 items-center justify-center bg-white px-6">
         <View style={{ width: "100%", maxWidth: 400 }}>
-          {/* Wordmark */}
-          <Text
-            className="text-center font-extrabold text-accent mb-10"
-            style={{ fontSize: 32, letterSpacing: -0.5 }}
-          >
-            P2PTax
-          </Text>
 
           {/* Header */}
           <Text
