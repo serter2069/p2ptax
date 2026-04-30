@@ -541,6 +541,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
       title: request.title,
       description: request.description,
       status: request.status,
+      isPublic: request.isPublic,
       createdAt: request.createdAt,
       lastActivityAt: request.lastActivityAt,
       extensionsCount: request.extensionsCount,

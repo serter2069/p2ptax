@@ -206,6 +206,7 @@ model Request {
   fnsId           String        @map("fns_id")
   description     String
   status          RequestStatus @default(ACTIVE)
+  isPublic        Boolean       @default(true) @map("is_public")
   lastActivityAt  DateTime      @default(now()) @map("last_activity_at")
   extensionsCount Int           @default(0) @map("extensions_count")
   createdAt       DateTime      @default(now()) @map("created_at")

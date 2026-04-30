@@ -7,6 +7,7 @@ import {
   Alert,
   Platform,
   Pressable,
+  Switch,
   useWindowDimensions,
 } from "react-native";
 import LandingHeader from "@/components/landing/LandingHeader";
@@ -25,7 +26,7 @@ import type {
 } from "@/components/shared/CityFnsServicePicker";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
-import FileDropZone, { type AttachedFile } from "@/components/requests/FileDropZone";
+import FileUploadZone, { type PendingFile } from "@/components/ui/FileUploadZone";
 import { draftStorage } from "@/lib/draftStorage";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -45,7 +46,7 @@ interface RequestDraft {
 export default function CreateRequest() {
   const router = useRouter();
   const nav = useTypedRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, token } = useAuth();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ restore?: string }>();
   const restoreMode = params.restore === "1";
@@ -59,6 +60,7 @@ export default function CreateRequest() {
   const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
 
+  const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loadingInit, setLoadingInit] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -66,7 +68,7 @@ export default function CreateRequest() {
   const [submitError, setSubmitError] = useState("");
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
-  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<PendingFile[]>([]);
 
   // Load cities/services — public, no auth required.
   useEffect(() => {
@@ -173,7 +175,7 @@ export default function CreateRequest() {
     setSubmitError("");
     try {
       const fileIds = attachedFiles
-        .filter((f) => !!f.uploadedId && !f.uploading && !f.error)
+        .filter((f) => !!f.uploadedId && f.status === "done")
         .map((f) => f.uploadedId as string);
       const result = await apiPost<{ id: string }>("/api/requests", {
         title: title.trim(),
@@ -182,6 +184,7 @@ export default function CreateRequest() {
         serviceId: selectedServiceId || undefined,
         description: description.trim(),
         fileIds,
+        isPublic,
       });
       // Clear draft on success.
       await draftStorage.del(DRAFT_KEY).catch(() => {});
@@ -207,7 +210,7 @@ export default function CreateRequest() {
     } finally {
       setSubmitting(false);
     }
-  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles]);
+  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, isPublic]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitted(true);
@@ -401,11 +404,33 @@ export default function CreateRequest() {
               </Text>
             </View>
 
+            {/* Visibility toggle */}
+            <View className="flex-row items-center justify-between py-3 mb-1">
+              <View className="flex-1 mr-4">
+                <Text className="text-sm font-medium text-text-base mb-0.5">
+                  Публичная заявка
+                </Text>
+                <Text className="text-xs text-text-mute leading-4">
+                  Видна всем в каталоге. Выключите, если хотите показывать только авторизованным пользователям.
+                </Text>
+              </View>
+              <Switch
+                value={isPublic}
+                onValueChange={setIsPublic}
+                disabled={submitting}
+                trackColor={{ false: "#D1D5DB", true: "#6366F1" }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+
             {isAuthenticated && (
-              <FileDropZone
+              <FileUploadZone
                 files={attachedFiles}
                 disabled={submitting}
                 onFilesChange={setAttachedFiles}
+                uploadEndpoint="/api/upload/documents"
+                authToken={token}
+                compact={false}
               />
             )}
           </View>

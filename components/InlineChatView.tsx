@@ -13,17 +13,18 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
-import * as DocumentPicker from "expo-document-picker";
 import * as Linking from "expo-linking";
+import * as DocumentPicker from "expo-document-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { FileText, ChevronRight } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
 import { Avatar } from "@/components/ui";
 import Input from "@/components/ui/Input";
 import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
+import FileUploadZone, { type PendingFile } from "@/components/ui/FileUploadZone";
 import { API_URL, api, apiPost, apiPatch, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, radiusValue } from "@/lib/theme";
 
 
@@ -33,14 +34,6 @@ interface FileAttachment {
   filename: string;
   size: number;
   mimeType: string;
-}
-
-interface PendingFile {
-  uri: string;
-  name: string;
-  size: number;
-  mimeType: string;
-  webFile?: File;
 }
 
 interface LightboxItem {
@@ -193,7 +186,7 @@ interface InlineChatViewProps {
 }
 
 export default function InlineChatView({ threadId }: InlineChatViewProps) {
-  const { user, isSpecialistUser } = useAuth();
+  const { user, isSpecialistUser, token } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
   const [menuVisible, setMenuVisible] = useState(false);
@@ -210,15 +203,15 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const [text, setText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const [hasMoreOlder, setHasMoreOlder] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [oldestMessageId, setOldestMessageId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
 
+  const [dragOver, setDragOver] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const chatContainerRef = useRef<View>(null);
+  const chatContainerRef = useRef<View | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isClosed = thread?.request?.status === "CLOSED";
@@ -339,10 +332,12 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       setPendingFiles((prev) => [
         ...prev,
         {
+          id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
           uri: asset.uri,
           name: asset.name,
           size: fileSize,
           mimeType: asset.mimeType ?? "application/octet-stream",
+          status: "pending" as const,
         },
       ]);
     } catch (e) {
@@ -369,11 +364,13 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       return;
     }
     const pending: PendingFile = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       uri: URL.createObjectURL(file),
       name: file.name,
       mimeType: file.type || "application/octet-stream",
       size: file.size,
       webFile: file,
+      status: "pending",
     };
     setPendingFiles((prev) => [...prev, pending]);
   }, [pendingFiles.length]);

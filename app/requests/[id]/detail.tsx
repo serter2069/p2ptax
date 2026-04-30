@@ -8,6 +8,7 @@ import {
   Alert,
   Linking,
   Platform,
+  Switch,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -37,6 +38,7 @@ interface RequestDetailData {
   title: string;
   description: string;
   status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
+  isPublic: boolean;
   createdAt: string;
   lastActivityAt: string;
   extensionsCount: number;
@@ -65,6 +67,7 @@ export default function MyRequestDetail() {
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [togglingVisibility, setTogglingVisibility] = useState(false);
 
   const handleCopyLink = useCallback(async () => {
     const url =
@@ -81,6 +84,21 @@ export default function MyRequestDetail() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [id]);
+
+  const handleToggleVisibility = useCallback(async (newValue: boolean) => {
+    if (togglingVisibility) return;
+    setTogglingVisibility(true);
+    // Optimistic update
+    setRequest((prev) => prev ? { ...prev, isPublic: newValue } : null);
+    try {
+      await apiPatch(`/api/requests/${id}`, { isPublic: newValue });
+    } catch {
+      // Revert on failure
+      setRequest((prev) => prev ? { ...prev, isPublic: !newValue } : null);
+    } finally {
+      setTogglingVisibility(false);
+    }
+  }, [id, togglingVisibility]);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -434,6 +452,41 @@ export default function MyRequestDetail() {
                       {copied ? "Скопировано!" : "Скопировать ссылку"}
                     </Text>
                   </Pressable>
+
+                  {/* Visibility toggle */}
+                  <View className="flex-row items-center justify-between mt-4 pt-3"
+                    style={{ borderTopWidth: 1, borderTopColor: colors.border }}
+                  >
+                    <View className="flex-1 mr-3">
+                      <View className="flex-row items-center gap-2 mb-0.5">
+                        <View
+                          className="rounded px-1.5 py-0.5"
+                          style={{
+                            backgroundColor: request.isPublic ? "#D1FAE5" : "#F3F4F6",
+                          }}
+                        >
+                          <Text
+                            className="text-xs font-semibold"
+                            style={{ color: request.isPublic ? "#065F46" : "#6B7280" }}
+                          >
+                            {request.isPublic ? "Публичная" : "Только авторизованным"}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text className="text-xs text-text-mute">
+                        {request.isPublic
+                          ? "Видна всем в каталоге"
+                          : "Видна только авторизованным"}
+                      </Text>
+                    </View>
+                    <Switch
+                      value={request.isPublic}
+                      onValueChange={handleToggleVisibility}
+                      disabled={togglingVisibility || !isActive}
+                      trackColor={{ false: "#D1D5DB", true: "#6366F1" }}
+                      thumbColor="#FFFFFF"
+                    />
+                  </View>
                 </View>
 
                 {/* Meta stats */}
@@ -667,6 +720,41 @@ export default function MyRequestDetail() {
                   {copied ? "Скопировано!" : "Скопировать ссылку"}
                 </Text>
               </Pressable>
+
+              {/* Visibility toggle */}
+              <View className="flex-row items-center justify-between mt-4 pt-3"
+                style={{ borderTopWidth: 1, borderTopColor: colors.border }}
+              >
+                <View className="flex-1 mr-3">
+                  <View className="flex-row items-center gap-2 mb-0.5">
+                    <View
+                      className="rounded px-1.5 py-0.5"
+                      style={{
+                        backgroundColor: request.isPublic ? "#D1FAE5" : "#F3F4F6",
+                      }}
+                    >
+                      <Text
+                        className="text-xs font-semibold"
+                        style={{ color: request.isPublic ? "#065F46" : "#6B7280" }}
+                      >
+                        {request.isPublic ? "Публичная" : "Только авторизованным"}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text className="text-xs text-text-mute">
+                    {request.isPublic
+                      ? "Видна всем в каталоге"
+                      : "Видна только авторизованным"}
+                  </Text>
+                </View>
+                <Switch
+                  value={request.isPublic}
+                  onValueChange={handleToggleVisibility}
+                  disabled={togglingVisibility || !isActive}
+                  trackColor={{ false: "#D1D5DB", true: "#6366F1" }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
             </View>
 
             <ThreadsList
