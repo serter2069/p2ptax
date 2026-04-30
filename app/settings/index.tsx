@@ -22,7 +22,8 @@ import InlineWorkArea from "@/components/settings/InlineWorkArea";
  *
  * Issue #1582 — specialist onboarding (work-area step) now renders inline
  * inside this layout instead of redirecting to /onboarding/work-area.
- * The sidebar tabs remain visible; active label = "Профиль".
+ * Issue #1599 — tabs are hidden while inline onboarding is active so the
+ * onboarding content takes the full screen.
  */
 
 const VALID_TABS: SettingsTab[] = ["profile", "specialist"];
@@ -35,11 +36,9 @@ interface SettingsTabsProps {
   activeTab: SettingsTab;
   onChange: (tab: SettingsTab) => void;
   canEditSpecialist: boolean;
-  /** When true, tabs are shown but pointer-events disabled (onboarding active). */
-  muted?: boolean;
 }
 
-function SettingsTabs({ activeTab, onChange, canEditSpecialist, muted }: SettingsTabsProps) {
+function SettingsTabs({ activeTab, onChange, canEditSpecialist }: SettingsTabsProps) {
   const tabs: { id: SettingsTab; label: string; disabled?: boolean }[] = [
     { id: "profile", label: "Профиль" },
     { id: "specialist", label: "Специалист", disabled: !canEditSpecialist },
@@ -50,8 +49,7 @@ function SettingsTabs({ activeTab, onChange, canEditSpecialist, muted }: Setting
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16 }}
-      style={{ flexGrow: 0, borderBottomWidth: 1, borderBottomColor: colors.border, opacity: muted ? 0.4 : 1 }}
-      scrollEnabled={!muted}
+      style={{ flexGrow: 0, borderBottomWidth: 1, borderBottomColor: colors.border }}
     >
       <View style={{ flexDirection: "row" }}>
         {tabs.map((t) => {
@@ -60,9 +58,8 @@ function SettingsTabs({ activeTab, onChange, canEditSpecialist, muted }: Setting
             <Pressable
               key={t.id}
               accessibilityRole="tab"
-              accessibilityState={{ selected: active, disabled: t.disabled || muted }}
+              accessibilityState={{ selected: active, disabled: t.disabled }}
               onPress={() => {
-                if (muted) return;
                 if (t.disabled) {
                   if (Platform.OS === "web") {
                     if (typeof window !== "undefined" && typeof window.alert === "function") {
@@ -191,13 +188,14 @@ export default function UnifiedSettings() {
         <Text className="text-2xl font-extrabold text-text-base mb-3">Настройки</Text>
       </View>
 
-      {/* Tabs always visible; muted (non-interactive) while inline onboarding is active */}
-      <SettingsTabs
-        activeTab={activeTab}
-        onChange={handleTabChange}
-        canEditSpecialist={isSpecialistUser}
-        muted={inlineOnboarding}
-      />
+      {/* Tabs hidden during inline onboarding — content takes full screen */}
+      {!inlineOnboarding && (
+        <SettingsTabs
+          activeTab={activeTab}
+          onChange={handleTabChange}
+          canEditSpecialist={isSpecialistUser}
+        />
+      )}
 
       {/* Inline work-area onboarding — renders inside settings, sidebar stays visible */}
       {inlineOnboarding ? (
