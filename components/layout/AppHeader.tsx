@@ -247,7 +247,7 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
       >
         <Image
           source={require("@/assets/images/logo.png")}
-          style={{ width: 100, height: 42 }}
+          style={{ width: isMobile ? 100 : 130, height: isMobile ? 42 : 54 }}
           resizeMode="contain"
           accessibilityLabel="P2PTax"
         />

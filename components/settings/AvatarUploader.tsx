@@ -143,7 +143,7 @@ export default function AvatarUploader({
           asset.mimeType ?? "image/jpeg",
           fileSize,
         );
-        onAvatarChange(fullUrl);
+        onAvatarChange(fullUrl, "");
       } catch (e: unknown) {
         const status = e instanceof ApiError ? e.status : -1;
         const msg =

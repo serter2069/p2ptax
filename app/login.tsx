@@ -96,6 +96,13 @@ export default function AuthEmailScreen() {
 
       <View className="flex-1 items-center justify-center bg-white px-6">
         <View style={{ width: "100%", maxWidth: 400 }}>
+          {/* Wordmark */}
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={{ width: 240, height: 100, alignSelf: "center", borderRadius: 0, marginBottom: 40 }}
+            resizeMode="contain"
+            accessibilityLabel="P2PTax"
+          />
 
           {/* Header */}
           <Text

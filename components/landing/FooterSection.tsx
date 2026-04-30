@@ -54,7 +54,7 @@ export default function FooterSection({
             >
               <Image
                 source={require("@/assets/images/logo-white.png")}
-                style={{ width: 110, height: 46 }}
+                style={{ width: 120, height: 50, borderRadius: 0 }}
                 resizeMode="contain"
                 accessibilityLabel="P2PTax"
               />

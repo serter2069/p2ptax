@@ -253,6 +253,12 @@ export default function AuthOtpScreen() {
 
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={{ width: 240, height: 100, alignSelf: "center", borderRadius: 0, marginBottom: 40 }}
+              resizeMode="contain"
+              accessibilityLabel="P2PTax"
+            />
             <Text
               style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}
             >
@@ -324,6 +330,12 @@ export default function AuthOtpScreen() {
         <HeaderBack title="" />
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={{ width: 240, height: 100, alignSelf: "center", borderRadius: 0, marginBottom: 40 }}
+              resizeMode="contain"
+              accessibilityLabel="P2PTax"
+            />
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
@@ -370,6 +382,12 @@ export default function AuthOtpScreen() {
       >
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={{ width: 240, height: 100, alignSelf: "center", borderRadius: 0, marginBottom: 40 }}
+              resizeMode="contain"
+              accessibilityLabel="P2PTax"
+            />
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
