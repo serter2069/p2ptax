@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Platform, type TextInputProps, type ViewStyle } from "react-native";
 import { type LucideIcon } from "lucide-react-native";
-import { colors, fontSizeValue, spacing } from "../../lib/theme";
+import { colors, spacing } from "../../lib/theme";
 
 export interface InputProps {
   label?: string;
@@ -27,6 +27,14 @@ export interface InputProps {
   /** "line" = bottom-border only (default). "bordered" = full border, radius 8, padding 12/14. */
   variant?: "line" | "bordered";
 }
+
+// Design tokens for the "bordered" variant (spec: #1589).
+const INPUT_BORDER_DEFAULT = "#e5e7eb";
+const INPUT_BORDER_FOCUS = "#3b82f6";
+const INPUT_BORDER_ERROR = "#c6365a";
+const INPUT_PLACEHOLDER = "#9ca3af";
+const INPUT_TEXT = "#111111";
+const INPUT_FONT_SIZE = 15;
 
 export default function Input({
   label,
@@ -54,10 +62,10 @@ export default function Input({
   const [focused, setFocused] = useState(false);
 
   const borderColor = error
-    ? colors.error
+    ? (variant === "bordered" ? INPUT_BORDER_ERROR : colors.error)
     : focused
-      ? colors.accent
-      : variant === "bordered" ? "#e5e7eb" : colors.borderStrong;
+      ? (variant === "bordered" ? INPUT_BORDER_FOCUS : colors.accent)
+      : (variant === "bordered" ? INPUT_BORDER_DEFAULT : colors.borderStrong);
 
   const wrapperStyle: ViewStyle = variant === "bordered"
     ? {
@@ -65,7 +73,7 @@ export default function Input({
         alignItems: multiline ? "flex-start" : "center",
         minHeight: multiline ? 96 : 48,
         width: "100%",
-        borderWidth: focused ? 2 : 1,
+        borderWidth: 1,
         borderColor,
         borderRadius: 8,
         backgroundColor: editable ? "#ffffff" : "#f9fafb",
@@ -107,7 +115,7 @@ export default function Input({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={colors.textSecondary}
+          placeholderTextColor={variant === "bordered" ? INPUT_PLACEHOLDER : colors.textSecondary}
           secureTextEntry={secureTextEntry}
           multiline={multiline}
           keyboardType={keyboardType}
@@ -127,43 +135,29 @@ export default function Input({
           // already renders a border focus indicator, so the global
           // ring would produce a double-border artifact.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          {...(Platform.OS === 'web' ? { 'data-line-input': true } as any : {})}
-          // TextInput's `style` prop is typed as `StyleProp<TextStyle>`,
-          // which doesn't include web-only CSS properties. We use several
-          // non-standard keys here (suppressed via the `as any` spread above):
-          //   alignSelf: 'stretch' — forces the web <input> to fill its
-          //     flex-row parent vertically (RN ignores on native).
-          //   outlineStyle: 'none' — removes default browser outline on
-          //     focus; the focus ring is rendered on the outer View via
-          //     boxShadow instead.
-          //   appearance: 'none' — strips UA-default chrome on
-          //     <input> AND <textarea> (multiline). Without this Safari
-          //     renders an inset border on textarea even when borderWidth
-          //     is 0, producing the double-border artifact.
-          // All are safe: RN drops unknown style keys, and on web they
-          // produce the intended CSS.
+          {...(Platform.OS === "web" ? { "data-line-input": true } as any : {})}
           style={{
             flex: 1,
             // On web the <input> intrinsic height is ~18px. We force a
             // minHeight of 44 so the full tap target area is interactive
             // (Apple HIG / WCAG 2.5.5 — minimum 44x44 touch target).
-            ...(Platform.OS === 'web' && !multiline ? {
+            ...(Platform.OS === "web" && !multiline ? {
               minHeight: 44,
-              alignSelf: 'stretch',
+              alignSelf: "stretch",
             } : {}),
-            fontSize: fontSizeValue.base,
-            color: colors.text,
+            fontSize: variant === "bordered" ? INPUT_FONT_SIZE : 16,
+            color: variant === "bordered" ? INPUT_TEXT : colors.text,
             // Bordered variant: wrapper already owns padding; line variant: add vertical padding for multiline.
             paddingVertical: variant === "bordered" ? 0 : (multiline ? spacing.sm : 0),
             // Inner TextInput never owns a border — the outer View does.
-            // This prevents the double-border artifact on web.
             borderWidth: 0,
-            borderColor: 'transparent',
-            backgroundColor: 'transparent',
-            ...(Platform.OS === 'web' ? {
+            borderColor: "transparent",
+            backgroundColor: "transparent",
+            paddingHorizontal: 0,
+            ...(Platform.OS === "web" ? {
               outlineWidth: 0,
-              outlineStyle: 'none',
-              appearance: 'none',
+              outlineStyle: "none",
+              appearance: "none",
             } : {}),
           }}
         />
