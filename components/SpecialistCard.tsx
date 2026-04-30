@@ -34,11 +34,19 @@ function getInitials(firstName: string | null, lastName: string | null): string 
   return (f + l).toUpperCase() || "?";
 }
 
+function formatSpecialistName(firstName: string | null, lastName: string | null): string {
+  const f = (firstName || "").trim();
+  const l = (lastName || "").trim();
+  if (f && l) return `${f} ${l[0]}.`;
+  return f || l || "Специалист";
+}
+
 export default function SpecialistCard({
   id,
   firstName,
   lastName,
   avatarUrl,
+  createdAt,
   services,
   cities,
   specialistFns,
@@ -49,8 +57,9 @@ export default function SpecialistCard({
   bookmarked = false,
 }: SpecialistCardProps) {
   const resolvedVariant = variant ?? (horizontal ? "horizontal" : "vertical");
-  const name = [firstName, lastName].filter(Boolean).join(" ") || "Специалист";
+  const name = formatSpecialistName(firstName, lastName);
   const initials = getInitials(firstName, lastName);
+  const year = createdAt ? new Date(createdAt).getFullYear() : null;
 
   if (resolvedVariant === "horizontal") {
     return (
@@ -86,26 +95,22 @@ export default function SpecialistCard({
     );
   }
 
-  // Vertical variant — compact 3-row layout (T2 redesign):
-  //   Row 1: avatar + name (bold) + city (muted) + bookmark
-  //   Row 2: ИФНС text (1 line, truncated)
-  //   Row 3: up to 3 service chips ("+N" if more)
-  const cityLabel = cities.length > 0 ? cities.map((c) => c.name).join(", ") : null;
+  // Vertical variant — cascade FNS-group layout:
+  //   Row 1: avatar + name + "На сайте с YYYY" + bookmark
+  //   Row 2..N: per FNS group → "city · ИФНС" line + service chips below
+  //   Overflow: "+N ещё" tap-to-profile link
 
-  // Resolve flat list of services + ИФНС label (prefer specialistFns when available).
-  const fnsLabel = specialistFns && specialistFns.length > 0
-    ? specialistFns.map((g) => g.fnsName).join(", ")
-    : null;
-  const flatServices = specialistFns && specialistFns.length > 0
-    ? specialistFns.flatMap((g) => g.services)
-    : services;
+  const fnsList = specialistFns ?? [];
+  const visibleFns = fnsList.slice(0, 2);
+  const fnsOverflow = fnsList.length - visibleFns.length;
 
-  // Dedupe services by id (FNS groups can repeat the same service across offices).
-  const uniqueServices = flatServices.filter(
+  // Fallback to flat services if no specialistFns provided
+  const fallbackServices = services.filter(
     (svc, idx, arr) => arr.findIndex((s) => s.id === svc.id) === idx
   );
-  const visibleServices = uniqueServices.slice(0, 3);
-  const overflow = uniqueServices.length - visibleServices.length;
+  const fallbackVisible = fallbackServices.slice(0, 3);
+  const fallbackOverflow = fallbackServices.length - fallbackVisible.length;
+  const fallbackCity = cities.length > 0 ? cities.map((c) => c.name).join(", ") : null;
 
   return (
     <Pressable
@@ -118,7 +123,7 @@ export default function SpecialistCard({
         pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
       ]}
     >
-      {/* Row 1: avatar + name + city (same line) + bookmark */}
+      {/* Row 1: avatar + name + "На сайте с YYYY" + bookmark */}
       <View className="flex-row items-center" style={{ gap: 10 }}>
         {avatarUrl ? (
           <Image
@@ -136,24 +141,22 @@ export default function SpecialistCard({
         )}
 
         <View style={{ flex: 1, minWidth: 0 }}>
-          <View className="flex-row items-baseline" style={{ gap: 6 }}>
+          <Text
+            className="text-sm font-bold"
+            style={{ color: colors.text }}
+            numberOfLines={1}
+          >
+            {name}
+          </Text>
+          {year ? (
             <Text
-              className="text-sm font-bold flex-shrink"
-              style={{ color: colors.text }}
+              className="text-xs"
+              style={{ color: colors.textMuted }}
               numberOfLines={1}
             >
-              {name}
+              На сайте с {year}
             </Text>
-            {cityLabel ? (
-              <Text
-                className="text-xs flex-shrink"
-                style={{ color: colors.textMuted }}
-                numberOfLines={1}
-              >
-                · {cityLabel}
-              </Text>
-            ) : null}
-          </View>
+          ) : null}
         </View>
 
         {onBookmark && (
@@ -172,38 +175,82 @@ export default function SpecialistCard({
         )}
       </View>
 
-      {/* Row 2: ИФНС (1 line, truncated) */}
-      {fnsLabel ? (
-        <Text
-          className="text-xs mt-1.5"
-          style={{ color: colors.textMuted }}
-          numberOfLines={1}
-        >
-          {fnsLabel}
-        </Text>
-      ) : null}
-
-      {/* Row 3: up to 3 service chips + "+N" */}
-      {visibleServices.length > 0 ? (
-        <View className="flex-row flex-wrap items-center mt-1.5" style={{ gap: 6 }}>
-          {visibleServices.map((s) => (
-            <View
-              key={s.id}
-              className="px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: colors.accentSoft }}
-            >
-              <Text className="text-xs" style={{ color: colors.primary }} numberOfLines={1}>
-                {s.name}
+      {/* Cascade rows: city · FNS + service chips per group */}
+      {visibleFns.length > 0 ? (
+        <View className="mt-2" style={{ gap: 8 }}>
+          {visibleFns.map((g) => (
+            <View key={g.fnsId} style={{ gap: 4 }}>
+              <Text
+                className="text-xs font-medium"
+                style={{ color: colors.textSecondary }}
+                numberOfLines={1}
+              >
+                {g.city.name} · {g.fnsName}
               </Text>
+              {g.services.length > 0 && (
+                <View className="flex-row flex-wrap items-center" style={{ gap: 6 }}>
+                  {g.services.map((s) => (
+                    <View
+                      key={`${g.fnsId}-${s.id}`}
+                      className="px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: colors.accentSoft }}
+                    >
+                      <Text className="text-xs" style={{ color: colors.primary }} numberOfLines={1}>
+                        {s.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           ))}
-          {overflow > 0 && (
-            <Text className="text-xs" style={{ color: colors.textMuted }}>
-              +{overflow}
-            </Text>
+          {fnsOverflow > 0 && (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`Ещё ${fnsOverflow} инспекций — открыть профиль`}
+              onPress={(e) => { e.stopPropagation?.(); onPress(id); }}
+              hitSlop={6}
+            >
+              <Text className="text-xs" style={{ color: colors.primary, textDecorationLine: "underline" }}>
+                +{fnsOverflow} ещё
+              </Text>
+            </Pressable>
           )}
         </View>
-      ) : null}
+      ) : (
+        // Fallback: no specialistFns → flat list (legacy callers)
+        <>
+          {fallbackCity ? (
+            <Text
+              className="text-xs mt-1.5"
+              style={{ color: colors.textMuted }}
+              numberOfLines={1}
+            >
+              {fallbackCity}
+            </Text>
+          ) : null}
+          {fallbackVisible.length > 0 ? (
+            <View className="flex-row flex-wrap items-center mt-1.5" style={{ gap: 6 }}>
+              {fallbackVisible.map((s) => (
+                <View
+                  key={s.id}
+                  className="px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: colors.accentSoft }}
+                >
+                  <Text className="text-xs" style={{ color: colors.primary }} numberOfLines={1}>
+                    {s.name}
+                  </Text>
+                </View>
+              ))}
+              {fallbackOverflow > 0 && (
+                <Text className="text-xs" style={{ color: colors.textMuted }}>
+                  +{fallbackOverflow}
+                </Text>
+              )}
+            </View>
+          ) : null}
+        </>
+      )}
     </Pressable>
   );
 }

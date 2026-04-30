@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
@@ -300,10 +300,8 @@ export default function SpecialistsCatalog() {
     }
   }, [isAuthenticated, bookmarkedIds, nav]);
 
-  const headerCount = useMemo(() => {
-    if (loading) return null;
-    return total > 0 ? total : specialists.length;
-  }, [loading, total, specialists.length]);
+  // Count display intentionally hidden: surfaced via list itself, not header.
+  const headerCount = null;
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">

@@ -6,6 +6,7 @@ import path from "path";
 import sharp from "sharp";
 import { authMiddleware } from "../middleware/auth";
 import { minioClient, MINIO_BUCKET, ensureBucket as ensureMinioBucket } from "../lib/minio";
+import { prisma } from "../lib/prisma";
 
 const router = Router();
 
@@ -92,18 +93,32 @@ router.post("/documents", authMiddleware, uploadRateLimiter, documentUpload.arra
 
     await ensureMinioBucket();
 
+    const userId = req.user!.userId;
     const results = [];
     for (const file of files) {
       const key = generateKey("documents", file.originalname);
       await minioClient.putObject(MINIO_BUCKET, key, file.buffer, file.size, {
         "Content-Type": file.mimetype,
       });
+      // Create a File record so the upload can be linked to a request later via fileIds.
+      // entityType/entityId are placeholders ("user" + userId) until the request is created.
+      const record = await prisma.file.create({
+        data: {
+          entityType: "user",
+          entityId: userId,
+          url: `/${MINIO_BUCKET}/${key}`,
+          filename: file.originalname,
+          size: file.size,
+          mimeType: file.mimetype,
+        },
+      });
       results.push({
-        url: `/${MINIO_BUCKET}/${key}`,
+        id: record.id,
+        url: record.url,
         key,
-        filename: file.originalname,
-        size: file.size,
-        mimeType: file.mimetype,
+        filename: record.filename,
+        size: record.size,
+        mimeType: record.mimeType,
       });
     }
 

@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, Pressable, Image, Platform } from "react-native";
 import { colors } from "@/lib/theme";
-import { MessageCircle } from "lucide-react-native";
+import { MessageCircle, Bookmark } from "lucide-react-native";
+
+function formatSpecialistName(firstName: string | null, lastName: string | null): string {
+  const f = (firstName || "").trim();
+  const l = (lastName || "").trim();
+  if (f && l) return `${f} ${l[0]}.`;
+  return f || l || "Специалист";
+}
 
 interface FnsGroup {
   fnsId: string;
@@ -30,6 +37,8 @@ interface Props {
   refreshing: boolean;
   loadingMore: boolean;
   bookmarkedIds: Set<string>;
+  /** When a specific FNS filter is active, cards show only the matching FNS group. */
+  activeFnsId?: string | null;
   onRefresh: () => void;
   onLoadMore: () => void;
   onPress: (id: string) => void;
@@ -46,16 +55,21 @@ function getInitials(firstName: string | null, lastName: string | null): string 
 function DesktopSpecialistRow({
   item,
   onPress,
+  bookmarked,
+  onBookmark,
+  activeFnsId,
 }: {
   item: SpecialistItem;
   onPress: (id: string) => void;
+  bookmarked: boolean;
+  onBookmark: (id: string) => void;
+  activeFnsId?: string | null;
 }) {
   const [hovered, setHovered] = useState(false);
 
-  const name = [item.firstName, item.lastName].filter(Boolean).join(" ") || "Специалист";
+  const name = formatSpecialistName(item.firstName, item.lastName);
   const initials = getInitials(item.firstName, item.lastName);
   const year = item.createdAt ? new Date(item.createdAt).getFullYear() : null;
-  const cityLabel = item.cities.length > 0 ? item.cities.map((c) => c.name).join(", ") : null;
 
   const desc = item.description
     ? item.description.length > 120
@@ -63,25 +77,18 @@ function DesktopSpecialistRow({
       : item.description
     : null;
 
-  // Resolve services
-  const flatServices =
-    item.specialistFns && item.specialistFns.length > 0
-      ? item.specialistFns.flatMap((g) => g.services)
-      : item.services;
-  const uniqueServices = flatServices.filter(
-    (svc, idx, arr) => arr.findIndex((s) => s.id === svc.id) === idx
-  );
-  const visibleServices = uniqueServices.slice(0, 2);
-  const serviceOverflow = uniqueServices.length - visibleServices.length;
-
-  // FNS for hover tooltip
-  const fnsList = item.specialistFns ?? [];
-  const visibleFns = fnsList.slice(0, 3);
+  // Cascade: show FNS groups (each = ИФНС + service chips).
+  // When an FNS filter is active, narrow to that single group.
+  const allFns = item.specialistFns ?? [];
+  const fnsList = activeFnsId
+    ? allFns.filter((g) => g.fnsId === activeFnsId)
+    : allFns;
+  const visibleFns = fnsList.slice(0, 2);
   const fnsOverflow = fnsList.length - visibleFns.length;
 
-  // All services for hover tooltip
-  const allVisibleServices = uniqueServices.slice(0, 5);
-  const allServiceOverflow = uniqueServices.length - allVisibleServices.length;
+  // Hover tooltip lists ALL groups up to 5, with a "see profile" link if more remain.
+  const tooltipFns = fnsList.slice(0, 5);
+  const tooltipOverflow = fnsList.length - tooltipFns.length;
 
   const hoverProps =
     Platform.OS === "web"
@@ -143,26 +150,74 @@ function DesktopSpecialistRow({
           </View>
         )}
 
-        {/* Center: name + desc + year + city */}
-        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-          <Text
-            style={{ color: colors.text, fontWeight: "700", fontSize: 15 }}
-            numberOfLines={1}
-          >
-            {name}
-          </Text>
-          {year && (
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-              С {year}
-              {cityLabel ? ` · ${cityLabel}` : ""}
+        {/* Center: name + cascade FNS groups + description */}
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+            <Text
+              style={{ color: colors.text, fontWeight: "700", fontSize: 15 }}
+              numberOfLines={1}
+            >
+              {name}
             </Text>
+            {year && (
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+                На сайте с {year}
+              </Text>
+            )}
+          </View>
+
+          {/* Cascade: each FNS group on its own line */}
+          {visibleFns.length > 0 && (
+            <View style={{ gap: 4, marginTop: 2 }}>
+              {visibleFns.map((g) => (
+                <View
+                  key={g.fnsId}
+                  style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 }}
+                >
+                  <Text
+                    style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "500" }}
+                    numberOfLines={1}
+                  >
+                    {g.fnsName}
+                  </Text>
+                  {g.services.map((s) => (
+                    <View
+                      key={`${g.fnsId}-${s.id}`}
+                      style={{
+                        backgroundColor: colors.accentSoft,
+                        borderRadius: 99,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                      }}
+                    >
+                      <Text style={{ color: colors.primary, fontSize: 11 }} numberOfLines={1}>
+                        {s.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
+              {fnsOverflow > 0 && (
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel={`Ещё ${fnsOverflow} инспекций — открыть профиль`}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    onPress(item.id);
+                  }}
+                  hitSlop={6}
+                >
+                  <Text style={{ color: colors.primary, fontSize: 12, textDecorationLine: "underline" }}>
+                    +{fnsOverflow} ещё
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           )}
-          {!year && cityLabel && (
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>{cityLabel}</Text>
-          )}
+
           {desc && (
             <Text
-              style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}
+              style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 2 }}
               numberOfLines={2}
             >
               {desc}
@@ -170,30 +225,33 @@ function DesktopSpecialistRow({
           )}
         </View>
 
-        {/* Right: service chips + "Написать" button */}
+        {/* Right: bookmark + "Написать" button */}
         <View style={{ alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, justifyContent: "flex-end", maxWidth: 220 }}>
-            {visibleServices.map((s) => (
-              <View
-                key={s.id}
-                style={{
-                  backgroundColor: colors.accentSoft,
-                  borderRadius: 99,
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
-                }}
-              >
-                <Text style={{ color: colors.primary, fontSize: 12 }} numberOfLines={1}>
-                  {s.name}
-                </Text>
-              </View>
-            ))}
-            {serviceOverflow > 0 && (
-              <Text style={{ color: colors.textMuted, fontSize: 12, alignSelf: "center" }}>
-                +{serviceOverflow}
-              </Text>
-            )}
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={bookmarked ? "Убрать из сохранённых" : "Сохранить"}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onBookmark(item.id);
+            }}
+            hitSlop={8}
+            style={({ pressed }) => [
+              {
+                width: 32,
+                height: 32,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 16,
+              },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Bookmark
+              size={18}
+              color={bookmarked ? colors.primary : colors.textMuted}
+              fill={bookmarked ? colors.primary : "none"}
+            />
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Написать"
@@ -222,8 +280,8 @@ function DesktopSpecialistRow({
         </View>
       </Pressable>
 
-      {/* Hover tooltip */}
-      {hovered && Platform.OS === "web" && (fnsList.length > 0 || uniqueServices.length > 2) && (
+      {/* Hover tooltip — show all FNS groups up to 5, link to profile if more */}
+      {hovered && Platform.OS === "web" && fnsList.length > 2 && (
         <View
           style={{
             position: "absolute",
@@ -245,53 +303,55 @@ function DesktopSpecialistRow({
           }}
           {...hoverProps}
         >
-          {fnsList.length > 0 && (
-            <View style={{ gap: 4 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                ИФНС
-              </Text>
-              <View style={{ gap: 3 }}>
-                {visibleFns.map((g) => (
-                  <Text key={g.fnsId} style={{ color: colors.text, fontSize: 13 }} numberOfLines={1}>
-                    {g.fnsName}
-                  </Text>
-                ))}
-                {fnsOverflow > 0 && (
-                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                    +{fnsOverflow} ещё
-                  </Text>
-                )}
-              </View>
-            </View>
-          )}
-
-          {uniqueServices.length > 2 && (
-            <View style={{ gap: 4 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Услуги
-              </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
-                {allVisibleServices.map((s) => (
+          <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>
+            Все инспекции
+          </Text>
+          <View style={{ gap: 6 }}>
+            {tooltipFns.map((g) => (
+              <View
+                key={g.fnsId}
+                style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 }}
+              >
+                <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }} numberOfLines={1}>
+                  {g.fnsName}
+                </Text>
+                {g.services.map((s) => (
                   <View
-                    key={s.id}
+                    key={`${g.fnsId}-${s.id}`}
                     style={{
                       backgroundColor: colors.accentSoft,
                       borderRadius: 99,
-                      paddingHorizontal: 10,
-                      paddingVertical: 3,
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
                     }}
                   >
-                    <Text style={{ color: colors.primary, fontSize: 12 }}>{s.name}</Text>
+                    <Text style={{ color: colors.primary, fontSize: 11 }}>{s.name}</Text>
                   </View>
                 ))}
-                {allServiceOverflow > 0 && (
-                  <Text style={{ color: colors.textMuted, fontSize: 12, alignSelf: "center" }}>
-                    +{allServiceOverflow} ещё
-                  </Text>
-                )}
               </View>
-            </View>
+            ))}
+          </View>
+          {tooltipOverflow > 0 && (
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+              И ещё {tooltipOverflow}…
+            </Text>
           )}
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Посмотреть профиль специалиста"
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onPress(item.id);
+            }}
+            style={({ pressed }) => [
+              { paddingTop: 4 },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>
+              Посмотреть профиль →
+            </Text>
+          </Pressable>
         </View>
       )}
     </View>
@@ -328,7 +388,12 @@ export default function SpecialistsGrid({
           width: "100%" as const,
         }}
         renderItem={({ item }) => (
-          <DesktopSpecialistRow item={item} onPress={onPress} />
+          <DesktopSpecialistRow
+            item={item}
+            onPress={onPress}
+            bookmarked={bookmarkedIds.has(item.id)}
+            onBookmark={onBookmark}
+          />
         )}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

@@ -25,6 +25,7 @@ import type {
 } from "@/components/requests/CityFnsServicePicker";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
+import FileDropZone, { type AttachedFile } from "@/components/requests/FileDropZone";
 import { draftStorage } from "@/lib/draftStorage";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -65,6 +66,7 @@ export default function CreateRequest() {
   const [submitError, setSubmitError] = useState("");
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
   // Load cities/services — public, no auth required.
   useEffect(() => {
@@ -170,13 +172,16 @@ export default function CreateRequest() {
     setSubmitting(true);
     setSubmitError("");
     try {
+      const fileIds = attachedFiles
+        .filter((f) => !!f.uploadedId && !f.uploading && !f.error)
+        .map((f) => f.uploadedId as string);
       const result = await apiPost<{ id: string }>("/api/requests", {
         title: title.trim(),
         cityId: selectedCityId,
         fnsId: selectedFnsId,
         serviceId: selectedServiceId || undefined,
         description: description.trim(),
-        files: [],
+        fileIds,
       });
       // Clear draft on success.
       await draftStorage.del(DRAFT_KEY).catch(() => {});
@@ -202,7 +207,7 @@ export default function CreateRequest() {
     } finally {
       setSubmitting(false);
     }
-  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav]);
+  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitted(true);
@@ -255,24 +260,34 @@ export default function CreateRequest() {
         />
       )}
       <View
-        className="px-4 pt-4 bg-surface2"
+        className="bg-surface2"
         style={{
           ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 10 } as object) : {}),
         }}
       >
-        {width < 640 && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
-            onPress={() => router.back()}
-            className="flex-row items-center mb-2"
-            style={{ minHeight: 44 }}
-          >
-            <ChevronLeft size={20} color={colors.text} />
-            <Text className="text-text-base ml-1">Назад</Text>
-          </Pressable>
-        )}
-        <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 640,
+            alignSelf: "center",
+            paddingHorizontal: 16,
+            paddingTop: 16,
+          }}
+        >
+          {width < 640 && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Назад"
+              onPress={() => router.back()}
+              className="flex-row items-center mb-2"
+              style={{ minHeight: 44 }}
+            >
+              <ChevronLeft size={20} color={colors.text} />
+              <Text className="text-text-base ml-1">Назад</Text>
+            </Pressable>
+          )}
+          <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+        </View>
       </View>
       <ScrollView
         className="flex-1"
@@ -282,10 +297,10 @@ export default function CreateRequest() {
         <View
           style={{
             width: "100%",
-            maxWidth: 720,
+            maxWidth: 640,
             alignSelf: "center",
             paddingHorizontal: 16,
-            paddingTop: 16,
+            paddingTop: 8,
           }}
         >
           {!isAuthenticated && (
@@ -299,7 +314,10 @@ export default function CreateRequest() {
             </View>
           )}
 
-          <View className="bg-white border border-border rounded-2xl px-4 pt-4 pb-4 mb-4">
+          <View
+            className="bg-white border border-border rounded-2xl px-4 pt-4 pb-4 mb-4"
+            style={{ overflow: "hidden" }}
+          >
             <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
               Описание заявки
             </Text>
@@ -382,6 +400,14 @@ export default function CreateRequest() {
                 {description.length}/2000
               </Text>
             </View>
+
+            {isAuthenticated && (
+              <FileDropZone
+                files={attachedFiles}
+                disabled={submitting}
+                onFilesChange={setAttachedFiles}
+              />
+            )}
           </View>
 
           {submitError ? (
