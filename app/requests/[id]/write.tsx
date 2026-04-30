@@ -138,7 +138,7 @@ export default function SpecialistConfirmWrite() {
         mimeType: asset.mimeType ?? "application/octet-stream",
       });
     } catch (e) {
-      console.error("document picker error:", e);
+      if (__DEV__) console.error("document picker error:", e);
     }
   }, [pendingFile]);
 

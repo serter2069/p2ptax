@@ -61,7 +61,7 @@ export default function UnifiedInbox() {
       const flat = res.groups.flatMap((g) => g.threads);
       setThreads(flat);
     } catch (e) {
-      console.error("fetch threads error:", e);
+      if (__DEV__) console.error("fetch threads error:", e);
       setError("Не удалось загрузить сообщения");
     } finally {
       setLoading(false);

@@ -98,13 +98,15 @@ export default function MetroBridge() {
       }
     };
 
-    // Intercept console.error
-    const origError = console.error.bind(console);
-    console.error = (...args: unknown[]) => {
-      origError(...args);
-      const text = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ").slice(0, 300);
-      postToParent({ type: "metro-map:runtime-error", path: location.pathname, text, source: "console.error" });
-    };
+    // Intercept console.error (dev only — metro-map bridge)
+    if (__DEV__) {
+      const origError = console.error.bind(console);
+      console.error = (...args: unknown[]) => {
+        origError(...args);
+        const text = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ").slice(0, 300);
+        postToParent({ type: "metro-map:runtime-error", path: location.pathname, text, source: "console.error" });
+      };
+    }
 
     // Global JS errors
     w.onerror = (msg, _src, _line, _col, err) => {

@@ -83,7 +83,7 @@ export function useSettingsForm({ ready, activeTab, onTabChange, onStartInlineOn
       }
       setContacts(contactsData.items);
     } catch (err) {
-      console.error("Settings: specialist profile load error", err);
+      if (__DEV__) console.error("Settings: specialist profile load error", err);
     } finally {
       setSpecLoading(false);
     }
@@ -159,7 +159,7 @@ export function useSettingsForm({ ready, activeTab, onTabChange, onStartInlineOn
       // Web: rely on the form transitioning out of dirty state to confirm save
       // (no blocking alert popup).
     } catch (err) {
-      console.error("Save profile error:", err);
+      if (__DEV__) console.error("Save profile error:", err);
       if (Platform.OS === "web") {
         if (typeof window !== "undefined" && typeof window.alert === "function") {
           window.alert("Ошибка сохранения\n\nНе удалось сохранить изменения. Попробуйте ещё раз.");
@@ -330,7 +330,7 @@ export function useSettingsForm({ ready, activeTab, onTabChange, onStartInlineOn
       await signOut();
       nav.replaceRoutes.home();
     } catch (err) {
-      console.error("delete account error:", err);
+      if (__DEV__) console.error("delete account error:", err);
       if (Platform.OS === "web") {
         window.alert("Не удалось удалить аккаунт. Попробуйте ещё раз.");
       } else {

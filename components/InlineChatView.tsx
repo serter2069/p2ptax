@@ -242,7 +242,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       setHasMoreOlder(Boolean(res.hasMore));
       setOldestMessageId(res.nextCursor ?? (res.messages[0]?.id ?? oldestMessageId));
     } catch (e) {
-      console.error("load older messages error:", e);
+      if (__DEV__) console.error("load older messages error:", e);
     } finally {
       setLoadingOlder(false);
     }
