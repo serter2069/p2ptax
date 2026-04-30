@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   View,
   Text,
+  Image,
   Pressable,
   TextInput,
   useWindowDimensions,
@@ -192,9 +193,12 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
                 {breadcrumb}
               </Text>
             ) : (
-              <Text className="text-lg font-bold" style={{ color: colors.primary }}>
-                P2PTax
-              </Text>
+              <Image
+                source={require("@/assets/images/logo.png")}
+                style={{ width: 36, height: 36, borderRadius: 8 }}
+                resizeMode="contain"
+                accessibilityLabel="P2PTax"
+              />
             )}
           </View>
 
@@ -237,7 +241,12 @@ export default function AppHeader({ title, onBurgerPress }: AppHeaderProps) {
         }}
         style={{ minHeight: 44, justifyContent: "center" }}
       >
-        <Text className="text-base font-bold" style={{ color: colors.primary }}>P2PTax</Text>
+        <Image
+          source={require("@/assets/images/logo.png")}
+          style={{ width: 44, height: 44, borderRadius: 8 }}
+          resizeMode="contain"
+          accessibilityLabel="P2PTax"
+        />
       </Pressable>
 
       {breadcrumb ? (

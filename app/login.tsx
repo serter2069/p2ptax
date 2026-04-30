@@ -1,4 +1,4 @@
-import { View, Text, Pressable, TextInput, Platform } from "react-native";
+import { View, Text, Image, Pressable, TextInput, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -81,13 +81,15 @@ export default function AuthEmailScreen() {
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <View className="flex-1 items-center justify-center bg-white px-6">
         <View style={{ width: "100%", maxWidth: 400 }}>
-          {/* Wordmark */}
-          <Text
-            className="text-center font-extrabold text-accent mb-10"
-            style={{ fontSize: 32, letterSpacing: -0.5 }}
-          >
-            P2PTax
-          </Text>
+          {/* Logo */}
+          <View className="items-center mb-10">
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={{ width: 120, height: 120, borderRadius: 16 }}
+              resizeMode="contain"
+              accessibilityLabel="P2PTax"
+            />
+          </View>
 
           {/* Header */}
           <Text

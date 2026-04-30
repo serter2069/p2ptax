@@ -1,6 +1,7 @@
 import {
   View,
   Text,
+  Image,
   Pressable,
   KeyboardAvoidingView,
   Platform,
@@ -217,12 +218,14 @@ export default function AuthOtpScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Text
-              className="text-center font-extrabold text-accent mb-10"
-              style={{ fontSize: 32, letterSpacing: -0.5 }}
-            >
-              P2PTax
-            </Text>
+            <View className="items-center mb-10">
+              <Image
+                source={require("@/assets/images/logo.png")}
+                style={{ width: 120, height: 120, borderRadius: 16 }}
+                resizeMode="contain"
+                accessibilityLabel="P2PTax"
+              />
+            </View>
             <Text
               style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}
             >
@@ -279,12 +282,14 @@ export default function AuthOtpScreen() {
         <HeaderBack title="" />
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Text
-              className="text-center font-extrabold text-accent mb-10"
-              style={{ fontSize: 32, letterSpacing: -0.5 }}
-            >
-              P2PTax
-            </Text>
+            <View className="items-center mb-10">
+              <Image
+                source={require("@/assets/images/logo.png")}
+                style={{ width: 120, height: 120, borderRadius: 16 }}
+                resizeMode="contain"
+                accessibilityLabel="P2PTax"
+              />
+            </View>
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
@@ -316,12 +321,14 @@ export default function AuthOtpScreen() {
       >
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Text
-              className="text-center font-extrabold text-accent mb-10"
-              style={{ fontSize: 32, letterSpacing: -0.5 }}
-            >
-              P2PTax
-            </Text>
+            <View className="items-center mb-10">
+              <Image
+                source={require("@/assets/images/logo.png")}
+                style={{ width: 120, height: 120, borderRadius: 16 }}
+                resizeMode="contain"
+                accessibilityLabel="P2PTax"
+              />
+            </View>
 
             <Text
               className="text-text-base font-extrabold text-center"
