@@ -34,7 +34,7 @@ export const ROUTES = {
   tabs: "/(tabs)",
   tabsHome: "/(tabs)",
   dashboard: "/(tabs)/dashboard",
-  tabsRequests: "/(tabs)/requests",
+  tabsRequests: "/(tabs)/my-requests",
   tabsMessages: "/(tabs)/messages",
   tabsPublicRequests: "/(tabs)/public-requests",
   tabsCreate: "/(tabs)/create",

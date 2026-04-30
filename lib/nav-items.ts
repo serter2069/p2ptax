@@ -80,9 +80,11 @@ export const USER_BASE_ITEMS: NavItem[] = [
   },
   {
     label: "Мои запросы",
-    href: "/(tabs)/requests",
+    href: "/(tabs)/my-requests",
     icon: FileText,
-    match: (ctx) => groupMatch(ctx, "(tabs)", "requests"),
+    match: (ctx) =>
+      groupMatch(ctx, "(tabs)", "requests") ||
+      groupMatch(ctx, "(tabs)", "my-requests"),
   },
   {
     label: "Сообщения",
