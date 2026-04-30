@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Constants from "expo-constants";
 import { View, Text, ScrollView, Pressable, Alert, Platform, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -101,20 +101,13 @@ export default function UnifiedSettings() {
   const form = useSettingsForm({ ready, activeTab, onTabChange: setActiveTab });
   const { router, nav, user, isSpecialistUser } = form;
 
-  // Sync tab from URL when query changes (e.g. browser back/forward).
-  useEffect(() => {
-    if (isValidTab(params.tab) && params.tab !== activeTab) {
-      setActiveTab(params.tab);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.tab]);
+  // Tab state is local — no URL sync to avoid Expo Router setParams reload on web.
 
   const handleTabChange = useCallback(
     (tab: SettingsTab) => {
       setActiveTab(tab);
-      router.setParams({ tab });
     },
-    [router],
+    [],
   );
 
   if (!ready) {

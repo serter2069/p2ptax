@@ -418,6 +418,20 @@ router.get("/:id", async (req: Request, res: Response) => {
       return;
     }
 
+    // Closed profile — return minimal data only
+    if (!specialist.isAvailable) {
+      const lastNameInitial =
+        specialist.lastName ? specialist.lastName[0] + "." : null;
+      res.json({
+        id: specialist.id,
+        firstName: specialist.firstName,
+        lastNameInitial,
+        avatarUrl: specialist.avatarUrl,
+        isAvailable: false,
+      });
+      return;
+    }
+
     // Group services by FNS/city
     const fnsMap = new Map<
       string,

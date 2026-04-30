@@ -110,7 +110,8 @@ router.get("/public", async (req: Request, res: Response) => {
         include: {
           city: true,
           fns: true,
-          _count: { select: { threads: true } },
+          user: { select: { firstName: true, lastName: true, avatarUrl: true, createdAt: true } },
+          _count: { select: { threads: true, files: true } },
         },
       }),
       prisma.request.count({ where }),
@@ -125,6 +126,13 @@ router.get("/public", async (req: Request, res: Response) => {
       city: { id: r.city.id, name: r.city.name },
       fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
       threadsCount: r._count.threads,
+      hasFiles: r._count.files > 0,
+      user: {
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+        avatarUrl: r.user.avatarUrl,
+        memberSince: r.user.createdAt.getFullYear(),
+      },
     }));
 
     res.json({

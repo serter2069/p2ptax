@@ -1,7 +1,15 @@
 import { View, Text, Pressable } from "react-native";
 import StatusBadge from "./StatusBadge";
-import { colors } from "@/lib/theme";
+import { colors, AVATAR_COLORS } from "@/lib/theme";
 import { pluralizeRu } from "@/lib/ru";
+import { Paperclip } from "lucide-react-native";
+
+interface UserInfo {
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string | null;
+  memberSince: number;
+}
 
 interface RequestCardProps {
   id: string;
@@ -11,7 +19,35 @@ interface RequestCardProps {
   city: { id: string; name: string };
   fns: { id: string; name: string; code: string };
   threadsCount: number;
+  hasFiles?: boolean;
+  user?: UserInfo;
+  createdAt?: string;
   onPress: (id: string) => void;
+}
+
+function getInitials(firstName: string, lastName: string): string {
+  const f = firstName?.[0] ?? "";
+  const l = lastName?.[0] ?? "";
+  return (f + l).toUpperCase();
+}
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function formatRelative(isoDate: string): string {
+  const now = Date.now();
+  const then = new Date(isoDate).getTime();
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffH = Math.floor(diffMin / 60);
+  const diffD = Math.floor(diffH / 24);
+  if (diffMin < 60) return "только что";
+  if (diffH < 24) return `${diffH} ${pluralizeRu(diffH, ["час", "часа", "часов"])} назад`;
+  if (diffD < 7) return `${diffD} ${pluralizeRu(diffD, ["день", "дня", "дней"])} назад`;
+  return new Date(isoDate).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 }
 
 export default function RequestCard({
@@ -22,8 +58,18 @@ export default function RequestCard({
   city,
   fns,
   threadsCount,
+  hasFiles,
+  user,
+  createdAt,
   onPress,
 }: RequestCardProps) {
+  const initials = user ? getInitials(user.firstName, user.lastName) : "?";
+  const avatarBg = user ? getAvatarColor(user.firstName + user.lastName) : colors.primary;
+  const displayName = user
+    ? `${user.firstName}${user.lastName ? " " + user.lastName[0] + "." : ""}`
+    : null;
+  const snippet = description ? description.slice(0, 100) + (description.length > 100 ? "…" : "") : null;
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -35,12 +81,48 @@ export default function RequestCard({
         pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
       ]}
     >
+      {/* Header row: avatar + name + date + status */}
+      <View className="flex-row items-center mb-2" style={{ gap: 8 }}>
+        {/* Avatar */}
+        <View
+          className="items-center justify-center rounded-full"
+          style={{ width: 32, height: 32, backgroundColor: avatarBg, flexShrink: 0 }}
+        >
+          {user?.avatarUrl ? (
+            // If avatarUrl exists, show initials as fallback (image loading not needed here)
+            <Text className="text-xs font-semibold text-white">{initials}</Text>
+          ) : (
+            <Text className="text-xs font-semibold text-white">{initials}</Text>
+          )}
+        </View>
+
+        {/* Name + member since */}
+        <View className="flex-1 min-w-0">
+          {displayName && (
+            <Text className="text-xs font-medium text-text-base" numberOfLines={1}>
+              {displayName}
+              {user?.memberSince ? (
+                <Text className="text-xs font-normal" style={{ color: colors.textMuted }}>
+                  {"  ·  На сайте с " + user.memberSince}
+                </Text>
+              ) : null}
+            </Text>
+          )}
+        </View>
+
+        {/* Date + attachment icon */}
+        <View className="flex-row items-center" style={{ gap: 4, flexShrink: 0 }}>
+          {hasFiles && <Paperclip size={13} color={colors.textMuted} />}
+          {createdAt && (
+            <Text className="text-xs" style={{ color: colors.textMuted }}>
+              {formatRelative(createdAt)}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {/* Title + status */}
       <View className="flex-row items-center justify-between mb-2">
-        {/* flex-1 + min-w-0 + flexShrink: 1 lets the title use ALL available
-            space and shrink (rather than pushing the StatusBadge off-screen
-            or being clipped at an arbitrary intrinsic width). On web the
-            default min-width of a flex item is its intrinsic content width,
-            so without minWidth: 0 the text never shrinks below that. */}
         <Text
           className="text-lg font-semibold text-text-base flex-1 mr-2"
           numberOfLines={2}
@@ -51,6 +133,7 @@ export default function RequestCard({
         <StatusBadge status={status} />
       </View>
 
+      {/* City + FNS chips */}
       <View className="flex-row flex-wrap gap-1.5 mb-2">
         <View className="bg-surface2 px-2 py-0.5 rounded">
           <Text className="text-xs text-text-mute">{city.name}</Text>
@@ -60,10 +143,14 @@ export default function RequestCard({
         </View>
       </View>
 
-      <Text className="text-sm text-text-mute mb-2" numberOfLines={2}>
-        {description}
-      </Text>
+      {/* Description snippet */}
+      {snippet && (
+        <Text className="text-sm text-text-mute mb-2" numberOfLines={2}>
+          {snippet}
+        </Text>
+      )}
 
+      {/* Threads count */}
       <Text className="text-xs text-text-mute">
         {threadsCount === 0
           ? "Никто пока не откликнулся"

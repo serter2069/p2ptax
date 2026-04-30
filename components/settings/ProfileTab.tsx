@@ -173,6 +173,9 @@ export default function ProfileTab({
             placeholder="Введите фамилию"
             maxLength={50}
           />
+          <Text className="text-xs text-text-mute mt-1">
+            Необязательно. Можете указать только первую букву
+          </Text>
         </View>
 
         <Text className="text-sm font-medium text-text-base mb-1.5">

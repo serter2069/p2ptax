@@ -22,15 +22,16 @@ import { colors, overlay, BREAKPOINT } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 
-interface CityOption {
-  id: string;
-  name: string;
-  fnsOffices: { id: string; name: string; code: string }[];
-}
-
 interface ServiceOption {
   id: string;
   name: string;
+}
+
+interface RequestUser {
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string | null;
+  memberSince: number;
 }
 
 interface RequestItem {
@@ -42,6 +43,8 @@ interface RequestItem {
   city: { id: string; name: string };
   fns: { id: string; name: string; code: string };
   threadsCount: number;
+  hasFiles: boolean;
+  user: RequestUser;
 }
 
 interface RequestsResponse {
@@ -77,7 +80,6 @@ export default function SpecialistPublicRequests() {
     }
   }, [authLoading, isAuthenticated, isSpecialistUser]);
 
-  const [cities, setCities] = useState<CityOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,27 +90,32 @@ export default function SpecialistPublicRequests() {
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
 
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
-  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
+  // Multi-select filter state
+  const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+  const [selectedFnsIds, setSelectedFnsIds] = useState<string[]>([]);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   // Specialist's own coverage (resolved on mount once auth is ready).
   const [profileLoading, setProfileLoading] = useState(true);
   const [specialistFnsServices, setSpecialistFnsServices] = useState<FnsServiceItem[]>([]);
   const hasFnsCoverage = specialistFnsServices.length > 0;
-  // True while the active filter equals "match my FNS" (default for specialists).
-  const isPrefiltered = !!selectedFnsId && hasFnsCoverage &&
-    specialistFnsServices.some((fs) => fs.fns.id === selectedFnsId);
+
+  // True while the active filter contains specialist's own FNS IDs
+  const myFnsIds = specialistFnsServices.map((fs) => fs.fns.id);
+  const isPrefiltered = myFnsIds.length > 0 &&
+    selectedFnsIds.length === myFnsIds.length &&
+    myFnsIds.every((id) => selectedFnsIds.includes(id));
 
   const fetchRequests = useCallback(
     async (pageNum: number, append = false) => {
       try {
-        let path = `/api/requests/public?page=${pageNum}&limit=20`;
-        if (selectedCityId) path += `&city_id=${selectedCityId}`;
-        if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
-        if (selectedServiceId) path += `&service_id=${selectedServiceId}`;
+        const params = new URLSearchParams();
+        params.set("page", String(pageNum));
+        params.set("limit", "20");
+        if (selectedCityIds.length > 0) params.set("city_id", selectedCityIds[0]);
+        if (selectedFnsIds.length > 0) params.set("fns_id", selectedFnsIds[0]);
 
-        const res = await api<RequestsResponse>(path, { noAuth: true });
+        const res = await api<RequestsResponse>(`/api/requests/public?${params}`, { noAuth: true });
 
         if (append) {
           setRequests((prev) => [...prev, ...res.items]);
@@ -124,18 +131,14 @@ export default function SpecialistPublicRequests() {
         if (!append) setError("Не удалось загрузить заявки");
       }
     },
-    [selectedCityId, selectedFnsId, selectedServiceId]
+    [selectedCityIds, selectedFnsIds]
   );
 
-  // Load the catalog (cities + services) once.
+  // Load services once.
   useEffect(() => {
     async function init() {
       try {
-        const [citiesRes, servicesRes] = await Promise.all([
-          api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
-          api<{ items: ServiceOption[] }>("/api/services", { noAuth: true }),
-        ]);
-        setCities(citiesRes.items);
+        const servicesRes = await api<{ items: ServiceOption[] }>("/api/services", { noAuth: true });
         setServices(servicesRes.items);
       } catch (e) {
         console.error("Init error:", e);
@@ -144,8 +147,7 @@ export default function SpecialistPublicRequests() {
     init();
   }, []);
 
-  // Load specialist profile once auth is ready, then default the filter to
-  // their first FNS so the very first feed call is already pre-filtered.
+  // Load specialist profile once auth is ready.
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
     if (!isSpecialistUser) {
@@ -160,7 +162,7 @@ export default function SpecialistPublicRequests() {
         const fnsServices = res.fnsServices ?? [];
         setSpecialistFnsServices(fnsServices);
         if (fnsServices.length > 0) {
-          setSelectedFnsId(fnsServices[0].fns.id);
+          setSelectedFnsIds([fnsServices[0].fns.id]);
         }
       } catch (e) {
         console.error("specialist profile error:", e);
@@ -173,13 +175,12 @@ export default function SpecialistPublicRequests() {
     };
   }, [authLoading, isAuthenticated, isSpecialistUser]);
 
-  // Run the feed call after profile resolution so the initial request already
-  // carries the specialist's first fns_id (avoids a flash of "all requests").
+  // Fetch after profile resolution.
   useEffect(() => {
     if (profileLoading) return;
     setLoading(true);
     fetchRequests(1).finally(() => setLoading(false));
-  }, [profileLoading, selectedCityId, selectedFnsId, selectedServiceId, fetchRequests]);
+  }, [profileLoading, selectedCityIds, selectedFnsIds, fetchRequests]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -201,9 +202,21 @@ export default function SpecialistPublicRequests() {
     [router]
   );
 
-  const handleServiceToggle = useCallback((id: string) => {
-    setSelectedServiceId((prev) => (prev === id ? null : id));
+  const handleReset = useCallback(() => {
+    setSelectedCityIds([]);
+    setSelectedFnsIds([]);
+    setSelectedServiceIds([]);
   }, []);
+
+  const handleFnsToggle = useCallback(() => {
+    if (isPrefiltered) {
+      setSelectedFnsIds([]);
+      setSelectedCityIds([]);
+      setSelectedServiceIds([]);
+    } else if (myFnsIds.length > 0) {
+      setSelectedFnsIds([myFnsIds[0]]);
+    }
+  }, [isPrefiltered, myFnsIds]);
 
   if (!ready || !isSpecialistUser || profileLoading) {
     return (
@@ -213,7 +226,6 @@ export default function SpecialistPublicRequests() {
     );
   }
 
-  // Specialist hasn't picked any FNS coverage yet — push them to onboarding.
   if (!hasFnsCoverage) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
@@ -233,10 +245,12 @@ export default function SpecialistPublicRequests() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <DesktopScreen>
-        {/* Accent hero */}
+        {/* Hero */}
         <View className="rounded-2xl px-5 py-5 mb-4 mt-2" style={{ backgroundColor: colors.accent }}>
           <Text className="text-xl font-bold text-white mb-0.5">Заявки</Text>
-          <Text className="text-sm" style={{ color: overlay.white90 }}>Находите клиентов по своей специализации</Text>
+          <Text className="text-sm" style={{ color: overlay.white90 }}>
+            Находите клиентов по своей специализации
+          </Text>
           {total > 0 && (
             <Text className="text-sm font-semibold text-white mt-2">
               {total} {pluralizeRu(total, ["заявка", "заявки", "заявок"])} доступно
@@ -245,92 +259,81 @@ export default function SpecialistPublicRequests() {
         </View>
 
         <FilterPanel
-          cities={cities}
-          selectedCityId={selectedCityId}
-          onCityChange={setSelectedCityId}
-          fnsOffices={specialistFnsServices.map((fs) => ({
-            id: fs.fns.id,
-            name: fs.fns.name,
-          }))}
-          selectedFnsId={selectedFnsId}
-          onFnsChange={setSelectedFnsId}
+          selectedCityIds={selectedCityIds}
+          onCityIdsChange={setSelectedCityIds}
+          selectedFnsIds={selectedFnsIds}
+          onFnsIdsChange={setSelectedFnsIds}
           services={services}
-          selectedServiceId={selectedServiceId}
-          onServiceToggle={handleServiceToggle}
+          selectedServiceIds={selectedServiceIds}
+          onServiceIdsChange={setSelectedServiceIds}
+          onReset={handleReset}
           fnsToggle={{
             isPrefiltered,
-            onToggle: () => {
-              if (isPrefiltered) {
-                setSelectedFnsId(null);
-                setSelectedCityId(null);
-                setSelectedServiceId(null);
-              } else if (specialistFnsServices.length > 0) {
-                setSelectedFnsId(specialistFnsServices[0].fns.id);
-              }
-            },
+            onToggle: handleFnsToggle,
           }}
         />
 
-        {loading ? (
-          <View className="py-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-border">
-                <LoadingState variant="skeleton" lines={4} />
-              </View>
-            ))}
-          </View>
-        ) : error ? (
-          <EmptyState
-            icon={TriangleAlert}
-            title="Ошибка загрузки"
-            subtitle={error}
-            actionLabel="Повторить"
-            onAction={() => {
-              setLoading(true);
-              fetchRequests(1).finally(() => setLoading(false));
-            }}
-          />
-        ) : requests.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="Заявок не найдено"
-            subtitle="Попробуйте изменить фильтры"
-            actionLabel="Сбросить фильтры"
-            onAction={() => {
-              setSelectedCityId(null);
-              setSelectedServiceId(null);
-              setSelectedFnsId(null);
-            }}
-          />
-        ) : (
-          <FlatList
-            data={requests}
-            keyExtractor={(item) => item.id}
-            contentContainerClassName={isDesktop ? "pb-8 pt-2" : "pb-4 pt-2"}
-            renderItem={({ item }) => (
-              <RequestCard
-                id={item.id}
-                title={item.title}
-                description={item.description}
-                status={item.status}
-                city={item.city}
-                fns={item.fns}
-                threadsCount={item.threadsCount}
-                onPress={handleRequestPress}
-              />
-            )}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              loadingMore ? (
-                <ActivityIndicator size="small" color={colors.primary} className="py-4" />
-              ) : null
-            }
-          />
-        )}
+        <View className="mt-3">
+          {loading ? (
+            <View className="py-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden border border-border">
+                  <LoadingState variant="skeleton" lines={4} />
+                </View>
+              ))}
+            </View>
+          ) : error ? (
+            <EmptyState
+              icon={TriangleAlert}
+              title="Ошибка загрузки"
+              subtitle={error}
+              actionLabel="Повторить"
+              onAction={() => {
+                setLoading(true);
+                fetchRequests(1).finally(() => setLoading(false));
+              }}
+            />
+          ) : requests.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Заявок не найдено"
+              subtitle="Попробуйте изменить фильтры"
+              actionLabel="Сбросить фильтры"
+              onAction={handleReset}
+            />
+          ) : (
+            <FlatList
+              data={requests}
+              keyExtractor={(item) => item.id}
+              contentContainerClassName={isDesktop ? "pb-8" : "pb-4"}
+              renderItem={({ item }) => (
+                <RequestCard
+                  id={item.id}
+                  title={item.title}
+                  description={item.description}
+                  status={item.status}
+                  city={item.city}
+                  fns={item.fns}
+                  threadsCount={item.threadsCount}
+                  hasFiles={item.hasFiles}
+                  user={item.user}
+                  createdAt={item.createdAt}
+                  onPress={handleRequestPress}
+                />
+              )}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+              }
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                loadingMore ? (
+                  <ActivityIndicator size="small" color={colors.primary} className="py-4" />
+                ) : null
+              }
+            />
+          )}
+        </View>
       </DesktopScreen>
     </SafeAreaView>
   );

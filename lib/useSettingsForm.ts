@@ -156,10 +156,6 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
       Alert.alert("Ошибка", "Имя должно быть от 2 до 50 символов");
       return;
     }
-    if (!lastName.trim() || lastName.trim().length < 2) {
-      Alert.alert("Ошибка", "Фамилия должна быть от 2 до 50 символов");
-      return;
-    }
     setSaving(true);
     try {
       await apiPatch("/api/specialist/profile", {
@@ -203,13 +199,12 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
 
   const applyAvailabilityChange = useCallback(
     async (value: boolean) => {
-      setIsAvailable(value);
       setAvailabilityLoading(true);
       try {
         await apiPatch("/api/specialist/profile", { isAvailable: value });
+        setIsAvailable(value);
         updateUser({ isAvailable: value });
       } catch {
-        setIsAvailable(!value);
         Alert.alert("Ошибка", "Не удалось обновить статус доступности");
       } finally {
         setAvailabilityLoading(false);

@@ -134,16 +134,25 @@ export default function SpecialistPublicProfile() {
     );
   }
 
+  // Closed profile — isAvailable = false
+  const isClosed = !specialist.isAvailable;
+
+  // Display name: open → firstName + lastName[0]+"." | closed → firstName + lastNameInitial
+  const displayLastName = isClosed
+    ? (specialist.lastNameInitial ?? null)
+    : specialist.lastName
+    ? specialist.lastName[0] + "."
+    : null;
   const name =
-    [specialist.firstName, specialist.lastName].filter(Boolean).join(" ") ||
+    [specialist.firstName, displayLastName].filter(Boolean).join(" ") ||
     "Специалист";
 
-  // Collect unique cities + FNS codes from fnsServices
+  // Collect unique cities + FNS codes from fnsServices (open profiles only)
   const citySet = new Set<string>();
   const cities: string[] = [];
   const fnsCodes: string[] = [];
   const serviceNames = new Set<string>();
-  for (const g of specialist.fnsServices) {
+  for (const g of specialist.fnsServices ?? []) {
     if (!citySet.has(g.city.id)) {
       citySet.add(g.city.id);
       cities.push(g.city.name);
@@ -152,11 +161,11 @@ export default function SpecialistPublicProfile() {
     for (const s of g.services) serviceNames.add(s.name);
   }
 
-  const profile = specialist.profile;
+  const profile = specialist.profile ?? null;
 
   const yearsExp =
     profile?.yearsOfExperience ??
-    Math.max(1, 2024 - new Date(specialist.createdAt).getFullYear());
+    Math.max(1, 2024 - new Date(specialist.createdAt ?? new Date()).getFullYear());
   const specializations = profile?.specializations ?? [];
   const certifications = profile?.certifications ?? [];
   const isExFns = !!(profile?.exFnsStartYear && profile?.exFnsEndYear);
@@ -174,7 +183,45 @@ export default function SpecialistPublicProfile() {
     elevation: 1,
   };
 
-  const mainContent = (
+  // Closed profile block shown instead of full content
+  const closedBlock = (
+    <View
+      className="rounded-2xl items-center px-6 py-10 mt-4"
+      style={{ backgroundColor: colors.surface2 }}
+    >
+      <Text
+        style={{ ...textStyle.h3, color: colors.text, textAlign: "center" }}
+      >
+        Профиль специалиста закрыт
+      </Text>
+      <Text
+        style={{
+          ...textStyle.body,
+          color: colors.textSecondary,
+          textAlign: "center",
+          marginTop: 8,
+        }}
+      >
+        Специалист сейчас не принимает заявки.
+      </Text>
+    </View>
+  );
+
+  const mainContent = isClosed ? (
+    <View>
+      <SpecialistHero
+        name={name}
+        avatarUrl={specialist.avatarUrl}
+        isTablet={isTablet}
+        rolePrimary="Налоговый консультант"
+        cityLabel="Россия"
+        isExFns={false}
+        exFnsStartYear={null}
+        exFnsEndYear={null}
+      />
+      {closedBlock}
+    </View>
+  ) : (
     <View>
       <SpecialistHero
         name={name}
@@ -200,7 +247,7 @@ export default function SpecialistPublicProfile() {
       <SpecialistServicesCities serviceNames={serviceNames} cities={cities} />
       <View className="mt-8">
         <WorkAreaSection
-          fnsServices={specialist.fnsServices}
+          fnsServices={specialist.fnsServices ?? []}
           cardShadow={legacyShadow}
         />
         {isAuthenticated ? (
@@ -284,7 +331,7 @@ export default function SpecialistPublicProfile() {
             </View>
 
             {/* Right sidebar (desktop only) */}
-            {isDesktop && !isOwnProfile && !isSpecialist && (
+            {isDesktop && !isOwnProfile && !isSpecialist && !isClosed && (
               <View style={{ width: 320 }}>
                 <View style={{ position: "sticky" as "relative", top: 24 }}>
                   <SpecialistContactCTA
@@ -318,7 +365,7 @@ export default function SpecialistPublicProfile() {
       </ScrollView>
 
       {/* Mobile sticky bottom CTA */}
-      {!isDesktop && !isOwnProfile && !isSpecialist && (
+      {!isDesktop && !isOwnProfile && !isSpecialist && !isClosed && (
         <SpecialistMobileBottomCTA
           savedBookmark={savedBookmark}
           onWritePress={handleWritePress}

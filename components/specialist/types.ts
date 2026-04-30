@@ -42,12 +42,16 @@ export interface ContactMethodItem {
 export interface SpecialistDetail {
   id: string;
   firstName: string | null;
-  lastName: string | null;
+  // Full lastName for open profiles; absent on closed profiles
+  lastName?: string | null;
+  // lastNameInitial is returned by the API for closed profiles (e.g. "К.")
+  lastNameInitial?: string | null;
   avatarUrl: string | null;
   isAvailable: boolean;
-  createdAt: string;
-  profile: SpecialistProfile | null;
-  fnsServices: FnsServiceGroup[];
+  // createdAt and profile are only present on open profiles
+  createdAt?: string;
+  profile?: SpecialistProfile | null;
+  fnsServices?: FnsServiceGroup[];
   requestsCount?: number;
   // Iteration 5
   cases?: SpecialistCaseItem[];
