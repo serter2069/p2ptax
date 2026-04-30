@@ -60,9 +60,10 @@ function toAccentKey(
 // and other tabs as "/messages", "/dashboard" etc. We add explicit entries so
 // every tab gets a label (no more inconsistent "Запросы" but blank dashboard).
 const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
-  // Iter11 — unified (tabs) replaces split groups.
-  { prefix: "/(tabs)/public-requests", label: "Открытые запросы" },
-  { prefix: "/(tabs)/requests", label: "Запросы" },
+  // #1615 — (tabs)/requests = public bourse, (tabs)/my-requests = personal feed.
+  { prefix: "/(tabs)/public-requests", label: "Заявки" },
+  { prefix: "/(tabs)/my-requests", label: "Мои заявки" },
+  { prefix: "/(tabs)/requests", label: "Заявки" },
   { prefix: "/(tabs)/messages", label: "Сообщения" },
   { prefix: "/(tabs)/dashboard", label: "Главная" },
   { prefix: "/(tabs)/profile", label: "Настройки" },
@@ -78,13 +79,14 @@ const BREADCRUMB_MAP: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/saved-specialists", label: "Мои специалисты" },
   { prefix: "/specialists", label: "Специалисты" },
   { prefix: "/requests/new", label: "Новый запрос" },
-  { prefix: "/requests", label: "Запросы" },
+  { prefix: "/requests", label: "Заявки" },
   { prefix: "/threads", label: "Переписки" },
   { prefix: "/settings", label: "Настройки" },
   // Bare paths (Expo Router strips (tabs) group from usePathname()).
   { prefix: "/dashboard", label: "Главная" },
   { prefix: "/messages", label: "Сообщения" },
-  { prefix: "/public-requests", label: "Открытые запросы" },
+  { prefix: "/public-requests", label: "Заявки" },
+  { prefix: "/my-requests", label: "Мои заявки" },
   { prefix: "/profile", label: "Настройки" },
 ];
 
