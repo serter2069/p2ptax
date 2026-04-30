@@ -9,6 +9,22 @@ const router = Router();
 
 const BUCKET = process.env.MINIO_BUCKET || "p2ptax";
 
+// 1-hour presigned URL so the <Image> component can load without auth headers.
+async function presignAttachmentUrl(storedUrl: string): Promise<string> {
+  // storedUrl is like "/<bucket>/<key>" or already an http URL.
+  if (storedUrl.startsWith("http")) return storedUrl;
+  const withoutLeadingSlash = storedUrl.replace(/^\/+/, "");
+  const prefix = `${MINIO_BUCKET}/`;
+  const key = withoutLeadingSlash.startsWith(prefix)
+    ? withoutLeadingSlash.slice(prefix.length)
+    : withoutLeadingSlash;
+  try {
+    return await minioClient.presignedGetObject(MINIO_BUCKET, key, 60 * 60);
+  } catch {
+    return storedUrl; // fallback to raw path — better than broken
+  }
+}
+
 function getMinioClient(): Minio.Client {
   return new Minio.Client({
     endPoint: process.env.MINIO_ENDPOINT || "localhost",
@@ -164,7 +180,7 @@ router.get("/", async (req: Request, res: Response) => {
       filesByLastMessageId.set(f.entityId, arr);
     }
 
-    const mapped = threads.map((t) => {
+    const mapped = await Promise.all(threads.map(async (t) => {
       const lastReadAt = isSpecialist
         ? t.specialistLastReadAt
         : t.clientLastReadAt;
@@ -178,6 +194,16 @@ router.get("/", async (req: Request, res: Response) => {
           unreadCount = 1; // Simplified — we'll enrich with actual count below
         }
       }
+
+      const rawAttachments = filesByLastMessageId.get(lastMessage?.id ?? "") ?? [];
+      const attachments = await Promise.all(
+        rawAttachments.map(async (f) => ({
+          id: f.id,
+          url: await presignAttachmentUrl(f.url),
+          filename: f.filename,
+          mimeType: f.mimeType,
+        }))
+      );
 
       return {
         id: t.id,
@@ -193,18 +219,13 @@ router.get("/", async (req: Request, res: Response) => {
           ? {
               text: lastMessage.text,
               createdAt: lastMessage.createdAt,
-              attachments: (filesByLastMessageId.get(lastMessage.id) ?? []).map((f) => ({
-                id: f.id,
-                url: f.url,
-                filename: f.filename,
-                mimeType: f.mimeType,
-              })),
+              attachments,
             }
           : null,
         unreadCount,
         createdAt: t.createdAt,
       };
-    });
+    }));
 
     // Enrich with actual unread counts — batch into parallel queries
     // Threads with lastReadAt need per-thread counts; threads without can be batched.
@@ -374,10 +395,21 @@ router.get("/my", async (req: Request, res: Response) => {
     }
 
     // Build enriched results with correct unread counts
-    const enriched = threads.map((thread) => {
+    const enriched = await Promise.all(threads.map(async (thread) => {
       const asSpecialist = thread.specialistId === userId;
       const otherUser = asSpecialist ? thread.client : thread.specialist;
       const lastMessage = thread.messages[0] ?? null;
+
+      const rawAttachments = myFilesByLastMessageId.get(lastMessage?.id ?? "") ?? [];
+      const attachments = await Promise.all(
+        rawAttachments.map(async (f) => ({
+          id: f.id,
+          url: await presignAttachmentUrl(f.url),
+          filename: f.filename,
+          mimeType: f.mimeType,
+        }))
+      );
+
       return {
         id: thread.id,
         requestId: thread.requestId,
@@ -394,18 +426,13 @@ router.get("/my", async (req: Request, res: Response) => {
           ? {
               text: lastMessage.text,
               createdAt: lastMessage.createdAt,
-              attachments: (myFilesByLastMessageId.get(lastMessage.id) ?? []).map((f) => ({
-                id: f.id,
-                url: f.url,
-                filename: f.filename,
-                mimeType: f.mimeType,
-              })),
+              attachments,
             }
           : null,
         unreadCount: unreadMap.get(thread.id) ?? 0,
         createdAt: thread.createdAt,
       };
-    });
+    }));
 
     // Group by request. Same request seen from both perspectives (client
     // + specialist) lands in the same group — useful for the dual-role
