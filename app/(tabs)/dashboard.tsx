@@ -339,11 +339,20 @@ export default function UserDashboard() {
                     />
 
                     {isSpecialistUser ? (
-                      <SpecialistMatchedWidget
-                        specialistFeedItems={specialistFeedItems}
-                        matchedCount={matched.length}
-                        onAllPublic={() => nav.routes.tabsPublicRequests()}
-                      />
+                      <View style={{ marginTop: 24 }}>
+                        <View
+                          style={{
+                            height: 1,
+                            backgroundColor: colors.border,
+                            marginBottom: 24,
+                          }}
+                        />
+                        <SpecialistMatchedWidget
+                          specialistFeedItems={specialistFeedItems}
+                          matchedCount={matched.length}
+                          onAllPublic={() => nav.routes.tabsPublicRequests()}
+                        />
+                      </View>
                     ) : null}
                   </View>
                 </DashboardGrid.Col>

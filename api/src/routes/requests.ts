@@ -86,6 +86,7 @@ router.get("/public", async (req: Request, res: Response) => {
 
     const where: Prisma.RequestWhereInput = {
       status: { in: ["ACTIVE", "CLOSING_SOON"] },
+      isPublic: true,
     };
 
     if (cityId) where.cityId = cityId;
@@ -122,6 +123,7 @@ router.get("/public", async (req: Request, res: Response) => {
       title: r.title,
       description: r.description,
       status: r.status,
+      isPublic: r.isPublic,
       createdAt: r.createdAt,
       city: { id: r.city.id, name: r.city.name },
       fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
@@ -236,7 +238,7 @@ router.get("/:id/public", async (req: Request, res: Response) => {
 // POST /api/requests/public — quick request from landing (auth required)
 router.post("/public", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
-    const { title, cityId, fnsId, description } = req.body;
+    const { title, cityId, fnsId, description, isPublic } = req.body;
     const userId = req.user!.userId;
 
     if (!title || !cityId || !fnsId || !description) {
@@ -263,6 +265,7 @@ router.post("/public", authMiddleware, createRequestRateLimiter, async (req: Req
         fnsId,
         description: stripHtml(description),
         userId,
+        isPublic: typeof isPublic === "boolean" ? isPublic : true,
       },
       select: {
         id: true,
@@ -335,7 +338,7 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { title, cityId, fnsId, description, fileIds } = req.body;
+    const { title, cityId, fnsId, description, fileIds, isPublic } = req.body;
 
     // Validate
     if (!title || title.length < 3 || title.length > 100) {
@@ -385,6 +388,7 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
         fnsId,
         description: stripHtml(description),
         userId,
+        isPublic: typeof isPublic === "boolean" ? isPublic : true,
       },
       include: {
         city: true,

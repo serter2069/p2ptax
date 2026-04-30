@@ -99,19 +99,20 @@ export default function OnboardingNameScreen() {
       // Iter11 — role stays USER; specialist mode is toggled by /set-role
       // (which set `isSpecialist=true` already) and finalised by
       // /onboarding/profile setting specialistProfileCompletedAt.
+      // Also sync isSpecialist=true so the guard useEffect doesn't
+      // redirect to tabs before navigation to work-area fires (#1522).
       updateUser({
         firstName: data.user.firstName,
         lastName: data.user.lastName,
+        isSpecialist: true,
       });
 
-      if (isSpecialistIntent) {
-        nav.replaceAny({
-          pathname: "/onboarding/work-area",
-          params: { role: "specialist" },
-        });
-      } else {
-        nav.routes.onboardingWorkArea();
-      }
+      // Always replace so the back button doesn't return here and
+      // re-trigger the guard redirect (#1522).
+      nav.replaceAny({
+        pathname: "/onboarding/work-area",
+        params: { role: "specialist" },
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Что-то пошло не так";
       setError(msg);

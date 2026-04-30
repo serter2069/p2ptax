@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { File, FileImage, Download, ChevronLeft, X } from "lucide-react-native";
+import { File, FileImage, Download, ChevronLeft, X, Link } from "lucide-react-native";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
@@ -64,6 +64,23 @@ export default function MyRequestDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = useCallback(async () => {
+    const url =
+      Platform.OS === "web" && typeof window !== "undefined"
+        ? window.location.href
+        : `https://p2ptax.ru/requests/${id}/detail`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+      }
+    } catch {
+      // silent — clipboard not critical
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [id]);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -390,6 +407,31 @@ export default function MyRequestDetail() {
                       <Text className="text-sm font-medium text-text-base">Запрос закрыт</Text>
                     </View>
                   )}
+
+                  {/* Copy link */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Скопировать ссылку"
+                    onPress={handleCopyLink}
+                    className="flex-row items-center justify-center rounded-xl py-3 px-4 mt-2"
+                    style={({ pressed }) => [
+                      {
+                        backgroundColor: colors.surface2,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        minHeight: 44,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Link size={16} color={copied ? colors.success : colors.text} />
+                    <Text
+                      className="font-medium text-sm ml-2"
+                      style={{ color: copied ? colors.success : colors.text }}
+                    >
+                      {copied ? "Скопировано!" : "Скопировать ссылку"}
+                    </Text>
+                  </Pressable>
                 </View>
 
                 {/* Meta stats */}
@@ -598,6 +640,31 @@ export default function MyRequestDetail() {
                   <Text className="text-sm font-medium text-text-base">Запрос закрыт</Text>
                 </View>
               )}
+
+              {/* Copy link */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Скопировать ссылку"
+                onPress={handleCopyLink}
+                className="flex-row items-center justify-center rounded-xl py-3 px-4 mt-2"
+                style={({ pressed }) => [
+                  {
+                    backgroundColor: colors.surface2,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    minHeight: 44,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Link size={16} color={copied ? colors.success : colors.text} />
+                <Text
+                  className="font-medium text-sm ml-2"
+                  style={{ color: copied ? colors.success : colors.text }}
+                >
+                  {copied ? "Скопировано!" : "Скопировать ссылку"}
+                </Text>
+              </Pressable>
             </View>
 
             <ThreadsList

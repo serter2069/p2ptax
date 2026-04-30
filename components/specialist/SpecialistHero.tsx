@@ -7,8 +7,8 @@ interface SpecialistHeroProps {
   name: string;
   avatarUrl: string | null | undefined;
   isTablet: boolean;
-  rolePrimary: string;
-  cityLabel: string;
+  rolePrimary?: string | null;
+  cityLabel?: string | null;
   isExFns: boolean;
   exFnsStartYear?: number | null;
   exFnsEndYear?: number | null;
@@ -42,15 +42,17 @@ export default function SpecialistHero({
       />
       <View className="flex-1">
         <Text style={{ ...textStyle.h1, color: colors.text }}>{name}</Text>
-        <Text
-          style={{
-            ...textStyle.body,
-            color: colors.textSecondary,
-            marginTop: 4,
-          }}
-        >
-          {rolePrimary} · {cityLabel}
-        </Text>
+        {(rolePrimary || cityLabel) && (
+          <Text
+            style={{
+              ...textStyle.body,
+              color: colors.textSecondary,
+              marginTop: 4,
+            }}
+          >
+            {[rolePrimary, cityLabel].filter(Boolean).join(" · ")}
+          </Text>
+        )}
 
         {/* ИФНС chips удалены — дубль секции «Работает в ФНС» (SA). */}
         {/* Rating/cases counter удалены — MVP stub only (SA). */}

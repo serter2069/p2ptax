@@ -28,7 +28,7 @@ export default function PerspectiveBadge({
   size = "sm",
 }: PerspectiveBadgeProps) {
   const isClient = perspective === "as_client";
-  const label = isClient ? "Я: Клиент" : "Я: Специалист";
+  const label = isClient ? "Клиент" : "Специалист";
 
   const bg = isClient ? colors.accentSoft : colors.greenSoft;
   const fg = isClient ? colors.accent : colors.success;

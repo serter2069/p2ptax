@@ -201,16 +201,33 @@ export default function SpecialistPublicProfile() {
     elevation: 1,
   };
 
+  // role label: only show if profile has specializations or we have a generic fallback
+  // For open profiles: show "Налоговый консультант" only if no specific role info — keep as generic label
+  // per task: only show if explicitly set; we use specializations[0] or null
+  const rolePrimary =
+    specializations.length > 0 ? specializations[0] : null;
+
   // Closed profile block shown instead of full content
   const closedBlock = (
     <View
       className="rounded-2xl items-center px-6 py-10 mt-4"
       style={{ backgroundColor: colors.surface2 }}
     >
+      <View
+        className="px-3 py-1 rounded-full mb-4 self-center"
+        style={{ backgroundColor: colors.accentSoft }}
+      >
+        <Text
+          className="text-xs font-semibold"
+          style={{ color: colors.accentSoftInk }}
+        >
+          Профиль закрыт
+        </Text>
+      </View>
       <Text
         style={{ ...textStyle.h3, color: colors.text, textAlign: "center" }}
       >
-        Профиль специалиста закрыт
+        {name}
       </Text>
       <Text
         style={{
@@ -220,23 +237,13 @@ export default function SpecialistPublicProfile() {
           marginTop: 8,
         }}
       >
-        Специалист сейчас не принимает запросы.
+        Специалист временно не принимает новых клиентов
       </Text>
     </View>
   );
 
   const mainContent = isClosed ? (
     <View>
-      <SpecialistHero
-        name={name}
-        avatarUrl={specialist.avatarUrl}
-        isTablet={isTablet}
-        rolePrimary="Налоговый консультант"
-        cityLabel="Россия"
-        isExFns={false}
-        exFnsStartYear={null}
-        exFnsEndYear={null}
-      />
       {closedBlock}
     </View>
   ) : (
@@ -245,8 +252,8 @@ export default function SpecialistPublicProfile() {
         name={name}
         avatarUrl={specialist.avatarUrl}
         isTablet={isTablet}
-        rolePrimary="Налоговый консультант"
-        cityLabel={cities[0] ?? "Россия"}
+        rolePrimary={rolePrimary}
+        cityLabel={cities[0] ?? null}
         isExFns={isExFns}
         exFnsStartYear={profile?.exFnsStartYear}
         exFnsEndYear={profile?.exFnsEndYear}

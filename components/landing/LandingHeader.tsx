@@ -108,7 +108,7 @@ export default function LandingHeader({
               className="min-h-[44px] items-center justify-center px-3"
             >
               <Text className="font-medium" style={{ color: colors.text, fontSize: 14 }}>
-                В кабинет
+                Личный кабинет
               </Text>
             </Pressable>
           ) : (

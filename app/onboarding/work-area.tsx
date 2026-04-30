@@ -82,7 +82,8 @@ export default function OnboardingWorkAreaScreen() {
     // Wave 1/B — when user arrives here from "Я специалист" landing CTA,
     // isSpecialist is still false; the form's submit will call
     // /api/user/become-specialist which flips the flag. Allow render.
-    if (!isSpecialistUser && !isSpecialistIntent) {
+    // fromSettings — client enabling specialist mode from Settings toggle, also allowed.
+    if (!isSpecialistUser && !isSpecialistIntent && !fromSettings) {
       nav.replaceRoutes.tabs();
       return;
     }
@@ -283,7 +284,7 @@ export default function OnboardingWorkAreaScreen() {
     }
   };
 
-  if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent)) {
+  if (!ready || isAdminUser || (!isSpecialistUser && !isSpecialistIntent && !fromSettings)) {
     return (
       <OnboardingShell
         step={2}
