@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 
@@ -22,15 +23,40 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // GET /api/saved-specialists/full — full specialist data for saved items
+//
+// Optional query params (filter the result set):
+//   ?cityId=...     — only specialists working at FNS in this city
+//   ?fnsId=...      — only specialists tied to this FNS office
+//   ?serviceId=...  — only specialists who provide this service
 router.get("/full", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
+
+    const cityId = typeof req.query.cityId === "string" ? req.query.cityId : "";
+    const fnsId = typeof req.query.fnsId === "string" ? req.query.fnsId : "";
+    const serviceId =
+      typeof req.query.serviceId === "string" ? req.query.serviceId : "";
+
+    // Build the specialist-side filter so we can compose city / FNS / service.
+    const specialistFilter: Prisma.UserWhereInput = { deletedAt: null };
+
+    if (fnsId) {
+      specialistFilter.specialistFns = { some: { fnsId } };
+    } else if (cityId) {
+      specialistFilter.specialistFns = { some: { fns: { cityId } } };
+    }
+
+    if (serviceId) {
+      specialistFilter.specialistServices = { some: { serviceId } };
+    }
+
     const saved = await prisma.savedSpecialist.findMany({
       where: {
         userId,
         // Hide soft-deleted specialists from the saved list (their PII has
-        // been anonymized — surfacing them would be confusing).
-        specialist: { deletedAt: null },
+        // been anonymized — surfacing them would be confusing) and apply the
+        // optional city / FNS / service filters from the query string.
+        specialist: specialistFilter,
       },
       orderBy: { savedAt: "desc" },
       include: {
@@ -40,37 +66,88 @@ router.get("/full", async (req: Request, res: Response) => {
             firstName: true,
             lastName: true,
             avatarUrl: true,
+            isAvailable: true,
             createdAt: true,
-            specialistProfile: { select: { description: true } },
+            specialistProfile: {
+              select: {
+                description: true,
+                yearsOfExperience: true,
+                exFnsStartYear: true,
+              },
+            },
             specialistServices: {
               select: { service: { select: { id: true, name: true } } },
               distinct: ["serviceId"],
             },
             specialistFns: {
-              select: { fns: { select: { city: { select: { id: true, name: true } } } } },
+              select: {
+                id: true,
+                fnsId: true,
+                fns: {
+                  select: {
+                    id: true,
+                    name: true,
+                    city: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+            _count: {
+              select: {
+                specialistCases: true,
+                specialistReviews: true,
+              },
             },
           },
         },
       },
     });
 
-    const items = saved.map((s) => ({
-      id: s.specialist.id,
-      firstName: s.specialist.firstName,
-      lastName: s.specialist.lastName,
-      avatarUrl: s.specialist.avatarUrl,
-      createdAt: s.specialist.createdAt.toISOString(),
-      description: s.specialist.specialistProfile?.description ?? null,
-      services: s.specialist.specialistServices.map((ss) => ss.service),
-      cities: Array.from(
+    const items = saved.map((s) => {
+      const sp = s.specialist;
+
+      // Deduplicate cities (a specialist may be linked to multiple FNS in
+      // the same city) keeping insertion order for stable rendering.
+      const cities = Array.from(
         new Map(
-          s.specialist.specialistFns
-            .map((sf) => sf.fns.city)
-            .filter(Boolean)
-            .map((c) => [c!.id, c!])
+          sp.specialistFns
+            .map((sf) => sf.fns?.city)
+            .filter((c): c is { id: string; name: string } => Boolean(c))
+            .map((c) => [c.id, c])
         ).values()
-      ),
-    }));
+      );
+
+      // FNS list with the office name (used in the filter chips + cards).
+      const fnsNames = Array.from(
+        new Map(
+          sp.specialistFns
+            .filter((sf) => Boolean(sf.fns))
+            .map((sf) => [
+              sf.fns!.id,
+              { id: sf.id, fnsId: sf.fns!.id, fnsName: sf.fns!.name },
+            ])
+        ).values()
+      );
+
+      return {
+        id: sp.id,
+        firstName: sp.firstName,
+        lastName: sp.lastName,
+        avatarUrl: sp.avatarUrl,
+        isAvailable: sp.isAvailable,
+        createdAt: sp.createdAt.toISOString(),
+        cities,
+        fnsNames,
+        services: sp.specialistServices.map((ss) => ss.service),
+        profile: {
+          description: sp.specialistProfile?.description ?? null,
+          yearsOfExperience: sp.specialistProfile?.yearsOfExperience ?? null,
+          exFnsStartYear: sp.specialistProfile?.exFnsStartYear ?? null,
+        },
+        casesCount: sp._count.specialistCases,
+        reviewsCount: sp._count.specialistReviews,
+      };
+    });
 
     res.json({ items });
   } catch (err) {
