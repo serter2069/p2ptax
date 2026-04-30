@@ -457,7 +457,8 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/requests/:id/detail — own request detail (auth required)
+// GET /api/requests/:id/detail — request detail (auth required, accessible to owner AND specialists)
+// Returns isOwner: boolean so the frontend can gate edit controls without a second request.
 router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -478,68 +479,68 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
       return;
     }
 
-    if (request.userId !== userId) {
-      res.status(403).json({ error: "Access denied" });
-      return;
-    }
+    const isOwner = request.userId === userId;
 
-    // Count unread messages across threads
-    const threads = await prisma.thread.findMany({
-      where: { requestId: id, clientId: userId },
-      select: {
-        id: true,
-        clientLastReadAt: true,
-      },
-    });
-
-    // Batch unread count: one query per group (has lastReadAt vs no lastReadAt)
+    // Count unread messages across threads — only meaningful for the owner (client).
+    // Specialists do not track per-request unread counts here.
     let unreadMessages = 0;
-    const threadIds = threads.map((t) => t.id);
-    if (threadIds.length > 0) {
-      const threadsWithReadAt = threads.filter((t) => t.clientLastReadAt);
-      const threadsWithoutReadAt = threads.filter((t) => !t.clientLastReadAt);
+    if (isOwner) {
+      const threads = await prisma.thread.findMany({
+        where: { requestId: id, clientId: userId },
+        select: {
+          id: true,
+          clientLastReadAt: true,
+        },
+      });
 
-      const counts = await Promise.all([
-        // Threads where client has read — count messages after lastReadAt
-        ...(threadsWithReadAt.length > 0
-          ? threadsWithReadAt.map((t) =>
-              prisma.message.count({
-                where: {
-                  threadId: t.id,
-                  createdAt: { gt: t.clientLastReadAt! },
-                  senderId: { not: userId },
-                },
-              })
-            )
-          : []),
-        // Threads never read — count all messages from others
-        ...(threadsWithoutReadAt.length > 0
-          ? [
-              prisma.message.count({
-                where: {
-                  threadId: { in: threadsWithoutReadAt.map((t) => t.id) },
-                  senderId: { not: userId },
-                },
-              }),
-            ]
-          : []),
-      ]);
+      if (threads.length > 0) {
+        const threadsWithReadAt = threads.filter((t) => t.clientLastReadAt);
+        const threadsWithoutReadAt = threads.filter((t) => !t.clientLastReadAt);
 
-      const withoutIdx = threadsWithReadAt.length;
-      unreadMessages = counts.slice(0, withoutIdx).reduce((s, c) => s + c, 0);
-      if (threadsWithoutReadAt.length > 0) {
-        unreadMessages += counts[withoutIdx];
+        const counts = await Promise.all([
+          // Threads where client has read — count messages after lastReadAt
+          ...(threadsWithReadAt.length > 0
+            ? threadsWithReadAt.map((t) =>
+                prisma.message.count({
+                  where: {
+                    threadId: t.id,
+                    createdAt: { gt: t.clientLastReadAt! },
+                    senderId: { not: userId },
+                  },
+                })
+              )
+            : []),
+          // Threads never read — count all messages from others
+          ...(threadsWithoutReadAt.length > 0
+            ? [
+                prisma.message.count({
+                  where: {
+                    threadId: { in: threadsWithoutReadAt.map((t) => t.id) },
+                    senderId: { not: userId },
+                  },
+                }),
+              ]
+            : []),
+        ]);
+
+        const withoutIdx = threadsWithReadAt.length;
+        unreadMessages = counts.slice(0, withoutIdx).reduce((s, c) => s + c, 0);
+        if (threadsWithoutReadAt.length > 0) {
+          unreadMessages += counts[withoutIdx];
+        }
       }
     }
 
-    // Get max extensions from settings
-    const extSetting = await prisma.setting.findUnique({
-      where: { key: "max_extensions" },
-    });
+    // Get max extensions from settings — only relevant for owner UI
+    const extSetting = isOwner
+      ? await prisma.setting.findUnique({ where: { key: "max_extensions" } })
+      : null;
     const maxExtensions = extSetting ? parseInt(extSetting.value, 10) : 3;
 
     res.json({
       id: request.id,
+      userId: request.userId,
+      isOwner,
       title: request.title,
       description: request.description,
       status: request.status,

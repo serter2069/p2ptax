@@ -8,6 +8,8 @@ export interface FileItem {
 
 export interface RequestDetailData {
   id: string;
+  userId: string;
+  isOwner: boolean;
   title: string;
   description: string;
   status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";

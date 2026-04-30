@@ -6,6 +6,7 @@ import { RequestDetailData } from "./types";
 
 interface Props {
   request: RequestDetailData;
+  isOwner: boolean;
   isActive: boolean;
   closing: boolean;
   copied: boolean;
@@ -18,6 +19,7 @@ interface Props {
 
 export default function RequestActions({
   request,
+  isOwner,
   isActive,
   closing,
   copied,
@@ -28,6 +30,53 @@ export default function RequestActions({
   isDesktop,
 }: Props) {
   const padding = isDesktop ? "p-5" : "p-4";
+
+  // Non-owners see only the copy-link button (read-only view).
+  if (!isOwner) {
+    return (
+      <View
+        className={`bg-white rounded-2xl ${padding} mb-4`}
+        style={{
+          borderWidth: 1,
+          borderColor: colors.border,
+          shadowColor: colors.text,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          elevation: 4,
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Скопировать ссылку"
+          onPress={onCopyLink}
+          className="flex-row items-center justify-center rounded-xl px-4"
+          style={({ pressed }) => [
+            {
+              backgroundColor: colors.surface2,
+              borderWidth: 1,
+              borderColor: colors.border,
+              minHeight: 48,
+              paddingVertical: 14,
+            },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Link size={16} color={copied ? colors.success : colors.text} />
+          <Text
+            className="ml-2"
+            style={{
+              fontSize: 14,
+              fontWeight: "600",
+              color: copied ? colors.success : "#111",
+            }}
+          >
+            {copied ? "Скопировано!" : "Скопировать ссылку"}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -132,7 +181,7 @@ export default function RequestActions({
         </Text>
       </Pressable>
 
-      {/* Visibility toggle */}
+      {/* Visibility toggle — owner only */}
       <View
         className="flex-row items-center justify-between mt-4 pt-3"
         style={{ borderTopWidth: 1, borderTopColor: colors.border }}
