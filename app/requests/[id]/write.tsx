@@ -214,7 +214,7 @@ export default function SpecialistConfirmWrite() {
           ...(uploadToken ? { uploadToken } : {}),
         },
       });
-      nav.replaceAny(`/threads/${result.id}`);
+      nav.replaceAny(`/threads/${result.id}?requestId=${id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
@@ -222,7 +222,7 @@ export default function SpecialistConfirmWrite() {
             typeof err.data?.threadId === "string" ? err.data.threadId : null;
           if (existingThreadId) {
             const goToThread = () =>
-              nav.replaceAny(`/threads/${existingThreadId}`);
+              nav.replaceAny(`/threads/${existingThreadId}?requestId=${id}`);
             Alert.alert(
               "Вы уже откликнулись",
               "Перейдём к существующему диалогу.",

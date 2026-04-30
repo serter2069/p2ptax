@@ -340,7 +340,9 @@ export default function MyRequestDetail() {
                   requestId={id}
                   threadsCount={request.threadsCount}
                   unreadMessages={request.unreadMessages}
-                  onOpenThread={(threadId) => nav.dynamic.thread(threadId)}
+                  onOpenThread={(threadId) =>
+                    nav.any(`/threads/${threadId}?requestId=${id}`)
+                  }
                 />
               </View>
 
@@ -672,7 +674,9 @@ export default function MyRequestDetail() {
               requestId={id}
               threadsCount={request.threadsCount}
               unreadMessages={request.unreadMessages}
-              onOpenThread={(threadId) => nav.any(`/threads/${threadId}`)}
+              onOpenThread={(threadId) =>
+                nav.any(`/threads/${threadId}?requestId=${id}`)
+              }
             />
 
             {/* Meta stats */}
