@@ -1,4 +1,4 @@
-import { Image, type ImageStyle } from "react-native";
+import { Image, Platform, type ImageStyle } from "react-native";
 
 export type LogoVariant = "dark" | "white" | "icon";
 export type LogoSize = "sm" | "md" | "lg" | "xl";
@@ -10,7 +10,14 @@ interface LogoProps {
 }
 
 const SOURCES = {
-  dark: require("@/assets/images/logo.png"),
+  // On web, prefer WebP for smaller file size (~30% vs PNG). Metro bundles both;
+  // modern browsers (Chrome 32+, Safari 14+, Firefox 65+) support WebP natively.
+  // On native (iOS/Android), RN Image supports WebP since RN 0.60 — keep PNG
+  // to avoid any potential decode edge-cases on older OS versions.
+  dark: Platform.OS === "web"
+    ? require("@/assets/images/logo.webp")
+    : require("@/assets/images/logo.png"),
+  // White silhouette stays PNG — needs lossless alpha channel.
   white: require("@/assets/images/logo-white.png"),
   icon: require("@/assets/images/logo-icon-1024.png"),
 };

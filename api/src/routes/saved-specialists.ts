@@ -1,9 +1,47 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { specialistListSelect, mapSpecialist } from "./specialists";
 
 const router = Router();
 router.use(authMiddleware);
+
+// GET /api/saved-specialists — list saved specialists for the authenticated user.
+// Returns the same field shape as GET /api/specialists so client cards render identically.
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+
+    // Fetch the saved specialist user records directly using the same select
+    // as the public catalog — ensures card data parity (cities, services, etc.).
+    const savedRows = await prisma.savedSpecialist.findMany({
+      where: { userId },
+      orderBy: { savedAt: "desc" },
+    });
+
+    if (savedRows.length === 0) {
+      res.json({ items: [] });
+      return;
+    }
+
+    const specialistIds = savedRows.map((r) => r.specialistId);
+    const specialists = await prisma.user.findMany({
+      where: { id: { in: specialistIds }, deletedAt: null },
+      select: specialistListSelect,
+    });
+
+    // Preserve the savedAt order
+    const orderedById = new Map(savedRows.map((r) => [r.specialistId, r]));
+    const sorted = specialistIds
+      .map((id) => specialists.find((s) => s.id === id))
+      .filter((s): s is NonNullable<typeof s> => s != null);
+
+    res.json({ items: sorted.map(mapSpecialist) });
+  } catch (err) {
+    console.error("[saved-specialists] GET /", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // POST /api/saved-specialists/:specialistId — save specialist
 router.post("/:specialistId", async (req: Request, res: Response) => {

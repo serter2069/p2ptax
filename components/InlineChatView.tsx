@@ -6,7 +6,6 @@ import {
   Pressable,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Alert,
   useWindowDimensions,
@@ -540,81 +539,12 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         onClose={() => setLightbox(null)}
       />
 
-      {/* Clear thread confirmation modal */}
-      <Modal
+      {/* Clear thread confirmation modal — extracted to ClearThreadModal */}
+      <ClearThreadModal
         visible={showClearModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowClearModal(false)}
-      >
-        <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", padding: 24 }}
-          onPress={() => setShowClearModal(false)}
-        >
-          <Pressable
-            onPress={() => {/* prevent dismiss on inner press */}}
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              padding: 24,
-              width: "100%",
-              maxWidth: 360,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.15,
-              shadowRadius: 24,
-              elevation: 16,
-            }}
-          >
-            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text, marginBottom: 8 }}>
-              Очистить переписку?
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20, marginBottom: 24 }}>
-              Вы и ваш собеседник не сможете получить к ней доступ. Она будет удалена с серверов.
-            </Text>
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Отмена"
-                onPress={() => setShowClearModal(false)}
-                style={({ pressed }) => [
-                  {
-                    flex: 1,
-                    paddingVertical: 12,
-                    borderRadius: 10,
-                    alignItems: "center",
-                    backgroundColor: colors.surface2,
-                    minHeight: 44,
-                    justifyContent: "center",
-                  },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>Отмена</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Очистить переписку"
-                onPress={handleClearConfirm}
-                style={({ pressed }) => [
-                  {
-                    flex: 1,
-                    paddingVertical: 12,
-                    borderRadius: 10,
-                    alignItems: "center",
-                    backgroundColor: colors.danger,
-                    minHeight: 44,
-                    justifyContent: "center",
-                  },
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}>Очистить</Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        onCancel={() => setShowClearModal(false)}
+        onConfirm={handleClearConfirm}
+      />
     </View>
   );
 }

@@ -175,12 +175,24 @@ export default function FileUploadZone({
         });
 
         if (!res.ok) {
+          // Try to parse an error message from the response body before falling back.
+          let serverMsg: string | undefined;
+          try {
+            const errBody = (await res.json()) as { error?: string };
+            serverMsg = errBody.error;
+          } catch {
+            // response body was not JSON — ignore
+          }
           throw new Error(
             res.status === 413
               ? `Файл больше ${maxSizeMB} МБ`
               : res.status === 415
               ? "Неподдерживаемый формат"
-              : "Ошибка загрузки"
+              : res.status === 401
+              ? "Необходима авторизация"
+              : res.status === 429
+              ? "Слишком много загрузок. Попробуйте через минуту."
+              : serverMsg ?? "Ошибка загрузки"
           );
         }
 

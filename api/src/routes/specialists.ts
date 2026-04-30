@@ -18,7 +18,7 @@ function resolveCallerId(req: Request): string | null {
   }
 }
 
-const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
+export const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
   id: true,
   firstName: true,
   lastName: true,
@@ -62,9 +62,9 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
   },
 });
 
-type SpecialistListItem = Prisma.UserGetPayload<{ select: typeof specialistListSelect }>;
+export type SpecialistListItem = Prisma.UserGetPayload<{ select: typeof specialistListSelect }>;
 
-function mapSpecialist(s: SpecialistListItem) {
+export function mapSpecialist(s: SpecialistListItem) {
   const citiesMap = new Map<string, { id: string; name: string }>();
   const fnsNamesMap = new Map<string, { id: string; fnsId: string; fnsName: string }>();
   const specialistFns = s.specialistFns.map((sf) => {
