@@ -8,9 +8,9 @@ import {
   Alert,
   Linking,
   Platform,
-  Switch,
   useWindowDimensions,
 } from "react-native";
+import StyledSwitch from "@/components/ui/StyledSwitch";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -653,12 +653,10 @@ export default function MyRequestDetail() {
                           : "Запрос виден только зарегистрированным пользователям"}
                       </Text>
                     </View>
-                    <Switch
+                    <StyledSwitch
                       value={request.isPublic}
                       onValueChange={handleToggleVisibility}
                       disabled={togglingVisibility || !isActive}
-                      trackColor={{ false: "#D1D5DB", true: "#6366F1" }}
-                      thumbColor="#FFFFFF"
                     />
                   </View>
                 </View>
@@ -942,12 +940,10 @@ export default function MyRequestDetail() {
                       : "Запрос виден только зарегистрированным пользователям"}
                   </Text>
                 </View>
-                <Switch
+                <StyledSwitch
                   value={request.isPublic}
                   onValueChange={handleToggleVisibility}
                   disabled={togglingVisibility || !isActive}
-                  trackColor={{ false: "#D1D5DB", true: "#6366F1" }}
-                  thumbColor="#FFFFFF"
                 />
               </View>
             </View>

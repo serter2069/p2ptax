@@ -7,9 +7,9 @@ import {
   Alert,
   Platform,
   Pressable,
-  Switch,
   useWindowDimensions,
 } from "react-native";
+import StyledSwitch from "@/components/ui/StyledSwitch";
 import LandingHeader from "@/components/landing/LandingHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -428,12 +428,10 @@ export default function CreateRequest() {
                   Видна всем в каталоге. Выключите, если хотите показывать только авторизованным пользователям.
                 </Text>
               </View>
-              <Switch
+              <StyledSwitch
                 value={isPublic}
                 onValueChange={setIsPublic}
                 disabled={submitting}
-                trackColor={{ false: "#D1D5DB", true: "#6366F1" }}
-                thumbColor="#FFFFFF"
               />
             </View>
 
