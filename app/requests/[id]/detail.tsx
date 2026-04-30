@@ -321,6 +321,11 @@ export default function MyRequestDetail() {
 
   const isActive = request.status !== "CLOSED";
 
+  // Service is shown in the chip only when actually selected — issue #1578.
+  // Backend may return null/undefined or an object with empty name; treat all
+  // those cases as "not selected" so the chip falls back to plain [ФНС].
+  const serviceName = request.service?.name?.trim() || null;
+
   // Inline composer eligibility — specialist with completed profile, request open.
   // Non-specialists / unauth users / closed requests don't see the composer.
   const showInlineComposer =
@@ -410,12 +415,15 @@ export default function MyRequestDetail() {
                   {request.title}
                 </Text>
 
-                {/* Unified FNS · service chip (city is already inside FNS name) */}
+                {/* Unified FNS · service chip — issue #1578.
+                    City already lives inside FNS name (e.g. "ИФНС №1 по г. Москве"),
+                    so we never include it separately. Service is appended only
+                    when it is actually selected. */}
                 <View className="flex-row flex-wrap gap-2 mb-5">
                   <View className="bg-white border border-border rounded-lg px-2.5 py-1">
                     <Text className="text-xs font-medium text-text-base">
                       {request.fns.name}
-                      {request.service ? ` · ${request.service.name}` : ""}
+                      {serviceName ? ` · ${serviceName}` : ""}
                     </Text>
                   </View>
                 </View>
@@ -696,12 +704,15 @@ export default function MyRequestDetail() {
               {request.title}
             </Text>
 
-            {/* Unified FNS · service chip (city is already inside FNS name) */}
+            {/* Unified FNS · service chip — issue #1578.
+                City already lives inside FNS name (e.g. "ИФНС №1 по г. Москве"),
+                so we never include it separately. Service is appended only
+                when it is actually selected. */}
             <View className="flex-row flex-wrap gap-2 mb-4">
               <View className="bg-white border border-border rounded-lg px-2.5 py-1">
                 <Text className="text-xs text-text-base">
                   {request.fns.name}
-                  {request.service ? ` · ${request.service.name}` : ""}
+                  {serviceName ? ` · ${serviceName}` : ""}
                 </Text>
               </View>
             </View>
