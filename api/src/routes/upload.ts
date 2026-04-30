@@ -31,23 +31,74 @@ const avatarUpload = multer({
   },
 });
 
+// Whitelist of allowed document MIME types. Mirrors the chat-file
+// allow list so uploaded attachments are uniformly validated regardless
+// of which entrypoint they came through.
+const DOCUMENT_ALLOWED_MIME = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
 const documentUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for documents
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for documents — multer returns 413 automatically
   fileFilter: (_req, file, cb) => {
-    const allowed = ["application/pdf", "image/jpeg", "image/png"];
-    if (allowed.includes(file.mimetype)) {
+    if (DOCUMENT_ALLOWED_MIME.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only pdf, jpg, png allowed for documents"));
+      cb(new Error("Недопустимый тип файла"));
     }
   },
 });
 
-function generateKey(folder: string, originalName: string): string {
-  const ext = path.extname(originalName);
-  const hash = crypto.randomBytes(8).toString("hex");
-  return `${folder}/${Date.now()}-${hash}${ext}`;
+// Map of trusted MIME types → canonical safe extensions used for the
+// MinIO storage key. Avoids carrying through user-supplied extensions
+// like ".exe.pdf" or ".php" — the storage key extension is fully
+// derived from the validated mimetype.
+const MIME_EXT_MAP: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "application/pdf": ".pdf",
+  "application/msword": ".doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  "application/vnd.ms-excel": ".xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+  "text/plain": ".txt",
+};
+
+/**
+ * Sanitize a user-supplied filename for response payloads (NOT for storage keys):
+ *   - strip path separators / traversal
+ *   - allow only [a-zA-Z0-9._-] + cyrillic + spaces
+ *   - collapse repeated separators
+ *   - clamp to 120 chars
+ */
+function sanitizeFilename(name: string): string {
+  const base = name.replace(/[\\/]/g, "_").replace(/\.\./g, "_");
+  const safe = base.replace(/[^a-zA-Z0-9._\-Ѐ-ӿ\s]/g, "_").trim();
+  const collapsed = safe.replace(/_+/g, "_").replace(/\s+/g, " ");
+  return collapsed.slice(0, 120) || "file";
+}
+
+/**
+ * Generate a UUID-only storage key. The user-supplied filename is NEVER
+ * used as part of the MinIO key — extension is derived from the validated
+ * mimetype (mimeType is checked against multer fileFilter before this is
+ * called). Falls back to original ext only if mimetype unmapped.
+ */
+function generateKey(folder: string, originalName: string, mimeType?: string): string {
+  let ext = mimeType && MIME_EXT_MAP[mimeType] ? MIME_EXT_MAP[mimeType] : path.extname(originalName).toLowerCase();
+  // Defensive: only allow safe ext characters
+  if (!/^\.[a-z0-9]{1,6}$/.test(ext)) ext = "";
+  const id = crypto.randomUUID();
+  return `${folder}/${Date.now()}-${id}${ext}`;
 }
 
 // POST /api/upload/avatar — upload avatar image
@@ -60,7 +111,8 @@ router.post("/avatar", authMiddleware, uploadRateLimiter, avatarUpload.single("f
 
     await ensureMinioBucket();
 
-    const key = generateKey("avatars", req.file.originalname);
+    // UUID-only storage key, ext derived from validated mimetype.
+    const key = generateKey("avatars", req.file.originalname, "image/jpeg");
 
     // Resize avatar to 400x400 max (fit, preserving aspect ratio) and convert to JPEG
     const { data: resized, info } = await sharp(req.file.buffer)
@@ -96,7 +148,11 @@ router.post("/documents", authMiddleware, uploadRateLimiter, documentUpload.arra
     const userId = req.user!.userId;
     const results = [];
     for (const file of files) {
-      const key = generateKey("documents", file.originalname);
+      // Storage key: UUID-only (extension derived from validated mimetype),
+      // never user-supplied filename. Display name is sanitized for return
+      // payload + DB persistence — strips path traversal and unsafe chars.
+      const safeFilename = sanitizeFilename(file.originalname);
+      const key = generateKey("documents", file.originalname, file.mimetype);
       await minioClient.putObject(MINIO_BUCKET, key, file.buffer, file.size, {
         "Content-Type": file.mimetype,
       });
@@ -107,7 +163,7 @@ router.post("/documents", authMiddleware, uploadRateLimiter, documentUpload.arra
           entityType: "user",
           entityId: userId,
           url: `/${MINIO_BUCKET}/${key}`,
-          filename: file.originalname,
+          filename: safeFilename,
           size: file.size,
           mimeType: file.mimetype,
         },
@@ -178,8 +234,11 @@ router.post("/chat-file", authMiddleware, uploadRateLimiter, chatFileUpload.sing
 
     await ensureMinioBucket();
 
-    // Sanitize filename: replace unsafe chars, preserve extension
-    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+    // Sanitized display name (returned to clients, used to derive the
+    // resolveUploadToken filename in messages.ts).
+    const safeName = sanitizeFilename(req.file.originalname);
+    // Storage key uses uploadToken + sanitized name (not the raw originalname)
+    // so adversarial filenames cannot escape the chat-files/<thread>/ prefix.
     const key = hasThread
       ? `chat-files/${threadId}/${uploadToken}_${safeName}`
       : `chat-files/_pending/${uploadToken}_${safeName}`;
@@ -191,7 +250,7 @@ router.post("/chat-file", authMiddleware, uploadRateLimiter, chatFileUpload.sing
     res.json({
       uploadToken,
       fileUrl: `/${MINIO_BUCKET}/${key}`,
-      fileName: req.file.originalname,
+      fileName: safeName,
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
     });
@@ -212,6 +271,29 @@ router.get("/signed-url/:key(*)", authMiddleware, async (req: Request, res: Resp
     console.error("get file error:", error);
     res.status(500).json({ error: "Failed to get file URL" });
   }
+});
+
+/**
+ * Router-scoped error handler. Multer raises:
+ *   - MulterError("LIMIT_FILE_SIZE") when the configured fileSize limit is exceeded
+ *   - generic Error from fileFilter for unsupported MIME types
+ * Map both to client-readable status codes (413 / 415) so the UI can show
+ * a precise message instead of a generic 500.
+ */
+router.use((err: unknown, _req: Request, res: Response, next: (err?: unknown) => void) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(413).json({ error: "Файл превышает 10 МБ" });
+      return;
+    }
+    res.status(400).json({ error: err.message });
+    return;
+  }
+  if (err instanceof Error && /Недопустимый тип файла|allowed/i.test(err.message)) {
+    res.status(415).json({ error: err.message });
+    return;
+  }
+  next(err);
 });
 
 export default router;

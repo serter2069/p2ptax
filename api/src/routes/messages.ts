@@ -292,9 +292,17 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
       res.status(400).json({ error: "content must be a string" });
       return;
     }
-    const trimmedText = typeof text === "string" ? text.trim() : "";
-    if (trimmedText.length > 10000) {
-      res.status(400).json({ error: "Message content exceeds maximum length of 10000 characters" });
+    // Trim → strip raw HTML tags → re-trim. We don't run a full HTML
+    // sanitizer (no library dep) — messages are rendered as plain text by
+    // the React Native <Text> component, but the regex below removes
+    // anything that looks like a tag in case downstream surfaces (email
+    // notification body, future webhooks) ever inject the value into HTML.
+    const rawText = typeof text === "string" ? text : "";
+    const stripped = rawText.replace(/<\/?[a-z][^>]*>/gi, "");
+    const trimmedText = stripped.trim();
+    const MAX_TEXT_LEN = 5000;
+    if (trimmedText.length > MAX_TEXT_LEN) {
+      res.status(400).json({ error: `Сообщение превышает ${MAX_TEXT_LEN} символов` });
       return;
     }
     const attachedFiles: FileInput[] = Array.isArray(files) ? files.slice(0, 3) : [];

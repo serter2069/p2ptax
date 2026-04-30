@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Platform } from "react-native";
+import { View, Text, TextInput } from "react-native";
 import { colors, fontSizeValue } from "@/lib/theme";
 
 interface MessageComposerProps {
@@ -60,6 +60,13 @@ export default function MessageComposer({
           placeholderTextColor={colors.placeholder}
           multiline
           editable={!disabled}
+          // Border/outline reset is applied unconditionally so the inner
+          // <input>/<textarea> never paints its own edge — only the outer
+          // wrapper View owns the bottom underline. Native silently drops
+          // unknown CSS keys, so this is safe across web + native.
+          // @ts-expect-error — outlineStyle/outlineWidth/appearance are
+          // web-only CSS properties; RN's TextStyle typing rejects them
+          // but the runtime drops unknown keys on native.
           style={{
             flex: 1,
             paddingHorizontal: 0,
@@ -68,15 +75,11 @@ export default function MessageComposer({
             color: colors.text,
             textAlignVertical: "top",
             borderWidth: 0,
+            borderColor: "transparent",
             backgroundColor: "transparent",
-            ...(Platform.OS === "web"
-              ? {
-                  borderColor: "transparent",
-                  outlineStyle: "none" as never,
-                  outlineWidth: 0,
-                  appearance: "none" as never,
-                }
-              : {}),
+            outlineStyle: "none",
+            outlineWidth: 0,
+            appearance: "none",
           }}
         />
       </View>

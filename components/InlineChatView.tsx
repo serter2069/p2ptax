@@ -878,15 +878,26 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
               />
             </Pressable>
 
-            {/* Text input */}
+            {/* Text input — strip Input's bottom underline; the chat-strip's
+                top border (border-t border-border on parent) is the only
+                visible edge, otherwise web shows a stacked double-border. */}
             <Input
               accessibilityLabel="Введите сообщение"
               placeholder="Введите сообщение..."
               value={text}
               onChangeText={setText}
               multiline
+              maxLength={5000}
               style={{ flex: 1 }}
-              containerStyle={{ borderRadius: radiusValue.xl, minHeight: 40, maxHeight: 120 }}
+              containerStyle={{
+                borderRadius: radiusValue.xl,
+                minHeight: 40,
+                maxHeight: 120,
+                borderBottomWidth: 0,
+                borderTopWidth: 0,
+                borderLeftWidth: 0,
+                borderRightWidth: 0,
+              }}
             />
 
             {/* Send button */}
