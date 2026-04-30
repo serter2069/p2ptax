@@ -126,6 +126,17 @@ router.post("/verify-otp", verifyOtpRateLimiter, async (req: Request, res: Respo
     // Find user (created in request-otp)
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isSpecialist: true,
+        isAvailable: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        specialistProfileCompletedAt: true,
+      },
     });
 
     if (!user) {
@@ -153,8 +164,10 @@ router.post("/verify-otp", verifyOtpRateLimiter, async (req: Request, res: Respo
         email: user.email,
         role: user.role,
         isSpecialist: user.isSpecialist,
+        isAvailable: user.isAvailable,
         firstName: user.firstName,
         lastName: user.lastName,
+        avatarUrl: user.avatarUrl,
         specialistProfileCompletedAt: user.specialistProfileCompletedAt
           ? user.specialistProfileCompletedAt.toISOString()
           : null,
@@ -178,7 +191,23 @@ router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) 
 
     const storedToken = await prisma.refreshToken.findUnique({
       where: { token: refreshToken },
-      include: { user: true },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            isSpecialist: true,
+            isAvailable: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+            specialistProfileCompletedAt: true,
+            isBanned: true,
+            deletedAt: true,
+          },
+        },
+      },
     });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
@@ -214,8 +243,10 @@ router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) 
         email: storedToken.user.email,
         role: storedToken.user.role,
         isSpecialist: storedToken.user.isSpecialist,
+        isAvailable: storedToken.user.isAvailable,
         firstName: storedToken.user.firstName,
         lastName: storedToken.user.lastName,
+        avatarUrl: storedToken.user.avatarUrl,
         specialistProfileCompletedAt: storedToken.user.specialistProfileCompletedAt
           ? storedToken.user.specialistProfileCompletedAt.toISOString()
           : null,
