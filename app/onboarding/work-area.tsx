@@ -1,6 +1,6 @@
 import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { api } from "@/lib/api";
@@ -67,9 +67,14 @@ export default function OnboardingWorkAreaScreen() {
   const isSpecialistIntent = role === "specialist";
   const { ready, user } = useRequireAuth();
   const { isSpecialistUser, isAdminUser, updateUser } = useAuth();
+  const segments = useSegments();
+  // Only redirect when this screen is actually active in the navigation stack.
+  // Without this guard, toggling specialist off from /settings causes this
+  // background screen to fire nav.replaceRoutes.tabs() unintentionally.
+  const isOnThisScreen = segments[0] === "onboarding" && segments[1] === "work-area";
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !isOnThisScreen) return;
     if (isAdminUser) {
       nav.replaceRoutes.adminDashboard();
       return;
@@ -84,7 +89,7 @@ export default function OnboardingWorkAreaScreen() {
     if (!fromSettings && user?.specialistProfileCompletedAt) {
       nav.replaceRoutes.tabs();
     }
-  }, [ready, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings, nav]);
+  }, [ready, isOnThisScreen, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings, nav]);
 
   // Catalogs (loaded once)
   const [cities, setCities] = useState<CityOpt[]>([]);

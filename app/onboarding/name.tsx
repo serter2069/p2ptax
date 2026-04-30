@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect } from "react";
 import { ChevronLeft } from "lucide-react-native";
@@ -27,11 +27,16 @@ export default function OnboardingNameScreen() {
   const isSpecialistIntent = role === "specialist";
   const { ready, user } = useRequireAuth();
   const { updateUser, isSpecialistUser, isAdminUser } = useAuth();
+  const segments = useSegments();
+  // Only redirect when this screen is actually active in the navigation stack.
+  // Without this guard, toggling specialist off from /settings causes this
+  // background screen to fire nav.replaceRoutes.tabs() unintentionally.
+  const isOnThisScreen = segments[0] === "onboarding" && segments[1] === "name";
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [lastName, setLastName] = useState(user?.lastName ?? "");
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !isOnThisScreen) return;
     if (isAdminUser) {
       nav.replaceRoutes.adminDashboard();
       return;
@@ -47,7 +52,7 @@ export default function OnboardingNameScreen() {
     if (!fromSettings && user?.specialistProfileCompletedAt) {
       nav.replaceRoutes.tabs();
     }
-  }, [ready, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings]);
+  }, [ready, isOnThisScreen, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings]);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

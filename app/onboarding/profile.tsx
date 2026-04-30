@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useSegments } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Pencil, Camera, ChevronLeft } from "lucide-react-native";
@@ -35,9 +35,14 @@ export default function OnboardingProfileScreen() {
   const fromSettings = params.from === "settings";
   const { ready, user } = useRequireAuth();
   const { updateUser, isSpecialistUser, isAdminUser } = useAuth();
+  const segments = useSegments();
+  // Only redirect when this screen is actually active in the navigation stack.
+  // Without this guard, toggling specialist off from /settings causes this
+  // background screen to fire nav.replaceRoutes.tabs() unintentionally.
+  const isOnThisScreen = segments[0] === "onboarding" && segments[1] === "profile";
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !isOnThisScreen) return;
     if (isAdminUser) {
       nav.replaceRoutes.adminDashboard();
       return;
@@ -49,7 +54,7 @@ export default function OnboardingProfileScreen() {
     if (!fromSettings && user?.specialistProfileCompletedAt) {
       nav.replaceRoutes.tabs();
     }
-  }, [ready, isAdminUser, isSpecialistUser, user, fromSettings, nav]);
+  }, [ready, isOnThisScreen, isAdminUser, isSpecialistUser, user, fromSettings, nav]);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);

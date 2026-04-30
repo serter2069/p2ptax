@@ -33,10 +33,14 @@ function installFocusRingCSS() {
   style.id = FOCUS_RING_STYLE_ID;
   // overlay.accent20 expanded inline (browser CSS string, not RN style).
   style.textContent = `
-    input:focus, textarea:focus {
+    input:focus:not([data-line-input]), textarea:focus:not([data-line-input]) {
       outline: none;
       box-shadow: 0 0 0 3px ${overlay.accent20};
       border-radius: 10px;
+    }
+    input[data-line-input]:focus, textarea[data-line-input]:focus {
+      outline: none;
+      box-shadow: none;
     }
   `;
   document.head.appendChild(style);

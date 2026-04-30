@@ -105,9 +105,15 @@ export default function Input({
           textAlignVertical={multiline ? "top" : undefined}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          // @ts-expect-error — TextInput's `style` prop is typed as
-          // `StyleProp<TextStyle>`, which doesn't include web-only CSS
-          // properties. We use several non-standard keys here:
+          // data-line-input: web-only attribute that tells AppShell's global
+          // focus CSS to skip box-shadow for this input. The wrapper View
+          // already renders a bottom-border focus indicator, so the global
+          // ring would produce a double-border artifact.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          {...(Platform.OS === 'web' ? { 'data-line-input': true } as any : {})}
+          // TextInput's `style` prop is typed as `StyleProp<TextStyle>`,
+          // which doesn't include web-only CSS properties. We use several
+          // non-standard keys here (suppressed via the `as any` spread above):
           //   alignSelf: 'stretch' — forces the web <input> to fill its
           //     flex-row parent vertically (RN ignores on native).
           //   outlineStyle: 'none' — removes default browser outline on
