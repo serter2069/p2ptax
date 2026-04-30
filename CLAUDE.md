@@ -60,3 +60,13 @@ npx tsc --noEmit && cd api && npx tsc --noEmit && cd ..
 ```
 
 Both must pass with 0 errors. No exceptions.
+
+## Discipline (added 2026-04-30)
+
+Before claiming "done" on any visual/chrome change:
+1. Touch a file matching `*Header*.tsx` or `_layout.tsx`? Run `npm run audit:visual` and inspect `.audit/screenshots/`.
+2. Add a logo? Use `<Logo>` from `@/components/brand/Logo`, NEVER raw `<Image source={require("@/assets/images/logo...")} />`.
+3. Add an input? Use `<Input>` from `@/components/ui/Input`, NEVER raw `<TextInput>` (ESLint enforces).
+4. Touch `app/_layout.tsx` or `(tabs)/_layout.tsx`? Re-verify mobile + desktop chrome rendering by manual visual check.
+5. Logo placeholder forbidden: never `<View bg=primary><Text>P</Text></View>` style fake logos.
+6. The full structure audit lives at `.audit/structure-audit.md` — re-run via the audit prompt template if it goes stale.
