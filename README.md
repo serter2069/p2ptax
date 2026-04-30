@@ -272,6 +272,20 @@ User opens app
 
 See `api/.env.example` for all required variables.
 
+## Browser Cache in Development
+
+The landing page (`landing/index.html`) includes `no-store` / `no-cache` meta
+tags so the browser does not serve stale assets during active development.
+
+For the Expo web app, disable cache in Chrome DevTools:
+
+1. Open DevTools (F12) -> Network tab -> check **Disable cache** (active while DevTools is open).
+2. Hard refresh: **Cmd+Shift+R** (macOS) / **Ctrl+Shift+R** (Windows/Linux).
+3. Or use Incognito mode — it starts with an empty cache every time.
+
+If you see outdated JS after a code change, hard-refresh first before debugging
+further.
+
 ## License
 
 MIT
