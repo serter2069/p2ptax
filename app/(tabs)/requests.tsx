@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
-import FilterBar from "@/components/FilterBar";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import { Inbox } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
@@ -78,7 +77,7 @@ export default function PublicRequestsTab() {
 
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
   const loadingMoreRef = useRef(false);
   const isFirstMount = useRef(true);
@@ -168,16 +167,14 @@ export default function PublicRequestsTab() {
     loadingMoreRef.current = false;
   }, [hasMore, page, fetchRequests]);
 
-  const handleServiceToggle = useCallback((id: string) => {
-    setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+  const handleServiceChange = useCallback((id: string | null) => {
+    setSelectedServiceId(id);
   }, []);
 
   const handleResetFilters = useCallback(() => {
     setSelectedCityId(null);
     setSelectedFnsId(null);
-    setSelectedServiceIds([]);
+    setSelectedServiceId(null);
   }, []);
 
   const handleCascadeChange = useCallback(
@@ -198,7 +195,7 @@ export default function PublicRequestsTab() {
   const hasFilters =
     selectedCityId !== null ||
     selectedFnsId !== null ||
-    selectedServiceIds.length > 0;
+    selectedServiceId !== null;
 
   // Skeleton on initial load
   if (initLoading) {
@@ -242,14 +239,9 @@ export default function PublicRequestsTab() {
           }}
           onChange={handleCascadeChange}
           citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
-        />
-        <FilterBar
-          cities={[]}
-          selectedCityId={null}
-          onCityChange={() => {}}
           services={services}
-          selectedServiceIds={selectedServiceIds}
-          onServiceToggle={handleServiceToggle}
+          selectedServiceId={selectedServiceId}
+          onServiceChange={handleServiceChange}
         />
       </View>
 

@@ -75,8 +75,8 @@ export default function SpecialistPublicProfile() {
   // Load initial saved state for authenticated users
   useEffect(() => {
     if (!isAuthenticated || !id) return;
-    apiGet<{ ids: string[] }>("/api/saved-specialists")
-      .then((r) => setSavedBookmark(r.ids.includes(id)))
+    apiGet<{ items: { id: string }[] }>("/api/specialists?savedOnly=true&page=1&limit=200")
+      .then((r) => setSavedBookmark(r.items.some((s) => s.id === id)))
       .catch(() => {});
   }, [isAuthenticated, id]);
 

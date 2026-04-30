@@ -73,7 +73,7 @@ export default function PublicRequestsFeed() {
 
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
   const loadingMoreRef = useRef(false);
   const isFirstMount = useRef(true);
@@ -163,16 +163,14 @@ export default function PublicRequestsFeed() {
     loadingMoreRef.current = false;
   }, [hasMore, page, fetchRequests]);
 
-  const handleServiceToggle = useCallback((id: string) => {
-    setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+  const handleServiceChange = useCallback((id: string | null) => {
+    setSelectedServiceId(id);
   }, []);
 
   const handleResetFilters = useCallback(() => {
     setSelectedCityId(null);
     setSelectedFnsId(null);
-    setSelectedServiceIds([]);
+    setSelectedServiceId(null);
   }, []);
 
   const handleCascadeChange = useCallback(
@@ -193,7 +191,7 @@ export default function PublicRequestsFeed() {
   const hasFilters =
     selectedCityId !== null ||
     selectedFnsId !== null ||
-    selectedServiceIds.length > 0;
+    selectedServiceId !== null;
 
   // Skeleton on initial load
   if (initLoading) {
@@ -241,8 +239,8 @@ export default function PublicRequestsFeed() {
           onChange={handleCascadeChange}
           citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
           services={services}
-          selectedServiceIds={selectedServiceIds}
-          onServiceToggle={handleServiceToggle}
+          selectedServiceId={selectedServiceId}
+          onServiceChange={handleServiceChange}
         />
       </View>
 

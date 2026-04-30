@@ -203,8 +203,8 @@ export default function SpecialistFeed({ mode }: SpecialistFeedProps) {
   // ── Load saved bookmark IDs (for 'all' mode — show filled icon on saved items) ──
   useEffect(() => {
     if (mode !== "all" || !isAuthenticated) return;
-    apiGet<{ ids: string[] }>("/api/saved-specialists")
-      .then((r) => setBookmarkedIds(new Set(r.ids)))
+    apiGet<{ items: SpecialistItem[] }>("/api/specialists?savedOnly=true&page=1&limit=200")
+      .then((r) => setBookmarkedIds(new Set(r.items.map((s) => s.id))))
       .catch(() => {});
   }, [mode, isAuthenticated]);
 
@@ -233,14 +233,13 @@ export default function SpecialistFeed({ mode }: SpecialistFeedProps) {
 
   const fetchFavorites = useCallback(async () => {
     try {
-      const parts: string[] = [];
-      if (selectedCityId) parts.push(`cityId=${selectedCityId}`);
-      if (selectedFnsId) parts.push(`fnsId=${selectedFnsId}`);
-      if (selectedServiceIds.length === 1)
-        parts.push(`serviceId=${selectedServiceIds[0]}`);
-      const qs = parts.length ? `?${parts.join("&")}` : "";
+      const parts: string[] = ["savedOnly=true", "page=1", "limit=200"];
+      if (selectedCityId) parts.push(`city_ids=${selectedCityId}`);
+      if (selectedFnsId) parts.push(`fns_ids=${selectedFnsId}`);
+      if (selectedServiceIds.length > 0)
+        parts.push(`services=${selectedServiceIds.join(",")}`);
       const res = await apiGet<{ items: SpecialistItem[] }>(
-        `/api/saved-specialists/full${qs}`
+        `/api/specialists?${parts.join("&")}`
       );
       setSpecialists(res.items);
       // All items on favorites page are by definition bookmarked
