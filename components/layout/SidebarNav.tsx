@@ -9,6 +9,7 @@ import {
   type MatchContext,
   itemsForGroup,
 } from "@/lib/nav-items";
+import Logo from "@/components/brand/Logo";
 
 /**
  * SidebarNav — persistent left-rail navigation for authenticated routes.
@@ -177,7 +178,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
           : {}),
       }}
     >
-      {/* Brand + role badge */}
+      {/* Brand */}
       <Pressable
         accessibilityRole="link"
         accessibilityLabel="P2PTax — главная"
@@ -190,25 +191,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
           marginBottom: spacing.sm,
         }}
       >
-        <View
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            backgroundColor: accent.strong,
-            marginRight: spacing.sm,
-          }}
-        />
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: "800",
-            color: colors.text,
-          }}
-        >
-          P2P
-          <Text style={{ color: accent.strong }}>Tax</Text>
-        </Text>
+        <Logo size="lg" />
       </Pressable>
 
       {/* Primary nav */}
