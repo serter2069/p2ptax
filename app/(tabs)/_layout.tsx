@@ -96,6 +96,8 @@ export default function TabLayout() {
       {/* STRUCT-1 — redirect-only tabs, hidden from tab bar. */}
       <Tabs.Screen name="create" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
+      {/* Specialist alias for client "My Requests" — hidden from tab bar. */}
+      <Tabs.Screen name="my-requests" options={{ href: null }} />
     </Tabs>
   );
 }
