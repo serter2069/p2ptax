@@ -33,8 +33,17 @@ function Pill({ children, active, onClick, className='' }) {
 }
 
 // stylized SVG portrait placeholder — deterministic from seed (name init)
-function Avatar({ init, online, size='md', seed }) {
+// if src is provided (avatarUrl), renders an <img> instead of the SVG
+function Avatar({ init, online, size='md', seed, src }) {
   const cls = size === 'lg' ? 'avatar lg' : size === 'xl' ? 'avatar xl' : 'avatar';
+  if (src) {
+    return (
+      <div className={cls}>
+        <img src={src} alt={init} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}}/>
+        {online && <span className="online"></span>}
+      </div>
+    );
+  }
   // simple hash
   const s = (seed || init || 'X').split('').reduce((a,c)=>a + c.charCodeAt(0), 0);
   // female vs male cue: first init char — last letter 'а/я/и' -> female-ish
@@ -166,7 +175,7 @@ function Nav({ onAuth, onCreate, onCatalog }) {
           ) : (
             <button className="btn btn-subtle" onClick={onAuth}>Войти</button>
           )}
-          <button className="btn btn-primary" onClick={onCreate}>Создать запрос</button>
+          <button className="btn btn-primary" onClick={onCreate}>Создать заявку</button>
         </div>
       </div>
     </nav>
@@ -298,7 +307,7 @@ function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }
             </div>
 
             <div className="row" style={{marginTop: 24, gap: 20}}>
-              <button className="btn btn-ghost btn-lg" onClick={onCreate}>Создать запрос бесплатно</button>
+              <button className="btn btn-ghost btn-lg" onClick={onCreate}>Создать заявку бесплатно</button>
               <span className="small dim">или <a onClick={onCatalog} style={{cursor:'pointer', textDecoration:'underline'}}>смотрите каталог</a></span>
             </div>
           </div>
@@ -309,7 +318,7 @@ function Hero({ onOpenSearch, onCreate, onCatalog, searchState, setSearchState }
             <div className="spec-stack">
               {getSpecialists().slice(0, 4).map(s => (
                 <div key={s.id} className="spec-card">
-                  <Avatar init={s.init} online={s.online} seed={s.id} />
+                  <Avatar init={s.init} online={s.online} seed={s.id} src={s.avatarUrl} />
                   <div className="spec-meta">
                     <div className="spec-name">{s.first} {s.last}</div>
                     <div className="spec-desc">{s.fnsLabel}</div>
@@ -376,7 +385,7 @@ function HowItWorks({ onCreate }) {
             <h2 className="section-title">Три шага<br/><em>вместо обзвона</em></h2>
           </div>
           <p className="section-sub">
-            Не вы ищете специалистов — они сами приходят к вам. Платформа показывает ваш запрос только тем, кто работает с вашей инспекцией и именно с этим типом проверки.
+            Не вы ищете специалистов — они сами приходят к вам. Платформа показывает вашу заявку только тем, кто работает с вашей инспекцией и именно с этим типом проверки.
           </p>
         </div>
 
@@ -394,7 +403,7 @@ function HowItWorks({ onCreate }) {
           <div className="step">
             <div className="step-num">[ ШАГ 02 ]</div>
             <div className="step-title">Специалисты пишут первыми</div>
-            <div className="step-desc">Обычно 2–5 сообщений в течение часа. Они смотрят запрос и решают, берутся или нет — уже с планом.</div>
+            <div className="step-desc">Обычно 2–5 сообщений в течение часа. Они смотрят заявку и решают, берутся или нет — уже с планом.</div>
             <div className="step-preview" style={{flexDirection:'column', alignItems:'flex-start', gap:6}}>
               <div>◉ Алексей М. · ИФНС №7 · ответил через 18 мин</div>
               <div>◉ Ирина К. · ИФНС №1 · ответила через 32 мин</div>
@@ -413,7 +422,7 @@ function HowItWorks({ onCreate }) {
         </div>
 
         <div style={{marginTop: 40, textAlign:'center'}}>
-          <button className="btn btn-primary btn-lg" onClick={onCreate}>Начать с запроса →</button>
+          <button className="btn btn-primary btn-lg" onClick={onCreate}>Начать с заявки →</button>
         </div>
       </div>
     </section>
@@ -466,7 +475,7 @@ function CatalogPreview({ onCatalog, onOpenSpecialist }) {
           {filtered.map(s => (
             <div className="cat-card" key={s.id} onClick={()=>onOpenSpecialist(s.id)}>
               <div className="cat-card-head">
-                <Avatar init={s.init} online={s.online} size="lg" />
+                <Avatar init={s.init} online={s.online} size="lg" src={s.avatarUrl} />
                 <div>
                   <div className="cat-card-name">{s.first} {s.last}</div>
                   <div className="cat-card-role">{s.role}</div>
@@ -521,7 +530,7 @@ function Coverage() {
             <h2 className="section-title">12 городов,<br/><em>78+ инспекций</em></h2>
           </div>
           <p className="section-sub">
-            Добавляем новые города каждую неделю. Не нашли свою — оставьте запрос, подтянем специалиста под неё за 5–7 дней.
+            Добавляем новые города каждую неделю. Не нашли свою — оставьте заявку, подтянем специалиста под неё за 5–7 дней.
           </p>
         </div>
 
@@ -686,7 +695,7 @@ function SpecialistsCTA({ onJoin }) {
             <div className="spec-stat">
               <div>
                 <div className="stat-val">20</div>
-                <div className="stat-label">новых запросов в день на пике</div>
+                <div className="stat-label">новых заявок в день на пике</div>
               </div>
               <div>
                 <div className="stat-val">0%</div>
@@ -743,10 +752,10 @@ function FinalCTA({ onCreate }) {
           <em>уведомление?</em>
         </h2>
         <p className="section-sub" style={{margin:'0 auto 32px', textAlign:'center', maxWidth: '48ch'}}>
-          Опишите ситуацию. Специалисты по вашей ФНС получат запрос и напишут сами. Бесплатно, 3 минуты, без регистрации заранее.
+          Опишите ситуацию. Специалисты по вашей ФНС получат заявку и напишут сами. Бесплатно, 3 минуты, без регистрации заранее.
         </p>
         <button className="btn btn-primary btn-lg" onClick={onCreate} style={{padding:'18px 28px', fontSize: 16}}>
-          Создать запрос →
+          Создать заявку →
         </button>
       </div>
     </section>

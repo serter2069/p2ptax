@@ -48,6 +48,7 @@ const SERVICES = [
 const SPECIALISTS = [
   {
     id: 'am', first: 'Алексей', last: 'Морозов', init: 'АМ',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Aleksey+Morozov&background=1e3a8a&color=fff&size=200&font-size=0.42&bold=true',
     role: 'Бывш. инспектор, 11 лет',
     city: 'msk', fns: ['msk-7', 'msk-14'], fnsLabel: 'ИФНС №7, №14 — Москва',
     services: ['field', 'desk'],
@@ -56,6 +57,7 @@ const SPECIALISTS = [
   },
   {
     id: 'ik', first: 'Ирина', last: 'Ковалёва', init: 'ИК',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Irina+Kovaleva&background=1e3a8a&color=fff&size=200&font-size=0.42&bold=true',
     role: 'Налоговый консультант, 8 лет',
     city: 'msk', fns: ['msk-1', 'msk-28'], fnsLabel: 'ИФНС №1, №28 — Москва',
     services: ['desk', 'oper'],
@@ -64,6 +66,7 @@ const SPECIALISTS = [
   },
   {
     id: 'ds', first: 'Дмитрий', last: 'Смирнов', init: 'ДС',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Dmitry+Smirnov&background=1e3a8a&color=fff&size=200&font-size=0.42&bold=true',
     role: 'Адвокат, 14 лет',
     city: 'msk', fns: ['msk-23', 'msk-33', 'msk-43'], fnsLabel: 'ИФНС №23, №33, №43 — Москва',
     services: ['field', 'desk', 'oper'],
@@ -72,6 +75,7 @@ const SPECIALISTS = [
   },
   {
     id: 'ev', first: 'Екатерина', last: 'Волкова', init: 'ЕВ',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Ekaterina+Volkova&background=1e3a8a&color=fff&size=200&font-size=0.42&bold=true',
     role: 'Бывш. сотрудник УФНС, 9 лет',
     city: 'spb', fns: ['spb-1', 'spb-15'], fnsLabel: 'ИФНС №1, №15 — СПб',
     services: ['field', 'oper'],
@@ -80,14 +84,16 @@ const SPECIALISTS = [
   },
   {
     id: 'pl', first: 'Павел', last: 'Лебедев', init: 'ПЛ',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Pavel+Lebedev&background=1e3a8a&color=fff&size=200&font-size=0.42&bold=true',
     role: 'Аудитор, 12 лет',
     city: 'spb', fns: ['spb-22', 'spb-24'], fnsLabel: 'ИФНС №22, №24 — СПб',
-    services: ['desk'],
+    services: ['desk', 'oper'],
     online: true, cases: 153, responseTime: '< 2 ч', since: '2013',
     bio: 'Камеральные по НДС, включая разрывы. Представляю интересы в инспекции и УФНС.',
   },
   {
     id: 'mo', first: 'Михаил', last: 'Орлов', init: 'МО',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Mikhail+Orlov&background=1e3a8a&color=fff&size=200&font-size=0.42&bold=true',
     role: 'Налоговый консультант, 6 лет',
     city: 'ekb', fns: ['ekb-24'], fnsLabel: 'ИФНС №24 — Екатеринбург',
     services: ['desk', 'oper'],

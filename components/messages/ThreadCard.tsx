@@ -85,7 +85,7 @@ export default function ThreadCard({
           item.perspective === "as_client" ? `Профиль специалиста ${name}` : name
         }
         onPress={handleUserPress}
-        className="relative mr-3 my-3.5"
+        className="mr-3 my-3.5"
         style={{
           shadowColor: colors.black,
           shadowOffset: { width: 0, height: 2 },
@@ -99,24 +99,9 @@ export default function ThreadCard({
           imageUrl={item.otherUser.avatarUrl ?? undefined}
           size="md"
         />
-        <View
-          className="absolute bottom-0 right-0 rounded-full bg-success"
-          style={{
-            width: 12,
-            height: 12,
-            borderWidth: 2,
-            borderColor: colors.white,
-          }}
-        />
-        {hasUnread && (
-          <View
-            className="absolute -top-0.5 -right-0.5 rounded-full"
-            style={{ width: 10, height: 10, backgroundColor: colors.primary }}
-          />
-        )}
       </Pressable>
 
-      <View className="flex-1 min-w-0 py-3.5">
+      <View className="flex-1 min-w-0 py-3.5" style={{ paddingRight: hasUnread ? 8 : 0 }}>
         {/* S3 fix — give the name flex-1 + min-w-0 so it gets the bulk of the row width
             and only ellipsises for genuinely long names. Timestamp is fixed-width on the
             right (flex-shrink-0). Perspective badge sits between name and timestamp, also
@@ -170,6 +155,24 @@ export default function ThreadCard({
           </Text>
         )}
       </View>
+      {hasUnread && (
+        <View
+          style={{
+            minWidth: 22,
+            height: 22,
+            borderRadius: 11,
+            backgroundColor: colors.danger ?? "#dc2626",
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 6,
+            marginLeft: 8,
+          }}
+        >
+          <Text style={{ color: colors.white, fontSize: 11, fontWeight: "700" }}>
+            {item.unreadCount > 99 ? "99+" : item.unreadCount}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }
