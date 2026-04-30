@@ -238,7 +238,13 @@ export default function AuthOtpScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="P2PTax — главная"
+              onPress={() => nav.replaceRoutes.home()}
+            >
+              <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
+            </Pressable>
             <Text
               style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}
             >
@@ -295,7 +301,13 @@ export default function AuthOtpScreen() {
         <HeaderBack title="" />
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="P2PTax — главная"
+              onPress={() => nav.replaceRoutes.home()}
+            >
+              <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
+            </Pressable>
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
@@ -327,7 +339,13 @@ export default function AuthOtpScreen() {
       >
         <View className="flex-1 items-center justify-center px-6">
           <View style={{ width: "100%", maxWidth: 400 }}>
-            <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="P2PTax — главная"
+              onPress={() => nav.replaceRoutes.home()}
+            >
+              <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
+            </Pressable>
             <Text
               className="text-text-base font-extrabold text-center"
               style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}

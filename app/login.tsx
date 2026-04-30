@@ -82,8 +82,14 @@ export default function AuthEmailScreen() {
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <View className="flex-1 items-center justify-center bg-white px-6">
         <View style={{ width: "100%", maxWidth: 400 }}>
-          {/* Wordmark */}
-          <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
+          {/* Wordmark — tapping navigates home */}
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="P2PTax — главная"
+            onPress={() => nav.replaceRoutes.home()}
+          >
+            <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
+          </Pressable>
 
           {/* Header */}
           <Text
