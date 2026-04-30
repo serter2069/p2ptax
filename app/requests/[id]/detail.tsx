@@ -465,26 +465,6 @@ export default function MyRequestDetail() {
               onToggleVisibility={handleToggleVisibility}
             />
 
-            {/* Meta stats */}
-            <View
-              className="bg-white rounded-2xl p-4 mb-6"
-              style={{
-                shadowColor: colors.text,
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-text-mute">Диалогов</Text>
-                <Text className="text-sm text-text-base">{request.threadsCount}</Text>
-              </View>
-              <View className="flex-row justify-between">
-                <Text className="text-sm text-text-mute">Город</Text>
-                <Text className="text-sm text-text-base">{request.city.name}</Text>
-              </View>
-            </View>
           </View>
         </View>
       </ScrollView>

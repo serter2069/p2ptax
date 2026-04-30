@@ -74,19 +74,19 @@ export default function Input({
     ? {
         flexDirection: "row",
         alignItems: multiline ? "flex-start" : "center",
-        minHeight: multiline ? 96 : 48,
+        minHeight: multiline ? 80 : 48,
         width: "100%",
         borderWidth: 1,
         borderColor,
         borderRadius: 8,
         backgroundColor: editable ? "#ffffff" : "#f9fafb",
-        paddingHorizontal: 14,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
       }
     : {
         flexDirection: "row",
         alignItems: "center",
-        minHeight: multiline ? 96 : 48,
+        minHeight: multiline ? 80 : 48,
         // Line-style: no top/left/right border, no radius, transparent bg.
         borderTopWidth: 0,
         borderLeftWidth: 0,
