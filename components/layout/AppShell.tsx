@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { View, useWindowDimensions, Platform } from "react-native";
 import { usePathname, useSegments } from "expo-router";
-import { colors, overlay } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav, { detectSidebarGroup, SIDEBAR_WIDTH } from "./SidebarNav";
 
@@ -32,13 +32,13 @@ function installFocusRingCSS() {
   const style = document.createElement("style");
   style.id = FOCUS_RING_STYLE_ID;
   // overlay.accent20 expanded inline (browser CSS string, not RN style).
+  // Suppress all browser-default focus rings on inputs — each component
+  // owns its own focus indicator (bottom-border on Input, styled wrapper on
+  // CityFnsCascade/OtpCodeInput, etc.). The old box-shadow rule was adding a
+  // second ring on top of the styled wrapper border, causing the double-input
+  // visual artifact the user sees everywhere.
   style.textContent = `
-    input:focus:not([data-line-input]), textarea:focus:not([data-line-input]) {
-      outline: none;
-      box-shadow: 0 0 0 3px ${overlay.accent20};
-      border-radius: 10px;
-    }
-    input[data-line-input]:focus, textarea[data-line-input]:focus {
+    input:focus, textarea:focus {
       outline: none;
       box-shadow: none;
     }
