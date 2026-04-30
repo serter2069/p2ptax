@@ -26,6 +26,8 @@ export interface InputProps {
   containerStyle?: ViewStyle;
   /** "line" = bottom-border only (default). "bordered" = full border, radius 8, padding 12/14. */
   variant?: "line" | "bordered";
+  /** Called when TextInput content size changes (multiline auto-expand). */
+  onContentSizeChange?: TextInputProps["onContentSizeChange"];
 }
 
 // Design tokens for the "bordered" variant (spec: #1589).
@@ -58,6 +60,7 @@ export default function Input({
   style,
   containerStyle,
   variant = "line",
+  onContentSizeChange,
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
@@ -128,6 +131,7 @@ export default function Input({
           maxLength={maxLength}
           numberOfLines={numberOfLines}
           textAlignVertical={multiline ? "top" : undefined}
+          onContentSizeChange={onContentSizeChange}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           // data-line-input: web-only attribute that tells AppShell's global
@@ -158,6 +162,8 @@ export default function Input({
               outlineWidth: 0,
               outlineStyle: "none",
               appearance: "none",
+              // Disable manual resize handle on multiline web textarea.
+              ...(multiline ? { resize: "none" } : {}),
             } : {}),
           }}
         />

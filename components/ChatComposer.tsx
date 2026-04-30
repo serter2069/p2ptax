@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import FileUploadZone, { type PendingFile } from "@/components/ui/FileUploadZone";
@@ -76,6 +77,11 @@ export default function ChatComposer({
 }: ChatComposerProps) {
   const canSend = !disabled && !sending && (value.trim().length > 0 || files.length > 0);
 
+  // Auto-expand: track TextInput content height, clamped between 40 and 120px.
+  const MIN_HEIGHT = 40;
+  const MAX_HEIGHT = 120;
+  const [inputHeight, setInputHeight] = useState(MIN_HEIGHT);
+
   return (
     <View className="flex-row items-end border-t border-border px-3 py-2 bg-white">
       {/* Shared upload control: paperclip button, chip preview strip,
@@ -102,11 +108,14 @@ export default function ChatComposer({
         multiline
         maxLength={maxLength}
         editable={!disabled}
+        onContentSizeChange={(e) => {
+          const h = e.nativeEvent.contentSize.height;
+          setInputHeight(Math.min(Math.max(MIN_HEIGHT, h), MAX_HEIGHT));
+        }}
         style={{ flex: 1 }}
         containerStyle={{
           borderRadius: radiusValue.xl,
-          minHeight: 40,
-          maxHeight: 120,
+          height: inputHeight,
           borderBottomWidth: 0,
           borderTopWidth: 0,
           borderLeftWidth: 0,
@@ -114,14 +123,24 @@ export default function ChatComposer({
         }}
       />
 
-      {/* Send button. */}
+      {/* Send button — aligned to flex-end so it stays at bottom when input expands. */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Отправить сообщение"
         onPress={onSend}
         disabled={!canSend}
-        className="w-11 h-11 items-center justify-center ml-2"
-        style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        style={({ pressed }) => [
+          {
+            width: 44,
+            height: 44,
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: 8,
+            alignSelf: "flex-end",
+            marginBottom: 0,
+          },
+          pressed && { opacity: 0.7 },
+        ]}
       >
         {sending ? (
           <ActivityIndicator size="small" color={colors.primary} />
