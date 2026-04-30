@@ -40,6 +40,7 @@ interface PendingFile {
   name: string;
   size: number;
   mimeType: string;
+  webFile?: File;
 }
 
 interface LightboxItem {
@@ -217,6 +218,8 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
   const flatListRef = useRef<FlatList>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const chatContainerRef = useRef<View>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isClosed = thread?.request?.status === "CLOSED";
   const myId = user?.id;
@@ -316,6 +319,10 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       Alert.alert("Лимит файлов", "Можно прикрепить не более 3 файлов");
       return;
     }
+    if (Platform.OS === "web") {
+      fileInputRef.current?.click();
+      return;
+    }
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/pdf", "image/jpeg", "image/png"],
@@ -366,18 +373,59 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       name: file.name,
       mimeType: file.type || "application/octet-stream",
       size: file.size,
+      webFile: file,
     };
     setPendingFiles((prev) => [...prev, pending]);
   }, [pendingFiles.length]);
 
+  // Web-only: real drag-and-drop on the entire chat container.
+  // RN-Web's `onDragOver`/`onDrop` View props are not always reliably wired,
+  // so we attach native DOM listeners on the underlying element instead.
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const node = chatContainerRef.current as unknown as HTMLElement | null;
+    if (!node || typeof node.addEventListener !== "function") return;
+
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      setDragOver(true);
+    };
+    const onDragLeave = (e: DragEvent) => {
+      // Only hide overlay when cursor leaves the container entirely,
+      // not when crossing into a child element.
+      if (!node.contains(e.relatedTarget as Node)) setDragOver(false);
+    };
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const files = Array.from(e.dataTransfer?.files ?? []);
+      files.slice(0, 3).forEach((f) => handleWebFileDrop(f));
+    };
+
+    node.addEventListener("dragover", onDragOver);
+    node.addEventListener("dragleave", onDragLeave);
+    node.addEventListener("drop", onDrop);
+    return () => {
+      node.removeEventListener("dragover", onDragOver);
+      node.removeEventListener("dragleave", onDragLeave);
+      node.removeEventListener("drop", onDrop);
+    };
+  }, [handleWebFileDrop]);
+
   const uploadChatFile = useCallback(async (file: PendingFile, tid: string): Promise<string> => {
     const uploadToken = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const formData = new FormData();
-    formData.append("file", {
-      uri: file.uri,
-      name: file.name,
-      type: file.mimeType,
-    } as unknown as Blob);
+    if (Platform.OS === "web" && file.webFile) {
+      // On web, append the actual File so the browser sets correct
+      // Content-Type/boundary and serializes the binary payload.
+      formData.append("file", file.webFile, file.name);
+    } else {
+      formData.append("file", {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType,
+      } as unknown as Blob);
+    }
     formData.append("uploadToken", uploadToken);
     formData.append("threadId", tid);
     const token = await AsyncStorage.getItem("p2ptax_access_token");
@@ -576,7 +624,51 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const canViewSpecialistProfile = thread && myId && thread.clientId === myId;
 
   return (
-    <View className="flex-1 bg-white">
+    <View ref={chatContainerRef} className="flex-1 bg-white">
+      {/* Hidden web file input — opened by paperclip Pressable on web */}
+      {Platform.OS === "web" && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+          style={{ display: "none" }}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            const files = Array.from(e.target.files ?? []);
+            const slots = Math.max(0, 3 - pendingFiles.length);
+            files.slice(0, slots).forEach((f) => handleWebFileDrop(f));
+            // Reset so picking the same file twice still fires onChange.
+            e.target.value = "";
+          }}
+        />
+      )}
+
+      {/* Drag-over overlay covering the whole chat area */}
+      {dragOver && Platform.OS === "web" && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 100,
+            backgroundColor: "rgba(59,130,246,0.08)",
+            borderWidth: 2,
+            borderColor: colors.primary,
+            borderStyle: "dashed",
+            borderRadius: 12,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          pointerEvents="none"
+        >
+          <Text style={{ color: colors.primary, fontSize: 16, fontWeight: "600" }}>
+            Перетащите файлы сюда
+          </Text>
+        </View>
+      )}
+
       {/* Header with avatar + other party name + perspective badge + counterparty hint */}
       <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
         {!isDesktop && (
@@ -839,29 +931,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
         {/* Input bar */}
         {!isClosed && (
-          <View
-            className="flex-row items-end border-t border-border px-3 py-2 bg-white"
-            style={dragOver ? { backgroundColor: colors.accentSoft } as object : undefined}
-            {...(Platform.OS === "web" ? {
-              onDragOver: (e: React.DragEvent) => { e.preventDefault(); setDragOver(true); },
-              onDragLeave: () => setDragOver(false),
-              onDrop: (e: React.DragEvent) => {
-                e.preventDefault();
-                setDragOver(false);
-                const file = e.dataTransfer.files[0];
-                if (file) handleWebFileDrop(file);
-              },
-            } as object : {})}
-          >
-            {dragOver && Platform.OS === "web" && (
-              <View
-                className="absolute inset-0 items-center justify-center rounded-lg"
-                style={{ backgroundColor: "rgba(0,0,0,0.05)", zIndex: 10 }}
-                pointerEvents="none"
-              >
-                <Text className="text-sm font-medium text-text-dim">Перетащите файл сюда</Text>
-              </View>
-            )}
+          <View className="flex-row items-end border-t border-border px-3 py-2 bg-white">
             {/* Attach button */}
             <Pressable
               accessibilityRole="button"
