@@ -49,6 +49,9 @@ interface RequestItem {
   city: { id: string; name: string };
   fns: { id: string; name: string; code: string };
   threadsCount: number;
+  hasFiles?: boolean;
+  filesCount?: number;
+  user?: { firstName: string | null; lastName: string | null };
 }
 
 interface RequestsResponse {
@@ -344,11 +347,11 @@ export default function RequestsFeed({
             id={item.id}
             title={item.title}
             description={item.description}
-            status={item.status}
-            city={item.city}
             fns={item.fns}
-            threadsCount={item.threadsCount}
             createdAt={item.createdAt}
+            hasFiles={item.hasFiles}
+            filesCount={item.filesCount}
+            user={item.user}
             onPress={handleRequestPress}
           />
         )}
