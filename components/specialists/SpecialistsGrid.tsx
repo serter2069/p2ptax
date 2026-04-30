@@ -12,6 +12,7 @@ import {
   NativeScrollEvent,
 } from "react-native";
 import { colors } from "@/lib/theme";
+import { getShortServiceName, isAllCoreServicesSelected } from "@/lib/services";
 import { MessageCircle, Bookmark } from "lucide-react-native";
 
 function formatSpecialistName(firstName: string | null, lastName: string | null): string {
@@ -195,9 +196,8 @@ function DesktopSpecialistRow({
                   >
                     {g.fnsName}
                   </Text>
-                  {g.services.map((s) => (
+                  {isAllCoreServicesSelected(g.services.map((s) => s.name)) ? (
                     <View
-                      key={`${g.fnsId}-${s.id}`}
                       style={{
                         backgroundColor: colors.accentSoft,
                         borderRadius: 99,
@@ -206,10 +206,26 @@ function DesktopSpecialistRow({
                       }}
                     >
                       <Text style={{ color: colors.primary, fontSize: 11 }} numberOfLines={1}>
-                        {s.name}
+                        Все
                       </Text>
                     </View>
-                  ))}
+                  ) : (
+                    g.services.map((s) => (
+                      <View
+                        key={`${g.fnsId}-${s.id}`}
+                        style={{
+                          backgroundColor: colors.accentSoft,
+                          borderRadius: 99,
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                        }}
+                      >
+                        <Text style={{ color: colors.primary, fontSize: 11 }} numberOfLines={1}>
+                          {getShortServiceName(s.name)}
+                        </Text>
+                      </View>
+                    ))
+                  )}
                 </View>
               ))}
               {fnsOverflow > 0 && (
