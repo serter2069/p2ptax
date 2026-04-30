@@ -11,6 +11,7 @@ import { colors } from "@/lib/theme";
 import { useSettingsForm, SettingsTab } from "@/lib/useSettingsForm";
 import ProfileTab from "@/components/settings/ProfileTab";
 import SpecialistTab from "@/components/settings/SpecialistTab";
+import InlineWorkArea from "@/components/settings/InlineWorkArea";
 
 /**
  * Unified Settings page — tabbed layout (Wave 2/F, refactored Wave 4/J).
@@ -18,6 +19,10 @@ import SpecialistTab from "@/components/settings/SpecialistTab";
  * logout/delete actions are now inline at the bottom of the page.
  * Form state + per-tab save handlers live in `lib/useSettingsForm`.
  * ADMIN users are redirected to /admin/settings.
+ *
+ * Issue #1582 — specialist onboarding (work-area step) now renders inline
+ * inside this layout instead of redirecting to /onboarding/work-area.
+ * The sidebar tabs remain visible; active label = "Профиль".
  */
 
 const VALID_TABS: SettingsTab[] = ["profile", "specialist"];
@@ -30,9 +35,11 @@ interface SettingsTabsProps {
   activeTab: SettingsTab;
   onChange: (tab: SettingsTab) => void;
   canEditSpecialist: boolean;
+  /** When true, tabs are shown but pointer-events disabled (onboarding active). */
+  muted?: boolean;
 }
 
-function SettingsTabs({ activeTab, onChange, canEditSpecialist }: SettingsTabsProps) {
+function SettingsTabs({ activeTab, onChange, canEditSpecialist, muted }: SettingsTabsProps) {
   const tabs: { id: SettingsTab; label: string; disabled?: boolean }[] = [
     { id: "profile", label: "Профиль" },
     { id: "specialist", label: "Специалист", disabled: !canEditSpecialist },
@@ -43,7 +50,8 @@ function SettingsTabs({ activeTab, onChange, canEditSpecialist }: SettingsTabsPr
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16 }}
-      style={{ flexGrow: 0, borderBottomWidth: 1, borderBottomColor: colors.border }}
+      style={{ flexGrow: 0, borderBottomWidth: 1, borderBottomColor: colors.border, opacity: muted ? 0.4 : 1 }}
+      scrollEnabled={!muted}
     >
       <View style={{ flexDirection: "row" }}>
         {tabs.map((t) => {
@@ -52,8 +60,9 @@ function SettingsTabs({ activeTab, onChange, canEditSpecialist }: SettingsTabsPr
             <Pressable
               key={t.id}
               accessibilityRole="tab"
-              accessibilityState={{ selected: active, disabled: t.disabled }}
+              accessibilityState={{ selected: active, disabled: t.disabled || muted }}
               onPress={() => {
+                if (muted) return;
                 if (t.disabled) {
                   if (Platform.OS === "web") {
                     if (typeof window !== "undefined" && typeof window.alert === "function") {
@@ -106,8 +115,31 @@ export default function UnifiedSettings() {
   const initialTab: SettingsTab = isValidTab(params.tab) ? params.tab : "profile";
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
 
-  const form = useSettingsForm({ ready, activeTab, onTabChange: setActiveTab });
-  const { router, nav, user, isSpecialistUser } = form;
+  // Inline onboarding — when true, work-area step renders inside settings content.
+  const [inlineOnboarding, setInlineOnboarding] = useState(false);
+
+  const handleStartInlineOnboarding = useCallback(() => {
+    setActiveTab("profile");
+    setInlineOnboarding(true);
+  }, []);
+
+  const handleInlineOnboardingDone = useCallback(() => {
+    setInlineOnboarding(false);
+    // Reload specialist data is handled by the form hook when it re-mounts
+    // or via the updateUser call inside InlineWorkArea.
+  }, []);
+
+  const handleInlineOnboardingCancel = useCallback(() => {
+    setInlineOnboarding(false);
+  }, []);
+
+  const form = useSettingsForm({
+    ready,
+    activeTab,
+    onTabChange: setActiveTab,
+    onStartInlineOnboarding: handleStartInlineOnboarding,
+  });
+  const { router, user, isSpecialistUser } = form;
 
   // Tab state is local — no URL sync to avoid Expo Router setParams reload on web.
 
@@ -159,131 +191,143 @@ export default function UnifiedSettings() {
         <Text className="text-2xl font-extrabold text-text-base mb-3">Настройки</Text>
       </View>
 
+      {/* Tabs always visible; muted (non-interactive) while inline onboarding is active */}
       <SettingsTabs
         activeTab={activeTab}
         onChange={handleTabChange}
         canEditSpecialist={isSpecialistUser}
+        muted={inlineOnboarding}
       />
 
-      <ScrollView
-        className="flex-1"
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: form.showSaveBar ? 96 : 32 }}
-      >
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 720,
-            alignSelf: "center",
-            paddingHorizontal: 16,
-            paddingTop: 16,
-          }}
-        >
-          {activeTab === "profile" && (
-            <ProfileTab
-              firstName={form.firstName}
-              lastName={form.lastName}
-              email={user?.email ?? ""}
-              avatarUrl={form.avatarUrl}
-              avatarUploading={form.avatarUploading}
-              isSpecialistUser={isSpecialistUser}
-              isAvailable={form.isAvailable}
-              availabilityLoading={form.availabilityLoading}
-              role={user?.role ?? null}
-              userId={user?.id}
-              onFirstNameChange={form.setFirstName}
-              onLastNameChange={form.setLastName}
-              onAvatarChange={form.setAvatarUrl}
-              onUploadStart={() => form.setAvatarUploading(true)}
-              onUploadEnd={() => form.setAvatarUploading(false)}
-              onToggleSpecialist={form.handleToggleSpecialist}
-              onToggleAvailable={form.handleToggleAvailable}
-            />
-          )}
-
-          {activeTab === "specialist" && (
-            <SpecialistTab
-              isSpecialistUser={isSpecialistUser}
-              specLoading={form.specLoading}
-              specData={form.specData}
-              description={form.description}
-              officeAddress={form.officeAddress}
-              workingHours={form.workingHours}
-              contacts={form.contacts}
-              addingContact={form.addingContact}
-              newContactType={form.newContactType}
-              newContactValue={form.newContactValue}
-              contactSaving={form.contactSaving}
-              showTypePicker={form.showTypePicker}
-              onDescriptionChange={form.setDescription}
-              onOfficeAddressChange={form.setOfficeAddress}
-              onWorkingHoursChange={form.setWorkingHours}
-              onContactsChange={form.setContacts}
-              onAddingContactChange={form.setAddingContact}
-              onNewContactTypeChange={form.setNewContactType}
-              onNewContactValueChange={form.setNewContactValue}
-              onContactSavingChange={form.setContactSaving}
-              onShowTypePickerChange={form.setShowTypePicker}
-              onGoToProfileTab={() => handleTabChange("profile")}
-              onGoToWorkArea={() => nav.any("/onboarding/work-area?from=settings")}
-            />
-          )}
-
-          {/* Logout / Delete — always visible at bottom, replacing the Account tab */}
-          <View className="bg-white border border-border rounded-2xl px-4 py-4 mt-2 mb-4 overflow-hidden">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Выйти из аккаунта"
-              onPress={form.handleLogout}
-              className="flex-row items-center min-h-[44px] border-b border-border"
-            >
-              <LogOut size={16} color={colors.error} />
-              <Text className="text-base text-danger ml-3 flex-1">Выйти из аккаунта</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Удалить аккаунт"
-              onPress={form.handleDeleteAccount}
-              className="flex-row items-center min-h-[44px]"
-            >
-              <Trash2 size={16} color={colors.error} />
-              <Text className="text-base text-danger ml-3 flex-1">Удалить аккаунт</Text>
-            </Pressable>
-          </View>
-
-          <Text className="text-xs text-text-dim text-center mb-4">
-            Версия {Constants.expoConfig?.version ?? "1.0.0"}
-          </Text>
-        </View>
-      </ScrollView>
-
-      {form.showSaveBar ? (
-        <View
-          className="border-t border-border bg-white px-6 py-3 flex-row justify-end items-center"
-          style={{
-            position: Platform.OS === "web" ? ("sticky" as never) : undefined,
-            bottom: 0,
-          }}
-        >
-          <View
-            style={{
-              width: "100%",
-              maxWidth: 720,
-              flexDirection: "row",
-              justifyContent: "flex-end",
-            }}
+      {/* Inline work-area onboarding — renders inside settings, sidebar stays visible */}
+      {inlineOnboarding ? (
+        <InlineWorkArea
+          onDone={handleInlineOnboardingDone}
+          onCancel={handleInlineOnboardingCancel}
+        />
+      ) : (
+        <>
+          <ScrollView
+            className="flex-1"
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: form.showSaveBar ? 96 : 32 }}
           >
-            <View style={{ minWidth: 180 }}>
-              <Button
-                label="Сохранить"
-                onPress={form.handleSave}
-                disabled={form.saving}
-                loading={form.saving}
-              />
+            <View
+              style={{
+                width: "100%",
+                maxWidth: 720,
+                alignSelf: "center",
+                paddingHorizontal: 16,
+                paddingTop: 16,
+              }}
+            >
+              {activeTab === "profile" && (
+                <ProfileTab
+                  firstName={form.firstName}
+                  lastName={form.lastName}
+                  email={user?.email ?? ""}
+                  avatarUrl={form.avatarUrl}
+                  avatarUploading={form.avatarUploading}
+                  isSpecialistUser={isSpecialistUser}
+                  isAvailable={form.isAvailable}
+                  availabilityLoading={form.availabilityLoading}
+                  role={user?.role ?? null}
+                  userId={user?.id}
+                  onFirstNameChange={form.setFirstName}
+                  onLastNameChange={form.setLastName}
+                  onAvatarChange={form.setAvatarUrl}
+                  onUploadStart={() => form.setAvatarUploading(true)}
+                  onUploadEnd={() => form.setAvatarUploading(false)}
+                  onToggleSpecialist={form.handleToggleSpecialist}
+                  onToggleAvailable={form.handleToggleAvailable}
+                />
+              )}
+
+              {activeTab === "specialist" && (
+                <SpecialistTab
+                  isSpecialistUser={isSpecialistUser}
+                  specLoading={form.specLoading}
+                  specData={form.specData}
+                  description={form.description}
+                  officeAddress={form.officeAddress}
+                  workingHours={form.workingHours}
+                  contacts={form.contacts}
+                  addingContact={form.addingContact}
+                  newContactType={form.newContactType}
+                  newContactValue={form.newContactValue}
+                  contactSaving={form.contactSaving}
+                  showTypePicker={form.showTypePicker}
+                  onDescriptionChange={form.setDescription}
+                  onOfficeAddressChange={form.setOfficeAddress}
+                  onWorkingHoursChange={form.setWorkingHours}
+                  onContactsChange={form.setContacts}
+                  onAddingContactChange={form.setAddingContact}
+                  onNewContactTypeChange={form.setNewContactType}
+                  onNewContactValueChange={form.setNewContactValue}
+                  onContactSavingChange={form.setContactSaving}
+                  onShowTypePickerChange={form.setShowTypePicker}
+                  onGoToProfileTab={() => handleTabChange("profile")}
+                  onGoToWorkArea={handleStartInlineOnboarding}
+                />
+              )}
+
+              {/* Logout / Delete — always visible at bottom, replacing the Account tab */}
+              <View className="bg-white border border-border rounded-2xl px-4 py-4 mt-2 mb-4 overflow-hidden">
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Выйти из аккаунта"
+                  onPress={form.handleLogout}
+                  className="flex-row items-center min-h-[44px] border-b border-border"
+                >
+                  <LogOut size={16} color={colors.error} />
+                  <Text className="text-base text-danger ml-3 flex-1">Выйти из аккаунта</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Удалить аккаунт"
+                  onPress={form.handleDeleteAccount}
+                  className="flex-row items-center min-h-[44px]"
+                >
+                  <Trash2 size={16} color={colors.error} />
+                  <Text className="text-base text-danger ml-3 flex-1">Удалить аккаунт</Text>
+                </Pressable>
+              </View>
+
+              <Text className="text-xs text-text-dim text-center mb-4">
+                Версия {Constants.expoConfig?.version ?? "1.0.0"}
+              </Text>
             </View>
-          </View>
-        </View>
-      ) : null}
+          </ScrollView>
+
+          {form.showSaveBar ? (
+            <View
+              className="border-t border-border bg-white px-6 py-3 flex-row justify-end items-center"
+              style={{
+                position: Platform.OS === "web" ? ("sticky" as never) : undefined,
+                bottom: 0,
+              }}
+            >
+              <View
+                style={{
+                  width: "100%",
+                  maxWidth: 720,
+                  flexDirection: "row",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <View style={{ minWidth: 180 }}>
+                  <Button
+                    label="Сохранить"
+                    onPress={form.handleSave}
+                    disabled={form.saving}
+                    loading={form.saving}
+                  />
+                </View>
+              </View>
+            </View>
+          ) : null}
+        </>
+      )}
     </SafeAreaView>
   );
 }

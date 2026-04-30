@@ -13,6 +13,8 @@ interface UseSettingsFormArgs {
   ready: boolean;
   activeTab: SettingsTab;
   onTabChange: (tab: SettingsTab) => void;
+  /** Called instead of navigating to /onboarding/work-area — shows inline step. */
+  onStartInlineOnboarding?: () => void;
 }
 
 /**
@@ -20,7 +22,7 @@ interface UseSettingsFormArgs {
  * The shell (`app/settings/index.tsx`) uses this to keep its own surface
  * focused on layout, deeplink parsing and tab rendering.
  */
-export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFormArgs) {
+export function useSettingsForm({ ready, activeTab, onTabChange, onStartInlineOnboarding }: UseSettingsFormArgs) {
   const router = useRouter();
   const nav = useTypedRouter();
   const { user, isSpecialistUser, isAdminUser, signOut, updateUser } = useAuth();
@@ -331,7 +333,11 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
       if (value) {
         const hasData = specData && specData.fnsServices.length > 0;
         if (!hasData) {
-          nav.any("/onboarding/work-area?from=settings");
+          if (onStartInlineOnboarding) {
+            onStartInlineOnboarding();
+          } else {
+            nav.any("/onboarding/work-area?from=settings");
+          }
           return;
         }
         try {
@@ -374,7 +380,7 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         }
       }
     },
-    [specData, updateUser, loadSpecialistData, activeTab, onTabChange, nav],
+    [specData, updateUser, loadSpecialistData, activeTab, onTabChange, nav, onStartInlineOnboarding],
   );
 
   return {
