@@ -151,8 +151,10 @@ export default function Input({
             } : {}),
             fontSize: variant === "bordered" ? INPUT_FONT_SIZE : 16,
             color: variant === "bordered" ? INPUT_TEXT : colors.text,
-            // Bordered variant: wrapper already owns padding; line variant: add vertical padding for multiline.
-            paddingVertical: variant === "bordered" ? 0 : (multiline ? spacing.sm : 0),
+            // On web multiline, explicit paddingTop ensures the cursor renders
+            // at the right vertical position when wrapper uses flex-start.
+            paddingTop: multiline ? spacing.sm : 0,
+            paddingBottom: multiline ? spacing.sm : 0,
             // Inner TextInput never owns a border — the outer View does.
             borderWidth: 0,
             borderColor: "transparent",

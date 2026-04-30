@@ -1,7 +1,6 @@
 import { useRef, useCallback } from "react";
 import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
 import { FileImage, File, X, Plus } from "lucide-react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
@@ -9,6 +8,8 @@ export interface AttachedFile {
   name: string;
   mimeType: string;
   size: number;
+  /** DB File record id returned by /api/upload/documents. */
+  uploadedId?: string;
   uploadedUrl?: string;
   uploading?: boolean;
   error?: string;
@@ -21,63 +22,80 @@ interface FileUploadSectionProps {
   files: AttachedFile[];
   disabled: boolean;
   onFilesChange: (files: AttachedFile[]) => void;
+  /** Bearer token for authenticated upload. */
+  authToken?: string | null;
 }
 
 export default function FileUploadSection({
   files,
   disabled,
   onFilesChange,
+  authToken,
 }: FileUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Keep a mutable ref so upload callbacks always see the latest list.
+  const filesRef = useRef(files);
+  filesRef.current = files;
 
   const uploadFile = useCallback(async (file: File) => {
     const mimeType = file.type || "application/octet-stream";
     const fileName = file.name;
 
-    onFilesChange([
-      ...files,
+    // Add the file as uploading immediately.
+    const withUploading: AttachedFile[] = [
+      ...filesRef.current,
       { name: fileName, mimeType, size: file.size, uploading: true },
-    ]);
+    ];
+    onFilesChange(withUploading);
+    filesRef.current = withUploading;
 
     try {
-      const token = await AsyncStorage.getItem("p2ptax_access_token");
       const formData = new FormData();
       formData.append("files", file);
 
       const uploadRes = await fetch(`${API_URL}/api/upload/documents`, {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
         body: formData,
       });
 
       if (!uploadRes.ok) {
-        throw new Error("Upload failed");
+        const errData = (await uploadRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(
+          uploadRes.status === 413
+            ? "Файл больше 10 МБ"
+            : uploadRes.status === 415
+            ? "Неподдерживаемый формат"
+            : uploadRes.status === 401
+            ? "Необходима авторизация"
+            : errData.error ?? "Ошибка загрузки файла"
+        );
       }
 
-      const uploadData = (await uploadRes.json()) as { files: { url: string }[] };
-      const uploadedUrl = uploadData.files[0]?.url;
+      const uploadData = (await uploadRes.json()) as {
+        files: { id?: string; url: string }[];
+      };
+      const uploaded = uploadData.files[0];
 
-      onFilesChange(
-        files
-          .concat([{ name: fileName, mimeType, size: file.size, uploading: true }])
-          .map((f, i, arr) =>
-            i === arr.length - 1 && f.name === fileName && f.uploading
-              ? { ...f, uploading: false, uploadedUrl }
-              : f
-          )
+      // Patch the uploading entry in the latest list (use filesRef, not stale closure).
+      const next = filesRef.current.map((f) =>
+        f.name === fileName && f.uploading
+          ? { ...f, uploading: false, uploadedId: uploaded?.id, uploadedUrl: uploaded?.url }
+          : f
       );
-    } catch {
-      onFilesChange(
-        files
-          .concat([{ name: fileName, mimeType, size: file.size, uploading: true }])
-          .map((f, i, arr) =>
-            i === arr.length - 1 && f.name === fileName && f.uploading
-              ? { ...f, uploading: false, error: "Ошибка загрузки" }
-              : f
-          )
+      onFilesChange(next);
+      filesRef.current = next;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Ошибка загрузки файла";
+      const next = filesRef.current.map((f) =>
+        f.name === fileName && f.uploading
+          ? { ...f, uploading: false, error: msg }
+          : f
       );
+      onFilesChange(next);
+      filesRef.current = next;
     }
-  }, [files, onFilesChange]);
+  }, [authToken, onFilesChange]);
 
   const handleAddFilePress = () => {
     if (Platform.OS === "web" && fileInputRef.current) {
@@ -88,7 +106,7 @@ export default function FileUploadSection({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (files.length >= MAX_FILES || file.size > MAX_FILE_SIZE) {
+    if (filesRef.current.length >= MAX_FILES || file.size > MAX_FILE_SIZE) {
       e.target.value = "";
       return;
     }
@@ -97,11 +115,13 @@ export default function FileUploadSection({
   };
 
   const handleRemoveFile = (index: number) => {
-    onFilesChange(files.filter((_, i) => i !== index));
+    const next = filesRef.current.filter((_, i) => i !== index);
+    onFilesChange(next);
+    filesRef.current = next;
   };
 
   return (
-    <View className="mb-6">
+    <View className="mb-4">
       <Text className="text-sm font-medium text-text-base mb-1">Документы</Text>
       <Text className="text-xs text-text-mute mb-3">
         PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов
@@ -121,13 +141,13 @@ export default function FileUploadSection({
               {file.name}
             </Text>
             {file.uploading && (
-              <Text className="text-xs text-text-mute">Загрузка...</Text>
+              <Text className="text-xs text-text-mute">Загрузка…</Text>
             )}
             {file.error && (
               <Text className="text-xs text-danger">{file.error}</Text>
             )}
-            {file.uploadedUrl && !file.uploading && (
-              <Text className="text-xs text-success">Загружен</Text>
+            {file.uploadedUrl && !file.uploading && !file.error && (
+              <Text className="text-xs text-text-mute">Загружен</Text>
             )}
           </View>
           {file.uploading ? (
@@ -151,13 +171,11 @@ export default function FileUploadSection({
           accessibilityLabel="Прикрепить файл"
           onPress={handleAddFilePress}
           className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl active:bg-surface2"
+          style={{ minHeight: 48 }}
         >
-          <Plus size={13} color={colors.accent} />
-          <Text
-            className="text-sm ml-2 font-medium"
-            style={{ color: colors.warningInkStrong }}
-          >
-            + Прикрепить файл
+          <Plus size={13} color={colors.primary} />
+          <Text className="text-sm ml-2 font-medium text-primary">
+            Прикрепить файл
           </Text>
         </Pressable>
       )}

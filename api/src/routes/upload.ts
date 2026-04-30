@@ -141,6 +141,8 @@ router.post("/avatar", authMiddleware, uploadRateLimiter, avatarUpload.single("f
 
 // POST /api/upload/documents — upload document files (max 10).
 // Limit raised from 5 → 10 to match the chat composer (#bug 3).
+// Creates a DB File record for each upload and returns its id so the
+// caller can link it to a request via POST /api/requests (fileIds param).
 router.post("/documents", authMiddleware, uploadRateLimiter, documentUpload.array("files", 10), async (req: Request, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[] | undefined;
@@ -174,6 +176,7 @@ router.post("/documents", authMiddleware, uploadRateLimiter, documentUpload.arra
           mimeType: file.mimetype,
         },
       });
+
       results.push({
         id: record.id,
         url: record.url,
