@@ -24,6 +24,8 @@ export interface InputProps {
   accessibilityLabel?: string;
   style?: ViewStyle;
   containerStyle?: ViewStyle;
+  /** "line" = bottom-border only (default). "bordered" = full border, radius 8, padding 12/14. */
+  variant?: "line" | "bordered";
 }
 
 export default function Input({
@@ -47,36 +49,51 @@ export default function Input({
   accessibilityLabel,
   style,
   containerStyle,
+  variant = "line",
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
-  // Line-style: only bottom border changes color on focus/error.
   const borderColor = error
     ? colors.error
     : focused
       ? colors.accent
-      : colors.borderStrong;
+      : variant === "bordered" ? "#e5e7eb" : colors.borderStrong;
+
+  const wrapperStyle: ViewStyle = variant === "bordered"
+    ? {
+        flexDirection: "row",
+        alignItems: multiline ? "flex-start" : "center",
+        minHeight: multiline ? 96 : 48,
+        width: "100%",
+        borderWidth: focused ? 2 : 1,
+        borderColor,
+        borderRadius: 8,
+        backgroundColor: editable ? "#ffffff" : "#f9fafb",
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+      }
+    : {
+        flexDirection: "row",
+        alignItems: "center",
+        minHeight: multiline ? 96 : 48,
+        // Line-style: no top/left/right border, no radius, transparent bg.
+        borderTopWidth: 0,
+        borderLeftWidth: 0,
+        borderRightWidth: 0,
+        borderBottomWidth: focused ? 2 : 1,
+        borderBottomColor: borderColor,
+        backgroundColor: "transparent",
+        paddingHorizontal: 0,
+        paddingBottom: 2,
+      };
 
   return (
-    <View style={style}>
+    <View style={[{ width: "100%" }, style]}>
       {label && (
         <Text className="text-sm font-medium text-text-base mb-1.5">{label}</Text>
       )}
       <View
-        style={[{
-          flexDirection: "row",
-          alignItems: "center",
-          minHeight: multiline ? 96 : 48,
-          // Line-style: no top/left/right border, no radius, transparent bg.
-          borderTopWidth: 0,
-          borderLeftWidth: 0,
-          borderRightWidth: 0,
-          borderBottomWidth: focused ? 2 : 1,
-          borderBottomColor: borderColor,
-          backgroundColor: "transparent",
-          paddingHorizontal: 0,
-          paddingBottom: 2,
-        }, containerStyle]}
+        style={[wrapperStyle, containerStyle]}
       >
         {Icon && (
           <Icon
@@ -107,7 +124,7 @@ export default function Input({
           onBlur={() => setFocused(false)}
           // data-line-input: web-only attribute that tells AppShell's global
           // focus CSS to skip box-shadow for this input. The wrapper View
-          // already renders a bottom-border focus indicator, so the global
+          // already renders a border focus indicator, so the global
           // ring would produce a double-border artifact.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           {...(Platform.OS === 'web' ? { 'data-line-input': true } as any : {})}
@@ -136,7 +153,8 @@ export default function Input({
             } : {}),
             fontSize: fontSizeValue.base,
             color: colors.text,
-            paddingVertical: multiline ? spacing.sm : 0,
+            // Bordered variant: wrapper already owns padding; line variant: add vertical padding for multiline.
+            paddingVertical: variant === "bordered" ? 0 : (multiline ? spacing.sm : 0),
             // Inner TextInput never owns a border — the outer View does.
             // This prevents the double-border artifact on web.
             borderWidth: 0,

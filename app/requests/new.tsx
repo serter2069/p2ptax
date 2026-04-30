@@ -14,7 +14,7 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { MapPin, ChevronLeft } from "lucide-react-native";
+import { MapPin, ChevronLeft, RefreshCw } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { api, apiPost } from "@/lib/api";
@@ -64,14 +64,17 @@ export default function CreateRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [loadingInit, setLoadingInit] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<PendingFile[]>([]);
 
-  // Load cities/services — public, no auth required.
+  // Load cities/services — public, no auth required. Re-runs on retry.
   useEffect(() => {
+    setLoadingInit(true);
+    setLoadError(false);
     async function init() {
       try {
         const [citiesRes, servicesRes] = await Promise.all([
@@ -87,7 +90,7 @@ export default function CreateRequest() {
       }
     }
     init();
-  }, []);
+  }, [retryCount]);
 
   // Restore draft on mount (anyone — anon or returning post-login).
   // Reads new key first, falls back to legacy key for in-flight users.
@@ -239,12 +242,21 @@ export default function CreateRequest() {
   if (loadError && cities.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center px-4">
           <EmptyState
             icon={MapPin}
             title="Не удалось загрузить данные"
             subtitle="Проверьте соединение и попробуйте снова"
           />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setRetryCount((n) => n + 1)}
+            className="flex-row items-center mt-4 px-6 py-3 bg-accent rounded-xl"
+            style={{ minHeight: 44 }}
+          >
+            <RefreshCw size={16} color="#ffffff" style={{ marginRight: 8 }} />
+            <Text className="text-white font-semibold text-sm">Повторить</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -330,6 +342,7 @@ export default function CreateRequest() {
                 Заголовок <Text className="text-danger">*</Text>
               </Text>
               <Input
+                variant="bordered"
                 placeholder="Кратко опишите суть проблемы"
                 value={title}
                 onChangeText={setTitle}
@@ -380,6 +393,7 @@ export default function CreateRequest() {
                 Описание <Text className="text-danger">*</Text>
               </Text>
               <Input
+                variant="bordered"
                 placeholder="Подробно опишите ситуацию: что произошло, какие документы получили, что требует инспекция, какая помощь нужна"
                 value={description}
                 onChangeText={setDescription}
