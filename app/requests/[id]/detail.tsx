@@ -22,7 +22,6 @@ import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
 import { api, apiPatch, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, BREAKPOINT } from "@/lib/theme";
-import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
 import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -65,7 +64,6 @@ export default function MyRequestDetail() {
   const { isLoading: authLoading, isAuthenticated, isSpecialistUser, user, token } = useAuth();
 
   const [request, setRequest] = useState<RequestDetailData | null>(null);
-  const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [recommendations, setRecommendations] = useState<SpecialistCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,11 +114,8 @@ export default function MyRequestDetail() {
       const detail = await api<RequestDetailData>(`/api/requests/${id}/detail`);
       setRequest(detail);
 
-      // Auth-gated: load threads and recommendations only for authenticated users
+      // Auth-gated: load recommendations only for authenticated users
       if (isAuthenticated) {
-        const threadsRes = await api<{ items: ThreadSummary[] }>(`/api/threads?request_id=${id}`);
-        setThreads(threadsRes.items);
-
         // Load recommendations in background — non-blocking
         api<{ items: SpecialistCard[] }>(`/api/requests/${id}/recommendations`)
           .then((r) => setRecommendations(r.items))
@@ -506,18 +501,6 @@ export default function MyRequestDetail() {
                     authenticated specialists with completed profile on
                     non-closed requests. */}
                 {inlineComposerSection}
-
-                {/* Threads */}
-                <ThreadsList
-                  threads={threads}
-                  requestId={id}
-                  threadsCount={request.threadsCount}
-                  unreadMessages={request.unreadMessages}
-                  onOpenThread={(threadId) =>
-                    nav.any(`/threads/${threadId}?requestId=${id}`)
-                  }
-                  onOpenSpecialistProfile={handleOpenSpecialistProfile}
-                />
               </View>
 
               {/* RIGHT: actions + meta stats */}
@@ -955,17 +938,6 @@ export default function MyRequestDetail() {
             {/* Inline message composer — issue #1566. Specialist-only,
                 visible on non-closed requests for users with completed profile. */}
             {inlineComposerSection}
-
-            <ThreadsList
-              threads={threads}
-              requestId={id}
-              threadsCount={request.threadsCount}
-              unreadMessages={request.unreadMessages}
-              onOpenThread={(threadId) =>
-                nav.any(`/threads/${threadId}?requestId=${id}`)
-              }
-              onOpenSpecialistProfile={handleOpenSpecialistProfile}
-            />
 
             {/* Meta stats */}
             <View
