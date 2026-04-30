@@ -13,6 +13,9 @@ import { ChevronDown, ChevronUp, Search, X } from "lucide-react-native";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
+/** Top cities shown first in the chip row; excluded from the alphabetical remainder. */
+export const TOP_CITIES_DEFAULT = ["Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург"];
+
 export interface CityCascadeOption {
   id: string;
   name: string;
@@ -36,13 +39,6 @@ export interface ServiceOption {
   id: string;
   name: string;
 }
-
-const TOP_CITIES_DEFAULT = [
-  "Москва",
-  "Санкт-Петербург",
-  "Новосибирск",
-  "Екатеринбург",
-];
 
 export interface CityFnsCascadeProps {
   mode: "single" | "multi";
@@ -215,117 +211,57 @@ export default function CityFnsCascade({
       ? fnsAll.find((f) => f.id === value.fns[0])
       : undefined;
 
-  // Derive quick-pick city objects from topCities names (matched against loaded list)
-  const topCityChips = useMemo(() => {
-    if (!topCities || topCities.length === 0 || cities.length === 0) return [];
-    return topCities
+  // Ordered city list: top-4 pinned first, then alphabetical remainder (no dupes)
+  const orderedCities = useMemo(() => {
+    const topCityObjs = TOP_CITIES_DEFAULT
       .map((name) => cities.find((c) => c.name === name))
-      .filter(Boolean) as CityCascadeOption[];
-  }, [topCities, cities]);
+      .filter((c): c is CityCascadeOption => !!c);
+    const topSet = new Set(TOP_CITIES_DEFAULT);
+    const remainingCities = cities.filter((c) => !topSet.has(c.name));
+    return [...topCityObjs, ...remainingCities];
+  }, [cities]);
 
   // --- render ---
 
   return (
     <View style={{ width: "100%" }}>
-      {/* Cities row — on desktop (>=640px) we wrap chips so long city lists
-          stay fully visible; on mobile we keep the horizontal scroller to
-          save vertical space. (iter11-b fix for work-area overflow critique.) */}
-      <View className="mb-2">
-        <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2 px-4">
-          {labelCities}
-        </Text>
-        {/* Top-4 quick-pick chips */}
-        {topCityChips.length > 0 && (
-          <View className="flex-row flex-wrap px-4 mb-2" style={{ gap: 6 }}>
-            {topCityChips.map((city) => {
+      {/* Cities row — top-4 pinned first, then alphabetical remainder (deduped).
+          Chips wrap on both mobile and desktop for full visibility. */}
+      <View className="mb-1">
+        <View className="flex-row flex-wrap px-4" style={{ gap: 6 }}>
+          <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide self-center mr-1">
+            {labelCities}:
+          </Text>
+          {orderedCities.length === 0 ? (
+            <Text className="text-xs text-text-mute self-center">Загрузка…</Text>
+          ) : (
+            orderedCities.map((city) => {
               const active = value.cities.includes(city.id);
               return (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={city.name}
-                  key={`top-${city.id}`}
+                  key={city.id}
                   onPress={() => toggleCity(city.id)}
-                  className={`px-3 h-8 items-center justify-center rounded-full border ${
+                  className={`px-3 items-center justify-center rounded-full border ${
                     active
                       ? "bg-accent border-accent"
-                      : "bg-surface2 border-border"
+                      : "bg-white border-border"
                   }`}
+                  style={{ paddingVertical: 6 }}
                 >
                   <Text
                     className={`text-xs ${
-                      active ? "text-white font-medium" : "text-text-mute"
+                      active ? "text-white font-medium" : "text-text-base"
                     }`}
                   >
                     {city.name}
                   </Text>
                 </Pressable>
               );
-            })}
-          </View>
-        )}
-        {isDesktop ? (
-          <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
-            {cities.length === 0 ? (
-              <Text className="text-sm text-text-mute">Загрузка…</Text>
-            ) : (
-              cities.map((city) => {
-                const active = value.cities.includes(city.id);
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={city.name}
-                    key={city.id}
-                    onPress={() => toggleCity(city.id)}
-                    className={`px-3 h-11 items-center justify-center rounded-full border ${
-                      active
-                        ? "bg-accent border-accent"
-                        : "bg-white border-border"
-                    }`}
-                  >
-                    <Text
-                      className={`text-sm ${
-                        active ? "text-white font-medium" : "text-text-base"
-                      }`}
-                    >
-                      {city.name}
-                    </Text>
-                  </Pressable>
-                );
-              })
-            )}
-          </View>
-        ) : (
-          <View className="flex-row flex-wrap px-4" style={{ gap: 8 }}>
-            {cities.length === 0 ? (
-              <Text className="text-sm text-text-mute">Загрузка…</Text>
-            ) : (
-              cities.map((city) => {
-                const active = value.cities.includes(city.id);
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={city.name}
-                    key={city.id}
-                    onPress={() => toggleCity(city.id)}
-                    className={`px-3 h-11 items-center justify-center rounded-full border ${
-                      active
-                        ? "bg-accent border-accent"
-                        : "bg-white border-border"
-                    }`}
-                  >
-                    <Text
-                      className={`text-sm ${
-                        active ? "text-white font-medium" : "text-text-base"
-                      }`}
-                    >
-                      {city.name}
-                    </Text>
-                  </Pressable>
-                );
-              })
-            )}
-          </View>
-        )}
+            })
+          )}
+        </View>
       </View>
 
       {/* FNS combobox */}
@@ -334,7 +270,7 @@ export default function CityFnsCascade({
           className={`${isDesktop ? "flex-row items-start gap-3" : ""} px-4 mt-1`}
         >
           <View style={{ flex: 1 }}>
-            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-2">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-1">
               {labelFns}
               {showCounts && fnsAll.length > 0 ? ` (${fnsAll.length})` : ""}
             </Text>
