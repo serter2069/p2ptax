@@ -23,9 +23,19 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
   firstName: true,
   lastName: true,
   avatarUrl: true,
+  isAvailable: true,
   createdAt: true,
+  specialistProfile: {
+    select: {
+      description: true,
+      yearsOfExperience: true,
+      exFnsStartYear: true,
+    },
+  },
   specialistFns: {
     select: {
+      id: true,
+      fnsId: true,
       fns: {
         select: {
           id: true,
@@ -40,18 +50,32 @@ const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
       },
     },
   },
+  specialistServices: {
+    select: { service: { select: { id: true, name: true } } },
+    distinct: ["serviceId"],
+  },
+  _count: {
+    select: {
+      specialistCases: true,
+      specialistReviews: true,
+    },
+  },
 });
 
 type SpecialistListItem = Prisma.UserGetPayload<{ select: typeof specialistListSelect }>;
 
 function mapSpecialist(s: SpecialistListItem) {
   const citiesMap = new Map<string, { id: string; name: string }>();
+  const fnsNamesMap = new Map<string, { id: string; fnsId: string; fnsName: string }>();
   const specialistFns = s.specialistFns.map((sf) => {
-    citiesMap.set(sf.fns.city.id, sf.fns.city);
+    if (sf.fns) {
+      citiesMap.set(sf.fns.city.id, sf.fns.city);
+      fnsNamesMap.set(sf.fns.id, { id: sf.id, fnsId: sf.fns.id, fnsName: sf.fns.name });
+    }
     return {
-      fnsId: sf.fns.id,
-      fnsName: sf.fns.name,
-      city: sf.fns.city,
+      fnsId: sf.fns?.id ?? sf.fnsId,
+      fnsName: sf.fns?.name ?? "",
+      city: sf.fns?.city ?? null,
       services: sf.services.map((sv) => sv.service),
     };
   });
@@ -69,10 +93,20 @@ function mapSpecialist(s: SpecialistListItem) {
     firstName: s.firstName,
     lastName: s.lastName,
     avatarUrl: s.avatarUrl,
+    isAvailable: s.isAvailable,
     createdAt: s.createdAt,
     services: [...servicesMap.values()],
     cities: [...citiesMap.values()],
+    fnsNames: [...fnsNamesMap.values()],
     specialistFns,
+    description: s.specialistProfile?.description ?? null,
+    profile: {
+      description: s.specialistProfile?.description ?? null,
+      yearsOfExperience: s.specialistProfile?.yearsOfExperience ?? null,
+      exFnsStartYear: s.specialistProfile?.exFnsStartYear ?? null,
+    },
+    casesCount: s._count.specialistCases,
+    reviewsCount: s._count.specialistReviews,
   };
 }
 
@@ -111,11 +145,23 @@ router.get("/featured", async (_req: Request, res: Response) => {
 });
 
 // GET /api/specialists — catalog with filters
+// ?savedOnly=true — returns only specialists saved by the authenticated caller.
+//   Same shape as the full catalog (description, profile, casesCount, etc.).
+//   Requires a valid Bearer token; returns 401 if not authenticated.
 // SECURITY: all user-supplied values (q, city_id, fns_id, services) are passed
 // exclusively through Prisma ORM parameterized queries — never interpolated into
 // raw SQL strings. Do NOT switch to $queryRaw/$executeRaw with string concatenation.
 router.get("/", async (req: Request, res: Response) => {
   try {
+    const savedOnly = req.query.savedOnly === "true";
+
+    // savedOnly requires auth — resolve caller from Bearer token
+    const callerId = resolveCallerId(req);
+    if (savedOnly && !callerId) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
     const skip = (page - 1) * limit;
@@ -172,7 +218,6 @@ router.get("/", async (req: Request, res: Response) => {
     // not by the retired SPECIALIST role value. Also exclude the caller from
     // their own catalog view — showing yourself as a specialist you could
     // contact is a bug, not a feature.
-    const callerId = resolveCallerId(req);
     const seedUserNot = notSeedUserWhere();
     const where: Prisma.UserWhereInput = {
       isSpecialist: true,
@@ -185,6 +230,10 @@ router.get("/", async (req: Request, res: Response) => {
       deletedAt: null,
       ...(callerId ? { id: { not: callerId } } : {}),
       ...(seedUserNot ?? {}),
+      // savedOnly: restrict to specialists saved by the authenticated caller
+      ...(savedOnly && callerId
+        ? { savedByUsers: { some: { userId: callerId } } }
+        : {}),
     };
 
     // Name search — uses Prisma `contains` (parameterized ILIKE under the hood)
