@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Image, Pressable } from "react-native";
 import { colors, overlay } from "@/lib/theme";
 
 interface FooterSectionProps {
@@ -51,17 +51,13 @@ export default function FooterSection({
               accessibilityRole="button"
               accessibilityLabel="P2PTax — главная"
               onPress={onHome}
-              className="flex-row items-center"
             >
-              <View
-                className="rounded-lg items-center justify-center"
-                style={{ width: 28, height: 28, backgroundColor: colors.primary, marginRight: 10 }}
-              >
-                <Text className="text-white font-extrabold" style={{ fontSize: 15 }}>P</Text>
-              </View>
-              <Text className="text-white font-extrabold" style={{ fontSize: 18 }}>
-                P2PTax
-              </Text>
+              <Image
+                source={require("@/assets/images/logo-white.png")}
+                style={{ width: 110, height: 46 }}
+                resizeMode="contain"
+                accessibilityLabel="P2PTax"
+              />
             </Pressable>
             <Text style={{ color: overlay.white70, fontSize: 13, lineHeight: 20 }}>
               Маркетплейс практикующих специалистов по ФНС. Для

@@ -1,6 +1,7 @@
 import {
   View,
   Text,
+  Image,
   Pressable,
   KeyboardAvoidingView,
   Platform,
@@ -242,12 +243,12 @@ export default function AuthOtpScreen() {
           onPress={() => router.push("/" as never)}
           className="absolute top-4 left-4 z-10 min-h-[44px] min-w-[44px] items-start justify-center"
         >
-          <Text
-            className="font-extrabold text-accent"
-            style={{ fontSize: 22, letterSpacing: -0.5 }}
-          >
-            P2PTax
-          </Text>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={{ width: 110, height: 46 }}
+            resizeMode="contain"
+            accessibilityLabel="P2PTax"
+          />
         </Pressable>
 
         <View className="flex-1 items-center justify-center px-6">
@@ -312,12 +313,12 @@ export default function AuthOtpScreen() {
           onPress={() => router.push("/" as never)}
           className="absolute top-4 left-4 z-10 min-h-[44px] min-w-[44px] items-start justify-center"
         >
-          <Text
-            className="font-extrabold text-accent"
-            style={{ fontSize: 22, letterSpacing: -0.5 }}
-          >
-            P2PTax
-          </Text>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={{ width: 110, height: 46 }}
+            resizeMode="contain"
+            accessibilityLabel="P2PTax"
+          />
         </Pressable>
 
         <HeaderBack title="" />
