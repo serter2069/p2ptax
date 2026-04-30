@@ -38,6 +38,8 @@ export interface UserData {
   lastName: string | null;
   avatarUrl?: string | null;
   isAvailable?: boolean;
+  /** Iter13 — specialist catalog visibility toggle. Default false. */
+  isPublicProfile?: boolean;
 }
 
 interface AuthContextType {

@@ -86,6 +86,7 @@ router.get("/featured", async (_req: Request, res: Response) => {
         // role enum. Require completed profile so we never surface half-seeded
         // users who are still onboarding. Hide soft-deleted accounts.
         isSpecialist: true,
+        isPublicProfile: true,
         specialistProfileCompletedAt: { not: null },
         isAvailable: true,
         isBanned: false,
@@ -175,6 +176,8 @@ router.get("/", async (req: Request, res: Response) => {
     const seedUserNot = notSeedUserWhere();
     const where: Prisma.UserWhereInput = {
       isSpecialist: true,
+      // Iter13: only show specialists who opted in to public catalog.
+      isPublicProfile: true,
       specialistProfileCompletedAt: { not: null },
       isAvailable: true,
       isBanned: false,

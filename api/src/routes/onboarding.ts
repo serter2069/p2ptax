@@ -158,11 +158,36 @@ router.put("/work-area", authMiddleware, async (req: Request, res: Response) => 
   }
 });
 
+// PUT /api/onboarding/visibility — set isPublicProfile before completing onboarding
+// Called from the first onboarding step (name screen). Idempotent.
+router.put("/visibility", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { isPublicProfile } = req.body as { isPublicProfile?: boolean };
+
+    if (typeof isPublicProfile !== "boolean") {
+      res.status(400).json({ error: "isPublicProfile must be a boolean" });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { isPublicProfile },
+      select: { id: true, isPublicProfile: true },
+    });
+
+    res.json({ user });
+  } catch (error) {
+    console.error("onboarding/visibility error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // PUT /api/onboarding/profile
 router.put("/profile", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { description, phone, telegram, whatsapp, officeAddress, workingHours, avatarUrl } =
+    const { description, phone, telegram, whatsapp, officeAddress, workingHours, avatarUrl, isPublicProfile } =
       req.body;
 
     // Verify user has specialist features enabled (Iter11 — flag-based).
@@ -208,6 +233,10 @@ router.put("/profile", authMiddleware, async (req: Request, res: Response) => {
     };
     if (avatarUrl !== undefined) {
       userPatch.avatarUrl = avatarUrl || null;
+    }
+    // Iter13: persist isPublicProfile if sent with profile completion.
+    if (typeof isPublicProfile === "boolean") {
+      userPatch.isPublicProfile = isPublicProfile;
     }
     await prisma.user.update({
       where: { id: userId },
