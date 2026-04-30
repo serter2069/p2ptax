@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
 import DesktopScreen from "@/components/layout/DesktopScreen";
-import FilterBar from "@/components/FilterBar";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import { Inbox, ChevronLeft } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
@@ -241,11 +240,6 @@ export default function PublicRequestsFeed() {
           }}
           onChange={handleCascadeChange}
           citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
-        />
-        <FilterBar
-          cities={[]}
-          selectedCityId={null}
-          onCityChange={() => {}}
           services={services}
           selectedServiceIds={selectedServiceIds}
           onServiceToggle={handleServiceToggle}
