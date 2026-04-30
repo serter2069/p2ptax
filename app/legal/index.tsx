@@ -4,6 +4,7 @@ import { useTypedRouter } from "@/lib/navigation";
 import { FileText, Shield, ChevronRight } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import DesktopScreen from "@/components/layout/DesktopScreen";
+import PageTitle from "@/components/layout/PageTitle";
 
 const LEGAL_DOCS = [
   {
@@ -27,10 +28,7 @@ export default function LegalIndexPage() {
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <DesktopScreen>
-          <View className="mb-6">
-            <Text className="text-2xl font-bold text-text-base mb-1">Правовая информация</Text>
-            <Text className="text-sm text-text-mute">Документы и соглашения P2PTax</Text>
-          </View>
+          <PageTitle title="Правовая информация" subtitle="Документы и соглашения P2PTax" />
 
           <View className="bg-white border border-border rounded-2xl overflow-hidden">
             {LEGAL_DOCS.map((doc, idx) => {

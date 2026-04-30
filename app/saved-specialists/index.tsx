@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   View,
-  Text,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   useWindowDimensions,
 } from "react-native";
+import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
 import SpecialistCard from "@/components/SpecialistCard";
@@ -120,18 +120,7 @@ export default function SavedSpecialistsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      <View
-        style={{
-          width: "100%",
-          maxWidth: isWide ? 1200 : isDesktop ? 900 : undefined,
-          alignSelf: "center",
-          paddingHorizontal: 16,
-          paddingTop: 16,
-          paddingBottom: 8,
-        }}
-      >
-        <Text className="text-xl font-bold text-text-base">Мои специалисты</Text>
-      </View>
+      <PageTitle title="Мои специалисты" />
 
       {specialists.length === 0 ? (
         <EmptyState

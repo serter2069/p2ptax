@@ -10,6 +10,7 @@ import {
   PanResponder,
   Platform,
 } from "react-native";
+import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -458,8 +459,8 @@ export default function MyRequests() {
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <DesktopScreen>
-        <View className="flex-row items-center justify-between mb-4">
-          <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
+        <PageTitle title="Мои заявки" />
+        <View className="flex-row items-center justify-end mb-4">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать заявку"

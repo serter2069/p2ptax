@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
-import { colors, textStyle } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { pluralizeRu } from "@/lib/ru";
+import PageTitle from "@/components/layout/PageTitle";
 
 interface Props {
   isDesktop: boolean;
@@ -8,26 +9,11 @@ interface Props {
 }
 
 export default function CatalogHeader({ isDesktop, count }: Props) {
+  const subtitle =
+    count !== null && count > 0
+      ? `${count} ${pluralizeRu(count, ["специалист", "специалиста", "специалистов"])}`
+      : undefined;
   return (
-    <View
-      className={`flex-row items-center justify-between px-4 ${
-        isDesktop ? "pt-4" : "pt-2"
-      } pb-1`}
-    >
-      <Text
-        style={
-          isDesktop
-            ? { ...textStyle.h3, color: colors.text }
-            : { ...textStyle.h4, color: colors.text }
-        }
-      >
-        Специалисты
-      </Text>
-      {count !== null && count > 0 && (
-        <Text className="text-xs" style={{ color: colors.textMuted }}>
-          {count} {pluralizeRu(count, ["специалист", "специалиста", "специалистов"])}
-        </Text>
-      )}
-    </View>
+    <PageTitle title="Специалисты" subtitle={subtitle} />
   );
 }

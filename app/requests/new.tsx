@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
 } from "react-native";
+import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter, ROUTES } from "@/lib/navigation";
@@ -306,7 +307,7 @@ export default function CreateRequest() {
             <ChevronLeft size={20} color={colors.text} />
             <Text className="text-text-base ml-1">Назад</Text>
           </Pressable>
-          <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+          <PageTitle title="Новая заявка" />
         </View>
         <View className="flex-1 items-center justify-center">
           <EmptyState
@@ -334,7 +335,7 @@ export default function CreateRequest() {
           <ChevronLeft size={20} color={colors.text} />
           <Text className="text-text-base ml-1">Назад</Text>
         </Pressable>
-        <Text className="text-2xl font-extrabold text-text-base mb-3">Создать заявку</Text>
+        <PageTitle title="Новая заявка" />
       </View>
       <ScrollView
         className="flex-1"

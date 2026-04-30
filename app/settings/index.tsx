@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Constants from "expo-constants";
 import { View, Text, ScrollView, Pressable, Alert, Platform } from "react-native";
+import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
@@ -133,7 +134,7 @@ export default function UnifiedSettings() {
             <ChevronLeft size={20} color={colors.text} />
             <Text className="text-text-base ml-1">Назад</Text>
           </Pressable>
-          <Text className="text-2xl font-extrabold text-text-base mb-4">Настройки</Text>
+          <PageTitle title="Настройки" />
         </View>
         <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
@@ -153,7 +154,7 @@ export default function UnifiedSettings() {
           <ChevronLeft size={20} color={colors.text} />
           <Text className="text-text-base ml-1">Назад</Text>
         </Pressable>
-        <Text className="text-2xl font-extrabold text-text-base mb-3">Настройки</Text>
+        <PageTitle title="Настройки" />
       </View>
 
       <SettingsTabs
