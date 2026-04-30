@@ -1,5 +1,5 @@
-import { View, Text, TextInput } from "react-native";
-import { colors, fontSizeValue } from "@/lib/theme";
+import { View, Text } from "react-native";
+import Input from "@/components/ui/Input";
 
 interface MessageComposerProps {
   value: string;
@@ -34,55 +34,19 @@ export default function MessageComposer({
 }: MessageComposerProps) {
   return (
     <>
-      <Text className="text-sm font-semibold text-text-base mb-2">{label}</Text>
-      {/* Outer View — line-style (bottom border only). Prevents double-input on web. */}
-      <View
-        style={{
-          minHeight: 140,
-          borderTopWidth: 0,
-          borderLeftWidth: 0,
-          borderRightWidth: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: disabled ? colors.border : colors.borderStrong,
-          backgroundColor: "transparent",
-          opacity: disabled ? 0.5 : 1,
-          paddingBottom: 2,
+      <Input
+        label={label}
+        accessibilityLabel={label}
+        value={value}
+        maxLength={maxLength}
+        onChangeText={(t) => {
+          if (t.length <= maxLength) onChange(t);
         }}
-      >
-        <TextInput
-          accessibilityLabel={label}
-          value={value}
-          maxLength={maxLength}
-          onChangeText={(t) => {
-            if (t.length <= maxLength) onChange(t);
-          }}
-          placeholder={placeholder}
-          placeholderTextColor={colors.placeholder}
-          multiline
-          editable={!disabled}
-          // Border/outline reset is applied unconditionally so the inner
-          // <input>/<textarea> never paints its own edge — only the outer
-          // wrapper View owns the bottom underline. Native silently drops
-          // unknown CSS keys, so this is safe across web + native.
-          // @ts-expect-error — outlineStyle/outlineWidth/appearance are
-          // web-only CSS properties; RN's TextStyle typing rejects them
-          // but the runtime drops unknown keys on native.
-          style={{
-            flex: 1,
-            paddingHorizontal: 0,
-            paddingVertical: 8,
-            fontSize: fontSizeValue.base,
-            color: colors.text,
-            textAlignVertical: "top",
-            borderWidth: 0,
-            borderColor: "transparent",
-            backgroundColor: "transparent",
-            outlineStyle: "none",
-            outlineWidth: 0,
-            appearance: "none",
-          }}
-        />
-      </View>
+        placeholder={placeholder}
+        multiline
+        editable={!disabled}
+        containerStyle={{ minHeight: 140, opacity: disabled ? 0.5 : 1 }}
+      />
 
       <View className="flex-row justify-between items-center mt-1 mb-1">
         {minLength !== undefined && value.length > 0 && value.length < minLength ? (

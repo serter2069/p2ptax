@@ -36,7 +36,6 @@ const INPUT_BORDER_FOCUS = "#3b82f6";
 const INPUT_BORDER_ERROR = "#c6365a";
 const INPUT_PLACEHOLDER = "#9ca3af";
 const INPUT_TEXT = "#111111";
-const INPUT_FONT_SIZE = 15;
 
 export default function Input({
   label,
@@ -149,8 +148,9 @@ export default function Input({
               minHeight: 44,
               alignSelf: "stretch",
             } : {}),
-            fontSize: variant === "bordered" ? INPUT_FONT_SIZE : 16,
+            fontSize: 14,
             color: variant === "bordered" ? INPUT_TEXT : colors.text,
+            lineHeight: multiline ? 20 : undefined,
             // On web multiline, explicit paddingTop ensures the cursor renders
             // at the right vertical position when wrapper uses flex-start.
             paddingTop: multiline ? spacing.sm : 0,

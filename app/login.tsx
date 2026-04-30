@@ -1,4 +1,4 @@
-import { View, Text, Image, Pressable, TextInput, Platform } from "react-native";
+import { View, Text, Image, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,7 +32,6 @@ export default function AuthEmailScreen() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -138,60 +138,25 @@ export default function AuthEmailScreen() {
             </View>
           ) : null}
 
-          {/* Email input — line-style (bottom border only) */}
-          <View
-            className="flex-row items-center"
-            style={{
-              borderTopWidth: 0,
-              borderLeftWidth: 0,
-              borderRightWidth: 0,
-              borderBottomWidth: focused ? 2 : 1,
-              borderBottomColor: error ? colors.error : focused ? colors.accent : colors.borderStrong,
-              paddingBottom: 2,
-              marginBottom: error ? 6 : 16,
-            }}
-          >
-            <Mail size={18} color={focused ? colors.accent : colors.placeholder} />
-            <TextInput
+          {/* Email input with leading icon */}
+          <View style={{ marginBottom: 16 }}>
+            <Input
               accessibilityLabel="Email адрес"
               placeholder="your@email.com"
-              placeholderTextColor={colors.placeholder}
               value={email}
               onChangeText={(t) => {
                 setEmail(t);
                 if (error) setError("");
               }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
+              icon={Mail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
               editable={!isLoading}
               onSubmitEditing={handleContinue}
-              style={{
-                flex: 1,
-                marginLeft: 10,
-                fontSize: 15,
-                color: colors.text,
-                borderWidth: 0,
-                backgroundColor: "transparent",
-                ...(Platform.OS === "web" ? {
-                  minHeight: 44,
-                  alignSelf: "stretch" as never,
-                  borderColor: "transparent",
-                  outlineStyle: "none" as never,
-                  outlineWidth: 0,
-                  appearance: "none" as never,
-                } : {}),
-              }}
+              error={error || undefined}
             />
           </View>
-
-          {error ? (
-            <Text className="text-sm text-danger mb-3" style={{ fontSize: 13 }}>
-              {error}
-            </Text>
-          ) : null}
 
           {/* CTA */}
           <Button

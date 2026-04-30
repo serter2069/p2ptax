@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, Platform } from "react-native";
 import { Mail } from "lucide-react-native";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import { useAuth, UserData } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
@@ -124,62 +125,25 @@ export default function InlineOtpFlow({
 
       {stage === "email" && (
         <View>
-          <Text className="text-sm font-medium text-text-base mb-1.5">
-            Email <Text className="text-danger">*</Text>
-          </Text>
-          {/* Email — line-style (bottom border only) */}
-          <View
-            className="flex-row items-center"
-            style={{
-              borderTopWidth: 0,
-              borderLeftWidth: 0,
-              borderRightWidth: 0,
-              borderBottomWidth: 1,
-              borderBottomColor: emailError ? colors.error : colors.borderStrong,
-              paddingBottom: 2,
-              marginBottom: emailError ? 6 : 12,
-            }}
-          >
-            <Mail size={18} color={colors.placeholder} />
-            <TextInput
+          <View style={{ marginBottom: 12 }}>
+            <Input
+              label="Email"
               accessibilityLabel="Email адрес"
               placeholder="your@email.com"
-              placeholderTextColor={colors.placeholder}
               value={email}
               onChangeText={(t) => {
                 setEmail(t);
                 if (emailError) setEmailError("");
               }}
+              icon={Mail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
               editable={!requesting}
               onSubmitEditing={handleRequestOtp}
-              style={{
-                flex: 1,
-                marginLeft: 10,
-                fontSize: 15,
-                color: colors.text,
-                borderWidth: 0,
-                backgroundColor: "transparent",
-                ...(Platform.OS === "web"
-                  ? {
-                      minHeight: 44,
-                      alignSelf: "stretch" as never,
-                      borderColor: "transparent",
-                      outlineStyle: "none" as never,
-                      outlineWidth: 0,
-                      appearance: "none" as never,
-                    }
-                  : {}),
-              }}
+              error={emailError || undefined}
             />
           </View>
-          {emailError ? (
-            <Text className="text-sm text-danger mb-3" style={{ fontSize: 13 }}>
-              {emailError}
-            </Text>
-          ) : null}
           <Button
             label="Получить код"
             onPress={handleRequestOtp}
