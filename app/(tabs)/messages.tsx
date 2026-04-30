@@ -89,7 +89,6 @@ export default function UnifiedInbox() {
   }, [fetchThreads]);
 
   const sorted = sortThreads(threads);
-  const unreadTotal = threads.reduce((sum, t) => sum + t.unreadCount, 0);
 
   const renderRow = useCallback(
     (item: ThreadItem, opts?: { onSelect?: () => void; selected?: boolean }) => (
@@ -189,29 +188,6 @@ export default function UnifiedInbox() {
                 backgroundColor: colors.surface,
               }}
             >
-              {unreadTotal > 0 && (
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <View
-                    className="bg-accent rounded-full items-center justify-center"
-                    style={{ minWidth: 22, height: 22, paddingHorizontal: 5 }}
-                  >
-                    <Text className="text-xs font-bold text-white">
-                      {unreadTotal > 99 ? "99+" : unreadTotal}
-                    </Text>
-                  </View>
-                  <Text className="text-xs text-text-dim">непрочитанных</Text>
-                </View>
-              )}
               <FlatList
                 data={sorted}
                 keyExtractor={(item) => item.id}

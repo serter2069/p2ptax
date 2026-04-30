@@ -104,6 +104,14 @@ export default function ChatHeader({
             <Text className="text-base font-semibold flex-shrink" style={{ color: colors.text }} numberOfLines={1}>
               {otherName}
             </Text>
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: colors.success,
+              }}
+            />
             {myPerspective ? (
               <PerspectiveBadge perspective={myPerspective} size="md" />
             ) : null}
