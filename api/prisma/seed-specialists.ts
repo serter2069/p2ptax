@@ -1797,6 +1797,83 @@ async function main() {
   }
   console.log(`  Bonus messages on thin threads: ${bonusMessageCount}`);
 
+  // ─── File attachments on sample requests ──────────────────────────
+  // Attach 1-3 files to the first 8 created requests.
+  // Idempotent: delete existing seed files for these requests, then recreate.
+
+  const FILE_TEMPLATES: Array<{
+    filename: string;
+    mimeType: string;
+    size: number;
+    url: string;
+  }> = [
+    {
+      filename: "Акт-проверки.pdf",
+      mimeType: "application/pdf",
+      size: 245760,
+      url: "https://www.africau.edu/images/default/sample.pdf",
+    },
+    {
+      filename: "Скрин-ответа.jpg",
+      mimeType: "image/jpeg",
+      size: 84300,
+      url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400",
+    },
+    {
+      filename: "Требование.pdf",
+      mimeType: "application/pdf",
+      size: 105200,
+      url: "https://www.africau.edu/images/default/sample.pdf",
+    },
+    {
+      filename: "Декларация-3НДФЛ.pdf",
+      mimeType: "application/pdf",
+      size: 312000,
+      url: "https://www.africau.edu/images/default/sample.pdf",
+    },
+    {
+      filename: "Выписка-банка.jpg",
+      mimeType: "image/jpeg",
+      size: 97500,
+      url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400",
+    },
+  ];
+
+  // Pick up to 8 requests to attach files to
+  const requestsWithFiles = createdRequests.slice(0, 8);
+  const requestIdsWithFiles = requestsWithFiles.map((r) => r.id);
+
+  // Delete existing seed files for these requests (idempotency)
+  await prisma.file.deleteMany({
+    where: {
+      entityType: "request",
+      entityId: { in: requestIdsWithFiles },
+    },
+  });
+
+  let fileCount = 0;
+  for (let i = 0; i < requestsWithFiles.length; i++) {
+    const req = requestsWithFiles[i];
+    // 1-3 files per request, cycling through templates
+    const fileCountForReq = (i % 3) + 1;
+    for (let f = 0; f < fileCountForReq; f++) {
+      const tpl = FILE_TEMPLATES[(i + f) % FILE_TEMPLATES.length];
+      await prisma.file.create({
+        data: {
+          entityType: "request",
+          entityId: req.id,
+          requestId: req.id,
+          filename: tpl.filename,
+          mimeType: tpl.mimeType,
+          size: tpl.size,
+          url: tpl.url,
+        },
+      });
+      fileCount++;
+    }
+  }
+  console.log(`  Files:       ${fileCount} (on ${requestsWithFiles.length} requests)`);
+
   console.log("\nSpecialist/content seed complete.");
 }
 
