@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import Input from "@/components/ui/Input";
-import CityFnsServicePicker, { CityOption, FnsOption, ServiceOption } from "@/components/requests/CityFnsServicePicker";
+import CityFnsServicePicker from "@/components/shared/CityFnsServicePicker";
+import type { CityOption as CityCascadeOption, ServiceOption } from "@/components/shared/CityFnsServicePicker";
 import FileUploadSection, { AttachedFile } from "@/components/requests/FileUploadSection";
 import { ChevronUp, ChevronDown } from "lucide-react-native";
 import { colors } from "@/lib/theme";
@@ -8,16 +9,11 @@ import { colors } from "@/lib/theme";
 interface RequestFormProps {
   title: string;
   description: string;
-  cities: CityOption[];
-  fnsOffices: FnsOption[];
+  cities: CityCascadeOption[];
   services: ServiceOption[];
-  selectedCity?: CityOption;
-  selectedFns?: FnsOption;
-  selectedService?: ServiceOption;
-  cityOpen: boolean;
-  fnsOpen: boolean;
-  serviceOpen: boolean;
-  loadingFns: boolean;
+  selectedCityId: string | null;
+  selectedFnsId: string | null;
+  selectedServiceId: string | null;
   submitted: boolean;
   atLimit: boolean;
   submitting: boolean;
@@ -28,26 +24,18 @@ interface RequestFormProps {
   setTitle: (val: string) => void;
   setDescription: (val: string) => void;
   setFiles: (val: AttachedFile[]) => void;
-  setCityOpen: (val: boolean) => void;
-  setFnsOpen: (val: boolean) => void;
-  setServiceOpen: (val: boolean) => void;
   setTipsOpen: (val: boolean) => void;
-  handleCitySelect: (city: CityOption) => void;
-  handleFnsSelect: (fns: FnsOption) => void;
-  handleServiceSelect: (svc: ServiceOption) => void;
-  handleServiceClear: () => void;
+  onPickerChange: (v: { cityId: string | null; fnsId: string | null; serviceId: string | null }) => void;
 }
 
 export default function RequestForm({
-  title, description, cities, fnsOffices, services,
-  selectedCity, selectedFns, selectedService,
-  cityOpen, fnsOpen, serviceOpen, loadingFns,
+  title, description, cities, services,
+  selectedCityId, selectedFnsId, selectedServiceId,
   submitted, atLimit, submitting,
   titleValid, descriptionValid,
   files, tipsOpen,
-  setTitle, setDescription, setFiles,
-  setCityOpen, setFnsOpen, setServiceOpen, setTipsOpen,
-  handleCitySelect, handleFnsSelect, handleServiceSelect, handleServiceClear,
+  setTitle, setDescription, setFiles, setTipsOpen,
+  onPickerChange,
 }: RequestFormProps) {
 
   return (
@@ -79,27 +67,20 @@ export default function RequestForm({
         </Text>
       </View>
 
-      <CityFnsServicePicker
-        cities={cities}
-        fnsOffices={fnsOffices}
-        services={services}
-        selectedCity={selectedCity}
-        selectedFns={selectedFns}
-        selectedService={selectedService}
-        cityOpen={cityOpen}
-        fnsOpen={fnsOpen}
-        serviceOpen={serviceOpen}
-        loadingFns={loadingFns}
-        submitted={submitted}
-        disabled={atLimit || submitting}
-        onCitySelect={handleCitySelect}
-        onFnsSelect={handleFnsSelect}
-        onServiceSelect={handleServiceSelect}
-        onServiceClear={handleServiceClear}
-        onCityOpenChange={setCityOpen}
-        onFnsOpenChange={setFnsOpen}
-        onServiceOpenChange={setServiceOpen}
-      />
+      {/* Negative margin compensates for cascade's internal px-4 so its
+          chip rows align with the card's edge padding. */}
+      <View className="mb-4 -mx-4">
+        <CityFnsServicePicker
+          cities={cities}
+          services={services}
+          cityId={selectedCityId}
+          fnsId={selectedFnsId}
+          serviceId={selectedServiceId}
+          onChange={onPickerChange}
+          submitted={submitted}
+          disabled={atLimit || submitting}
+        />
+      </View>
 
       <View className="mb-4">
         <Text className="text-sm font-medium text-text-base mb-1.5">
