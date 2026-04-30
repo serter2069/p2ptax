@@ -94,6 +94,8 @@ export function detectSidebarGroup(
   // Top-level authenticated screens reachable from sidebar (requests,
   // specialists, notifications, threads, settings): show a generic "main"
   // sidebar scoped to the user's role.
+  if (pathname.startsWith("/admin/")) return "admin";
+
   if (
     pathname.startsWith("/specialists") ||
     pathname.startsWith("/saved-specialists") ||

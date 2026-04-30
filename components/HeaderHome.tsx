@@ -29,7 +29,13 @@ export default function HeaderHome({ notificationCount = 0, onSettingsPress }: H
 
   return (
     <View className="flex-row items-center justify-between h-14 px-4" style={{ backgroundColor: colors.primary }}>
-      <Logo variant="white" size="md" />
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="P2PTax — главная"
+        onPress={() => nav.routes.home()}
+      >
+        <Logo variant="white" size="md" />
+      </Pressable>
       <View className="flex-row items-center gap-4">
         <Pressable
           accessibilityRole="button"

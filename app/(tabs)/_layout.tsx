@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { useWindowDimensions } from "react-native";
+import { View, useWindowDimensions } from "react-native";
 import { useState, useEffect } from "react";
 import {
   FileText,
@@ -9,6 +9,7 @@ import {
 } from "lucide-react-native";
 import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 import { apiGet } from "@/lib/api";
+import HeaderHome from "@/components/HeaderHome";
 
 /**
  * Unified (tabs) navigator — task #1615 nav split.
@@ -39,6 +40,8 @@ export default function TabLayout() {
   }, []);
 
   return (
+    <View style={{ flex: 1 }}>
+      {isMobile && <HeaderHome />}
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -101,5 +104,6 @@ export default function TabLayout() {
       <Tabs.Screen name="create" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
     </Tabs>
+    </View>
   );
 }

@@ -12,6 +12,7 @@ import {
 import { ChevronDown, ChevronUp, Search, X, MapPin, Building2 } from "lucide-react-native";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import { useCities } from "@/lib/hooks/useCities";
 
 export interface CityCascadeOption {
   id: string;
@@ -88,6 +89,7 @@ export default function CityFnsCascade({
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
 
+  const { cities: hookCities } = useCities();
   const [cities, setCities] = useState<CityCascadeOption[]>(citiesSource ?? []);
   const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>(fnsSource ?? []);
   const [loadingFns, setLoadingFns] = useState(false);
@@ -99,28 +101,15 @@ export default function CityFnsCascade({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch cities only if caller hasn't supplied them
+  // Sync cities: prefer caller-supplied citiesSource; fall back to global hook cache.
   useEffect(() => {
     if (citiesSource && citiesSource.length > 0) {
       setCities(citiesSource);
       return;
     }
     if (mode === "typeahead") return; // typeahead caller provides citiesSource + fnsSource
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await api<{ items: CityCascadeOption[] }>("/api/cities", {
-          noAuth: true,
-        });
-        if (!cancelled) setCities(res.items);
-      } catch {
-        /* ignore — empty cities simply hide filter */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [citiesSource, mode]);
+    if (hookCities.length > 0) setCities(hookCities);
+  }, [citiesSource, mode, hookCities]);
 
   // Typeahead: use fnsSource when provided
   useEffect(() => {
