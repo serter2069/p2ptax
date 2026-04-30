@@ -140,9 +140,12 @@ export function avatarUploadErrorMessage(status: number): string {
 /**
  * Upload an avatar file (web). Performs client-side size pre-check, throws ApiError on
  * server error (with mapped Russian message), or a network ApiError(0, ...) on fetch failure.
- * Returns the absolute URL of the uploaded avatar.
+ * Returns { url, key } — url is a 7-day presigned URL for immediate display,
+ * key is the storage key that should be persisted in the DB (never expires).
+ * The upload endpoint already saves key to user.avatarUrl in the DB, but the
+ * profile PATCH also sends the key so the user profile stays in sync.
  */
-export async function uploadAvatarFile(file: File): Promise<string> {
+export async function uploadAvatarFile(file: File): Promise<{ url: string; key: string }> {
   if (file.size > AVATAR_MAX_BYTES) {
     throw new ApiError(413, avatarUploadErrorMessage(413));
   }
@@ -166,8 +169,9 @@ export async function uploadAvatarFile(file: File): Promise<string> {
     throw new ApiError(res.status, avatarUploadErrorMessage(res.status));
   }
 
-  const data = (await res.json()) as { url: string };
-  return data.url.startsWith("http") ? data.url : `${API_URL}${data.url}`;
+  const data = (await res.json()) as { url: string; key: string };
+  const url = data.url && data.url.startsWith("http") ? data.url : `${API_URL}${data.url}`;
+  return { url, key: data.key };
 }
 
 /**

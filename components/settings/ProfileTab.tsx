@@ -84,7 +84,7 @@ interface ProfileTabProps {
   userId?: string;
   onFirstNameChange: (v: string) => void;
   onLastNameChange: (v: string) => void;
-  onAvatarChange: (url: string | null) => void;
+  onAvatarChange: (url: string, key: string) => void;
   onUploadStart: () => void;
   onUploadEnd: () => void;
   onToggleSpecialist: (v: boolean) => void;
