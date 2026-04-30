@@ -16,7 +16,7 @@ const SAFE_EDGES = Platform.OS === "web"
 export default function ChatThread() {
   const { id, requestId } = useLocalSearchParams<{ id: string; requestId?: string }>();
   const router = useRouter();
-  const { ready } = useRequireAuth();
+  const { ready, isLoading: authLoading } = useRequireAuth();
 
   function handleBack() {
     if (requestId) {
@@ -28,7 +28,11 @@ export default function ChatThread() {
     }
   }
 
-  if (!ready) {
+  // Show spinner while auth is loading OR while unauthenticated (redirect pending).
+  // This prevents InlineChatView from mounting before auth is resolved, which
+  // caused a flash: InlineChatView would fetch/render then vanish on redirect.
+  // issue #1611
+  if (authLoading || !ready) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
         <LoadingState />
