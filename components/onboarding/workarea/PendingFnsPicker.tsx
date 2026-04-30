@@ -12,9 +12,7 @@ interface Props {
   pendingFns: FnsOpt;
   services: ServiceItem[];
   pendingServiceIds: string[];
-  pendingAnyService: boolean;
   canAddEntry: boolean;
-  onPickAny: () => void;
   onToggleService: (id: string) => void;
   onAdd: () => void;
   onCancel: () => void;
@@ -24,9 +22,7 @@ export default function PendingFnsPicker({
   pendingFns,
   services,
   pendingServiceIds,
-  pendingAnyService,
   canAddEntry,
-  onPickAny,
   onToggleService,
   onAdd,
   onCancel,
@@ -48,26 +44,6 @@ export default function PendingFnsPicker({
       </Text>
 
       <View className="flex-row flex-wrap" style={{ gap: 8 }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Не знаю — любая услуга"
-          onPress={onPickAny}
-          className={`px-3 h-9 items-center justify-center rounded-full border ${
-            pendingAnyService
-              ? "bg-accent border-accent"
-              : "bg-white border-border"
-          }`}
-        >
-          <Text
-            className={`text-sm ${
-              pendingAnyService
-                ? "text-white font-medium"
-                : "text-text-base"
-            }`}
-          >
-            Не знаю
-          </Text>
-        </Pressable>
         {services.map((svc) => {
           const active = pendingServiceIds.includes(svc.id);
           return (

@@ -60,7 +60,6 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
 
   // Step 2 — service picker
   const [pendingServiceIds, setPendingServiceIds] = useState<string[]>([]);
-  const [pendingAnyService, setPendingAnyService] = useState(false);
 
   // Accepted entries
   const [entries, setEntries] = useState<WorkAreaEntryData[]>([]);
@@ -116,42 +115,32 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
     setPendingCityId(fns.cityId);
     setPendingFns(fns);
     setPendingServiceIds([]);
-    setPendingAnyService(false);
   }, []);
 
   const handleClearLocation = useCallback(() => {
     setPendingCityId(null);
     setPendingFns(null);
     setPendingServiceIds([]);
-    setPendingAnyService(false);
   }, []);
 
   const toggleService = useCallback((id: string) => {
-    setPendingAnyService(false);
     setPendingServiceIds((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   }, []);
 
-  const pickAnyService = useCallback(() => {
-    setPendingServiceIds([]);
-    setPendingAnyService(true);
-  }, []);
-
-  const canAddEntry = pendingFns !== null && (pendingAnyService || pendingServiceIds.length > 0);
+  const canAddEntry = pendingFns !== null && pendingServiceIds.length > 0;
 
   const addEntry = useCallback(() => {
     if (!pendingFns) return;
-    if (!pendingAnyService && pendingServiceIds.length === 0) return;
+    if (pendingServiceIds.length === 0) return;
 
     const cityName =
       pendingFns.cityName ||
       cities.find((c) => c.id === pendingFns.cityId)?.name ||
       "";
 
-    const serviceNames = pendingAnyService
-      ? []
-      : services.filter((s) => pendingServiceIds.includes(s.id)).map((s) => s.name);
+    const serviceNames = services.filter((s) => pendingServiceIds.includes(s.id)).map((s) => s.name);
 
     const next: WorkAreaEntryData = {
       fnsId: pendingFns.id,
@@ -159,9 +148,9 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
       fnsCode: pendingFns.code,
       cityId: pendingFns.cityId,
       cityName,
-      serviceIds: pendingAnyService ? [] : pendingServiceIds,
+      serviceIds: pendingServiceIds,
       serviceNames,
-      isAnyService: pendingAnyService,
+      isAnyService: false,
     };
 
     setEntries((prev) => {
@@ -172,8 +161,7 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
     setPendingCityId(null);
     setPendingFns(null);
     setPendingServiceIds([]);
-    setPendingAnyService(false);
-  }, [pendingFns, pendingAnyService, pendingServiceIds, cities, services]);
+  }, [pendingFns, pendingServiceIds, cities, services]);
 
   const removeEntry = useCallback((fnsId: string) => {
     setEntries((prev) => prev.filter((e) => e.fnsId !== fnsId));
@@ -253,9 +241,7 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
             pendingFns={pendingFns}
             services={services}
             pendingServiceIds={pendingServiceIds}
-            pendingAnyService={pendingAnyService}
             canAddEntry={canAddEntry}
-            onPickAny={pickAnyService}
             onToggleService={toggleService}
             onAdd={addEntry}
             onCancel={handleClearLocation}
