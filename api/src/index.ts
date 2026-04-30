@@ -30,7 +30,7 @@ import { runRequestLifecycleCron } from "./cron/requestLifecycle";
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:8081" }));
+app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",").map(s => s.trim()) : [/^http:\/\/localhost:(8081|8082)$/] }));
 app.use(express.json({ limit: "1mb" }));
 
 // Health check
