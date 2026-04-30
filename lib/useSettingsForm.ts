@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
@@ -238,50 +238,48 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     [availabilityLoading, isAvailable, applyAvailabilityChange],
   );
 
-  const handleLogout = useCallback(() => {
-    Alert.alert("Выйти из аккаунта", "Вы уверены, что хотите выйти?", [
-      { text: "Отмена", style: "cancel" },
-      {
-        text: "Выйти",
-        style: "destructive",
-        onPress: async () => {
-          await signOut();
-          nav.replaceRoutes.home();
-        },
-      },
-    ]);
+  const handleLogout = useCallback(async () => {
+    const confirmed = Platform.OS === "web"
+      ? window.confirm("Выйти из аккаунта?")
+      : await new Promise<boolean>((resolve) =>
+          Alert.alert("Выйти из аккаунта", "Вы уверены?", [
+            { text: "Отмена", onPress: () => resolve(false), style: "cancel" },
+            { text: "Выйти", onPress: () => resolve(true), style: "destructive" },
+          ])
+        );
+    if (!confirmed) return;
+    await signOut();
+    nav.replaceRoutes.home();
   }, [signOut, nav]);
 
-  const handleDeleteAccount = useCallback(() => {
-    Alert.alert(
-      "Удалить аккаунт навсегда?",
-      "Аккаунт будет анонимизирован и скрыт. Восстановление невозможно. История переписок останется у других участников.",
-      [
-        { text: "Отмена", style: "cancel" },
-        {
-          text: "Удалить",
-          style: "destructive",
-          onPress: async () => {
-            const email = user?.email;
-            if (!email) {
-              Alert.alert("Ошибка", "Не удалось определить email аккаунта");
-              return;
-            }
-            try {
-              await apiPost("/api/account/delete", { confirm: email });
-              await signOut();
-              nav.replaceRoutes.home();
-            } catch (err) {
-              console.error("delete account error:", err);
-              Alert.alert(
-                "Ошибка",
-                "Не удалось удалить аккаунт. Попробуйте ещё раз.",
-              );
-            }
-          },
-        },
-      ],
-    );
+  const handleDeleteAccount = useCallback(async () => {
+    const confirmed = Platform.OS === "web"
+      ? window.confirm("Удалить аккаунт? Аккаунт будет анонимизирован. Восстановление невозможно.")
+      : await new Promise<boolean>((resolve) =>
+          Alert.alert(
+            "Удалить аккаунт навсегда?",
+            "Аккаунт будет анонимизирован и скрыт. Восстановление невозможно.",
+            [
+              { text: "Отмена", onPress: () => resolve(false), style: "cancel" },
+              { text: "Удалить", onPress: () => resolve(true), style: "destructive" },
+            ],
+          )
+        );
+    if (!confirmed) return;
+    const email = user?.email;
+    if (!email) return;
+    try {
+      await apiPost("/api/account/delete", { confirm: email });
+      await signOut();
+      nav.replaceRoutes.home();
+    } catch (err) {
+      console.error("delete account error:", err);
+      if (Platform.OS === "web") {
+        window.alert("Не удалось удалить аккаунт. Попробуйте ещё раз.");
+      } else {
+        Alert.alert("Ошибка", "Не удалось удалить аккаунт. Попробуйте ещё раз.");
+      }
+    }
   }, [user?.email, signOut, nav]);
 
   const handleToggleSpecialist = useCallback(

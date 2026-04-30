@@ -100,7 +100,7 @@ export default function LandingScreen() {
           // Pick up to 2 FNS names; fall back to null (card will show city instead)
           const fnsEntries = s.specialistFns ?? [];
           const fnsName = fnsEntries.length > 0
-            ? fnsEntries.slice(0, 2).map((f) => f.fnsName).join(", ")
+            ? fnsEntries[0].fnsName
             : null;
           return {
             id: s.id,
@@ -208,7 +208,7 @@ export default function LandingScreen() {
           onCreateRequest={goCreateRequest}
           onFindSpecialist={goCatalog}
           isAuthenticated={isAuthenticated}
-          onOpenDashboard={() => nav.routes.tabs()}
+          onOpenDashboard={() => nav.routes.dashboard()}
         />
 
         <HeroBlock
