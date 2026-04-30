@@ -115,7 +115,7 @@ export default function OnboardingProfileScreen() {
     setAvatarUploading(true);
     setError("");
     try {
-      const fullUrl = await uploadAvatarFile(file);
+      const { url: fullUrl } = await uploadAvatarFile(file);
       setAvatarUrl(fullUrl);
     } catch (e: unknown) {
       const msg =

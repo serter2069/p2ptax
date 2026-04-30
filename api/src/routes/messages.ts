@@ -1,12 +1,13 @@
 import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
 import { sendNewMessageEmail } from "../lib/email";
 import { firstNameInGenitive } from "../lib/ru";
 import type * as Minio from "minio";
-import { minioClient, MINIO_BUCKET, presignStoredUrl } from "../lib/minio";
+import { minioClient, MINIO_BUCKET, presignAvatarUrl } from "../lib/minio";
 
 const router = Router();
 
@@ -181,8 +182,8 @@ router.get("/threads", authMiddleware, async (req: Request, res: Response) => {
       threads.map(async (t) => ({
         id: t.id,
         request: t.request,
-        client: { ...t.client, avatarUrl: await presignStoredUrl(t.client.avatarUrl) },
-        specialist: { ...t.specialist, avatarUrl: await presignStoredUrl(t.specialist.avatarUrl) },
+        client: { ...t.client, avatarUrl: await presignAvatarUrl(t.client.avatarUrl) },
+        specialist: { ...t.specialist, avatarUrl: await presignAvatarUrl(t.specialist.avatarUrl) },
         lastMessage: t.messages[0] || null,
         lastMessageAt: t.lastMessageAt,
         createdAt: t.createdAt,
@@ -239,7 +240,9 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
       }
     }
 
-    type MessageRow = Awaited<ReturnType<typeof prisma.message.findMany>>[number];
+    type MessageRow = Prisma.MessageGetPayload<{
+      include: { sender: { select: { id: true; firstName: true; lastName: true; avatarUrl: true } } };
+    }>;
     let messages: MessageRow[];
 
     if (!paginated) {
@@ -303,7 +306,7 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
     const result = await Promise.all(
       messages.map(async (m) => ({
         ...m,
-        sender: { ...m.sender, avatarUrl: await presignStoredUrl(m.sender.avatarUrl) },
+        sender: { ...m.sender, avatarUrl: await presignAvatarUrl(m.sender.avatarUrl) },
         files: filesByMessage[m.id] || [],
       }))
     );
@@ -523,7 +526,7 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
     res.json({
       message: {
         ...message,
-        sender: { ...message.sender, avatarUrl: await presignStoredUrl(message.sender.avatarUrl) },
+        sender: { ...message.sender, avatarUrl: await presignAvatarUrl(message.sender.avatarUrl) },
         files: savedFiles,
       },
     });
