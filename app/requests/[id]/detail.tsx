@@ -6,7 +6,6 @@ import {
   Pressable,
   Alert,
   Linking,
-  TextInput,
   ActivityIndicator,
   useWindowDimensions,
 } from "react-native";
@@ -16,6 +15,7 @@ import { useTypedRouter } from "@/lib/navigation";
 import { File, FileImage, Download, ChevronLeft, MessageSquare } from "lucide-react-native";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import LoadingState from "@/components/ui/LoadingState";
 import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
 import { api, apiPost, apiPatch } from "@/lib/api";
@@ -287,14 +287,13 @@ function SpecialistView({
             <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
               Откликнуться
             </Text>
-            <TextInput
+            <Input
               value={message}
               onChangeText={(t) => { setMessage(t); setMsgError(null); }}
               placeholder="Напишите сообщение клиенту (минимум 10 символов)..."
               multiline
               numberOfLines={4}
-              className="text-base text-text-base"
-              style={{ minHeight: 96, textAlignVertical: "top" }}
+              variant="bordered"
               accessibilityLabel="Ваше сообщение"
             />
           </View>

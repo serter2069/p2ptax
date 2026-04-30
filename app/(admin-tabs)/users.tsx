@@ -4,7 +4,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  TextInput,
   Alert,
   Platform,
 } from "react-native";
@@ -14,6 +13,7 @@ import { Users } from "lucide-react-native";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
+import Input from "@/components/ui/Input";
 import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
@@ -246,42 +246,14 @@ export default function AdminUsers() {
   const filterBar = (
     <View style={{ gap: 12 }}>
       {/* Line-style search — bottom border only, no box */}
-      <View
-        style={{
-          borderTopWidth: 0,
-          borderLeftWidth: 0,
-          borderRightWidth: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.borderStrong,
-          height: 44,
-          paddingHorizontal: 0,
-          paddingBottom: 2,
-          justifyContent: "center",
-          backgroundColor: "transparent",
-        }}
-      >
-        <TextInput
-          accessibilityLabel="Поиск по email или имени"
-          style={{
-            flex: 1,
-            color: colors.text,
-            fontSize: fontSizeValue.md,
-            borderWidth: 0,
-            backgroundColor: "transparent",
-            ...(Platform.OS === "web" ? {
-              borderColor: "transparent",
-              outlineStyle: "none" as never,
-              outlineWidth: 0,
-              appearance: "none" as never,
-            } : {}),
-          }}
-          placeholder="Поиск по email или имени..."
-          placeholderTextColor={colors.placeholder}
-          value={search}
-          onChangeText={setSearch}
-          autoCapitalize="none"
-        />
-      </View>
+      <Input
+        accessibilityLabel="Поиск по email или имени"
+        placeholder="Поиск по email или имени..."
+        value={search}
+        onChangeText={setSearch}
+        autoCapitalize="none"
+        variant="line"
+      />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

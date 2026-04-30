@@ -45,6 +45,8 @@ export default tseslint.config(
       "components/filters/CityFnsCascade.tsx",
       "components/filters/SpecialistSearchBar.tsx",
       "components/onboarding/OtpCodeInput.tsx",
+      "components/auth/OtpCodeInput.tsx",
+      "components/requests/InlineOtpFlow.tsx",
     ],
     rules: {
       "no-restricted-imports": ["error", {
