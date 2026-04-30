@@ -129,6 +129,7 @@ router.get("/public", async (req: Request, res: Response) => {
       fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
       threadsCount: r._count.threads,
       hasFiles: r._count.files > 0,
+      filesCount: r._count.files,
       user: {
         firstName: r.user.firstName,
         lastName: r.user.lastName,
@@ -309,7 +310,8 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
         include: {
           city: true,
           fns: true,
-          _count: { select: { threads: true } },
+          user: { select: { firstName: true, lastName: true, avatarUrl: true } },
+          _count: { select: { threads: true, files: true } },
         },
       }),
       prisma.request.count({ where: { userId } }),
@@ -326,6 +328,12 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
       city: { id: r.city.id, name: r.city.name },
       fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
       threadsCount: r._count.threads,
+      hasFiles: r._count.files > 0,
+      filesCount: r._count.files,
+      user: {
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+      },
     }));
 
     res.json({ items: mapped, total, limit, offset, hasMore: offset + limit < total });
