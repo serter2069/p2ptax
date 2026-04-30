@@ -1,6 +1,7 @@
 import { View, Text, Pressable, Image } from "react-native";
 import { Bookmark, MessageCircle } from "lucide-react-native";
 import { colors } from "@/lib/theme";
+import { isAllCoreServicesSelected } from "@/lib/services";
 
 interface FnsGroup {
   fnsId: string;
@@ -213,17 +214,28 @@ export default function SpecialistCard({
               </Text>
               {g.services.length > 0 && (
                 <View className="flex-row flex-wrap items-center" style={{ gap: 6 }}>
-                  {g.services.map((s) => (
+                  {isAllCoreServicesSelected(g.services.map((s) => s.name)) ? (
                     <View
-                      key={`${g.fnsId}-${s.id}`}
                       className="px-2 py-0.5 rounded-full"
                       style={{ backgroundColor: colors.accentSoft }}
                     >
                       <Text className="text-xs" style={{ color: colors.primary }} numberOfLines={1}>
-                        {s.name}
+                        Все
                       </Text>
                     </View>
-                  ))}
+                  ) : (
+                    g.services.map((s) => (
+                      <View
+                        key={`${g.fnsId}-${s.id}`}
+                        className="px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: colors.accentSoft }}
+                      >
+                        <Text className="text-xs" style={{ color: colors.primary }} numberOfLines={1}>
+                          {s.name}
+                        </Text>
+                      </View>
+                    ))
+                  )}
                 </View>
               )}
             </View>
