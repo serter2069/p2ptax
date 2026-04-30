@@ -133,7 +133,7 @@ router.get("/", async (req: Request, res: Response) => {
           messages: {
             orderBy: { createdAt: "desc" },
             take: 1,
-            select: { text: true, createdAt: true, senderId: true },
+            select: { id: true, text: true, createdAt: true, senderId: true },
           },
         },
       }),
@@ -146,6 +146,23 @@ router.get("/", async (req: Request, res: Response) => {
         },
       }),
     ]);
+
+    // Fetch files for last messages
+    const lastMessageIds = threads
+      .map((t) => t.messages[0]?.id)
+      .filter((id): id is string => Boolean(id));
+    const lastMessageFiles = lastMessageIds.length > 0
+      ? await prisma.file.findMany({
+          where: { entityType: "message", entityId: { in: lastMessageIds } },
+          select: { id: true, entityId: true, url: true, filename: true, mimeType: true },
+        })
+      : [];
+    const filesByLastMessageId = new Map<string, typeof lastMessageFiles>();
+    for (const f of lastMessageFiles) {
+      const arr = filesByLastMessageId.get(f.entityId) ?? [];
+      arr.push(f);
+      filesByLastMessageId.set(f.entityId, arr);
+    }
 
     const mapped = threads.map((t) => {
       const lastReadAt = isSpecialist
@@ -176,6 +193,12 @@ router.get("/", async (req: Request, res: Response) => {
           ? {
               text: lastMessage.text,
               createdAt: lastMessage.createdAt,
+              attachments: (filesByLastMessageId.get(lastMessage.id) ?? []).map((f) => ({
+                id: f.id,
+                url: f.url,
+                filename: f.filename,
+                mimeType: f.mimeType,
+              })),
             }
           : null,
         unreadCount,
@@ -271,7 +294,7 @@ router.get("/my", async (req: Request, res: Response) => {
           messages: {
             orderBy: { createdAt: "desc" },
             take: 1,
-            select: { text: true, createdAt: true, senderId: true },
+            select: { id: true, text: true, createdAt: true, senderId: true },
           },
         },
       }),
@@ -284,6 +307,23 @@ router.get("/my", async (req: Request, res: Response) => {
         },
       }),
     ]);
+
+    // Fetch files for last messages (my inbox)
+    const myLastMessageIds = threads
+      .map((t) => t.messages[0]?.id)
+      .filter((id): id is string => Boolean(id));
+    const myLastMessageFiles = myLastMessageIds.length > 0
+      ? await prisma.file.findMany({
+          where: { entityType: "message", entityId: { in: myLastMessageIds } },
+          select: { id: true, entityId: true, url: true, filename: true, mimeType: true },
+        })
+      : [];
+    const myFilesByLastMessageId = new Map<string, typeof myLastMessageFiles>();
+    for (const f of myLastMessageFiles) {
+      const arr = myFilesByLastMessageId.get(f.entityId) ?? [];
+      arr.push(f);
+      myFilesByLastMessageId.set(f.entityId, arr);
+    }
 
     // Enrich with actual unread counts — batch with groupBy for threads
     // that share the same lastReadAt pattern. Each thread has its own
@@ -351,7 +391,16 @@ router.get("/my", async (req: Request, res: Response) => {
           isDeleted: otherUser.deletedAt !== null,
         },
         lastMessage: lastMessage
-          ? { text: lastMessage.text, createdAt: lastMessage.createdAt }
+          ? {
+              text: lastMessage.text,
+              createdAt: lastMessage.createdAt,
+              attachments: (myFilesByLastMessageId.get(lastMessage.id) ?? []).map((f) => ({
+                id: f.id,
+                url: f.url,
+                filename: f.filename,
+                mimeType: f.mimeType,
+              })),
+            }
           : null,
         unreadCount: unreadMap.get(thread.id) ?? 0,
         createdAt: thread.createdAt,

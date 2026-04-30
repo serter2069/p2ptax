@@ -1,5 +1,6 @@
-import { View, Text, Pressable, Image } from "react-native";
-import { ImageIcon, File, FileText, Download } from "lucide-react-native";
+import { View, Text, Pressable, Image, Modal, TouchableOpacity } from "react-native";
+import { useState } from "react";
+import { File, FileText, Download, X } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 interface FileAttachment {
@@ -42,13 +43,52 @@ export default function MessageBubble({
   onFilePress,
   onImagePress,
 }: MessageBubbleProps) {
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const imageFiles = files.filter((f) => isImage(f.mimeType));
   const docFiles = files.filter((f) => !isImage(f.mimeType));
+
+  const handleImagePress = (url: string, filename: string) => {
+    if (onImagePress) {
+      onImagePress(url, filename);
+    } else {
+      setLightboxUrl(url);
+    }
+  };
 
   return (
     <View
       className={`mb-2 ${isOwn ? "items-end" : "items-start"}`}
     >
+      {/* Inline lightbox modal */}
+      <Modal
+        visible={lightboxUrl !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLightboxUrl(null)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setLightboxUrl(null)}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.9)", alignItems: "center", justifyContent: "center" }}
+        >
+          {lightboxUrl ? (
+            <Image
+              source={{ uri: lightboxUrl }}
+              style={{ width: "90%", height: "70%", resizeMode: "contain" }}
+              accessibilityLabel="Просмотр изображения"
+            />
+          ) : null}
+          <TouchableOpacity
+            onPress={() => setLightboxUrl(null)}
+            style={{ position: "absolute", top: 48, right: 16, padding: 8 }}
+            accessibilityLabel="Закрыть"
+            accessibilityRole="button"
+          >
+            <X size={28} color="#fff" />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       <View
         className="px-3 py-2"
         style={{
@@ -66,7 +106,7 @@ export default function MessageBubble({
             accessibilityRole="button"
             key={img.id}
             accessibilityLabel={`Изображение ${img.filename}. Нажмите для просмотра.`}
-            onPress={() => onImagePress?.(img.url, img.filename)}
+            onPress={() => handleImagePress(img.url, img.filename)}
             className="mb-1"
             style={({ pressed }) => [pressed && { opacity: 0.85 }]}
           >
@@ -75,8 +115,6 @@ export default function MessageBubble({
               style={{ width: 200, height: 200, borderRadius: 12 }}
               resizeMode="cover"
               accessibilityLabel={img.filename}
-              defaultSource={undefined}
-              onError={() => {/* silent — fallback below not needed for already-fetched URLs */}}
             />
           </Pressable>
         ))}
