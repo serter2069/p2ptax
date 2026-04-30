@@ -16,6 +16,7 @@ import { colors } from "@/lib/theme";
 export interface CityCascadeOption {
   id: string;
   name: string;
+  slug?: string;
 }
 
 export interface FnsCascadeOption {

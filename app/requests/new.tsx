@@ -22,7 +22,7 @@ import { colors } from "@/lib/theme";
 import type {
   CityOption,
   ServiceOption,
-} from "@/components/requests/CityFnsServicePicker";
+} from "@/components/shared/CityFnsServicePicker";
 import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import FileDropZone, { type AttachedFile } from "@/components/requests/FileDropZone";
