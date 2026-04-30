@@ -9,18 +9,17 @@ import {
   Modal,
   Platform,
   Alert,
-  Image,
   useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
-import * as Linking from "expo-linking";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { FileText, ChevronRight } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
 import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
-import { Avatar } from "@/components/ui";
 import Lightbox, { type LightboxFile } from "@/components/files/Lightbox";
-import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
+import ChatThreadHeader from "@/components/chat-inline/ChatThreadHeader";
+import ClearThreadModal from "@/components/chat-inline/ClearThreadModal";
+import { displayName, nameInInstrumental } from "@/components/chat-inline/chatHelpers";
 import { API_URL, api, apiPost, apiPatch, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
@@ -78,104 +77,27 @@ interface ThreadInfo {
   otherUser: OtherUser;
 }
 
-function displayName(user: { firstName: string | null; lastName: string | null; isDeleted?: boolean }): string {
-  if (user.isDeleted) return "Аккаунт удалён";
-  const parts = [user.firstName, user.lastName].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : "Пользователь";
-}
-
-/**
- * Inline Russian instrumental-case helper for first+last names.
- * Pragmatic suffix rules — handles common cases for "переписываетесь с <Name>".
- * Track U will replace this with a proper library-level helper (lib/ru.ts) later.
- *
- * Rules covered:
- *   мужские имена: -ей → -еем (Алексей → Алексеем), -й → -ем (Сергей → Сергеем), -а/я → -ой/ей,
- *                   -consonant → +ом (Иван → Иваном)
- *   мужские фамилии: -ов/ев/ёв/ин/ын → +ым (Воронов → Вороновым, Пушкин → Пушкиным)
- *   женские: -а → -ой, -я → -ей (Анна → Анной, Юлия → Юлией)
- *   фамилии на -ова/ева/ина/ына → -овой/евой/иной/ыной
- * Unknowns return original token.
- */
-function tokenInInstrumental(token: string): string {
-  if (!token) return token;
-  const lower = token.toLowerCase();
-
-  // Female surnames: -ова/ева/ёва/ина/ына → -овой/евой/ёвой/иной/ыной
-  if (/(?:ова|ева|ёва|ина|ына)$/.test(lower)) {
-    return token.slice(0, -1) + "ой";
-  }
-  // Female surnames: -ская → -ской
-  if (/ская$/.test(lower)) {
-    return token.slice(0, -2) + "ой";
-  }
-  // Male surnames: -ов/ев/ёв/ин/ын → +ым
-  if (/(?:ов|ев|ёв|ин|ын)$/.test(lower)) {
-    return token + "ым";
-  }
-  // Male surnames: -ский/цкий → -ским/цким
-  if (/(?:ский|цкий)$/.test(lower)) {
-    return token.slice(0, -2) + "им";
-  }
-
-  // First names ending -ей (Алексей, Андрей, Сергей*) → -еем
-  // (Сергей → Сергеем — collapses with -ей rule)
-  if (/ей$/.test(lower)) {
-    return token.slice(0, -2) + "еем";
-  }
-  // -ай/-ой/-уй ends → -аем/-оем/-уем (rare but safer than -ем)
-  if (/[аоу]й$/.test(lower)) {
-    return token.slice(0, -1) + "ем";
-  }
-  // Generic -й → -ем (Николай → Николаем would match -ай above; Юрий → Юрием handled below)
-  if (/ий$/.test(lower)) {
-    return token.slice(0, -2) + "ием";
-  }
-  if (/й$/.test(lower)) {
-    return token.slice(0, -1) + "ем";
-  }
-
-  // -ия (female): Юлия → Юлией, Мария → Марией
-  if (/ия$/.test(lower)) {
-    return token.slice(0, -1) + "ей";
-  }
-  // -я (female/male soft): Аня → Аней, Илья → Ильёй (not handled — return -ей as best-effort)
-  if (/я$/.test(lower)) {
-    return token.slice(0, -1) + "ей";
-  }
-  // -а (female or male like Никита): default to -ой
-  // Special: hissing stems (ж/ш/щ/ч/ц + а) → -ей (Саша → Сашей). Approximate.
-  if (/[жшщчц]а$/.test(lower)) {
-    return token.slice(0, -1) + "ей";
-  }
-  if (/а$/.test(lower)) {
-    return token.slice(0, -1) + "ой";
-  }
-
-  // Male names ending in soft sign -ь (Игорь → Игорем)
-  if (/ь$/.test(lower)) {
-    return token.slice(0, -1) + "ем";
-  }
-
-  // Male names ending in consonant (Иван, Петр) → +ом
-  // Russian consonant set check (last letter)
-  if (/[бвгджзйклмнпрстфхцчшщ]$/.test(lower)) {
-    return token + "ом";
-  }
-
-  return token;
-}
-
-function nameInInstrumental(fullName: string): string {
-  if (!fullName) return fullName;
-  return fullName
-    .split(/\s+/)
-    .map((part) => tokenInInstrumental(part))
-    .join(" ");
-}
-
 interface InlineChatViewProps {
   threadId: string;
+}
+
+/** Slim header shown only during loading / error states (no thread data yet). */
+function MinimalChatHeader({ isDesktop }: { isDesktop: boolean }) {
+  return (
+    <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
+      {!isDesktop && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => router.back()}
+          className="mr-3 w-11 h-11 items-center justify-center"
+        >
+          <FontAwesome name="chevron-left" size={18} color={colors.primary} />
+        </Pressable>
+      )}
+      <Text className="text-base font-semibold" style={{ color: colors.text }}>Чат</Text>
+    </View>
+  );
 }
 
 export default function InlineChatView({ threadId }: InlineChatViewProps) {
@@ -449,14 +371,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   if (loading) {
     return (
       <View className="flex-1 bg-white">
-        <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
-          {!isDesktop && (
-            <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-              <FontAwesome name="chevron-left" size={18} color={colors.primary} />
-            </Pressable>
-          )}
-          <Text className="text-base font-semibold" style={{ color: colors.text }}>Чат</Text>
-        </View>
+        <MinimalChatHeader isDesktop={isDesktop} />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -467,14 +382,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   if (error && messages.length === 0) {
     return (
       <View className="flex-1 bg-white">
-        <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
-          {!isDesktop && (
-            <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center">
-              <FontAwesome name="chevron-left" size={18} color={colors.primary} />
-            </Pressable>
-          )}
-          <Text className="text-base font-semibold" style={{ color: colors.text }}>Чат</Text>
-        </View>
+        <MinimalChatHeader isDesktop={isDesktop} />
         <View className="flex-1 items-center justify-center px-4">
           <FontAwesome name="exclamation-circle" size={40} color={colors.danger} />
           <Text className="text-base text-center mt-3" style={{ color: colors.danger }}>{error}</Text>
@@ -497,146 +405,22 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header with avatar + other party name + perspective badge + counterparty hint */}
-      <View className="flex-row items-center px-4 py-3 border-b border-border bg-white">
-        {!isDesktop && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} className="mr-3 w-11 h-11 items-center justify-center" style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
-            <FontAwesome name="chevron-left" size={18} color={colors.primary} />
-          </Pressable>
-        )}
-        {/* Avatar + name: tappable → specialist profile (client view only) */}
-        <Pressable
-          accessibilityRole={canViewSpecialistProfile ? "link" : "none"}
-          accessibilityLabel={canViewSpecialistProfile ? `Профиль специалиста ${otherName}` : undefined}
-          onPress={canViewSpecialistProfile ? handleOtherUserPress : undefined}
-          className="flex-row items-start flex-1 min-w-0"
-          style={({ pressed }) => [pressed && canViewSpecialistProfile ? { opacity: 0.7 } : undefined]}
-        >
-          {otherUser ? (
-            <Avatar
-              name={displayName(otherUser)}
-              imageUrl={otherUser.avatarUrl ?? undefined}
-              size="sm"
-            />
-          ) : (
-            <View className="w-9 h-9 rounded-full items-center justify-center" style={{ backgroundColor: colors.border }}>
-              <FontAwesome name="user" size={16} color={colors.textSecondary} />
-            </View>
-          )}
-          <View className="ml-3 flex-1 min-w-0" style={{ gap: 4 }}>
-            <View className="flex-row items-center" style={{ gap: 8 }}>
-              <Text className="text-base font-semibold flex-shrink" style={{ color: colors.text }} numberOfLines={1}>
-                {otherName}
-              </Text>
-              {thread && myId ? (
-                thread.clientId === myId ? (
-                  <PerspectiveBadge perspective="as_client" size="md" />
-                ) : thread.specialistId === myId ? (
-                  <PerspectiveBadge perspective="as_specialist" size="md" />
-                ) : null
-              ) : null}
-            </View>
-            {thread && myId ? (
-              (() => {
-                const myPerspective: "as_client" | "as_specialist" | null =
-                  thread.clientId === myId
-                    ? "as_client"
-                    : thread.specialistId === myId
-                      ? "as_specialist"
-                      : null;
-                if (!myPerspective) return null;
-                const counterpartyFallback =
-                  myPerspective === "as_client" ? "Специалистом" : "Клиентом";
-                const namedCounterparty = otherUser && !otherUser.isDeleted
-                  ? nameInInstrumental(displayName(otherUser))
-                  : counterpartyFallback;
-                return (
-                  <Text
-                    className="text-xs"
-                    style={{ color: colors.textSecondary }}
-                    numberOfLines={1}
-                  >
-                    Вы переписываетесь с {namedCounterparty}
-                  </Text>
-                );
-              })()
-            ) : null}
-          </View>
-        </Pressable>
-
-        {/* Three-dots menu button */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Меню чата"
-          onPress={() => setMenuVisible((v) => !v)}
-          disabled={clearingThread}
-          className="w-10 h-10 items-center justify-center ml-1"
-          style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-        >
-          {clearingThread ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <Text style={{ fontSize: 22, color: colors.textSecondary, lineHeight: 24 }}>
-              {"⋯"}
-            </Text>
-          )}
-        </Pressable>
-      </View>
-
-      {/* Dropdown menu */}
-      {menuVisible && (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setMenuVisible(false)}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 10,
-          }}
-        >
-          <View
-            style={{
-              position: "absolute",
-              top: 56,
-              right: 12,
-              backgroundColor: "#fff",
-              borderRadius: 10,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
-              shadowRadius: 12,
-              elevation: 8,
-              minWidth: 200,
-              zIndex: 20,
-            }}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Очистить переписку"
-              onPress={handleClearThread}
-              style={({ pressed }) => [
-                {
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  borderRadius: 10,
-                },
-                pressed && { backgroundColor: "#fef2f2" },
-              ]}
-            >
-              <FontAwesome name="trash-o" size={16} color={colors.danger} />
-              <Text style={{ color: colors.danger, fontSize: 15 }}>
-                Очистить переписку
-              </Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      )}
+      {/* Header — extracted to ChatThreadHeader for LOC reduction */}
+      <ChatThreadHeader
+        isDesktop={isDesktop}
+        otherUser={otherUser}
+        otherName={otherName}
+        thread={thread}
+        myId={myId}
+        menuVisible={menuVisible}
+        clearingThread={clearingThread}
+        canViewSpecialistProfile={Boolean(canViewSpecialistProfile)}
+        nameInInstrumental={nameInInstrumental}
+        displayName={displayName}
+        onMenuToggle={() => setMenuVisible((v) => !v)}
+        onOtherUserPress={handleOtherUserPress}
+        onClearThread={handleClearThread}
+      />
 
       {/* Source request link strip — visible when thread was created from a request */}
       {thread?.requestId ? (
