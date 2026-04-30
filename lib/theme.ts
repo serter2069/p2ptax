@@ -255,3 +255,49 @@ export const overlay = {
   accent20: 'rgba(34,86,194,0.2)',  // focus-ring tint (web)
   dark15: 'rgba(0,0,0,0.15)',  // image placeholder icon tint
 } as const
+
+// ─── Issue GH-1634: Design token aliases ────────────────────────────────────
+// Short-form color aliases for high-frequency usage in components.
+// Existing named tokens remain unchanged; these are additive aliases.
+export const tokenColors = {
+  bg: '#ffffff',           // page background
+  fg: '#111111',           // foreground text (dark)
+  border: '#e5e5ea',       // default border
+  primary: '#1e3a8a',      // primary brand (deep navy)
+  primaryHover: '#2563eb', // primary hover state
+  success: '#166534',      // success text/icon
+  muted: '#6b7280',        // muted / secondary text
+  surface: '#fafbfc',      // card / surface background
+  danger: '#dc2626',       // danger / error
+} as const
+
+// Numeric font-size scale (xs→xxl) — additive alongside textStyle/fontSizeValue
+export const fontSize = {
+  xs:  12,
+  sm:  14,
+  md:  16,
+  lg:  18,
+  xl:  24,
+  xxl: 32,
+} as const
+
+// Numeric spacing scale (keyed 1–10) — additive alongside existing `spacing`
+export const spacingScale = {
+  1:  4,
+  2:  8,
+  3:  12,
+  4:  16,
+  5:  20,
+  6:  24,
+  8:  32,
+  10: 40,
+} as const
+
+// Numeric radius scale — additive alongside existing `radiusValue`
+export const radiusScale = {
+  sm:   4,
+  md:   8,
+  lg:   12,
+  xl:   16,
+  full: 9999,
+} as const
