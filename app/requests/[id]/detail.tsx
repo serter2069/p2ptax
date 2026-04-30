@@ -18,12 +18,16 @@ import { File, FileImage, Download, ChevronLeft, X, Link } from "lucide-react-na
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import { api, apiPatch } from "@/lib/api";
+import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
+import { api, apiPatch, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, BREAKPOINT } from "@/lib/theme";
 import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
 import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
 import EmptyState from "@/components/ui/EmptyState";
+
+const FIRST_MESSAGE_MIN = 10;
+const FIRST_MESSAGE_MAX = 2000;
 
 interface FileItem {
   id: string;
@@ -58,7 +62,7 @@ export default function MyRequestDetail() {
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
-  const { isLoading: authLoading, isAuthenticated } = useAuth();
+  const { isLoading: authLoading, isAuthenticated, isSpecialistUser, user, token } = useAuth();
 
   const [request, setRequest] = useState<RequestDetailData | null>(null);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
@@ -68,6 +72,12 @@ export default function MyRequestDetail() {
   const [closing, setClosing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [togglingVisibility, setTogglingVisibility] = useState(false);
+
+  // Inline message composer state — issue #1566 (specialist quick-reply).
+  const [composerText, setComposerText] = useState("");
+  const [composerFiles, setComposerFiles] = useState<PendingFile[]>([]);
+  const [composerSending, setComposerSending] = useState(false);
+  const [composerError, setComposerError] = useState<string | null>(null);
 
   const handleCopyLink = useCallback(async () => {
     const url =
@@ -135,6 +145,90 @@ export default function MyRequestDetail() {
     }
     action();
   }, [isAuthenticated, nav, pathname]);
+
+  // Inline composer send — creates a thread (mirrors /requests/:id/write).
+  // Files are uploaded immediately on pick by FileUploadZone, so by send-time
+  // each "done" file already has its uploadedToken (single-attachment first
+  // message — limit enforced by maxFiles=1 below).
+  const handleComposerSend = useCallback(async () => {
+    if (!isAuthenticated) {
+      nav.replaceAny({ pathname: "/login", params: { returnTo: pathname } });
+      return;
+    }
+    const trimmed = composerText.trim();
+    if (trimmed.length < FIRST_MESSAGE_MIN) {
+      setComposerError(`Минимум ${FIRST_MESSAGE_MIN} символов`);
+      return;
+    }
+    if (trimmed.length > FIRST_MESSAGE_MAX) {
+      setComposerError(`Максимум ${FIRST_MESSAGE_MAX} символов`);
+      return;
+    }
+    const stillBusy = composerFiles.some(
+      (f) => f.status === "uploading" || f.status === "pending",
+    );
+    if (stillBusy) {
+      setComposerError("Файл ещё загружается. Подождите.");
+      return;
+    }
+    const failedFile = composerFiles.find((f) => f.status === "error");
+    if (failedFile) {
+      setComposerError(failedFile.errorMessage ?? "Не удалось загрузить файл");
+      return;
+    }
+    const readyFile = composerFiles.find(
+      (f) => f.status === "done" && f.uploadedToken,
+    );
+    const uploadToken = readyFile?.uploadedToken;
+
+    setComposerSending(true);
+    setComposerError(null);
+    try {
+      const result = await api<{ id: string }>("/api/threads", {
+        method: "POST",
+        body: {
+          requestId: id,
+          firstMessage: trimmed,
+          ...(uploadToken ? { uploadToken } : {}),
+        },
+      });
+      setComposerText("");
+      setComposerFiles([]);
+      nav.replaceAny(`/threads/${result.id}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 409) {
+          const existingThreadId =
+            typeof err.data?.threadId === "string" ? err.data.threadId : null;
+          if (existingThreadId) {
+            // Already wrote to this request — open the existing thread.
+            nav.replaceAny(`/threads/${existingThreadId}`);
+          } else {
+            setComposerError("Запрос закрыт — сообщение отправить невозможно");
+          }
+        } else if (err.status === 429) {
+          setComposerError(
+            "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра.",
+          );
+        } else if (err.status === 403) {
+          setComposerError("Только специалисты могут начать диалог");
+        } else {
+          setComposerError("Не удалось отправить сообщение. Попробуйте ещё раз.");
+        }
+      } else {
+        setComposerError("Не удалось отправить сообщение. Попробуйте ещё раз.");
+      }
+    } finally {
+      setComposerSending(false);
+    }
+  }, [
+    composerText,
+    composerFiles,
+    id,
+    isAuthenticated,
+    nav,
+    pathname,
+  ]);
 
   const handleCloseRequest = useCallback(async () => {
     if (closing) return;
@@ -226,6 +320,54 @@ export default function MyRequestDetail() {
   });
 
   const isActive = request.status !== "CLOSED";
+
+  // Inline composer eligibility — specialist with completed profile, request open.
+  // Non-specialists / unauth users / closed requests don't see the composer.
+  const showInlineComposer =
+    isActive &&
+    isAuthenticated &&
+    isSpecialistUser &&
+    !!user?.specialistProfileCompletedAt;
+
+  const inlineComposerSection = showInlineComposer ? (
+    <View
+      className="bg-white rounded-2xl mb-4 overflow-hidden"
+      style={{
+        shadowColor: colors.text,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      }}
+    >
+      <View className="px-4 pt-4 pb-2">
+        <Text className="text-xs font-semibold text-text-mute mb-1 uppercase tracking-wide">
+          Написать клиенту
+        </Text>
+        <Text className="text-xs text-text-mute mb-2">
+          Минимум {FIRST_MESSAGE_MIN} символов · можно прикрепить один файл (PDF, JPG, PNG до 10 МБ)
+        </Text>
+      </View>
+      <ChatComposer
+        value={composerText}
+        onChangeText={setComposerText}
+        files={composerFiles}
+        onFilesChange={setComposerFiles}
+        onSend={handleComposerSend}
+        sending={composerSending}
+        authToken={token}
+        maxFiles={1}
+        maxLength={FIRST_MESSAGE_MAX}
+        placeholder="Напишите первое сообщение клиенту..."
+        accessibilityLabel="Сообщение клиенту"
+      />
+      {composerError ? (
+        <View className="px-4 py-2">
+          <Text className="text-xs text-danger">{composerError}</Text>
+        </View>
+      ) : null}
+    </View>
+  ) : null;
 
   // ── DESKTOP LAYOUT ────────────────────────────────────────────────────
   if (isDesktop) {
@@ -351,6 +493,11 @@ export default function MyRequestDetail() {
                     />
                   </View>
                 )}
+
+                {/* Inline message composer — issue #1566. Shown only for
+                    authenticated specialists with completed profile on
+                    non-closed requests. */}
+                {inlineComposerSection}
 
                 {/* Threads */}
                 <ThreadsList
@@ -756,6 +903,10 @@ export default function MyRequestDetail() {
                 />
               </View>
             </View>
+
+            {/* Inline message composer — issue #1566. Specialist-only,
+                visible on non-closed requests for users with completed profile. */}
+            {inlineComposerSection}
 
             <ThreadsList
               threads={threads}
