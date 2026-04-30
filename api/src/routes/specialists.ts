@@ -214,6 +214,28 @@ router.get("/", async (req: Request, res: Response) => {
       }
     }
 
+    // #1658: per-FNS service filter — Record<fnsId, string[]>
+    let fnsServices: Record<string, string[]> | null = null;
+    const fnsServicesRaw = (req.query.fnsServices as string) || undefined;
+    if (fnsServicesRaw) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(fnsServicesRaw));
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          fnsServices = parsed as Record<string, string[]>;
+          // Validate each key is UUID and each value is an array of strings
+          for (const [fnsId, svcIds] of Object.entries(fnsServices)) {
+            if (!uuidRegex.test(fnsId) || !Array.isArray(svcIds)) {
+              res.status(400).json({ error: "Invalid fnsServices format" });
+              return;
+            }
+          }
+        }
+      } catch {
+        // malformed JSON — ignore, degrade gracefully
+        fnsServices = null;
+      }
+    }
+
     // Iter11: catalog is gated by isSpecialist flag + completed onboarding,
     // not by the retired SPECIALIST role value. Also exclude the caller from
     // their own catalog view — showing yourself as a specialist you could
@@ -260,6 +282,20 @@ router.get("/", async (req: Request, res: Response) => {
     if (serviceIds.length > 0) {
       where.specialistServices = {
         some: { serviceId: { in: serviceIds } },
+      };
+    }
+
+    // #1658: per-FNS services filter — specialist must cover the FNS with matching services
+    if (fnsServices && Object.keys(fnsServices).length > 0) {
+      where.specialistFns = {
+        some: {
+          OR: Object.entries(fnsServices).map(([fnsId, svcIds]) => ({
+            fnsId,
+            ...(svcIds.length > 0
+              ? { services: { some: { serviceId: { in: svcIds } } } }
+              : {}),
+          })),
+        },
       };
     }
 

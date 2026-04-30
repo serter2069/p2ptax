@@ -1,68 +1,49 @@
 import { View } from "react-native";
-import SpecialistSearchBar, {
-  CityOpt,
-  FnsOpt,
-} from "@/components/filters/SpecialistSearchBar";
-import ServiceChipsRow from "@/components/specialists/ServiceChipsRow";
+import CityFnsCascade, {
+  CityFnsValue,
+  FnsCascadeOption,
+  ServiceOption,
+} from "@/components/filters/CityFnsCascade";
 
-interface ServiceOption {
+interface CityCascadeOption {
   id: string;
   name: string;
 }
 
 interface Props {
-  cities: CityOpt[];
-  fnsAll: FnsOpt[];
+  cities: CityCascadeOption[];
+  fnsAll: FnsCascadeOption[];
   services: ServiceOption[];
-  selectedCityId: string | null;
-  selectedFnsId: string | null;
-  selectedServiceIds: string[];
-  onPickCity: (cityId: string) => void;
-  onPickFns: (fns: FnsOpt) => void;
-  onClearLocation: () => void;
-  onToggleService: (id: string) => void;
-  onClearServices: () => void;
+  value: CityFnsValue;
+  onChange: (v: CityFnsValue) => void;
 }
 
 /**
- * Shared cascade filter (city → FNS → services) used by both
+ * Shared cascade filter (city → FNS → per-FNS services) used by both
  * `/specialists` (public catalog) and `/saved-specialists` (bookmarks).
  *
- * Keeps the typeahead SearchBar + horizontal service chips together so the
- * two pages can never drift apart visually.
+ * Wraps CityFnsCascade in typeahead mode so the two pages
+ * can never drift apart visually.
  */
 export default function SpecialistFilter({
   cities,
   fnsAll,
   services,
-  selectedCityId,
-  selectedFnsId,
-  selectedServiceIds,
-  onPickCity,
-  onPickFns,
-  onClearLocation,
-  onToggleService,
-  onClearServices,
+  value,
+  onChange,
 }: Props) {
   return (
     <View>
       <View className="px-4 pt-2" style={{ zIndex: 100 }}>
-        <SpecialistSearchBar
-          cities={cities}
-          fnsAll={fnsAll}
-          selectedCityId={selectedCityId}
-          selectedFnsId={selectedFnsId}
-          onPickCity={onPickCity}
-          onPickFns={onPickFns}
-          onClear={onClearLocation}
+        <CityFnsCascade
+          mode="typeahead"
+          value={value}
+          onChange={onChange}
+          citiesSource={cities}
+          fnsSource={fnsAll}
+          services={services}
         />
       </View>
-      <ServiceChipsRow
-        services={services}
-        selectedServiceIds={selectedServiceIds}
-        onToggle={onToggleService}
-        onClearAll={onClearServices}
-      />
     </View>
   );
 }
