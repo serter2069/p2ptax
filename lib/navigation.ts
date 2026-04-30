@@ -58,7 +58,6 @@ export const ROUTES = {
   // Requests
   requests: "/requests",
   requestsNew: "/requests/new",
-  requestsCreate: "/requests/create",
 
   // Settings
   settings: "/settings",
