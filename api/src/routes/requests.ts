@@ -350,8 +350,8 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
       res.status(400).json({ error: "City and FNS office are required" });
       return;
     }
-    if (!description || description.length < 10 || description.length > 2000) {
-      res.status(400).json({ error: "Description must be 10-2000 characters" });
+    if (!description || description.length < 10 || description.length > 5000) {
+      res.status(400).json({ error: "Description must be 10-5000 characters" });
       return;
     }
 
@@ -600,8 +600,8 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
 
     // Validate description if provided
     if (description !== undefined) {
-      if (typeof description !== "string" || description.length < 10 || description.length > 2000) {
-        res.status(400).json({ error: "Description must be 10-2000 characters" });
+      if (typeof description !== "string" || description.length < 10 || description.length > 5000) {
+        res.status(400).json({ error: "Description must be 10-5000 characters" });
         return;
       }
     }
