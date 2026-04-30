@@ -23,7 +23,6 @@ import { api, apiPatch, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, BREAKPOINT } from "@/lib/theme";
 import SpecialistRecommendations, { SpecialistCard } from "@/components/requests/SpecialistRecommendations";
-import EmptyState from "@/components/ui/EmptyState";
 
 const FIRST_MESSAGE_MIN = 10;
 const FIRST_MESSAGE_MAX = 2000;
@@ -442,24 +441,22 @@ export default function MyRequestDetail() {
                   </Text>
                 </View>
 
-                {/* Files */}
-                <View
-                  className="bg-white rounded-2xl p-5 mb-4"
-                  style={{
-                    shadowColor: colors.text,
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }}
-                >
-                  <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
-                    Прикреплённые документы
-                  </Text>
-                  {request.files.length === 0 ? (
-                    <EmptyState title="Нет документов" subtitle="К этому запросу не прикреплены файлы" />
-                  ) : (
-                    request.files.map((file) => (
+                {/* Files — issue #1610: hide block entirely when no files attached */}
+                {request.files.length > 0 && (
+                  <View
+                    className="bg-white rounded-2xl p-5 mb-4"
+                    style={{
+                      shadowColor: colors.text,
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 8,
+                      elevation: 2,
+                    }}
+                  >
+                    <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
+                      Прикреплённые документы
+                    </Text>
+                    {request.files.map((file) => (
                       <Pressable
                         accessibilityRole="button"
                         key={file.id}
@@ -482,9 +479,9 @@ export default function MyRequestDetail() {
                         </View>
                         <Download size={14} color={colors.placeholder} />
                       </Pressable>
-                    ))
-                  )}
-                </View>
+                    ))}
+                  </View>
+                )}
 
                 {/* Recommended specialists feed (horizontal scroll) — issue #1550 */}
                 {recommendations.length > 0 && (
@@ -736,24 +733,22 @@ export default function MyRequestDetail() {
               </Text>
             </View>
 
-            {/* Files */}
-            <View
-              className="bg-white rounded-2xl p-4 mb-4"
-              style={{
-                shadowColor: colors.text,
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
-              <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
-                Прикреплённые документы
-              </Text>
-              {request.files.length === 0 ? (
-                <EmptyState title="Нет документов" subtitle="К этому запросу не прикреплены файлы" />
-              ) : (
-                request.files.map((file) => (
+            {/* Files — issue #1610: hide block entirely when no files attached */}
+            {request.files.length > 0 && (
+              <View
+                className="bg-white rounded-2xl p-4 mb-4"
+                style={{
+                  shadowColor: colors.text,
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}
+              >
+                <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
+                  Прикреплённые документы
+                </Text>
+                {request.files.map((file) => (
                   <Pressable
                     accessibilityRole="button"
                     key={file.id}
@@ -776,9 +771,9 @@ export default function MyRequestDetail() {
                     </View>
                     <Download size={14} color={colors.placeholder} />
                   </Pressable>
-                ))
-              )}
-            </View>
+                ))}
+              </View>
+            )}
 
             {/* Recommended specialists feed (horizontal scroll) — issue #1550.
                 Placed under main info, before actions (per acceptance criteria). */}
