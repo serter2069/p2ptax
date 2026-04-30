@@ -1,22 +1,35 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
   FlatList,
-  Pressable,
+  ActivityIndicator,
   RefreshControl,
+  Pressable,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
-import { BREAKPOINT } from "@/lib/theme";
-import DesktopScreen from "@/components/layout/DesktopScreen";
-import { FileText } from "lucide-react-native";
+import FilterBar from "@/components/FilterBar";
+import CityFnsCascade from "@/components/filters/CityFnsCascade";
+import { Inbox } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
-import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
+import RequestCard from "@/components/RequestCard";
 import { api } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, overlay, textStyle, BREAKPOINT } from "@/lib/theme";
+
+interface CityOption {
+  id: string;
+  name: string;
+  fnsOffices: { id: string; name: string; code: string }[];
+}
+
+interface ServiceOption {
+  id: string;
+  name: string;
+}
 
 interface RequestItem {
   id: string;
@@ -29,110 +42,151 @@ interface RequestItem {
   threadsCount: number;
 }
 
-// ── Request card ───────────────────────────────────────────────────────
-
-interface RequestCardProps {
-  item: RequestItem;
-  onPress: (id: string) => void;
+interface RequestsResponse {
+  items: RequestItem[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
-function RequestCard({ item, onPress }: RequestCardProps) {
-  const formattedDate = new Date(item.createdAt).toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+const LIMIT = 20;
 
-  return (
-    <View className="mb-3 mx-4 rounded-2xl overflow-hidden">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={item.title}
-        onPress={() => onPress(item.id)}
-        className="bg-white border border-border rounded-2xl p-4"
-        style={{
-          shadowColor: colors.text,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.09,
-          shadowRadius: 7,
-          elevation: 3,
-          minHeight: 44,
-        }}
-      >
-        {/* Title */}
-        <Text
-          className="text-base font-semibold text-text-base mb-1"
-          numberOfLines={2}
-        >
-          {item.title}
-        </Text>
-
-        {/* Description preview */}
-        {item.description ? (
-          <Text className="text-sm text-text-mute mb-2" numberOfLines={2}>
-            {item.description.length > 80
-              ? item.description.slice(0, 80) + "…"
-              : item.description}
-          </Text>
-        ) : null}
-
-        {/* City + FNS */}
-        <Text className="text-sm text-text-mute mb-2" numberOfLines={1}>
-          {item.city.name} · {item.fns.name}
-        </Text>
-
-        {/* Footer: threads + date */}
-        <View className="flex-row items-center justify-between">
-          {item.threadsCount > 0 ? (
-            <View className="bg-accent-soft rounded-full px-2 py-0.5 flex-row items-center">
-              <Text className="text-xs text-accent font-medium">
-                {item.threadsCount}{" "}
-                {item.threadsCount === 1
-                  ? "специалист"
-                  : "специалистов"}
-              </Text>
-            </View>
-          ) : (
-            <Text className="text-xs text-text-mute">Нет диалогов</Text>
-          )}
-          <Text className="text-xs text-text-mute">{formattedDate}</Text>
-        </View>
-      </Pressable>
-    </View>
-  );
-}
-
-// ── Main screen ────────────────────────────────────────────────────────
-export default function MyRequests() {
+/**
+ * Public requests bourse — visible to everyone (auth and anon).
+ * #1615: this is the primary "Заявки" tab, replacing the prior client
+ * "My Requests" placement. The personal feed lives at (tabs)/my-requests.
+ */
+export default function PublicRequestsTab() {
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
-  const [requests, setRequests] = useState<RequestItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"active" | "closed">("active");
 
-  const fetchRequests = useCallback(async () => {
-    setError(null);
-    try {
-      const res = await api<{ items: RequestItem[] }>("/api/requests/my");
-      setRequests(res.items);
-    } catch (e) {
-      setError("Не удалось загрузить заявки");
+  const [cities, setCities] = useState<CityOption[]>([]);
+  const [services, setServices] = useState<ServiceOption[]>([]);
+  const [requests, setRequests] = useState<RequestItem[]>([]);
+
+  const [initLoading, setInitLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
+
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+
+  const loadingMoreRef = useRef(false);
+  const isFirstMount = useRef(true);
+
+  const fetchRequests = useCallback(
+    async (pageNum: number, append = false) => {
+      try {
+        let path = `/api/requests/public?page=${pageNum}&limit=${LIMIT}`;
+        if (selectedCityId) path += `&city_id=${selectedCityId}`;
+        if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
+
+        const res = await api<RequestsResponse>(path, { noAuth: true });
+
+        if (append) {
+          setRequests((prev) => [...prev, ...res.items]);
+        } else {
+          setRequests(res.items);
+        }
+        setHasMore(res.hasMore);
+        setTotal(res.total);
+        setPage(pageNum);
+        setError(null);
+      } catch {
+        setError("Не удалось загрузить запросы");
+      }
+    },
+    [selectedCityId, selectedFnsId]
+  );
+
+  const fetchRequestsRef = useRef(fetchRequests);
+  fetchRequestsRef.current = fetchRequests;
+
+  // Initial load: fetch cities, services, and first page of requests
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      setInitLoading(true);
+      setError(null);
+      try {
+        const [citiesRes, servicesRes] = await Promise.all([
+          api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
+          api<{ items: ServiceOption[] }>("/api/services", { noAuth: true }),
+        ]);
+        if (!cancelled) {
+          setCities(citiesRes.items);
+          setServices(servicesRes.items);
+        }
+      } catch {
+        // Non-fatal: filters will just be empty
+      }
+      if (!cancelled) {
+        await fetchRequestsRef.current(1);
+        setInitLoading(false);
+      }
     }
+
+    init();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Re-fetch when city filter changes (skip on first mount since init handles it)
   useEffect(() => {
-    setLoading(true);
-    fetchRequests().finally(() => setLoading(false));
-  }, [fetchRequests]);
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    setListLoading(true);
+    setPage(1);
+    fetchRequests(1).finally(() => setListLoading(false));
+  }, [selectedCityId, selectedFnsId, fetchRequests]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchRequests();
+    await fetchRequests(1);
     setRefreshing(false);
   }, [fetchRequests]);
+
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMoreRef.current || !hasMore) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    await fetchRequests(page + 1, true);
+    setLoadingMore(false);
+    loadingMoreRef.current = false;
+  }, [hasMore, page, fetchRequests]);
+
+  const handleServiceToggle = useCallback((id: string) => {
+    setSelectedServiceIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  }, []);
+
+  const handleResetFilters = useCallback(() => {
+    setSelectedCityId(null);
+    setSelectedFnsId(null);
+    setSelectedServiceIds([]);
+  }, []);
+
+  const handleCascadeChange = useCallback(
+    (v: { cities: string[]; fns: string[] }) => {
+      setSelectedCityId(v.cities[0] ?? null);
+      setSelectedFnsId(v.fns[0] ?? null);
+    },
+    []
+  );
 
   const handleRequestPress = useCallback(
     (id: string) => {
@@ -141,136 +195,146 @@ export default function MyRequests() {
     [nav]
   );
 
-  const renderItem = useCallback(
-    ({ item }: { item: RequestItem }) => (
-      <RequestCard item={item} onPress={handleRequestPress} />
-    ),
-    [handleRequestPress]
-  );
+  const hasFilters =
+    selectedCityId !== null ||
+    selectedFnsId !== null ||
+    selectedServiceIds.length > 0;
 
-  const filteredRequests = requests.filter((r) =>
-    activeTab === "active"
-      ? r.status === "ACTIVE" || r.status === "CLOSING_SOON"
-      : r.status === "CLOSED"
-  );
-
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <View className="py-8">
-          <LoadingState variant="skeleton" lines={5} />
-          <LoadingState variant="skeleton" lines={5} />
-          <LoadingState variant="skeleton" lines={5} />
-        </View>
-      );
-    }
-
-    if (error) {
-      return (
-        <ErrorState
-          message={error}
-          onRetry={() => {
-            setLoading(true);
-            fetchRequests().finally(() => setLoading(false));
-          }}
-        />
-      );
-    }
-
-    if (filteredRequests.length === 0) {
-      return (
-        <EmptyState
-          icon={FileText}
-          title={activeTab === "active" ? "Активных заявок нет" : "Закрытых заявок нет"}
-          subtitle={
-            activeTab === "active"
-              ? "Создайте первую заявку — специалисты из вашего города увидят её и предложат помощь"
-              : "Закрытые заявки появятся здесь"
-          }
-          actionLabel={activeTab === "active" ? "Создать заявку" : undefined}
-          onAction={activeTab === "active" ? () => nav.routes.requestsNew() : undefined}
-        />
-      );
-    }
-
+  // Skeleton on initial load
+  if (initLoading) {
     return (
-      <FlatList
-        data={filteredRequests}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 100, paddingTop: 4 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      />
+      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
+        <View className="flex-1 pt-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <View key={i} className="mx-4 mb-3 bg-white rounded-2xl overflow-hidden border border-border">
+              <LoadingState variant="skeleton" lines={4} />
+            </View>
+          ))}
+        </View>
+      </SafeAreaView>
     );
-  };
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-      <DesktopScreen>
-        <View className="flex-row items-center justify-between mb-4">
-          {!isDesktop && (
-            <Text className="text-xl font-bold text-text-base">Мои заявки</Text>
-          )}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Создать заявку"
-            onPress={() => nav.routes.requestsNew()}
-            className="flex-row items-center gap-1.5 px-4 rounded-xl"
-            style={{ backgroundColor: colors.primary, minHeight: 40, justifyContent: "center", marginLeft: isDesktop ? "auto" : 0 }}
-          >
-            <Text className="text-white font-semibold text-sm">+ Создать</Text>
-          </Pressable>
-        </View>
+      {/* Accent hero — no back button (this is a tab, not a stacked screen) */}
+      <View className="bg-accent px-4 py-4">
+        <Text style={{ ...textStyle.h3, color: colors.white, marginBottom: 2 }}>
+          Заявки
+        </Text>
+        <Text style={{ ...textStyle.small, color: overlay.white90 }}>
+          Открытая биржа: задайте вопрос — получите предложения от специалистов
+        </Text>
+        {total > 0 && (
+          <Text className="text-sm font-semibold text-white mt-2">
+            {total} активных запросов
+          </Text>
+        )}
+      </View>
 
-        {/* Active / Closed tab switcher */}
-        <View
-          className="flex-row mb-4 rounded-xl overflow-hidden border border-border"
-          style={{ backgroundColor: colors.surface2 }}
-        >
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityLabel="Активные заявки"
-            onPress={() => setActiveTab("active")}
-            style={[
-              { flex: 1, paddingVertical: 10, alignItems: "center", minHeight: 40 },
-              activeTab === "active" ? { backgroundColor: colors.primary } : undefined,
-            ]}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: activeTab === "active" ? "#fff" : colors.textSecondary,
-              }}
-            >
-              Активные
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityLabel="Закрытые заявки"
-            onPress={() => setActiveTab("closed")}
-            style={[
-              { flex: 1, paddingVertical: 10, alignItems: "center", minHeight: 40 },
-              activeTab === "closed" ? { backgroundColor: colors.primary } : undefined,
-            ]}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: activeTab === "closed" ? "#fff" : colors.textSecondary,
-              }}
-            >
-              Закрытые
-            </Text>
-          </Pressable>
-        </View>
+      {/* Filter bar: city → FNS cascade + services chips */}
+      <View className="bg-white border-b border-border py-2">
+        <CityFnsCascade
+          mode="single"
+          value={{
+            cities: selectedCityId ? [selectedCityId] : [],
+            fns: selectedFnsId ? [selectedFnsId] : [],
+          }}
+          onChange={handleCascadeChange}
+          citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
+        />
+        <FilterBar
+          cities={[]}
+          selectedCityId={null}
+          onCityChange={() => {}}
+          services={services}
+          selectedServiceIds={selectedServiceIds}
+          onServiceToggle={handleServiceToggle}
+        />
+      </View>
 
-        {renderContent()}
-      </DesktopScreen>
+      <View className="flex-1">
+        {error ? (
+          <ErrorState
+            message="Не удалось загрузить запросы. Проверьте соединение с интернетом и попробуйте снова."
+            onRetry={() => {
+              setError(null);
+              setListLoading(true);
+              fetchRequests(1).finally(() => setListLoading(false));
+            }}
+          />
+        ) : listLoading ? (
+          <View className="flex-1 items-center justify-center py-16">
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : requests.length === 0 ? (
+          <EmptyState
+            icon={Inbox}
+            title="Запросов не найдено"
+            subtitle="Попробуйте изменить фильтры или сбросить их"
+            actionLabel={hasFilters ? "Сбросить фильтры" : undefined}
+            onAction={hasFilters ? handleResetFilters : undefined}
+          />
+        ) : (
+          <FlatList
+            data={requests}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingHorizontal: isDesktop ? 24 : 16,
+              paddingTop: 12,
+              paddingBottom: 24,
+              maxWidth: isDesktop ? 720 : undefined,
+              alignSelf: isDesktop ? ("center" as const) : undefined,
+              width: "100%" as const,
+            }}
+            renderItem={({ item }) => (
+              <RequestCard
+                id={item.id}
+                title={item.title}
+                description={item.description}
+                status={item.status}
+                city={item.city}
+                fns={item.fns}
+                threadsCount={item.threadsCount}
+                onPress={handleRequestPress}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={colors.primary}
+              />
+            }
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              loadingMore ? (
+                <View className="py-4 items-center">
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : hasMore ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Загрузить ещё"
+                  onPress={handleLoadMore}
+                  className="py-4 items-center"
+                >
+                  <Text className="text-sm font-medium text-accent">
+                    Загрузить ещё
+                  </Text>
+                </Pressable>
+              ) : (
+                <View className="py-4 items-center">
+                  <Text className="text-xs text-text-mute">
+                    Все запросы загружены
+                  </Text>
+                </View>
+              )
+            }
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }

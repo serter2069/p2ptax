@@ -30,13 +30,14 @@ export const ROUTES = {
   brand: "/brand",
   notifications: "/notifications",
 
-  // Tabs (user)
+  // Tabs (user) — #1615: requests = public bourse, my-requests = personal feed
   tabs: "/(tabs)/my-requests",
   tabsHome: "/(tabs)/my-requests",
   dashboard: "/(tabs)/my-requests",
-  tabsRequests: "/(tabs)/my-requests",
+  tabsRequests: "/(tabs)/requests",
+  tabsMyRequests: "/(tabs)/my-requests",
   tabsMessages: "/(tabs)/messages",
-  tabsPublicRequests: "/(tabs)/public-requests",
+  tabsPublicRequests: "/(tabs)/requests",
   tabsCreate: "/(tabs)/create",
   tabsProfile: "/(tabs)/profile",
   tabsSearch: "/(tabs)/search",

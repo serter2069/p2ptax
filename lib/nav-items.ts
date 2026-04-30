@@ -68,15 +68,21 @@ export const topLevelMatch = (ctx: MatchContext, prefix: string): boolean => {
 
 // ─────────────────────────────────────────── nav item arrays
 
-// Iter11 — unified USER nav (client-like items always present).
+// #1615 — unified USER nav: public Заявки + Мои заявки for everyone.
 export const USER_BASE_ITEMS: NavItem[] = [
   {
-    label: "Мои запросы",
-    href: "/(tabs)/my-requests",
-    icon: FileText,
+    label: "Заявки",
+    href: "/(tabs)/requests",
+    icon: Inbox,
     match: (ctx) =>
       groupMatch(ctx, "(tabs)", "requests") ||
-      groupMatch(ctx, "(tabs)", "my-requests"),
+      groupMatch(ctx, "(tabs)", "public-requests"),
+  },
+  {
+    label: "Мои заявки",
+    href: "/(tabs)/my-requests",
+    icon: FileText,
+    match: (ctx) => groupMatch(ctx, "(tabs)", "my-requests"),
   },
   {
     label: "Сообщения",
@@ -86,7 +92,7 @@ export const USER_BASE_ITEMS: NavItem[] = [
   },
 ];
 
-// Client-only addition: injected after "Мои запросы" for non-specialist users.
+// Client-only addition: injected after the base items for non-specialist users.
 export const USER_CLIENT_EXTRA: NavItem[] = [
   {
     label: "Специалисты",
@@ -102,18 +108,10 @@ export const USER_CLIENT_EXTRA: NavItem[] = [
   },
 ];
 
-// Specialist-only addition: appended to USER_BASE when isSpecialist=true.
-export const USER_SPECIALIST_EXTRA: NavItem[] = [
-  {
-    label: "Запросы",
-    href: "/(tabs)/public-requests",
-    icon: Inbox,
-    // Only match the public-requests tab — do NOT match "/requests" which is
-    // "Мои запросы" (the client-side tab). Previously this had an erroneous
-    // topLevelMatch("/requests") that highlighted the wrong item.
-    match: (ctx) => groupMatch(ctx, "(tabs)", "public-requests"),
-  },
-];
+// Specialist-only addition: empty after #1615 — specialists already see the
+// public bourse via the base "Заявки" item; the legacy public-requests link
+// is no longer surfaced separately.
+export const USER_SPECIALIST_EXTRA: NavItem[] = [];
 
 export const USER_TAIL_ITEMS: NavItem[] = [];
 

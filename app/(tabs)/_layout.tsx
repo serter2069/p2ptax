@@ -3,6 +3,7 @@ import { useWindowDimensions } from "react-native";
 import { useState, useEffect } from "react";
 import {
   FileText,
+  Inbox,
   MessageCircle,
   User,
 } from "lucide-react-native";
@@ -10,11 +11,14 @@ import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 import { apiGet } from "@/lib/api";
 
 /**
- * Unified (tabs) navigator — task #1379 cleanup.
+ * Unified (tabs) navigator — task #1615 nav split.
  *
- * Exactly 4 tabs on mobile: Главная / Запросы / Сообщения / Настройки.
- * "Публичные запросы" is hidden from the tab bar (href: null) — accessible
- * via the mobile drawer / sidebar only.
+ * Mobile tabs (5): Заявки (public bourse) / Мои заявки / Сообщения / Настройки.
+ * "Заявки" = open public requests feed (visible to all users).
+ * "Мои заявки" = current user's own requests (auth required).
+ *
+ * The legacy `public-requests` screen is hidden from the tab bar
+ * (href: null) — its logic moved into `requests.tsx`.
  *
  * Tab bar is hidden on desktop (≥768px) — SidebarNav carries navigation there.
  */
@@ -65,7 +69,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="requests"
         options={{
-          title: "Мои запросы",
+          title: "Заявки",
+          tabBarIcon: ({ color, size }) => <Inbox size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="my-requests"
+        options={{
+          title: "Мои заявки",
           tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
         }}
       />
@@ -84,13 +95,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
-      {/* Hidden from tab bar — accessible via mobile drawer / sidebar. */}
+      {/* Hidden — legacy specialist public-requests screen, logic moved into `requests`. */}
       <Tabs.Screen name="public-requests" options={{ href: null }} />
       {/* STRUCT-1 — redirect-only tabs, hidden from tab bar. */}
       <Tabs.Screen name="create" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
-      {/* Specialist alias for client "My Requests" — hidden from tab bar. */}
-      <Tabs.Screen name="my-requests" options={{ href: null }} />
     </Tabs>
   );
 }
