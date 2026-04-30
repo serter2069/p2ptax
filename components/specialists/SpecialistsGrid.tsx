@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, Pressable, Image, Platform } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  Pressable,
+  Image,
+  Platform,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from "react-native";
 import { colors } from "@/lib/theme";
 import { MessageCircle, Bookmark } from "lucide-react-native";
 
@@ -43,6 +54,7 @@ interface Props {
   onLoadMore: () => void;
   onPress: (id: string) => void;
   onBookmark: (id: string) => void;
+  onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
 function getInitials(firstName: string | null, lastName: string | null): string {
@@ -366,10 +378,12 @@ export default function SpecialistsGrid({
   refreshing,
   loadingMore,
   bookmarkedIds,
+  activeFnsId,
   onRefresh,
   onLoadMore,
   onPress,
   onBookmark,
+  onScroll,
 }: Props) {
   // On desktop we always render 1 column of horizontal rows
   if (isDesktop) {
@@ -393,6 +407,7 @@ export default function SpecialistsGrid({
             onPress={onPress}
             bookmarked={bookmarkedIds.has(item.id)}
             onBookmark={onBookmark}
+            activeFnsId={activeFnsId}
           />
         )}
         refreshControl={
@@ -400,6 +415,8 @@ export default function SpecialistsGrid({
         }
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         ListFooterComponent={
           loadingMore ? (
             <ActivityIndicator
@@ -448,6 +465,7 @@ export default function SpecialistsGrid({
             onBookmark={onBookmark}
             bookmarked={bookmarkedIds.has(item.id)}
             variant="vertical"
+            activeFnsId={activeFnsId}
           />
         </View>
       )}
@@ -456,6 +474,8 @@ export default function SpecialistsGrid({
       }
       onEndReached={onLoadMore}
       onEndReachedThreshold={0.5}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
       ListFooterComponent={
         loadingMore ? (
           <ActivityIndicator

@@ -90,6 +90,11 @@ router.get("/full", async (req: Request, res: Response) => {
                     city: { select: { id: true, name: true } },
                   },
                 },
+                services: {
+                  select: {
+                    service: { select: { id: true, name: true } },
+                  },
+                },
               },
             },
             _count: {
@@ -129,6 +134,17 @@ router.get("/full", async (req: Request, res: Response) => {
         ).values()
       );
 
+      // Cascade: FNS groups with services per group (matches /api/specialists shape
+      // so the same `SpecialistsGrid` component can render both lists).
+      const specialistFns = sp.specialistFns
+        .filter((sf) => Boolean(sf.fns))
+        .map((sf) => ({
+          fnsId: sf.fns!.id,
+          fnsName: sf.fns!.name,
+          city: sf.fns!.city,
+          services: sf.services.map((sv) => sv.service),
+        }));
+
       return {
         id: sp.id,
         firstName: sp.firstName,
@@ -139,6 +155,8 @@ router.get("/full", async (req: Request, res: Response) => {
         cities,
         fnsNames,
         services: sp.specialistServices.map((ss) => ss.service),
+        specialistFns,
+        description: sp.specialistProfile?.description ?? null,
         profile: {
           description: sp.specialistProfile?.description ?? null,
           yearsOfExperience: sp.specialistProfile?.yearsOfExperience ?? null,

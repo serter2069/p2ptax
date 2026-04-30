@@ -26,6 +26,8 @@ interface SpecialistCardProps {
   horizontal?: boolean;
   onBookmark?: (id: string) => void;
   bookmarked?: boolean;
+  /** When set, only the matching FNS group is shown (cascade narrows to active filter). */
+  activeFnsId?: string | null;
 }
 
 function getInitials(firstName: string | null, lastName: string | null): string {
@@ -50,16 +52,23 @@ export default function SpecialistCard({
   services,
   cities,
   specialistFns,
+  description,
   onPress,
   variant,
   horizontal = false,
   onBookmark,
   bookmarked = false,
+  activeFnsId,
 }: SpecialistCardProps) {
   const resolvedVariant = variant ?? (horizontal ? "horizontal" : "vertical");
   const name = formatSpecialistName(firstName, lastName);
   const initials = getInitials(firstName, lastName);
   const year = createdAt ? new Date(createdAt).getFullYear() : null;
+  const desc = description
+    ? description.length > 120
+      ? description.slice(0, 120) + "..."
+      : description
+    : null;
 
   if (resolvedVariant === "horizontal") {
     return (
@@ -100,7 +109,10 @@ export default function SpecialistCard({
   //   Row 2..N: per FNS group → "city · ИФНС" line + service chips below
   //   Overflow: "+N ещё" tap-to-profile link
 
-  const fnsList = specialistFns ?? [];
+  const allFns = specialistFns ?? [];
+  const fnsList = activeFnsId
+    ? allFns.filter((g) => g.fnsId === activeFnsId)
+    : allFns;
   const visibleFns = fnsList.slice(0, 2);
   const fnsOverflow = fnsList.length - visibleFns.length;
 
@@ -185,7 +197,7 @@ export default function SpecialistCard({
                 style={{ color: colors.textSecondary }}
                 numberOfLines={1}
               >
-                {g.city.name} · {g.fnsName}
+                {g.fnsName}
               </Text>
               {g.services.length > 0 && (
                 <View className="flex-row flex-wrap items-center" style={{ gap: 6 }}>
@@ -251,6 +263,17 @@ export default function SpecialistCard({
           ) : null}
         </>
       )}
+
+      {/* Description (truncated to 2 lines) */}
+      {desc ? (
+        <Text
+          className="text-xs mt-2"
+          style={{ color: colors.textSecondary, lineHeight: 16 }}
+          numberOfLines={2}
+        >
+          {desc}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }

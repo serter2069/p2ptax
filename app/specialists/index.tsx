@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { View, useWindowDimensions } from "react-native";
+import {
+  View,
+  useWindowDimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
 import { useLocalSearchParams, router } from "expo-router";
-import SpecialistSearchBar, {
-  CityOpt,
-  FnsOpt,
-} from "@/components/filters/SpecialistSearchBar";
+import { CityOpt, FnsOpt } from "@/components/filters/SpecialistSearchBar";
 import { AlertCircle, Search, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import CatalogHeader from "@/components/specialists/CatalogHeader";
 import CatalogSkeleton from "@/components/specialists/CatalogSkeleton";
-import ServiceChipsRow from "@/components/specialists/ServiceChipsRow";
+import SpecialistFilter from "@/components/specialists/SpecialistFilter";
 import SpecialistsGrid from "@/components/specialists/SpecialistsGrid";
 import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -303,6 +305,25 @@ export default function SpecialistsCatalog() {
   // Count display intentionally hidden: surfaced via list itself, not header.
   const headerCount = null;
 
+  // Scroll-aware filter visibility: hide when scrolling DOWN, reveal on UP.
+  const [filterVisible, setFilterVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const last = lastScrollYRef.current;
+      if (y < 40) {
+        if (!filterVisible) setFilterVisible(true);
+      } else if (y > last + 10) {
+        if (filterVisible) setFilterVisible(false);
+      } else if (y < last - 10) {
+        if (!filterVisible) setFilterVisible(true);
+      }
+      lastScrollYRef.current = y;
+    },
+    [filterVisible]
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-surface2">
       {!isAuthenticated && (
@@ -317,26 +338,22 @@ export default function SpecialistsCatalog() {
       )}
       <CatalogHeader isDesktop={isDesktop} count={headerCount} />
 
-      {/* Row 2: typeahead search bar */}
-      <View className="px-4 pt-2" style={{ zIndex: 20 }}>
-        <SpecialistSearchBar
+      {/* Cascade filter — hides on scroll-down, reveals on scroll-up */}
+      <View style={{ display: filterVisible ? "flex" : "none" }}>
+        <SpecialistFilter
           cities={cities}
           fnsAll={fnsAll}
+          services={services}
           selectedCityId={selectedCityId}
           selectedFnsId={selectedFnsId}
+          selectedServiceIds={selectedServiceIds}
           onPickCity={handlePickCity}
           onPickFns={handlePickFns}
-          onClear={handleClearLocation}
+          onClearLocation={handleClearLocation}
+          onToggleService={handleServiceToggle}
+          onClearServices={handleClearServices}
         />
       </View>
-
-      {/* Row 3: compact service chips — always visible */}
-      <ServiceChipsRow
-        services={services}
-        selectedServiceIds={selectedServiceIds}
-        onToggle={handleServiceToggle}
-        onClearAll={handleClearServices}
-      />
 
       {/* Specialist list */}
       {loading && specialists.length === 0 ? (
@@ -382,10 +399,12 @@ export default function SpecialistsCatalog() {
           refreshing={refreshing}
           loadingMore={loadingMore}
           bookmarkedIds={bookmarkedIds}
+          activeFnsId={selectedFnsId}
           onRefresh={handleRefresh}
           onLoadMore={handleLoadMore}
           onPress={handleSpecialistPress}
           onBookmark={handleBookmark}
+          onScroll={handleScroll}
         />
       )}
     </SafeAreaView>
