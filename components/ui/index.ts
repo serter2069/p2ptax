@@ -8,7 +8,7 @@ export { default as ErrorState } from "./ErrorState";
 export { default as LoadingState } from "./LoadingState";
 export { default as MetricCard } from "./MetricCard";
 export { default as Text } from "./Text";
-export { default as FileUploadZone } from "./FileUploadZone";
+export { default as FileUploadZone, FileUploadChips } from "./FileUploadZone";
 export { default as StyledSwitch } from "./StyledSwitch";
 
 export type { PendingFile } from "./FileUploadZone";

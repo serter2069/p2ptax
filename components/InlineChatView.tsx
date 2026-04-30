@@ -327,12 +327,12 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     }
 
     // Files are uploaded immediately on pick by FileUploadZone, so by send-time
-    // each "done" file already has its uploadedToken. Only the first done file
-    // is sent (single-attachment messages — limit enforced upstream by maxFiles=3).
-    const readyFile = pendingFiles.find(
-      (f) => f.status === "done" && f.uploadedToken
-    );
-    const uploadToken = readyFile?.uploadedToken;
+    // each "done" file already has its uploadedToken. Send ALL ready file
+    // tokens — the API accepts uploadTokens[] (bug #3 fix: previously only
+    // the first file was attached, regardless of maxFiles).
+    const uploadTokens: string[] = pendingFiles
+      .filter((f) => f.status === "done" && f.uploadedToken)
+      .map((f) => f.uploadedToken as string);
 
     // Block send if user attached a file that is still uploading or errored.
     const stillBusy = pendingFiles.some(
@@ -351,7 +351,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     try {
       const res = await apiPost<{ message: MessageItem }>(`/api/messages/${threadId}`, {
         text: trimmed,
-        ...(uploadToken ? { uploadToken } : {}),
+        ...(uploadTokens.length > 0 ? { uploadTokens } : {}),
       });
       setMessages((prev) => [...prev, res.message]);
       setText("");
