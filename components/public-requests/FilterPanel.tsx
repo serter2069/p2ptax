@@ -303,17 +303,29 @@ export default function FilterPanel({
                 ))}
               </View>
             )}
-            {/* Search input */}
+            {/* Search input — border lives on the wrapper View only (no className on TextInput to avoid NativeWind double-border on web) */}
             <View className="flex-row items-center border border-border rounded-lg px-3 h-9 bg-white">
               <TextInput
                 value={cityQuery}
                 onChangeText={setCityQuery}
                 placeholder="Поиск города..."
                 placeholderTextColor={colors.textMuted}
-                className="flex-1 text-sm text-text-base"
-                style={{ outlineStyle: "none" } as any}
                 autoCorrect={false}
                 autoCapitalize="none"
+                style={{
+                  flex: 1,
+                  fontSize: 14,
+                  color: colors.text,
+                  borderWidth: 0,
+                  backgroundColor: "transparent",
+                  ...(Platform.OS === "web"
+                    ? {
+                        outlineStyle: "none" as never,
+                        outlineWidth: 0,
+                        appearance: "none" as never,
+                      }
+                    : {}),
+                }}
               />
               {citySuggestionsLoading && <ActivityIndicator size="small" color={colors.primary} />}
               {cityQuery.length > 0 && !citySuggestionsLoading && (

@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Image } from "react-native";
 import { ImageIcon, File, FileText, Download } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
@@ -16,7 +16,7 @@ interface MessageBubbleProps {
   isOwn: boolean;
   files?: FileAttachment[];
   onFilePress?: (file: FileAttachment) => void;
-  onImagePress?: (url: string) => void;
+  onImagePress?: (url: string, filename: string) => void;
 }
 
 function formatTime(dateStr: string): string {
@@ -65,22 +65,19 @@ export default function MessageBubble({
           <Pressable
             accessibilityRole="button"
             key={img.id}
-            accessibilityLabel={`Изображение ${img.filename}`}
-            onPress={() => onImagePress?.(img.url)}
+            accessibilityLabel={`Изображение ${img.filename}. Нажмите для просмотра.`}
+            onPress={() => onImagePress?.(img.url, img.filename)}
             className="mb-1"
+            style={({ pressed }) => [pressed && { opacity: 0.85 }]}
           >
-            <View className="w-[200px] h-[200px] bg-surface2 rounded-xl items-center justify-center">
-              <ImageIcon
-                size={32}
-                color={isOwn ? colors.surface : colors.textSecondary}
-              />
-              <Text
-                className={`text-xs mt-1 ${isOwn ? "text-accent-soft" : "text-text-mute"}`}
-                numberOfLines={1}
-              >
-                {img.filename}
-              </Text>
-            </View>
+            <Image
+              source={{ uri: img.url }}
+              style={{ width: 200, height: 200, borderRadius: 12 }}
+              resizeMode="cover"
+              accessibilityLabel={img.filename}
+              defaultSource={undefined}
+              onError={() => {/* silent — fallback below not needed for already-fetched URLs */}}
+            />
           </Pressable>
         ))}
 

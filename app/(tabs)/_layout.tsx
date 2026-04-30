@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { useWindowDimensions } from "react-native";
+import { useState, useEffect } from "react";
 import {
   LayoutGrid,
   FileText,
@@ -7,6 +8,7 @@ import {
   User,
 } from "lucide-react-native";
 import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
+import { apiGet } from "@/lib/api";
 
 /**
  * Unified (tabs) navigator — task #1379 cleanup.
@@ -20,6 +22,18 @@ import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isMobile = width < BREAKPOINT;
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnread = () => {
+      apiGet<{ count: number }>("/api/messages/unread-count")
+        .then((data) => setUnreadCount(data.count))
+        .catch(() => {});
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <Tabs
@@ -67,6 +81,7 @@ export default function TabLayout() {
         options={{
           title: "Сообщения",
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
+          tabBarBadge: unreadCount > 0 ? (unreadCount > 9 ? "9+" : unreadCount) : undefined,
         }}
       />
       <Tabs.Screen

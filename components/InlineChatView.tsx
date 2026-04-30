@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   Alert,
+  Image,
   useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
