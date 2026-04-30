@@ -1,6 +1,5 @@
-import { View, Text, Pressable } from "react-native";
-import { useRouter } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
+import { MessageCircle } from "lucide-react-native";
 import Avatar from "@/components/ui/Avatar";
 import { colors } from "@/lib/theme";
 
@@ -21,74 +20,101 @@ function getSpecialistName(
 
 interface SpecialistRecommendationsProps {
   recommendations: SpecialistCard[];
-  onContact: (specialistId: string) => void;
+  /** Open the specialist's profile (where the user can contact them). */
+  onOpenProfile: (specialistId: string) => void;
+  /** Trigger the "Написать" action — opens chat with the specialist. */
+  onWrite: (specialistId: string) => void;
+  /** Optional title override. */
+  title?: string;
 }
 
+/**
+ * Horizontal scroll feed of recommended specialists for issue #1550.
+ *
+ * - Horizontal scroll (горизонтальная лента)
+ * - Each card: avatar, name, services hint, "Написать" button
+ * - Filtering (FNS match + no existing thread) is done server-side
+ *   in /api/requests/:id/recommendations.
+ */
 export default function SpecialistRecommendations({
   recommendations,
-  onContact,
+  onOpenProfile,
+  onWrite,
+  title = "Рекомендованные специалисты",
 }: SpecialistRecommendationsProps) {
-  const router = useRouter();
-
   if (recommendations.length === 0) return null;
 
   return (
     <View className="mb-4">
-      <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
-        Рекомендованные специалисты
+      <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3 px-1">
+        {title}
       </Text>
-      {recommendations.map((spec) => {
-        const name = getSpecialistName(spec);
-        return (
-          <Pressable
-            accessibilityRole="button"
-            key={spec.id}
-            accessibilityLabel={`Профиль специалиста ${name}`}
-            onPress={() => onContact(spec.id)}
-            className="bg-white rounded-2xl p-4 mb-3"
-            style={({ pressed }) => [
-              {
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 4 }}
+      >
+        {recommendations.map((spec) => {
+          const name = getSpecialistName(spec);
+          return (
+            <View
+              key={spec.id}
+              className="bg-white rounded-2xl p-4 mr-3"
+              style={{
+                width: 220,
                 shadowColor: colors.text,
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.05,
                 shadowRadius: 8,
                 elevation: 2,
-              },
-              pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
-            ]}
-          >
-            <View className="flex-row items-center">
-              <Avatar
-                name={name}
-                imageUrl={spec.avatarUrl ?? undefined}
-                size="md"
-              />
-              <View className="ml-3 flex-1">
-                <Text className="text-base font-semibold text-text-base">
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Профиль специалиста ${name}`}
+                onPress={() => onOpenProfile(spec.id)}
+                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                className="items-center"
+              >
+                <Avatar
+                  name={name}
+                  imageUrl={spec.avatarUrl ?? undefined}
+                  size="lg"
+                />
+                <Text
+                  className="text-sm font-semibold text-text-base mt-3 text-center"
+                  numberOfLines={2}
+                >
                   {name}
                 </Text>
                 {spec.services.length > 0 && (
                   <Text
-                    className="text-xs text-text-mute mt-0.5"
-                    numberOfLines={1}
+                    className="text-xs text-text-mute mt-1 text-center"
+                    numberOfLines={2}
                   >
                     {spec.services.join(", ")}
                   </Text>
                 )}
-                {spec.description && (
-                  <Text
-                    className="text-sm text-text-mute mt-1 leading-5"
-                    numberOfLines={2}
-                  >
-                    {spec.description}
-                  </Text>
-                )}
-              </View>
-              <ChevronRight size={12} color={colors.placeholder} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Написать специалисту ${name}`}
+                onPress={() => onWrite(spec.id)}
+                className="flex-row items-center justify-center rounded-xl mt-3 py-2 px-3"
+                style={({ pressed }) => [
+                  { backgroundColor: colors.accent, minHeight: 40 },
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <MessageCircle size={14} color="#fff" />
+                <Text className="text-white text-sm font-semibold ml-1.5">
+                  Написать
+                </Text>
+              </Pressable>
             </View>
-          </Pressable>
-        );
-      })}
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }

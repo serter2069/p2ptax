@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { File, FileImage, Download, ChevronLeft, MessageCircle, X } from "lucide-react-native";
+import { File, FileImage, Download, ChevronLeft, X } from "lucide-react-native";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
@@ -152,6 +152,10 @@ export default function MyRequestDetail() {
   const handleWriteSpecialist = useCallback((specialistId: string) => {
     handleAuthRequired(() => nav.any(`/messages?specialist=${specialistId}`));
   }, [handleAuthRequired, nav]);
+
+  const handleOpenSpecialistProfile = useCallback((specialistId: string) => {
+    nav.dynamic.specialist(specialistId);
+  }, [nav]);
 
   if (loading) {
     return (
@@ -302,6 +306,17 @@ export default function MyRequestDetail() {
                   )}
                 </View>
 
+                {/* Recommended specialists feed (horizontal scroll) — issue #1550 */}
+                {recommendations.length > 0 && (
+                  <View className="mb-4">
+                    <SpecialistRecommendations
+                      recommendations={recommendations}
+                      onOpenProfile={handleOpenSpecialistProfile}
+                      onWrite={handleWriteSpecialist}
+                    />
+                  </View>
+                )}
+
                 {/* Threads */}
                 <ThreadsList
                   threads={threads}
@@ -312,7 +327,7 @@ export default function MyRequestDetail() {
                 />
               </View>
 
-              {/* RIGHT: actions + recommendations */}
+              {/* RIGHT: actions + meta stats */}
               <View style={{ flex: 1, minWidth: 280, maxWidth: 360 }}>
                 {/* Actions card */}
                 <View
@@ -357,67 +372,6 @@ export default function MyRequestDetail() {
                     </View>
                   )}
                 </View>
-
-                {/* Recommendations with "Write" button */}
-                {recommendations.length > 0 && (
-                  <View
-                    className="bg-white rounded-2xl p-5 mb-4"
-                    style={{
-                      shadowColor: colors.text,
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 8,
-                      elevation: 2,
-                    }}
-                  >
-                    <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
-                      Рекомендованные специалисты
-                    </Text>
-                    {recommendations.map((spec) => {
-                      const name = [spec.firstName, spec.lastName].filter(Boolean).join(" ") || "Специалист";
-                      return (
-                        <View
-                          key={spec.id}
-                          className="mb-3 pb-3"
-                          style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
-                        >
-                          <View className="flex-row items-center justify-between mb-2">
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityLabel={`Профиль ${name}`}
-                              onPress={() => nav.dynamic.specialist(spec.id)}
-                              className="flex-1 mr-2"
-                            >
-                              <Text className="text-sm font-semibold text-text-base" numberOfLines={1}>
-                                {name}
-                              </Text>
-                              {spec.services.length > 0 && (
-                                <Text className="text-xs text-text-mute mt-0.5" numberOfLines={1}>
-                                  {spec.services.join(", ")}
-                                </Text>
-                              )}
-                            </Pressable>
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityLabel={`Написать специалисту ${name}`}
-                              onPress={() => handleWriteSpecialist(spec.id)}
-                              className="flex-row items-center rounded-lg px-3 py-1.5"
-                              style={({ pressed }) => [
-                                { backgroundColor: colors.accent, minHeight: 32 },
-                                pressed && { opacity: 0.8 },
-                              ]}
-                            >
-                              <MessageCircle size={13} color="#fff" />
-                              <Text className="text-white text-xs font-semibold ml-1">
-                                Написать
-                              </Text>
-                            </Pressable>
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
 
                 {/* Meta stats */}
                 <View
@@ -552,6 +506,18 @@ export default function MyRequestDetail() {
               )}
             </View>
 
+            {/* Recommended specialists feed (horizontal scroll) — issue #1550.
+                Placed under main info, before actions (per acceptance criteria). */}
+            {recommendations.length > 0 && (
+              <View className="mb-4">
+                <SpecialistRecommendations
+                  recommendations={recommendations}
+                  onOpenProfile={handleOpenSpecialistProfile}
+                  onWrite={handleWriteSpecialist}
+                />
+              </View>
+            )}
+
             {/* Close button — mobile */}
             {isActive && (
               <Pressable
@@ -585,62 +551,6 @@ export default function MyRequestDetail() {
               unreadMessages={request.unreadMessages}
               onOpenThread={(threadId) => nav.any(`/threads/${threadId}`)}
             />
-
-            {/* Recommendations with "Write" button on mobile */}
-            {recommendations.length > 0 && (
-              <View className="mb-4">
-                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
-                  Рекомендованные специалисты
-                </Text>
-                {recommendations.map((spec) => {
-                  const name = [spec.firstName, spec.lastName].filter(Boolean).join(" ") || "Специалист";
-                  return (
-                    <View
-                      key={spec.id}
-                      className="bg-white rounded-2xl p-4 mb-3 flex-row items-center"
-                      style={{
-                        shadowColor: colors.text,
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 8,
-                        elevation: 2,
-                      }}
-                    >
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Профиль ${name}`}
-                        onPress={() => nav.any(`/specialists/${spec.id}`)}
-                        className="flex-1 mr-3"
-                      >
-                        <Text className="text-sm font-semibold text-text-base" numberOfLines={1}>
-                          {name}
-                        </Text>
-                        {spec.services.length > 0 && (
-                          <Text className="text-xs text-text-mute mt-0.5" numberOfLines={1}>
-                            {spec.services.join(", ")}
-                          </Text>
-                        )}
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Написать специалисту ${name}`}
-                        onPress={() => handleWriteSpecialist(spec.id)}
-                        className="flex-row items-center rounded-lg px-3 py-2"
-                        style={({ pressed }) => [
-                          { backgroundColor: colors.accent, minHeight: 36 },
-                          pressed && { opacity: 0.8 },
-                        ]}
-                      >
-                        <MessageCircle size={14} color="#fff" />
-                        <Text className="text-white text-xs font-semibold ml-1">
-                          Написать
-                        </Text>
-                      </Pressable>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
 
             {/* Meta stats */}
             <View
