@@ -3,7 +3,7 @@ import AboutSection from "@/components/settings/specialist/AboutSection";
 import FnsServicesSection, {
   FnsServiceItem,
 } from "@/components/settings/specialist/FnsServicesSection";
-import ContactsSection from "@/components/settings/specialist/ContactsSection";
+import ContactsEditor from "@/components/settings/specialist/ContactsEditor";
 import OfficeSection from "@/components/settings/specialist/OfficeSection";
 import DisabledNotice from "@/components/settings/specialist/DisabledNotice";
 
@@ -88,7 +88,7 @@ export default function SpecialistTab({
         fnsServices={specData?.fnsServices}
         onGoToWorkArea={onGoToWorkArea}
       />
-      <ContactsSection
+      <ContactsEditor
         contacts={contacts}
         addingContact={addingContact}
         newContactType={newContactType}

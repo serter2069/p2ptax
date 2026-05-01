@@ -22,6 +22,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
+import { useCities } from "@/lib/hooks/useCities";
+import { useServices } from "@/lib/hooks/useServices";
+import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
 import { colors } from "@/lib/theme";
 import { AlertCircle, Bookmark, Search, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
@@ -67,10 +70,6 @@ interface SpecialistsResponse {
   hasMore: boolean;
 }
 
-interface CitiesResponse {
-  items: { id: string; name: string; slug: string; officesCount?: number }[];
-}
-
 interface FnsResponse {
   offices: {
     id: string;
@@ -98,7 +97,8 @@ const EMPTY_FILTER: CityFnsValue = { cities: [], fns: [], fnsServices: {} };
 
 export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeedProps) {
   const nav = useTypedRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // allowAnonymous=true for 'all' (no redirect); false for 'favorites' (redirect to login)
+  const { isAuthenticated, isLoading: authLoading } = useAuthGuard({ allowAnonymous: mode !== "favorites" });
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const isWide = width >= 1024;
@@ -110,6 +110,8 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
   }>();
 
   // ── Filter source data ──
+  const { cities: citiesData } = useCities();
+  const { services: servicesData } = useServices();
   const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
   const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -150,56 +152,40 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
     }
   }, [mode, authLoading, isAuthenticated, nav]);
 
-  // ── Load filter source lists ──
+  // ── Sync cities/services from global hooks ──
+  useEffect(() => {
+    if (citiesData.length > 0) setCities(citiesData.map((c) => ({ id: c.id, name: c.name })));
+  }, [citiesData]);
+
+  useEffect(() => {
+    if (servicesData.length > 0) setServices(servicesData);
+  }, [servicesData]);
+
+  // ── Load FNS for typeahead once cities are available ──
   useEffect(() => {
     if (mode === "favorites" && !isAuthenticated) return;
+    if (cities.length === 0) return;
     let cancelled = false;
-
-    async function loadFilterData() {
-      try {
-        const noAuth = mode === "all";
-        const [citiesRes, servicesRes] = await Promise.all([
-          noAuth
-            ? api<CitiesResponse>("/api/cities", { noAuth: true })
-            : apiGet<CitiesResponse>("/api/cities"),
-          noAuth
-            ? api<{ items: ServiceOption[] }>("/api/services", { noAuth: true })
-            : apiGet<{ items: ServiceOption[] }>("/api/services"),
-        ]);
+    const ids = cities.map((c) => c.id).join(",");
+    const fetchFns = mode === "all"
+      ? api<FnsResponse>(`/api/fns?city_ids=${ids}`, { noAuth: true })
+      : apiGet<FnsResponse>(`/api/fns?city_ids=${ids}`);
+    fetchFns
+      .then((fnsRes) => {
         if (cancelled) return;
-        setCities(citiesRes.items.map((c) => ({ id: c.id, name: c.name })));
-        setServices(servicesRes.items);
-
-        if (citiesRes.items.length > 0) {
-          const ids = citiesRes.items.map((c) => c.id).join(",");
-          try {
-            const fnsRes = noAuth
-              ? await api<FnsResponse>(`/api/fns?city_ids=${ids}`, { noAuth: true })
-              : await apiGet<FnsResponse>(`/api/fns?city_ids=${ids}`);
-            if (cancelled) return;
-            setFnsAll(
-              fnsRes.offices.map((f) => ({
-                id: f.id,
-                name: f.name,
-                code: f.code,
-                cityId: f.cityId,
-                cityName: f.city?.name,
-              }))
-            );
-          } catch {
-            // typeahead degrades gracefully
-          }
-        }
-      } catch {
-        // soft fail — filters degrade gracefully
-      }
-    }
-
-    loadFilterData();
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, isAuthenticated]);
+        setFnsAll(
+          fnsRes.offices.map((f) => ({
+            id: f.id,
+            name: f.name,
+            code: f.code,
+            cityId: f.cityId,
+            cityName: f.city?.name,
+          }))
+        );
+      })
+      .catch(() => { /* typeahead degrades gracefully */ });
+    return () => { cancelled = true; };
+  }, [mode, isAuthenticated, cities]);
 
   // ── Load saved bookmark IDs (for 'all' mode — show filled icon on saved items) ──
   useEffect(() => {

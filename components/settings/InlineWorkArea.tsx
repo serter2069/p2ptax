@@ -14,14 +14,12 @@ import EntriesList from "@/components/onboarding/workarea/EntriesList";
 import { saveWorkArea } from "@/components/onboarding/workarea/saveWorkArea";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCities } from "@/lib/hooks/useCities";
+import { useServices } from "@/lib/hooks/useServices";
 
 interface ServiceItem {
   id: string;
   name: string;
-}
-
-interface CitiesResponse {
-  items: { id: string; name: string }[];
 }
 
 interface FnsResponse {
@@ -51,7 +49,9 @@ const EMPTY_CASCADE: CityFnsValue = { cities: [], fns: [], fnsServices: {} };
 export default function InlineWorkArea({ onDone, onCancel }: Props) {
   const { isSpecialistUser, updateUser } = useAuth();
 
-  // Catalogs
+  // Catalogs — cities/services from global cache hooks
+  const { cities: citiesData } = useCities();
+  const { services: servicesData } = useServices();
   const [cities, setCities] = useState<CityCascadeOption[]>([]);
   const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
@@ -67,43 +67,40 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Sync hook data into local cascade state
   useEffect(() => {
+    if (citiesData.length > 0) setCities(citiesData.map((c) => ({ id: c.id, name: c.name })));
+  }, [citiesData]);
+
+  useEffect(() => {
+    if (servicesData.length > 0) setServices(servicesData);
+  }, [servicesData]);
+
+  // Load all FNS for typeahead once cities are available.
+  useEffect(() => {
+    if (cities.length === 0) return;
     let cancelled = false;
+    const ids = cities.map((c) => c.id).join(",");
     (async () => {
       try {
-        const [citiesRes, servicesRes] = await Promise.all([
-          api<CitiesResponse>("/api/cities", { noAuth: true }),
-          api<{ items: ServiceItem[] }>("/api/services", { noAuth: true }),
-        ]);
+        const fnsRes = await api<FnsResponse>(`/api/fns?city_ids=${ids}`, { noAuth: true });
         if (cancelled) return;
-        const cityList = citiesRes.items.map((c) => ({ id: c.id, name: c.name }));
-        setCities(cityList);
-        setServices(servicesRes.items);
-
-        if (cityList.length > 0) {
-          const ids = cityList.map((c) => c.id).join(",");
-          try {
-            const fnsRes = await api<FnsResponse>(`/api/fns?city_ids=${ids}`, { noAuth: true });
-            if (cancelled) return;
-            setFnsAll(
-              fnsRes.offices.map((f) => ({
-                id: f.id,
-                name: f.name,
-                code: f.code,
-                cityId: f.cityId,
-                cityName: f.city?.name,
-              }))
-            );
-          } catch {
-            // typeahead degrades gracefully
-          }
-        }
+        setFnsAll(
+          fnsRes.offices.map((f) => ({
+            id: f.id,
+            name: f.name,
+            code: f.code,
+            cityId: f.cityId,
+            cityName: f.city?.name,
+          }))
+        );
       } catch {
+        // typeahead degrades gracefully
         if (!cancelled) setCatalogError("Не удалось загрузить справочники");
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [cities]);
 
   // Exclude already-added FNS from cascade.
   const fnsForCascade = useMemo(() => {

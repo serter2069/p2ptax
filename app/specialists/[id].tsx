@@ -13,7 +13,7 @@ import Head from "expo-router/head";
 import { AlertCircle, Pencil, ChevronLeft } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import ContactsSection from "@/components/specialist/ContactsSection";
+import ContactsView from "@/components/specialist/ContactsView";
 import WorkAreaSection from "@/components/specialist/WorkAreaSection";
 import SpecialistHero from "@/components/specialist/SpecialistHero";
 import SpecialistAbout from "@/components/specialist/SpecialistAbout";
@@ -276,7 +276,7 @@ export default function SpecialistPublicProfile() {
           cardShadow={legacyShadow}
         />
         {isAuthenticated ? (
-          <ContactsSection
+          <ContactsView
             contacts={contacts}
             officeAddress={profile?.officeAddress ?? null}
             workingHours={profile?.workingHours ?? null}

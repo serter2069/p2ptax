@@ -60,7 +60,7 @@ export default function LandingHeader({
         </Pressable>
 
         <View className="flex-row items-center" style={{ gap: isDesktop ? 8 : 4 }}>
-          {isDesktop ? (
+          {isDesktop && (
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="Каталог специалистов"
@@ -71,18 +71,7 @@ export default function LandingHeader({
                 Специалисты
               </Text>
             </Pressable>
-          ) : (onFindSpecialist ? (
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Найти специалиста"
-              onPress={onFindSpecialist}
-              className="min-h-[44px] items-center justify-center px-2"
-            >
-              <Text className="font-medium" style={{ color: colors.primary, fontSize: 14 }}>
-                Найти специалиста
-              </Text>
-            </Pressable>
-          ) : null)}
+          )}
           {isAuthenticated ? (
             <Pressable
               accessibilityRole="button"
@@ -113,12 +102,12 @@ export default function LandingHeader({
             className="rounded-xl items-center justify-center"
             style={{
               height: 44,
-              paddingHorizontal: isDesktop ? 18 : 14,
+              paddingHorizontal: isDesktop ? 18 : 12,
               backgroundColor: colors.primary,
             }}
           >
             <Text className="text-white font-semibold" style={{ fontSize: 14 }}>
-              Создать запрос
+              {isDesktop ? "Создать запрос" : "Создать"}
             </Text>
           </Pressable>
         </View>
