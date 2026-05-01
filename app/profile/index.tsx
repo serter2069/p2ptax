@@ -16,6 +16,7 @@ import Card from "@/components/ui/Card";
 import LoadingState from "@/components/ui/LoadingState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
+import { Z } from "@/lib/zIndex";
 import { useSettingsForm, type AutosaveStatus } from "@/lib/useSettingsForm";
 import ProfileTab from "@/components/settings/ProfileTab";
 import SpecialistTab from "@/components/settings/SpecialistTab";
@@ -268,7 +269,7 @@ export default function UnifiedProfile() {
         className="bg-surface2"
         style={
           Platform.OS === "web"
-            ? ({ position: "sticky", top: 0, zIndex: 10 } as never)
+            ? ({ position: "sticky", top: 0, zIndex: Z.STICKY } as never)
             : undefined
         }
       >

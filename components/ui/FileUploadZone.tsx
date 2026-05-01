@@ -10,6 +10,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { UploadCloud, File as FileIcon, FileImage, X, Paperclip } from "lucide-react-native";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import { Z } from "@/lib/zIndex";
 
 /**
  * One pending file tracked by the upload zone. Holds local metadata,
@@ -504,7 +505,7 @@ export default function FileUploadZone({
               left: 0,
               right: 0,
               bottom: 0,
-              zIndex: 100,
+              zIndex: Z.DRAG,
               backgroundColor: "rgba(59,130,246,0.08)",
               borderWidth: 2,
               borderColor: colors.primary,

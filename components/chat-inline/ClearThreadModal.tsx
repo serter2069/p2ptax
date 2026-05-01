@@ -4,6 +4,7 @@
  */
 import { Modal, View, Text, Pressable } from "react-native";
 import { colors } from "@/lib/theme";
+import { layer } from "@/lib/zIndex";
 
 interface ClearThreadModalProps {
   visible: boolean;
@@ -45,7 +46,7 @@ export default function ClearThreadModal({
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.15,
             shadowRadius: 24,
-            elevation: 16,
+            ...layer("MODAL"),
           }}
         >
           <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text, marginBottom: 8 }}>

@@ -1,100 +1,158 @@
 /**
  * CityFnsServicePicker — unified city → FNS → service selector.
  *
- * Wraps CityFnsCascade (chip city row + typeahead FNS dropdown + service chips)
- * with a simplified value/onChange API used by forms.
+ * Two modes:
  *
- * Usage (single selection):
- *   <CityFnsServicePicker
- *     cities={cities}
- *     services={services}
- *     cityId={selectedCityId}
- *     fnsId={selectedFnsId}
- *     serviceId={selectedServiceId}
- *     onChange={({ cityId, fnsId, serviceId }) => { ... }}
- *     submitted={submitted}
- *   />
+ *   single  — one city, one FNS, one service. Used by client request creation.
+ *             Value: { cityId, fnsId, serviceId }.
+ *
+ *   multi   — many cities, many FNS, per-FNS subset of services. Used by
+ *             specialist work-area onboarding and catalog filter.
+ *             Value: CityFnsValue (cities[], fns[], fnsServices).
+ *
+ * Both modes wrap CityFnsCascade in typeahead UX. Only the value shape and
+ * the optional service block differ. The wrapper centralises validation,
+ * label overrides, error display, and the optional bordered "frame" so all
+ * call sites look identical regardless of mode.
  */
 import { View, Text } from "react-native";
 import CityFnsCascade, {
   CityCascadeOption,
+  FnsCascadeOption,
   ServiceOption,
+  CityFnsValue,
 } from "@/components/filters/CityFnsCascade";
+import { colors } from "@/lib/theme";
 
-export interface CityFnsServicePickerValue {
+export type { CityCascadeOption, FnsCascadeOption, ServiceOption, CityFnsValue };
+export type CityOption = CityCascadeOption;
+
+export interface SingleValue {
   cityId: string | null;
   fnsId: string | null;
   serviceId: string | null;
 }
 
-export interface CityFnsServicePickerProps {
+interface CommonProps {
   cities: CityCascadeOption[];
+  fnsAll?: FnsCascadeOption[];
   services?: ServiceOption[];
-  cityId: string | null;
-  fnsId: string | null;
-  serviceId?: string | null;
-  onChange: (value: CityFnsServicePickerValue) => void;
-  /** Show validation errors for required fields */
   submitted?: boolean;
   disabled?: boolean;
+  framed?: boolean;
+  frameLabel?: string;
   labelCities?: string;
   labelFns?: string;
   labelServices?: string;
 }
 
-export default function CityFnsServicePicker({
-  cities,
-  services,
-  cityId,
-  fnsId,
-  serviceId,
-  onChange,
-  submitted = false,
-  disabled = false,
-  labelCities,
-  labelFns,
-  labelServices,
-}: CityFnsServicePickerProps) {
-  const handleCascadeChange = (v: { cities: string[]; fns: string[] }) => {
-    if (disabled) return;
-    onChange({
-      cityId: v.cities[0] ?? null,
-      fnsId: v.fns[0] ?? null,
-      serviceId: serviceId ?? null,
+export type CityFnsServicePickerProps =
+  | (CommonProps & {
+      mode: "single";
+      value: SingleValue;
+      onChange: (v: SingleValue) => void;
+    })
+  | (CommonProps & {
+      mode: "multi";
+      value: CityFnsValue;
+      onChange: (v: CityFnsValue) => void;
     });
-  };
 
-  const handleServiceChange = (id: string | null) => {
-    if (disabled) return;
-    onChange({ cityId, fnsId, serviceId: id });
-  };
+export default function CityFnsServicePicker(props: CityFnsServicePickerProps) {
+  const {
+    cities,
+    fnsAll,
+    services,
+    submitted = false,
+    disabled = false,
+    framed = false,
+    frameLabel = "Куда обращаемся",
+    labelCities,
+    labelFns,
+    labelServices,
+  } = props;
 
-  return (
-    <View>
+  let cascade: React.ReactNode;
+  let validationError: string | null = null;
+
+  if (props.mode === "single") {
+    const { value, onChange } = props;
+    const handleCascadeChange = (v: CityFnsValue) => {
+      if (disabled) return;
+      onChange({
+        cityId: v.cities[0] ?? null,
+        fnsId: v.fns[0] ?? null,
+        serviceId: value.serviceId,
+      });
+    };
+    const handleServiceChange = (id: string | null) => {
+      if (disabled) return;
+      onChange({ cityId: value.cityId, fnsId: value.fnsId, serviceId: id });
+    };
+    cascade = (
       <CityFnsCascade
-        mode="single"
+        mode="typeahead"
         value={{
-          cities: cityId ? [cityId] : [],
-          fns: fnsId ? [fnsId] : [],
+          cities: value.cityId ? [value.cityId] : [],
+          fns: value.fnsId ? [value.fnsId] : [],
         }}
         onChange={handleCascadeChange}
         citiesSource={cities}
+        fnsSource={fnsAll}
         services={services}
-        selectedServiceId={serviceId ?? null}
+        selectedServiceId={value.serviceId}
         onServiceChange={handleServiceChange}
         labelCities={labelCities}
         labelFns={labelFns}
         labelServices={labelServices}
       />
-      {submitted && !cityId && (
-        <Text className="text-xs text-danger mt-1 px-4">Выберите город</Text>
-      )}
-      {submitted && cityId && !fnsId && (
-        <Text className="text-xs text-danger mt-1 px-4">Выберите инспекцию</Text>
+    );
+    if (submitted && !value.cityId) validationError = "Выберите город";
+    else if (submitted && !value.fnsId) validationError = "Выберите инспекцию ФНС";
+  } else {
+    const { value, onChange } = props;
+    cascade = (
+      <CityFnsCascade
+        mode="typeahead"
+        value={value}
+        onChange={(v) => !disabled && onChange(v)}
+        citiesSource={cities}
+        fnsSource={fnsAll}
+        services={services}
+        labelCities={labelCities}
+        labelFns={labelFns}
+        labelServices={labelServices}
+      />
+    );
+  }
+
+  if (!framed) {
+    return (
+      <View>
+        {cascade}
+        {validationError && (
+          <Text className="text-xs text-danger mt-1.5">{validationError}</Text>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: validationError ? colors.danger : colors.border,
+        borderRadius: 12,
+        padding: 12,
+      }}
+    >
+      <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-2">
+        {frameLabel}
+      </Text>
+      {cascade}
+      {validationError && (
+        <Text className="text-xs text-danger mt-1.5">{validationError}</Text>
       )}
     </View>
   );
 }
-
-// Re-export types for consumers that previously imported from requests/CityFnsServicePicker
-export type { CityCascadeOption as CityOption, ServiceOption };

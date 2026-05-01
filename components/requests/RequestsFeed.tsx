@@ -21,6 +21,7 @@ import CityFnsCascade, {
   CityFnsValue,
   FnsCascadeOption,
 } from "@/components/filters/CityFnsCascade";
+import { Z } from "@/lib/zIndex";
 import { Inbox, FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -412,7 +413,7 @@ export default function RequestsFeed({
           PageTitle already provides the 16px gap (#1716). pb-3 stays to keep
           the white chrome strip separated from the list below. */}
       {mode === "catalog" && (
-        <View className="bg-white border-b border-border px-4 pb-3" style={{ zIndex: 100 }}>
+        <View className="bg-white border-b border-border px-4 pb-3" style={{ zIndex: Z.STICKY }}>
           <CityFnsCascade
             mode="typeahead"
             value={filterValue}

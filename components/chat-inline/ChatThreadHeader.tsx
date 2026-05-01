@@ -10,6 +10,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Avatar } from "@/components/ui";
 import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import { colors } from "@/lib/theme";
+import { Z, layer } from "@/lib/zIndex";
 
 interface OtherUser {
   id: string;
@@ -170,7 +171,7 @@ export default function ChatThreadHeader({
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 10,
+            zIndex: Z.STICKY,
           }}
         >
           <View
@@ -184,9 +185,8 @@ export default function ChatThreadHeader({
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15,
               shadowRadius: 12,
-              elevation: 8,
+              ...layer("POPOVER"),
               minWidth: 200,
-              zIndex: 20,
             }}
           >
             <Pressable

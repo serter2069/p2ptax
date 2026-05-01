@@ -13,6 +13,7 @@ import { ChevronDown, ChevronUp, Search, X, MapPin, Building2 } from "lucide-rea
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 import { useCities } from "@/lib/hooks/useCities";
+import { Z, layer } from "@/lib/zIndex";
 
 export interface CityCascadeOption {
   id: string;
@@ -352,7 +353,7 @@ export default function CityFnsCascade({
 
         {/* Search input — hide once FNS is picked */}
         {!selFns && (
-          <View className="relative" style={{ zIndex: 10 }}>
+          <View className="relative" style={{ zIndex: Z.STICKY }}>
             <View className="flex-row items-center bg-white border border-border rounded-xl h-10 px-3">
               <Search size={14} color={colors.placeholder} style={{ marginRight: 8 }} />
               <TextInput
@@ -397,8 +398,7 @@ export default function CityFnsCascade({
                 style={{
                   top: 44,
                   maxHeight: 360,
-                  zIndex: 50,
-                  elevation: 8,
+                  ...layer("POPOVER"),
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.08,

@@ -7,6 +7,7 @@ import FileUploadZone, {
 } from "@/components/ui/FileUploadZone";
 import Input from "@/components/ui/Input";
 import { colors, radiusValue } from "@/lib/theme";
+import { Z } from "@/lib/zIndex";
 
 export type { PendingFile };
 
@@ -120,7 +121,7 @@ export default function ChatComposer({
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 50,
+            zIndex: Z.DRAG,
             backgroundColor: "rgba(59,130,246,0.10)",
             borderWidth: 2,
             borderStyle: "dashed",

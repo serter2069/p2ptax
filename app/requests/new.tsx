@@ -24,10 +24,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCities } from "@/lib/hooks/useCities";
 import { useServices } from "@/lib/hooks/useServices";
 import { colors } from "@/lib/theme";
-import CityFnsCascade, {
-  type CityFnsValue,
+import CityFnsServicePicker, {
   type FnsCascadeOption,
-} from "@/components/filters/CityFnsCascade";
+} from "@/components/shared/CityFnsServicePicker";
+import { Z } from "@/lib/zIndex";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import FileUploadSection, { type AttachedFile } from "@/components/requests/FileUploadSection";
 import { draftStorage } from "@/lib/draftStorage";
@@ -206,14 +206,6 @@ export default function CreateRequest() {
     cities,
   ]);
 
-  const handleCascadeChange = useCallback(
-    (v: CityFnsValue) => {
-      setSelectedCityId(v.cities[0] ?? null);
-      setSelectedFnsId(v.fns[0] ?? null);
-    },
-    []
-  );
-
   const titleValid = title.trim().length >= 3 && title.trim().length <= 100;
   const descriptionValid =
     description.trim().length >= 10 && description.trim().length <= 2000;
@@ -315,7 +307,7 @@ export default function CreateRequest() {
       <View
         className="bg-surface2"
         style={{
-          ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 10 } as object) : {}),
+          ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: Z.STICKY } as object) : {}),
         }}
       >
         {width < 640 && (
@@ -422,31 +414,27 @@ export default function CreateRequest() {
               </Text>
             </View>
 
-            {/* City + FNС typeahead — unified flow */}
             <View className="mb-4">
-              <Text className="text-sm font-medium text-text-base mb-1.5">
-                Инспекция ФНС <Text className="text-danger">*</Text>
-              </Text>
-              <CityFnsCascade
-                mode="typeahead"
-                value={{
-                  cities: selectedCityId ? [selectedCityId] : [],
-                  fns: selectedFnsId ? [selectedFnsId] : [],
-                }}
-                onChange={handleCascadeChange}
-                citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
-                fnsSource={fnsAll}
+              <CityFnsServicePicker
+                mode="single"
+                framed
+                frameLabel="Куда обращаемся"
+                cities={cities.map((c) => ({ id: c.id, name: c.name }))}
+                fnsAll={fnsAll}
                 services={services}
-                selectedServiceId={selectedServiceId}
-                onServiceChange={setSelectedServiceId}
+                value={{
+                  cityId: selectedCityId,
+                  fnsId: selectedFnsId,
+                  serviceId: selectedServiceId,
+                }}
+                onChange={(v) => {
+                  setSelectedCityId(v.cityId);
+                  setSelectedFnsId(v.fnsId);
+                  setSelectedServiceId(v.serviceId);
+                }}
+                submitted={submitted}
                 labelFns="Инспекция ФНС"
               />
-              {submitted && !selectedCityId && (
-                <Text className="text-xs text-danger mt-1">Выберите город</Text>
-              )}
-              {submitted && selectedCityId && !selectedFnsId && (
-                <Text className="text-xs text-danger mt-1">Выберите инспекцию ФНС</Text>
-              )}
             </View>
 
             <View className="mb-4">

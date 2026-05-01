@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Search, X, MapPin, Building2 } from "lucide-react-native";
 import { colors } from "@/lib/theme";
+import { Z, layer } from "@/lib/zIndex";
 
 export interface CityOpt {
   id: string;
@@ -153,7 +154,7 @@ export default function SpecialistSearchBar({
 
       {/* Search input */}
       {!selectedFns && (
-        <View className="relative" style={{ zIndex: 100 }}>
+        <View className="relative" style={{ zIndex: Z.STICKY }}>
           <View className="flex-row items-center bg-white border border-border rounded-xl h-10 px-3">
             <Search size={14} color={colors.placeholder} style={{ marginRight: 8 }} />
             <TextInput
@@ -208,8 +209,7 @@ export default function SpecialistSearchBar({
               style={{
                 top: 44,
                 maxHeight: 360,
-                zIndex: 200,
-                elevation: 8,
+                ...layer("POPOVER"),
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.08,

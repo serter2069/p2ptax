@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { colors } from "@/lib/theme";
 import { getShortServiceName, isAllCoreServicesSelected } from "@/lib/services";
+import { layer } from "@/lib/zIndex";
 import { MessageCircle, Bookmark } from "lucide-react-native";
 
 function formatSpecialistName(firstName: string | null, lastName: string | null): string {
@@ -327,7 +328,6 @@ function DesktopSpecialistRow({
             top: "100%",
             left: 0,
             right: 0,
-            zIndex: 50,
             backgroundColor: colors.white,
             borderWidth: 1,
             borderColor: colors.border,
@@ -337,7 +337,7 @@ function DesktopSpecialistRow({
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.12,
             shadowRadius: 12,
-            elevation: 8,
+            ...layer("POPOVER"),
             gap: 10,
           }}
           {...hoverProps}
