@@ -167,9 +167,10 @@ export default function UnifiedInbox() {
         <View className="flex-1 items-center" style={{ width: "100%", overflow: "hidden" }}>
           <View
             className="flex-1 flex-row"
+            // House rule: two-pane outer caps at 960 (CLAUDE.md).
             style={{
               width: "100%",
-              maxWidth: isWide ? 1200 : "100%",
+              maxWidth: isWide ? 960 : "100%",
               borderWidth: isWide ? 1 : 0,
               borderColor: colors.border,
               borderRadius: isWide ? 12 : 0,

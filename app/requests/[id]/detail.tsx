@@ -56,10 +56,7 @@ interface RequestDetailData {
 function FileList({ files, onPress }: { files: FileItem[]; onPress: (f: FileItem) => void }) {
   if (files.length === 0) return null;
   return (
-    <View
-      className="bg-white rounded-2xl p-4 mb-4"
-      style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
-    >
+    <Card className="mb-4">
       <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wider">
         Прикреплённые документы
       </Text>
@@ -83,7 +80,7 @@ function FileList({ files, onPress }: { files: FileItem[]; onPress: (f: FileItem
           <Download size={14} color={colors.placeholder} />
         </Pressable>
       ))}
-    </View>
+    </Card>
   );
 }
 
@@ -175,15 +172,12 @@ function RequestInfoBlock({ request }: { request: RequestDetailData }) {
       </View>
 
       {/* Description */}
-      <View
-        className="bg-white rounded-2xl p-4 mb-4"
-        style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
-      >
+      <Card className="mb-4">
         <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wider">
           Описание
         </Text>
         <Text className="text-base text-text-base leading-6">{request.description}</Text>
-      </View>
+      </Card>
     </>
   );
 }
@@ -442,15 +436,12 @@ function SpecialistView({
 function AnonymousView({ request, onLogin }: { request: Partial<RequestDetailData> & { title: string; description: string }; onLogin: () => void }) {
   return (
     <>
-      <View
-        className="bg-white rounded-2xl p-4 mb-4"
-        style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
-      >
+      <Card className="mb-4">
         <Text className="text-base font-semibold text-text-base mb-2">{request.title}</Text>
         <Text className="text-base text-text-mute leading-6">
           {request.description.slice(0, 200)}{request.description.length > 200 ? "…" : ""}
         </Text>
-      </View>
+      </Card>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Войти, чтобы откликнуться"
@@ -577,9 +568,10 @@ export default function RequestDetail() {
     }
   }, [id]);
 
-  // Desktop: full-width with horizontal padding, no maxWidth cap
+  // Desktop: cap at 960px to align with the rest of the app's content surfaces.
+  // House rule: detail pages share the 960/24 layout with lists/feeds (see CLAUDE.md).
   const containerStyle = isDesktop
-    ? { paddingHorizontal: 32 }
+    ? { maxWidth: 960, alignSelf: "center" as const, width: "100%" as const, paddingHorizontal: 24 }
     : undefined;
 
   if (authLoading || loading) {

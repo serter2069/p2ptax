@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { MessageCircle, ChevronLeft } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -194,7 +193,8 @@ export default function RequestMessages() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         {backRow}
-        <ResponsiveContainer>
+        {/* House rule: write-y form context caps at 720 with 24 padding (CLAUDE.md). */}
+        <View style={{ maxWidth: 720, alignSelf: "center", width: "100%", paddingHorizontal: 24 }}>
           {[0, 1, 2, 3].map((i) => (
             <View key={i} className="flex-row items-center py-3 border-b border-border">
               <View className="w-10 h-10 rounded-full bg-surface2" />
@@ -205,7 +205,7 @@ export default function RequestMessages() {
               <View className="h-3 bg-surface2 rounded ml-2" style={{ width: 32 }} />
             </View>
           ))}
-        </ResponsiveContainer>
+        </View>
       </SafeAreaView>
     );
   }
@@ -230,7 +230,8 @@ export default function RequestMessages() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       {backRow}
-      <ResponsiveContainer>
+      {/* House rule: write-y form context caps at 720 with 24 padding (CLAUDE.md). */}
+      <View style={{ flex: 1, maxWidth: 720, alignSelf: "center", width: "100%", paddingHorizontal: 24 }}>
         <FlatList
           data={threads}
           keyExtractor={(item) => item.id}
@@ -251,7 +252,7 @@ export default function RequestMessages() {
           }
           contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 24 : 0 }}
         />
-      </ResponsiveContainer>
+      </View>
     </SafeAreaView>
   );
 }

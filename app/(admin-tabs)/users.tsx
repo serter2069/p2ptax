@@ -340,7 +340,10 @@ export default function AdminUsers() {
                       onPress={() =>
                         setExpandedId(expandedId === user.id ? null : user.id)
                       }
-                      className="bg-white border border-border rounded-xl p-4 active:opacity-70"
+                      // House rule: card-level surfaces use rounded-2xl (CLAUDE.md).
+                      // When expanded, the bottom is squared so the body row fuses
+                      // visually — see `rounded-b-2xl` partner below.
+                      className={`bg-white border border-border ${expandedId === user.id ? "rounded-t-2xl" : "rounded-2xl"} p-4 active:opacity-70`}
                       style={cardShadow}
                     >
                       <View className="flex-row items-center">
@@ -391,7 +394,7 @@ export default function AdminUsers() {
 
                     {/* Expanded section */}
                     {expandedId === user.id && (
-                      <View className="bg-surface2 px-4 py-3 border border-t-0 border-border rounded-b-xl">
+                      <View className="bg-surface2 px-4 py-3 border border-t-0 border-border rounded-b-2xl">
                         <Text className="text-xs text-text-mute mb-1">
                           ID: {user.id}
                         </Text>

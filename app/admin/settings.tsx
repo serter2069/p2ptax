@@ -12,6 +12,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { AlertTriangle, Settings, ChevronLeft } from "lucide-react-native";
 import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
@@ -180,11 +181,12 @@ export default function AdminSettings() {
           contentContainerStyle={{ paddingBottom: 32 }}
         >
           <View
+            // House rule: forms cap at 720 with 24 padding (CLAUDE.md).
             style={{
               width: "100%",
               maxWidth: 720,
               alignSelf: "center",
-              paddingHorizontal: 16,
+              paddingHorizontal: 24,
               paddingTop: 16,
             }}
           >
@@ -203,8 +205,9 @@ export default function AdminSettings() {
               Изменения применяются ко всей платформе и вступают в силу сразу.
             </Text>
 
-            <View
-              className="rounded-2xl border bg-white mb-4"
+            <Card
+              className="mb-4"
+              padding="none"
               style={{
                 padding: 14,
                 borderColor: colors.warning,
@@ -227,9 +230,9 @@ export default function AdminSettings() {
                 Эти настройки затрагивают {totalUsers || "всех"} пользователей
                 платформы. Проверяйте дважды перед сохранением.
               </Text>
-            </View>
+            </Card>
 
-            <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+            <Card className="mb-4" padding="none" style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
               <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
                 Лимиты
               </Text>
@@ -262,7 +265,7 @@ export default function AdminSettings() {
                   loading={saving}
                 />
               </View>
-            </View>
+            </Card>
           </View>
         </ScrollView>
       )}

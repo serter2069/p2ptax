@@ -349,7 +349,8 @@ export default function RequestsFeed({
           paddingHorizontal: isDesktop ? 24 : 16,
           paddingTop: 12,
           paddingBottom: 100,
-          maxWidth: isDesktop ? 920 : undefined,
+          // House rule: content/list/feed pages cap at 960 with 24 padding (CLAUDE.md).
+          maxWidth: isDesktop ? 960 : undefined,
           alignSelf: isDesktop ? ("center" as const) : undefined,
           width: "100%" as const,
         }}

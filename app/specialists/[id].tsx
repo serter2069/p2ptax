@@ -358,14 +358,12 @@ export default function SpecialistPublicProfile() {
             </View>
           )}
           <View
+            // House rule: detail pages share 960 cap with feeds (CLAUDE.md).
             className={`${isDesktop ? "flex-row" : "flex-col"} w-full`}
-            style={{ maxWidth: 1200, gap: isDesktop ? spacing.xl : 0 }}
+            style={{ maxWidth: 960, gap: isDesktop ? spacing.xl : 0 }}
           >
-            {/* Main column */}
-            <View
-              className="flex-1"
-              style={{ maxWidth: isDesktop ? 860 : undefined }}
-            >
+            {/* Main column flows naturally inside 960 wrapper */}
+            <View className="flex-1">
               {isDesktop && (
                 <View className="flex-row items-center justify-between mb-4">
                   <Pressable

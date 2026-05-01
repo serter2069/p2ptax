@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ChevronUp, ChevronDown, Flag } from "lucide-react-native";
 import DesktopScreen from "@/components/layout/DesktopScreen";
+import Card from "@/components/ui/Card";
 import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
@@ -159,16 +160,13 @@ export default function AdminComplaints() {
     const isReviewing = reviewingId === item.id;
 
     return (
-      <View
-        className="bg-white border border-border rounded-xl mb-3 overflow-hidden"
+      <Card
+        className="mb-3"
+        padding="none"
         style={{
+          overflow: "hidden",
           borderLeftWidth: 3,
           borderLeftColor: item.status === "NEW" ? colors.warning : colors.success,
-          shadowColor: colors.text,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 6,
-          elevation: 3,
         }}
       >
         <Pressable
@@ -263,7 +261,7 @@ export default function AdminComplaints() {
             )}
           </View>
         )}
-      </View>
+      </Card>
     );
   };
 

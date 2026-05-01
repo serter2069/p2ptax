@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import { Send, UserCheck, ChevronLeft } from "lucide-react-native";
@@ -216,7 +215,8 @@ export default function SpecialistConfirmWrite() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: isDesktop ? 48 : 24 }}
       >
-        <ResponsiveContainer>
+        {/* House rule: forms (specialist write) cap at 720 with 24 padding (CLAUDE.md). */}
+        <View style={{ maxWidth: 720, alignSelf: "center", width: "100%", paddingHorizontal: 24 }}>
           {/* Subtitle */}
           <Text className="text-sm text-text-mute mt-4 mb-3">
             Прочитайте запрос и напишите первое сообщение
@@ -295,7 +295,7 @@ export default function SpecialistConfirmWrite() {
               onPress={() => router.back()}
             />
           </View>
-        </ResponsiveContainer>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

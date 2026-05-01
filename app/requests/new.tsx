@@ -340,11 +340,12 @@ export default function CreateRequest() {
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         <View
+          // House rule: forms (request creation) cap at 720 with 24 padding (CLAUDE.md).
           style={{
             width: "100%",
-            maxWidth: 640,
+            maxWidth: 720,
             alignSelf: "center",
-            paddingHorizontal: 16,
+            paddingHorizontal: 24,
             paddingTop: 8,
           }}
         >
