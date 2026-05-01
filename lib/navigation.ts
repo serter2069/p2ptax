@@ -60,7 +60,8 @@ export const ROUTES = {
   requests: "/requests",
   requestsNew: "/requests/new",
 
-  // Settings
+  // Profile (Wave 4 / profile-merged — replaces /settings; alias kept).
+  profile: "/profile",
   settings: "/settings",
 
   // Specialists

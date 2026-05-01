@@ -49,6 +49,8 @@ interface SpecialistTabProps {
   onShowTypePickerChange: (v: boolean) => void;
   onGoToProfileTab: () => void;
   onGoToWorkArea: () => void;
+  /** Fires when an About / Office input loses focus — used by autosave. */
+  onSpecialistBlur?: () => void;
 }
 
 export default function SpecialistTab({
@@ -75,6 +77,7 @@ export default function SpecialistTab({
   onShowTypePickerChange,
   onGoToProfileTab,
   onGoToWorkArea,
+  onSpecialistBlur,
 }: SpecialistTabProps) {
   if (!isSpecialistUser) {
     return <DisabledNotice onGoToProfileTab={onGoToProfileTab} />;
@@ -82,7 +85,11 @@ export default function SpecialistTab({
 
   return (
     <>
-      <AboutSection description={description} onChange={onDescriptionChange} />
+      <AboutSection
+        description={description}
+        onChange={onDescriptionChange}
+        onBlur={onSpecialistBlur}
+      />
       <FnsServicesSection
         specLoading={specLoading}
         fnsServices={specData?.fnsServices}
@@ -107,6 +114,7 @@ export default function SpecialistTab({
         workingHours={workingHours}
         onOfficeAddressChange={onOfficeAddressChange}
         onWorkingHoursChange={onWorkingHoursChange}
+        onBlur={onSpecialistBlur}
       />
     </>
   );

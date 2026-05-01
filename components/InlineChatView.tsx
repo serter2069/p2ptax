@@ -95,7 +95,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
             "Завершите профиль\n\nПеред тем как писать клиенту, завершите профиль специалиста."
           )
         ) {
-          router.push("/onboarding/name" as never);
+          router.push("/profile?firstTime=true&focus=specialist" as never);
         }
       } else {
         Alert.alert(
@@ -103,7 +103,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           "Перед тем как писать клиенту, завершите профиль специалиста.",
           [
             { text: "Отмена", style: "cancel" },
-            { text: "Завершить", onPress: () => router.push("/onboarding/name" as never) },
+            { text: "Завершить", onPress: () => router.push("/profile?firstTime=true&focus=specialist" as never) },
           ]
         );
       }

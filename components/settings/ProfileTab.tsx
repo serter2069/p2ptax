@@ -26,6 +26,8 @@ interface ProfileTabProps {
   onUploadEnd: () => void;
   onToggleSpecialist: (v: boolean) => void;
   onToggleAvailable: (v: boolean) => void;
+  /** Fires when name inputs lose focus — used by autosave on the merged Profile page. */
+  onPersonalBlur?: () => void;
 }
 
 export default function ProfileTab({
@@ -46,6 +48,7 @@ export default function ProfileTab({
   onUploadEnd,
   onToggleSpecialist,
   onToggleAvailable,
+  onPersonalBlur,
 }: ProfileTabProps) {
   const handleShareProfile = async () => {
     const url =
@@ -99,6 +102,7 @@ export default function ProfileTab({
             label="Имя"
             value={firstName}
             onChangeText={onFirstNameChange}
+            onBlur={onPersonalBlur ? () => onPersonalBlur() : undefined}
             placeholder="Введите имя"
             maxLength={50}
           />
@@ -110,6 +114,7 @@ export default function ProfileTab({
             label="Фамилия"
             value={lastName}
             onChangeText={onLastNameChange}
+            onBlur={onPersonalBlur ? () => onPersonalBlur() : undefined}
             placeholder="Введите фамилию"
             maxLength={50}
           />

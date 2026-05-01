@@ -71,7 +71,8 @@ export default function StrandedSpecialistBanner({ stranded }: StrandedSpecialis
   }, []);
 
   const handleFinish = useCallback(() => {
-    router.push("/onboarding/name" as never);
+    // Wave 4 / profile-merged — onboarding now lives inside /profile.
+    router.push("/profile?firstTime=true&focus=specialist" as never);
   }, [router]);
 
   if (!stranded || !hydrated || dismissed) return null;

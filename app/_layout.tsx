@@ -129,6 +129,10 @@ export default function RootLayout() {
 
             {/* Specialist flow */}
             <Stack.Screen name="requests/[id]/write" />
+            {/* Wave 4 / profile-merged: /settings is now an alias that
+                redirects to /profile. Both screens are registered so deep
+                links continue to work. */}
+            <Stack.Screen name="profile/index" />
             <Stack.Screen name="settings" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="legal/index" options={{ headerShown: false }} />

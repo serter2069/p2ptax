@@ -28,6 +28,10 @@ export interface InputProps {
   variant?: "line" | "bordered";
   /** Called when TextInput content size changes (multiline auto-expand). */
   onContentSizeChange?: TextInputProps["onContentSizeChange"];
+  /** Forwarded to TextInput.onBlur. The internal focus state is updated regardless. */
+  onBlur?: TextInputProps["onBlur"];
+  /** Forwarded to TextInput.onFocus. The internal focus state is updated regardless. */
+  onFocus?: TextInputProps["onFocus"];
 }
 
 // Design tokens for the "bordered" variant — imported from lib/theme (spec: #1589).
@@ -60,6 +64,8 @@ export default function Input({
   containerStyle,
   variant = "line",
   onContentSizeChange,
+  onBlur,
+  onFocus,
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
@@ -131,8 +137,14 @@ export default function Input({
           numberOfLines={numberOfLines}
           textAlignVertical={multiline ? "top" : undefined}
           onContentSizeChange={onContentSizeChange}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
           // data-line-input: web-only attribute that tells AppShell's global
           // focus CSS to skip box-shadow for this input. The wrapper View
           // already renders a border focus indicator, so the global
