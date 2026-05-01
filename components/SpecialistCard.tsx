@@ -1,7 +1,7 @@
 import { View, Text, Pressable } from "react-native";
-import { Bookmark, MessageCircle } from "lucide-react-native";
+import { Bookmark, MessageCircle, Shield, Clock } from "lucide-react-native";
 import Avatar from "@/components/ui/Avatar";
-import { colors } from "@/lib/theme";
+import { colors, gray } from "@/lib/theme";
 import { isAllCoreServicesSelected } from "@/lib/services";
 import { formatYear } from "@/lib/formatDate";
 
@@ -23,6 +23,15 @@ interface SpecialistCardProps {
   /** FNS-grouped services. When provided, used instead of flat services in vertical variant. */
   specialistFns?: FnsGroup[];
   description?: string | null;
+  /** Ex-FNS credentials (claimed or verified). Surfaces a green/grey badge under the name. */
+  exFns?: {
+    office: string | null;
+    startYear: number | null;
+    endYear: number | null;
+    verified: boolean;
+  };
+  /** Median response time in minutes. Already rounded to nearest 5 by the API. */
+  avgResponseMinutes?: number | null;
   onPress: (id: string) => void;
   variant?: "vertical" | "horizontal";
   /** @deprecated Use variant="horizontal" instead */
@@ -32,6 +41,60 @@ interface SpecialistCardProps {
   onWrite?: (id: string) => void;
   /** When set, only the matching FNS group is shown (cascade narrows to active filter). */
   activeFnsId?: string | null;
+}
+
+/**
+ * Trust signal: ex-FNS inspector badge. Verified === true → green pill;
+ * unverified claim → muted gray. Hidden when no startYear is set.
+ */
+function ExFnsBadge({
+  office,
+  startYear,
+  endYear,
+  verified,
+}: {
+  office: string | null;
+  startYear: number | null;
+  endYear: number | null;
+  verified: boolean;
+}) {
+  if (!startYear) return null;
+  const period = endYear ? `${startYear}-${endYear}` : `${startYear}-наст. вр.`;
+  const officePart = office ? `${office} · ` : "";
+  const bg = verified ? colors.successSoft : gray[100];
+  const fg = verified ? colors.success : colors.textMuted;
+  return (
+    <View
+      className="flex-row items-center self-start rounded-full"
+      style={{
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        backgroundColor: bg,
+        marginTop: 4,
+      }}
+    >
+      <Shield size={11} color={fg} />
+      <Text
+        className="text-xs font-medium"
+        style={{ color: fg }}
+        numberOfLines={1}
+      >
+        Ex-ФНС {officePart}{period}
+      </Text>
+    </View>
+  );
+}
+
+function ResponseTimeRow({ minutes }: { minutes: number }) {
+  return (
+    <View className="flex-row items-center" style={{ gap: 4, marginTop: 4 }}>
+      <Clock size={11} color={colors.textMuted} />
+      <Text className="text-xs" style={{ color: colors.textMuted }}>
+        Отвечает в среднем за {minutes} мин
+      </Text>
+    </View>
+  );
 }
 
 function formatSpecialistName(firstName: string | null, lastName: string | null): string {
@@ -51,6 +114,8 @@ export default function SpecialistCard({
   cities,
   specialistFns,
   description,
+  exFns,
+  avgResponseMinutes,
   onPress,
   variant,
   horizontal = false,
@@ -170,6 +235,17 @@ export default function SpecialistCard({
             >
               На сайте с {year}
             </Text>
+          ) : null}
+          {exFns ? (
+            <ExFnsBadge
+              office={exFns.office}
+              startYear={exFns.startYear}
+              endYear={exFns.endYear}
+              verified={exFns.verified}
+            />
+          ) : null}
+          {typeof avgResponseMinutes === "number" && avgResponseMinutes > 0 ? (
+            <ResponseTimeRow minutes={avgResponseMinutes} />
           ) : null}
         </View>
       </View>

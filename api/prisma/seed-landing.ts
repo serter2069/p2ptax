@@ -68,6 +68,40 @@ async function setOnlyService(specialistId: string, serviceId: string) {
   }
 }
 
+// Verified ex-FNS credentials for the 4 landing specialists. These power the
+// green "Ex-ФНС {office} · YYYY-YYYY" badge on cards and trust pillars.
+const FNS_CREDS = {
+  yulia:    { office: "ИФНС №46 по г. Москве",                          start: 2014, end: 2021, responseMin: 12 },
+  vladimir: { office: "ИФНС №7 по г. Москве",                           start: 2008, end: 2020, responseMin: 18 },
+  yury:     { office: "Межрайонная ИФНС №39 по Республике Башкортостан", start: 2012, end: 2022, responseMin: 8 },
+  svetlana: { office: "ИФНС №25 по г. Москве",                          start: 2015, end: 2023, responseMin: 15 },
+} as const;
+
+async function setFnsCredentials(
+  userId: string,
+  c: { office: string; start: number; end: number; responseMin: number }
+) {
+  // Profile may not exist for a user — upsert by userId (which is unique).
+  await prisma.specialistProfile.upsert({
+    where: { userId },
+    update: {
+      exFnsStartYear: c.start,
+      exFnsEndYear: c.end,
+      exFnsOffice: c.office,
+      verifiedExFns: true,
+      cachedAvgResponseMinutes: c.responseMin,
+    },
+    create: {
+      userId,
+      exFnsStartYear: c.start,
+      exFnsEndYear: c.end,
+      exFnsOffice: c.office,
+      verifiedExFns: true,
+      cachedAvgResponseMinutes: c.responseMin,
+    },
+  });
+}
+
 async function main() {
   console.log("=== seed-landing: fixing featured specialist cards ===");
 
@@ -77,7 +111,8 @@ async function main() {
     where: { id: SPECIALIST_IDS.yulia },
     data: { avatarUrl: AVATARS.yulia },
   });
-  console.log("Юлия Зайцева: avatar updated → Камеральная проверка (unchanged)");
+  await setFnsCredentials(SPECIALIST_IDS.yulia, FNS_CREDS.yulia);
+  console.log("Юлия Зайцева: avatar + ex-FNS credentials updated");
 
   // 2. Юрий Кондратьев — set ONLY Выездная проверка + Unsplash avatar
   console.log("Юрий Кондратьев: setting Выездная проверка…");
@@ -86,7 +121,8 @@ async function main() {
     where: { id: SPECIALIST_IDS.yury },
     data: { avatarUrl: AVATARS.yury },
   });
-  console.log("Юрий Кондратьев: done");
+  await setFnsCredentials(SPECIALIST_IDS.yury, FNS_CREDS.yury);
+  console.log("Юрий Кондратьев: done + ex-FNS credentials");
 
   // 3. Владимир Лебедев — set ONLY Отдел оперативного контроля
   console.log("Владимир Лебедев: setting Отдел оперативного контроля…");
@@ -95,11 +131,17 @@ async function main() {
     where: { id: SPECIALIST_IDS.vladimir },
     data: { avatarUrl: AVATARS.vladimir },
   });
-  console.log("Владимир Лебедев: done");
+  await setFnsCredentials(SPECIALIST_IDS.vladimir, FNS_CREDS.vladimir);
+  console.log("Владимир Лебедев: done + ex-FNS credentials");
 
-  // 4. Светлана Орлова — set ONLY Отдел оперативного контроля (kept for future use)
-  // NOTE: Светлана is not in the top-3 featured currently; skip to avoid conflict.
-  // await setOnlyService(SPECIALIST_IDS.svetlana, SERVICE_IDS.okk);
+  // 4. Светлана Орлова — also set credentials so verified badge surfaces
+  //    everywhere her card renders (catalog, search, etc.)
+  await prisma.user.update({
+    where: { id: SPECIALIST_IDS.svetlana },
+    data: { avatarUrl: AVATARS.svetlana },
+  });
+  await setFnsCredentials(SPECIALIST_IDS.svetlana, FNS_CREDS.svetlana);
+  console.log("Светлана Орлова: ex-FNS credentials updated");
 
   console.log("=== seed-landing complete ===");
 }

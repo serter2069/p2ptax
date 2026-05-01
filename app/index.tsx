@@ -10,6 +10,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroBlock, { type HeroSpecialistPreview } from "@/components/landing/HeroBlock";
 import TrustStrip from "@/components/landing/TrustStrip";
+import TrustPillarsSection from "@/components/landing/TrustPillarsSection";
 import ServicesSection from "@/components/landing/ServicesSection";
 import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import CasesSection from "@/components/landing/CasesSection";
@@ -220,6 +221,10 @@ export default function LandingScreen() {
           onSecondaryCta={goCatalog}
         />
 
+        {/* Trust pillars — moat sits directly below hero so ex-FNS / NDA / no-result
+            messaging is visible above the fold on a typical desktop landing. */}
+        <TrustPillarsSection isDesktop={isDesktop} />
+
         <TrustStrip
           isDesktop={isDesktop}
           specialistsCount={counts?.specialistsCount ?? 0}
@@ -227,15 +232,15 @@ export default function LandingScreen() {
           resolvedCases={counts?.resolvedCases ?? counts?.consultationsCount ?? 0}
         />
 
-        <ServicesSection isDesktop={isDesktop} />
-
-        <HowItWorksFlow isDesktop={isDesktop} />
-
         <CasesSection
           isDesktop={isDesktop}
           cases={cases}
           onCreateRequest={goCreateRequest}
         />
+
+        <HowItWorksFlow isDesktop={isDesktop} />
+
+        <ServicesSection isDesktop={isDesktop} />
 
         <SpecialistCTASection
           isDesktop={isDesktop}

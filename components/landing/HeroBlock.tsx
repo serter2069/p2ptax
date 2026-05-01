@@ -151,14 +151,16 @@ export default function HeroBlock({
           <Text
             style={{
               color: colors.text,
-              fontSize: isDesktop ? 56 : 36,
-              lineHeight: isDesktop ? 64 : 42,
+              fontSize: isDesktop ? 52 : 34,
+              lineHeight: isDesktop ? 60 : 40,
               fontWeight: "800",
               letterSpacing: -1,
             }}
           >
-            Специалисты по вашей ФНС.{"\n"}
-            <Text style={{ color: colors.primary }}>Не юристы из интернета.</Text>
+            Получили требование от ФНС?{"\n"}
+            <Text style={{ color: colors.primary }}>
+              Защитят ex-инспекторы — за 30 минут получите план.
+            </Text>
           </Text>
 
           <Text
@@ -171,9 +173,8 @@ export default function HeroBlock({
               maxWidth: 540,
             }}
           >
-            Пришло требование от налоговой? Не делайте резких движений.
-            Практики с опытом в камеральных, выездных и ОКК помогут пройти
-            проверку. Бесплатная первая консультация.
+            Все специалисты на платформе — бывшие сотрудники ФНС. Знают
+            процедуры изнутри, защищали налогоплательщиков от знакомых им коллег.
           </Text>
 
           <View
@@ -185,8 +186,8 @@ export default function HeroBlock({
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Найти специалиста"
-              onPress={onSecondaryCta}
+              accessibilityLabel="Подобрать специалиста"
+              onPress={onPrimaryCta}
               className="rounded-xl items-center justify-center"
               style={{
                 height: 56,
@@ -195,27 +196,28 @@ export default function HeroBlock({
               }}
             >
               <Text className="text-white font-semibold" style={{ fontSize: 16 }}>
-                Найти специалиста
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Создать запрос"
-              onPress={onPrimaryCta}
-              className="rounded-xl items-center justify-center"
-              style={{
-                height: 56,
-                paddingHorizontal: 32,
-                borderWidth: 2,
-                borderColor: gray[300],
-                backgroundColor: colors.white,
-              }}
-            >
-              <Text className="font-semibold" style={{ fontSize: 16, color: colors.text }}>
-                Создать запрос
+                Подобрать специалиста
               </Text>
             </Pressable>
           </View>
+
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Посмотреть всех специалистов"
+            onPress={onSecondaryCta}
+            style={{ marginTop: 16, alignSelf: "flex-start" }}
+          >
+            <Text
+              style={{
+                color: colors.primary,
+                fontSize: 13,
+                lineHeight: 18,
+                textDecorationLine: "underline",
+              }}
+            >
+              или посмотреть всех специалистов
+            </Text>
+          </Pressable>
 
           <Text
             style={{
