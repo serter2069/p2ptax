@@ -2,6 +2,7 @@ import { View, Text, Pressable, Image } from "react-native";
 import { Bookmark, MessageCircle } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import { isAllCoreServicesSelected } from "@/lib/services";
+import { formatYear } from "@/lib/formatDate";
 
 interface FnsGroup {
   fnsId: string;
@@ -66,7 +67,7 @@ export default function SpecialistCard({
   const resolvedVariant = variant ?? (horizontal ? "horizontal" : "vertical");
   const name = formatSpecialistName(firstName, lastName);
   const initials = getInitials(firstName, lastName);
-  const year = createdAt ? new Date(createdAt).getFullYear() : null;
+  const year = createdAt ? formatYear(createdAt) : null;
   const desc = description
     ? description.length > 120
       ? description.slice(0, 120) + "..."

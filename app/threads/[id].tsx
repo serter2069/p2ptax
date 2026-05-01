@@ -43,7 +43,7 @@ export default function ChatThread() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
       <View
-        className="flex-row items-center px-3 py-2 border-b border-gray-100"
+        className="flex-row items-center px-3 py-2 border-b border-border"
         style={{ minHeight: 48 }}
       >
         <Pressable

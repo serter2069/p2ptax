@@ -23,6 +23,7 @@ import { api, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, BREAKPOINT } from "@/lib/theme";
 import { getShortServiceName } from "@/lib/services";
+import { formatDateLong } from "@/lib/formatDate";
 
 import { FileItem } from "@/components/requests/detail/types";
 
@@ -57,7 +58,7 @@ function FileList({ files, onPress }: { files: FileItem[]; onPress: (f: FileItem
       className="bg-white rounded-2xl p-4 mb-4"
       style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
     >
-      <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wide">
+      <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wider">
         Прикреплённые документы
       </Text>
       {files.map((file) => (
@@ -143,11 +144,7 @@ function CloseConfirmModal({
 // ─── Shared info block ────────────────────────────────────────────────────────
 
 function RequestInfoBlock({ request }: { request: RequestDetailData }) {
-  const createdDate = new Date(request.createdAt).toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const createdDate = formatDateLong(request.createdAt);
 
   const serviceName = request.service ? getShortServiceName(request.service.name) : null;
 
@@ -180,7 +177,7 @@ function RequestInfoBlock({ request }: { request: RequestDetailData }) {
         className="bg-white rounded-2xl p-4 mb-4"
         style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
       >
-        <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
+        <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wider">
           Описание
         </Text>
         <Text className="text-base text-text-base leading-6">{request.description}</Text>
@@ -381,7 +378,7 @@ function SpecialistView({
           className="bg-white rounded-2xl p-4 mb-4"
           style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
         >
-          <Text className="text-xs font-semibold text-text-mute mb-1 uppercase tracking-wide">Клиент</Text>
+          <Text className="text-xs font-semibold text-text-mute mb-1 uppercase tracking-wider">Клиент</Text>
           <Text className="text-base text-text-base">{request.client.name}</Text>
         </View>
       )}
@@ -407,7 +404,7 @@ function SpecialistView({
               className="bg-white rounded-2xl p-4 mb-3"
               style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
             >
-              <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
+              <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wider">
                 Откликнуться
               </Text>
               <Input

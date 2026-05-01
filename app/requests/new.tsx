@@ -15,7 +15,7 @@ import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, X } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { apiPost, api } from "@/lib/api";
@@ -44,13 +44,25 @@ interface RequestDraft {
   serviceId: string | null;
 }
 
+interface SpecialistMini {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
 export default function CreateRequest() {
   const router = useRouter();
   const nav = useTypedRouter();
   const { isAuthenticated, isLoading: authLoading, token } = useAuth();
   const { width } = useWindowDimensions();
-  const params = useLocalSearchParams<{ restore?: string }>();
+  const params = useLocalSearchParams<{ restore?: string; specialistId?: string }>();
   const restoreMode = params.restore === "1";
+
+  // Specialist targeting — optional, set via specialistId query param
+  const [targetSpecialistId, setTargetSpecialistId] = useState<string | null>(
+    typeof params.specialistId === "string" ? params.specialistId : null
+  );
+  const [targetSpecialist, setTargetSpecialist] = useState<SpecialistMini | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -71,6 +83,20 @@ export default function CreateRequest() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+
+  // Fetch targeted specialist name when specialistId is present.
+  useEffect(() => {
+    if (!targetSpecialistId) {
+      setTargetSpecialist(null);
+      return;
+    }
+    api<{ id: string; firstName: string | null; lastName: string | null }>(
+      `/api/specialists/${targetSpecialistId}`,
+      { noAuth: true }
+    )
+      .then((s) => setTargetSpecialist({ id: s.id, firstName: s.firstName, lastName: s.lastName }))
+      .catch(() => setTargetSpecialist(null));
+  }, [targetSpecialistId]);
 
   // Load all FNS offices once cities are available — needed for typeahead.
   useEffect(() => {
@@ -200,6 +226,7 @@ export default function CreateRequest() {
         description: description.trim(),
         fileIds,
         isPublic,
+        ...(targetSpecialistId ? { targetSpecialistId } : {}),
       });
       // Clear draft on success.
       await draftStorage.del(DRAFT_KEY).catch(() => {});
@@ -225,7 +252,7 @@ export default function CreateRequest() {
     } finally {
       setSubmitting(false);
     }
-  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, isPublic]);
+  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, isPublic, targetSpecialistId]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitted(true);
@@ -307,6 +334,35 @@ export default function CreateRequest() {
               <Text className="text-sm text-accent">
                 Подтверждение по email кодом. Без паролей.
               </Text>
+            </View>
+          )}
+
+          {/* Specialist targeting banner */}
+          {targetSpecialistId && (
+            <View
+              className="flex-row items-center justify-between rounded-xl px-4 py-3 mb-4 border"
+              style={{ backgroundColor: colors.greenSoft, borderColor: colors.success }}
+            >
+              <View className="flex-row items-center flex-1" style={{ gap: 8 }}>
+                <View
+                  className="rounded-full"
+                  style={{ width: 8, height: 8, backgroundColor: colors.success, flexShrink: 0 }}
+                />
+                <Text className="text-sm font-medium flex-1" style={{ color: colors.success }}>
+                  {targetSpecialist
+                    ? `Запрос для: ${[targetSpecialist.firstName, targetSpecialist.lastName].filter(Boolean).join(" ")}`
+                    : "Адресован специалисту"}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Убрать адресацию специалисту"
+                onPress={() => setTargetSpecialistId(null)}
+                className="ml-2 p-1"
+                hitSlop={8}
+              >
+                <X size={14} color={colors.success} />
+              </Pressable>
             </View>
           )}
 

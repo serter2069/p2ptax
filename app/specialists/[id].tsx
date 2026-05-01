@@ -84,7 +84,7 @@ export default function SpecialistPublicProfile() {
     if (!isAuthenticated) {
       router.push(`/login?returnTo=/specialists/${id}` as never);
     } else {
-      nav.routes.requestsNew();
+      nav.any(`/requests/new?specialistId=${id}`);
     }
   }, [isAuthenticated, router, id, nav]);
 

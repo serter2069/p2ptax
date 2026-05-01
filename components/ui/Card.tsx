@@ -1,14 +1,19 @@
-import { View, Pressable } from "react-native";
+import { View, Pressable, type ViewStyle } from "react-native";
 import { colors } from "../../lib/theme";
 
 export interface CardProps {
   children: React.ReactNode;
   onPress?: () => void;
   variant?: "default" | "outlined";
-  padding?: "sm" | "md" | "lg";
+  padding?: "none" | "sm" | "md" | "lg";
+  /** Extra className passed to the outer View (e.g. "mb-4 mt-2"). */
+  className?: string;
+  /** Extra inline style for the outer View (e.g. overflow: "hidden"). */
+  style?: ViewStyle;
 }
 
 const paddingMap = {
+  none: 0,
   sm: 12,
   md: 16,
   lg: 24,
@@ -19,10 +24,12 @@ export default function Card({
   onPress,
   variant = "default",
   padding = "md",
+  className,
+  style,
 }: CardProps) {
-  const variantClass = "bg-white rounded-2xl border";
+  const variantClass = `bg-white rounded-2xl border${className ? ` ${className}` : ""}`;
 
-  const variantBorderColor = variant === "default" ? colors.border : colors.border;
+  const variantBorderColor = colors.border;
 
   const shadowStyle =
     variant === "default"
@@ -38,7 +45,7 @@ export default function Card({
   const content = (
     <View
       className={variantClass}
-      style={[{ padding: paddingMap[padding], borderColor: variantBorderColor, backgroundColor: colors.surface }, shadowStyle]}
+      style={[{ padding: paddingMap[padding], borderColor: variantBorderColor, backgroundColor: colors.surface }, shadowStyle, style]}
     >
       {children}
     </View>
