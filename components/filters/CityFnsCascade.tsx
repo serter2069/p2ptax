@@ -632,7 +632,7 @@ export default function CityFnsCascade({
                 accessibilityRole="button"
                 accessibilityLabel="Выбрать инспекцию"
                 onPress={() => setFnsOpen((v) => !v)}
-                className="h-12 border border-border rounded-xl bg-white px-4 flex-row items-center justify-between"
+                className="h-10 border border-border rounded-xl bg-white px-4 flex-row items-center justify-between"
               >
                 <Text
                   className={
@@ -657,7 +657,7 @@ export default function CityFnsCascade({
                 accessibilityRole="button"
                 accessibilityLabel="Выбрать инспекции"
                 onPress={() => setFnsOpen((v) => !v)}
-                className="min-h-12 border border-border rounded-xl bg-white px-4 py-2 flex-row items-center justify-between"
+                className="min-h-10 border border-border rounded-xl bg-white px-4 py-2 flex-row items-center justify-between"
               >
                 <Text
                   className={
@@ -779,7 +779,7 @@ export default function CityFnsCascade({
               accessibilityRole="button"
               accessibilityLabel="Сбросить фильтры"
               onPress={clearAll}
-              className="h-12 px-3 rounded-xl border border-border items-center justify-center flex-row mt-6"
+              className="h-10 px-3 rounded-xl border border-border items-center justify-center flex-row mt-6"
               style={{ alignSelf: isDesktop ? "flex-start" : "flex-start" }}
             >
               <X size={14} color={colors.textSecondary} />

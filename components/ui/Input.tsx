@@ -75,23 +75,29 @@ export default function Input({
       ? (variant === "bordered" ? INPUT_BORDER_FOCUS : colors.accent)
       : (variant === "bordered" ? INPUT_BORDER_DEFAULT : colors.borderStrong);
 
+  // Unified rhythm (#1716): single-line inputs are 40px tall (h-10) across the
+  // app — search bars, form fields, dropdowns. This matches the search-bar
+  // height already used by CityFnsCascade and the filter chips, so one
+  // <Input>'s height never differs from another input on a different page.
+  // Multiline keeps minHeight 80 (≈4 rows) so descriptions feel like a
+  // textarea, not a single-line that wraps.
   const wrapperStyle: ViewStyle = variant === "bordered"
     ? {
         flexDirection: "row",
         alignItems: multiline ? "flex-start" : "center",
-        minHeight: multiline ? 80 : 48,
+        minHeight: multiline ? 80 : 40,
         width: "100%",
         borderWidth: 1,
         borderColor,
         borderRadius: 8,
         backgroundColor: editable ? inputColors.bgEditable : inputColors.bgReadOnly,
         paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingVertical: multiline ? 8 : 0,
       }
     : {
         flexDirection: "row",
         alignItems: "center",
-        minHeight: multiline ? 80 : 48,
+        minHeight: multiline ? 80 : 40,
         // Line-style: no top/left/right border, no radius, transparent bg.
         borderTopWidth: 0,
         borderLeftWidth: 0,
@@ -153,11 +159,11 @@ export default function Input({
           {...(Platform.OS === "web" ? { "data-line-input": true } as any : {})}
           style={{
             flex: 1,
-            // On web the <input> intrinsic height is ~18px. We force a
-            // minHeight of 44 so the full tap target area is interactive
-            // (Apple HIG / WCAG 2.5.5 — minimum 44x44 touch target).
+            // On web the <input> intrinsic height is ~18px. Stretch to fill the
+            // 40px wrapper so the full surface is interactive. (Native already
+            // gets a tall touch target via the wrapper minHeight.)
             ...(Platform.OS === "web" && !multiline ? {
-              minHeight: 44,
+              minHeight: 40,
               alignSelf: "stretch",
             } : {}),
             fontSize: 14,

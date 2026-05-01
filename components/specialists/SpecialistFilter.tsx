@@ -32,9 +32,12 @@ export default function SpecialistFilter({
   value,
   onChange,
 }: Props) {
+  // No top padding here: PageTitle already provides the canonical 16px gap
+  // (#1716). Adding pt-2 would double the gap on /specialists and make the
+  // search bar sit lower than on /requests, /my-requests, etc.
   return (
     <View>
-      <View className="px-4 pt-2" style={{ zIndex: 100 }}>
+      <View className="px-4" style={{ zIndex: 100 }}>
         <CityFnsCascade
           mode="typeahead"
           value={value}
