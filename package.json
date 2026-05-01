@@ -11,7 +11,9 @@
     "lint:fix": "eslint . --fix",
     "audit:visual": "node scripts/visual-audit.mjs",
     "audit:structure": "echo 'See .audit/structure-audit.md'",
-    "check:chrome": "bash scripts/check-visual-touched.sh"
+    "check:chrome": "bash scripts/check-visual-touched.sh",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -39,6 +41,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.59.1",
     "@types/react": "~19.1.0",
     "eslint": "^9.39.4",
     "eslint-plugin-import": "^2.32.0",
