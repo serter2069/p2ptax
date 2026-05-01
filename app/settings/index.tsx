@@ -12,7 +12,6 @@ import { colors } from "@/lib/theme";
 import { useSettingsForm, SettingsTab } from "@/lib/useSettingsForm";
 import ProfileTab from "@/components/settings/ProfileTab";
 import SpecialistTab from "@/components/settings/SpecialistTab";
-import InlineWorkArea from "@/components/settings/InlineWorkArea";
 
 /**
  * Unified Settings page — tabbed layout (Wave 2/F, refactored Wave 4/J).
@@ -113,29 +112,11 @@ export default function UnifiedSettings() {
   const initialTab: SettingsTab = isValidTab(params.tab) ? params.tab : "profile";
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
 
-  // Inline onboarding — when true, work-area step renders inside settings content.
-  const [inlineOnboarding, setInlineOnboarding] = useState(false);
-
-  const handleStartInlineOnboarding = useCallback(() => {
-    setActiveTab("profile");
-    setInlineOnboarding(true);
-  }, []);
-
-  const handleInlineOnboardingDone = useCallback(() => {
-    setInlineOnboarding(false);
-    // Reload specialist data is handled by the form hook when it re-mounts
-    // or via the updateUser call inside InlineWorkArea.
-  }, []);
-
-  const handleInlineOnboardingCancel = useCallback(() => {
-    setInlineOnboarding(false);
-  }, []);
-
   const form = useSettingsForm({
     ready,
     activeTab,
     onTabChange: setActiveTab,
-    onStartInlineOnboarding: handleStartInlineOnboarding,
+    // No inline onboarding — navigate to /onboarding/work-area?from=settings instead.
   });
   const { router, user, isSpecialistUser } = form;
 
@@ -189,28 +170,17 @@ export default function UnifiedSettings() {
       )}
       <PageTitle title="Настройки" />
 
-      {/* Tabs hidden during inline onboarding — content takes full screen */}
-      {!inlineOnboarding && (
-        <SettingsTabs
-          activeTab={activeTab}
-          onChange={handleTabChange}
-          canEditSpecialist={isSpecialistUser}
-        />
-      )}
+      <SettingsTabs
+        activeTab={activeTab}
+        onChange={handleTabChange}
+        canEditSpecialist={isSpecialistUser}
+      />
 
-      {/* Inline work-area onboarding — renders inside settings, sidebar stays visible */}
-      {inlineOnboarding ? (
-        <InlineWorkArea
-          onDone={handleInlineOnboardingDone}
-          onCancel={handleInlineOnboardingCancel}
-        />
-      ) : (
-        <>
-          <ScrollView
-            className="flex-1"
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: form.showSaveBar ? 96 : 32 }}
-          >
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: form.showSaveBar ? 96 : 32 }}
+      >
             <View
               style={{
                 width: "100%",
@@ -266,7 +236,7 @@ export default function UnifiedSettings() {
                   onContactSavingChange={form.setContactSaving}
                   onShowTypePickerChange={form.setShowTypePicker}
                   onGoToProfileTab={() => handleTabChange("profile")}
-                  onGoToWorkArea={handleStartInlineOnboarding}
+                  onGoToWorkArea={form.handleGoToWorkArea}
                 />
               )}
 
@@ -295,38 +265,36 @@ export default function UnifiedSettings() {
               <Text className="text-xs text-text-dim text-center mb-4">
                 Версия {Constants.expoConfig?.version ?? "1.0.0"}
               </Text>
-            </View>
-          </ScrollView>
+          </View>
+      </ScrollView>
 
-          {form.showSaveBar ? (
-            <View
-              className="border-t border-border bg-white px-6 py-3 flex-row justify-end items-center"
-              style={{
-                position: Platform.OS === "web" ? ("sticky" as never) : undefined,
-                bottom: 0,
-              }}
-            >
-              <View
-                style={{
-                  width: "100%",
-                  maxWidth: 720,
-                  flexDirection: "row",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <View style={{ minWidth: 180 }}>
-                  <Button
-                    label="Сохранить"
-                    onPress={form.handleSave}
-                    disabled={form.saving}
-                    loading={form.saving}
-                  />
-                </View>
-              </View>
+      {form.showSaveBar ? (
+        <View
+          className="border-t border-border bg-white px-6 py-3 flex-row justify-end items-center"
+          style={{
+            position: Platform.OS === "web" ? ("sticky" as never) : undefined,
+            bottom: 0,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 720,
+              flexDirection: "row",
+              justifyContent: "flex-end",
+            }}
+          >
+            <View style={{ minWidth: 180 }}>
+              <Button
+                label="Сохранить"
+                onPress={form.handleSave}
+                disabled={form.saving}
+                loading={form.saving}
+              />
             </View>
-          ) : null}
-        </>
-      )}
+          </View>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }

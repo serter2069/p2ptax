@@ -167,6 +167,7 @@ export default function ContactMethodsList({
           )}
           <View className="mb-3">
             <Input
+              variant="bordered"
               label="Значение"
               value={newContactValue}
               onChangeText={onNewContactValueChange}
