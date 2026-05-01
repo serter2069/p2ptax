@@ -431,15 +431,15 @@ export default function RequestsFeed({
             style={{
               backgroundColor: colors.primary,
               minHeight: 40,
+              minWidth: isDesktop ? 200 : undefined,
               justifyContent: "center",
               alignItems: "center",
               borderRadius: 12,
-              paddingHorizontal: 16,
-              flex: isDesktop ? 0 : undefined,
+              paddingHorizontal: 20,
               alignSelf: isDesktop ? "flex-start" : "stretch",
             }}
           >
-            <Text className="text-white font-semibold text-sm">+ Создать запрос</Text>
+            <Text numberOfLines={1} className="text-white font-semibold text-sm">+ Создать запрос</Text>
           </Pressable>
 
           <Pressable
