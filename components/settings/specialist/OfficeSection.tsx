@@ -21,6 +21,7 @@ export default function OfficeSection({
       </Text>
       <View className="mb-3">
         <Input
+          variant="bordered"
           label="Адрес офиса"
           value={officeAddress}
           onChangeText={onOfficeAddressChange}
@@ -28,6 +29,7 @@ export default function OfficeSection({
         />
       </View>
       <Input
+        variant="bordered"
         label="Часы работы"
         value={workingHours}
         onChangeText={onWorkingHoursChange}

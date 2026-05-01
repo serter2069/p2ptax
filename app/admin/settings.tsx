@@ -15,7 +15,9 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
+import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTypedRouter } from "@/lib/navigation";
 import { API_URL, api } from "@/lib/api";
 import { colors, textStyle } from "@/lib/theme";
 
@@ -42,13 +44,26 @@ const SETTINGS_FIELDS: SettingField[] = [
 ];
 
 export default function AdminSettings() {
-  const { token } = useAuth();
+  const { token, isAuthenticated, isLoading: authLoading, isAdminUser } = useAuth();
   const router = useRouter();
+  const nav = useTypedRouter();
   const [values, setValues] = useState<Record<string, string>>({});
   const [stats, setStats] = useState<AdminExtra | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
+
+  // Guard: redirect non-admin and anon callers (#P1)
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      nav.replaceAny({ pathname: "/login", params: { returnTo: "/admin/settings" } });
+      return;
+    }
+    if (!isAdminUser) {
+      nav.replaceRoutes.tabsMyRequests();
+    }
+  }, [authLoading, isAuthenticated, isAdminUser]);
 
   const fetchSettings = useCallback(async () => {
     if (!token) return;
@@ -80,9 +95,15 @@ export default function AdminSettings() {
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated || !isAdminUser) return;
     fetchSettings();
     fetchStats();
-  }, [fetchSettings, fetchStats]);
+  }, [fetchSettings, fetchStats, isAuthenticated, isAdminUser]);
+
+  // All hooks above — early return for guard is safe here
+  if (authLoading || !isAuthenticated || !isAdminUser) {
+    return <LoadingState />;
+  }
 
   const handleSave = async () => {
     if (!token) return;

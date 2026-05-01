@@ -16,6 +16,7 @@ export default function AboutSection({
         О себе
       </Text>
       <Input
+        variant="bordered"
         label="Описание"
         value={description}
         onChangeText={onChange}

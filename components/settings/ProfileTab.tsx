@@ -158,6 +158,7 @@ export default function ProfileTab({
 
         <View className="mb-3">
           <Input
+            variant="bordered"
             label="Имя"
             value={firstName}
             onChangeText={onFirstNameChange}
@@ -168,6 +169,7 @@ export default function ProfileTab({
 
         <View className="mb-3">
           <Input
+            variant="bordered"
             label="Фамилия"
             value={lastName}
             onChangeText={onLastNameChange}

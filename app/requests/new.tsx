@@ -18,16 +18,15 @@ import { useTypedRouter } from "@/lib/navigation";
 import { ChevronLeft } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { apiPost } from "@/lib/api";
+import { apiPost, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCities } from "@/lib/hooks/useCities";
 import { useServices } from "@/lib/hooks/useServices";
 import { colors } from "@/lib/theme";
-import type {
-  CityOption,
-  ServiceOption,
-} from "@/components/shared/CityFnsServicePicker";
-import CityFnsCascade from "@/components/filters/CityFnsCascade";
+import CityFnsCascade, {
+  type CityFnsValue,
+  type FnsCascadeOption,
+} from "@/components/filters/CityFnsCascade";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import FileUploadSection, { type AttachedFile } from "@/components/requests/FileUploadSection";
 import { draftStorage } from "@/lib/draftStorage";
@@ -59,8 +58,10 @@ export default function CreateRequest() {
   const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
-  const { cities, loading: citiesLoading } = useCities();
+  const { cities: citiesRaw, loading: citiesLoading } = useCities();
   const { services, loading: servicesLoading } = useServices();
+  const cities = citiesRaw;
+  const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
 
   const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +71,34 @@ export default function CreateRequest() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+
+  // Load all FNS offices once cities are available — needed for typeahead.
+  useEffect(() => {
+    if (cities.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const ids = cities.map((c) => c.id).join(",");
+        const res = await api<{ offices: { id: string; name: string; code: string; cityId: string; city?: { name: string } }[] }>(
+          `/api/fns?city_ids=${ids}`,
+          { noAuth: true }
+        );
+        if (cancelled) return;
+        setFnsAll(
+          res.offices.map((f) => ({
+            id: f.id,
+            name: f.name,
+            code: f.code,
+            cityId: f.cityId,
+            cityName: f.city?.name,
+          }))
+        );
+      } catch {
+        /* typeahead degrades gracefully */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [cities]);
 
   // Restore draft on mount (anyone — anon or returning post-login).
   // Reads new key first, falls back to legacy key for in-flight users.
@@ -137,7 +166,7 @@ export default function CreateRequest() {
   ]);
 
   const handleCascadeChange = useCallback(
-    (v: { cities: string[]; fns: string[] }) => {
+    (v: CityFnsValue) => {
       setSelectedCityId(v.cities[0] ?? null);
       setSelectedFnsId(v.fns[0] ?? null);
     },
@@ -313,26 +342,30 @@ export default function CreateRequest() {
               </Text>
             </View>
 
-            {/* Negative margin compensates for cascade's internal px-4 so its
-                chip rows align with the card's edge padding. */}
-            <View className="mb-4 -mx-4">
+            {/* City + FNС typeahead — unified flow */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-text-base mb-1.5">
+                Инспекция ФНС <Text className="text-danger">*</Text>
+              </Text>
               <CityFnsCascade
-                mode="single"
+                mode="typeahead"
                 value={{
                   cities: selectedCityId ? [selectedCityId] : [],
                   fns: selectedFnsId ? [selectedFnsId] : [],
                 }}
                 onChange={handleCascadeChange}
                 citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
+                fnsSource={fnsAll}
                 services={services}
                 selectedServiceId={selectedServiceId}
                 onServiceChange={setSelectedServiceId}
+                labelFns="Инспекция ФНС"
               />
               {submitted && !selectedCityId && (
-                <Text className="text-xs text-danger mt-1 px-4">Выберите город</Text>
+                <Text className="text-xs text-danger mt-1">Выберите город</Text>
               )}
               {submitted && selectedCityId && !selectedFnsId && (
-                <Text className="text-xs text-danger mt-1 px-4">Выберите инспекцию</Text>
+                <Text className="text-xs text-danger mt-1">Выберите инспекцию ФНС</Text>
               )}
             </View>
 

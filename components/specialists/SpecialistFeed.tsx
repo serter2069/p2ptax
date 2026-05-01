@@ -96,8 +96,11 @@ const EMPTY_FILTER: CityFnsValue = { cities: [], fns: [], fnsServices: {} };
 
 export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeedProps) {
   const nav = useTypedRouter();
-  // allowAnonymous=true for 'all' (no redirect); false for 'favorites' (redirect to login)
-  const { isAuthenticated, isLoading: authLoading } = useAuthGuard({ allowAnonymous: mode !== "favorites" });
+  // allowAnonymous=true for 'all' (no redirect); false for 'favorites' (redirect with returnTo #P2)
+  const { isAuthenticated, isLoading: authLoading } = useAuthGuard({
+    allowAnonymous: mode !== "favorites",
+    returnTo: mode === "favorites" ? "/saved-specialists" : undefined,
+  });
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const isWide = width >= 1024;
