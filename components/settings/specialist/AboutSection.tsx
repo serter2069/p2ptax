@@ -5,11 +5,14 @@ import Input from "@/components/ui/Input";
 interface AboutSectionProps {
   description: string;
   onChange: (v: string) => void;
+  /** Called when the underlying input loses focus — used by autosave. */
+  onBlur?: () => void;
 }
 
 export default function AboutSection({
   description,
   onChange,
+  onBlur,
 }: AboutSectionProps) {
   return (
     <Card padding="none" className="mb-4" style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
@@ -21,6 +24,7 @@ export default function AboutSection({
         label="Описание"
         value={description}
         onChangeText={onChange}
+        onBlur={onBlur ? () => onBlur() : undefined}
         placeholder="Расскажите о своём опыте и специализации..."
         multiline
         numberOfLines={4}

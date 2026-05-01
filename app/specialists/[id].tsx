@@ -298,7 +298,7 @@ export default function SpecialistPublicProfile() {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Редактировать профиль"
-      onPress={() => nav.routes.settings()}
+      onPress={() => nav.routes.profile()}
     >
       <Pencil size={16} color={colors.text} />
     </Pressable>

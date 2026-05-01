@@ -102,7 +102,10 @@ export function detectSidebarGroup(
     pathname.startsWith("/requests") ||
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/threads") ||
-    pathname.startsWith("/settings")
+    pathname.startsWith("/settings") ||
+    // Wave 4 / profile-merged — /profile is the new authenticated home for
+    // settings + onboarding combined.
+    pathname.startsWith("/profile")
   ) {
     return "main";
   }
@@ -154,8 +157,10 @@ export default function SidebarNav({ group }: SidebarNavProps) {
     user?.email?.[0]?.toUpperCase() ||
     "U";
 
+  // Wave 4 / profile-merged — non-admin users open the unified Profile.
+  // Admins keep their dedicated /admin/settings page.
   const settingsPath =
-    user?.role === "ADMIN" ? "/admin/settings" : "/settings";
+    user?.role === "ADMIN" ? "/admin/settings" : "/profile";
 
   return (
     <View

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,9 @@ import type { ContactMethodItem } from "@/components/settings/ContactMethodsList
 import type { SpecialistProfileData } from "@/components/settings/SpecialistTab";
 
 export type SettingsTab = "profile" | "specialist" | "notifications" | "account";
+
+/** Auto-save indicator state for the merged Profile page (issue: profile-merged). */
+export type AutosaveStatus = "idle" | "saving" | "saved" | "error";
 
 interface UseSettingsFormArgs {
   ready: boolean;
@@ -54,6 +57,13 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   // Notification preferences — MVP is local-state only (SA email-only).
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
+
+  // Auto-save indicator (issue: profile-merged).
+  // `lastSavedAt` is a Date (or null) so the UI can render "Сохранено • N сек назад".
+  const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  // Track the last save attempt so we can offer a Retry button on error.
+  const lastSaveRef = useRef<(() => Promise<void>) | null>(null);
 
   // Sync local fields when user object updates (login/refresh).
   useEffect(() => {
@@ -340,13 +350,12 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   const handleToggleSpecialist = useCallback(
     async (value: boolean) => {
       if (value) {
-        const hasData = specData && specData.fnsServices.length > 0;
-        if (!hasData) {
-          // Include role=specialist so work-area doesn't immediately redirect back
-          // (it checks isSpecialistIntent when isSpecialistUser is still false).
-          nav.any("/onboarding/work-area?from=settings&role=specialist");
-          return;
-        }
+        // Wave 4/profile-merged: never navigate away. We always flip the flag
+        // server-side; if the user has no FNS data the inline specialist
+        // sections of the merged Profile page guide them to fill it. The
+        // sidebar item "Запросы" is added by `buildUserItems(true)` and
+        // the inline "Где работаете" picker writes via the existing
+        // saveWorkArea() helper.
         try {
           await apiPost("/api/user/leave-specialist-toggle", { enable: true });
           updateUser({ isSpecialist: true });
@@ -389,6 +398,78 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     },
     [specData, updateUser, loadSpecialistData, activeTab, onTabChange, nav],
   );
+
+  // ---------------------------------------------------------------------
+  // Auto-save (issue: profile-merged) — fires from `onBlur` of individual
+  // section inputs. Each helper runs the appropriate PATCH and updates the
+  // shared `autosaveStatus` indicator. We deliberately do NOT save on every
+  // keystroke — only on blur.
+  // ---------------------------------------------------------------------
+
+  const runAutosave = useCallback(
+    async (fn: () => Promise<void>) => {
+      lastSaveRef.current = fn;
+      setAutosaveStatus("saving");
+      try {
+        await fn();
+        setAutosaveStatus("saved");
+        setLastSavedAt(new Date());
+      } catch (err) {
+        if (__DEV__) console.error("autosave error:", err);
+        setAutosaveStatus("error");
+      }
+    },
+    [],
+  );
+
+  /** Save personal data (firstName, lastName, optionally avatar) — used on blur. */
+  const autosavePersonal = useCallback(() => {
+    return runAutosave(async () => {
+      if (!firstName.trim() || firstName.trim().length < 2) {
+        // Skip silently when invalid — banner stays "saving" briefly then resets.
+        // Throw so runAutosave marks error so the user sees a retry hint.
+        throw new Error("Имя должно быть от 2 до 50 символов");
+      }
+      const body: Record<string, string | null> = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      };
+      if (avatarKey !== null) {
+        body.avatarUrl = avatarKey;
+      } else if (avatarUrl !== (user?.avatarUrl ?? null)) {
+        body.avatarUrl = avatarUrl;
+      }
+      const res = await apiPatch<{
+        user: { firstName: string; lastName: string; avatarUrl?: string | null };
+      }>("/api/user/profile", body);
+      setAvatarKey(null);
+      updateUser({
+        firstName: res.user.firstName,
+        lastName: res.user.lastName,
+        avatarUrl: res.user.avatarUrl,
+      });
+    });
+  }, [firstName, lastName, avatarUrl, avatarKey, user?.avatarUrl, updateUser, runAutosave]);
+
+  /** Save the specialist "About / Office" fields. */
+  const autosaveSpecialistProfile = useCallback(() => {
+    return runAutosave(async () => {
+      await apiPatch("/api/specialist/profile", {
+        description: description.trim() || null,
+        officeAddress: officeAddress.trim() || null,
+        workingHours: workingHours.trim() || null,
+      });
+      // Reload to keep `specData` in sync (so dirty-flag math doesn't lie).
+      await loadSpecialistData();
+    });
+  }, [description, officeAddress, workingHours, loadSpecialistData, runAutosave]);
+
+  /** Manual retry for the toast — re-runs the last save attempt. */
+  const retryAutosave = useCallback(() => {
+    if (lastSaveRef.current) {
+      void runAutosave(lastSaveRef.current);
+    }
+  }, [runAutosave]);
 
   return {
     // Auth-derived
@@ -445,6 +526,12 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     handleToggleSpecialist,
     handleLogout,
     handleDeleteAccount,
-    handleGoToWorkArea: () => nav.any("/onboarding/work-area?from=settings"),
+    handleGoToWorkArea: () => nav.any("/profile?firstTime=true&focus=specialist"),
+    // Auto-save (issue: profile-merged)
+    autosaveStatus,
+    lastSavedAt,
+    autosavePersonal,
+    autosaveSpecialistProfile,
+    retryAutosave,
   };
 }

@@ -200,7 +200,7 @@ export default function SpecialistConfirmWrite() {
             title="Завершите профиль специалиста"
             subtitle="Перед тем как написать клиенту, нужно указать ИФНС, услуги и описание."
             actionLabel="Завершить"
-            onAction={() => router.replace("/onboarding/name" as never)}
+            onAction={() => router.replace("/profile?firstTime=true&focus=specialist" as never)}
           />
         </View>
       </SafeAreaView>

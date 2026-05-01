@@ -77,16 +77,12 @@ export default function AuthOtpScreen() {
 
   const routeByRole = useCallback(
     (user: UserData) => {
-      // Landing CTA "Я специалист" passes intent=specialist through the auth
-      // chain. If the authenticated user is not yet a specialist, drop them
-      // into the specialist onboarding (name -> work-area) instead of the
-      // generic dashboard. Existing specialists fall through to the regular
-      // resume-onboarding / tabs logic below.
+      // Wave 4 / profile-merged — onboarding is now part of /profile.
+      // Specialist intent users land on /profile?firstTime=true&focus=specialist
+      // so the specialist sections are revealed and pre-scrolled. Existing
+      // specialists fall through to the regular resume / tabs logic below.
       if (intent === "specialist" && !user.isSpecialist) {
-        nav.replaceAny({
-          pathname: "/onboarding/visibility",
-          params: { role: "specialist" },
-        });
+        nav.replaceAny("/profile?firstTime=true&focus=specialist");
         return;
       }
       // If there's a returnTo param, navigate there after login
@@ -99,20 +95,16 @@ export default function AuthOtpScreen() {
         nav.replaceRoutes.adminDashboard();
         return;
       }
-      // Resume incomplete specialist onboarding. The previous check used
-      // `!user.firstName`, which only catches users who quit before step 1.
-      // Specialists who finish step 1 (firstName set) but abandon before
-      // step 3 are stranded — they have no profile, are invisible in the
-      // catalog, and cannot write threads. `specialistProfileCompletedAt`
-      // is the authoritative gate: it's set only after `/api/onboarding/profile`
-      // succeeds, so any falsy value means onboarding is incomplete.
+      // Resume incomplete specialist onboarding. Stranded specialists land
+      // on /profile?firstTime=true&focus=specialist where they can finish
+      // the missing fields without leaving the page.
       if (user.isSpecialist && !user.specialistProfileCompletedAt) {
-        nav.replaceRoutes.onboardingVisibility();
+        nav.replaceAny("/profile?firstTime=true&focus=specialist");
         return;
       }
       nav.replaceRoutes.dashboard();
     },
-    [router, returnTo, intent]
+    [router, returnTo, intent, nav]
   );
 
   const handleVerify = useCallback(
@@ -152,7 +144,7 @@ export default function AuthOtpScreen() {
             } catch {
               // optimistic update already applied; next /me call will re-sync
             }
-            nav.replaceRoutes.onboardingVisibility();
+            nav.replaceAny("/profile?firstTime=true&focus=specialist");
             return;
           }
           setPendingAuth(data);
@@ -223,7 +215,7 @@ export default function AuthOtpScreen() {
       // Silent: optimistic update keeps the UI responsive.
     }
     if (becomeSpecialist) {
-      nav.replaceRoutes.onboardingVisibility();
+      nav.replaceAny("/profile?firstTime=true&focus=specialist");
     } else if (returnTo) {
       nav.replaceAny(returnTo);
     } else {

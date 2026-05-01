@@ -6,6 +6,8 @@ interface OfficeSectionProps {
   workingHours: string;
   onOfficeAddressChange: (v: string) => void;
   onWorkingHoursChange: (v: string) => void;
+  /** Called when any input loses focus — used by autosave. */
+  onBlur?: () => void;
 }
 
 export default function OfficeSection({
@@ -13,6 +15,7 @@ export default function OfficeSection({
   workingHours,
   onOfficeAddressChange,
   onWorkingHoursChange,
+  onBlur,
 }: OfficeSectionProps) {
   return (
     <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
@@ -25,6 +28,7 @@ export default function OfficeSection({
           label="Адрес офиса"
           value={officeAddress}
           onChangeText={onOfficeAddressChange}
+          onBlur={onBlur ? () => onBlur() : undefined}
           placeholder="Город, улица, дом"
         />
       </View>
@@ -33,6 +37,7 @@ export default function OfficeSection({
         label="Часы работы"
         value={workingHours}
         onChangeText={onWorkingHoursChange}
+        onBlur={onBlur ? () => onBlur() : undefined}
         placeholder="Пн-Пт 9:00-18:00"
       />
     </View>
