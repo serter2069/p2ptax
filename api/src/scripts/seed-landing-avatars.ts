@@ -14,18 +14,27 @@ import * as path from "node:path";
 
 const prisma = new PrismaClient();
 
-const SPECIALIST_IDS = {
-  yulia:    "0ed05f10-a9f9-4e8d-9f35-a3920e5abaab",
-  vladimir: "45790a39-0285-48d7-943c-bea399edc3f1",
-  svetlana: "ca4f2c0f-491b-4791-bf4c-38f43122a6d1",
-  yury:     "5ff5cac2-5bdb-4e52-b82b-10e72ad3e1c3",
-};
+// Email-based lookup — UUIDs differ across DBs (local vs staging seed).
+// Emails are deterministic from prisma/seed-specialists.ts.
+const SPECIALIST_EMAILS = {
+  yulia:    "yulia.zaitseva@p2ptax-seed.ru",
+  vladimir: "vladimir.lebedev@p2ptax-seed.ru",
+  svetlana: "svetlana.orlova@p2ptax-seed.ru",
+  yury:     "yuriy.kondratyev@p2ptax-seed.ru",
+} as const;
 
 const ASSETS_DIR = path.resolve(__dirname, "../../../assets/images/specialists");
 
-async function uploadOne(key: keyof typeof SPECIALIST_IDS) {
+async function uploadOne(key: keyof typeof SPECIALIST_EMAILS) {
   const file = path.join(ASSETS_DIR, `${key}.jpg`);
   if (!fs.existsSync(file)) throw new Error(`missing ${file}`);
+
+  const email = SPECIALIST_EMAILS[key];
+  const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (!user) {
+    console.warn(`  ${key.padEnd(10)} → SKIP (no user with email=${email})`);
+    return;
+  }
 
   const buf = fs.readFileSync(file);
   const objectKey = `landing/${key}.jpg`;
@@ -42,7 +51,7 @@ async function uploadOne(key: keyof typeof SPECIALIST_IDS) {
   const avatarUrl = `${apiBase}/${MINIO_BUCKET}/${objectKey}`;
 
   await prisma.user.update({
-    where: { id: SPECIALIST_IDS[key] },
+    where: { id: user.id },
     data: { avatarUrl },
   });
 
@@ -55,7 +64,7 @@ async function main() {
 
   await ensureBucket();
 
-  for (const k of Object.keys(SPECIALIST_IDS) as (keyof typeof SPECIALIST_IDS)[]) {
+  for (const k of Object.keys(SPECIALIST_EMAILS) as (keyof typeof SPECIALIST_EMAILS)[]) {
     await uploadOne(k);
   }
 

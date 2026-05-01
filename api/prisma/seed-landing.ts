@@ -13,20 +13,15 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// IDs taken from the live DB (confirmed via /api/specialists/featured)
-const SPECIALIST_IDS = {
-  yulia:   "0ed05f10-a9f9-4e8d-9f35-a3920e5abaab", // Юлия Зайцева  → Камеральная проверка
-  vladimir:"45790a39-0285-48d7-943c-bea399edc3f1", // Владимир Лебедев → ОКК
-  svetlana:"ca4f2c0f-491b-4791-bf4c-38f43122a6d1", // Светлана Орлова → Отдел оперативного контроля
-  yury:    "5ff5cac2-5bdb-4e52-b82b-10e72ad3e1c3", // Юрий Кондратьев → Выездная проверка
-};
-
-// Service IDs from the live local DB
-const SERVICE_IDS = {
-  vyezdnaya:     "55472950-feb9-4367-9313-514857c7fe5b", // Выездная проверка
-  kameral:       "7d4c0783-4a48-4043-8780-017604adaee7", // Камеральная проверка
-  okk:           "2a8ccfb7-de80-459d-89eb-936d00b8d851", // Отдел оперативного контроля
-};
+// Pin the 4 landing specialists by EMAIL — emails are deterministic from
+// seed-specialists.ts, while UUIDs differ between dev DBs and freshly-seeded
+// staging DBs. The actual DB id is resolved at runtime via findUnique.
+const SPECIALIST_EMAILS = {
+  yulia:    "yulia.zaitseva@p2ptax-seed.ru",
+  vladimir: "vladimir.lebedev@p2ptax-seed.ru",
+  svetlana: "svetlana.orlova@p2ptax-seed.ru",
+  yury:     "yuriy.kondratyev@p2ptax-seed.ru",
+} as const;
 
 // AI-generated portraits served via the MinIO proxy at api/src/index.ts.
 // Source files in `assets/images/specialists/`; uploaded by
@@ -106,46 +101,65 @@ async function setFnsCredentials(
   });
 }
 
+async function resolveIdByEmail(email: string): Promise<string | null> {
+  const u = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (!u) {
+    console.warn(`  WARN: no user with email=${email} (skipping)`);
+    return null;
+  }
+  return u.id;
+}
+
+// Lookup the canonical service id by name (set in seed.ts).
+async function resolveServiceId(name: string): Promise<string | null> {
+  const s = await prisma.service.findFirst({ where: { name }, select: { id: true } });
+  if (!s) {
+    console.warn(`  WARN: no service named "${name}"`);
+    return null;
+  }
+  return s.id;
+}
+
 async function main() {
   console.log("=== seed-landing: fixing featured specialist cards ===");
 
-  // 1. Юлия Зайцева — keep Камеральная as primary (already correct).
-  //    Just update avatar.
-  await prisma.user.update({
-    where: { id: SPECIALIST_IDS.yulia },
-    data: { avatarUrl: AVATARS.yulia },
-  });
-  await setFnsCredentials(SPECIALIST_IDS.yulia, FNS_CREDS.yulia);
-  console.log("Юлия Зайцева: avatar + ex-FNS credentials updated");
+  const yuliaId    = await resolveIdByEmail(SPECIALIST_EMAILS.yulia);
+  const vladimirId = await resolveIdByEmail(SPECIALIST_EMAILS.vladimir);
+  const yuryId     = await resolveIdByEmail(SPECIALIST_EMAILS.yury);
+  const svetlanaId = await resolveIdByEmail(SPECIALIST_EMAILS.svetlana);
 
-  // 2. Юрий Кондратьев — set ONLY Выездная проверка + Unsplash avatar
-  console.log("Юрий Кондратьев: setting Выездная проверка…");
-  await setOnlyService(SPECIALIST_IDS.yury, SERVICE_IDS.vyezdnaya);
-  await prisma.user.update({
-    where: { id: SPECIALIST_IDS.yury },
-    data: { avatarUrl: AVATARS.yury },
-  });
-  await setFnsCredentials(SPECIALIST_IDS.yury, FNS_CREDS.yury);
-  console.log("Юрий Кондратьев: done + ex-FNS credentials");
+  const vyezdnayaSvc = await resolveServiceId("Выездная проверка");
+  const okkSvc       = await resolveServiceId("Отдел оперативного контроля");
 
-  // 3. Владимир Лебедев — set ONLY Отдел оперативного контроля
-  console.log("Владимир Лебедев: setting Отдел оперативного контроля…");
-  await setOnlyService(SPECIALIST_IDS.vladimir, SERVICE_IDS.okk);
-  await prisma.user.update({
-    where: { id: SPECIALIST_IDS.vladimir },
-    data: { avatarUrl: AVATARS.vladimir },
-  });
-  await setFnsCredentials(SPECIALIST_IDS.vladimir, FNS_CREDS.vladimir);
-  console.log("Владимир Лебедев: done + ex-FNS credentials");
+  // 1. Юлия — Камеральная (default from seed-specialists), avatar + creds
+  if (yuliaId) {
+    await prisma.user.update({ where: { id: yuliaId }, data: { avatarUrl: AVATARS.yulia } });
+    await setFnsCredentials(yuliaId, FNS_CREDS.yulia);
+    console.log("Юлия Зайцева: avatar + ex-FNS credentials updated");
+  }
 
-  // 4. Светлана Орлова — also set credentials so verified badge surfaces
-  //    everywhere her card renders (catalog, search, etc.)
-  await prisma.user.update({
-    where: { id: SPECIALIST_IDS.svetlana },
-    data: { avatarUrl: AVATARS.svetlana },
-  });
-  await setFnsCredentials(SPECIALIST_IDS.svetlana, FNS_CREDS.svetlana);
-  console.log("Светлана Орлова: ex-FNS credentials updated");
+  // 2. Юрий → Выездная
+  if (yuryId && vyezdnayaSvc) {
+    await setOnlyService(yuryId, vyezdnayaSvc);
+    await prisma.user.update({ where: { id: yuryId }, data: { avatarUrl: AVATARS.yury } });
+    await setFnsCredentials(yuryId, FNS_CREDS.yury);
+    console.log("Юрий Кондратьев: Выездная + avatar + ex-FNS credentials");
+  }
+
+  // 3. Владимир → ОКК
+  if (vladimirId && okkSvc) {
+    await setOnlyService(vladimirId, okkSvc);
+    await prisma.user.update({ where: { id: vladimirId }, data: { avatarUrl: AVATARS.vladimir } });
+    await setFnsCredentials(vladimirId, FNS_CREDS.vladimir);
+    console.log("Владимир Лебедев: ОКК + avatar + ex-FNS credentials");
+  }
+
+  // 4. Светлана — keep her existing service from seed-specialists, set creds
+  if (svetlanaId) {
+    await prisma.user.update({ where: { id: svetlanaId }, data: { avatarUrl: AVATARS.svetlana } });
+    await setFnsCredentials(svetlanaId, FNS_CREDS.svetlana);
+    console.log("Светлана Орлова: avatar + ex-FNS credentials");
+  }
 
   console.log("=== seed-landing complete ===");
 }

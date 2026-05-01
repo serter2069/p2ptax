@@ -121,14 +121,16 @@ export function mapSpecialist(s: SpecialistListItem) {
   };
 }
 
-// Pinned IDs surfaced FIRST in /featured — these are the 4 hand-curated landing
-// specialists with AI-generated portraits seeded via seed-landing-avatars.ts.
-// Keeps the HeroBlock cards stable across reseeds of the faker pool.
-const FEATURED_PINNED_IDS = [
-  "0ed05f10-a9f9-4e8d-9f35-a3920e5abaab", // Юлия Зайцева
-  "45790a39-0285-48d7-943c-bea399edc3f1", // Владимир Лебедев
-  "5ff5cac2-5bdb-4e52-b82b-10e72ad3e1c3", // Юрий Кондратьев
-  "ca4f2c0f-491b-4791-bf4c-38f43122a6d1", // Светлана Орлова
+// Pinned EMAILS surfaced FIRST in /featured — these are the 4 hand-curated
+// landing specialists with AI-generated portraits seeded via
+// seed-landing-avatars.ts. Pin by email (not UUID) because UUIDs differ
+// between local-dev and freshly-seeded staging DBs; emails are deterministic
+// from seed-specialists.ts.
+const FEATURED_PINNED_EMAILS = [
+  "yulia.zaitseva@p2ptax-seed.ru",     // Юлия Зайцева → Камеральная
+  "vladimir.lebedev@p2ptax-seed.ru",   // Владимир Лебедев → ОКК
+  "yuriy.kondratyev@p2ptax-seed.ru",   // Юрий Кондратьев → Выездная
+  "svetlana.orlova@p2ptax-seed.ru",    // Светлана Орлова → Опер.контроль
 ];
 
 // GET /api/specialists/featured — top 10 available specialists
@@ -145,13 +147,22 @@ router.get("/featured", async (_req: Request, res: Response) => {
       ...(seedUserNot ?? {}),
     } as const;
 
-    const pinned = await prisma.user.findMany({
-      where: { ...baseWhere, id: { in: FEATURED_PINNED_IDS } },
-      select: specialistListSelect,
+    // Resolve pinned emails → IDs (email kept out of the public select).
+    const pinnedRefs = await prisma.user.findMany({
+      where: { ...baseWhere, email: { in: FEATURED_PINNED_EMAILS } },
+      select: { id: true, email: true },
     });
+    const pinnedIds = pinnedRefs.map((r) => r.id);
+
+    const pinned = pinnedIds.length === 0
+      ? []
+      : await prisma.user.findMany({
+          where: { ...baseWhere, id: { in: pinnedIds } },
+          select: specialistListSelect,
+        });
 
     const remaining = await prisma.user.findMany({
-      where: { ...baseWhere, id: { notIn: FEATURED_PINNED_IDS } },
+      where: { ...baseWhere, id: { notIn: pinnedIds } },
       take: Math.max(0, 10 - pinned.length),
       orderBy: [
         { avatarUrl: { sort: "desc", nulls: "last" } },
@@ -160,10 +171,11 @@ router.get("/featured", async (_req: Request, res: Response) => {
       select: specialistListSelect,
     });
 
-    // Re-sort pinned to match FEATURED_PINNED_IDS order so HeroBlock layout
-    // is deterministic.
-    const pinnedSorted = FEATURED_PINNED_IDS
-      .map((id) => pinned.find((p) => p.id === id))
+    // Re-sort pinned to match FEATURED_PINNED_EMAILS order so HeroBlock layout
+    // is deterministic. Use the email→id map from the pinnedRefs query.
+    const emailById = new Map(pinnedRefs.map((r) => [r.id, r.email]));
+    const pinnedSorted = FEATURED_PINNED_EMAILS
+      .map((email) => pinned.find((p) => emailById.get(p.id) === email))
       .filter((s): s is (typeof pinned)[number] => Boolean(s));
 
     res.json({ items: [...pinnedSorted, ...remaining].map(mapSpecialist) });
