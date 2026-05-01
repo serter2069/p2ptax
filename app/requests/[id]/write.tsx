@@ -44,7 +44,7 @@ export default function SpecialistConfirmWrite() {
   const nav = useTypedRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { ready } = useRequireAuth();
-  const { isSpecialistUser, user, token } = useAuth();
+  const { isAuthenticated, isSpecialistUser, user, token } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
 
@@ -80,11 +80,14 @@ export default function SpecialistConfirmWrite() {
     }
   }, [id]);
 
-  // Authed but wrong role: redirect to client-facing requests screen.
+  // Authed but wrong role: redirect to client-facing requests screen (#P1)
   useEffect(() => {
-    if (ready && !isSpecialistUser) {
-      nav.replaceRoutes.login();
+    const { isAuthenticated } = useAuth();
+    if (ready && isAuthenticated && !isSpecialistUser) {
+      nav.replaceRoutes.tabsMyRequests();
+      return;
     }
+    // Anon: useRequireAuth handles redirect to /login with returnTo
   }, [ready, isSpecialistUser, nav]);
 
   useEffect(() => {

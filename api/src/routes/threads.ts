@@ -73,6 +73,7 @@ async function resolvePendingUpload(
 }
 
 // GET /api/threads/sample — dev helper: first thread ID for metromap URL resolver
+// SECURITY: dev/tooling helper — returns minimal data (id only), intentionally public for metromap
 router.get("/sample", async (_req: Request, res: Response) => {
   try {
     const first = await prisma.thread.findFirst({

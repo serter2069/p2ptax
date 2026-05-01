@@ -30,7 +30,7 @@ import PageTitle from "@/components/layout/PageTitle";
 import { api } from "@/lib/api";
 import { useCities } from "@/lib/hooks/useCities";
 import { useServices } from "@/lib/hooks/useServices";
-import { useRequireAuth } from "@/lib/useRequireAuth";
+import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
 import { colors, BREAKPOINT } from "@/lib/theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -91,10 +91,11 @@ export default function RequestsFeed({
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
 
-  // Auth guard for personal feed — redirect anon to /login with returnTo (#P0)
-  const { ready: authReady } = mode === "mine"
-    ? useRequireAuth() // eslint-disable-line react-hooks/rules-of-hooks
-    : { ready: true };
+  // Auth guard: mine requires auth (redirect with returnTo); catalog is public (#P0)
+  const { isAuthenticated: isAuth, isLoading: authLoading } = useAuthGuard({
+    allowAnonymous: mode !== "mine",
+    returnTo: mode === "mine" ? "/(tabs)/my-requests" : undefined,
+  });
 
   // Filter source data (catalog only)
   const { cities: citiesHook } = useCities();
@@ -190,6 +191,9 @@ export default function RequestsFeed({
 
   // ── Initial load ──
   useEffect(() => {
+    // Don't fetch personal requests while auth is resolving or when anon (guard redirects)
+    if (mode === "mine" && (authLoading || !isAuth)) return;
+
     let cancelled = false;
 
     async function init() {
@@ -209,7 +213,7 @@ export default function RequestsFeed({
     return () => {
       cancelled = true;
     };
-  }, [mode, fetchMine]);
+  }, [mode, fetchMine, isAuth, authLoading]);
 
   // ── Re-fetch on filter change (catalog) — skip first mount ──
   useEffect(() => {

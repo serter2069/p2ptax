@@ -9,6 +9,7 @@ import {
 } from "lucide-react-native";
 import { colors, fontSizeValue, BREAKPOINT } from "@/lib/theme";
 import { apiGet } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import HeaderHome from "@/components/HeaderHome";
 
 /**
@@ -27,8 +28,11 @@ export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isMobile = width < BREAKPOINT;
   const [unreadCount, setUnreadCount] = useState(0);
+  const { isAuthenticated } = useAuth();
 
+  // Only poll unread count when authenticated — avoid 401 noise (#P3)
   useEffect(() => {
+    if (!isAuthenticated) return;
     const fetchUnread = () => {
       apiGet<{ count: number }>("/api/messages/unread-count")
         .then((data) => setUnreadCount(data.count))
@@ -37,7 +41,7 @@ export default function TabLayout() {
     fetchUnread();
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <View style={{ flex: 1 }}>

@@ -152,6 +152,7 @@ router.get("/public", async (req: Request, res: Response) => {
 });
 
 // GET /api/requests/sample — dev helper: first request ID for metromap URL resolver
+// SECURITY: dev/tooling helper — returns minimal data (id only), intentionally public for metromap
 router.get("/sample", async (_req: Request, res: Response) => {
   try {
     const first = await prisma.request.findFirst({
@@ -490,6 +491,12 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
 
     const isOwner = request.userId === userId;
 
+    // Check if caller is a specialist to determine view shape (#P1)
+    const callerUser = !isOwner
+      ? await prisma.user.findUnique({ where: { id: userId }, select: { isSpecialist: true } })
+      : null;
+    const isSpecialist = callerUser?.isSpecialist ?? false;
+
     if (isOwner) {
       // Owner view: full detail + threads list + unread count
 
@@ -575,7 +582,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         existingThreadId: null,
         client: null,
       });
-    } else {
+    } else if (isSpecialist) {
       // Specialist view: check for existing thread with this request
       const existingThread = await prisma.thread.findFirst({
         where: { requestId: id, specialistId: userId },
@@ -617,6 +624,26 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         hasExistingThread: !!existingThread,
         existingThreadId: existingThread?.id ?? null,
         client: { name: clientName },
+      });
+    } else {
+      // Public/client view: authenticated non-owner non-specialist — strip private fields
+      // TODO: frontend should check viewType==='public' and render read-only variant
+      res.json({
+        viewType: "public" as const,
+        id: request.id,
+        title: request.title,
+        description: request.description,
+        status: request.status,
+        createdAt: request.createdAt,
+        city: { id: request.city.id, name: request.city.name },
+        fns: { id: request.fns.id, name: request.fns.name, code: request.fns.code },
+        isOwner: false,
+        hasExistingThread: false,
+        existingThreadId: null,
+        client: null,
+        files: [],
+        threadsCount: request._count.threads,
+        unreadMessages: 0,
       });
     }
   } catch (error) {
