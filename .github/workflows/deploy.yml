@@ -53,6 +53,14 @@ jobs:
               npx prisma migrate resolve --applied "$m" || echo "  (already applied or harmless skip)"
             done
 
+            # Reset any half-applied migrations so `migrate deploy` retries them.
+            # Our migrations are idempotent (ALTER ... IF EXISTS / CREATE INDEX
+            # IF NOT EXISTS-ish), so retry is safe.
+            for failed in 20260430000000_thread_optional_request; do
+              echo "==> rolling back failed $failed (will retry)"
+              npx prisma migrate resolve --rolled-back "$failed" 2>&1 | grep -v "is not a failed migration" || true
+            done
+
             npx prisma migrate deploy || echo "WARN P3005 — DB unbaselined, migrations skipped (see issue #1510 for baseline plan)"
             npx prisma generate
             npm run build
