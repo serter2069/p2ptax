@@ -559,6 +559,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         maxExtensions,
         city: { id: request.city.id, name: request.city.name },
         fns: { id: request.fns.id, name: request.fns.name, code: request.fns.code },
+        service: null,
         files: request.files.map((f) => ({
           id: f.id,
           url: f.url,
@@ -601,6 +602,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         maxExtensions: 0,
         city: { id: request.city.id, name: request.city.name },
         fns: { id: request.fns.id, name: request.fns.name, code: request.fns.code },
+        service: null,
         files: request.files.map((f) => ({
           id: f.id,
           url: f.url,
@@ -730,15 +732,17 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// PATCH /api/requests/:id/status — close own request (auth required)
+// PATCH /api/requests/:id/status — change own request status (auth required)
+// Supports: CLOSED (close), ACTIVE (reopen)
 router.patch("/:id/status", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const id = req.params.id as string;
     const { status } = req.body;
 
-    if (status !== "CLOSED") {
-      res.status(400).json({ error: "Can only close requests" });
+    const ALLOWED_STATUSES = ["ACTIVE", "CLOSED"];
+    if (!ALLOWED_STATUSES.includes(status)) {
+      res.status(400).json({ error: "Status must be ACTIVE or CLOSED" });
       return;
     }
 
@@ -754,14 +758,17 @@ router.patch("/:id/status", authMiddleware, async (req: Request, res: Response) 
       return;
     }
 
-    if (request.status === "CLOSED") {
-      res.status(400).json({ error: "Request already closed" });
+    if (request.status === status) {
+      res.status(400).json({ error: `Request is already ${status}` });
       return;
     }
 
+    // Reopen: set back to ACTIVE
+    const newStatus = status as "ACTIVE" | "CLOSED";
+
     const updated = await prisma.request.update({
       where: { id },
-      data: { status: "CLOSED" },
+      data: { status: newStatus },
     });
 
     res.json({ id: updated.id, status: updated.status });

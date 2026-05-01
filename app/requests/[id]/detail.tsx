@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   Pressable,
+  Modal,
   Alert,
   Linking,
   ActivityIndicator,
@@ -21,6 +22,7 @@ import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
 import { api, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors, BREAKPOINT } from "@/lib/theme";
+import { getShortServiceName } from "@/lib/services";
 
 import { FileItem } from "@/components/requests/detail/types";
 
@@ -36,6 +38,7 @@ interface RequestDetailData {
   maxExtensions: number;
   city: { id: string; name: string };
   fns: { id: string; name: string; code: string };
+  service?: { id: string; name: string } | null;
   files: FileItem[];
   threadsCount: number;
   unreadMessages: number;
@@ -81,6 +84,62 @@ function FileList({ files, onPress }: { files: FileItem[]; onPress: (f: FileItem
   );
 }
 
+// ─── Close confirmation modal ─────────────────────────────────────────────────
+
+function CloseConfirmModal({
+  visible,
+  onCancel,
+  onConfirm,
+  closing,
+}: {
+  visible: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  closing: boolean;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <Pressable
+        style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}
+        onPress={onCancel}
+      >
+        <Pressable
+          className="bg-white rounded-2xl p-6"
+          style={{ maxWidth: 400, width: "90%", margin: 16 }}
+          onPress={(e) => e.stopPropagation?.()}
+        >
+          <Text className="text-lg font-bold text-text-base mb-2">Закрыть запрос?</Text>
+          <Text className="text-sm text-text-mute mb-6 leading-5">
+            Запрос будет помечен как закрытый. Специалисты больше не смогут откликнуться.
+            Вы сможете открыть его снова в любой момент.
+          </Text>
+          <View className="flex-row gap-3">
+            <Pressable
+              onPress={onCancel}
+              className="flex-1 border border-border rounded-xl py-3 items-center"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            >
+              <Text className="text-text-base font-semibold text-sm">Отмена</Text>
+            </Pressable>
+            <Pressable
+              onPress={onConfirm}
+              disabled={closing}
+              className="flex-1 bg-danger rounded-xl py-3 items-center"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            >
+              {closing ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text className="text-white font-semibold text-sm">Закрыть запрос</Text>
+              )}
+            </Pressable>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 // ─── Shared info block ────────────────────────────────────────────────────────
 
 function RequestInfoBlock({ request }: { request: RequestDetailData }) {
@@ -90,6 +149,8 @@ function RequestInfoBlock({ request }: { request: RequestDetailData }) {
     year: "numeric",
   });
 
+  const serviceName = request.service ? getShortServiceName(request.service.name) : null;
+
   return (
     <>
       {/* Status + date */}
@@ -98,16 +159,20 @@ function RequestInfoBlock({ request }: { request: RequestDetailData }) {
         <Text className="text-sm text-text-mute ml-3">{createdDate}</Text>
       </View>
 
-      {/* City + FNS chips */}
+      {/* FNS chip only (city removed per UX feedback) */}
       <View className="flex-row flex-wrap gap-2 mb-4">
-        <View className="bg-white border border-border px-3 py-1 rounded-lg">
-          <Text className="text-sm text-text-base">{request.city.name}</Text>
-        </View>
         <View className="bg-white border border-border px-3 py-1 rounded-lg">
           <Text className="text-sm text-text-base">
             {request.fns.name} ({request.fns.code})
           </Text>
         </View>
+        {serviceName && (
+          <View className="bg-accent-soft border border-accent-soft px-3 py-1 rounded-lg">
+            <Text className="text-sm font-medium" style={{ color: colors.accentSoftInk }}>
+              {serviceName}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Description */}
@@ -133,6 +198,8 @@ function OwnerView({
   onExtend,
   extending,
   onClose,
+  onReopen,
+  isDesktop,
 }: {
   request: RequestDetailData;
   threads: ThreadSummary[];
@@ -140,18 +207,19 @@ function OwnerView({
   onExtend: () => void;
   extending: boolean;
   onClose: () => void;
+  onReopen: () => void;
+  isDesktop: boolean;
 }) {
   const nav = useTypedRouter();
   const canExtend =
     request.status === "CLOSING_SOON" &&
     request.extensionsCount < request.maxExtensions;
 
-  return (
-    <>
-      <RequestInfoBlock request={request} />
+  const isClosed = request.status === "CLOSED";
 
-      <FileList files={request.files} onPress={onFilePress} />
-
+  // Action panel — reopen or close button + extend
+  const ActionPanel = () => (
+    <View>
       {/* Extend button */}
       {canExtend && (
         <Pressable
@@ -181,16 +249,18 @@ function OwnerView({
         </View>
       )}
 
-      <ThreadsList
-        threads={threads}
-        requestId={request.id}
-        threadsCount={request.threadsCount}
-        unreadMessages={request.unreadMessages}
-        onOpenThread={(threadId) => nav.any(`/threads/${threadId}`)}
-      />
-
-      {/* Close request button */}
-      {request.status !== "CLOSED" && (
+      {/* Close / Reopen button */}
+      {isClosed ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Открыть запрос снова"
+          onPress={onReopen}
+          className="border border-accent rounded-xl py-3 items-center mb-6"
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
+          <Text className="text-accent font-semibold text-sm">Открыть запрос снова</Text>
+        </Pressable>
+      ) : (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Закрыть заявку"
@@ -201,6 +271,47 @@ function OwnerView({
           <Text className="text-danger font-semibold text-sm">Закрыть заявку</Text>
         </Pressable>
       )}
+    </View>
+  );
+
+  if (isDesktop) {
+    // 2-column layout: left = main info + files, right = threads + actions
+    return (
+      <View className="flex-row gap-6">
+        {/* Left column */}
+        <View style={{ flex: 2 }}>
+          <RequestInfoBlock request={request} />
+          <FileList files={request.files} onPress={onFilePress} />
+        </View>
+
+        {/* Right column */}
+        <View style={{ flex: 1 }}>
+          <ActionPanel />
+          <ThreadsList
+            threads={threads}
+            requestId={request.id}
+            threadsCount={request.threadsCount}
+            unreadMessages={request.unreadMessages}
+            onOpenThread={(threadId) => nav.any(`/threads/${threadId}`)}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  // Mobile: single column
+  return (
+    <>
+      <RequestInfoBlock request={request} />
+      <FileList files={request.files} onPress={onFilePress} />
+      <ThreadsList
+        threads={threads}
+        requestId={request.id}
+        threadsCount={request.threadsCount}
+        unreadMessages={request.unreadMessages}
+        onOpenThread={(threadId) => nav.any(`/threads/${threadId}`)}
+      />
+      <ActionPanel />
     </>
   );
 }
@@ -249,9 +360,20 @@ function SpecialistView({
     }
   }, [message, sending, request.id, onThreadCreated]);
 
+  const isClosed = request.status === "CLOSED";
+
   return (
     <>
       <RequestInfoBlock request={request} />
+
+      {/* Closed banner for specialist */}
+      {isClosed && (
+        <View className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 mb-4 items-center">
+          <Text className="text-sm text-text-base font-medium text-center">
+            Запрос закрыт — откликнуться невозможно
+          </Text>
+        </View>
+      )}
 
       {/* Client info */}
       {request.client && (
@@ -266,55 +388,57 @@ function SpecialistView({
 
       <FileList files={request.files} onPress={onFilePress} />
 
-      {/* CTA: go to existing thread OR compose */}
-      {request.hasExistingThread && request.existingThreadId ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Перейти к диалогу"
-          onPress={() => nav.any(`/threads/${request.existingThreadId}`)}
-          className="bg-accent rounded-xl py-3.5 items-center mb-6 flex-row justify-center gap-2"
-          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-        >
-          <MessageSquare size={18} color="#fff" />
-          <Text className="text-white font-semibold text-base ml-2">Перейти к диалогу</Text>
-        </Pressable>
-      ) : (
-        <View className="mb-6">
-          <View
-            className="bg-white rounded-2xl p-4 mb-3"
-            style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
-          >
-            <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
-              Откликнуться
-            </Text>
-            <Input
-              value={message}
-              onChangeText={(t) => { setMessage(t); setMsgError(null); }}
-              placeholder="Напишите сообщение клиенту (минимум 10 символов)..."
-              multiline
-              numberOfLines={4}
-              variant="bordered"
-              accessibilityLabel="Ваше сообщение"
-            />
-          </View>
-          {msgError && (
-            <Text className="text-danger text-sm mb-3 px-1">{msgError}</Text>
-          )}
+      {/* CTA: go to existing thread OR compose (only if open) */}
+      {!isClosed && (
+        request.hasExistingThread && request.existingThreadId ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Отправить отклик"
-            onPress={handleRespond}
-            disabled={sending}
-            className="bg-accent rounded-xl py-3.5 items-center"
+            accessibilityLabel="Перейти к диалогу"
+            onPress={() => nav.any(`/threads/${request.existingThreadId}`)}
+            className="bg-accent rounded-xl py-3.5 items-center mb-6 flex-row justify-center gap-2"
             style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           >
-            {sending ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white font-semibold text-base">Отправить</Text>
-            )}
+            <MessageSquare size={18} color="#fff" />
+            <Text className="text-white font-semibold text-base ml-2">Перейти к диалогу</Text>
           </Pressable>
-        </View>
+        ) : (
+          <View className="mb-6">
+            <View
+              className="bg-white rounded-2xl p-4 mb-3"
+              style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
+            >
+              <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wide">
+                Откликнуться
+              </Text>
+              <Input
+                value={message}
+                onChangeText={(t) => { setMessage(t); setMsgError(null); }}
+                placeholder="Напишите сообщение клиенту (минимум 10 символов)..."
+                multiline
+                numberOfLines={4}
+                variant="bordered"
+                accessibilityLabel="Ваше сообщение"
+              />
+            </View>
+            {msgError && (
+              <Text className="text-danger text-sm mb-3 px-1">{msgError}</Text>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Отправить отклик"
+              onPress={handleRespond}
+              disabled={sending}
+              className="bg-accent rounded-xl py-3.5 items-center"
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            >
+              {sending ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="text-white font-semibold text-base">Отправить</Text>
+              )}
+            </Pressable>
+          </View>
+        )
       )}
     </>
   );
@@ -362,6 +486,8 @@ export default function RequestDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [extending, setExtending] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   // Public fallback for anonymous / unauthenticated
   const [publicRequest, setPublicRequest] = useState<{ title: string; description: string } | null>(null);
@@ -426,29 +552,35 @@ export default function RequestDetail() {
   }, [id, extending, request]);
 
   const handleClose = useCallback(() => {
-    Alert.alert(
-      "Закрыть заявку",
-      "Закрыть заявку? Специалисты больше не смогут откликнуться.",
-      [
-        { text: "Отмена", style: "cancel" },
-        {
-          text: "Закрыть",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await apiPatch(`/api/requests/${id}/status`, { status: "CLOSED" });
-              setRequest((prev) => prev ? { ...prev, status: "CLOSED" } : null);
-            } catch {
-              Alert.alert("Ошибка", "Не удалось закрыть заявку");
-            }
-          },
-        },
-      ]
-    );
+    setShowCloseConfirm(true);
+  }, []);
+
+  const confirmClose = useCallback(async () => {
+    if (closing) return;
+    setClosing(true);
+    try {
+      await apiPatch(`/api/requests/${id}/status`, { status: "CLOSED" });
+      setRequest((prev) => prev ? { ...prev, status: "CLOSED" } : null);
+      setShowCloseConfirm(false);
+    } catch {
+      Alert.alert("Ошибка", "Не удалось закрыть заявку");
+    } finally {
+      setClosing(false);
+    }
+  }, [id, closing]);
+
+  const handleReopen = useCallback(async () => {
+    try {
+      await apiPatch(`/api/requests/${id}/status`, { status: "ACTIVE" });
+      setRequest((prev) => prev ? { ...prev, status: "ACTIVE" } : null);
+    } catch {
+      Alert.alert("Ошибка", "Не удалось открыть заявку");
+    }
   }, [id]);
 
+  // Desktop: full-width with horizontal padding, no maxWidth cap
   const containerStyle = isDesktop
-    ? { maxWidth: 520, width: "100%" as const, alignSelf: "center" as const }
+    ? { paddingHorizontal: 32 }
     : undefined;
 
   if (authLoading || loading) {
@@ -516,40 +648,44 @@ export default function RequestDetail() {
   // ── MOBILE + DESKTOP LAYOUT ───────────────────────────────────────────
   return (
     <SafeAreaView className="flex-1 bg-surface2">
+      {/* Close confirmation modal */}
+      <CloseConfirmModal
+        visible={showCloseConfirm}
+        onCancel={() => setShowCloseConfirm(false)}
+        onConfirm={confirmClose}
+        closing={closing}
+      />
+
       <ScrollView className="flex-1">
-        <View style={containerStyle} className={isDesktop ? "" : "px-4"}>
-          {/* Header */}
-          <View className="flex-row items-center justify-between pt-4 pb-2">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Назад"
-              onPress={() => router.back()}
-              className="flex-row items-center"
-              style={{ minHeight: 44 }}
+        <View style={containerStyle} className={isDesktop ? "py-6" : "px-4"}>
+          {/* Title header — no "Назад" button (breadcrumb in AppHeader + sidebar nav) */}
+          <View className="pt-4 pb-4">
+            <Text
+              className="text-xl font-bold text-text-base"
+              numberOfLines={2}
             >
-              <ChevronLeft size={20} color={colors.text} />
-              <Text className="text-text-base ml-1">Назад</Text>
-            </Pressable>
+              {request.title}
+            </Text>
           </View>
 
-          <View className="py-4">
-            {request.isOwner ? (
-              <OwnerView
-                request={request}
-                threads={threads}
-                onFilePress={handleFilePress}
-                onExtend={handleExtend}
-                extending={extending}
-                onClose={handleClose}
-              />
-            ) : (
-              <SpecialistView
-                request={request}
-                onFilePress={handleFilePress}
-                onThreadCreated={(threadId) => nav.any(`/threads/${threadId}`)}
-              />
-            )}
-          </View>
+          {request.isOwner ? (
+            <OwnerView
+              request={request}
+              threads={threads}
+              onFilePress={handleFilePress}
+              onExtend={handleExtend}
+              extending={extending}
+              onClose={handleClose}
+              onReopen={handleReopen}
+              isDesktop={isDesktop}
+            />
+          ) : (
+            <SpecialistView
+              request={request}
+              onFilePress={handleFilePress}
+              onThreadCreated={(threadId) => nav.any(`/threads/${threadId}`)}
+            />
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

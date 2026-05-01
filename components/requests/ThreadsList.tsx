@@ -1,5 +1,4 @@
 import { View, Text, Pressable } from "react-native";
-import { useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import Avatar from "@/components/ui/Avatar";
 import { colors } from "@/lib/theme";
@@ -41,7 +40,6 @@ export default function ThreadsList({
   onOpenThread,
   onOpenSpecialistProfile,
 }: ThreadsListProps) {
-  const router = useRouter()
   const nav = useTypedRouter();
 
   return (
@@ -144,17 +142,6 @@ export default function ThreadsList({
             );
           })}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Все сообщения"
-            onPress={() => nav.dynamic.requestMessages(requestId)}
-            className="mt-3 border border-accent rounded-xl py-2.5 items-center"
-            style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
-          >
-            <Text className="text-accent font-semibold text-sm">
-              Все сообщения ({threadsCount})
-            </Text>
-          </Pressable>
         </>
       )}
     </View>
