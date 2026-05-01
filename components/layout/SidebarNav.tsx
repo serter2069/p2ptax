@@ -193,7 +193,7 @@ export default function SidebarNav({ group }: SidebarNavProps) {
           marginBottom: spacing.sm,
         }}
       >
-        <Logo size="lg" />
+        <Logo size="md" />
       </Pressable>
 
       {/* Primary nav */}

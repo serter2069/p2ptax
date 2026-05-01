@@ -1,8 +1,8 @@
 /**
  * RequestsFeed — unified feed for request catalog and personal list.
  *
- * mode='catalog' — public bourse: all active requests, CityFnsCascade filter, pagination.
- * mode='mine'    — own requests: fetches /api/requests/my, active/closed tab, no pagination.
+ * mode='catalog' — public bourse: all active requests, CityFnsCascade typeahead filter, pagination.
+ * mode='mine'    — own requests: fetches /api/requests/my, all items shown, closed items muted.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -17,7 +17,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTypedRouter } from "@/lib/navigation";
-import CityFnsCascade from "@/components/filters/CityFnsCascade";
+import CityFnsCascade, {
+  CityFnsValue,
+  FnsCascadeOption,
+} from "@/components/filters/CityFnsCascade";
 import { Inbox, FileText } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -27,20 +30,10 @@ import PageTitle from "@/components/layout/PageTitle";
 import { api } from "@/lib/api";
 import { useCities } from "@/lib/hooks/useCities";
 import { useServices } from "@/lib/hooks/useServices";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors, BREAKPOINT } from "@/lib/theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface CityOption {
-  id: string;
-  name: string;
-  fnsOffices?: { id: string; name: string; code: string }[];
-}
-
-interface ServiceOption {
-  id: string;
-  name: string;
-}
 
 interface RequestItem {
   id: string;
@@ -64,6 +57,14 @@ interface RequestsResponse {
   hasMore: boolean;
 }
 
+interface FnsApiOffice {
+  id: string;
+  name: string;
+  code: string;
+  cityId: string;
+  city?: { name: string };
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 export interface RequestsFeedProps {
@@ -76,6 +77,7 @@ export interface RequestsFeedProps {
 }
 
 const LIMIT = 20;
+const EMPTY_FILTER: CityFnsValue = { cities: [], fns: [], fnsServices: {} };
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -89,11 +91,21 @@ export default function RequestsFeed({
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
 
+  // Auth guard for personal feed — redirect anon to /login with returnTo (#P0)
+  const { ready: authReady } = mode === "mine"
+    ? useRequireAuth() // eslint-disable-line react-hooks/rules-of-hooks
+    : { ready: true };
+
   // Filter source data (catalog only)
   const { cities: citiesHook } = useCities();
   const { services: servicesHook } = useServices();
-  const cities = citiesHook as CityOption[];
-  const services = servicesHook as ServiceOption[];
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
+  const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
+
+  // Unified filter state for typeahead
+  const [filterValue, setFilterValue] = useState<CityFnsValue>(EMPTY_FILTER);
+  const selectedCityId = filterValue.cities[0] ?? null;
+  const selectedFnsId = filterValue.fns[0] ?? null;
 
   // List state
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -108,16 +120,38 @@ export default function RequestsFeed({
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
 
-  // Filter state (catalog only)
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
-
-  // Mine tab
-  const [activeTab, setActiveTab] = useState<"active" | "closed">("active");
+  // Mine: show-archived toggle (default: show all including closed)
+  const [showArchiveOnly, setShowArchiveOnly] = useState(false);
 
   const loadingMoreRef = useRef(false);
   const isFirstMount = useRef(true);
+
+  // ── Sync cities from hook ──
+  useEffect(() => {
+    if (citiesHook.length > 0) setCities(citiesHook.map((c) => ({ id: c.id, name: c.name })));
+  }, [citiesHook]);
+
+  // ── Load all FNS for typeahead once cities are available (catalog only) ──
+  useEffect(() => {
+    if (mode !== "catalog" || cities.length === 0) return;
+    let cancelled = false;
+    const ids = cities.map((c) => c.id).join(",");
+    api<{ offices: FnsApiOffice[] }>(`/api/fns?city_ids=${ids}`, { noAuth: true })
+      .then((res) => {
+        if (cancelled) return;
+        setFnsAll(
+          res.offices.map((f) => ({
+            id: f.id,
+            name: f.name,
+            code: f.code,
+            cityId: f.cityId,
+            cityName: f.city?.name,
+          }))
+        );
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [mode, cities]);
 
   // ── Catalog fetch ──
   const fetchCatalog = useCallback(
@@ -163,7 +197,6 @@ export default function RequestsFeed({
       setError(null);
 
       if (mode === "catalog") {
-        // cities/services provided by useCities/useServices hooks (globally cached)
         if (!cancelled) await fetchCatalogRef.current(1);
       } else {
         if (!cancelled) await fetchMine();
@@ -208,21 +241,7 @@ export default function RequestsFeed({
   }, [mode, hasMore, page, fetchCatalog]);
 
   const handleResetFilters = useCallback(() => {
-    setSelectedCityId(null);
-    setSelectedFnsId(null);
-    setSelectedServiceId(null);
-  }, []);
-
-  const handleCascadeChange = useCallback(
-    (v: { cities: string[]; fns: string[] }) => {
-      setSelectedCityId(v.cities[0] ?? null);
-      setSelectedFnsId(v.fns[0] ?? null);
-    },
-    []
-  );
-
-  const handleServiceChange = useCallback((id: string | null) => {
-    setSelectedServiceId(id);
+    setFilterValue(EMPTY_FILTER);
   }, []);
 
   const handleRequestPress = useCallback(
@@ -230,17 +249,14 @@ export default function RequestsFeed({
     [nav]
   );
 
-  const hasFilters =
-    selectedCityId !== null || selectedFnsId !== null || selectedServiceId !== null;
+  const hasFilters = selectedCityId !== null || selectedFnsId !== null;
 
-  // ── Mine: client-side tab filter ──
+  // ── Mine: client-side filter (archive toggle) ──
   const displayedRequests =
     mode === "mine"
-      ? requests.filter((r) =>
-          activeTab === "active"
-            ? r.status === "ACTIVE" || r.status === "CLOSING_SOON"
-            : r.status === "CLOSED"
-        )
+      ? showArchiveOnly
+        ? requests.filter((r) => r.status === "CLOSED")
+        : requests
       : requests;
 
   // ── Skeleton on initial load ──
@@ -299,16 +315,14 @@ export default function RequestsFeed({
         return (
           <EmptyState
             icon={FileText}
-            title={activeTab === "active" ? "Активных запросов нет" : "Закрытых запросов нет"}
+            title={showArchiveOnly ? "Закрытых запросов нет" : "Запросов нет"}
             subtitle={
-              activeTab === "active"
-                ? "Создайте первый запрос — специалисты из вашего города увидят его и предложат помощь"
-                : "Закрытые запросы появятся здесь"
+              showArchiveOnly
+                ? "Закрытые запросы появятся здесь"
+                : "Создайте первый запрос — специалисты из вашего города увидят его и предложат помощь"
             }
-            actionLabel={activeTab === "active" ? "Создать запрос" : undefined}
-            onAction={
-              activeTab === "active" ? () => nav.routes.requestsNew() : undefined
-            }
+            actionLabel={!showArchiveOnly ? "Создать запрос" : undefined}
+            onAction={!showArchiveOnly ? () => nav.routes.requestsNew() : undefined}
           />
         );
       }
@@ -331,7 +345,7 @@ export default function RequestsFeed({
           paddingHorizontal: isDesktop ? 24 : 16,
           paddingTop: 12,
           paddingBottom: 100,
-          maxWidth: isDesktop ? 720 : undefined,
+          maxWidth: isDesktop ? 920 : undefined,
           alignSelf: isDesktop ? ("center" as const) : undefined,
           width: "100%" as const,
         }}
@@ -340,6 +354,7 @@ export default function RequestsFeed({
             id={item.id}
             title={item.title}
             description={item.description}
+            status={item.status}
             fns={item.fns}
             createdAt={item.createdAt}
             hasFiles={item.hasFiles}
@@ -388,29 +403,23 @@ export default function RequestsFeed({
       {/* Page header */}
       {title && <PageTitle title={title} subtitle={subtitle} />}
 
-      {/* Catalog: total count + CityFnsCascade filter */}
+      {/* Catalog: typeahead CityFnsCascade filter */}
       {mode === "catalog" && (
-        <>
-          <View className="bg-white border-b border-border py-2">
-            <CityFnsCascade
-              mode="single"
-              value={{
-                cities: selectedCityId ? [selectedCityId] : [],
-                fns: selectedFnsId ? [selectedFnsId] : [],
-              }}
-              onChange={handleCascadeChange}
-              citiesSource={cities.map((c) => ({ id: c.id, name: c.name }))}
-              services={services}
-              selectedServiceId={selectedServiceId}
-              onServiceChange={handleServiceChange}
-            />
-          </View>
-        </>
+        <View className="bg-white border-b border-border px-4 pt-3 pb-3" style={{ zIndex: 100 }}>
+          <CityFnsCascade
+            mode="typeahead"
+            value={filterValue}
+            onChange={setFilterValue}
+            citiesSource={cities}
+            fnsSource={fnsAll}
+            services={servicesHook}
+          />
+        </View>
       )}
 
-      {/* Mine: action button + active/closed tab switcher */}
+      {/* Mine: create button + archive toggle */}
       {mode === "mine" && (
-        <View className="px-4 pt-2 pb-3">
+        <View className="px-4 pt-2 pb-3" style={{ flexDirection: isDesktop ? "row" : "column", alignItems: isDesktop ? "center" : "stretch", gap: 8 }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Создать запрос"
@@ -422,40 +431,33 @@ export default function RequestsFeed({
               alignItems: "center",
               borderRadius: 12,
               paddingHorizontal: 16,
-              alignSelf: isDesktop ? "flex-end" : "stretch",
-              marginBottom: 12,
+              flex: isDesktop ? 0 : undefined,
+              alignSelf: isDesktop ? "flex-start" : "stretch",
             }}
           >
             <Text className="text-white font-semibold text-sm">+ Создать запрос</Text>
           </Pressable>
 
-          <View
-            className="flex-row rounded-xl overflow-hidden border border-border"
-            style={{ backgroundColor: colors.surface2 }}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={showArchiveOnly ? "Показать все" : "Показать архив"}
+            onPress={() => setShowArchiveOnly((v) => !v)}
+            style={{
+              minHeight: 40,
+              justifyContent: "center",
+              alignItems: "center",
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: showArchiveOnly ? colors.surface2 : "transparent",
+              alignSelf: isDesktop ? "flex-start" : "stretch",
+            }}
           >
-            {(["active", "closed"] as const).map((tab) => (
-              <Pressable
-                key={tab}
-                accessibilityRole="tab"
-                accessibilityLabel={tab === "active" ? "Активные запросы" : "Закрытые запросы"}
-                onPress={() => setActiveTab(tab)}
-                style={[
-                  { flex: 1, paddingVertical: 10, alignItems: "center", minHeight: 40 },
-                  activeTab === tab ? { backgroundColor: colors.primary } : undefined,
-                ]}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: activeTab === tab ? "#fff" : colors.textSecondary,
-                  }}
-                >
-                  {tab === "active" ? "Активные" : "Закрытые"}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: "500" }}>
+              {showArchiveOnly ? "Все запросы" : "Архив"}
+            </Text>
+          </Pressable>
         </View>
       )}
 

@@ -555,6 +555,10 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     const profile = specialist.specialistProfile;
 
+    // Security: strip contact fields for anonymous callers (#P0)
+    const callerId = resolveCallerId(req);
+    const isAnon = callerId === null;
+
     res.json({
       id: specialist.id,
       firstName: specialist.firstName,
@@ -566,10 +570,10 @@ router.get("/:id", async (req: Request, res: Response) => {
       profile: profile
         ? {
             description: profile.description,
-            phone: profile.phone,
-            telegram: profile.telegram,
-            whatsapp: profile.whatsapp,
-            officeAddress: profile.officeAddress,
+            phone: isAnon ? null : profile.phone,
+            telegram: isAnon ? null : profile.telegram,
+            whatsapp: isAnon ? null : profile.whatsapp,
+            officeAddress: isAnon ? null : profile.officeAddress,
             workingHours: profile.workingHours,
             exFnsStartYear: profile.exFnsStartYear,
             exFnsEndYear: profile.exFnsEndYear,

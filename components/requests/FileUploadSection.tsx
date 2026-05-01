@@ -1,6 +1,6 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
-import { FileImage, File, X, Plus } from "lucide-react-native";
+import { FileImage, File, X, Upload, Plus } from "lucide-react-native";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
@@ -36,6 +36,7 @@ export default function FileUploadSection({
   // Keep a mutable ref so upload callbacks always see the latest list.
   const filesRef = useRef(files);
   filesRef.current = files;
+  const [hover, setHover] = useState(false);
 
   const uploadFile = useCallback(async (file: File) => {
     const mimeType = file.type || "application/octet-stream";
@@ -104,15 +105,32 @@ export default function FileUploadSection({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (filesRef.current.length >= MAX_FILES || file.size > MAX_FILE_SIZE) {
-      e.target.value = "";
-      return;
-    }
-    void uploadFile(file);
+    const fileList = e.target.files;
+    if (!fileList) return;
+    Array.from(fileList).forEach((file) => {
+      if (filesRef.current.length >= MAX_FILES || file.size > MAX_FILE_SIZE) return;
+      void uploadFile(file);
+    });
     e.target.value = "";
   };
+
+  const handleDrop = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    setHover(false);
+    if (disabled) return;
+    const dropped = Array.from(e.dataTransfer.files as FileList);
+    dropped.forEach((file) => {
+      if (filesRef.current.length >= MAX_FILES || file.size > MAX_FILE_SIZE) return;
+      void uploadFile(file);
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    if (!disabled) setHover(true);
+  };
+
+  const handleDragLeave = () => setHover(false);
 
   const handleRemoveFile = (index: number) => {
     const next = filesRef.current.filter((_, i) => i !== index);

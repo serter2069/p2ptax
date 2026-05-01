@@ -350,6 +350,27 @@ export default function CityFnsCascade({
           </View>
         )}
 
+        {/* Quick city chips — top 4, shown before city is selected */}
+        {!selCity && !selFns && (
+          <View className="flex-row flex-wrap mb-2" style={{ gap: 6 }}>
+            {TOP_CITIES_DEFAULT.map((name) => {
+              const city = cities.find((c) => c.name === name);
+              if (!city) return null;
+              return (
+                <Pressable
+                  key={city.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={city.name}
+                  onPress={() => handleTypeaheadPickCity(city.id)}
+                  className="px-3 py-1.5 rounded-full border border-border bg-white"
+                >
+                  <Text className="text-xs text-text-base">{city.name}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
         {/* Search input — hide once FNS is picked */}
         {!selFns && (
           <View className="relative" style={{ zIndex: 10 }}>
