@@ -70,7 +70,13 @@ app.use(express.json({ limit: "1mb" }));
 // hash on `req.body.email`) get a populated body. Per-endpoint limiters
 // inside `routes/auth.ts` run first within each route and provide
 // stricter budgets where needed.
-app.use("/api/", apiLimiter);
+//
+// Dev: skip the global limiter — a normal browsing session (one user
+// hammering the API from a SPA) trivially exhausts 200/15min and
+// auth-clears tokens. Per-route auth limiters still enforce abuse-bound.
+if (process.env.NODE_ENV === "production") {
+  app.use("/api/", apiLimiter);
+}
 
 // Proxy MinIO objects at /<bucket>/<key> so that avatarUrls stored as
 // http://localhost:3812/p2ptax/... load correctly in dev.

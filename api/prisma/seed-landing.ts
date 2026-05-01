@@ -28,12 +28,16 @@ const SERVICE_IDS = {
   okk:           "2a8ccfb7-de80-459d-89eb-936d00b8d851", // Отдел оперативного контроля
 };
 
-// Unsplash photos
+// AI-generated portraits served via the MinIO proxy at api/src/index.ts.
+// Source files in `assets/images/specialists/`; uploaded by
+// `seed-landing-avatars.ts` (run that AFTER this script if avatars are wiped).
+const apiBase = process.env.PUBLIC_API_URL || "http://localhost:3812";
+const minioBucket = process.env.MINIO_BUCKET || process.env.HETZNER_S3_BUCKET || "p2ptax";
 const AVATARS = {
-  yulia:    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop",
-  vladimir: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop",
-  svetlana: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=200&h=200&fit=crop",
-  yury:     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+  yulia:    `${apiBase}/${minioBucket}/landing/yulia.jpg`,
+  vladimir: `${apiBase}/${minioBucket}/landing/vladimir.jpg`,
+  svetlana: `${apiBase}/${minioBucket}/landing/svetlana.jpg`,
+  yury:     `${apiBase}/${minioBucket}/landing/yury.jpg`,
 };
 
 async function setOnlyService(specialistId: string, serviceId: string) {
