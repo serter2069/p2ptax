@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import HeaderBack from "@/components/HeaderBack";
 import { useAuth, UserData } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
+import { track } from "@/lib/analytics";
 import Button from "@/components/ui/Button";
 import OtpCodeInput from "@/components/auth/OtpCodeInput";
 import ResendCountdown from "@/components/auth/ResendCountdown";
@@ -125,6 +126,7 @@ export default function AuthOtpScreen() {
           body: { email, code: codeValue },
           noAuth: true,
         });
+        track("otp_verify", { ok: true });
 
         if (!data.user.role) {
           // If intent=specialist is set, skip the picker and auto-assign the
@@ -156,6 +158,7 @@ export default function AuthOtpScreen() {
         routeByRole(data.user);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Неверный код";
+        track("otp_verify", { ok: false, reason: msg });
         setError(msg);
         setCode("");
         isSubmitting.current = false;
@@ -181,9 +184,15 @@ export default function AuthOtpScreen() {
         body: { email },
         noAuth: true,
       });
+      track("otp_request", { ok: true, source: "resend" });
       setResendTimer(RESEND_SECONDS);
       setCode("");
-    } catch {
+    } catch (err) {
+      track("otp_request", {
+        ok: false,
+        source: "resend",
+        reason: err instanceof Error ? err.message : "unknown",
+      });
       setError("Не удалось отправить код. Попробуйте ещё раз.");
     } finally {
       setIsResending(false);

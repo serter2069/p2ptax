@@ -30,6 +30,7 @@ import type {
 import { useAuth } from "@/contexts/AuthContext";
 import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
 import { colors, textStyle, spacing, BREAKPOINT } from "@/lib/theme";
+import { track } from "@/lib/analytics";
 
 export default function SpecialistPublicProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -71,6 +72,16 @@ export default function SpecialistPublicProfile() {
     }
     if (id) load();
   }, [id]);
+
+  // Funnel — fire once per id mount. Re-fires when the user navigates between
+  // specialist profiles, which is the desired granularity for PostHog cohorts.
+  useEffect(() => {
+    if (!id) return;
+    track("specialist_profile_view", {
+      specialistId: id,
+      isOwn: isOwnProfile,
+    });
+  }, [id, isOwnProfile]);
 
   // Load initial saved state for authenticated users
   useEffect(() => {

@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
 import { useThreadMessages, type MessageItem } from "@/lib/hooks/useThreadMessages";
 import { useLightbox } from "@/lib/hooks/useLightbox";
+import { track } from "@/lib/analytics";
 
 interface InlineChatViewProps {
   threadId: string;
@@ -131,6 +132,11 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       const res = await apiPost<{ message: MessageItem }>(`/api/messages/${threadId}`, {
         text: trimmed,
         ...(uploadTokens.length > 0 ? { uploadTokens } : {}),
+      });
+      track("thread_message_send", {
+        threadId,
+        hasFiles: uploadTokens.length > 0,
+        textLength: trimmed.length,
       });
       setMessages((prev) => [...prev, res.message]);
       setText("");

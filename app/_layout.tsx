@@ -1,13 +1,41 @@
 import "../global.css";
+import { useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { Stack, usePathname } from "expo-router";
+import * as Sentry from "@sentry/react-native";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppShell from "@/components/layout/AppShell";
 import StrandedSpecialistBanner from "@/components/layout/StrandedSpecialistBanner";
 import { colors } from "@/lib/theme";
 import { useHeartbeat } from "@/lib/hooks/useHeartbeat";
+import { identify as analyticsIdentify, reset as analyticsReset } from "@/lib/analytics";
 
 import MetroBridge from "@/components/MetroBridge";
+
+// Sentry MUST be initialised BEFORE any other code runs that could throw,
+// so crashes during render / module evaluation are still captured. The
+// SDK no-ops gracefully when `EXPO_PUBLIC_SENTRY_DSN` is missing — local
+// dev without keys keeps working.
+//
+// `EXPO_PUBLIC_*` vars are inlined at build time (Expo CLI), so this read
+// is safe in a top-level module body.
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+const APP_VERSION = process.env.EXPO_PUBLIC_APP_VERSION;
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    debug: __DEV__,
+    tracesSampleRate: 0.1,
+    enableNativeFramesTracking: true,
+    release: APP_VERSION,
+    environment: __DEV__ ? "development" : "production",
+  });
+} else if (__DEV__) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[sentry] EXPO_PUBLIC_SENTRY_DSN not set — crash reporting disabled"
+  );
+}
 
 /**
  * Read-only computed signal for "stranded specialist" state.
@@ -59,6 +87,29 @@ function useStrandedSpecialistInfo(): { stranded: boolean } {
  * Issue GH-1353 — mobile drawer navigation.
  * Issue GH-1367 — auth loading flash: show spinner while auth restores from storage.
  */
+/**
+ * Bridges auth state into PostHog/Sentry user context. Mounted inside the
+ * AuthProvider so it can read `user`. On sign-in we call `identify(userId)`
+ * once; on sign-out we `reset()` so the next anonymous session is clean.
+ *
+ * This is a separate component (not a hook on the gate) because it must
+ * fire even when the gate short-circuits to a spinner — analytics IDs
+ * should attach as soon as the user object is available.
+ */
+function AnalyticsBridge() {
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user?.id) {
+      analyticsIdentify(user.id, { email: user.email });
+      Sentry.setUser({ id: user.id, email: user.email });
+    } else {
+      analyticsReset();
+      Sentry.setUser(null);
+    }
+  }, [user?.id, user?.email]);
+  return null;
+}
+
 function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
   const { isLoading } = useAuth();
 
@@ -90,9 +141,10 @@ function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <AuthProvider>
+      <AnalyticsBridge />
       <MetroBridge />
       <AppShell>
         <AuthenticatedHeaderGate>
@@ -154,3 +206,8 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+// Wrap the root component so Sentry can capture render-time crashes and
+// attach navigation breadcrumbs. When SENTRY_DSN is unset the SDK no-ops,
+// so this wrap is safe in dev without keys.
+export default Sentry.wrap(RootLayout);
