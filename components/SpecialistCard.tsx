@@ -61,7 +61,6 @@ export default function SpecialistCard({
 }: SpecialistCardProps) {
   const resolvedVariant = variant ?? (horizontal ? "horizontal" : "vertical");
   const name = formatSpecialistName(firstName, lastName);
-  const initials = getInitials(firstName, lastName);
   const year = createdAt ? formatYear(createdAt) : null;
   const desc = description
     ? description.length > 120

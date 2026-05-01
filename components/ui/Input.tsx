@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Platform, type TextInputProps, type ViewStyle } from "react-native";
 import { type LucideIcon } from "lucide-react-native";
-import { colors, spacing } from "../../lib/theme";
+import { colors, inputColors, spacing } from "../../lib/theme";
 
 export interface InputProps {
   label?: string;
@@ -30,12 +30,12 @@ export interface InputProps {
   onContentSizeChange?: TextInputProps["onContentSizeChange"];
 }
 
-// Design tokens for the "bordered" variant (spec: #1589).
-const INPUT_BORDER_DEFAULT = "#e5e7eb";
-const INPUT_BORDER_FOCUS = "#3b82f6";
-const INPUT_BORDER_ERROR = "#c6365a";
-const INPUT_PLACEHOLDER = "#9ca3af";
-const INPUT_TEXT = "#111111";
+// Design tokens for the "bordered" variant — imported from lib/theme (spec: #1589).
+const INPUT_BORDER_DEFAULT = inputColors.borderDefault;
+const INPUT_BORDER_FOCUS   = inputColors.borderFocus;
+const INPUT_BORDER_ERROR   = inputColors.borderError;
+const INPUT_PLACEHOLDER    = inputColors.placeholder;
+const INPUT_TEXT           = inputColors.text;
 
 export default function Input({
   label,
@@ -78,7 +78,7 @@ export default function Input({
         borderWidth: 1,
         borderColor,
         borderRadius: 8,
-        backgroundColor: editable ? "#ffffff" : "#f9fafb",
+        backgroundColor: editable ? inputColors.bgEditable : inputColors.bgReadOnly,
         paddingHorizontal: 12,
         paddingVertical: 8,
       }

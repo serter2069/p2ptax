@@ -256,6 +256,18 @@ export const overlay = {
   dark15: 'rgba(0,0,0,0.15)',  // image placeholder icon tint
 } as const
 
+// ─── Input design tokens (GH-1589) ─────────────────────────────────────────
+// Centralised here so Input.tsx has zero raw hex literals.
+export const inputColors = {
+  borderDefault: '#e5e7eb',  // gray-200 — resting border
+  borderFocus:   '#3b82f6',  // blue-500 — focus ring
+  borderError:   '#c6365a',  // same as colors.danger
+  placeholder:   '#9ca3af',  // gray-400
+  text:          '#111111',  // foreground text (same as tokenColors.fg)
+  bgEditable:    '#ffffff',  // editable background
+  bgReadOnly:    '#f9fafb',  // read-only / disabled background (gray-50)
+} as const
+
 // ─── Issue GH-1634: Design token aliases ────────────────────────────────────
 // Short-form color aliases for high-frequency usage in components.
 // Existing named tokens remain unchanged; these are additive aliases.
