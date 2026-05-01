@@ -22,11 +22,13 @@ const SOURCES = {
   icon: require("@/assets/images/logo-icon-1024.png"),
 };
 
+// Aspect ratio of the wide logo: 1100 × 274 ≈ 4:1.
+// Heights chosen for vertical chrome rhythm (28 / 40 / 56 / 80).
 const SIZES: Record<LogoSize, { width: number; height: number }> = {
-  sm: { width: 96, height: 28 },
-  md: { width: 110, height: 36 },
-  lg: { width: 130, height: 42 },
-  xl: { width: 180, height: 60 },
+  sm: { width: 112, height: 28 },
+  md: { width: 160, height: 40 },
+  lg: { width: 224, height: 56 },
+  xl: { width: 320, height: 80 },
 };
 
 const ICON_SIZES: Record<LogoSize, { width: number; height: number }> = {

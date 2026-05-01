@@ -25,6 +25,8 @@ import LoadingState from "@/components/ui/LoadingState";
 import RequestCard from "@/components/RequestCard";
 import PageTitle from "@/components/layout/PageTitle";
 import { api } from "@/lib/api";
+import { useCities } from "@/lib/hooks/useCities";
+import { useServices } from "@/lib/hooks/useServices";
 import { colors, BREAKPOINT } from "@/lib/theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -88,8 +90,10 @@ export default function RequestsFeed({
   const isDesktop = width >= BREAKPOINT;
 
   // Filter source data (catalog only)
-  const [cities, setCities] = useState<CityOption[]>([]);
-  const [services, setServices] = useState<ServiceOption[]>([]);
+  const { cities: citiesHook } = useCities();
+  const { services: servicesHook } = useServices();
+  const cities = citiesHook as CityOption[];
+  const services = servicesHook as ServiceOption[];
 
   // List state
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -159,18 +163,7 @@ export default function RequestsFeed({
       setError(null);
 
       if (mode === "catalog") {
-        try {
-          const [citiesRes, servicesRes] = await Promise.all([
-            api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
-            api<{ items: ServiceOption[] }>("/api/services", { noAuth: true }),
-          ]);
-          if (!cancelled) {
-            setCities(citiesRes.items);
-            setServices(servicesRes.items);
-          }
-        } catch {
-          // Non-fatal: filters degrade gracefully
-        }
+        // cities/services provided by useCities/useServices hooks (globally cached)
         if (!cancelled) await fetchCatalogRef.current(1);
       } else {
         if (!cancelled) await fetchMine();
