@@ -167,10 +167,11 @@ export default function UnifiedInbox() {
         <View className="flex-1 items-center" style={{ width: "100%", overflow: "hidden" }}>
           <View
             className="flex-1 flex-row"
-            // House rule: two-pane outer caps at 960 (CLAUDE.md).
+            // CHAT EXCEPTION: messages benefit from full width — no maxWidth cap.
+            // All other authenticated screens use 960 (forms 720). See CLAUDE.md
+            // Layout House Rules row "Two-pane (messages)".
             style={{
               width: "100%",
-              maxWidth: isWide ? 960 : "100%",
               borderWidth: isWide ? 1 : 0,
               borderColor: colors.border,
               borderRadius: isWide ? 12 : 0,
@@ -217,8 +218,12 @@ export default function UnifiedInbox() {
                 <InlineChatView threadId={selectedThreadId} />
               ) : (
                 <MessengerEmptyPane
-                  title="Выберите диалог слева"
-                  hint={emptyPaneHint}
+                  title="Начните общение"
+                  hint={
+                    sorted.length > 0
+                      ? `Выберите ${isSpecialistUser ? "запрос клиента" : "переписку со специалистом"} слева, чтобы открыть чат.`
+                      : emptyPaneHint
+                  }
                   primary={emptyPanePrimary}
                   secondary={emptyPaneSecondary}
                 />

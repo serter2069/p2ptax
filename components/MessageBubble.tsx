@@ -2,6 +2,19 @@ import { View, Text, Pressable, Image, Modal, TouchableOpacity } from "react-nat
 import { useState } from "react";
 import { File, FileText, Download, X } from "lucide-react-native";
 import { colors } from "@/lib/theme";
+import { API_URL } from "@/lib/api";
+
+/**
+ * Resolve a stored attachment URL to a fully-qualified URL the platform
+ * <Image>/<a> can fetch. Backend now presigns to absolute https URLs,
+ * but we keep the relative fallback so legacy bubbles (and the brief
+ * window between deploy + DB rewrite) still render.
+ */
+function resolveAttachmentUrl(url: string): string {
+  if (!url) return url;
+  if (url.startsWith("http")) return url;
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 interface FileAttachment {
   id: string;
@@ -48,6 +61,7 @@ export default function MessageBubble({
   const docFiles = files.filter((f) => !isImage(f.mimeType));
 
   const handleImagePress = (url: string, filename: string) => {
+    // url is already resolved (caller passed `resolvedUri`). Forwarded as-is.
     if (onImagePress) {
       onImagePress(url, filename);
     } else {
@@ -101,23 +115,26 @@ export default function MessageBubble({
         }}
       >
         {/* Image thumbnails */}
-        {imageFiles.map((img) => (
-          <Pressable
-            accessibilityRole="button"
-            key={img.id}
-            accessibilityLabel={`Изображение ${img.filename}. Нажмите для просмотра.`}
-            onPress={() => handleImagePress(img.url, img.filename)}
-            className="mb-1"
-            style={({ pressed }) => [pressed && { opacity: 0.85 }]}
-          >
-            <Image
-              source={{ uri: img.url }}
-              style={{ width: 200, height: 200, borderRadius: 12 }}
-              resizeMode="cover"
-              accessibilityLabel={img.filename}
-            />
-          </Pressable>
-        ))}
+        {imageFiles.map((img) => {
+          const resolvedUri = resolveAttachmentUrl(img.url);
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={img.id}
+              accessibilityLabel={`Изображение ${img.filename}. Нажмите для просмотра.`}
+              onPress={() => handleImagePress(resolvedUri, img.filename)}
+              className="mb-1"
+              style={({ pressed }) => [pressed && { opacity: 0.85 }]}
+            >
+              <Image
+                source={{ uri: resolvedUri }}
+                style={{ width: 200, height: 200, borderRadius: 12 }}
+                resizeMode="cover"
+                accessibilityLabel={img.filename}
+              />
+            </Pressable>
+          );
+        })}
 
         {/* Document files */}
         {docFiles.map((file) => (

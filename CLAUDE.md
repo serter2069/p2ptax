@@ -77,9 +77,15 @@ Before claiming "done" on any visual/chrome change:
 |---|---|---|
 | Content / list / catalog / detail | 960 | 24 |
 | Forms (profile, requests/new, admin settings) | 720 | 24 |
-| Two-pane (messages) outer | 960 | 0 |
+| Two-pane (messages) outer | none | 0 |
 | Legal prose | 720 | 24 |
 | Auth (login/otp) | 400 | 24 |
+
+> Two-pane chat is the **only** screen without a maxWidth cap. Rationale: the
+> 360-px thread list + flexible chat pane benefit from every pixel — capping
+> at 960 leaves a wide blank on the right at 1440+ desktops and makes the
+> chat pane feel cramped. All other authenticated content stays at 960 to
+> preserve readability.
 
 Sidebar = 240px on ≥768px. Optimal viewport 1200px → 960px content.
 
