@@ -61,22 +61,32 @@ export default function Avatar({
   const ink = inkColor ?? colors.white;
 
   if (imageUrl) {
+    // Web rendering bug: when `border-radius: 9999` is applied only to the
+    // outer wrapper (with overflow:hidden) the inner <img> can still bleed
+    // square corners on certain DPR/browser combos — the avatar reads
+    // "square". Fix: round BOTH the wrapper AND the inner image, and shrink
+    // the image by `borderWidth*2` so it fits inside the bordered box
+    // (instead of overflowing it and being clipped by overflow:hidden).
+    const borderW = 2;
+    const inner = wh - borderW * 2;
     return (
       <View
         style={{
           width: wh,
           height: wh,
-          borderRadius: 9999,
+          borderRadius: wh / 2,
           overflow: "hidden",
-          borderWidth: 2,
+          borderWidth: borderW,
           borderColor: colors.border,
           backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <Image
           source={{ uri: imageUrl }}
           accessibilityLabel={name}
-          style={{ width: wh, height: wh }}
+          style={{ width: inner, height: inner, borderRadius: inner / 2 }}
         />
       </View>
     );

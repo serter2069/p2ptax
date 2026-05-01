@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { FileText, ChevronRight } from "lucide-react-native";
+import { FileText, ChevronRight, MessageCircle } from "lucide-react-native";
 import MessageBubble from "@/components/MessageBubble";
 import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
 import Lightbox, { type LightboxFile } from "@/components/files/Lightbox";
@@ -336,11 +336,32 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
             ) : null
           }
           ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-16">
-              <FontAwesome name="comments-o" size={48} color={colors.textSecondary} />
-              <Text className="text-base font-medium mt-4" style={{ color: colors.textSecondary }}>Начните общение</Text>
-              <Text className="text-sm mt-1 text-center px-4" style={{ color: colors.textSecondary }}>
-                Напишите сообщение, чтобы начать диалог
+            <View className="flex-1 items-center justify-center py-16 px-6">
+              {/* On-brand empty state: soft accent circle (80×80) with the
+                  brand-color MessageCircle icon (32×32). Replaces the prior
+                  off-brand lucide/FontAwesome grey "comments-o" stock icon.
+                  Matches RequestsFeed empty-state design language. */}
+              <View
+                className="rounded-full items-center justify-center"
+                style={{
+                  width: 80,
+                  height: 80,
+                  backgroundColor: colors.accentSoft,
+                }}
+              >
+                <MessageCircle size={32} color={colors.accent} strokeWidth={2} />
+              </View>
+              <Text
+                className="text-lg font-bold text-center mt-4"
+                style={{ color: colors.text }}
+              >
+                Начните общение
+              </Text>
+              <Text
+                className="text-sm mt-2 text-center max-w-xs"
+                style={{ color: colors.textMuted, lineHeight: 20 }}
+              >
+                Напишите первое сообщение, чтобы начать диалог
               </Text>
             </View>
           }

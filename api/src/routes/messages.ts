@@ -11,6 +11,30 @@ import { minioClient, MINIO_BUCKET, presignAvatarUrl } from "../lib/minio";
 
 const router = Router();
 
+// 1-hour presigned URL so the <Image> component (web + native) can load
+// attachments without auth headers and without relying on the
+// API-relative `/p2ptax/<key>` proxy. Why presign on every fetch:
+//
+//   - Stored DB url is `/<bucket>/<key>` (a relative path). On web the
+//     RN `<Image>` resolves that relative to the page origin (Expo dev
+//     port 8081), 404'ing instead of hitting the API proxy on 3812.
+//   - Presigned URLs are absolute https://<minio-host>/... — they work
+//     identically on web, iOS, Android.
+//   - 1-hour TTL means thumbnails never go stale within a session.
+async function presignAttachmentUrl(storedUrl: string): Promise<string> {
+  if (storedUrl.startsWith("http")) return storedUrl;
+  const withoutLeadingSlash = storedUrl.replace(/^\/+/, "");
+  const prefix = `${MINIO_BUCKET}/`;
+  const key = withoutLeadingSlash.startsWith(prefix)
+    ? withoutLeadingSlash.slice(prefix.length)
+    : withoutLeadingSlash;
+  try {
+    return await minioClient.presignedGetObject(MINIO_BUCKET, key, 60 * 60);
+  } catch {
+    return storedUrl; // graceful fallback — better a broken thumb than 500
+  }
+}
+
 const messageRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
@@ -304,11 +328,20 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
     }
 
     const result = await Promise.all(
-      messages.map(async (m) => ({
-        ...m,
-        sender: { ...m.sender, avatarUrl: await presignAvatarUrl(m.sender.avatarUrl) },
-        files: filesByMessage[m.id] || [],
-      }))
+      messages.map(async (m) => {
+        const rawFiles = filesByMessage[m.id] || [];
+        const signedFiles = await Promise.all(
+          rawFiles.map(async (f) => ({
+            ...f,
+            url: await presignAttachmentUrl(f.url),
+          }))
+        );
+        return {
+          ...m,
+          sender: { ...m.sender, avatarUrl: await presignAvatarUrl(m.sender.avatarUrl) },
+          files: signedFiles,
+        };
+      })
     );
 
     if (!paginated) {
@@ -523,11 +556,20 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
       });
     }).catch((err: Error) => console.warn("[email] new_message email failed:", err.message));
 
+    // Presign attachment URLs so the FE can render them in <Image> /
+    // <a download> without prefixing API_URL or adding auth headers.
+    const signedSavedFiles = await Promise.all(
+      savedFiles.map(async (f) => ({
+        ...f,
+        url: await presignAttachmentUrl(f.url),
+      }))
+    );
+
     res.json({
       message: {
         ...message,
         sender: { ...message.sender, avatarUrl: await presignAvatarUrl(message.sender.avatarUrl) },
-        files: savedFiles,
+        files: signedSavedFiles,
       },
     });
   } catch (error) {
