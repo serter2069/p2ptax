@@ -1176,6 +1176,17 @@ const NOTIFICATION_SAMPLES = [
   },
 ];
 
+// ─── Landing Specialist UUID overrides ────────────────────────────
+// These 4 specialists must get DETERMINISTIC UUIDs on every DB so that
+// FEATURED_PINNED_IDS in api/src/routes/specialists.ts always resolves them.
+// Note: emails use @p2ptax-seed.ru (existing seed entries).
+const LANDING_OVERRIDES: Record<string, string> = {
+  "yulia.zaitseva@p2ptax-seed.ru":     "0ed05f10-a9f9-4e8d-9f35-a3920e5abaab", // Юлия Зайцева → Камеральная
+  "vladimir.lebedev@p2ptax-seed.ru":   "45790a39-0285-48d7-943c-bea399edc3f1", // Владимир Лебедев → ОКК
+  "yuriy.kondratyev@p2ptax-seed.ru":   "5ff5cac2-5bdb-4e52-b82b-10e72ad3e1c3", // Юрий Кондратьев → Выездная
+  "svetlana.orlova@p2ptax-seed.ru":    "ca4f2c0f-491b-4791-bf4c-38f43122a6d1", // Светлана Орлова → Опер.контроль
+};
+
 // ─── Main ──────────────────────────────────────────────────────────
 
 async function main() {
@@ -1216,9 +1227,20 @@ async function main() {
   const specialistUsers: Array<{ id: string; email: string }> = [];
   let specialistCount = 0;
   for (const spec of SPECIALISTS) {
+    const landingId = LANDING_OVERRIDES[spec.email];
+
+    if (landingId) {
+      // Delete any existing record with this email that has a different UUID
+      // (can't change PK via upsert, so we must delete+recreate stale rows)
+      await prisma.user.deleteMany({
+        where: { email: spec.email, NOT: { id: landingId } },
+      });
+    }
+
     const user = await prisma.user.upsert({
-      where: { email: spec.email },
+      where: landingId ? { id: landingId } : { email: spec.email },
       update: {
+        email: spec.email,
         firstName: spec.firstName,
         lastName: spec.lastName,
         avatarUrl: spec.avatarUrl,
@@ -1229,6 +1251,7 @@ async function main() {
         isPublicProfile: true,
       },
       create: {
+        ...(landingId ? { id: landingId } : {}),
         email: spec.email,
         firstName: spec.firstName,
         lastName: spec.lastName,
