@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { View, Text, TextInput, Platform } from "react-native";
 import { Mail } from "lucide-react-native";
 import Button from "@/components/ui/Button";
@@ -14,9 +14,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 interface Props {
   /**
    * Called once the user is fully authenticated AND has a role.
-   * Parent should perform the action (e.g. POST /api/requests) here.
+   * Receives the fresh accessToken so the parent can use it directly
+   * without waiting for AuthContext to propagate (avoids stale-closure race).
    */
-  onAuthenticated: () => void | Promise<void>;
+  onAuthenticated: (accessToken: string) => void | Promise<void>;
   /** Called when user dismisses or cancels the flow (currently unused). */
   onCancel?: () => void;
   /** External submitting flag — disables the verify button while parent posts. */
@@ -30,7 +31,7 @@ export default function InlineOtpFlow({
   parentSubmitting = false,
   returnTo = "/requests/new",
 }: Props) {
-  const { isAuthenticated, signIn } = useAuth();
+  const { signIn } = useAuth();
   const nav = useTypedRouter();
 
   const [stage, setStage] = useState<"email" | "code">("email");
@@ -40,16 +41,6 @@ export default function InlineOtpFlow({
   const [codeError, setCodeError] = useState("");
   const [requesting, setRequesting] = useState(false);
   const [verifying, setVerifying] = useState(false);
-
-  const pendingAfterAuth = useRef(false);
-
-  // When auth completes via signIn() below, run the parent action.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (!pendingAfterAuth.current) return;
-    pendingAfterAuth.current = false;
-    onAuthenticated();
-  }, [isAuthenticated, onAuthenticated]);
 
   const handleRequestOtp = useCallback(async () => {
     setEmailError("");
@@ -102,9 +93,10 @@ export default function InlineOtpFlow({
         });
         return;
       }
-      // Pending submit; effect runs onAuthenticated after auth state settles.
-      pendingAfterAuth.current = true;
+      // Store tokens first, then call parent directly with fresh token —
+      // avoids stale-closure race waiting for AuthContext re-render.
       await signIn(data.accessToken, data.refreshToken, data.user);
+      onAuthenticated(data.accessToken);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Неверный код";
       setCodeError(msg);
@@ -112,7 +104,7 @@ export default function InlineOtpFlow({
     } finally {
       setVerifying(false);
     }
-  }, [code, email, signIn, nav, returnTo]);
+  }, [code, email, signIn, nav, returnTo, onAuthenticated]);
 
   return (
     <View

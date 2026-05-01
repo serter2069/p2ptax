@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -19,62 +19,11 @@ import Lightbox, { type LightboxFile } from "@/components/files/Lightbox";
 import ChatThreadHeader from "@/components/chat-inline/ChatThreadHeader";
 import ClearThreadModal from "@/components/chat-inline/ClearThreadModal";
 import { displayName, nameInInstrumental } from "@/components/chat-inline/chatHelpers";
-import { API_URL, api, apiPost, apiPatch, apiDelete } from "@/lib/api";
+import { apiPost, apiDelete } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
-
-
-interface FileAttachment {
-  id: string;
-  url: string;
-  filename: string;
-  size: number;
-  mimeType: string;
-}
-
-// LightboxItem kept for internal state only; wired to <Lightbox> via LightboxFile.
-interface LightboxItem {
-  url: string;
-  filename: string;
-  mimeType: string;
-}
-
-interface MessageSender {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  avatarUrl: string | null;
-}
-
-interface MessageItem {
-  id: string;
-  threadId: string;
-  senderId: string;
-  text: string;
-  createdAt: string;
-  sender: MessageSender;
-  files: FileAttachment[];
-}
-
-interface OtherUser {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  avatarUrl: string | null;
-  /** Soft-deleted account — render "Аккаунт удалён" instead of the name. */
-  isDeleted?: boolean;
-}
-
-interface ThreadInfo {
-  id: string;
-  requestId: string;
-  clientId: string;
-  specialistId: string;
-  request: { id: string; title: string; status: string };
-  client: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null; isDeleted?: boolean };
-  specialist: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null; isDeleted?: boolean };
-  otherUser: OtherUser;
-}
+import { useThreadMessages, type MessageItem } from "@/lib/hooks/useThreadMessages";
+import { useLightbox } from "@/lib/hooks/useLightbox";
 
 interface InlineChatViewProps {
   threadId: string;
@@ -106,23 +55,25 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [clearingThread, setClearingThread] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
-
-  const PAGE_SIZE = 50;
-
-  const [messages, setMessages] = useState<MessageItem[]>([]);
-  const [thread, setThread] = useState<ThreadInfo | null>(null);
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [text, setText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMoreOlder, setHasMoreOlder] = useState(false);
-  const [loadingOlder, setLoadingOlder] = useState(false);
-  const [oldestMessageId, setOldestMessageId] = useState<string | null>(null);
-  const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const {
+    messages,
+    thread,
+    loading,
+    error,
+    hasMoreOlder,
+    loadingOlder,
+    setMessages,
+    loadData,
+    loadOlder,
+  } = useThreadMessages(threadId);
+
+  const { lightbox, handleFilePress, handleImagePress, closeLightbox } = useLightbox();
 
   const isClosed = thread?.request?.status === "CLOSED";
   const myId = user?.id;
@@ -130,101 +81,11 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const otherUser = thread?.otherUser ?? null;
   const otherName = otherUser ? displayName(otherUser) : "Чат";
 
-  // Initial fetch / refresh: pulls the latest PAGE_SIZE messages.
-  // Polling reuses this; older pages stay in `messages` only on the first poll
-  // (refresh resets the paged window — acceptable trade-off for poll simplicity).
-  const fetchMessages = useCallback(async () => {
-    if (!threadId) return;
-    try {
-      const res = await api<{
-        messages: MessageItem[];
-        hasMore?: boolean;
-        nextCursor?: string | null;
-      }>(`/api/messages/${threadId}?limit=${PAGE_SIZE}`);
-      setMessages(res.messages);
-      setHasMoreOlder(Boolean(res.hasMore));
-      setOldestMessageId(res.nextCursor ?? (res.messages[0]?.id ?? null));
-    } catch (e) {
-      // ignore
-    }
-  }, [threadId]);
-
-  // Load one page of older messages, prepending to `messages`.
-  const loadOlder = useCallback(async () => {
-    if (!threadId || !oldestMessageId || loadingOlder || !hasMoreOlder) return;
-    setLoadingOlder(true);
-    try {
-      const res = await api<{
-        messages: MessageItem[];
-        hasMore?: boolean;
-        nextCursor?: string | null;
-      }>(`/api/messages/${threadId}?limit=${PAGE_SIZE}&before=${encodeURIComponent(oldestMessageId)}`);
-      if (res.messages.length > 0) {
-        setMessages((prev) => [...res.messages, ...prev]);
-      }
-      setHasMoreOlder(Boolean(res.hasMore));
-      setOldestMessageId(res.nextCursor ?? (res.messages[0]?.id ?? oldestMessageId));
-    } catch (e) {
-      if (__DEV__) console.error("load older messages error:", e);
-    } finally {
-      setLoadingOlder(false);
-    }
-  }, [threadId, oldestMessageId, loadingOlder, hasMoreOlder]);
-
-  const fetchThread = useCallback(async () => {
-    if (!threadId) return;
-    try {
-      const res = await api<ThreadInfo>(`/api/threads/${threadId}`);
-      setThread(res);
-    } catch (e) {
-      // ignore
-    }
-  }, [threadId]);
-
-  const markAsRead = useCallback(async () => {
-    if (!threadId) return;
-    try {
-      await apiPatch(`/api/messages/${threadId}/read`, {});
-    } catch (e) {
-      // ignore
-    }
-  }, [threadId]);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await Promise.all([fetchMessages(), fetchThread()]);
-      await markAsRead();
-    } catch {
-      setError("Не удалось загрузить сообщения");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchMessages, fetchThread, markAsRead]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Poll for new messages every 5 seconds
-  useEffect(() => {
-    pollRef.current = setInterval(() => {
-      fetchMessages();
-    }, 5000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [fetchMessages]);
-
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if ((!trimmed && pendingFiles.length === 0) || sending || !threadId) return;
 
-    // Wave 2/G — hard gate: stranded specialists (isSpecialist=true,
-    // specialistProfileCompletedAt=null) cannot send messages because
-    // they're invisible in the catalog. Force them to finish onboarding
-    // before the message leaves the client.
+    // Wave 2/G — hard gate: stranded specialists cannot send messages.
     if (isSpecialistUser && !user?.specialistProfileCompletedAt) {
       if (Platform.OS === "web") {
         if (
@@ -249,15 +110,10 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       return;
     }
 
-    // Files are uploaded immediately on pick by FileUploadZone, so by send-time
-    // each "done" file already has its uploadedToken. Send ALL ready file
-    // tokens — the API accepts uploadTokens[] (bug #3 fix: previously only
-    // the first file was attached, regardless of maxFiles).
     const uploadTokens: string[] = pendingFiles
       .filter((f) => f.status === "done" && f.uploadedToken)
       .map((f) => f.uploadedToken as string);
 
-    // Block send if user attached a file that is still uploading or errored.
     const stillBusy = pendingFiles.some(
       (f) => f.status === "uploading" || f.status === "pending"
     );
@@ -294,17 +150,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     } finally {
       setSending(false);
     }
-  }, [text, pendingFiles, sending, threadId, isSpecialistUser, user?.specialistProfileCompletedAt]);
-
-  const handleFilePress = useCallback((file: FileAttachment) => {
-    const fullUrl = file.url.startsWith("http") ? file.url : `${API_URL}${file.url}`;
-    setLightbox({ url: fullUrl, filename: file.filename, mimeType: file.mimeType });
-  }, []);
-
-  const handleImagePress = useCallback((url: string, filename: string) => {
-    const fullUrl = url.startsWith("http") ? url : `${API_URL}${url}`;
-    setLightbox({ url: fullUrl, filename, mimeType: "image/jpeg" });
-  }, []);
+  }, [text, pendingFiles, sending, threadId, isSpecialistUser, user?.specialistProfileCompletedAt, setMessages]);
 
   const handleClearThread = useCallback(() => {
     setMenuVisible(false);
@@ -316,9 +162,8 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     setClearingThread(true);
     try {
       await apiDelete(`/api/messages/${threadId}/clear`);
-      // Stay on the thread page — just clear local message list
       setMessages([]);
-    } catch (e) {
+    } catch {
       if (Platform.OS === "web") {
         if (typeof window !== "undefined" && typeof window.alert === "function") {
           window.alert("Ошибка: Не удалось очистить переписку");
@@ -329,11 +174,10 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     } finally {
       setClearingThread(false);
     }
-  }, [threadId]);
+  }, [threadId, setMessages]);
 
   const handleOtherUserPress = useCallback(() => {
     if (!thread) return;
-    // Navigate to specialist profile only when current user is the client
     if (thread.clientId === myId && thread.specialistId) {
       router.push(`/specialists/${thread.specialistId}` as never);
     }
@@ -353,10 +197,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     [myId, handleFilePress, handleImagePress]
   );
 
-  // S1 fix — render-time defensive sort: ascending by createdAt (Date timestamp).
-  // The API already returns ASC, but optimistic appends in handleSend + polling races
-  // can interleave messages so a reply lands above older ones. Sorting here guarantees
-  // chronological order regardless of how state was updated. Stable sort keeps within-ms ties.
+  // S1 fix — render-time defensive sort: ascending by createdAt.
   const sortedMessages = (() => {
     if (messages.length < 2) return messages;
     return [...messages].sort((a, b) => {
@@ -399,12 +240,10 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     );
   }
 
-  // Determine if current user is the client (can navigate to specialist profile)
   const canViewSpecialistProfile = thread && myId && thread.clientId === myId;
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header — extracted to ChatThreadHeader for LOC reduction */}
       <ChatThreadHeader
         isDesktop={isDesktop}
         otherUser={otherUser}
@@ -421,7 +260,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         onClearThread={handleClearThread}
       />
 
-      {/* Source request link strip — visible when thread was created from a request */}
       {thread?.requestId ? (
         <Pressable
           accessibilityRole="link"
@@ -461,9 +299,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           renderItem={renderMessage}
           contentContainerStyle={{ padding: 16, flexGrow: 1, justifyContent: "flex-end" }}
           onContentSizeChange={() => {
-            // Scroll to bottom only on initial load / new messages.
-            // When loading older messages, prepended items would otherwise
-            // jerk the list to the bottom. `loadingOlder` short-circuits that.
             if (!loadingOlder) {
               flatListRef.current?.scrollToEnd({ animated: false });
             }
@@ -505,7 +340,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           }
         />
 
-        {/* Request closed banner */}
         {isClosed && (
           <View className="border-t px-4 py-3" style={{ backgroundColor: colors.yellowSoft, borderTopColor: colors.warning }}>
             <Text className="text-sm text-center" style={{ color: colors.primary }}>
@@ -514,7 +348,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
           </View>
         )}
 
-        {/* Unified chat composer (text + files + drag-and-drop). */}
         {!isClosed && (
           <ChatComposer
             value={text}
@@ -528,7 +361,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         )}
       </KeyboardAvoidingView>
 
-      {/* File / Image lightbox — unified Lightbox component */}
       <Lightbox
         files={
           lightbox
@@ -536,10 +368,9 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
             : []
         }
         visible={lightbox !== null}
-        onClose={() => setLightbox(null)}
+        onClose={closeLightbox}
       />
 
-      {/* Clear thread confirmation modal — extracted to ClearThreadModal */}
       <ClearThreadModal
         visible={showClearModal}
         onCancel={() => setShowClearModal(false)}

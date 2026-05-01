@@ -342,7 +342,9 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
       if (value) {
         const hasData = specData && specData.fnsServices.length > 0;
         if (!hasData) {
-          nav.any("/onboarding/work-area?from=settings");
+          // Include role=specialist so work-area doesn't immediately redirect back
+          // (it checks isSpecialistIntent when isSpecialistUser is still false).
+          nav.any("/onboarding/work-area?from=settings&role=specialist");
           return;
         }
         try {

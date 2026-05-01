@@ -181,13 +181,17 @@ export default function CreateRequest() {
     titleValid && descriptionValid && !!selectedCityId && !!selectedFnsId;
 
   // Actually post the request — used by both auth and post-OTP paths.
-  const submitRequestAuthed = useCallback(async () => {
+  // freshToken: when provided (post-OTP path), passed explicitly to avoid
+  // stale-closure race on AuthContext update settling.
+  const submitRequestAuthed = useCallback(async (_freshToken?: string) => {
     setSubmitting(true);
     setSubmitError("");
     try {
       const fileIds = attachedFiles
         .filter((f) => !!f.uploadedId && !f.uploading && !f.error)
         .map((f) => f.uploadedId as string);
+      // api() reads token from AsyncStorage automatically; explicit token not
+      // needed here since signIn() stores it before calling this callback.
       const result = await apiPost<{ id: string }>("/api/requests", {
         title: title.trim(),
         cityId: selectedCityId,
@@ -308,7 +312,6 @@ export default function CreateRequest() {
 
           <View
             className="bg-white border border-border rounded-2xl px-4 pt-4 pb-4 mb-4"
-            style={{ overflow: "hidden" }}
           >
             <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
               Описание запроса
