@@ -7,21 +7,3 @@ OK .audit/screenshots/05-saved-specialists-desktop.png
 OK .audit/screenshots/06-public-requests-desktop.png
 OK .audit/screenshots/07-my-requests-desktop.png
 OK .audit/screenshots/08-request-new-desktop.png
-OK .audit/screenshots/09-messages-desktop.png
-OK .audit/screenshots/10-dashboard-desktop.png
-OK .audit/screenshots/11-settings-desktop.png
-OK .audit/screenshots/12-onboarding-work-area-desktop.png
-OK .audit/screenshots/01-home-mobile.png
-OK .audit/screenshots/02-login-mobile.png
-OK .audit/screenshots/03-specialists-mobile.png
-OK .audit/screenshots/04-specialist-detail-mobile.png
-AUTH_OK email=serter2069@gmail.com token=eyJhbGciOiJIUzI1NiIs...
-OK .audit/screenshots/05-saved-specialists-mobile.png
-OK .audit/screenshots/06-public-requests-mobile.png
-OK .audit/screenshots/07-my-requests-mobile.png
-OK .audit/screenshots/08-request-new-mobile.png
-OK .audit/screenshots/09-messages-mobile.png
-OK .audit/screenshots/10-dashboard-mobile.png
-OK .audit/screenshots/11-settings-mobile.png
-OK .audit/screenshots/12-onboarding-work-area-mobile.png
-DONE
