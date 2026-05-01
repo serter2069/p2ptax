@@ -10,6 +10,8 @@ export interface CardProps {
   className?: string;
   /** Extra inline style for the outer View (e.g. overflow: "hidden"). */
   style?: ViewStyle;
+  /** Forwarded to the inner View for automated testing. */
+  testID?: string;
 }
 
 const paddingMap = {
@@ -26,6 +28,7 @@ export default function Card({
   padding = "md",
   className,
   style,
+  testID,
 }: CardProps) {
   const variantClass = `bg-white rounded-2xl border${className ? ` ${className}` : ""}`;
 
@@ -46,6 +49,7 @@ export default function Card({
     <View
       className={variantClass}
       style={[{ padding: paddingMap[padding], borderColor: variantBorderColor, backgroundColor: colors.surface }, shadowStyle, style]}
+      testID={testID}
     >
       {children}
     </View>

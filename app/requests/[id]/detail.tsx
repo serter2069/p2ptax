@@ -16,6 +16,7 @@ import { useTypedRouter } from "@/lib/navigation";
 import { File, FileImage, Download, ChevronLeft, MessageSquare } from "lucide-react-native";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import LoadingState from "@/components/ui/LoadingState";
 import ThreadsList, { ThreadSummary } from "@/components/requests/ThreadsList";
@@ -374,13 +375,10 @@ function SpecialistView({
 
       {/* Client info */}
       {request.client && (
-        <View
-          className="bg-white rounded-2xl p-4 mb-4"
-          style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
-        >
+        <Card className="mb-4">
           <Text className="text-xs font-semibold text-text-mute mb-1 uppercase tracking-wider">Клиент</Text>
           <Text className="text-base text-text-base">{request.client.name}</Text>
-        </View>
+        </Card>
       )}
 
       <FileList files={request.files} onPress={onFilePress} />
@@ -400,10 +398,7 @@ function SpecialistView({
           </Pressable>
         ) : (
           <View className="mb-6">
-            <View
-              className="bg-white rounded-2xl p-4 mb-3"
-              style={{ shadowColor: colors.text, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
-            >
+            <Card className="mb-3">
               <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wider">
                 Откликнуться
               </Text>
@@ -416,7 +411,7 @@ function SpecialistView({
                 variant="bordered"
                 accessibilityLabel="Ваше сообщение"
               />
-            </View>
+            </Card>
             {msgError && (
               <Text className="text-danger text-sm mb-3 px-1">{msgError}</Text>
             )}

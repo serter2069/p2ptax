@@ -1,5 +1,6 @@
-import { View, Text, Pressable, Image } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { Bookmark, MessageCircle } from "lucide-react-native";
+import Avatar from "@/components/ui/Avatar";
 import { colors } from "@/lib/theme";
 import { isAllCoreServicesSelected } from "@/lib/services";
 import { formatYear } from "@/lib/formatDate";
@@ -31,12 +32,6 @@ interface SpecialistCardProps {
   onWrite?: (id: string) => void;
   /** When set, only the matching FNS group is shown (cascade narrows to active filter). */
   activeFnsId?: string | null;
-}
-
-function getInitials(firstName: string | null, lastName: string | null): string {
-  const f = firstName?.[0] || "";
-  const l = lastName?.[0] || "";
-  return (f + l).toUpperCase() || "?";
 }
 
 function formatSpecialistName(firstName: string | null, lastName: string | null): string {
@@ -83,17 +78,9 @@ export default function SpecialistCard({
         className="bg-white border border-border rounded-xl p-4 mr-3"
         style={({ pressed }) => [{ maxWidth: 200, flex: 1 }, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
       >
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            className="w-12 h-12 rounded-full mb-2"
-            accessibilityLabel={name}
-          />
-        ) : (
-          <View className="w-12 h-12 rounded-full items-center justify-center mb-2" style={{ backgroundColor: colors.primary }}>
-            <Text className="text-white font-bold text-base">{initials}</Text>
-          </View>
-        )}
+        <View className="mb-2">
+          <Avatar name={name} imageUrl={avatarUrl ?? undefined} size={48} />
+        </View>
         <Text className="text-base font-semibold mb-1" style={{ color: colors.text }} numberOfLines={1}>
           {name}
         </Text>
@@ -166,20 +153,7 @@ export default function SpecialistCard({
 
       {/* Row 1: avatar + name + city (same line) */}
       <View className="flex-row items-center" style={{ gap: 10 }}>
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={{ width: 40, height: 40, borderRadius: 20 }}
-            accessibilityLabel={name}
-          />
-        ) : (
-          <View
-            className="rounded-full items-center justify-center"
-            style={{ width: 40, height: 40, backgroundColor: colors.primary }}
-          >
-            <Text className="text-white font-bold text-sm">{initials}</Text>
-          </View>
-        )}
+        <Avatar name={name} imageUrl={avatarUrl ?? undefined} size={40} />
 
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text

@@ -81,10 +81,11 @@ export default function SpecialistPublicProfile() {
   }, [isAuthenticated, id]);
 
   const handleWritePress = useCallback(() => {
+    const targetPath = `/requests/new?specialistId=${id}`;
     if (!isAuthenticated) {
-      router.push(`/login?returnTo=/specialists/${id}` as never);
+      router.push(`/login?returnTo=${encodeURIComponent(targetPath)}` as never);
     } else {
-      nav.any(`/requests/new?specialistId=${id}`);
+      nav.any(targetPath);
     }
   }, [isAuthenticated, router, id, nav]);
 

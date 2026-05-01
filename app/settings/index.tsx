@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { ChevronLeft, LogOut, Trash2 } from "lucide-react-native";
 import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 import LoadingState from "@/components/ui/LoadingState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
@@ -277,7 +278,7 @@ export default function UnifiedSettings() {
               )}
 
               {/* Logout / Delete — always visible at bottom, replacing the Account tab */}
-              <View className="bg-white border border-border rounded-2xl px-4 py-4 mt-2 mb-4 overflow-hidden">
+              <Card className="mt-2 mb-4" style={{ overflow: "hidden" }}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Выйти из аккаунта"
@@ -296,7 +297,7 @@ export default function UnifiedSettings() {
                   <Trash2 size={16} color={colors.error} />
                   <Text className="text-base text-danger ml-3 flex-1">Удалить аккаунт</Text>
                 </Pressable>
-              </View>
+              </Card>
 
               <Text className="text-xs text-text-dim text-center mb-4">
                 Версия {Constants.expoConfig?.version ?? "1.0.0"}

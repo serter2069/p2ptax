@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { Text } from "react-native";
+import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 
 interface AboutSectionProps {
@@ -11,7 +12,7 @@ export default function AboutSection({
   onChange,
 }: AboutSectionProps) {
   return (
-    <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+    <Card padding="none" className="mb-4" style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
       <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
         О себе
       </Text>
@@ -28,6 +29,6 @@ export default function AboutSection({
       <Text className="text-xs text-text-dim text-right mt-1">
         {description.length}/500
       </Text>
-    </View>
+    </Card>
   );
 }

@@ -237,7 +237,7 @@ export default function AuthOtpScreen() {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <View className="flex-1 items-center justify-center px-6">
-          <View style={{ width: "100%", maxWidth: 400 }}>
+          <View className="w-full max-w-[400px]">
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="P2PTax — главная"
@@ -246,12 +246,14 @@ export default function AuthOtpScreen() {
               <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
             </Pressable>
             <Text
-              style={{ ...textStyle.h2, color: colors.text, textAlign: "center", marginBottom: 8 }}
+              className="text-[28px] leading-[36px] font-bold text-center mb-2"
+              style={{ color: colors.text, letterSpacing: -0.25 }}
             >
               Кто вы?
             </Text>
             <Text
-              style={{ ...textStyle.body, color: colors.textSecondary, textAlign: "center", marginBottom: 32 }}
+              className="text-base leading-6 text-center mb-8"
+              style={{ color: colors.textSecondary }}
             >
               Выберите, как вы будете использовать сервис
             </Text>
@@ -300,7 +302,7 @@ export default function AuthOtpScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
         <HeaderBack title="" />
         <View className="flex-1 items-center justify-center px-6">
-          <View style={{ width: "100%", maxWidth: 400 }}>
+          <View className="w-full max-w-[400px]">
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="P2PTax — главная"
@@ -308,16 +310,10 @@ export default function AuthOtpScreen() {
             >
               <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
             </Pressable>
-            <Text
-              className="text-text-base font-extrabold text-center"
-              style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
-            >
+            <Text className="text-[28px] leading-[34px] font-extrabold text-text-base text-center mb-2">
               Сессия истекла
             </Text>
-            <Text
-              className="text-text-mute text-center"
-              style={{ fontSize: 14, lineHeight: 20, marginBottom: 24 }}
-            >
+            <Text className="text-sm leading-5 text-text-mute text-center mb-6">
               Чтобы получить новый 6-значный код, вернитесь на шаг ввода email.
             </Text>
             <Button
@@ -338,7 +334,7 @@ export default function AuthOtpScreen() {
         className="flex-1"
       >
         <View className="flex-1 items-center justify-center px-6">
-          <View style={{ width: "100%", maxWidth: 400 }}>
+          <View className="w-full max-w-[400px]">
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="P2PTax — главная"
@@ -346,16 +342,10 @@ export default function AuthOtpScreen() {
             >
               <Logo size="xl" style={{ alignSelf: "center", marginBottom: 40 }} />
             </Pressable>
-            <Text
-              className="text-text-base font-extrabold text-center"
-              style={{ fontSize: 28, lineHeight: 34, marginBottom: 8 }}
-            >
+            <Text className="text-[28px] leading-[34px] font-extrabold text-text-base text-center mb-2">
               Введите код
             </Text>
-            <Text
-              className="text-text-mute text-center"
-              style={{ fontSize: 14, lineHeight: 20, marginBottom: 6 }}
-            >
+            <Text className="text-sm leading-5 text-text-mute text-center mb-1.5">
               Код отправлен на{" "}
               <Text className="text-text-base font-semibold">{maskEmail(email)}</Text>
             </Text>
@@ -365,7 +355,7 @@ export default function AuthOtpScreen() {
               onPress={() => nav.replaceRoutes.login()}
               className="mb-7"
             >
-              <Text className="text-accent text-center font-medium" style={{ fontSize: 13 }}>
+              <Text className="text-[13px] text-accent text-center font-medium">
                 изменить
               </Text>
             </Pressable>
@@ -380,11 +370,11 @@ export default function AuthOtpScreen() {
             />
 
             {error ? (
-              <Text className="text-sm text-danger text-center mb-4" style={{ fontSize: 13 }}>
+              <Text className="text-[13px] text-danger text-center mb-4">
                 {error}
               </Text>
             ) : (
-              <View style={{ height: 20, marginBottom: 4 }} />
+              <View className="h-5 mb-1" />
             )}
 
             <Button

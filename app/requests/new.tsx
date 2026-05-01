@@ -17,6 +17,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { ChevronLeft, X } from "lucide-react-native";
 import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { apiPost, api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -366,9 +367,7 @@ export default function CreateRequest() {
             </View>
           )}
 
-          <View
-            className="bg-white border border-border rounded-2xl px-4 pt-4 pb-4 mb-4"
-          >
+          <Card className="mb-4">
             <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
               Описание запроса
             </Text>
@@ -484,7 +483,7 @@ export default function CreateRequest() {
                 authToken={token}
               />
             )}
-          </View>
+          </Card>
 
           {submitError ? (
             <View className="bg-danger-soft border border-danger rounded-xl p-3 mb-4">
@@ -501,7 +500,11 @@ export default function CreateRequest() {
               onAuthenticated={submitRequestAuthed}
               onCancel={() => setShowOtpFlow(false)}
               parentSubmitting={submitting}
-              returnTo="/requests/new"
+              returnTo={
+                targetSpecialistId
+                  ? `/requests/new?specialistId=${targetSpecialistId}`
+                  : "/requests/new"
+              }
             />
           )}
 
