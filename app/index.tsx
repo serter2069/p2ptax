@@ -34,6 +34,7 @@ interface FeaturedSpecialistsResponse {
     cities: Array<{ id: string; name: string }>;
     services: Array<{ id: string; name: string }>;
     specialistFns?: Array<{ fnsId: string; fnsName: string }>;
+    createdAt?: string | null;
   }>;
 }
 
@@ -110,7 +111,7 @@ export default function LandingScreen() {
             cities: s.cities,
             services: s.services,
             fnsName,
-            isOnline: true,
+            createdAt: s.createdAt,
           };
         });
         setSpecialists(mapped);

@@ -10,7 +10,36 @@ export interface HeroSpecialistPreview {
   cities: Array<{ id: string; name: string }>;
   services: Array<{ id: string; name: string }>;
   fnsName?: string | null;
-  isOnline?: boolean;
+  createdAt?: string | null;
+}
+
+/**
+ * Shorten verbose FNS names to fit card layout.
+ * e.g. "Межрайонная ИФНС №39 по Республике Башкортостан" → "ИФНС №39, Уфа"
+ */
+function shortFnsName(name: string): string {
+  if (!name) return name;
+  // Extract number like №39 or №3
+  const numMatch = name.match(/№\s*(\d+)/);
+  const num = numMatch ? `№${numMatch[1]}` : null;
+
+  // City mappings based on region/city patterns in the name
+  if (/Башкортостан|Уфа/i.test(name) && num) return `ИФНС ${num}, Уфа`;
+  if (/Москв/i.test(name) && num) return `ИФНС ${num}, Москва`;
+  if (/Санкт-Петербург|Петербург|СПб/i.test(name) && num) return `ИФНС ${num}, СПб`;
+  if (/Казан/i.test(name) && num) return `ИФНС ${num}, Казань`;
+  if (/Новосибирск/i.test(name) && num) return `ИФНС ${num}, Новосибирск`;
+  if (/Екатеринбург/i.test(name) && num) return `ИФНС ${num}, Екатеринбург`;
+  if (/Краснодар/i.test(name) && num) return `ИФНС ${num}, Краснодар`;
+  if (/Нижний Новгород/i.test(name) && num) return `ИФНС ${num}, Н.Новгород`;
+  if (/Самар/i.test(name) && num) return `ИФНС ${num}, Самара`;
+  if (/Ростов/i.test(name) && num) return `ИФНС ${num}, Ростов`;
+
+  // Generic shortening: strip "Межрайонная" prefix and long suffixes
+  return name
+    .replace(/^Межрайонная\s+/i, "")
+    .replace(/\s+по\s+.+$/, "")
+    .trim();
 }
 
 interface HeroBlockProps {
@@ -229,6 +258,7 @@ function SpecialistCard({
   // Show only the first service to prevent card layout breaking.
   const firstService = specialist.services[0] ?? null;
   const avatarBg = AVATAR_COLORS[index % AVATAR_COLORS.length];
+  const since = specialist.createdAt ? new Date(specialist.createdAt).getFullYear() : null;
 
   return (
     <View
@@ -277,38 +307,15 @@ function SpecialistCard({
               {name}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-              Специалист
+              {since ? `На сайте с ${since}` : "Специалист"}
             </Text>
           </View>
-          {specialist.isOnline ? (
-            <View
-              className="flex-row items-center rounded-full"
-              style={{
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                backgroundColor: colors.successBgTint,
-              }}
-            >
-              <View
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 6,
-                  backgroundColor: colors.success,
-                  marginRight: 5,
-                }}
-              />
-              <Text style={{ color: colors.success, fontSize: 12, fontWeight: "600" }}>
-                онлайн
-              </Text>
-            </View>
-          ) : null}
         </View>
 
         <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 10 }}>
           {/* Show FNS name if available, otherwise fall back to city */}
           {specialist.fnsName
-            ? <Chip label={specialist.fnsName} tone="default" />
+            ? <Chip label={shortFnsName(specialist.fnsName)} tone="default" />
             : city
             ? <Chip label={city} tone="default" />
             : null}
