@@ -1,6 +1,32 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+// Sentry must be initialised BEFORE any other module imports it implicitly
+// (express, prisma, etc.) so its async-hooks-based instrumentation can wrap
+// outgoing requests and DB queries. Graceful no-op if SENTRY_DSN is missing
+// — local dev without a key keeps working.
+import * as Sentry from "@sentry/node";
+const SENTRY_DSN = process.env.SENTRY_DSN;
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: process.env.NODE_ENV ?? "development",
+    release: process.env.SENTRY_RELEASE,
+    tracesSampleRate: 0.1,
+  });
+  // Surface unhandled async failures into Sentry. Node's default behaviour
+  // (warning, then exit on `unhandledRejection` in newer versions) still
+  // applies — this just makes sure the event reaches Sentry first.
+  process.on("uncaughtException", (err) => {
+    Sentry.captureException(err);
+  });
+  process.on("unhandledRejection", (reason) => {
+    Sentry.captureException(reason);
+  });
+} else {
+  console.warn("[sentry] SENTRY_DSN not set — error reporting disabled");
+}
+
 import { validateConfig, config } from "./lib/config";
 validateConfig();
 
@@ -27,6 +53,7 @@ import savedSpecialistsRoutes from "./routes/saved-specialists";
 import accountRoutes from "./routes/account";
 import { startNotificationWorker } from "./notifications/notification.processor";
 import { runRequestLifecycleCron } from "./cron/requestLifecycle";
+import { apiLimiter } from "./middleware/rateLimit";
 
 const app = express();
 
@@ -37,6 +64,13 @@ app.use(helmet({
 }));
 app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",").map(s => s.trim()) : [/^http:\/\/localhost:(8081|8082)$/] }));
 app.use(express.json({ limit: "1mb" }));
+
+// Global API fallback rate limit. Applied to the whole `/api/` surface
+// AFTER body parsing so per-route limiters mounted further down (which
+// hash on `req.body.email`) get a populated body. Per-endpoint limiters
+// inside `routes/auth.ts` run first within each route and provide
+// stricter budgets where needed.
+app.use("/api/", apiLimiter);
 
 // Proxy MinIO objects at /<bucket>/<key> so that avatarUrls stored as
 // http://localhost:3812/p2ptax/... load correctly in dev.
@@ -84,6 +118,13 @@ app.use("/api", contactsRoutes);
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
 });
+
+// Sentry error handler MUST come before any other error middleware so it
+// captures the original Error instance with its stack. No-op when DSN is
+// not configured. v10 API: `setupExpressErrorHandler` registers itself.
+if (SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 // Global error handler (Express signature requires 4 params)
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

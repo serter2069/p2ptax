@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
+import { track } from "@/lib/analytics";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroBlock, { type HeroSpecialistPreview } from "@/components/landing/HeroBlock";
 import TrustStrip from "@/components/landing/TrustStrip";
@@ -150,7 +151,14 @@ export default function LandingScreen() {
     loadData();
   }, [loadData]);
 
+  // Funnel entry — fire once per mount. Authenticated/anonymous split lives
+  // in the prop rather than two events so PostHog Insights can group both.
+  useEffect(() => {
+    track("landing_view", { authenticated: isAuthenticated });
+  }, [isAuthenticated]);
+
   const goCreateRequest = useCallback(() => {
+    track("landing_cta_match_click", { source: "primary" });
     nav.routes.requestsNew();
   }, [router]);
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { track } from "@/lib/analytics";
 
 export function useOtpRequest() {
   const [loading, setLoading] = useState(false);
@@ -14,8 +15,10 @@ export function useOtpRequest() {
         body: { email },
         noAuth: true,
       });
+      track("otp_request", { ok: true });
       return true;
     } catch (e: any) {
+      track("otp_request", { ok: false, reason: e?.message ?? "unknown" });
       setError(e.message ?? "OTP request failed");
       return false;
     } finally {
@@ -36,8 +39,10 @@ export function useOtpRequest() {
         body: { email, code },
         noAuth: true,
       });
+      track("otp_verify", { ok: true });
       return data;
     } catch (e: any) {
+      track("otp_verify", { ok: false, reason: e?.message ?? "unknown" });
       setError(e.message ?? "OTP verify failed");
       return null;
     } finally {

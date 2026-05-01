@@ -25,6 +25,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { colors, BREAKPOINT } from "@/lib/theme";
 import { getShortServiceName } from "@/lib/services";
 import { formatDateLong } from "@/lib/formatDate";
+import { track } from "@/lib/analytics";
 
 import { FileItem } from "@/components/requests/detail/types";
 
@@ -552,9 +553,15 @@ export default function RequestDetail() {
     setClosing(true);
     try {
       await apiPatch(`/api/requests/${id}/status`, { status: "CLOSED" });
+      track("request_close", { ok: true, requestId: id });
       setRequest((prev) => prev ? { ...prev, status: "CLOSED" } : null);
       setShowCloseConfirm(false);
-    } catch {
+    } catch (err) {
+      track("request_close", {
+        ok: false,
+        requestId: id,
+        reason: err instanceof Error ? err.message : "unknown",
+      });
       Alert.alert("Ошибка", "Не удалось закрыть заявку");
     } finally {
       setClosing(false);

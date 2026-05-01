@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@sentry/node": "^10.51.0",
     "bullmq": "^5.74.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

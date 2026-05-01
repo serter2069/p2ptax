@@ -31,6 +31,7 @@ import CityFnsCascade, {
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import FileUploadSection, { type AttachedFile } from "@/components/requests/FileUploadSection";
 import { draftStorage } from "@/lib/draftStorage";
+import { track } from "@/lib/analytics";
 
 // Single canonical key (v1). Replaces legacy "pending_request_draft".
 const DRAFT_KEY = "p2ptax_request_draft_v1";
@@ -84,6 +85,19 @@ export default function CreateRequest() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+
+  // Funnel — wizard mount counts as the single intake step view today.
+  // When the form splits into multi-step, fire `intake_step_view` per step
+  // with `{ step: N }` instead of remounting this once.
+  useEffect(() => {
+    track("intake_step_view", {
+      step: 1,
+      authenticated: isAuthenticated,
+      hasTargetSpecialist: !!targetSpecialistId,
+    });
+    // Run once per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch targeted specialist name when specialistId is present.
   useEffect(() => {
@@ -229,6 +243,12 @@ export default function CreateRequest() {
         isPublic,
         ...(targetSpecialistId ? { targetSpecialistId } : {}),
       });
+      track("intake_submit", {
+        ok: true,
+        isPublic,
+        hasTargetSpecialist: !!targetSpecialistId,
+        fileCount: fileIds.length,
+      });
       // Clear draft on success.
       await draftStorage.del(DRAFT_KEY).catch(() => {});
       await draftStorage.del(LEGACY_DRAFT_KEY).catch(() => {});
@@ -249,6 +269,7 @@ export default function CreateRequest() {
         e instanceof Error
           ? e.message
           : "Не удалось опубликовать запрос. Проверьте данные и попробуйте ещё раз.";
+      track("intake_submit", { ok: false, reason: msg });
       setSubmitError(msg);
     } finally {
       setSubmitting(false);

@@ -8,29 +8,15 @@ import {
 } from "../lib/jwt";
 import { authMiddleware } from "../middleware/auth";
 import { presignAvatarUrl } from "../lib/minio";
+import {
+  otpRequestLimiter,
+  otpVerifyLimiter,
+} from "../middleware/rateLimit";
 
 const router = Router();
 
-// POST /login equivalent: max 10 req per 15 min per IP (relaxed in dev)
-const otpRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 10 : 1000,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Слишком много запросов. Попробуйте через 15 минут." },
-  skip: (req) => req.headers['x-smoke-test'] === 'metromap',
-});
-
-// POST /verify-otp: max 5 req per 15 min per IP
-const verifyOtpRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 5 : 1000,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Слишком много попыток. Попробуйте через 15 минут." },
-  skip: (req) => req.headers['x-smoke-test'] === 'metromap',
-});
-
+// Token refresh has its own tighter window — kept inline because the limit
+// (5/min/IP) is specific to token rotation and not reused elsewhere.
 const refreshRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
@@ -40,7 +26,7 @@ const refreshRateLimiter = rateLimit({
 });
 
 // POST /api/auth/request-otp
-router.post("/request-otp", otpRateLimiter, async (req: Request, res: Response) => {
+router.post("/request-otp", otpRequestLimiter, async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
@@ -94,7 +80,7 @@ router.post("/request-otp", otpRateLimiter, async (req: Request, res: Response) 
 });
 
 // POST /api/auth/verify-otp
-router.post("/verify-otp", verifyOtpRateLimiter, async (req: Request, res: Response) => {
+router.post("/verify-otp", otpVerifyLimiter, async (req: Request, res: Response) => {
   try {
     const { email, code } = req.body;
 
