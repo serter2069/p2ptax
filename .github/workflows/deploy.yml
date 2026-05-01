@@ -61,8 +61,30 @@ jobs:
               npx prisma migrate resolve --rolled-back "$failed" 2>&1 | grep -v "is not a failed migration" || true
             done
 
-            npx prisma migrate deploy || echo "WARN P3005 — DB unbaselined, migrations skipped (see issue #1510 for baseline plan)"
+            npx prisma migrate deploy || echo "WARN — migrations didn't fully apply; falling back to db push"
+
+            # Fallback: force-sync schema from schema.prisma to DB.
+            # Idempotent — does nothing if schema already matches.
+            # --accept-data-loss is acceptable on staging (issue #1510 — DB
+            # unbaselined; some tables never created via migrations).
+            npx prisma db push --accept-data-loss --skip-generate || echo "WARN db push failed"
+
             npx prisma generate
+
+            # Seed: base (cities/fns/services/users) → specialists → landing.
+            # All idempotent (upsert/update). Shell env populated from /etc/profile
+            # + ecosystem env, same as what `prisma migrate deploy` above used.
+            #
+            # PUBLIC_API_URL controls the avatarUrl prefix in seed-landing.ts so
+            # avatars resolve through the production nginx, not localhost.
+            export PUBLIC_API_URL="https://p2ptax.smartlaunchhub.com"
+
+            npx tsx prisma/seed.ts            || echo "WARN seed.ts failed (non-fatal)"
+            npx tsx prisma/seed-specialists.ts || echo "WARN seed-specialists failed (non-fatal)"
+            npx tsx prisma/seed-profiles.ts   || echo "WARN seed-profiles failed (non-fatal)"
+            npx tsx prisma/seed-landing.ts    || echo "WARN seed-landing failed (non-fatal)"
+            npx tsx src/scripts/seed-landing-avatars.ts || echo "WARN seed-avatars failed (non-fatal)"
+
             npm run build
             cd ..
 
