@@ -76,9 +76,14 @@ model SpecialistProfile {
   // Iteration 5 — credibility stack fields
   exFnsStartYear    Int?    @map("ex_fns_start_year")
   exFnsEndYear      Int?    @map("ex_fns_end_year")
+  exFnsOffice       String? @map("ex_fns_office")
+  verifiedExFns     Boolean @default(false) @map("verified_ex_fns")
   yearsOfExperience Int?    @map("years_of_experience")
   specializations   Json? // array of strings
   certifications    Json? // array of strings
+  // Cached median response time (minutes) — backfilled by recompute-response-times.ts cron.
+  // Falls back to live computation when null and >=5 closed threads exist.
+  cachedAvgResponseMinutes Int? @map("cached_avg_response_minutes")
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   contactMethods ContactMethod[]

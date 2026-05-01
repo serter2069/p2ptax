@@ -39,6 +39,13 @@ interface SpecialistItem {
   cities: { id: string; name: string }[];
   specialistFns?: FnsGroup[];
   description?: string | null;
+  profile?: {
+    exFnsStartYear?: number | null;
+    exFnsEndYear?: number | null;
+    exFnsOffice?: string | null;
+    verifiedExFns?: boolean;
+  } | null;
+  avgResponseMinutes?: number | null;
 }
 
 interface Props {
@@ -483,6 +490,13 @@ export default function SpecialistsGrid({
             cities={item.cities}
             specialistFns={item.specialistFns}
             description={item.description}
+            exFns={item.profile ? {
+              office: item.profile.exFnsOffice ?? null,
+              startYear: item.profile.exFnsStartYear ?? null,
+              endYear: item.profile.exFnsEndYear ?? null,
+              verified: !!item.profile.verifiedExFns,
+            } : undefined}
+            avgResponseMinutes={item.avgResponseMinutes ?? null}
             onPress={onPress}
             onBookmark={onBookmark}
             bookmarked={bookmarkedIds.has(item.id)}

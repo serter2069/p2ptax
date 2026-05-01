@@ -30,6 +30,10 @@ export const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
       description: true,
       yearsOfExperience: true,
       exFnsStartYear: true,
+      exFnsEndYear: true,
+      exFnsOffice: true,
+      verifiedExFns: true,
+      cachedAvgResponseMinutes: true,
     },
   },
   specialistFns: {
@@ -104,7 +108,14 @@ export function mapSpecialist(s: SpecialistListItem) {
       description: s.specialistProfile?.description ?? null,
       yearsOfExperience: s.specialistProfile?.yearsOfExperience ?? null,
       exFnsStartYear: s.specialistProfile?.exFnsStartYear ?? null,
+      exFnsEndYear: s.specialistProfile?.exFnsEndYear ?? null,
+      exFnsOffice: s.specialistProfile?.exFnsOffice ?? null,
+      verifiedExFns: s.specialistProfile?.verifiedExFns ?? false,
     },
+    // Round to nearest 5 (UI-friendly), null when no cache + insufficient data
+    avgResponseMinutes: s.specialistProfile?.cachedAvgResponseMinutes != null
+      ? Math.max(5, Math.round(s.specialistProfile.cachedAvgResponseMinutes / 5) * 5)
+      : null,
     casesCount: s._count.specialistCases,
     reviewsCount: s._count.specialistReviews,
   };
