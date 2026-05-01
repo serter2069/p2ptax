@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState } from "react";
 import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
-import { FileImage, File, X, Upload, Plus } from "lucide-react-native";
+import { FileImage, File, X, Upload } from "lucide-react-native";
 import { API_URL } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
@@ -140,10 +140,7 @@ export default function FileUploadSection({
 
   return (
     <View className="mb-4">
-      <Text className="text-sm font-medium text-text-base mb-1">Документы</Text>
-      <Text className="text-xs text-text-mute mb-3">
-        PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов
-      </Text>
+      <Text className="text-sm font-medium text-text-base mb-2">Документы</Text>
 
       {files.map((file, index) => (
         <View
@@ -183,7 +180,46 @@ export default function FileUploadSection({
         </View>
       ))}
 
-      {files.length < MAX_FILES && !disabled && (
+      {files.length < MAX_FILES && !disabled && Platform.OS === "web" && (
+        <View
+          {...({
+            onDragOver: handleDragOver,
+            onDragLeave: handleDragLeave,
+            onDrop: handleDrop,
+          } as object)}
+          style={{
+            borderWidth: 2,
+            borderStyle: "dashed",
+            borderColor: hover ? colors.accent : colors.border,
+            borderRadius: 12,
+            backgroundColor: hover ? "#eff6ff" : colors.surface2 ?? "#f8f9fb",
+            padding: 24,
+            alignItems: "center" as const,
+            justifyContent: "center" as const,
+            cursor: "pointer",
+          } as object}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Прикрепить файлы"
+            onPress={handleAddFilePress}
+            style={{ alignItems: "center" }}
+          >
+            <Upload size={32} color={hover ? colors.accent : colors.placeholder} />
+            <Text
+              className="text-sm font-medium mt-2"
+              style={{ color: hover ? colors.accent : colors.text }}
+            >
+              Перетащите файлы или нажмите для выбора
+            </Text>
+            <Text className="text-xs text-text-mute mt-1">
+              PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      {files.length < MAX_FILES && !disabled && Platform.OS !== "web" && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Прикрепить файл"
@@ -191,7 +227,7 @@ export default function FileUploadSection({
           className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl active:bg-surface2"
           style={{ minHeight: 48 }}
         >
-          <Plus size={13} color={colors.primary} />
+          <Upload size={16} color={colors.primary} />
           <Text className="text-sm ml-2 font-medium text-primary">
             Прикрепить файл
           </Text>
@@ -202,7 +238,8 @@ export default function FileUploadSection({
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/pdf,image/jpeg,image/png"
+          accept="application/pdf,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          multiple
           style={{ display: "none" }}
           onChange={handleFileChange}
         />
