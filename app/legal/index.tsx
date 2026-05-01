@@ -27,7 +27,8 @@ export default function LegalIndexPage() {
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <DesktopScreen>
+        {/* House rule: legal prose caps at 720 (CLAUDE.md). */}
+        <DesktopScreen maxWidth={720}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Назад"

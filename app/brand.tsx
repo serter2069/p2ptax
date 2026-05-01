@@ -16,7 +16,6 @@ import HeaderBack from "../components/HeaderBack";
 import HeaderHome from "../components/HeaderHome";
 import LandingHeader from "../components/landing/LandingHeader";
 import Logo from "../components/brand/Logo";
-import ResponsiveContainer from "../components/ResponsiveContainer";
 import { colors, tw, typography, spacing, radius, BREAKPOINT } from "../lib/theme";
 
 // Spacing rhythm is unified on `gap-4` (16px) for all section content. Old
@@ -56,7 +55,8 @@ export default function BrandScreen() {
     <SafeAreaView className="flex-1 bg-surface2">
       <HeaderBack title="Design System" />
       <ScrollView className="flex-1">
-      <ResponsiveContainer>
+      {/* House rule: content/list pages cap at 960 with 24 padding (CLAUDE.md). */}
+      <View style={{ width: "100%", maxWidth: 960, alignSelf: "center", paddingHorizontal: 24 }}>
       <View className="py-6 pb-20">
         <Text className={`${typography.h2} ${tw.text} mb-1`}>P2PTax</Text>
         <Text className={`${typography.small} mb-8`}>Design System</Text>
@@ -350,7 +350,7 @@ export default function BrandScreen() {
           </View>
         </Section>
       </View>
-      </ResponsiveContainer>
+      </View>
       </ScrollView>
     </SafeAreaView>
   );

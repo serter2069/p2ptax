@@ -422,10 +422,11 @@ export default function SpecialistsGrid({
         keyExtractor={(item) => item.id}
         numColumns={1}
         contentContainerStyle={{
-          paddingHorizontal: isWide ? 48 : 24,
+          paddingHorizontal: 24,
           paddingBottom: 48,
           paddingTop: 8,
-          maxWidth: isWide ? 1100 : 860,
+          // House rule: content/list/feed pages cap at 960 with 24 padding (CLAUDE.md).
+          maxWidth: 960,
           alignSelf: "center" as const,
           width: "100%" as const,
         }}

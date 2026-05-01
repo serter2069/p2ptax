@@ -70,3 +70,24 @@ Before claiming "done" on any visual/chrome change:
 4. Touch `app/_layout.tsx` or `(tabs)/_layout.tsx`? Re-verify mobile + desktop chrome rendering by manual visual check.
 5. Logo placeholder forbidden: never `<View bg=primary><Text>P</Text></View>` style fake logos.
 6. The full structure audit lives at `.audit/structure-audit.md` — re-run via the audit prompt template if it goes stale.
+
+## Layout / Width House Rules (added 2026-05-01)
+
+| Page type | maxWidth | paddingHorizontal |
+|---|---|---|
+| Content / list / catalog / detail | 960 | 24 |
+| Forms (profile, requests/new, admin settings) | 720 | 24 |
+| Two-pane (messages) outer | 960 | 0 |
+| Legal prose | 720 | 24 |
+| Auth (login/otp) | 400 | 24 |
+
+Sidebar = 240px on ≥768px. Optimal viewport 1200px → 960px content.
+
+### Forbidden
+- New raw `bg-white border border-border rounded-{xl,2xl}` — use `<Card>` from `components/ui/Card.tsx`.
+- Reusing `ResponsiveContainer` — deprecated, use explicit `maxWidth`.
+- `rounded-xl` on card-level surfaces — `rounded-2xl` is the standard.
+- Bespoke `maxWidth` outside this table without a comment justifying why.
+
+### Card primitive
+Always use `<Card>` from `components/ui/Card.tsx`. It owns `rounded-2xl`, `border-border`, white-ish surface, and shadow tier. If you need a tinted card, request an `<Card variant="accent">` extension rather than reverting to raw.

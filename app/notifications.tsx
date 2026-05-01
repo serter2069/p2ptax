@@ -1,4 +1,4 @@
-import { View, Text, Pressable, FlatList, RefreshControl, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, FlatList, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, BellOff, MessageCircle, Mail, MapPin, Clock, Bell, type LucideIcon } from "lucide-react-native";
@@ -9,7 +9,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { api, apiPatch } from "@/lib/api";
-import { colors, overlay, BREAKPOINT } from "@/lib/theme";
+import { colors, overlay } from "@/lib/theme";
 
 interface NotificationItem {
   id: string;
@@ -74,7 +74,7 @@ function NotificationRow({
       className="active:bg-surface2"
     >
       <View
-        className="flex-row items-start px-4 py-4 bg-white rounded-xl mb-3"
+        className="flex-row items-start px-4 py-4 bg-white rounded-2xl mb-3"
         style={{
           borderWidth: 1,
           borderColor: colors.border,
@@ -112,8 +112,6 @@ function NotificationRow({
 }
 
 export default function NotificationsScreen() {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= BREAKPOINT;
   const router = useRouter();
   const { ready } = useRequireAuth();
 
@@ -222,44 +220,53 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pt-2 pb-3 bg-white border-b border-border">
-        <View className="flex-row items-center">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
-            onPress={() => router.back()}
-            className="w-11 h-11 items-center justify-center -ml-2 mr-1"
-          >
-            <ArrowLeft size={20} color={colors.text} />
-          </Pressable>
-          <Text className="text-xl font-bold text-text-base">Уведомления</Text>
+      {/* Header — full-width chrome strip, inner content capped at 960 */}
+      <View className="bg-white border-b border-border">
+        <View
+          className="flex-row items-center justify-between"
+          style={{ width: "100%", maxWidth: 960, alignSelf: "center", paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12 }}
+        >
+          <View className="flex-row items-center">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Назад"
+              onPress={() => router.back()}
+              className="w-11 h-11 items-center justify-center -ml-2 mr-1"
+            >
+              <ArrowLeft size={20} color={colors.text} />
+            </Pressable>
+            <Text className="text-xl font-bold text-text-base">Уведомления</Text>
+          </View>
+          {unreadCount > 0 && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Прочитать все"
+              onPress={handleMarkAllRead}
+              className="py-2 pl-3 justify-center"
+              style={{ minHeight: 44 }}
+            >
+              <Text className="text-sm text-accent font-semibold">Прочитать все</Text>
+            </Pressable>
+          )}
         </View>
-        {unreadCount > 0 && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Прочитать все"
-            onPress={handleMarkAllRead}
-            className="py-2 pl-3 justify-center"
-            style={{ minHeight: 44 }}
-          >
-            <Text className="text-sm text-accent font-semibold">Прочитать все</Text>
-          </Pressable>
-        )}
       </View>
 
-      {/* Accent hero */}
-      <View className="bg-accent px-4 pt-5 pb-5">
-        <Text className="text-xl font-bold text-white mb-0.5">Ваши уведомления</Text>
-        <Text className="text-sm" style={{ color: overlay.white90 }}>Сообщения о новых ответах, запросах и обновлениях</Text>
-        <View className="flex-row mt-4 gap-3">
-          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
-            <Text className="text-xs" style={{ color: overlay.white90 }}>Непрочитано</Text>
-            <Text className="text-xl font-bold text-white">{unreadCount}</Text>
-          </View>
-          <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
-            <Text className="text-xs" style={{ color: overlay.white90 }}>Всего</Text>
-            <Text className="text-xl font-bold text-white">{notifications.length}</Text>
+      {/* Accent hero — full-width strip, inner content capped at 960 */}
+      <View className="bg-accent">
+        <View
+          style={{ width: "100%", maxWidth: 960, alignSelf: "center", paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20 }}
+        >
+          <Text className="text-xl font-bold text-white mb-0.5">Ваши уведомления</Text>
+          <Text className="text-sm" style={{ color: overlay.white90 }}>Сообщения о новых ответах, запросах и обновлениях</Text>
+          <View className="flex-row mt-4 gap-3">
+            <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+              <Text className="text-xs" style={{ color: overlay.white90 }}>Непрочитано</Text>
+              <Text className="text-xl font-bold text-white">{unreadCount}</Text>
+            </View>
+            <View className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: overlay.white15 }}>
+              <Text className="text-xs" style={{ color: overlay.white90 }}>Всего</Text>
+              <Text className="text-xl font-bold text-white">{notifications.length}</Text>
+            </View>
           </View>
         </View>
       </View>

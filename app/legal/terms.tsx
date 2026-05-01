@@ -3,7 +3,6 @@ import { View, Text, ScrollView, Pressable, useWindowDimensions, Platform } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import ResponsiveContainer from "@/components/ResponsiveContainer";
 import { colors, overlay, spacing } from "@/lib/theme";
 
 interface Section {
@@ -214,7 +213,10 @@ export default function TermsScreen() {
           <View style={{ flex: 1, maxWidth: 720 }}>{body}</View>
         </View>
       ) : (
-        <ResponsiveContainer maxWidth={720}>{body}</ResponsiveContainer>
+        // House rule: legal prose caps at 720 with 24 padding (CLAUDE.md).
+        <View style={{ flex: 1, maxWidth: 720, alignSelf: "center", width: "100%", paddingHorizontal: 24 }}>
+          {body}
+        </View>
       )}
     </SafeAreaView>
   );

@@ -277,7 +277,7 @@ export default function UnifiedProfile() {
             width: "100%",
             maxWidth: 720,
             alignSelf: "center",
-            paddingHorizontal: 16,
+            paddingHorizontal: 24,
             paddingTop: 12,
             paddingBottom: 8,
             flexDirection: "row",
@@ -307,7 +307,7 @@ export default function UnifiedProfile() {
             width: "100%",
             maxWidth: 720,
             alignSelf: "center",
-            paddingHorizontal: 16,
+            paddingHorizontal: 24,
             paddingTop: 16,
           }}
         >
