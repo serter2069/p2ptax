@@ -5,7 +5,7 @@ import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect } from "react";
 import { Mail } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { useOtpRequest } from "@/lib/hooks/useOtpRequest";
 import { colors } from "@/lib/theme";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -31,8 +31,8 @@ export default function AuthEmailScreen() {
         ? params.intent[0]
         : undefined;
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState("");
+  const { request: requestOtp, loading: isLoading, error: otpError } = useOtpRequest();
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -50,31 +50,22 @@ export default function AuthEmailScreen() {
   }, [isAuthenticated, user, router, returnTo]);
 
   const handleContinue = async () => {
-    setError("");
-    if (!EMAIL_REGEX.test(email.trim())) {
-      setError("Некорректный email");
+    setLocalError("");
+    const trimmed = email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(trimmed)) {
+      setLocalError("Некорректный email");
       return;
     }
-    setIsLoading(true);
-    try {
-      await api("/api/auth/request-otp", {
-        method: "POST",
-        body: { email: email.trim().toLowerCase() },
-        noAuth: true,
-      });
+    const ok = await requestOtp(trimmed);
+    if (ok) {
       nav.any({
         pathname: "/otp",
         params: {
-          email: email.trim().toLowerCase(),
+          email: trimmed,
           ...(returnTo ? { returnTo } : {}),
           ...(intent ? { intent } : {}),
         },
       });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Что-то пошло не так";
-      setError(msg);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -148,7 +139,7 @@ export default function AuthEmailScreen() {
               value={email}
               onChangeText={(t) => {
                 setEmail(t);
-                if (error) setError("");
+                if (localError) setLocalError("");
               }}
               icon={Mail}
               keyboardType="email-address"
@@ -156,7 +147,7 @@ export default function AuthEmailScreen() {
               autoComplete="email"
               editable={!isLoading}
               onSubmitEditing={handleContinue}
-              error={error || undefined}
+              error={localError || otpError || undefined}
             />
           </View>
 

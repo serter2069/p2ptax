@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { API_URL } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export function useOtpRequest() {
   const [loading, setLoading] = useState(false);
@@ -9,15 +9,14 @@ export function useOtpRequest() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/auth/request-otp`, {
+      await api("/api/auth/request-otp", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: { email },
+        noAuth: true,
       });
-      if (!res.ok) throw new Error("OTP request failed");
       return true;
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message ?? "OTP request failed");
       return false;
     } finally {
       setLoading(false);
@@ -28,19 +27,18 @@ export function useOtpRequest() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/auth/verify-otp`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, code }),
-      });
-      if (!res.ok) throw new Error("OTP verify failed");
-      return (await res.json()) as {
+      const data = await api<{
         accessToken: string;
         refreshToken: string;
         user?: any;
-      };
+      }>("/api/auth/verify-otp", {
+        method: "POST",
+        body: { email, code },
+        noAuth: true,
+      });
+      return data;
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message ?? "OTP verify failed");
       return null;
     } finally {
       setLoading(false);

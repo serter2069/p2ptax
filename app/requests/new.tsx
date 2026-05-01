@@ -15,11 +15,13 @@ import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { MapPin, ChevronLeft, RefreshCw } from "lucide-react-native";
+import { ChevronLeft } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { api, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCities } from "@/lib/hooks/useCities";
+import { useServices } from "@/lib/hooks/useServices";
 import { colors } from "@/lib/theme";
 import type {
   CityOption,
@@ -29,7 +31,6 @@ import CityFnsCascade from "@/components/filters/CityFnsCascade";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import FileUploadSection, { type AttachedFile } from "@/components/requests/FileUploadSection";
 import { draftStorage } from "@/lib/draftStorage";
-import EmptyState from "@/components/ui/EmptyState";
 
 // Single canonical key (v1). Replaces legacy "pending_request_draft".
 const DRAFT_KEY = "p2ptax_request_draft_v1";
@@ -58,40 +59,17 @@ export default function CreateRequest() {
   const [selectedFnsId, setSelectedFnsId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
-  const [cities, setCities] = useState<CityOption[]>([]);
-  const [services, setServices] = useState<ServiceOption[]>([]);
+  const { cities, loading: citiesLoading } = useCities();
+  const { services, loading: servicesLoading } = useServices();
 
   const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [loadingInit, setLoadingInit] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const loadingInit = citiesLoading || servicesLoading;
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showOtpFlow, setShowOtpFlow] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-
-  // Load cities/services — public, no auth required. Re-runs on retry.
-  useEffect(() => {
-    setLoadingInit(true);
-    setLoadError(false);
-    async function init() {
-      try {
-        const [citiesRes, servicesRes] = await Promise.all([
-          api<{ items: CityOption[] }>("/api/cities", { noAuth: true }),
-          api<{ items: ServiceOption[] }>("/api/services", { noAuth: true }),
-        ]);
-        setCities(citiesRes.items);
-        setServices(servicesRes.items);
-      } catch {
-        setLoadError(true);
-      } finally {
-        setLoadingInit(false);
-      }
-    }
-    init();
-  }, [retryCount]);
 
   // Restore draft on mount (anyone — anon or returning post-login).
   // Reads new key first, falls back to legacy key for in-flight users.
@@ -235,29 +213,6 @@ export default function CreateRequest() {
       <SafeAreaView className="flex-1 bg-surface2">
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (loadError && cities.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-surface2">
-        <View className="flex-1 items-center justify-center px-4">
-          <EmptyState
-            icon={MapPin}
-            title="Не удалось загрузить данные"
-            subtitle="Проверьте соединение и попробуйте снова"
-          />
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setRetryCount((n) => n + 1)}
-            className="flex-row items-center mt-4 px-6 py-3 bg-accent rounded-xl"
-            style={{ minHeight: 44 }}
-          >
-            <RefreshCw size={16} color="#ffffff" style={{ marginRight: 8 }} />
-            <Text className="text-white font-semibold text-sm">Повторить</Text>
-          </Pressable>
         </View>
       </SafeAreaView>
     );

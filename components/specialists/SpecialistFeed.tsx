@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 import { api, apiGet, apiPost, apiDelete } from "@/lib/api";
 import { useCities } from "@/lib/hooks/useCities";
 import { useServices } from "@/lib/hooks/useServices";
@@ -143,14 +142,6 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
   const hasFilters =
     filterValue.cities.length > 0 ||
     filterValue.fns.length > 0;
-
-  // ── Auth guard for favorites mode ──
-  useEffect(() => {
-    if (mode !== "favorites") return;
-    if (!authLoading && !isAuthenticated) {
-      nav.replaceRoutes.login();
-    }
-  }, [mode, authLoading, isAuthenticated, nav]);
 
   // ── Sync cities/services from global hooks ──
   useEffect(() => {

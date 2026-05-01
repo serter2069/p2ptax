@@ -5,6 +5,8 @@ import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Plus } from "lucide-react-native";
 import { api } from "@/lib/api";
+import { useCities } from "@/lib/hooks/useCities";
+import { useServices } from "@/lib/hooks/useServices";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
@@ -25,10 +27,6 @@ import { saveWorkArea } from "@/components/onboarding/workarea/saveWorkArea";
 interface ServiceItem {
   id: string;
   name: string;
-}
-
-interface CitiesResponse {
-  items: { id: string; name: string }[];
 }
 
 interface FnsResponse {
@@ -84,6 +82,8 @@ export default function OnboardingWorkAreaScreen() {
   }, [ready, isAdminUser, isSpecialistUser, isSpecialistIntent, user, fromSettings, nav]);
 
   // Catalogs (loaded once)
+  const { cities: citiesData } = useCities();
+  const { services: servicesData } = useServices();
   const [cities, setCities] = useState<CityCascadeOption[]>([]);
   const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
@@ -99,52 +99,42 @@ export default function OnboardingWorkAreaScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Initial load — cities + services + all FNS for typeahead.
+  // Sync hook data into local state for cascade
   useEffect(() => {
+    if (citiesData.length > 0) setCities(citiesData.map((c) => ({ id: c.id, name: c.name })));
+  }, [citiesData]);
+
+  useEffect(() => {
+    if (servicesData.length > 0) setServices(servicesData);
+  }, [servicesData]);
+
+  // Load all FNS for typeahead once cities are available.
+  useEffect(() => {
+    if (cities.length === 0) return;
     let cancelled = false;
     (async () => {
+      const ids = cities.map((c) => c.id).join(",");
       try {
-        const [citiesRes, servicesRes] = await Promise.all([
-          api<CitiesResponse>("/api/cities", { noAuth: true }),
-          api<{ items: ServiceItem[] }>("/api/services", { noAuth: true }),
-        ]);
+        const fnsRes = await api<FnsResponse>(
+          `/api/fns?city_ids=${ids}`,
+          { noAuth: true }
+        );
         if (cancelled) return;
-        const cityList = citiesRes.items.map((c) => ({
-          id: c.id,
-          name: c.name,
-        }));
-        setCities(cityList);
-        setServices(servicesRes.items);
-
-        if (cityList.length > 0) {
-          const ids = cityList.map((c) => c.id).join(",");
-          try {
-            const fnsRes = await api<FnsResponse>(
-              `/api/fns?city_ids=${ids}`,
-              { noAuth: true }
-            );
-            if (cancelled) return;
-            setFnsAll(
-              fnsRes.offices.map((f) => ({
-                id: f.id,
-                name: f.name,
-                code: f.code,
-                cityId: f.cityId,
-                cityName: f.city?.name,
-              }))
-            );
-          } catch {
-            /* typeahead degrades — still usable via city → city-FNS chips */
-          }
-        }
+        setFnsAll(
+          fnsRes.offices.map((f) => ({
+            id: f.id,
+            name: f.name,
+            code: f.code,
+            cityId: f.cityId,
+            cityName: f.city?.name,
+          }))
+        );
       } catch {
-        if (!cancelled) setCatalogError("Не удалось загрузить справочники");
+        /* typeahead degrades — still usable via city → city-FNS chips */
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [cities]);
 
   // Exclude already-added FNS from cascade so user can't pick same office twice.
   const fnsForCascade = useMemo(() => {
