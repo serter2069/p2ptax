@@ -27,7 +27,6 @@ import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
 import { colors } from "@/lib/theme";
 import { AlertCircle, Bookmark, Search, UserX } from "lucide-react-native";
 import EmptyState from "@/components/ui/EmptyState";
-import CatalogHeader from "@/components/specialists/CatalogHeader";
 import CatalogSkeleton from "@/components/specialists/CatalogSkeleton";
 import SpecialistFilter from "@/components/specialists/SpecialistFilter";
 import SpecialistsGrid from "@/components/specialists/SpecialistsGrid";
@@ -505,31 +504,25 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
         />
       )}
 
-      {/* Page header */}
-      {mode === "all" ? (
-        <>
-          {title && <PageTitle title={title} subtitle={subtitle} />}
-          <CatalogHeader isDesktop={isDesktop} count={null} />
-        </>
-      ) : (
-        <>
-          {title && <PageTitle title={title} subtitle={subtitle} />}
-          {hasFilters && (
-            <View style={{ paddingHorizontal: 16, paddingBottom: 4, alignItems: "flex-end" }}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={resetFilters}
-                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-              >
-                <Text
-                  style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}
-                >
-                  Сбросить
-                </Text>
-              </Pressable>
-            </View>
-          )}
-        </>
+      {/* Page header — PageTitle owns the 16px gap to the search bar (#1716).
+          CatalogHeader was previously rendered here only to show a count
+          which is always null at this call-site; it added an extra pt-2/pb-1
+          that made /specialists' search bar sit lower than /requests'. */}
+      {title && <PageTitle title={title} subtitle={subtitle} />}
+      {mode === "favorites" && hasFilters && (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 4, alignItems: "flex-end" }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={resetFilters}
+            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+          >
+            <Text
+              style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}
+            >
+              Сбросить
+            </Text>
+          </Pressable>
+        </View>
       )}
 
       {/* Cascade filter — hides on scroll-down, reveals on scroll-up */}
