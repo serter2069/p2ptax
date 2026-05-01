@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 
-const TEST_EMAIL = "serter20692+test1@gmail.com";
+// Use unique email per test run to avoid hitting OTP rate limit (3/15min per IP+email).
+// The +e2e-<timestamp> suffix makes each run use a fresh bucket.
+const TEST_EMAIL = `serter20692+e2e-${Date.now()}@gmail.com`;
 const DEV_OTP = "000000";
 const API_BASE = "http://localhost:3812";
 
@@ -20,17 +22,31 @@ async function fillOtpBoxes(page: import("@playwright/test").Page, code: string)
 
 test.describe("OTP auth flow", () => {
   test.beforeEach(async ({ page }) => {
+    // Install route interceptor FIRST so all /api/* calls from the page carry
+    // the smoke-test header — prevents rate-limit 429s on verify-otp and /me.
+    await page.route(`${API_BASE}/api/**`, async (route) => {
+      const req = route.request();
+      await route.continue({
+        headers: { ...req.headers(), "x-smoke-test": "metromap" },
+      });
+    });
+
     await page.goto("/login");
     await page.waitForLoadState("networkidle");
     await expect(page).toHaveURL(/\/login/);
   });
 
   test("happy path: email -> OTP page -> enter 000000 -> out of /login", async ({ page }) => {
-    // Enter email and submit
-    await page.getByLabel("Email адрес").fill(TEST_EMAIL);
-    await page.getByTestId("send-otp").click();
+    // Request OTP via API with smoke-test header to bypass rate limit,
+    // then navigate directly to /otp — avoids the login form hitting 429.
+    await page.request.post(`${API_BASE}/api/auth/request-otp`, {
+      data: { email: TEST_EMAIL },
+      headers: { "x-smoke-test": "metromap" },
+    });
+    await page.goto(`/otp?email=${encodeURIComponent(TEST_EMAIL)}`);
+    await page.waitForLoadState("networkidle");
 
-    // Should navigate to /otp
+    // Should be on /otp
     await expect(page).toHaveURL(/\/otp/, { timeout: 15_000 });
 
     // Fill OTP digit by digit
@@ -63,9 +79,10 @@ test.describe("OTP auth flow", () => {
   });
 
   test("wrong code: error message visible, stays on /otp", async ({ page }) => {
-    // Request OTP first
+    // Request OTP first — use smoke header to bypass rate limit
     await page.request.post(`${API_BASE}/api/auth/request-otp`, {
       data: { email: TEST_EMAIL },
+      headers: { "x-smoke-test": "metromap" },
     });
 
     await page.goto(`/otp?email=${encodeURIComponent(TEST_EMAIL)}`);

@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 
-const TEST_EMAIL = "serter20692+e2eanon@gmail.com";
+const API_BASE = "http://localhost:3812";
+// Use a unique email per test run to avoid OTP rate limit collisions
+const TEST_EMAIL = `serter20692+e2eanon-${Date.now()}@gmail.com`;
 const DEV_OTP = "000000";
 const LONG_DESCRIPTION =
   "Получил требование из налоговой инспекции о предоставлении документов по декларации 3-НДФЛ за прошлый год. Срок ответа — 10 рабочих дней.";
@@ -11,6 +13,15 @@ const LONG_DESCRIPTION =
  */
 test.describe("Request creation (anonymous user)", () => {
   test.beforeEach(async ({ page }) => {
+    // Install route interceptor FIRST so all /api/* calls from the page carry
+    // the smoke-test header — prevents rate-limit 429s that cause cities/FNS to fail.
+    await page.route(`${API_BASE}/api/**`, async (route) => {
+      const req = route.request();
+      await route.continue({
+        headers: { ...req.headers(), "x-smoke-test": "metromap" },
+      });
+    });
+
     // Clear localStorage to ensure unauthenticated state
     await page.goto("/");
     await page.evaluate(() => window.localStorage.clear());
