@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppShell from "@/components/layout/AppShell";
 import StrandedSpecialistBanner from "@/components/layout/StrandedSpecialistBanner";
 import { colors } from "@/lib/theme";
+import { useHeartbeat } from "@/lib/hooks/useHeartbeat";
 
 import MetroBridge from "@/components/MetroBridge";
 
@@ -60,6 +61,9 @@ function useStrandedSpecialistInfo(): { stranded: boolean } {
  */
 function AuthenticatedHeaderGate({ children }: { children: React.ReactNode }) {
   const { isLoading } = useAuth();
+
+  // Presence tracking — ping /api/auth/heartbeat every 60s while authenticated.
+  useHeartbeat();
 
   // Wave 2/G — soft guard. Render a persistent banner for stranded
   // specialists instead of force-redirecting them. The hard gate lives

@@ -20,28 +20,29 @@ enum RequestStatus {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  role        Role?
+  id                           String    @id @default(uuid())
+  email                        String    @unique
+  role                         Role?
   // Iter11 — specialist opt-in flag (replaces role = SPECIALIST).
   isSpecialist                 Boolean   @default(false) @map("is_specialist")
   // Timestamp when specialist onboarding fully completed (profile populated).
   // Null = either not a specialist, or specialist onboarding in progress.
   specialistProfileCompletedAt DateTime? @map("specialist_profile_completed_at")
-  firstName   String?  @map("first_name")
-  lastName    String?  @map("last_name")
-  avatarUrl   String?  @map("avatar_url")
-  isAvailable Boolean  @default(false) @map("is_available")
-  isBanned    Boolean  @default(false) @map("is_banned")
+  firstName                    String?   @map("first_name")
+  lastName                     String?   @map("last_name")
+  avatarUrl                    String?   @map("avatar_url")
+  isAvailable                  Boolean   @default(false) @map("is_available")
+  isBanned                     Boolean   @default(false) @map("is_banned")
   // Iter13 — specialist catalog visibility. When true, appears in public catalog.
   // Default false; specialist opts in during onboarding or via settings.
-  isPublicProfile Boolean @default(false) @map("is_public_profile")
+  isPublicProfile              Boolean   @default(false) @map("is_public_profile")
   // Soft-delete timestamp. When non-null the user is considered deleted —
   // PII is anonymized in-place and they're hidden from public catalog/queries
   // but the row is preserved so threads/messages keep a valid FK target.
-  deletedAt   DateTime? @map("deleted_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt                    DateTime? @map("deleted_at")
+  lastSeenAt                   DateTime? @map("last_seen_at")
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
 
   specialistProfile       SpecialistProfile?
   specialistFns           SpecialistFns[]
@@ -49,35 +50,35 @@ model User {
   specialistCases         SpecialistCase[]
   specialistReviews       SpecialistReview[]
   requests                Request[]
-  clientThreads           Thread[]  @relation("ClientThreads")
-  specialistThreads       Thread[]  @relation("SpecialistThreads")
+  clientThreads           Thread[]                 @relation("ClientThreads")
+  specialistThreads       Thread[]                 @relation("SpecialistThreads")
   messages                Message[]
   refreshTokens           RefreshToken[]
   notifications           Notification[]
   notificationPreferences NotificationPreference[]
-  complaintsReported      Complaint[] @relation("ComplaintReporter")
-  complaintsReceived      Complaint[] @relation("ComplaintTarget")
-  savedSpecialists        SavedSpecialist[] @relation("SavedByUser_user")
-  savedByUsers            SavedSpecialist[] @relation("SavedByUser_specialist")
+  complaintsReported      Complaint[]              @relation("ComplaintReporter")
+  complaintsReceived      Complaint[]              @relation("ComplaintTarget")
+  savedSpecialists        SavedSpecialist[]        @relation("SavedByUser_user")
+  savedByUsers            SavedSpecialist[]        @relation("SavedByUser_specialist")
 
   @@map("users")
 }
 
 model SpecialistProfile {
-  id                 String   @id @default(uuid())
-  userId             String   @unique @map("user_id")
-  description        String?
-  phone              String?
-  telegram           String?
-  whatsapp           String?
-  officeAddress      String?  @map("office_address")
-  workingHours       String?  @map("working_hours")
+  id                String  @id @default(uuid())
+  userId            String  @unique @map("user_id")
+  description       String?
+  phone             String?
+  telegram          String?
+  whatsapp          String?
+  officeAddress     String? @map("office_address")
+  workingHours      String? @map("working_hours")
   // Iteration 5 — credibility stack fields
-  exFnsStartYear     Int?     @map("ex_fns_start_year")
-  exFnsEndYear       Int?     @map("ex_fns_end_year")
-  yearsOfExperience  Int?     @map("years_of_experience")
-  specializations    Json?    // array of strings
-  certifications     Json?    // array of strings
+  exFnsStartYear    Int?    @map("ex_fns_start_year")
+  exFnsEndYear      Int?    @map("ex_fns_end_year")
+  yearsOfExperience Int?    @map("years_of_experience")
+  specializations   Json? // array of strings
+  certifications    Json? // array of strings
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   contactMethods ContactMethod[]
@@ -89,11 +90,11 @@ model SpecialistCase {
   id             String   @id @default(uuid())
   specialistId   String   @map("specialist_id")
   title          String
-  category       String   // "Выездная проверка" | "Камеральная проверка" | "115-ФЗ" | "ОКК"
-  amount         Int?     // в рублях (доначисления)
+  category       String // "Выездная проверка" | "Камеральная проверка" | "115-ФЗ" | "ОКК"
+  amount         Int? // в рублях (доначисления)
   resolvedAmount Int?     @map("resolved_amount") // в рублях (оспорено)
-  days           Int?     // срок решения
-  status         String   // "resolved" | "in_progress"
+  days           Int? // срок решения
+  status         String // "resolved" | "in_progress"
   description    String
   year           Int?
   order          Int      @default(0)
@@ -106,14 +107,14 @@ model SpecialistCase {
 }
 
 model SpecialistReview {
-  id             String   @id @default(uuid())
-  specialistId   String   @map("specialist_id")
-  authorName     String   @map("author_name")
-  rating         Int      // 1..5
-  date           DateTime
-  text           String
-  categoryChips  Json?    @map("category_chips") // array of strings
-  createdAt      DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  specialistId  String   @map("specialist_id")
+  authorName    String   @map("author_name")
+  rating        Int // 1..5
+  date          DateTime
+  text          String
+  categoryChips Json?    @map("category_chips") // array of strings
+  createdAt     DateTime @default(now()) @map("created_at")
 
   specialist User @relation(fields: [specialistId], references: [id], onDelete: Cascade)
 
@@ -124,7 +125,7 @@ model SpecialistReview {
 model ContactMethod {
   id        String   @id @default(uuid())
   profileId String   @map("profile_id")
-  type      String   // phone | email | telegram | whatsapp | vk | website
+  type      String // phone | email | telegram | whatsapp | vk | website
   value     String
   label     String?
   order     Int      @default(0)
@@ -177,14 +178,14 @@ model City {
 }
 
 model FnsOffice {
-  id             String  @id @default(uuid())
-  cityId         String  @map("city_id")
-  name           String
-  code           String  @unique
-  address        String?
-  searchAliases  String? @map("search_aliases")
+  id            String  @id @default(uuid())
+  cityId        String  @map("city_id")
+  name          String
+  code          String  @unique
+  address       String?
+  searchAliases String? @map("search_aliases")
 
-  city               City              @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  city               City                @relation(fields: [cityId], references: [id], onDelete: Cascade)
   specialistFns      SpecialistFns[]
   specialistServices SpecialistService[]
   requests           Request[]
@@ -314,7 +315,7 @@ model RefreshToken {
 model Notification {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  type      String   // new_response | new_message | new_request_in_city | promo_expiring
+  type      String // new_response | new_message | new_request_in_city | promo_expiring
   title     String
   body      String
   entityId  String?  @map("entity_id") // requestId or threadId
@@ -345,8 +346,8 @@ model NotificationPreference {
 model NotificationDeliveryLog {
   id             String   @id @default(uuid())
   notificationId String?  @map("notification_id")
-  channel        String   // email | inapp
-  status         String   // sent | skipped | failed
+  channel        String // email | inapp
+  status         String // sent | skipped | failed
   reason         String?
   createdAt      DateTime @default(now()) @map("created_at")
 

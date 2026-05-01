@@ -259,6 +259,20 @@ router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) 
   }
 });
 
+// POST /api/auth/heartbeat — update lastSeenAt for presence tracking
+router.post("/heartbeat", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: { lastSeenAt: new Date() },
+    });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("heartbeat error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/auth/logout
 router.post("/logout", authMiddleware, async (req: Request, res: Response) => {
   try {

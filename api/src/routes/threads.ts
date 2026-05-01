@@ -9,6 +9,12 @@ const router = Router();
 
 const BUCKET = process.env.MINIO_BUCKET || "p2ptax";
 
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+function computeIsOnline(lastSeenAt: Date | null | undefined): boolean {
+  if (!lastSeenAt) return false;
+  return Date.now() - lastSeenAt.getTime() < ONLINE_THRESHOLD_MS;
+}
+
 // 1-hour presigned URL so the <Image> component can load without auth headers.
 async function presignAttachmentUrl(storedUrl: string): Promise<string> {
   // storedUrl is like "/<bucket>/<key>" or already an http URL.
@@ -141,10 +147,10 @@ router.get("/", async (req: Request, res: Response) => {
             select: { id: true, title: true, status: true },
           },
           client: {
-            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true },
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true },
           },
           specialist: {
-            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true },
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true },
           },
           messages: {
             orderBy: { createdAt: "desc" },
@@ -214,8 +220,7 @@ router.get("/", async (req: Request, res: Response) => {
           lastName: otherUser.lastName,
           avatarUrl: otherUser.avatarUrl,
           isDeleted: otherUser.deletedAt !== null,
-          // TODO: derive from lastSeenAt once User model tracks it
-          isOnline: false,
+          isOnline: computeIsOnline(otherUser.lastSeenAt),
         },
         lastMessage: lastMessage
           ? {
@@ -312,8 +317,8 @@ router.get("/my", async (req: Request, res: Response) => {
         take: limit,
         include: {
           request: { select: { id: true, title: true, status: true, userId: true } },
-          client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
-          specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
+          client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true } },
+          specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true } },
           messages: {
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -423,8 +428,7 @@ router.get("/my", async (req: Request, res: Response) => {
           lastName: otherUser.lastName,
           avatarUrl: otherUser.avatarUrl,
           isDeleted: otherUser.deletedAt !== null,
-          // TODO: derive from lastSeenAt once User model tracks it
-          isOnline: false,
+          isOnline: computeIsOnline(otherUser.lastSeenAt),
         },
         lastMessage: lastMessage
           ? {
