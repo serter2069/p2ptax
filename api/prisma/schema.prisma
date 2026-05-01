@@ -19,6 +19,15 @@ enum RequestStatus {
   CLOSED
 }
 
+// Intake wizard — document type that triggered the request.
+// Drives auto-deadline computation and screen flow.
+enum DocumentType {
+  TREBOVANIE
+  RESHENIE
+  VYEZDNAYA
+  OTHER
+}
+
 model User {
   id                           String    @id @default(uuid())
   email                        String    @unique
@@ -214,6 +223,12 @@ model Request {
   lastActivityAt  DateTime      @default(now()) @map("last_activity_at")
   extensionsCount Int           @default(0) @map("extensions_count")
   createdAt       DateTime      @default(now()) @map("created_at")
+  // Intake wizard fields (#feat-intake-wizard) — optional so legacy rows
+  // and any non-wizard creation paths keep working.
+  documentType    DocumentType? @map("document_type")
+  incidentDate    DateTime?     @map("incident_date")
+  urgency         Boolean?      @default(false)
+  disputedAmount  Int?          @map("disputed_amount")
 
   user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   city    City      @relation(fields: [cityId], references: [id])

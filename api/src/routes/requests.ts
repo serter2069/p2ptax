@@ -348,7 +348,20 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { title, cityId, fnsId, description, fileIds, isPublic } = req.body;
+    const {
+      title,
+      cityId,
+      fnsId,
+      description,
+      fileIds,
+      isPublic,
+      // Intake wizard (#feat-intake-wizard) — all optional, legacy callers
+      // continue to work without these fields.
+      documentType,
+      incidentDate,
+      urgency,
+      disputedAmount,
+    } = req.body;
 
     // Validate
     if (!title || title.length < 3 || title.length > 100) {
@@ -362,6 +375,36 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
     if (!description || description.length < 10 || description.length > 5000) {
       res.status(400).json({ error: "Description must be 10-5000 characters" });
       return;
+    }
+
+    // Validate intake wizard fields when present.
+    const ALLOWED_DOC_TYPES = ["TREBOVANIE", "RESHENIE", "VYEZDNAYA", "OTHER"] as const;
+    type DocType = typeof ALLOWED_DOC_TYPES[number];
+    let normalizedDocType: DocType | null = null;
+    if (documentType !== undefined && documentType !== null) {
+      if (typeof documentType !== "string" || !ALLOWED_DOC_TYPES.includes(documentType as DocType)) {
+        res.status(400).json({ error: "Invalid documentType" });
+        return;
+      }
+      normalizedDocType = documentType as DocType;
+    }
+    let normalizedIncidentDate: Date | null = null;
+    if (incidentDate !== undefined && incidentDate !== null && incidentDate !== "") {
+      const d = new Date(incidentDate);
+      if (Number.isNaN(d.getTime())) {
+        res.status(400).json({ error: "Invalid incidentDate" });
+        return;
+      }
+      normalizedIncidentDate = d;
+    }
+    let normalizedDisputedAmount: number | null = null;
+    if (disputedAmount !== undefined && disputedAmount !== null && disputedAmount !== "") {
+      const n = typeof disputedAmount === "number" ? disputedAmount : parseInt(String(disputedAmount), 10);
+      if (!Number.isFinite(n) || n < 0 || n > 1_000_000_000_000) {
+        res.status(400).json({ error: "Invalid disputedAmount" });
+        return;
+      }
+      normalizedDisputedAmount = Math.round(n);
     }
 
     // Check limit
@@ -399,6 +442,10 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
         description: stripHtml(description),
         userId,
         isPublic: typeof isPublic === "boolean" ? isPublic : true,
+        documentType: normalizedDocType,
+        incidentDate: normalizedIncidentDate,
+        urgency: typeof urgency === "boolean" ? urgency : undefined,
+        disputedAmount: normalizedDisputedAmount,
       },
       include: {
         city: true,
