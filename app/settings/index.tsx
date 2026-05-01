@@ -168,18 +168,54 @@ export default function UnifiedSettings() {
           </Pressable>
         </View>
       )}
-      <PageTitle title="Настройки" />
+      {/* Sticky top header: title left, Save button right */}
+      <View
+        className="bg-surface2"
+        style={
+          Platform.OS === "web"
+            ? ({ position: "sticky", top: 0, zIndex: 10 } as never)
+            : undefined
+        }
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            alignSelf: "center",
+            paddingHorizontal: 16,
+            paddingTop: 12,
+            paddingBottom: 4,
+            flexDirection: "row",
+            alignItems: "center",
+            minHeight: 56,
+          }}
+        >
+          <Text className="text-xl font-bold text-text-base" style={{ flex: 1 }}>
+            Настройки
+          </Text>
+          {form.showSaveBar && (
+            <View style={{ minWidth: 140 }}>
+              <Button
+                label="Сохранить"
+                onPress={form.handleSave}
+                disabled={form.saving}
+                loading={form.saving}
+              />
+            </View>
+          )}
+        </View>
 
-      <SettingsTabs
-        activeTab={activeTab}
-        onChange={handleTabChange}
-        canEditSpecialist={isSpecialistUser}
-      />
+        <SettingsTabs
+          activeTab={activeTab}
+          onChange={handleTabChange}
+          canEditSpecialist={isSpecialistUser}
+        />
+      </View>
 
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: form.showSaveBar ? 96 : 32 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
             <View
               style={{
@@ -268,33 +304,6 @@ export default function UnifiedSettings() {
           </View>
       </ScrollView>
 
-      {form.showSaveBar ? (
-        <View
-          className="border-t border-border bg-white px-6 py-3 flex-row justify-end items-center"
-          style={{
-            position: Platform.OS === "web" ? ("sticky" as never) : undefined,
-            bottom: 0,
-          }}
-        >
-          <View
-            style={{
-              width: "100%",
-              maxWidth: 720,
-              flexDirection: "row",
-              justifyContent: "flex-end",
-            }}
-          >
-            <View style={{ minWidth: 180 }}>
-              <Button
-                label="Сохранить"
-                onPress={form.handleSave}
-                disabled={form.saving}
-                loading={form.saving}
-              />
-            </View>
-          </View>
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 }
