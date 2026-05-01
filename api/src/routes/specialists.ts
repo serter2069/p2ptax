@@ -110,26 +110,38 @@ export function mapSpecialist(s: SpecialistListItem) {
   };
 }
 
+// Pinned IDs surfaced FIRST in /featured — these are the 4 hand-curated landing
+// specialists with AI-generated portraits seeded via seed-landing-avatars.ts.
+// Keeps the HeroBlock cards stable across reseeds of the faker pool.
+const FEATURED_PINNED_IDS = [
+  "0ed05f10-a9f9-4e8d-9f35-a3920e5abaab", // Юлия Зайцева
+  "45790a39-0285-48d7-943c-bea399edc3f1", // Владимир Лебедев
+  "5ff5cac2-5bdb-4e52-b82b-10e72ad3e1c3", // Юрий Кондратьев
+  "ca4f2c0f-491b-4791-bf4c-38f43122a6d1", // Светлана Орлова
+];
+
 // GET /api/specialists/featured — top 10 available specialists
 router.get("/featured", async (_req: Request, res: Response) => {
   try {
     const seedUserNot = notSeedUserWhere();
-    const specialists = await prisma.user.findMany({
-      where: {
-        // Iter11: specialist catalog is driven by the flag, not the legacy
-        // role enum. Require completed profile so we never surface half-seeded
-        // users who are still onboarding. Hide soft-deleted accounts.
-        isSpecialist: true,
-        isPublicProfile: true,
-        specialistProfileCompletedAt: { not: null },
-        isAvailable: true,
-        isBanned: false,
-        deletedAt: null,
-        ...(seedUserNot ?? {}),
-      },
-      take: 10,
-      // Catalog ranking: specialists with avatar photos first, then newest.
-      // `avatarUrl` desc + nulls:last puts non-null URLs before null ones (Prisma 6.x).
+    const baseWhere = {
+      isSpecialist: true,
+      isPublicProfile: true,
+      specialistProfileCompletedAt: { not: null },
+      isAvailable: true,
+      isBanned: false,
+      deletedAt: null,
+      ...(seedUserNot ?? {}),
+    } as const;
+
+    const pinned = await prisma.user.findMany({
+      where: { ...baseWhere, id: { in: FEATURED_PINNED_IDS } },
+      select: specialistListSelect,
+    });
+
+    const remaining = await prisma.user.findMany({
+      where: { ...baseWhere, id: { notIn: FEATURED_PINNED_IDS } },
+      take: Math.max(0, 10 - pinned.length),
       orderBy: [
         { avatarUrl: { sort: "desc", nulls: "last" } },
         { createdAt: "desc" },
@@ -137,7 +149,13 @@ router.get("/featured", async (_req: Request, res: Response) => {
       select: specialistListSelect,
     });
 
-    res.json({ items: specialists.map(mapSpecialist) });
+    // Re-sort pinned to match FEATURED_PINNED_IDS order so HeroBlock layout
+    // is deterministic.
+    const pinnedSorted = FEATURED_PINNED_IDS
+      .map((id) => pinned.find((p) => p.id === id))
+      .filter((s): s is (typeof pinned)[number] => Boolean(s));
+
+    res.json({ items: [...pinnedSorted, ...remaining].map(mapSpecialist) });
   } catch (error) {
     console.error("specialists/featured error:", error);
     res.status(500).json({ error: "Internal server error" });
