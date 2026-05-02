@@ -52,7 +52,7 @@ export default function CaseCard({ data, index }: CaseCardProps) {
           <View className="flex-row items-center" style={{ gap: 4, marginTop: 2 }}>
             <DuotoneIcon name="shield-check" size={14} color={colors.success} softColor={colors.successSoft} />
             <Text style={{ color: colors.success, fontSize: 12, fontWeight: "600" }}>
-              Проверен платформой
+              Профиль на платформе
             </Text>
           </View>
         </View>

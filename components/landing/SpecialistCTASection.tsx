@@ -62,7 +62,7 @@ export default function SpecialistCTASection({
               letterSpacing: -0.7,
             }}
           >
-            Ваша экспертиза — ваш рынок.
+            Работайте с теми, кто пришёл за вашей ИФНС.
           </Text>
           <Text
             style={{
@@ -73,8 +73,8 @@ export default function SpecialistCTASection({
               maxWidth: 520,
             }}
           >
-            Специалисты по ФНС находят клиентов через платформу. 0%
-            комиссии. Регистрация за 5 минут.
+            Привяжите профиль к инспекциям, в которых работаете — клиенты
+            находят вас по своей ИФНС. Регистрация за 5 минут.
           </Text>
 
           <View style={{ marginTop: 24, gap: 10 }}>

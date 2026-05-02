@@ -144,7 +144,7 @@ export default function HeroBlock({
                 textTransform: "uppercase",
               }}
             >
-              Сервис для получивших уведомление ФНС
+              Каталог специалистов по конкретным ИФНС
             </Text>
           </View>
 
@@ -159,7 +159,7 @@ export default function HeroBlock({
           >
             Получили требование от ФНС?{"\n"}
             <Text style={{ color: colors.primary }}>
-              Защитят ex-инспекторы — за 30 минут получите план.
+              Найдите специалиста, который работает именно с вашей ИФНС.
             </Text>
           </Text>
 
@@ -173,8 +173,8 @@ export default function HeroBlock({
               maxWidth: 540,
             }}
           >
-            Все специалисты на платформе — бывшие сотрудники ФНС. Знают
-            процедуры изнутри, защищали налогоплательщиков от знакомых им коллег.
+            В каталоге специалисты привязаны к конкретным инспекциям.
+            Не общий консультант, а тот, кто работает с этой ИФНС каждый день.
           </Text>
 
           <View
@@ -196,7 +196,7 @@ export default function HeroBlock({
               }}
             >
               <Text className="text-white font-semibold" style={{ fontSize: 16 }}>
-                Подобрать специалиста
+                Создать запрос
               </Text>
             </Pressable>
           </View>
@@ -215,7 +215,7 @@ export default function HeroBlock({
                 textDecorationLine: "underline",
               }}
             >
-              или посмотреть всех специалистов
+              или найти специалиста по своей ИФНС
             </Text>
           </Pressable>
 
@@ -227,7 +227,7 @@ export default function HeroBlock({
               lineHeight: 18,
             }}
           >
-            Без подписок. Без комиссий. Без скрытых платежей.
+            Без подписок и скрытых платежей.
           </Text>
         </View>
 

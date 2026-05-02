@@ -47,7 +47,7 @@ export default function CasesSection({ isDesktop, cases, onCreateRequest }: Case
               letterSpacing: -0.8,
             }}
           >
-            Настоящие клиенты. Настоящие суммы.
+            Чем закончились другие запросы
           </Text>
           <Text
             style={{
@@ -57,8 +57,9 @@ export default function CasesSection({ isDesktop, cases, onCreateRequest }: Case
               lineHeight: 24,
             }}
           >
-            Истории, где специалисты оспорили доначисления ФНС целиком
-            или в большой части.
+            Каждый исход — результат конкретной работы со своей инспекцией.
+            Платформа не гарантирует исход — он зависит от ФНС и материалов
+            дела, не от нас.
           </Text>
         </View>
 
@@ -93,7 +94,7 @@ export default function CasesSection({ isDesktop, cases, onCreateRequest }: Case
                 letterSpacing: -0.4,
               }}
             >
-              Станьте первым успешным кейсом
+              Станьте первым запросом
             </Text>
             <Text
               style={{
@@ -104,7 +105,8 @@ export default function CasesSection({ isDesktop, cases, onCreateRequest }: Case
                 maxWidth: 440,
               }}
             >
-              Создайте запрос — специалисты в вашей ФНС напишут первыми.
+              Создайте запрос — специалисты, привязанные к вашей ИФНС,
+              напишут вам напрямую.
             </Text>
             <Pressable
               accessibilityRole="button"

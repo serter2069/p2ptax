@@ -1,5 +1,5 @@
 import { View, Text } from "react-native";
-import { Shield, Lock, CheckCircle2 } from "lucide-react-native";
+import { MapPin, MessageCircle, Star } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 interface TrustPillarsSectionProps {
@@ -7,36 +7,34 @@ interface TrustPillarsSectionProps {
 }
 
 interface Pillar {
-  Icon: typeof Shield;
+  Icon: typeof MapPin;
   title: string;
   desc: string;
 }
 
 const PILLARS: Pillar[] = [
   {
-    Icon: Shield,
-    title: "Ex-инспекторы ФНС",
-    desc: "Знают как составляют требования и как их оспаривать",
+    Icon: MapPin,
+    title: "Привязка к вашей ИФНС",
+    desc: "Каталог отбирает специалистов, которые работают именно с вашей инспекцией.",
   },
   {
-    Icon: Lock,
-    title: "NDA по умолчанию",
-    desc: "Документы под защитой. Никто кроме выбранного специалиста их не увидит",
+    Icon: MessageCircle,
+    title: "Прямой контакт",
+    desc: "Переписка со специалистом внутри платформы — без посредников и звонков из колл-центра.",
   },
   {
-    Icon: CheckCircle2,
-    title: "Без результата — не платите",
-    desc: "Платёж списывается только после защиты",
+    Icon: Star,
+    title: "Профиль и отзывы",
+    desc: "Опыт, услуги и отзывы клиентов в одном профиле — выбираете осознанно.",
   },
 ];
 
 /**
  * Trust pillars row — three columns on desktop, vertical stack on mobile.
- * Each pillar = soft-tinted icon circle + title + 1-line description.
- *
- * Sits directly below the hero so the moat (ex-FNS inside knowledge,
- * confidentiality, success-based pricing) is visible above the fold on
- * a typical desktop landing impression.
+ * Anchors the value props on what the platform actually delivers
+ * (FNS-binding, in-platform messaging, public profile + reviews) rather
+ * than on outcome guarantees the platform can't make.
  */
 export default function TrustPillarsSection({ isDesktop }: TrustPillarsSectionProps) {
   return (

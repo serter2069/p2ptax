@@ -56,8 +56,8 @@ export default function FooterSection({
               <Logo variant="white" size="md" />
             </Pressable>
             <Text style={{ color: overlay.white70, fontSize: 13, lineHeight: 20 }}>
-              Маркетплейс практикующих специалистов по ФНС. Для
-              клиентов и специалистов — бесплатно.
+              Каталог налоговых специалистов с привязкой к конкретным
+              ИФНС. Для клиентов и специалистов — без подписок и комиссий.
             </Text>
           </View>
 
