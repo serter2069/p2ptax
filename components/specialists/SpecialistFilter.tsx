@@ -1,9 +1,10 @@
 import { View } from "react-native";
-import CityFnsCascade, {
+import CityFnsServicePicker, {
   CityFnsValue,
   FnsCascadeOption,
   ServiceOption,
-} from "@/components/filters/CityFnsCascade";
+} from "@/components/shared/CityFnsServicePicker";
+import { Z } from "@/lib/zIndex";
 
 interface CityCascadeOption {
   id: string;
@@ -21,9 +22,8 @@ interface Props {
 /**
  * Shared cascade filter (city → FNS → per-FNS services) used by both
  * `/specialists` (public catalog) and `/saved-specialists` (bookmarks).
- *
- * Wraps CityFnsCascade in typeahead mode so the two pages
- * can never drift apart visually.
+ * Routes through the unified CityFnsServicePicker (multi mode) so the two
+ * pages and the request intake form never drift apart visually.
  */
 export default function SpecialistFilter({
   cities,
@@ -32,18 +32,15 @@ export default function SpecialistFilter({
   value,
   onChange,
 }: Props) {
-  // No top padding here: PageTitle already provides the canonical 16px gap
-  // (#1716). Adding pt-2 would double the gap on /specialists and make the
-  // search bar sit lower than on /requests, /my-requests, etc.
   return (
     <View>
-      <View className="px-4" style={{ zIndex: 100 }}>
-        <CityFnsCascade
-          mode="typeahead"
+      <View className="px-4" style={{ zIndex: Z.STICKY }}>
+        <CityFnsServicePicker
+          mode="multi"
           value={value}
           onChange={onChange}
-          citiesSource={cities}
-          fnsSource={fnsAll}
+          cities={cities}
+          fnsAll={fnsAll}
           services={services}
         />
       </View>

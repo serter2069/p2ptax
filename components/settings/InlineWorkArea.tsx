@@ -3,11 +3,12 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Plus } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import { colors } from "@/lib/theme";
-import CityFnsCascade, {
+import CityFnsServicePicker, {
   CityFnsValue,
   CityCascadeOption,
   FnsCascadeOption,
-} from "@/components/filters/CityFnsCascade";
+} from "@/components/shared/CityFnsServicePicker";
+import { Z } from "@/lib/zIndex";
 import { WorkAreaEntryData } from "@/components/onboarding/WorkAreaEntry";
 import WorkAreaIntro from "@/components/onboarding/workarea/WorkAreaIntro";
 import EntriesList from "@/components/onboarding/workarea/EntriesList";
@@ -202,14 +203,13 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
 
         <WorkAreaIntro catalogError={catalogError} />
 
-        {/* Cascade picker — city → FNS → services */}
-        <View style={{ zIndex: 20 }}>
-          <CityFnsCascade
-            mode="typeahead"
+        <View style={{ zIndex: Z.STICKY }}>
+          <CityFnsServicePicker
+            mode="multi"
             value={cascadeValue}
             onChange={setCascadeValue}
-            citiesSource={cities}
-            fnsSource={fnsForCascade}
+            cities={cities}
+            fnsAll={fnsForCascade}
             services={services}
           />
         </View>

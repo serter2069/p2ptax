@@ -383,6 +383,30 @@ export default function CreateRequest() {
 
           <Card className="mb-4">
             <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+              Куда обращаемся
+            </Text>
+            <CityFnsServicePicker
+              mode="single"
+              cities={cities.map((c) => ({ id: c.id, name: c.name }))}
+              fnsAll={fnsAll}
+              services={services}
+              value={{
+                cityId: selectedCityId,
+                fnsId: selectedFnsId,
+                serviceId: selectedServiceId,
+              }}
+              onChange={(v) => {
+                setSelectedCityId(v.cityId);
+                setSelectedFnsId(v.fnsId);
+                setSelectedServiceId(v.serviceId);
+              }}
+              submitted={submitted}
+              labelFns="Инспекция ФНС"
+            />
+          </Card>
+
+          <Card className="mb-4">
+            <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
               Описание запроса
             </Text>
 
@@ -412,29 +436,6 @@ export default function CreateRequest() {
               >
                 {title.length}/100
               </Text>
-            </View>
-
-            <View className="mb-4">
-              <CityFnsServicePicker
-                mode="single"
-                framed
-                frameLabel="Куда обращаемся"
-                cities={cities.map((c) => ({ id: c.id, name: c.name }))}
-                fnsAll={fnsAll}
-                services={services}
-                value={{
-                  cityId: selectedCityId,
-                  fnsId: selectedFnsId,
-                  serviceId: selectedServiceId,
-                }}
-                onChange={(v) => {
-                  setSelectedCityId(v.cityId);
-                  setSelectedFnsId(v.fnsId);
-                  setSelectedServiceId(v.serviceId);
-                }}
-                submitted={submitted}
-                labelFns="Инспекция ФНС"
-              />
             </View>
 
             <View className="mb-4">
