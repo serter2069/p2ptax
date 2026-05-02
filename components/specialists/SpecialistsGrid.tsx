@@ -264,33 +264,8 @@ function DesktopSpecialistRow({
           )}
         </View>
 
-        {/* Right: bookmark + "Написать" button */}
-        <View style={{ alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={bookmarked ? "Убрать из сохранённых" : "Сохранить"}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              onBookmark(item.id);
-            }}
-            hitSlop={8}
-            style={({ pressed }) => [
-              {
-                width: 32,
-                height: 32,
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 16,
-              },
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <Bookmark
-              size={18}
-              color={bookmarked ? colors.primary : colors.textMuted}
-              fill={bookmarked ? colors.primary : "none"}
-            />
-          </Pressable>
+        {/* Right: only the primary CTA — bookmark moves to top-right corner. */}
+        <View style={{ alignItems: "flex-end", flexShrink: 0 }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Написать"
@@ -318,6 +293,33 @@ function DesktopSpecialistRow({
             </Text>
           </Pressable>
         </View>
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={bookmarked ? "Убрать из сохранённых" : "Сохранить"}
+        onPress={() => onBookmark(item.id)}
+        hitSlop={8}
+        style={({ pressed }) => [
+          {
+            position: "absolute",
+            top: 8,
+            right: 8,
+            width: 32,
+            height: 32,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 16,
+            zIndex: 2,
+          },
+          pressed && { opacity: 0.7 },
+        ]}
+      >
+        <Bookmark
+          size={18}
+          color={bookmarked ? colors.primary : colors.textMuted}
+          fill={bookmarked ? colors.primary : "none"}
+        />
       </Pressable>
 
       {/* Hover tooltip — show all FNS groups up to 5, link to profile if more */}
