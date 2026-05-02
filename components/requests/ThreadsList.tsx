@@ -57,7 +57,7 @@ export default function ThreadsList({
         <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide">
           Сообщения
         </Text>
-        {unreadMessages > 0 && (
+        {unreadMessages > 0 && threads.length > 0 && (
           <View className="bg-accent rounded-full px-2 py-0.5">
             <Text className="text-white text-xs font-bold">
               {unreadMessages}

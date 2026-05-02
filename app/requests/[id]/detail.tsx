@@ -188,8 +188,6 @@ function OwnerView({
   request,
   threads,
   onFilePress,
-  onExtend,
-  extending,
   onClose,
   onReopen,
   isDesktop,
@@ -197,51 +195,15 @@ function OwnerView({
   request: RequestDetailData;
   threads: ThreadSummary[];
   onFilePress: (f: FileItem) => void;
-  onExtend: () => void;
-  extending: boolean;
   onClose: () => void;
   onReopen: () => void;
   isDesktop: boolean;
 }) {
   const nav = useTypedRouter();
-  const canExtend =
-    request.status === "CLOSING_SOON" &&
-    request.extensionsCount < request.maxExtensions;
-
   const isClosed = request.status === "CLOSED";
 
-  // Action panel — reopen or close button + extend
   const ActionPanel = () => (
     <View>
-      {/* Extend button */}
-      {canExtend && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Продлить заявку"
-          onPress={onExtend}
-          disabled={extending}
-          className="bg-warning rounded-xl py-3 items-center mb-4"
-          style={({ pressed }) => [pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
-        >
-          {extending ? (
-            <ActivityIndicator color={colors.surface} />
-          ) : (
-            <Text className="text-white font-semibold text-base">
-              Продлить заявку — Продлений: {request.extensionsCount}/{request.maxExtensions}
-            </Text>
-          )}
-        </Pressable>
-      )}
-
-      {/* Extend limit banner */}
-      {request.status === "CLOSING_SOON" && request.extensionsCount >= request.maxExtensions && (
-        <View className="bg-warning-soft border border-amber-200 rounded-xl px-4 py-3 mb-4">
-          <Text className="text-sm text-warning text-center font-medium">
-            Продление использовано ({request.extensionsCount}/{request.maxExtensions})
-          </Text>
-        </View>
-      )}
-
       {/* Close / Reopen button */}
       {isClosed ? (
         <Pressable
@@ -469,7 +431,6 @@ export default function RequestDetail() {
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [extending, setExtending] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -513,27 +474,6 @@ export default function RequestDetail() {
       // ignore
     }
   }, []);
-
-  const handleExtend = useCallback(async () => {
-    if (extending || !request) return;
-    setExtending(true);
-    try {
-      const res = await apiPost<{ extensionsCount: number; status: string }>(
-        `/api/requests/${id}/extend`,
-        {}
-      );
-      setRequest((prev) =>
-        prev
-          ? { ...prev, extensionsCount: res.extensionsCount, status: res.status as RequestDetailData["status"] }
-          : null
-      );
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Не удалось продлить заявку";
-      Alert.alert("Ошибка", msg);
-    } finally {
-      setExtending(false);
-    }
-  }, [id, extending, request]);
 
   const handleClose = useCallback(() => {
     setShowCloseConfirm(true);
@@ -664,8 +604,6 @@ export default function RequestDetail() {
               request={request}
               threads={threads}
               onFilePress={handleFilePress}
-              onExtend={handleExtend}
-              extending={extending}
               onClose={handleClose}
               onReopen={handleReopen}
               isDesktop={isDesktop}

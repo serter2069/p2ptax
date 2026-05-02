@@ -1,9 +1,14 @@
 import { View, Text, Pressable, Alert } from "react-native";
-import { Trash2, ChevronDown, Plus } from "lucide-react-native";
+import {
+  Trash2, ChevronDown, Plus,
+  Phone, Mail, Send, MessageCircle, MessageSquare, Globe, AtSign,
+  type LucideIcon,
+} from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import { Z, layer } from "@/lib/zIndex";
 
 export interface ContactMethodItem {
   id: string;
@@ -18,8 +23,19 @@ const CONTACT_TYPE_LABELS: Record<string, string> = {
   email: "Email",
   telegram: "Telegram",
   whatsapp: "WhatsApp",
+  max: "Max",
   vk: "ВКонтакте",
   website: "Сайт",
+};
+
+const CONTACT_TYPE_ICONS: Record<string, LucideIcon> = {
+  phone: Phone,
+  email: Mail,
+  telegram: Send,
+  whatsapp: MessageCircle,
+  max: MessageSquare,
+  vk: AtSign,
+  website: Globe,
 };
 
 const CONTACT_TYPES = Object.keys(CONTACT_TYPE_LABELS);
@@ -37,6 +53,29 @@ interface ContactMethodsListProps {
   onNewContactValueChange: (val: string) => void;
   onContactSavingChange: (val: boolean) => void;
   onShowTypePickerChange: (val: boolean) => void;
+}
+
+function placeholderFor(type: string): string {
+  switch (type) {
+    case "phone":
+    case "whatsapp":
+    case "max":
+      return "+7 (___) ___-__-__";
+    case "telegram":
+      return "@username";
+    case "email":
+      return "email@example.com";
+    case "vk":
+      return "vk.com/username";
+    default:
+      return "https://example.com";
+  }
+}
+
+function keyboardFor(type: string) {
+  if (type === "phone" || type === "whatsapp" || type === "max") return "phone-pad" as const;
+  if (type === "email") return "email-address" as const;
+  return "default" as const;
 }
 
 export default function ContactMethodsList({
@@ -97,99 +136,113 @@ export default function ContactMethodsList({
 
   return (
     <View>
-      <Text className="text-xs font-semibold text-text-mute uppercase tracking-wide mb-3">
-        Контакты
-      </Text>
-
-      {contacts.map((contact) => (
-        <View
-          key={contact.id}
-          className="flex-row items-center bg-surface2 border border-border rounded-xl px-4 py-3 mb-2"
-        >
-          <View className="flex-1">
-            <Text className="text-xs text-text-mute mb-0.5">
-              {CONTACT_TYPE_LABELS[contact.type] || contact.type}
-            </Text>
-            <Text className="text-sm font-medium text-text-base">
-              {contact.value}
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Удалить контакт"
-            onPress={() => handleDeleteContact(contact.id)}
-            className="ml-2 p-2"
+      {contacts.map((contact) => {
+        const Icon = CONTACT_TYPE_ICONS[contact.type] ?? Globe;
+        return (
+          <View
+            key={contact.id}
+            className="flex-row items-center bg-surface2 border border-border rounded-xl px-4 py-3 mb-2"
           >
-            <Trash2 size={16} color={colors.error} />
-          </Pressable>
-        </View>
-      ))}
+            <Icon size={18} color={colors.textMuted} style={{ marginRight: 12 }} />
+            <View className="flex-1">
+              <Text className="text-xs text-text-mute mb-0.5">
+                {CONTACT_TYPE_LABELS[contact.type] || contact.type}
+              </Text>
+              <Text className="text-sm font-medium text-text-base">
+                {contact.value}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Удалить контакт"
+              onPress={() => handleDeleteContact(contact.id)}
+              className="ml-2 p-2"
+            >
+              <Trash2 size={16} color={colors.error} />
+            </Pressable>
+          </View>
+        );
+      })}
 
       {addingContact ? (
         <View className="bg-surface2 border border-border rounded-xl p-4 mb-2">
           <Text className="text-sm font-medium text-text-base mb-2">Тип контакта</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Выбрать тип контакта"
-            onPress={() => onShowTypePickerChange(!showTypePicker)}
-            className="flex-row items-center justify-between bg-white border border-border rounded-xl px-4 py-3 mb-3"
-          >
-            <Text className="text-base text-text-base">
-              {CONTACT_TYPE_LABELS[newContactType]}
-            </Text>
-            <ChevronDown size={12} color={colors.placeholder} />
-          </Pressable>
-          {showTypePicker && (
-            <View className="bg-white border border-border rounded-xl overflow-hidden mb-3">
-              {CONTACT_TYPES.map((t) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={t}
-                  accessibilityLabel={CONTACT_TYPE_LABELS[t]}
-                  onPress={() => {
-                    onNewContactTypeChange(t);
-                    onShowTypePickerChange(false);
-                  }}
-                  className={`px-4 py-3 border-b border-border ${
-                    newContactType === t ? "bg-surface2" : ""
-                  }`}
-                >
-                  <Text
-                    className={`text-base ${
-                      newContactType === t ? "text-accent font-medium" : "text-text-base"
-                    }`}
-                  >
-                    {CONTACT_TYPE_LABELS[t]}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
+
+          <View style={{ position: "relative", zIndex: Z.STICKY, marginBottom: 12 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Выбрать тип контакта"
+              onPress={() => onShowTypePickerChange(!showTypePicker)}
+              className="flex-row items-center justify-between bg-white border border-border rounded-xl px-4 py-3"
+            >
+              <View className="flex-row items-center">
+                {(() => {
+                  const Icon = CONTACT_TYPE_ICONS[newContactType] ?? Globe;
+                  return <Icon size={16} color={colors.textMuted} style={{ marginRight: 10 }} />;
+                })()}
+                <Text className="text-base text-text-base">
+                  {CONTACT_TYPE_LABELS[newContactType]}
+                </Text>
+              </View>
+              <ChevronDown size={14} color={colors.placeholder} />
+            </Pressable>
+
+            {showTypePicker && (
+              <View
+                className="absolute left-0 right-0 bg-white border border-border rounded-xl overflow-hidden"
+                style={{
+                  top: 52,
+                  ...layer("POPOVER"),
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 16,
+                }}
+              >
+                {CONTACT_TYPES.map((t) => {
+                  const Icon = CONTACT_TYPE_ICONS[t] ?? Globe;
+                  const active = newContactType === t;
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      key={t}
+                      accessibilityLabel={CONTACT_TYPE_LABELS[t]}
+                      onPress={() => {
+                        onNewContactTypeChange(t);
+                        onShowTypePickerChange(false);
+                      }}
+                      className={`flex-row items-center px-4 py-3 ${
+                        active ? "bg-surface2" : ""
+                      }`}
+                    >
+                      <Icon
+                        size={16}
+                        color={active ? colors.accent : colors.textMuted}
+                        style={{ marginRight: 10 }}
+                      />
+                      <Text
+                        className={`text-base ${
+                          active ? "text-accent font-medium" : "text-text-base"
+                        }`}
+                      >
+                        {CONTACT_TYPE_LABELS[t]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
           <View className="mb-3">
             <Input
               variant="bordered"
               label="Значение"
               value={newContactValue}
               onChangeText={onNewContactValueChange}
-              placeholder={
-                newContactType === "phone" || newContactType === "whatsapp"
-                  ? "+7 (___) ___-__-__"
-                  : newContactType === "telegram"
-                  ? "@username"
-                  : newContactType === "email"
-                  ? "email@example.com"
-                  : newContactType === "vk"
-                  ? "vk.com/username"
-                  : "https://example.com"
-              }
+              placeholder={placeholderFor(newContactType)}
               autoCapitalize="none"
-              keyboardType={
-                newContactType === "phone" || newContactType === "whatsapp"
-                  ? "phone-pad"
-                  : newContactType === "email"
-                  ? "email-address"
-                  : "default"
-              }
+              keyboardType={keyboardFor(newContactType)}
             />
           </View>
           <View className="flex-row gap-2">
