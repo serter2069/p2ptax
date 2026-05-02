@@ -10,8 +10,9 @@
  *             catalog filter.
  */
 import { useMemo, useState } from "react";
-import { View, Text, Pressable, TextInput, Platform } from "react-native";
-import { Search, X, MapPin, Building2, Check, ChevronDown } from "lucide-react-native";
+import { View, Text, Pressable } from "react-native";
+import { Search, X, MapPin, Check, ChevronDown } from "lucide-react-native";
+import Input from "@/components/ui/Input";
 import CityFnsCascade, {
   CityCascadeOption,
   FnsCascadeOption,
@@ -375,36 +376,26 @@ function SearchInput({
   disabled?: boolean;
 }) {
   return (
-    <View className="flex-row items-center bg-white border border-border rounded-xl h-11 px-3">
-      <Search size={15} color={colors.placeholder} style={{ marginRight: 8 }} />
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        editable={!disabled}
-        placeholder={placeholder}
-        placeholderTextColor={colors.placeholder}
-        style={{
-          flex: 1,
-          fontSize: 14,
-          color: colors.text,
-          height: 44,
-          backgroundColor: "transparent",
-          ...(Platform.OS === "web"
-            ? { paddingHorizontal: 4, outlineStyle: "none" as never }
-            : {}),
-        }}
-      />
-      {value.length > 0 && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Очистить"
-          onPress={() => onChange("")}
-          className="ml-1 w-7 h-7 items-center justify-center"
-        >
-          <X size={14} color={colors.placeholder} />
-        </Pressable>
-      )}
-    </View>
+    <Input
+      variant="bordered"
+      icon={Search}
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChange}
+      editable={!disabled}
+      rightSlot={
+        value.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Очистить"
+            onPress={() => onChange("")}
+            className="ml-1 w-7 h-7 items-center justify-center"
+          >
+            <X size={14} color={colors.placeholder} />
+          </Pressable>
+        ) : null
+      }
+    />
   );
 }
 

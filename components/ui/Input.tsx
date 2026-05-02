@@ -32,6 +32,8 @@ export interface InputProps {
   onBlur?: TextInputProps["onBlur"];
   /** Forwarded to TextInput.onFocus. The internal focus state is updated regardless. */
   onFocus?: TextInputProps["onFocus"];
+  /** Optional element rendered to the right of the text (clear button, etc.). */
+  rightSlot?: React.ReactNode;
 }
 
 // Design tokens for the "bordered" variant — imported from lib/theme (spec: #1589).
@@ -66,6 +68,7 @@ export default function Input({
   onContentSizeChange,
   onBlur,
   onFocus,
+  rightSlot,
 }: InputProps) {
   const [focused, setFocused] = useState(false);
 
@@ -183,10 +186,17 @@ export default function Input({
               outlineStyle: "none",
               appearance: "none",
               // Disable manual resize handle on multiline web textarea.
-              ...(multiline ? { resize: "none" } : {}),
+              // alignSelf+height keep the textarea filling the wrapper so
+              // clicks anywhere on its tall area focus the field — without
+              // them <textarea> stays at content height and the empty area
+              // below is inert.
+              ...(multiline
+                ? { resize: "none", alignSelf: "stretch", height: "100%" }
+                : {}),
             } : {}),
           }}
         />
+        {rightSlot}
       </View>
       {error && (
         <Text className="text-xs text-danger mt-1">{error}</Text>

@@ -14,6 +14,7 @@ import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
 import { useCities } from "@/lib/hooks/useCities";
 import { Z, layer } from "@/lib/zIndex";
+import Input from "@/components/ui/Input";
 
 export interface CityCascadeOption {
   id: string;
@@ -351,45 +352,34 @@ export default function CityFnsCascade({
           </View>
         )}
 
-        {/* Search input — hide once FNS is picked */}
         {!selFns && (
           <View className="relative" style={{ zIndex: Z.STICKY }}>
-            <View className="flex-row items-center bg-white border border-border rounded-xl h-10 px-3">
-              <Search size={14} color={colors.placeholder} style={{ marginRight: 8 }} />
-              <TextInput
-                value={query}
-                onChangeText={(t) => {
-                  setQuery(t);
-                  if (t.trim().length >= 2) setDropdownOpen(true);
-                }}
-                onFocus={() => {
-                  if (query.trim().length >= 2) setDropdownOpen(true);
-                }}
-                onBlur={handleBlur}
-                placeholder="Введите город или ИФНС, например: Москва или №46"
-                placeholderTextColor={colors.placeholder}
-                style={{
-                  flex: 1,
-                  fontSize: 14,
-                  color: colors.text,
-                  height: 40,
-                  backgroundColor: "transparent",
-                  ...(Platform.OS === "web"
-                    ? { borderRadius: 8, paddingHorizontal: 4, outlineStyle: "none" as never }
-                    : {}),
-                }}
-              />
-              {query.length > 0 && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Очистить ввод"
-                  onPress={() => { setQuery(""); setDropdownOpen(false); }}
-                  className="ml-2 w-6 h-6 items-center justify-center"
-                >
-                  <X size={12} color={colors.placeholder} />
-                </Pressable>
-              )}
-            </View>
+            <Input
+              variant="bordered"
+              icon={Search}
+              placeholder="Введите город или ИФНС, например: Москва или №46"
+              value={query}
+              onChangeText={(t) => {
+                setQuery(t);
+                if (t.trim().length >= 2) setDropdownOpen(true);
+              }}
+              onFocus={() => {
+                if (query.trim().length >= 2) setDropdownOpen(true);
+              }}
+              onBlur={handleBlur}
+              rightSlot={
+                query.length > 0 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Очистить ввод"
+                    onPress={() => { setQuery(""); setDropdownOpen(false); }}
+                    className="ml-1 w-7 h-7 items-center justify-center"
+                  >
+                    <X size={14} color={colors.placeholder} />
+                  </Pressable>
+                ) : null
+              }
+            />
 
             {/* Typeahead dropdown */}
             {showTypeaheadResults && (
@@ -685,23 +675,13 @@ export default function CityFnsCascade({
                 className="border border-border rounded-xl mt-1 bg-white overflow-hidden"
                 style={{ maxHeight: 320 }}
               >
-                <View className="flex-row items-center px-3 h-11 border-b border-border">
-                  <Search size={14} color={colors.placeholder} />
-                  <TextInput
+                <View className="px-2 pt-2 border-b border-border">
+                  <Input
+                    variant="bordered"
+                    icon={Search}
+                    placeholder="Поиск инспекции…"
                     value={fnsSearch}
                     onChangeText={setFnsSearch}
-                    placeholder="Поиск инспекции…"
-                    placeholderTextColor={colors.placeholder}
-                    style={{
-                      flex: 1,
-                      fontSize: 14,
-                      color: colors.text,
-                      marginLeft: 8,
-                      height: 40,
-                      borderWidth: 0,
-                      backgroundColor: "transparent",
-                      ...(Platform.OS === "web" ? { outlineStyle: "none" as never, outlineWidth: 0, appearance: "none" as never } : {}),
-                    }}
                   />
                 </View>
                 <ScrollView nestedScrollEnabled>

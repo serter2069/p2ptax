@@ -134,6 +134,7 @@ export default function AuthEmailScreen() {
           {/* Email input with leading icon */}
           <View style={{ marginBottom: 16 }}>
             <Input
+              variant="bordered"
               accessibilityLabel="Email адрес"
               placeholder="your@email.com"
               value={email}

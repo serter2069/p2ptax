@@ -248,6 +248,7 @@ export default function AdminSettings() {
                   {SETTINGS_FIELDS.map((field) => (
                     <Input
                       key={field.key}
+                      variant="bordered"
                       label={field.label}
                       value={getValue(field.key, field.defaultValue)}
                       onChangeText={(val) => setValue(field.key, val)}
