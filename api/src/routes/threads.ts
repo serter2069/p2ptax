@@ -15,6 +15,35 @@ function computeIsOnline(lastSeenAt: Date | null | undefined): boolean {
   return Date.now() - lastSeenAt.getTime() < ONLINE_THRESHOLD_MS;
 }
 
+/**
+ * Privacy mask for the other party's display fields. When a specialist
+ * has closed their public profile (isSpecialist && !isAvailable), strip
+ * avatar and replace lastName with first-letter-only — same rule the
+ * /api/specialists/:id detail page applies. Clients (isSpecialist=false)
+ * are unaffected; their isAvailable flag is meaningless.
+ */
+type ThreadPartyRow = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+  isAvailable?: boolean;
+  isSpecialist?: boolean;
+};
+function maskClosedParty(u: ThreadPartyRow) {
+  const closed = u.isSpecialist === true && u.isAvailable === false;
+  return {
+    firstName: u.firstName,
+    lastName: closed
+      ? u.lastName
+        ? u.lastName.charAt(0) + "."
+        : null
+      : u.lastName,
+    avatarUrl: closed ? null : u.avatarUrl,
+    isClosed: closed,
+  };
+}
+
 // 1-hour presigned URL so the <Image> component can load without auth headers.
 async function presignAttachmentUrl(storedUrl: string): Promise<string> {
   // storedUrl is like "/<bucket>/<key>" or already an http URL.
@@ -148,10 +177,10 @@ router.get("/", async (req: Request, res: Response) => {
             select: { id: true, title: true, status: true },
           },
           client: {
-            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true },
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true, isAvailable: true, isSpecialist: true },
           },
           specialist: {
-            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true },
+            select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true, isAvailable: true, isSpecialist: true },
           },
           messages: {
             orderBy: { createdAt: "desc" },
@@ -212,14 +241,16 @@ router.get("/", async (req: Request, res: Response) => {
         }))
       );
 
+      const masked = maskClosedParty(otherUser);
       return {
         id: t.id,
         request: t.request,
         otherUser: {
           id: otherUser.id,
-          firstName: otherUser.firstName,
-          lastName: otherUser.lastName,
-          avatarUrl: otherUser.avatarUrl,
+          firstName: masked.firstName,
+          lastName: masked.lastName,
+          avatarUrl: masked.avatarUrl,
+          isClosed: masked.isClosed,
           isDeleted: otherUser.deletedAt !== null,
           isOnline: computeIsOnline(otherUser.lastSeenAt),
         },
@@ -318,8 +349,8 @@ router.get("/my", async (req: Request, res: Response) => {
         take: limit,
         include: {
           request: { select: { id: true, title: true, status: true, userId: true } },
-          client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true } },
-          specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true } },
+          client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true, isAvailable: true, isSpecialist: true } },
+          specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, lastSeenAt: true, isAvailable: true, isSpecialist: true } },
           messages: {
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -418,6 +449,7 @@ router.get("/my", async (req: Request, res: Response) => {
         }))
       );
 
+      const masked = maskClosedParty(otherUser);
       return {
         id: thread.id,
         requestId: thread.requestId,
@@ -425,9 +457,10 @@ router.get("/my", async (req: Request, res: Response) => {
         perspective: asSpecialist ? "as_specialist" : "as_client",
         otherUser: {
           id: otherUser.id,
-          firstName: otherUser.firstName,
-          lastName: otherUser.lastName,
-          avatarUrl: otherUser.avatarUrl,
+          firstName: masked.firstName,
+          lastName: masked.lastName,
+          avatarUrl: masked.avatarUrl,
+          isClosed: masked.isClosed,
           isDeleted: otherUser.deletedAt !== null,
           isOnline: computeIsOnline(otherUser.lastSeenAt),
         },
@@ -479,8 +512,8 @@ router.get("/:id", async (req: Request, res: Response) => {
       where: { id: threadId },
       include: {
         request: { select: { id: true, title: true, status: true } },
-        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
-        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true } },
+        client: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, isAvailable: true, isSpecialist: true } },
+        specialist: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, deletedAt: true, isAvailable: true, isSpecialist: true } },
       },
     });
 
@@ -497,11 +530,19 @@ router.get("/:id", async (req: Request, res: Response) => {
     const isClient = thread.clientId === userId;
     const otherUser = isClient ? thread.specialist : thread.client;
 
-    // Strip the raw `deletedAt` Date from the public payload — replace
-    // with the boolean `isDeleted` flag the FE consumes.
-    const stripDeletedAt = <T extends { deletedAt: Date | null }>(u: T) => {
-      const { deletedAt, ...rest } = u;
-      return { ...rest, isDeleted: deletedAt !== null };
+    // Strip the raw `deletedAt` Date and apply the closed-profile mask
+    // (avatarUrl/lastName) so frontends can render minimal display data
+    // for specialists who hid themselves.
+    const stripAndMask = <T extends ThreadPartyRow & { deletedAt: Date | null }>(u: T) => {
+      const masked = maskClosedParty(u);
+      return {
+        id: u.id,
+        firstName: masked.firstName,
+        lastName: masked.lastName,
+        avatarUrl: masked.avatarUrl,
+        isClosed: masked.isClosed,
+        isDeleted: u.deletedAt !== null,
+      };
     };
 
     res.json({
@@ -510,15 +551,9 @@ router.get("/:id", async (req: Request, res: Response) => {
       clientId: thread.clientId,
       specialistId: thread.specialistId,
       request: thread.request,
-      client: stripDeletedAt(thread.client),
-      specialist: stripDeletedAt(thread.specialist),
-      otherUser: {
-        id: otherUser.id,
-        firstName: otherUser.firstName,
-        lastName: otherUser.lastName,
-        avatarUrl: otherUser.avatarUrl,
-        isDeleted: otherUser.deletedAt !== null,
-      },
+      client: stripAndMask(thread.client),
+      specialist: stripAndMask(thread.specialist),
+      otherUser: stripAndMask(otherUser),
       createdAt: thread.createdAt,
     });
   } catch (error) {

@@ -387,19 +387,56 @@ export default function SpecialistPublicProfile() {
           </View>
         </View>
 
-        {/* Own profile banner */}
+        {/* Own profile banner. When the user is viewing their own *closed*
+            profile, replace the bare "Это вы" pill with a preview hint —
+            this is exactly what other people see, plus a route back to the
+            toggle that re-opens the profile. */}
         {isOwnProfile && (
-          <View
-            className="mx-4 mt-6 mb-4 rounded-xl py-3.5 items-center"
-            style={{ backgroundColor: colors.surface2 }}
-          >
-            <Text
-              className="text-sm font-semibold"
-              style={{ color: colors.textSecondary }}
+          isClosed ? (
+            <View
+              className="mx-4 mt-6 mb-4 rounded-2xl px-5 py-4"
+              style={{ backgroundColor: colors.surface2 }}
             >
-              Это вы
-            </Text>
-          </View>
+              <Text
+                className="text-sm font-semibold mb-1"
+                style={{ color: colors.text }}
+              >
+                Так ваш профиль видят другие
+              </Text>
+              <Text
+                className="text-xs leading-5"
+                style={{ color: colors.textSecondary }}
+              >
+                Имя и первая буква фамилии — больше ничего. Чтобы вернуть
+                полный профиль в каталог, включите{" "}
+                <Text className="font-semibold" style={{ color: colors.text }}>
+                  «Публичный профиль»
+                </Text>{" "}
+                на странице{" "}
+                <Text
+                  accessibilityRole="link"
+                  onPress={() => nav.routes.profile()}
+                  className="font-semibold underline"
+                  style={{ color: colors.accent }}
+                >
+                  Профиль
+                </Text>
+                .
+              </Text>
+            </View>
+          ) : (
+            <View
+              className="mx-4 mt-6 mb-4 rounded-xl py-3.5 items-center"
+              style={{ backgroundColor: colors.surface2 }}
+            >
+              <Text
+                className="text-sm font-semibold"
+                style={{ color: colors.textSecondary }}
+              >
+                Это вы
+              </Text>
+            </View>
+          )
         )}
       </ScrollView>
 

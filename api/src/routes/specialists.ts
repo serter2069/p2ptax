@@ -547,7 +547,11 @@ router.get("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    // Closed profile — return minimal data only
+    // Closed profile — return minimal data only.
+    // Privacy rule: when a specialist hides their profile, callers see
+    // first name + last initial and nothing else — no avatar, no contacts,
+    // no work area, no description. The page renders a "Профиль закрыт"
+    // card so old links / chat references stay routable but reveal nothing.
     if (!specialist.isAvailable) {
       const lastNameInitial =
         specialist.lastName ? specialist.lastName[0] + "." : null;
@@ -555,7 +559,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         id: specialist.id,
         firstName: specialist.firstName,
         lastNameInitial,
-        avatarUrl: specialist.avatarUrl,
+        avatarUrl: null,
         isAvailable: false,
       });
       return;
