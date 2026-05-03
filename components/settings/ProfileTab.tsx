@@ -53,8 +53,8 @@ export default function ProfileTab({
   const handleShareProfile = async () => {
     const url =
       Platform.OS === "web"
-        ? `${window.location.origin}/specialists/${userId}`
-        : `https://p2ptax.ru/specialists/${userId}`;
+        ? `${window.location.origin}/profile/${userId}`
+        : `https://p2ptax.ru/profile/${userId}`;
     if (Platform.OS === "web") {
       try {
         await navigator.clipboard.writeText(url);
@@ -175,7 +175,7 @@ export default function ProfileTab({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Посмотреть мой профиль"
-                  onPress={() => router.push(`/specialists/${userId}` as never)}
+                  onPress={() => router.push(`/profile/${userId}` as never)}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",

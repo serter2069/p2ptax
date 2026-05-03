@@ -160,7 +160,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const handleOtherUserPress = useCallback(() => {
     if (!thread) return;
     if (thread.clientId === myId && thread.specialistId) {
-      router.push(`/specialists/${thread.specialistId}` as never);
+      router.push(`/profile/${thread.specialistId}` as never);
     }
   }, [thread, myId]);
 

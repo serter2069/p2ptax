@@ -95,8 +95,8 @@ export const DYNAMIC_ROUTES = {
   /** /threads/:id */
   thread: (id: string) => `/threads/${id}` as const,
 
-  /** /specialists/:id */
-  specialist: (id: string) => `/specialists/${id}` as const,
+  /** /profile/:id — public profile (any user can be both client and specialist) */
+  specialist: (id: string) => `/profile/${id}` as const,
 
   /** /login?returnTo=... */
   loginWithReturnTo: (returnTo: string) =>
