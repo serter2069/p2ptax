@@ -5,11 +5,11 @@ import {
   ScrollView,
   useWindowDimensions,
   Pressable,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
+import { dialog } from "@/lib/dialog";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import { Send, UserCheck, ChevronLeft } from "lucide-react-native";
@@ -104,7 +104,7 @@ export default function SpecialistConfirmWrite() {
       (f) => f.status === "uploading" || f.status === "pending"
     );
     if (uploading) {
-      Alert.alert("Подождите", "Файл ещё загружается");
+      dialog.alert({ title: "Подождите", message: "Файл ещё загружается" });
       return;
     }
 
@@ -134,12 +134,12 @@ export default function SpecialistConfirmWrite() {
           if (existingThreadId) {
             const goToThread = () =>
               nav.replaceAny(`/threads/${existingThreadId}?requestId=${id}`);
-            Alert.alert(
-              "Вы уже откликнулись",
-              "Перейдём к существующему диалогу.",
-              [{ text: "OK", onPress: goToThread }],
-              { onDismiss: goToThread }
-            );
+            void dialog
+              .alert({
+                title: "Вы уже откликнулись",
+                message: "Перейдём к существующему диалогу.",
+              })
+              .then(goToThread);
           } else {
             setSubmitError("Запрос закрыт — сообщение отправить невозможно");
           }

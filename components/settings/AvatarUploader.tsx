@@ -5,11 +5,11 @@ import {
   Pressable,
   ActivityIndicator,
   Image,
-  Alert,
   Platform,
 } from "react-native";
 import { Pencil } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
+import { dialog } from "@/lib/dialog";
 import {
   ApiError,
   AVATAR_MAX_BYTES,
@@ -88,7 +88,7 @@ export default function AvatarUploader({
   const uploadAvatar = async (file: File) => {
     // Pre-check size before any network call
     if (file.size > AVATAR_MAX_BYTES) {
-      Alert.alert(AVATAR_TOO_LARGE_TITLE, AVATAR_TOO_LARGE_MESSAGE);
+      dialog.alert({ title: AVATAR_TOO_LARGE_TITLE, message: AVATAR_TOO_LARGE_MESSAGE });
       return;
     }
 
@@ -104,7 +104,7 @@ export default function AvatarUploader({
         e instanceof ApiError ? e.message : avatarUploadErrorMessage(-1);
       // Keep file for retry, but for 413 the file itself is the problem — don't offer retry.
       if (status === 413) {
-        Alert.alert(AVATAR_TOO_LARGE_TITLE, AVATAR_TOO_LARGE_MESSAGE);
+        dialog.alert({ title: AVATAR_TOO_LARGE_TITLE, message: AVATAR_TOO_LARGE_MESSAGE });
         setLastFile(null);
       } else {
         setLastFile(file);
@@ -131,7 +131,7 @@ export default function AvatarUploader({
       const asset = result.assets[0];
       const fileSize = asset.size ?? 0;
       if (fileSize > AVATAR_MAX_BYTES) {
-        Alert.alert(AVATAR_TOO_LARGE_TITLE, AVATAR_TOO_LARGE_MESSAGE);
+        dialog.alert({ title: AVATAR_TOO_LARGE_TITLE, message: AVATAR_TOO_LARGE_MESSAGE });
         return;
       }
       setErrorMessage(null);
@@ -149,7 +149,7 @@ export default function AvatarUploader({
         const msg =
           e instanceof ApiError ? e.message : avatarUploadErrorMessage(-1);
         if (status === 413) {
-          Alert.alert(AVATAR_TOO_LARGE_TITLE, AVATAR_TOO_LARGE_MESSAGE);
+          dialog.alert({ title: AVATAR_TOO_LARGE_TITLE, message: AVATAR_TOO_LARGE_MESSAGE });
         } else {
           setErrorMessage(msg);
         }

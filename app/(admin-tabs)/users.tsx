@@ -4,12 +4,11 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Alert,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Users } from "lucide-react-native";
+import { dialog } from "@/lib/dialog";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
@@ -181,16 +180,13 @@ export default function AdminUsers() {
       }
     };
 
-    if (Platform.OS === "web") {
-      if (window.confirm(`Вы уверены, что хотите ${action} пользователя ${user.email}?`)) {
-        await doIt();
-      }
-    } else {
-      Alert.alert("Подтверждение", `${action} пользователя ${user.email}?`, [
-        { text: "Отмена", style: "cancel" },
-        { text: "Да", onPress: doIt },
-      ]);
-    }
+    const ok = await dialog.confirm({
+      title: "Подтверждение",
+      message: `${action.charAt(0).toUpperCase() + action.slice(1)} пользователя ${user.email}?`,
+      confirmLabel: "Да",
+      destructive: !user.isBanned,
+    });
+    if (ok) await doIt();
   };
 
   const closeAllRequests = async (user: UserItem) => {
@@ -205,31 +201,20 @@ export default function AdminUsers() {
         );
         if (res.ok) {
           const data = await res.json();
-          if (Platform.OS === "web") {
-            window.alert(`Закрыто запросов: ${data.closed}`);
-          } else {
-            Alert.alert("Готово", `Закрыто запросов: ${data.closed}`);
-          }
+          dialog.alert({ title: "Готово", message: `Закрыто запросов: ${data.closed}` });
         }
       } catch {
         // ignore
       }
     };
 
-    if (Platform.OS === "web") {
-      if (window.confirm(`Закрыть все активные запросы пользователя ${user.email}?`)) {
-        await doIt();
-      }
-    } else {
-      Alert.alert(
-        "Подтверждение",
-        `Закрыть все активные запросы ${user.email}?`,
-        [
-          { text: "Отмена", style: "cancel" },
-          { text: "Да", onPress: doIt },
-        ]
-      );
-    }
+    const ok = await dialog.confirm({
+      title: "Подтверждение",
+      message: `Закрыть все активные запросы ${user.email}?`,
+      confirmLabel: "Да",
+      destructive: true,
+    });
+    if (ok) await doIt();
   };
 
   const isCloseToBottom = (event: {

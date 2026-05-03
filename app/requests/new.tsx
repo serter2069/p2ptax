@@ -4,12 +4,12 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   useWindowDimensions,
 } from "react-native";
 import StyledSwitch from "@/components/ui/StyledSwitch";
+import { dialog } from "@/lib/dialog";
 import LandingHeader from "@/components/landing/LandingHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -274,17 +274,17 @@ export default function CreateRequest() {
         try { window.localStorage.removeItem("p2ptax_anon_session_v1"); } catch { /* ignore */ }
       }
 
+      // Native got a confirmation dialog; on web we navigated immediately.
+      // Now both routes show the same "Запрос опубликован" dialog so the
+      // success feedback is consistent across platforms.
       const goToDetail = () => nav.replaceAny(`/requests/${result.id}/detail`);
-      if (Platform.OS === "web") {
-        goToDetail();
-      } else {
-        Alert.alert(
-          "Запрос опубликован",
-          "Специалисты по вашей ФНС увидят его и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
-          [{ text: "OK", onPress: goToDetail }],
-          { onDismiss: goToDetail }
-        );
-      }
+      void dialog
+        .alert({
+          title: "Запрос опубликован",
+          message:
+            "Специалисты по вашей ФНС увидят его и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
+        })
+        .then(goToDetail);
     } catch (e: unknown) {
       const msg =
         e instanceof Error

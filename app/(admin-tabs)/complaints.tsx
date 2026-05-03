@@ -4,12 +4,11 @@ import {
   FlatList,
   Pressable,
   ActivityIndicator,
-  Alert,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ChevronUp, ChevronDown, Flag } from "lucide-react-native";
+import { dialog } from "@/lib/dialog";
 import DesktopScreen from "@/components/layout/DesktopScreen";
 import Card from "@/components/ui/Card";
 import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
@@ -145,14 +144,14 @@ export default function AdminComplaints() {
       }
     };
 
-    if (Platform.OS === "web") {
-      if (window.confirm(`Отметить жалобу как рассмотренную?`)) doIt();
-    } else {
-      Alert.alert("Подтверждение", "Отметить жалобу как рассмотренную?", [
-        { text: "Отмена", style: "cancel" },
-        { text: "Да", onPress: doIt },
-      ]);
-    }
+    void (async () => {
+      const ok = await dialog.confirm({
+        title: "Подтверждение",
+        message: "Отметить жалобу как рассмотренную?",
+        confirmLabel: "Да",
+      });
+      if (ok) doIt();
+    })();
   };
 
   const renderItem = ({ item }: { item: ComplaintItem }) => {

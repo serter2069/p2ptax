@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
 import { apiGet, apiPatch, apiPost } from "@/lib/api";
+import { dialog } from "@/lib/dialog";
 import type { ContactMethodItem } from "@/components/settings/ContactMethodsList";
 import type { SpecialistProfileData } from "@/components/settings/SpecialistTab";
 
@@ -161,23 +161,15 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         lastName: res.user.lastName,
         avatarUrl: res.user.avatarUrl,
       });
-      if (Platform.OS !== "web") {
-        Alert.alert("Готово", "Изменения сохранены");
-      }
-      // Web: rely on the form transitioning out of dirty state to confirm save
-      // (no blocking alert popup).
+      // Web/native: rely on the form transitioning out of dirty state to
+      // confirm save — no blocking popup. The autosave indicator already
+      // shows "Сохранено" briefly.
     } catch (err) {
       if (__DEV__) console.error("Save profile error:", err);
-      if (Platform.OS === "web") {
-        if (typeof window !== "undefined" && typeof window.alert === "function") {
-          window.alert("Ошибка сохранения\n\nНе удалось сохранить изменения. Попробуйте ещё раз.");
-        }
-      } else {
-        Alert.alert(
-          "Ошибка сохранения",
-          "Не удалось сохранить изменения. Попробуйте ещё раз.",
-        );
-      }
+      dialog.alert({
+        title: "Ошибка сохранения",
+        message: "Не удалось сохранить изменения. Попробуйте ещё раз.",
+      });
     } finally {
       setSaving(false);
     }
@@ -185,13 +177,7 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
 
   const handleSaveSpecialist = useCallback(async () => {
     if (!firstName.trim() || firstName.trim().length < 2) {
-      if (Platform.OS === "web") {
-        if (typeof window !== "undefined" && typeof window.alert === "function") {
-          window.alert("Ошибка: имя должно быть от 2 до 50 символов");
-        }
-      } else {
-        Alert.alert("Ошибка", "Имя должно быть от 2 до 50 символов");
-      }
+      dialog.alert({ title: "Ошибка", message: "Имя должно быть от 2 до 50 символов" });
       return;
     }
     setSaving(true);
@@ -210,18 +196,9 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         avatarUrl: avatarUrl || null,
       });
       await loadSpecialistData();
-      if (Platform.OS !== "web") {
-        Alert.alert("Сохранено", "Профиль обновлён");
-      }
-      // Web: form transitions out of dirty state — no blocking alert.
+      // Form leaving dirty state confirms the save; no blocking popup.
     } catch {
-      if (Platform.OS === "web") {
-        if (typeof window !== "undefined" && typeof window.alert === "function") {
-          window.alert("Не удалось сохранить");
-        }
-      } else {
-        Alert.alert("Ошибка", "Не удалось сохранить");
-      }
+      dialog.alert({ title: "Ошибка", message: "Не удалось сохранить" });
     } finally {
       setSaving(false);
     }
@@ -252,13 +229,7 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         setIsAvailable(value);
         updateUser({ isAvailable: value });
       } catch {
-        if (Platform.OS === "web") {
-          if (typeof window !== "undefined" && typeof window.alert === "function") {
-            window.alert("Ошибка: не удалось обновить статус доступности");
-          }
-        } else {
-          Alert.alert("Ошибка", "Не удалось обновить статус доступности");
-        }
+        dialog.alert({ title: "Ошибка", message: "Не удалось обновить статус доступности" });
       } finally {
         setAvailabilityLoading(false);
       }
@@ -267,34 +238,18 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   );
 
   const handleToggleAvailable = useCallback(
-    (value: boolean) => {
+    async (value: boolean) => {
       if (availabilityLoading) return;
       if (isAvailable && !value) {
-        if (Platform.OS === "web") {
-          const ok =
-            typeof window !== "undefined" && typeof window.confirm === "function"
-              ? window.confirm(
-                  "Скрыть профиль из каталога?\n\nНовые клиенты не смогут вас найти. Существующие переписки сохранятся, и вы сможете отвечать как обычно. Включить обратно — в любой момент."
-                )
-              : true;
-          if (ok) {
-            void applyAvailabilityChange(value);
-          }
-        } else {
-          Alert.alert(
-            "Скрыть профиль из каталога?",
+        const ok = await dialog.confirm({
+          title: "Скрыть профиль из каталога?",
+          message:
             "Новые клиенты не смогут вас найти. Существующие переписки сохранятся, и вы сможете отвечать как обычно. Включить обратно — в любой момент.",
-            [
-              { text: "Отмена", style: "cancel" },
-              {
-                text: "Скрыть",
-                style: "destructive",
-                onPress: () => {
-                  void applyAvailabilityChange(value);
-                },
-              },
-            ],
-          );
+          confirmLabel: "Скрыть",
+          destructive: true,
+        });
+        if (ok) {
+          void applyAvailabilityChange(value);
         }
         return;
       }
@@ -304,32 +259,24 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   );
 
   const handleLogout = useCallback(async () => {
-    const confirmed = Platform.OS === "web"
-      ? window.confirm("Выйти из аккаунта?")
-      : await new Promise<boolean>((resolve) =>
-          Alert.alert("Выйти из аккаунта", "Вы уверены?", [
-            { text: "Отмена", onPress: () => resolve(false), style: "cancel" },
-            { text: "Выйти", onPress: () => resolve(true), style: "destructive" },
-          ])
-        );
+    const confirmed = await dialog.confirm({
+      title: "Выйти из аккаунта?",
+      message: "Вы уверены?",
+      confirmLabel: "Выйти",
+      destructive: true,
+    });
     if (!confirmed) return;
     await signOut();
     nav.replaceRoutes.home();
   }, [signOut, nav]);
 
   const handleDeleteAccount = useCallback(async () => {
-    const confirmed = Platform.OS === "web"
-      ? window.confirm("Удалить аккаунт? Аккаунт будет анонимизирован. Восстановление невозможно.")
-      : await new Promise<boolean>((resolve) =>
-          Alert.alert(
-            "Удалить аккаунт навсегда?",
-            "Аккаунт будет анонимизирован и скрыт. Восстановление невозможно.",
-            [
-              { text: "Отмена", onPress: () => resolve(false), style: "cancel" },
-              { text: "Удалить", onPress: () => resolve(true), style: "destructive" },
-            ],
-          )
-        );
+    const confirmed = await dialog.confirm({
+      title: "Удалить аккаунт навсегда?",
+      message: "Аккаунт будет анонимизирован и скрыт. Восстановление невозможно.",
+      confirmLabel: "Удалить",
+      destructive: true,
+    });
     if (!confirmed) return;
     const email = user?.email;
     if (!email) return;
@@ -339,11 +286,10 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
       nav.replaceRoutes.home();
     } catch (err) {
       if (__DEV__) console.error("delete account error:", err);
-      if (Platform.OS === "web") {
-        window.alert("Не удалось удалить аккаунт. Попробуйте ещё раз.");
-      } else {
-        Alert.alert("Ошибка", "Не удалось удалить аккаунт. Попробуйте ещё раз.");
-      }
+      dialog.alert({
+        title: "Ошибка",
+        message: "Не удалось удалить аккаунт. Попробуйте ещё раз.",
+      });
     }
   }, [user?.email, signOut, nav]);
 
@@ -361,25 +307,16 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
           updateUser({ isSpecialist: true });
           await loadSpecialistData();
         } catch {
-          if (Platform.OS === "web") {
-            window.alert("Не удалось включить режим специалиста");
-          } else {
-            Alert.alert("Ошибка", "Не удалось включить режим специалиста");
-          }
+          dialog.alert({ title: "Ошибка", message: "Не удалось включить режим специалиста" });
         }
       } else {
-        const confirmed = Platform.OS === "web"
-          ? window.confirm("Выключить режим специалиста? Вы исчезнете из каталога, новые запросы не будут поступать. История переписок сохранится.")
-          : await new Promise<boolean>((resolve) =>
-              Alert.alert(
-                "Выключить режим специалиста?",
-                "Вы исчезнете из каталога, новые запросы не будут поступать. История переписок сохранится.",
-                [
-                  { text: "Отмена", onPress: () => resolve(false), style: "cancel" },
-                  { text: "Выключить", onPress: () => resolve(true), style: "destructive" },
-                ],
-              )
-            );
+        const confirmed = await dialog.confirm({
+          title: "Выключить режим специалиста?",
+          message:
+            "Вы исчезнете из каталога, новые запросы не будут поступать. История переписок сохранится.",
+          confirmLabel: "Выключить",
+          destructive: true,
+        });
         if (!confirmed) return;
         try {
           await apiPost("/api/user/leave-specialist", {});
@@ -388,11 +325,7 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
             onTabChange("profile");
           }
         } catch {
-          if (Platform.OS === "web") {
-            window.alert("Не удалось выключить режим специалиста");
-          } else {
-            Alert.alert("Ошибка", "Не удалось выключить режим специалиста");
-          }
+          dialog.alert({ title: "Ошибка", message: "Не удалось выключить режим специалиста" });
         }
       }
     },

@@ -6,12 +6,12 @@ import {
   Modal,
   Image,
   Platform,
-  Alert,
 } from "react-native";
 import * as Linking from "expo-linking";
 import { X, Download, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { getFileIcon, isImage, isPdf } from "@/lib/files";
 import { colors } from "@/lib/theme";
+import { dialog } from "@/lib/dialog";
 
 export interface LightboxFile {
   url: string;
@@ -72,7 +72,7 @@ export default function Lightbox({
       document.body.removeChild(a);
     } else {
       Linking.openURL(item.url).catch(() => {
-        Alert.alert("Ошибка", "Не удалось открыть файл");
+        dialog.alert({ title: "Ошибка", message: "Не удалось открыть файл" });
       });
     }
   };

@@ -1,4 +1,5 @@
-import { View, Text, Pressable, Alert } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { dialog } from "@/lib/dialog";
 import {
   Trash2, ChevronDown, Plus,
   Phone, Mail, Send, MessageCircle, MessageSquare, Globe, AtSign,
@@ -94,7 +95,7 @@ export default function ContactMethodsList({
 }: ContactMethodsListProps) {
   const handleAddContact = async () => {
     if (!newContactValue.trim()) {
-      Alert.alert("Ошибка", "Введите значение контакта");
+      dialog.alert({ title: "Ошибка", message: "Введите значение контакта" });
       return;
     }
     onContactSavingChange(true);
@@ -110,28 +111,26 @@ export default function ContactMethodsList({
       onNewContactTypeChange("phone");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Не удалось добавить контакт";
-      Alert.alert("Ошибка", msg);
+      dialog.alert({ title: "Ошибка", message: msg });
     } finally {
       onContactSavingChange(false);
     }
   };
 
-  const handleDeleteContact = (id: string) => {
-    Alert.alert("Удалить контакт?", "Это действие нельзя отменить", [
-      { text: "Отмена", style: "cancel" },
-      {
-        text: "Удалить",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await apiDelete(`/api/profile/contacts/${id}`);
-            onContactsChange(contacts.filter((c) => c.id !== id));
-          } catch {
-            Alert.alert("Ошибка", "Не удалось удалить контакт");
-          }
-        },
-      },
-    ]);
+  const handleDeleteContact = async (id: string) => {
+    const ok = await dialog.confirm({
+      title: "Удалить контакт?",
+      message: "Это действие нельзя отменить",
+      confirmLabel: "Удалить",
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await apiDelete(`/api/profile/contacts/${id}`);
+      onContactsChange(contacts.filter((c) => c.id !== id));
+    } catch {
+      dialog.alert({ title: "Ошибка", message: "Не удалось удалить контакт" });
+    }
   };
 
   return (

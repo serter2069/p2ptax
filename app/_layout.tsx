@@ -11,6 +11,7 @@ import { useHeartbeat } from "@/lib/hooks/useHeartbeat";
 import { identify as analyticsIdentify, reset as analyticsReset } from "@/lib/analytics";
 
 import MetroBridge from "@/components/MetroBridge";
+import DialogHost from "@/components/ui/Dialog";
 
 // Sentry MUST be initialised BEFORE any other code runs that could throw,
 // so crashes during render / module evaluation are still captured. The
@@ -204,6 +205,7 @@ function RootLayout() {
           </Stack>
         </AuthenticatedHeaderGate>
       </AppShell>
+      <DialogHost />
     </AuthProvider>
   );
 }

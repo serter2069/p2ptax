@@ -5,7 +5,6 @@ import {
   ScrollView,
   Pressable,
   Modal,
-  Alert,
   Linking,
   ActivityIndicator,
   useWindowDimensions,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
+import { dialog } from "@/lib/dialog";
 import { File, FileImage, Download, ChevronLeft, MessageSquare } from "lucide-react-native";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
@@ -455,7 +455,7 @@ export default function RequestDetail() {
         requestId: id,
         reason: err instanceof Error ? err.message : "unknown",
       });
-      Alert.alert("Ошибка", "Не удалось закрыть заявку");
+      dialog.alert({ title: "Ошибка", message: "Не удалось закрыть заявку" });
     } finally {
       setClosing(false);
     }
@@ -466,7 +466,7 @@ export default function RequestDetail() {
       await apiPatch(`/api/requests/${id}/status`, { status: "ACTIVE" });
       setRequest((prev) => prev ? { ...prev, status: "ACTIVE" } : null);
     } catch {
-      Alert.alert("Ошибка", "Не удалось открыть заявку");
+      dialog.alert({ title: "Ошибка", message: "Не удалось открыть заявку" });
     }
   }, [id]);
 

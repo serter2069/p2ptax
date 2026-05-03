@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { dialog } from "@/lib/dialog";
 import {
   View,
   Text,
@@ -7,7 +8,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
@@ -94,11 +94,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       (f) => f.status === "uploading" || f.status === "pending"
     );
     if (stillBusy) {
-      if (Platform.OS === "web") {
-        window.alert("Файл ещё загружается. Подождите.");
-      } else {
-        Alert.alert("Подождите", "Файл ещё загружается");
-      }
+      dialog.alert({ title: "Подождите", message: "Файл ещё загружается" });
       return;
     }
 
@@ -121,13 +117,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       }, 100);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Ошибка отправки";
-      if (Platform.OS === "web") {
-        if (typeof window !== "undefined" && typeof window.alert === "function") {
-          window.alert(`Ошибка: ${msg}`);
-        }
-      } else {
-        Alert.alert("Ошибка", msg);
-      }
+      dialog.alert({ title: "Ошибка", message: msg });
     } finally {
       setSending(false);
     }
@@ -145,13 +135,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
       await apiDelete(`/api/messages/${threadId}/clear`);
       setMessages([]);
     } catch {
-      if (Platform.OS === "web") {
-        if (typeof window !== "undefined" && typeof window.alert === "function") {
-          window.alert("Ошибка: Не удалось очистить переписку");
-        }
-      } else {
-        Alert.alert("Ошибка", "Не удалось очистить переписку");
-      }
+      dialog.alert({ title: "Ошибка", message: "Не удалось очистить переписку" });
     } finally {
       setClearingThread(false);
     }

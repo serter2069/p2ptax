@@ -3,14 +3,13 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
-  Platform,
-  Alert,
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { AlertTriangle, Settings, ChevronLeft } from "lucide-react-native";
+import { dialog } from "@/lib/dialog";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -121,18 +120,10 @@ export default function AdminSettings() {
       if (res.ok) {
         const data = await res.json();
         setValues(data);
-        if (Platform.OS === "web") {
-          window.alert("Сохранено");
-        } else {
-          Alert.alert("Готово", "Настройки сохранены");
-        }
+        dialog.alert({ title: "Готово", message: "Настройки сохранены" });
       }
     } catch {
-      if (Platform.OS === "web") {
-        window.alert("Ошибка сохранения");
-      } else {
-        Alert.alert("Ошибка", "Не удалось сохранить настройки");
-      }
+      dialog.alert({ title: "Ошибка", message: "Не удалось сохранить настройки" });
     } finally {
       setSaving(false);
     }
