@@ -125,8 +125,11 @@ router.put("/work-area", authMiddleware, async (req: Request, res: Response) => 
       }
     }
 
-    // Clear existing and recreate
-    await prisma.$transaction(async (tx) => {
+    // Clear existing and recreate.
+    // Also stamp specialistProfileCompletedAt on the *first* successful save so
+    // the "Профиль специалиста не завершён" banner clears. We only stamp when
+    // it's still null — re-saving the work-area later shouldn't move the date.
+    const updatedUser = await prisma.$transaction(async (tx) => {
       await tx.specialistService.deleteMany({ where: { specialistId: userId } });
       await tx.specialistFns.deleteMany({ where: { specialistId: userId } });
 
@@ -149,9 +152,55 @@ router.put("/work-area", authMiddleware, async (req: Request, res: Response) => 
           });
         }
       }
+
+      // Stamp completion + flip isPublicProfile=true on the first save.
+      // Catalog visibility gates on (isPublicProfile && isAvailable &&
+      // specialistProfileCompletedAt) — so without this flip, users finish
+      // onboarding but stay invisible until they hunt down a separate switch
+      // that doesn't currently exist in the UI. The 'Я специалист' opt-in
+      // already implies "be discoverable"; the day-to-day on/off is the
+      // isAvailable toggle elsewhere.
+      const cur = await tx.user.findUnique({
+        where: { id: userId },
+        select: { specialistProfileCompletedAt: true, isPublicProfile: true },
+      });
+      const data: { specialistProfileCompletedAt?: Date; isPublicProfile?: boolean } = {};
+      if (cur && cur.specialistProfileCompletedAt === null) {
+        data.specialistProfileCompletedAt = new Date();
+      }
+      if (cur && cur.isPublicProfile === false) {
+        data.isPublicProfile = true;
+      }
+      if (Object.keys(data).length > 0) {
+        return tx.user.update({
+          where: { id: userId },
+          data,
+          select: {
+            isSpecialist: true,
+            specialistProfileCompletedAt: true,
+            isPublicProfile: true,
+          },
+        });
+      }
+      return tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          isSpecialist: true,
+          specialistProfileCompletedAt: true,
+          isPublicProfile: true,
+        },
+      });
     });
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      user: {
+        isSpecialist: updatedUser?.isSpecialist ?? true,
+        specialistProfileCompletedAt:
+          updatedUser?.specialistProfileCompletedAt?.toISOString() ?? null,
+        isPublicProfile: updatedUser?.isPublicProfile ?? false,
+      },
+    });
   } catch (error) {
     console.error("onboarding/work-area error:", error);
     res.status(500).json({ error: "Internal server error" });

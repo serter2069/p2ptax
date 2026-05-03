@@ -185,6 +185,7 @@ function RootLayout() {
                 redirects to /profile. Both screens are registered so deep
                 links continue to work. */}
             <Stack.Screen name="profile/index" />
+            <Stack.Screen name="profile/[id]" />
             <Stack.Screen name="settings" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="legal/index" options={{ headerShown: false }} />

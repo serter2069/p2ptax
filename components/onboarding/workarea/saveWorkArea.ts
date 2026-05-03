@@ -11,6 +11,7 @@ interface SaveResult {
   user?: {
     isSpecialist: boolean;
     specialistProfileCompletedAt: string | null;
+    isPublicProfile?: boolean;
   };
 }
 
@@ -56,7 +57,14 @@ export async function saveWorkArea({
     return { user: res.user };
   }
 
-  await api("/api/onboarding/work-area", {
+  const res = await api<{
+    success: boolean;
+    user?: {
+      isSpecialist: boolean;
+      specialistProfileCompletedAt: string | null;
+      isPublicProfile?: boolean;
+    };
+  }>("/api/onboarding/work-area", {
     method: "PUT",
     body: {
       cities: cityIds,
@@ -70,5 +78,5 @@ export async function saveWorkArea({
       ),
     },
   });
-  return {};
+  return { user: res.user };
 }
