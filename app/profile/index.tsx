@@ -20,6 +20,7 @@ import { Z } from "@/lib/zIndex";
 import { useSettingsForm, type AutosaveStatus } from "@/lib/useSettingsForm";
 import ProfileTab from "@/components/settings/ProfileTab";
 import SpecialistTab from "@/components/settings/SpecialistTab";
+import InlineWorkArea from "@/components/settings/InlineWorkArea";
 
 /**
  * Unified Profile page (Wave 4 / profile-merged).
@@ -152,6 +153,11 @@ export default function UnifiedProfile() {
   }, [params.focus]);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  // When the specialist clicks "Изменить рабочую зону" we open the inline
+  // 3-step wizard right here on /profile instead of navigating away (the
+  // old behaviour redirected to /profile?firstTime=true&focus=specialist
+  // which is the same page → just scrolled, never opening anything).
+  const [editingWorkArea, setEditingWorkArea] = useState(false);
 
   // useSettingsForm still expects `activeTab` for backward compat; we always
   // pass "profile" since this page no longer has tabs.
@@ -353,40 +359,53 @@ export default function UnifiedProfile() {
             {/* 3-6. Specialist sections — visible only when isSpecialist ON */}
             {isSpecialistUser ? (
               <>
-                {/* Inline hint when specialist mode is fresh and no FNS yet. */}
-                {form.specData && form.specData.fnsServices.length === 0 && (
-                  <View className="bg-accent-soft border border-border rounded-2xl px-4 py-3 mb-4">
-                    <Text className="text-sm text-text-base leading-5">
-                      Заполните город, услугу и услугу, чтобы попасть в каталог.
-                    </Text>
-                  </View>
+                {editingWorkArea ? (
+                  <InlineWorkArea
+                    onDone={() => {
+                      setEditingWorkArea(false);
+                      // Refresh the specialist profile so the new
+                      // FNS/services list shows up in FnsServicesSection.
+                      form.refreshSpecialistData?.();
+                    }}
+                    onCancel={() => setEditingWorkArea(false)}
+                  />
+                ) : (
+                  <>
+                    {form.specData && form.specData.fnsServices.length === 0 && (
+                      <View className="bg-accent-soft border border-border rounded-2xl px-4 py-3 mb-4">
+                        <Text className="text-sm text-text-base leading-5">
+                          Заполните город, услугу и услугу, чтобы попасть в каталог.
+                        </Text>
+                      </View>
+                    )}
+                    <SpecialistTab
+                      isSpecialistUser={isSpecialistUser}
+                      specLoading={form.specLoading}
+                      specData={form.specData}
+                      description={form.description}
+                      officeAddress={form.officeAddress}
+                      workingHours={form.workingHours}
+                      contacts={form.contacts}
+                      addingContact={form.addingContact}
+                      newContactType={form.newContactType}
+                      newContactValue={form.newContactValue}
+                      contactSaving={form.contactSaving}
+                      showTypePicker={form.showTypePicker}
+                      onDescriptionChange={form.setDescription}
+                      onOfficeAddressChange={form.setOfficeAddress}
+                      onWorkingHoursChange={form.setWorkingHours}
+                      onContactsChange={form.setContacts}
+                      onAddingContactChange={form.setAddingContact}
+                      onNewContactTypeChange={form.setNewContactType}
+                      onNewContactValueChange={form.setNewContactValue}
+                      onContactSavingChange={form.setContactSaving}
+                      onShowTypePickerChange={form.setShowTypePicker}
+                      onGoToProfileTab={() => undefined}
+                      onGoToWorkArea={() => setEditingWorkArea(true)}
+                      onSpecialistBlur={form.autosaveSpecialistProfile}
+                    />
+                  </>
                 )}
-                <SpecialistTab
-                  isSpecialistUser={isSpecialistUser}
-                  specLoading={form.specLoading}
-                  specData={form.specData}
-                  description={form.description}
-                  officeAddress={form.officeAddress}
-                  workingHours={form.workingHours}
-                  contacts={form.contacts}
-                  addingContact={form.addingContact}
-                  newContactType={form.newContactType}
-                  newContactValue={form.newContactValue}
-                  contactSaving={form.contactSaving}
-                  showTypePicker={form.showTypePicker}
-                  onDescriptionChange={form.setDescription}
-                  onOfficeAddressChange={form.setOfficeAddress}
-                  onWorkingHoursChange={form.setWorkingHours}
-                  onContactsChange={form.setContacts}
-                  onAddingContactChange={form.setAddingContact}
-                  onNewContactTypeChange={form.setNewContactType}
-                  onNewContactValueChange={form.setNewContactValue}
-                  onContactSavingChange={form.setContactSaving}
-                  onShowTypePickerChange={form.setShowTypePicker}
-                  onGoToProfileTab={() => undefined}
-                  onGoToWorkArea={form.handleGoToWorkArea}
-                  onSpecialistBlur={form.autosaveSpecialistProfile}
-                />
               </>
             ) : null}
           </View>

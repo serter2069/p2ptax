@@ -527,6 +527,9 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     handleLogout,
     handleDeleteAccount,
     handleGoToWorkArea: () => nav.any("/profile?firstTime=true&focus=specialist"),
+    // Exposed so the page can refresh the specialist's FNS list after the
+    // inline work-area wizard finishes saving.
+    refreshSpecialistData: loadSpecialistData,
     // Auto-save (issue: profile-merged)
     autosaveStatus,
     lastSavedAt,
