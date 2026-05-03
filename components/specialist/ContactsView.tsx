@@ -1,6 +1,6 @@
 import { View, Text, Pressable, Linking } from "react-native";
 import {
-  Phone, Mail, Send, MessageCircle,
+  Phone, Mail, Send, MessageCircle, MessageSquare,
   ExternalLink, Globe, ChevronRight, MapPin, Clock, type LucideIcon,
 } from "lucide-react-native";
 import { colors } from "@/lib/theme";
@@ -23,6 +23,9 @@ function getContactUrl(type: string, value: string): string | null {
       return `https://t.me/${value.replace("@", "")}`;
     case "whatsapp":
       return `https://wa.me/${value.replace(/\D/g, "")}`;
+    case "max":
+      // Max messenger uses tel: deeplink (sticks to the user's number).
+      return `tel:${value.replace(/\D/g, "")}`;
     case "vk":
       return value.startsWith("http") ? value : `https://vk.com/${value.replace(/^vk\.com\//, "")}`;
     case "website":
@@ -37,6 +40,7 @@ const CONTACT_TYPE_CONFIG: Record<string, { label: string; Icon: LucideIcon; bg:
   email: { label: "Email", Icon: Mail, bg: colors.limeSoft, color: colors.success },
   telegram: { label: "Telegram", Icon: Send, bg: colors.accentSoft, color: colors.blue500 },
   whatsapp: { label: "WhatsApp", Icon: MessageCircle, bg: colors.limeSoft, color: colors.success },
+  max: { label: "Max", Icon: MessageSquare, bg: colors.accentSoft, color: colors.primary },
   vk: { label: "ВКонтакте", Icon: ExternalLink, bg: colors.accentSoft, color: colors.blue500 },
   website: { label: "Сайт", Icon: Globe, bg: colors.surface2, color: colors.textSecondary },
 };

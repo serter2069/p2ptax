@@ -1,32 +1,29 @@
 import { View } from "react-native";
-import { Briefcase, Target, ScrollText } from "lucide-react-native";
+import { Briefcase, Target } from "lucide-react-native";
 import MetricCard from "@/components/ui/MetricCard";
 import { spacing } from "@/lib/theme";
 
 interface SpecialistCredentialsProps {
   isTablet: boolean;
   yearsExp: number;
-  isExFns: boolean;
   cities: string[];
-  fnsCodes: string[];
-  specializations: string[];
   serviceNames: Set<string>;
-  certifications: string[];
 }
 
 /**
- * 3-up MetricCard grid: Опыт / Специализация / Сертификации.
+ * 2-up MetricCard grid: Опыт + Специализация. Both columns are derived
+ * from data the specialist actually edits in settings (registration date
+ * for years; FNS-services list for specialisation). Сертификации column
+ * removed — it had no editable counterpart and only ever printed the
+ * placeholder "Практикующий консультант".
  */
 export default function SpecialistCredentials({
   isTablet,
   yearsExp,
-  isExFns,
   cities,
-  fnsCodes,
-  specializations,
   serviceNames,
-  certifications,
 }: SpecialistCredentialsProps) {
+  const services = [...serviceNames];
   return (
     <View className="mt-8">
       <View
@@ -37,43 +34,16 @@ export default function SpecialistCredentials({
           icon={Briefcase}
           title="Опыт"
           value={`${yearsExp} ${yearsExp === 1 ? "год" : yearsExp < 5 ? "года" : "лет"}`}
-          lines={
-            isExFns
-              ? [
-                  `Ex-ФНС ${cities[0] ?? ""}`,
-                  fnsCodes.length > 0
-                    ? `ИФНС ${fnsCodes.slice(0, 2).map((c) => `№${c}`).join(", ")}`
-                    : "",
-                ].filter(Boolean)
-              : [
-                  `Налоговая практика`,
-                  cities.length > 0 ? `Регион: ${cities.join(", ")}` : "",
-                ].filter(Boolean)
-          }
+          lines={[
+            "Налоговая практика",
+            cities.length > 0 ? `Регион: ${cities.join(", ")}` : "",
+          ].filter(Boolean)}
         />
         <MetricCard
           icon={Target}
           title="Специализация"
-          value={
-            specializations.length > 0
-              ? specializations[0]
-              : [...serviceNames][0] ?? "Налоговая практика"
-          }
-          lines={
-            specializations.length > 0
-              ? specializations.slice(1, 4)
-              : [...serviceNames].slice(1, 4)
-          }
-        />
-        <MetricCard
-          icon={ScrollText}
-          title="Сертификации"
-          value={
-            certifications.length > 0
-              ? certifications[0]
-              : "Практикующий консультант"
-          }
-          lines={certifications.slice(1, 4)}
+          value={services[0] ?? "Налоговая практика"}
+          lines={services.slice(1, 4)}
         />
       </View>
     </View>

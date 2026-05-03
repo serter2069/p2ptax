@@ -27,11 +27,13 @@ export default function TrustStrip({
       value: formatNumber(citiesCount),
       label: "городов от Калининграда до Владивостока",
     },
-    {
-      value: formatNumber(resolvedCases || 0),
-      label: "решённых кейсов за последнее время",
-    },
   ];
+  if (resolvedCases > 0) {
+    items.push({
+      value: formatNumber(resolvedCases),
+      label: "закрытых запросов на платформе",
+    });
+  }
 
   return (
     <View

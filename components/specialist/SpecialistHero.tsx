@@ -57,21 +57,8 @@ export default function SpecialistHero({
         {/* ИФНС chips удалены — дубль секции «Работает в ФНС» (SA). */}
         {/* Rating/cases counter удалены — MVP stub only (SA). */}
 
-        {isExFns && (
-          <View
-            className="flex-row items-center self-start mt-3 px-3 py-1.5 rounded-full"
-            style={{ backgroundColor: colors.yellowSoft, gap: 6 }}
-          >
-            <ShieldCheck size={14} color={colors.warningInk} />
-            <Text
-              className="text-xs font-semibold"
-              style={{ color: colors.warningInk }}
-            >
-              Ex-ФНС {exFnsStartYear}–{exFnsEndYear}
-            </Text>
-          </View>
-        )}
-
+        {/* Ex-FNS badge removed — claim isn't editable in settings nor verified
+            by the platform; surfacing it here would mislead clients. */}
         {/* Duplicate hero CTA удалён — используем sticky sidebar CTA (SA). */}
       </View>
     </View>
