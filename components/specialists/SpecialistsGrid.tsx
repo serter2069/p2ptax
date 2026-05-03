@@ -65,6 +65,7 @@ interface Props {
   onBookmark: (id: string) => void;
   onWrite?: (id: string) => void;
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  ListHeaderComponent?: React.ComponentType | React.ReactElement | null;
 }
 
 function getInitials(firstName: string | null, lastName: string | null): string {
@@ -414,6 +415,7 @@ export default function SpecialistsGrid({
   onBookmark,
   onWrite,
   onScroll,
+  ListHeaderComponent,
 }: Props) {
   // On desktop we always render 1 column of horizontal rows
   if (isDesktop) {
@@ -449,6 +451,7 @@ export default function SpecialistsGrid({
         onEndReachedThreshold={0.5}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        ListHeaderComponent={ListHeaderComponent}
         ListFooterComponent={
           loadingMore ? (
             <ActivityIndicator

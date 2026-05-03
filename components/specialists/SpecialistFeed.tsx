@@ -470,6 +470,34 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
       );
     }
 
+    const listHeader = (
+      <View>
+        {title && <PageTitle title={title} subtitle={subtitle} />}
+        {mode === "favorites" && hasFilters && (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 4, alignItems: "flex-end" }}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={resetFilters}
+              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            >
+              <Text
+                style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}
+              >
+                Сбросить
+              </Text>
+            </Pressable>
+          </View>
+        )}
+        <SpecialistFilter
+          cities={cities}
+          fnsAll={fnsAll}
+          services={services}
+          value={filterValue}
+          onChange={handleFilterChange}
+        />
+      </View>
+    );
+
     return (
       <SpecialistsGrid
         specialists={specialists}
@@ -486,13 +514,13 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
         onBookmark={handleBookmark}
         onWrite={handleWrite}
         onScroll={handleScroll}
+        ListHeaderComponent={listHeader}
       />
     );
   };
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      {/* Landing header for unauthenticated users on the public catalog */}
       {mode === "all" && !isAuthenticated && (
         <LandingHeader
           isDesktop={isDesktop}
@@ -503,39 +531,6 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
           isAuthenticated={false}
         />
       )}
-
-      {/* Page header — PageTitle owns the 16px gap to the search bar (#1716).
-          CatalogHeader was previously rendered here only to show a count
-          which is always null at this call-site; it added an extra pt-2/pb-1
-          that made /specialists' search bar sit lower than /requests'. */}
-      {title && <PageTitle title={title} subtitle={subtitle} />}
-      {mode === "favorites" && hasFilters && (
-        <View style={{ paddingHorizontal: 16, paddingBottom: 4, alignItems: "flex-end" }}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={resetFilters}
-            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-          >
-            <Text
-              style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}
-            >
-              Сбросить
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
-      {/* Cascade filter — hides on scroll-down, reveals on scroll-up */}
-      <View style={{ display: filterVisible ? "flex" : "none" }}>
-        <SpecialistFilter
-          cities={cities}
-          fnsAll={fnsAll}
-          services={services}
-          value={filterValue}
-          onChange={handleFilterChange}
-        />
-      </View>
-
       {renderContent()}
     </SafeAreaView>
   );

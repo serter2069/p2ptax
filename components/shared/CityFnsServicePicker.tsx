@@ -392,7 +392,7 @@ function CityStep({
   return (
     <View>
       <StepLabel n={1} of={3} text={labelCities.toLowerCase()} />
-      <View style={{ position: "relative", zIndex: Z.STICKY }}>
+      <View style={{ position: "relative", zIndex: Z.POPOVER }}>
         <SearchInput value={cityQuery} onChange={setCityQuery} placeholder="Поиск по городу" disabled={disabled} />
         {cityQuery.trim().length >= 2 && (
           <DropdownContainer>
