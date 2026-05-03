@@ -86,31 +86,6 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     const trimmed = text.trim();
     if ((!trimmed && pendingFiles.length === 0) || sending || !threadId) return;
 
-    // Wave 2/G — hard gate: stranded specialists cannot send messages.
-    if (isSpecialistUser && !user?.specialistProfileCompletedAt) {
-      if (Platform.OS === "web") {
-        if (
-          typeof window !== "undefined" &&
-          typeof window.confirm === "function" &&
-          window.confirm(
-            "Завершите профиль\n\nПеред тем как писать клиенту, завершите профиль специалиста."
-          )
-        ) {
-          router.push("/profile?firstTime=true&focus=specialist" as never);
-        }
-      } else {
-        Alert.alert(
-          "Завершите профиль",
-          "Перед тем как писать клиенту, завершите профиль специалиста.",
-          [
-            { text: "Отмена", style: "cancel" },
-            { text: "Завершить", onPress: () => router.push("/profile?firstTime=true&focus=specialist" as never) },
-          ]
-        );
-      }
-      return;
-    }
-
     const uploadTokens: string[] = pendingFiles
       .filter((f) => f.status === "done" && f.uploadedToken)
       .map((f) => f.uploadedToken as string);
@@ -156,7 +131,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     } finally {
       setSending(false);
     }
-  }, [text, pendingFiles, sending, threadId, isSpecialistUser, user?.specialistProfileCompletedAt, setMessages]);
+  }, [text, pendingFiles, sending, threadId, setMessages]);
 
   const handleClearThread = useCallback(() => {
     setMenuVisible(false);
