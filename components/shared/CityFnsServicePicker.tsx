@@ -55,6 +55,9 @@ interface EntryModeProps extends CommonProps {
   allowAnyFns?: boolean;
   allowAnyService?: boolean;
   excludeFnsIds?: string[];
+  /** Hide the top-N city chips below the search input. Used by the
+   *  catalog filter where they duplicate the active filter chip row. */
+  hideTopCityChips?: boolean;
 }
 
 interface MultiModeProps extends CommonProps {
@@ -185,6 +188,7 @@ function EntryPicker({
   cities, fnsAll = [], services = [], onAdd,
   multiService = false, allowAnyFns = false, allowAnyService = false,
   excludeFnsIds = [], disabled = false,
+  hideTopCityChips = false,
   labelCities = "Город", labelServices = "Услуги",
 }: EntryModeProps) {
   const [cityId, setCityId] = useState<string | null>(null);
@@ -270,6 +274,7 @@ function EntryPicker({
         cityMatches={cityMatches} showAllCities={showAllCities}
         setShowAllCities={setShowAllCities} onPick={pickCity}
         labelCities={labelCities} disabled={disabled}
+        hideTopCityChips={hideTopCityChips}
       />
     );
   }
@@ -381,6 +386,7 @@ function CityStep({
   labelCities: string;
   disabled: boolean;
   error?: string | null;
+  hideTopCityChips?: boolean;
 }) {
   const topCityOptions = useMemo(
     () => TOP_CITIES.map((n) => cities.find((c) => c.name === n)).filter((c): c is CityCascadeOption => !!c),

@@ -111,9 +111,22 @@ export default function SpecialistFilter({
 
   return (
     <View>
-      <View className="px-4" style={{ zIndex: Z.STICKY }}>
+      <View className="px-4" style={{ zIndex: Z.STICKY, paddingBottom: 24 }}>
+        <CityFnsServicePicker
+          mode="entry"
+          multiService
+          allowAnyFns
+          allowAnyService
+          hideTopCityChips
+          excludeFnsIds={value.fns}
+          cities={cities}
+          fnsAll={fnsAll}
+          services={services}
+          onAdd={handleAdd}
+        />
+
         {chips.length > 0 && (
-          <View className="flex-row flex-wrap mb-3" style={{ gap: 8 }}>
+          <View className="flex-row flex-wrap mt-3" style={{ gap: 8 }}>
             {chips.map((c) => (
               <View
                 key={c.key}
@@ -133,18 +146,6 @@ export default function SpecialistFilter({
             ))}
           </View>
         )}
-
-        <CityFnsServicePicker
-          mode="entry"
-          multiService
-          allowAnyFns
-          allowAnyService
-          excludeFnsIds={value.fns}
-          cities={cities}
-          fnsAll={fnsAll}
-          services={services}
-          onAdd={handleAdd}
-        />
       </View>
     </View>
   );
