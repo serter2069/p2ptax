@@ -200,6 +200,14 @@ export default function InlineWorkArea({ onDone, onCancel, initialEntries }: Pro
             />
           </View>
         </View>
+
+        {entries.length === 0 && (
+          <Text className="text-xs text-text-mute text-center mt-3 leading-5">
+            Сначала пройдите 3 шага выше (Город → ИФНС → Услуги) и нажмите{" "}
+            <Text className="font-semibold text-text-base">Добавить</Text>.
+            После этого появится возможность сохранить.
+          </Text>
+        )}
       </View>
     </ScrollView>
   );
