@@ -190,6 +190,22 @@ export default function UnifiedProfile() {
     visibilityRef.current = node as typeof visibilityRef.current;
   }, []);
 
+  // Stranded specialist auto-open: if the visitor lands on /profile with
+  // ?focus=specialist (e.g. clicked the StrandedSpecialistBanner's
+  // "Завершить →"), they're already a specialist but have no work-area
+  // entries yet — open the inline wizard automatically so they don't
+  // have to hunt for the "+ Добавить ИФНС и услуги" button.
+  useEffect(() => {
+    if (!ready) return;
+    if (focus !== "specialist") return;
+    if (!isSpecialistUser) return;
+    if (form.specLoading) return;
+    if (!form.specData) return;
+    if (form.specData.fnsServices && form.specData.fnsServices.length === 0) {
+      setEditingWorkArea(true);
+    }
+  }, [ready, focus, isSpecialistUser, form.specLoading, form.specData]);
+
   // When the user lands with `?focus=specialist` and isn't a specialist yet,
   // auto-enable so the sections are visible. Mirrors old role=specialist flow.
   useEffect(() => {
