@@ -38,9 +38,18 @@ echo "▶ pre-push: tsc (api)"
 green "✓ api tsc clean"
 
 echo "▶ pre-push: Metro health on localhost:19006"
-HTTP=$(curl -sS -o /tmp/.prepush-metro-body -w "%{http_code}" --max-time 8 http://localhost:19006/ || echo 000)
+# Retry: Metro can be mid-rebundle right after a save (5-10s window).
+# Three tries with 5s pause is enough to stop flapping while still
+# blocking a real bundle break.
+HTTP=000
+for attempt in 1 2 3; do
+  HTTP=$(curl -sS -o /tmp/.prepush-metro-body -w "%{http_code}" --max-time 20 http://localhost:19006/ || echo 000)
+  [ "$HTTP" = "200" ] && break
+  yellow "  attempt $attempt: HTTP $HTTP — retry in 5s"
+  sleep 5
+done
 if [ "$HTTP" != "200" ]; then
-  red "✗ Metro returned HTTP $HTTP"
+  red "✗ Metro returned HTTP $HTTP after 3 tries"
   head -c 800 /tmp/.prepush-metro-body 2>/dev/null
   fail "Metro is not serving — fix the bundle or restart pm2 p2ptax-metro before pushing"
 fi
