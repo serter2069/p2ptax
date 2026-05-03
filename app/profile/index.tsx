@@ -377,6 +377,16 @@ export default function UnifiedProfile() {
               <>
                 {editingWorkArea ? (
                   <InlineWorkArea
+                    initialEntries={(form.specData?.fnsServices ?? []).map((g) => ({
+                      fnsId: g.fns.id,
+                      fnsName: g.fns.name,
+                      fnsCode: g.fns.code,
+                      cityId: g.city.id,
+                      cityName: g.city.name,
+                      serviceIds: g.services.map((s) => s.id),
+                      serviceNames: g.services.map((s) => s.name),
+                      isAnyService: g.services.length === 0,
+                    }))}
                     onDone={() => {
                       setEditingWorkArea(false);
                       // Refresh the specialist profile so the new

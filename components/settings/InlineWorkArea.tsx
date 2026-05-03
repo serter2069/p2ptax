@@ -34,6 +34,10 @@ interface FnsResponse {
 interface Props {
   onDone: () => void;
   onCancel: () => void;
+  /** Existing FNS+services already saved on the server. The wizard
+   *  starts with these prepopulated so adding a new entry doesn't wipe
+   *  the previous list, and the user can ✕ individual ones in EntriesList. */
+  initialEntries?: WorkAreaEntryData[];
 }
 
 /**
@@ -41,7 +45,7 @@ interface Props {
  * Routes through CityFnsServicePicker entry mode so the specialist adds
  * N×{city, fns, services[]} via the same 3-step wizard a client uses.
  */
-export default function InlineWorkArea({ onDone, onCancel }: Props) {
+export default function InlineWorkArea({ onDone, onCancel, initialEntries }: Props) {
   const { isSpecialistUser, updateUser } = useAuth();
 
   const { cities: citiesData } = useCities();
@@ -51,7 +55,7 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  const [entries, setEntries] = useState<WorkAreaEntryData[]>([]);
+  const [entries, setEntries] = useState<WorkAreaEntryData[]>(initialEntries ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
