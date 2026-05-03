@@ -494,13 +494,11 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 router.get("/:id/files.zip", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     const request = await prisma.request.findUnique({
       where: { id },
-      select: {
-        id: true,
-        userId: true,
+      include: {
         files: { select: { id: true, url: true, filename: true } },
       },
     });

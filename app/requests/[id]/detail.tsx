@@ -53,13 +53,37 @@ interface RequestDetailData {
 
 // ─── Shared file list ─────────────────────────────────────────────────────────
 
-function FileList({ files, onPress }: { files: FileItem[]; onPress: (f: FileItem) => void }) {
+function FileList({
+  files,
+  onPress,
+  requestId,
+}: {
+  files: FileItem[];
+  onPress: (f: FileItem) => void;
+  requestId?: string;
+}) {
   if (files.length === 0) return null;
   return (
     <Card className="mb-4">
-      <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wider">
-        Прикреплённые документы
-      </Text>
+      <View className="flex-row items-center justify-between mb-3">
+        <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider">
+          Прикреплённые документы
+        </Text>
+        {requestId && files.length > 1 && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Скачать все файлы"
+            onPress={() =>
+              Linking.openURL(`/api/requests/${requestId}/files.zip`).catch(() => {})
+            }
+            className="flex-row items-center"
+            hitSlop={6}
+          >
+            <Download size={12} color={colors.primary} />
+            <Text className="text-xs text-accent ml-1 font-medium">Скачать все</Text>
+          </Pressable>
+        )}
+      </View>
       {files.map((file) => (
         <Pressable
           accessibilityRole="button"
