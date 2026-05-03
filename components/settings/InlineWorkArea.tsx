@@ -1,5 +1,6 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { useState, useEffect, useCallback } from "react";
+import { Plus } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import { colors } from "@/lib/theme";
 import CityFnsServicePicker, {
@@ -58,6 +59,9 @@ export default function InlineWorkArea({ onDone, onCancel, initialEntries }: Pro
   const [entries, setEntries] = useState<WorkAreaEntryData[]>(initialEntries ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  // Once the user has at least one entry, collapse the wizard into a
+  // '+ Добавить ещё' button so the next step (Сохранить) is the obvious one.
+  const [pickerOpen, setPickerOpen] = useState(true);
 
   useEffect(() => {
     if (citiesData.length > 0) setCities(citiesData.map((c) => ({ id: c.id, name: c.name })));
@@ -93,18 +97,24 @@ export default function InlineWorkArea({ onDone, onCancel, initialEntries }: Pro
 
   const handleAdd = useCallback((entry: EntryValue) => {
     if (!entry.fnsId) return;
+    // If the user picked every available service one-by-one, treat it as
+    // 'Любая услуга' — there's no point listing each chip separately.
+    const pickedAll =
+      services.length > 0 && entry.serviceIds.length === services.length;
+    const isAnyService = pickedAll || entry.serviceIds.length === 0;
     const next: WorkAreaEntryData = {
       fnsId: entry.fnsId,
       fnsName: entry.fnsName ?? "",
       fnsCode: entry.fnsCode ?? "",
       cityId: entry.cityId,
       cityName: entry.cityName,
-      serviceIds: entry.serviceIds,
-      serviceNames: entry.serviceNames,
-      isAnyService: entry.serviceIds.length === 0,
+      serviceIds: isAnyService ? [] : entry.serviceIds,
+      serviceNames: isAnyService ? [] : entry.serviceNames,
+      isAnyService,
     };
     setEntries((prev) => [...prev.filter((e) => e.fnsId !== next.fnsId), next]);
-  }, []);
+    setPickerOpen(false);
+  }, [services]);
 
   const removeEntry = useCallback((fnsId: string) => {
     setEntries((prev) => prev.filter((e) => e.fnsId !== fnsId));
@@ -160,16 +170,30 @@ export default function InlineWorkArea({ onDone, onCancel, initialEntries }: Pro
 
         <WorkAreaIntro catalogError={catalogError} />
 
-        <CityFnsServicePicker
-          mode="entry"
-          multiService
-          allowAnyService
-          excludeFnsIds={entries.map((e) => e.fnsId)}
-          cities={cities}
-          fnsAll={fnsAll}
-          services={services}
-          onAdd={handleAdd}
-        />
+        {pickerOpen ? (
+          <CityFnsServicePicker
+            mode="entry"
+            multiService
+            allowAnyService
+            excludeFnsIds={entries.map((e) => e.fnsId)}
+            cities={cities}
+            fnsAll={fnsAll}
+            services={services}
+            onAdd={handleAdd}
+          />
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Добавить ещё инспекцию"
+            onPress={() => setPickerOpen(true)}
+            className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl"
+          >
+            <Plus size={14} color={colors.primary} />
+            <Text className="text-sm font-medium ml-2" style={{ color: colors.accent }}>
+              Добавить ещё инспекцию
+            </Text>
+          </Pressable>
+        )}
 
         <EntriesList entries={entries} onRemove={removeEntry} />
 
@@ -182,30 +206,44 @@ export default function InlineWorkArea({ onDone, onCancel, initialEntries }: Pro
           </View>
         ) : null}
 
-        <View className="mt-6 flex-row" style={{ gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Button
-              label="Сохранить"
-              onPress={handleSave}
-              disabled={!canProceed}
-              loading={isLoading}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Button
-              label="Отмена"
+        <View className="mt-6">
+          <Button
+            label={
+              entries.length > 0
+                ? `Сохранить и завершить (${entries.length})`
+                : "Сохранить"
+            }
+            onPress={handleSave}
+            disabled={!canProceed}
+            loading={isLoading}
+          />
+          <View style={{ alignItems: "center", marginTop: 12 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Отмена"
               onPress={onCancel}
               disabled={isLoading}
-              variant="secondary"
-            />
+              hitSlop={8}
+            >
+              <Text
+                className="text-sm"
+                style={{ color: colors.textMuted, textDecorationLine: "underline" }}
+              >
+                Отмена
+              </Text>
+            </Pressable>
           </View>
         </View>
 
-        {entries.length === 0 && (
-          <Text className="text-xs text-text-mute text-center mt-3 leading-5">
+        {entries.length === 0 ? (
+          <Text className="text-xs text-text-mute text-center mt-4 leading-5">
             Сначала пройдите 3 шага выше (Город → ИФНС → Услуги) и нажмите{" "}
             <Text className="font-semibold text-text-base">Добавить</Text>.
-            После этого появится возможность сохранить.
+            После этого станет доступна кнопка «Сохранить».
+          </Text>
+        ) : (
+          <Text className="text-xs text-center mt-4 leading-5" style={{ color: colors.success }}>
+            Готово к сохранению. Нажмите «Сохранить» — это последний шаг.
           </Text>
         )}
       </View>
