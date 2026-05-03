@@ -16,7 +16,7 @@ export interface AttachedFile {
 }
 
 const MAX_FILES = 5;
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 interface FileUploadSectionProps {
   files: AttachedFile[];
@@ -24,6 +24,14 @@ interface FileUploadSectionProps {
   onFilesChange: (files: AttachedFile[]) => void;
   /** Bearer token for authenticated upload. */
   authToken?: string | null;
+  /**
+   * Anonymous-session id. When provided AND `authToken` is empty, uploads
+   * route through /api/upload/anon-documents and the file rows get a
+   * 24-hour TTL on the server. When the visitor later submits the request
+   * via OTP, the same sessionId is sent in `pendingFileSessionId` to claim
+   * the files and clear the TTL.
+   */
+  anonSessionId?: string | null;
 }
 
 export default function FileUploadSection({
@@ -31,6 +39,7 @@ export default function FileUploadSection({
   disabled,
   onFilesChange,
   authToken,
+  anonSessionId,
 }: FileUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Keep a mutable ref so upload callbacks always see the latest list.
@@ -54,7 +63,14 @@ export default function FileUploadSection({
       const formData = new FormData();
       formData.append("files", file);
 
-      const uploadRes = await fetch(`${API_URL}/api/upload/documents`, {
+      // Anonymous path requires sessionId in the multipart body and skips
+      // the Authorization header. Authenticated path keeps the original
+      // /api/upload/documents endpoint.
+      const isAnon = !authToken && !!anonSessionId;
+      if (isAnon) formData.append("sessionId", anonSessionId!);
+      const endpoint = isAnon ? "/api/upload/anon-documents" : "/api/upload/documents";
+
+      const uploadRes = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
         body: formData,
@@ -64,7 +80,7 @@ export default function FileUploadSection({
         const errData = (await uploadRes.json().catch(() => ({}))) as { error?: string };
         throw new Error(
           uploadRes.status === 413
-            ? "Файл больше 10 МБ"
+            ? "Файл больше 100 МБ"
             : uploadRes.status === 415
             ? "Неподдерживаемый формат"
             : uploadRes.status === 401
@@ -96,7 +112,7 @@ export default function FileUploadSection({
       onFilesChange(next);
       filesRef.current = next;
     }
-  }, [authToken, onFilesChange]);
+  }, [authToken, anonSessionId, onFilesChange]);
 
   const handleAddFilePress = () => {
     if (Platform.OS === "web" && fileInputRef.current) {
@@ -213,7 +229,7 @@ export default function FileUploadSection({
               Перетащите файлы или нажмите для выбора
             </Text>
             <Text className="text-xs text-text-mute mt-1">
-              PDF, JPG, PNG — до 10 МБ каждый, не более 5 файлов
+              PDF, JPG, PNG, DOC, DOCX — до 100 МБ каждый, не более 5 файлов
             </Text>
           </Pressable>
         </View>

@@ -44,9 +44,11 @@ const DOCUMENT_ALLOWED_MIME = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
+const DOCUMENT_MAX_FILE_BYTES = 100 * 1024 * 1024; // 100MB per file
+
 const documentUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for documents — multer returns 413 automatically
+  limits: { fileSize: DOCUMENT_MAX_FILE_BYTES },
   fileFilter: (_req, file, cb) => {
     if (DOCUMENT_ALLOWED_MIME.includes(file.mimetype)) {
       cb(null, true);
@@ -55,6 +57,20 @@ const documentUpload = multer({
     }
   },
 });
+
+// Hourly anon upload cap per IP — keeps the anonymous endpoint from being
+// abused as free storage. Standard Express rate limiter, separate window
+// from the normal authenticated uploadRateLimiter.
+const anonUploadRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Слишком много анонимных загрузок. Попробуйте позже." },
+});
+
+const ANON_FILE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+const ANON_MAX_FILES_PER_SESSION = 5;
 
 // Map of trusted MIME types → canonical safe extensions used for the
 // MinIO storage key. Avoids carrying through user-supplied extensions
@@ -193,6 +209,81 @@ router.post("/documents", authMiddleware, uploadRateLimiter, documentUpload.arra
     res.status(500).json({ error: "Upload failed" });
   }
 });
+
+// POST /api/upload/anon-documents — anonymous document upload bound to a
+// client-generated sessionId. Files are written to MinIO immediately but
+// the DB row carries an `expiresAt` set to NOW()+24h. When the visitor
+// later submits a request via OTP, /api/requests claims them by sessionId
+// (clears expiresAt + sets requestId). A periodic cleanup job removes
+// rows where requestId IS NULL AND expiresAt < now() and deletes their
+// MinIO objects. See p2ptax-anon-cleanup systemd timer.
+router.post(
+  "/anon-documents",
+  anonUploadRateLimiter,
+  documentUpload.array("files", ANON_MAX_FILES_PER_SESSION),
+  async (req: Request, res: Response) => {
+    try {
+      const sessionId = (req.body?.sessionId as string | undefined)?.trim();
+      if (!sessionId || sessionId.length < 16 || sessionId.length > 128) {
+        res.status(400).json({ error: "sessionId is required" });
+        return;
+      }
+      const files = req.files as Express.Multer.File[] | undefined;
+      if (!files || files.length === 0) {
+        res.status(400).json({ error: "No files provided" });
+        return;
+      }
+
+      // Cap on cumulative session size — prevents an attacker spamming many
+      // uploads with the same sessionId to fill disk.
+      const existingCount = await prisma.file.count({
+        where: { sessionId, requestId: null },
+      });
+      if (existingCount + files.length > ANON_MAX_FILES_PER_SESSION) {
+        res.status(400).json({
+          error: `Максимум ${ANON_MAX_FILES_PER_SESSION} файлов в сессии`,
+        });
+        return;
+      }
+
+      await ensureMinioBucket();
+
+      const expiresAt = new Date(Date.now() + ANON_FILE_TTL_MS);
+      const results = [];
+      for (const file of files) {
+        const safeFilename = sanitizeFilename(file.originalname);
+        const key = generateKey("anon-uploads", file.originalname, file.mimetype);
+        await minioClient.putObject(MINIO_BUCKET, key, file.buffer, file.size, {
+          "Content-Type": file.mimetype,
+        });
+        const record = await prisma.file.create({
+          data: {
+            entityType: "anon",
+            entityId: sessionId,
+            sessionId,
+            expiresAt,
+            url: `/${MINIO_BUCKET}/${key}`,
+            filename: safeFilename,
+            size: file.size,
+            mimeType: file.mimetype,
+          },
+        });
+        results.push({
+          id: record.id,
+          url: record.url,
+          filename: record.filename,
+          size: record.size,
+          mimeType: record.mimeType,
+        });
+      }
+
+      res.json({ files: results, expiresAt });
+    } catch (error) {
+      console.error("anon-documents upload error:", error);
+      res.status(500).json({ error: "Upload failed" });
+    }
+  }
+);
 
 // POST /api/upload/chat-file — upload a single chat attachment with idempotency token
 // Body (multipart): file + uploadToken (UUID) + threadId

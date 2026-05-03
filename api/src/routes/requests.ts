@@ -348,7 +348,7 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { title, cityId, fnsId, description, fileIds, isPublic } = req.body;
+    const { title, cityId, fnsId, description, fileIds, pendingFileSessionId, isPublic } = req.body;
 
     // Validate
     if (!title || title.length < 3 || title.length > 100) {
@@ -406,11 +406,29 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
       },
     });
 
-    // Link files if provided
+    // Link files if provided (authenticated path: file ids issued by
+    // /api/upload/documents).
     if (fileIds && Array.isArray(fileIds) && fileIds.length > 0) {
       await prisma.file.updateMany({
         where: { id: { in: fileIds } },
         data: { requestId: request.id, entityType: "request", entityId: request.id },
+      });
+    }
+
+    // Claim anonymous-session uploads. Anonymous visitors uploaded files
+    // before signing in; now that the OTP completed and they have a userId,
+    // bind those files to this request and clear the TTL so the cleanup
+    // job no longer deletes them.
+    if (typeof pendingFileSessionId === "string" && pendingFileSessionId.length >= 16) {
+      await prisma.file.updateMany({
+        where: { sessionId: pendingFileSessionId, requestId: null },
+        data: {
+          requestId: request.id,
+          entityType: "request",
+          entityId: request.id,
+          sessionId: null,
+          expiresAt: null,
+        },
       });
     }
 

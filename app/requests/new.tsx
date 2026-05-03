@@ -85,6 +85,30 @@ export default function CreateRequest() {
   const [showOtpFlow, setShowOtpFlow] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
+  // Stable per-visitor session id used to tie pre-OTP file uploads to the
+  // request once the user signs in. Generated on first mount (or first
+  // touch of /requests/new), persisted in localStorage so a draft survives
+  // refresh, cleared after a successful submit so the next request starts
+  // a clean session.
+  const [anonSessionId, setAnonSessionId] = useState<string | null>(null);
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    let id: string | null = null;
+    try {
+      id = window.localStorage.getItem("p2ptax_anon_session_v1");
+      if (!id) {
+        id = (window.crypto && "randomUUID" in window.crypto)
+          ? window.crypto.randomUUID()
+          : `anon-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
+        window.localStorage.setItem("p2ptax_anon_session_v1", id);
+      }
+    } catch {
+      // Storage blocked — files just won't persist across refresh.
+      id = `anon-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
+    }
+    setAnonSessionId(id);
+  }, []);
+
   // Funnel — wizard mount counts as the single intake step view today.
   // When the form splits into multi-step, fire `intake_step_view` per step
   // with `{ step: N }` instead of remounting this once.
@@ -231,6 +255,9 @@ export default function CreateRequest() {
         serviceId: selectedServiceId || undefined,
         description: description.trim(),
         fileIds,
+        // Anon-session id is sent so the server can claim files uploaded
+        // before OTP completed. Server clears the TTL on those rows.
+        ...(anonSessionId ? { pendingFileSessionId: anonSessionId } : {}),
         isPublic,
         ...(targetSpecialistId ? { targetSpecialistId } : {}),
       });
@@ -240,9 +267,12 @@ export default function CreateRequest() {
         hasTargetSpecialist: !!targetSpecialistId,
         fileCount: fileIds.length,
       });
-      // Clear draft on success.
+      // Clear draft + anon session on success.
       await draftStorage.del(DRAFT_KEY).catch(() => {});
       await draftStorage.del(LEGACY_DRAFT_KEY).catch(() => {});
+      if (Platform.OS === "web") {
+        try { window.localStorage.removeItem("p2ptax_anon_session_v1"); } catch { /* ignore */ }
+      }
 
       const goToDetail = () => nav.replaceAny(`/requests/${result.id}/detail`);
       if (Platform.OS === "web") {
@@ -265,7 +295,7 @@ export default function CreateRequest() {
     } finally {
       setSubmitting(false);
     }
-  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, isPublic, targetSpecialistId]);
+  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, anonSessionId, isPublic, targetSpecialistId]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitted(true);
@@ -496,15 +526,13 @@ export default function CreateRequest() {
               />
             </View>
 
-            {/* File upload — only for authenticated users (endpoint requires auth). */}
-            {isAuthenticated && (
-              <FileUploadSection
-                files={attachedFiles}
-                disabled={submitting}
-                onFilesChange={setAttachedFiles}
-                authToken={token}
-              />
-            )}
+            <FileUploadSection
+              files={attachedFiles}
+              disabled={submitting}
+              onFilesChange={setAttachedFiles}
+              authToken={token}
+              anonSessionId={anonSessionId}
+            />
           </Card>
 
           {submitError ? (

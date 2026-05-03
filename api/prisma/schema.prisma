@@ -282,7 +282,17 @@ model File {
   requestId String?  @map("request_id")
   request   Request? @relation(fields: [requestId], references: [id], onDelete: SetNull)
 
+  // Anonymous upload tracking — when an unauthenticated visitor attaches
+  // files before submitting a request, the rows carry a session id and an
+  // expiry timestamp. On successful request creation the session id is
+  // cleared and the row is bound to the new requestId. A periodic cleanup
+  // job removes rows where requestId IS NULL AND expiresAt < now().
+  sessionId String?   @map("session_id")
+  expiresAt DateTime? @map("expires_at")
+
   @@index([entityType, entityId])
+  @@index([sessionId])
+  @@index([expiresAt])
   @@map("files")
 }
 
