@@ -1,0 +1,35 @@
+module.exports = {
+  apps: [
+    {
+      name: "p2ptax-api",
+      cwd: "/var/www/p2ptax/api",
+      script: "node_modules/.bin/ts-node-dev",
+      args: "--respawn --transpile-only --no-notify src/index.ts",
+      instances: 1,
+      exec_mode: "fork",
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "1024M",
+      env: { NODE_ENV: "development" },
+      out_file: "/root/.pm2/logs/p2ptax-api-dev-out.log",
+      error_file: "/root/.pm2/logs/p2ptax-api-dev-error.log",
+    },
+    {
+      name: "p2ptax-metro",
+      cwd: "/var/www/p2ptax",
+      script: "/var/www/p2ptax/start-metro.sh",
+      interpreter: "bash",
+      instances: 1,
+      exec_mode: "fork",
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "2048M",
+      env: {
+        NODE_ENV: "development",
+        EXPO_PUBLIC_API_URL: "https://p2ptax.smartlaunchhub.com",
+      },
+      out_file: "/root/.pm2/logs/p2ptax-metro-out.log",
+      error_file: "/root/.pm2/logs/p2ptax-metro-error.log",
+    },
+  ],
+};
