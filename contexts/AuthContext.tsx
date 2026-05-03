@@ -11,6 +11,8 @@ import { Platform } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 
+import { refreshAuthSession } from "@/lib/auth-refresh";
+
 const TOKEN_KEY = "p2ptax_access_token";
 const REFRESH_KEY = "p2ptax_refresh_token";
 
@@ -121,33 +123,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshAuth = useCallback(async (): Promise<boolean> => {
-    try {
-      const refreshToken = await AsyncStorage.getItem(REFRESH_KEY);
-      if (!refreshToken) return false;
-
-      const res = await fetch(`${API_URL}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      if (!res.ok) {
-        await clearTokens();
-        setToken(null);
-        setUser(null);
-        return false;
-      }
-
-      const data = await res.json();
-      await storeTokens(data.accessToken, data.refreshToken);
-      setToken(data.accessToken);
-      if (data.user) {
-        setUser(data.user);
+    // Delegate to the shared single-flight refresh manager so we never
+    // race the lib/api.ts 401 interceptor against this proactive timer
+    // (both calling /refresh in parallel was the cause of the random
+    // logouts — first call rotates the token, second gets 401, FE
+    // mistakenly clears localStorage).
+    const result = await refreshAuthSession();
+    if (result.ok && result.accessToken) {
+      setToken(result.accessToken);
+      if (result.user) {
+        setUser(result.user as unknown as UserData);
       }
       return true;
-    } catch {
-      return false;
     }
+    // Don't proactively clear tokens here — auth-refresh already does
+    // the cleanup on a true 401, and silently no-ops on 5xx/network.
+    // If we explicitly got "no tokens to refresh", reflect that:
+    const stored = await AsyncStorage.getItem(REFRESH_KEY);
+    if (!stored) {
+      setToken(null);
+      setUser(null);
+    }
+    return false;
   }, []);
 
   // Load stored token on mount
