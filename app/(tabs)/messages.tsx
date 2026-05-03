@@ -167,17 +167,13 @@ export default function UnifiedInbox() {
         <View className="flex-1 items-center" style={{ width: "100%", overflow: "hidden" }}>
           <View
             className="flex-1 flex-row"
-            // CHAT EXCEPTION: messages benefit from full width — no maxWidth cap.
-            // All other authenticated screens use 960 (forms 720). See CLAUDE.md
-            // Layout House Rules row "Two-pane (messages)".
+            // CHAT EXCEPTION: messages benefit from full width and full
+            // viewport height — no maxWidth cap, no top/bottom gutters.
             style={{
               width: "100%",
-              borderWidth: isWide ? 1 : 0,
+              borderTopWidth: isWide ? 1 : 0,
               borderColor: colors.border,
-              borderRadius: isWide ? 12 : 0,
               overflow: "hidden",
-              marginTop: isWide ? 24 : 0,
-              marginBottom: isWide ? 24 : 0,
             }}
           >
             <View
