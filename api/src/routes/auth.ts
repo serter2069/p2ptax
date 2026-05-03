@@ -154,7 +154,7 @@ router.post("/verify-otp", otpVerifyLimiter, async (req: Request, res: Response)
         isAvailable: user.isAvailable,
         firstName: user.firstName,
         lastName: user.lastName,
-        avatarUrl: await presignAvatarUrl(user.avatarUrl),
+        avatarUrl: await presignAvatarUrl(user.avatarUrl).catch(() => null),
         specialistProfileCompletedAt: user.specialistProfileCompletedAt
           ? user.specialistProfileCompletedAt.toISOString()
           : null,
@@ -233,7 +233,7 @@ router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) 
         isAvailable: storedToken.user.isAvailable,
         firstName: storedToken.user.firstName,
         lastName: storedToken.user.lastName,
-        avatarUrl: await presignAvatarUrl(storedToken.user.avatarUrl),
+        avatarUrl: await presignAvatarUrl(storedToken.user.avatarUrl).catch(() => null),
         specialistProfileCompletedAt: storedToken.user.specialistProfileCompletedAt
           ? storedToken.user.specialistProfileCompletedAt.toISOString()
           : null,
@@ -301,7 +301,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    res.json({ user: { ...user, avatarUrl: await presignAvatarUrl(user.avatarUrl) } });
+    res.json({ user: { ...user, avatarUrl: await presignAvatarUrl(user.avatarUrl).catch(() => null) } });
   } catch (error) {
     console.error("me error:", error);
     res.status(500).json({ error: "Internal server error" });

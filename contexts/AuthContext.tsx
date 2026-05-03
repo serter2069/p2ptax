@@ -164,12 +164,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
               const data = await res.json();
               setUser(data.user);
-            } else {
+            } else if (res.status === 401) {
+              // Only an explicit auth failure should trigger refresh+logout.
+              // Server 5xx (e.g. transient S3/MinIO presign failure) must NOT
+              // sign the user out — keep the token and retry on next action.
               const refreshed = await refreshAuth();
               if (!refreshed) {
                 await clearTokens();
                 setToken(null);
               }
+            } else {
+              console.warn(`[auth] /me returned ${res.status}; keeping token`);
             }
           } catch {
             // Backend unavailable, keep token for offline

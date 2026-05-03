@@ -66,8 +66,11 @@ interface MultiModeProps extends CommonProps {
 export type CityFnsServicePickerProps = SingleModeProps | EntryModeProps | MultiModeProps;
 
 const TOP_CITIES = [
-  "Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург",
-  "Казань", "Уфа", "Краснодар", "Воронеж",
+  "Москва",
+  "Санкт-Петербург",
+  "Новосибирск",
+  "Екатеринбург",
+  "Казань",
 ];
 
 const SERVICE_HINT: Record<string, string> = {
@@ -409,20 +412,6 @@ function CityStep({
       </View>
       <View className="flex-row flex-wrap mt-3" style={{ gap: 8 }}>
         {topCityOptions.map((c) => (<CityChip key={c.id} label={c.name} onPress={() => onPick(c.id)} />))}
-        {!showAllCities && remaining.length > 0 && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Показать ещё ${remaining.length} городов`}
-            onPress={() => setShowAllCities(true)}
-            className="px-3 py-1.5 rounded-full border border-dashed bg-white"
-            style={{ borderColor: colors.border }}
-          >
-            <Text className="text-xs" style={{ color: colors.textSecondary }}>
-              + ещё {remaining.length}
-            </Text>
-          </Pressable>
-        )}
-        {showAllCities && remaining.map((c) => (<CityChip key={c.id} label={c.name} onPress={() => onPick(c.id)} />))}
       </View>
       {error && <ErrorText text={error} />}
     </View>
