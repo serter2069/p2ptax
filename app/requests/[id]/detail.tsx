@@ -236,7 +236,7 @@ function OwnerView({
         {/* Left column */}
         <View style={{ flex: 2 }}>
           <RequestInfoBlock request={request} />
-          <FileList files={request.files} onPress={onFilePress} />
+          <FileList files={request.files} onPress={onFilePress} requestId={request.id} />
         </View>
 
         {/* Right column */}
@@ -258,7 +258,7 @@ function OwnerView({
   return (
     <>
       <RequestInfoBlock request={request} />
-      <FileList files={request.files} onPress={onFilePress} />
+      <FileList files={request.files} onPress={onFilePress} requestId={request.id} />
       <ThreadsList
         threads={threads}
         requestId={request.id}
@@ -276,52 +276,17 @@ function OwnerView({
 function SpecialistView({
   request,
   onFilePress,
-  onThreadCreated,
 }: {
   request: RequestDetailData;
   onFilePress: (f: FileItem) => void;
-  onThreadCreated: (threadId: string) => void;
 }) {
   const nav = useTypedRouter();
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [msgError, setMsgError] = useState<string | null>(null);
-
-  const handleRespond = useCallback(async () => {
-    if (sending) return;
-    const trimmed = message.trim();
-    if (trimmed.length < 10) {
-      setMsgError("Сообщение слишком короткое (минимум 10 символов)");
-      return;
-    }
-    setMsgError(null);
-    setSending(true);
-    try {
-      const res = await apiPost<{ id: string }>("/api/threads", {
-        requestId: request.id,
-        firstMessage: trimmed,
-      });
-      onThreadCreated(res.id);
-    } catch (e: unknown) {
-      // Thread already exists — server returns threadId in 409
-      if (e && typeof e === "object" && "threadId" in e) {
-        onThreadCreated((e as { threadId: string }).threadId);
-        return;
-      }
-      const msg = e instanceof Error ? e.message : "Не удалось отправить сообщение";
-      setMsgError(msg);
-    } finally {
-      setSending(false);
-    }
-  }, [message, sending, request.id, onThreadCreated]);
-
   const isClosed = request.status === "CLOSED";
 
   return (
     <>
       <RequestInfoBlock request={request} />
 
-      {/* Closed banner for specialist */}
       {isClosed && (
         <View className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 mb-4 items-center">
           <Text className="text-sm text-text-base font-medium text-center">
@@ -330,7 +295,6 @@ function SpecialistView({
         </View>
       )}
 
-      {/* Client info */}
       {request.client && (
         <Card className="mb-4">
           <Text className="text-xs font-semibold text-text-mute mb-1 uppercase tracking-wider">Клиент</Text>
@@ -338,56 +302,30 @@ function SpecialistView({
         </Card>
       )}
 
-      <FileList files={request.files} onPress={onFilePress} />
+      <FileList files={request.files} onPress={onFilePress} requestId={request.id} />
 
-      {/* CTA: go to existing thread OR compose (only if open) */}
+      {/* Single primary CTA. If a thread already exists, jump to chat;
+          otherwise route to the dedicated compose screen at
+          /requests/[id]/write where the specialist actually writes. */}
       {!isClosed && (
-        request.hasExistingThread && request.existingThreadId ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Перейти к диалогу"
-            onPress={() => nav.any(`/threads/${request.existingThreadId}`)}
-            className="bg-accent rounded-xl py-3.5 items-center mb-6 flex-row justify-center gap-2"
-            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-          >
-            <MessageSquare size={18} color="#fff" />
-            <Text className="text-white font-semibold text-base ml-2">Перейти к диалогу</Text>
-          </Pressable>
-        ) : (
-          <View className="mb-6">
-            <Card className="mb-3">
-              <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wider">
-                Откликнуться
-              </Text>
-              <Input
-                value={message}
-                onChangeText={(t) => { setMessage(t); setMsgError(null); }}
-                placeholder="Напишите сообщение клиенту (минимум 10 символов)..."
-                multiline
-                numberOfLines={4}
-                variant="bordered"
-                accessibilityLabel="Ваше сообщение"
-              />
-            </Card>
-            {msgError && (
-              <Text className="text-danger text-sm mb-3 px-1">{msgError}</Text>
-            )}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Отправить отклик"
-              onPress={handleRespond}
-              disabled={sending}
-              className="bg-accent rounded-xl py-3.5 items-center"
-              style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-            >
-              {sending ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-white font-semibold text-base">Отправить</Text>
-              )}
-            </Pressable>
-          </View>
-        )
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Написать клиенту"
+          onPress={() => {
+            if (request.hasExistingThread && request.existingThreadId) {
+              nav.any(`/threads/${request.existingThreadId}`);
+            } else {
+              nav.any(`/requests/${request.id}/write`);
+            }
+          }}
+          className="bg-accent rounded-xl py-3.5 items-center mb-6 flex-row justify-center gap-2"
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
+          <MessageSquare size={18} color="#fff" />
+          <Text className="text-white font-semibold text-base ml-2">
+            {request.hasExistingThread ? "Перейти к диалогу" : "Написать"}
+          </Text>
+        </Pressable>
       )}
     </>
   );
@@ -612,7 +550,7 @@ export default function RequestDetail() {
             <SpecialistView
               request={request}
               onFilePress={handleFilePress}
-              onThreadCreated={(threadId) => nav.any(`/threads/${threadId}`)}
+              // onThreadCreated kept for type compat; no longer used by the slimmed SpecialistView
             />
           )}
         </View>

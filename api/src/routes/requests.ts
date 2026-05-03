@@ -1,11 +1,13 @@
 import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
+import archiver from "archiver";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { verifyAccessToken } from "../lib/jwt";
 import { sendNotification } from "../notifications/notification.service";
 import { notSeedRequestWhere } from "../lib/seedFilter";
+import { minioClient, MINIO_BUCKET } from "../lib/minio";
 
 // Strip all HTML tags to prevent XSS
 function stripHtml(str: string): string {
@@ -486,6 +488,86 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 // GET /api/requests/:id/detail — request detail (auth required)
 // Returns owner view (full data + threads) or specialist view (preview + respond CTA).
+// GET /api/requests/:id/files.zip — stream all files attached to a request
+// as a single ZIP. Auth required. Available to the request owner and to
+// specialists who have an active thread on the request (server checks).
+router.get("/:id/files.zip", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
+
+    const request = await prisma.request.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        files: { select: { id: true, url: true, filename: true } },
+      },
+    });
+    if (!request) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+
+    // Authorization: owner OR a specialist who's been let into a thread.
+    const isOwner = request.userId === userId;
+    let allowed = isOwner;
+    if (!allowed) {
+      const threadCount = await prisma.thread.count({
+        where: { requestId: id, specialistId: userId },
+      });
+      allowed = threadCount > 0;
+    }
+    if (!allowed) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    if (request.files.length === 0) {
+      res.status(404).json({ error: "No files attached" });
+      return;
+    }
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="request-${id}-files.zip"`
+    );
+
+    const archive = archiver("zip", { zlib: { level: 6 } });
+    archive.on("error", (err) => {
+      console.error("zip stream error:", err);
+      try { res.status(500).end(); } catch { /* already streaming */ }
+    });
+    archive.pipe(res);
+
+    // Append each file. External URLs (seed data) are skipped — only files
+    // stored in MinIO under /<bucket>/... can actually be streamed back.
+    for (const f of request.files) {
+      try {
+        if (/^https?:\/\//.test(f.url)) {
+          // External URL — skip (cannot stream remote without extra fetch)
+          continue;
+        }
+        const m = f.url.match(/^\/[^/]+\/(.+)$/);
+        const key = m ? m[1] : null;
+        if (!key) continue;
+        const stream = await minioClient.getObject(MINIO_BUCKET, key);
+        archive.append(stream, { name: f.filename || `file-${f.id}` });
+      } catch (e) {
+        console.warn("zip skip file", f.id, (e as Error).message);
+      }
+    }
+
+    await archive.finalize();
+  } catch (error) {
+    console.error("files.zip error:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+});
+
 router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
