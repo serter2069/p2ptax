@@ -130,7 +130,7 @@ model SpecialistReview {
 model ContactMethod {
   id        String   @id @default(uuid())
   profileId String   @map("profile_id")
-  type      String // phone | email | telegram | whatsapp | vk | website
+  type      String // phone | email | telegram | whatsapp | max | vk | website
   value     String
   label     String?
   order     Int      @default(0)

@@ -4,7 +4,7 @@ import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
 
 const router = Router();
 
-const VALID_TYPES = ["phone", "email", "telegram", "whatsapp", "vk", "website"];
+const VALID_TYPES = ["phone", "email", "telegram", "whatsapp", "max", "vk", "website"];
 const MAX_CONTACTS = 6;
 
 // GET /api/specialists/:id/contacts — public

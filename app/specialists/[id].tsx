@@ -18,7 +18,6 @@ import WorkAreaSection from "@/components/specialist/WorkAreaSection";
 import SpecialistHero from "@/components/specialist/SpecialistHero";
 import SpecialistAbout from "@/components/specialist/SpecialistAbout";
 import SpecialistCredentials from "@/components/specialist/SpecialistCredentials";
-import SpecialistServicesCities from "@/components/specialist/SpecialistServicesCities";
 import SpecialistContactCTA from "@/components/specialist/SpecialistContactCTA";
 import SpecialistGuestLockedContacts from "@/components/specialist/SpecialistGuestLockedContacts";
 import SpecialistReviewsPlaceholder from "@/components/specialist/SpecialistReviewsPlaceholder";
@@ -270,7 +269,6 @@ export default function SpecialistPublicProfile() {
         cities={cities}
         serviceNames={serviceNames}
       />
-      <SpecialistServicesCities serviceNames={serviceNames} cities={cities} />
       <View className="mt-8">
         <WorkAreaSection
           fnsServices={specialist.fnsServices ?? []}
