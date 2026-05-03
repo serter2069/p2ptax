@@ -85,15 +85,15 @@ export default function SpecialistTab({
 
   return (
     <>
-      <AboutSection
-        description={description}
-        onChange={onDescriptionChange}
-        onBlur={onSpecialistBlur}
-      />
       <FnsServicesSection
         specLoading={specLoading}
         fnsServices={specData?.fnsServices}
         onGoToWorkArea={onGoToWorkArea}
+      />
+      <AboutSection
+        description={description}
+        onChange={onDescriptionChange}
+        onBlur={onSpecialistBlur}
       />
       <ContactsEditor
         contacts={contacts}
