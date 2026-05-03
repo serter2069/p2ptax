@@ -196,9 +196,6 @@ export default function SpecialistPublicProfile() {
   const yearsExp =
     profile?.yearsOfExperience ??
     Math.max(1, 2024 - new Date(specialist.createdAt ?? new Date()).getFullYear());
-  const specializations = profile?.specializations ?? [];
-  const certifications = profile?.certifications ?? [];
-  const isExFns = !!(profile?.exFnsStartYear && profile?.exFnsEndYear);
 
   const ogDescription = profile?.description
     ? profile.description.slice(0, 160)
@@ -213,11 +210,9 @@ export default function SpecialistPublicProfile() {
     elevation: 1,
   };
 
-  // role label: only show if profile has specializations or we have a generic fallback
-  // For open profiles: show "Налоговый консультант" only if no specific role info — keep as generic label
-  // per task: only show if explicitly set; we use specializations[0] or null
-  const rolePrimary =
-    specializations.length > 0 ? specializations[0] : null;
+  // Role label is derived from the first service the specialist offers via
+  // their work-area entries (the only thing actually editable in settings).
+  const rolePrimary = [...serviceNames][0] ?? null;
 
   // Closed profile block shown instead of full content
   const closedBlock = (
@@ -266,20 +261,14 @@ export default function SpecialistPublicProfile() {
         isTablet={isTablet}
         rolePrimary={rolePrimary}
         cityLabel={cities[0] ?? null}
-        isExFns={isExFns}
-        exFnsStartYear={profile?.exFnsStartYear}
-        exFnsEndYear={profile?.exFnsEndYear}
+        isExFns={false}
       />
       <SpecialistAbout description={profile?.description} />
       <SpecialistCredentials
         isTablet={isTablet}
         yearsExp={yearsExp}
-        isExFns={isExFns}
         cities={cities}
-        fnsCodes={fnsCodes}
-        specializations={specializations}
         serviceNames={serviceNames}
-        certifications={certifications}
       />
       <SpecialistServicesCities serviceNames={serviceNames} cities={cities} />
       <View className="mt-8">
