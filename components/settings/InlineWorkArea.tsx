@@ -1,14 +1,12 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus } from "lucide-react-native";
+import { View, Text, ScrollView } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 import Button from "@/components/ui/Button";
 import { colors } from "@/lib/theme";
 import CityFnsServicePicker, {
-  CityFnsValue,
   CityCascadeOption,
   FnsCascadeOption,
+  EntryValue,
 } from "@/components/shared/CityFnsServicePicker";
-import { Z } from "@/lib/zIndex";
 import { WorkAreaEntryData } from "@/components/onboarding/WorkAreaEntry";
 import WorkAreaIntro from "@/components/onboarding/workarea/WorkAreaIntro";
 import EntriesList from "@/components/onboarding/workarea/EntriesList";
@@ -34,23 +32,18 @@ interface FnsResponse {
 }
 
 interface Props {
-  /** Called when user successfully saves work-area and should return to settings. */
   onDone: () => void;
-  /** Called when user cancels inline onboarding. */
   onCancel: () => void;
 }
 
-const EMPTY_CASCADE: CityFnsValue = { cities: [], fns: [], fnsServices: {} };
-
 /**
- * InlineWorkArea — embeds the specialist work-area onboarding step
- * directly inside the settings layout (no navigation away from /settings).
- * Uses CityFnsCascade (typeahead mode) unified with app/onboarding/work-area.tsx.
+ * InlineWorkArea — embeds specialist work-area inside settings.
+ * Routes through CityFnsServicePicker entry mode so the specialist adds
+ * N×{city, fns, services[]} via the same 3-step wizard a client uses.
  */
 export default function InlineWorkArea({ onDone, onCancel }: Props) {
   const { isSpecialistUser, updateUser } = useAuth();
 
-  // Catalogs — cities/services from global cache hooks
   const { cities: citiesData } = useCities();
   const { services: servicesData } = useServices();
   const [cities, setCities] = useState<CityCascadeOption[]>([]);
@@ -58,17 +51,10 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  // CityFnsCascade controlled value
-  const [cascadeValue, setCascadeValue] = useState<CityFnsValue>(EMPTY_CASCADE);
-
-  // Accepted entries
   const [entries, setEntries] = useState<WorkAreaEntryData[]>([]);
-
-  // Submission state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Sync hook data into local cascade state
   useEffect(() => {
     if (citiesData.length > 0) setCities(citiesData.map((c) => ({ id: c.id, name: c.name })));
   }, [citiesData]);
@@ -77,7 +63,6 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
     if (servicesData.length > 0) setServices(servicesData);
   }, [servicesData]);
 
-  // Load all FNS for typeahead once cities are available.
   useEffect(() => {
     if (cities.length === 0) return;
     let cancelled = false;
@@ -96,57 +81,26 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
           }))
         );
       } catch {
-        // typeahead degrades gracefully
         if (!cancelled) setCatalogError("Не удалось загрузить справочники");
       }
     })();
     return () => { cancelled = true; };
   }, [cities]);
 
-  // Exclude already-added FNS from cascade.
-  const fnsForCascade = useMemo(() => {
-    if (entries.length === 0) return fnsAll;
-    const taken = new Set(entries.map((e) => e.fnsId));
-    return fnsAll.filter((f) => !taken.has(f.id));
-  }, [fnsAll, entries]);
-
-  const selectedFnsId = cascadeValue.fns[0] ?? null;
-  const canAddEntry = selectedFnsId !== null;
-
-  const addEntry = useCallback(() => {
-    if (!selectedFnsId) return;
-    const fnsObj = fnsAll.find((f) => f.id === selectedFnsId);
-    if (!fnsObj) return;
-
-    const cityName =
-      fnsObj.cityName ||
-      cities.find((c) => c.id === fnsObj.cityId)?.name ||
-      "";
-
-    const selectedSvcIds = (cascadeValue.fnsServices ?? {})[selectedFnsId] ?? [];
-    const isAnyService = selectedSvcIds.length === 0;
-    const serviceNames = isAnyService
-      ? []
-      : services.filter((s) => selectedSvcIds.includes(s.id)).map((s) => s.name);
-
+  const handleAdd = useCallback((entry: EntryValue) => {
+    if (!entry.fnsId) return;
     const next: WorkAreaEntryData = {
-      fnsId: fnsObj.id,
-      fnsName: fnsObj.name,
-      fnsCode: fnsObj.code,
-      cityId: fnsObj.cityId,
-      cityName,
-      serviceIds: selectedSvcIds,
-      serviceNames,
-      isAnyService,
+      fnsId: entry.fnsId,
+      fnsName: entry.fnsName ?? "",
+      fnsCode: entry.fnsCode ?? "",
+      cityId: entry.cityId,
+      cityName: entry.cityName,
+      serviceIds: entry.serviceIds,
+      serviceNames: entry.serviceNames,
+      isAnyService: entry.serviceIds.length === 0,
     };
-
-    setEntries((prev) => {
-      const filtered = prev.filter((e) => e.fnsId !== next.fnsId);
-      return [...filtered, next];
-    });
-
-    setCascadeValue(EMPTY_CASCADE);
-  }, [selectedFnsId, fnsAll, cities, services, cascadeValue]);
+    setEntries((prev) => [...prev.filter((e) => e.fnsId !== next.fnsId), next]);
+  }, []);
 
   const removeEntry = useCallback((fnsId: string) => {
     setEntries((prev) => prev.filter((e) => e.fnsId !== fnsId));
@@ -194,7 +148,6 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
           paddingTop: 8,
         }}
       >
-        {/* Section header */}
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider">
             Стать специалистом
@@ -203,30 +156,16 @@ export default function InlineWorkArea({ onDone, onCancel }: Props) {
 
         <WorkAreaIntro catalogError={catalogError} />
 
-        <View style={{ zIndex: Z.STICKY }}>
-          <CityFnsServicePicker
-            mode="multi"
-            value={cascadeValue}
-            onChange={setCascadeValue}
-            cities={cities}
-            fnsAll={fnsForCascade}
-            services={services}
-          />
-        </View>
-
-        {/* Add button — shown after FNS selected */}
-        {canAddEntry && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Добавить запись"
-            onPress={addEntry}
-            className="mt-3 flex-row items-center justify-center h-10 rounded-xl bg-accent"
-            style={{ gap: 6 }}
-          >
-            <Plus size={16} color="#ffffff" />
-            <Text className="text-sm font-medium text-white">Добавить</Text>
-          </Pressable>
-        )}
+        <CityFnsServicePicker
+          mode="entry"
+          multiService
+          allowAnyService
+          excludeFnsIds={entries.map((e) => e.fnsId)}
+          cities={cities}
+          fnsAll={fnsAll}
+          services={services}
+          onAdd={handleAdd}
+        />
 
         <EntriesList entries={entries} onRemove={removeEntry} />
 

@@ -1,10 +1,14 @@
-import { View } from "react-native";
+import { useMemo, useCallback } from "react";
+import { View, Text, Pressable } from "react-native";
+import { X } from "lucide-react-native";
 import CityFnsServicePicker, {
   CityFnsValue,
   FnsCascadeOption,
   ServiceOption,
+  EntryValue,
 } from "@/components/shared/CityFnsServicePicker";
 import { Z } from "@/lib/zIndex";
+import { colors } from "@/lib/theme";
 
 interface CityCascadeOption {
   id: string;
@@ -20,10 +24,10 @@ interface Props {
 }
 
 /**
- * Shared cascade filter (city → FNS → per-FNS services) used by both
- * `/specialists` (public catalog) and `/saved-specialists` (bookmarks).
- * Routes through the unified CityFnsServicePicker (multi mode) so the two
- * pages and the request intake form never drift apart visually.
+ * Catalog filter — same wizard a client sees on /requests/new, repeated
+ * for multi-add: each pass picks city/FNS/services and pushes a chip
+ * into the active filter. Internally collapses N entries into the
+ * existing CityFnsValue shape so downstream feed APIs stay unchanged.
  */
 export default function SpecialistFilter({
   cities,
@@ -32,16 +36,114 @@ export default function SpecialistFilter({
   value,
   onChange,
 }: Props) {
+  const chips = useMemo(() => {
+    const out: Array<{ key: string; label: string; remove: () => void }> = [];
+    for (const fnsId of value.fns) {
+      const fns = fnsAll.find((f) => f.id === fnsId);
+      if (!fns) continue;
+      const svcIds = value.fnsServices?.[fnsId] ?? [];
+      const svcLabels = svcIds
+        .map((id) => services.find((s) => s.id === id)?.name)
+        .filter(Boolean)
+        .join(", ");
+      const label = svcLabels
+        ? `${fns.cityName ?? ""} · ${fns.name} · ${svcLabels}`
+        : `${fns.cityName ?? ""} · ${fns.name}`;
+      out.push({
+        key: `fns-${fnsId}`,
+        label,
+        remove: () => {
+          const nextFnsServices = { ...(value.fnsServices ?? {}) };
+          delete nextFnsServices[fnsId];
+          const nextFns = value.fns.filter((id) => id !== fnsId);
+          const stillHasCity = nextFns.some(
+            (id) => fnsAll.find((f) => f.id === id)?.cityId === fns.cityId
+          );
+          const nextCities = stillHasCity
+            ? value.cities
+            : value.cities.filter((id) => id !== fns.cityId);
+          onChange({ cities: nextCities, fns: nextFns, fnsServices: nextFnsServices });
+        },
+      });
+    }
+    for (const cityId of value.cities) {
+      const hasFnsInCity = value.fns.some(
+        (fnsId) => fnsAll.find((f) => f.id === fnsId)?.cityId === cityId
+      );
+      if (hasFnsInCity) continue;
+      const city = cities.find((c) => c.id === cityId);
+      if (!city) continue;
+      out.push({
+        key: `city-${cityId}`,
+        label: `${city.name} · все ИФНС`,
+        remove: () => {
+          onChange({
+            cities: value.cities.filter((id) => id !== cityId),
+            fns: value.fns,
+            fnsServices: value.fnsServices,
+          });
+        },
+      });
+    }
+    return out;
+  }, [value, cities, fnsAll, services, onChange]);
+
+  const handleAdd = useCallback(
+    (entry: EntryValue) => {
+      const nextCities = value.cities.includes(entry.cityId)
+        ? value.cities
+        : [...value.cities, entry.cityId];
+      if (!entry.fnsId) {
+        onChange({ cities: nextCities, fns: value.fns, fnsServices: value.fnsServices });
+        return;
+      }
+      const nextFns = value.fns.includes(entry.fnsId)
+        ? value.fns
+        : [...value.fns, entry.fnsId];
+      const nextFnsServices = {
+        ...(value.fnsServices ?? {}),
+        [entry.fnsId]: entry.serviceIds,
+      };
+      onChange({ cities: nextCities, fns: nextFns, fnsServices: nextFnsServices });
+    },
+    [value, onChange]
+  );
+
   return (
     <View>
       <View className="px-4" style={{ zIndex: Z.STICKY }}>
+        {chips.length > 0 && (
+          <View className="flex-row flex-wrap mb-3" style={{ gap: 8 }}>
+            {chips.map((c) => (
+              <View
+                key={c.key}
+                className="flex-row items-center bg-accent-soft rounded-full pl-3 pr-1 h-8"
+                style={{ gap: 6 }}
+              >
+                <Text className="text-xs font-medium text-accent">{c.label}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Убрать фильтр"
+                  onPress={c.remove}
+                  className="w-6 h-6 rounded-full items-center justify-center"
+                >
+                  <X size={12} color={colors.accent} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+
         <CityFnsServicePicker
-          mode="multi"
-          value={value}
-          onChange={onChange}
+          mode="entry"
+          multiService
+          allowAnyFns
+          allowAnyService
+          excludeFnsIds={value.fns}
           cities={cities}
           fnsAll={fnsAll}
           services={services}
+          onAdd={handleAdd}
         />
       </View>
     </View>
