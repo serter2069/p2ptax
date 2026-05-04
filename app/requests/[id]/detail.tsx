@@ -30,6 +30,8 @@ import { formatDateLong } from "@/lib/formatDate";
 import { track } from "@/lib/analytics";
 
 import { FileItem } from "@/components/requests/detail/types";
+import Avatar from "@/components/ui/Avatar";
+import FilePreviewModal from "@/components/requests/FilePreviewModal";
 
 interface RequestDetailData {
   viewType: "owner" | "specialist";
@@ -341,8 +343,28 @@ function SpecialistView({
 
       {request.client && (
         <Card className="mb-4">
-          <Text className="text-xs font-semibold text-text-mute mb-1 uppercase tracking-wider">Клиент</Text>
-          <Text className="text-base text-text-base">{request.client.name}</Text>
+          <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wider">Клиент</Text>
+          <Pressable
+            accessibilityRole={request.client.isSpecialist ? "link" : undefined}
+            accessibilityLabel={request.client.isSpecialist ? `Профиль ${request.client.name}` : undefined}
+            onPress={
+              request.client.isSpecialist
+                ? () => nav.dynamic.specialist(request.client!.id)
+                : undefined
+            }
+            disabled={!request.client.isSpecialist}
+            className="flex-row items-center"
+            style={({ pressed }) => [pressed && request.client?.isSpecialist ? { opacity: 0.7 } : null]}
+          >
+            <Avatar
+              name={request.client.name}
+              imageUrl={request.client.avatarUrl ?? undefined}
+              size="sm"
+            />
+            <Text className="text-base text-text-base ml-3 flex-1">
+              {request.client.name}
+            </Text>
+          </Pressable>
         </Card>
       )}
 
@@ -609,24 +631,13 @@ export default function RequestDetail() {
     if (!authLoading) fetchAll();
   }, [authLoading, fetchAll]);
 
-  const handleFilePress = useCallback(async (file: FileItem) => {
-    // Seeded files (and any external attachment) keep their original
-    // http(s) URL in the DB. Feeding /api/upload/signed-url an http URL
-    // produces a presign for 'p2ptax/https:/example.com/...' which MinIO
-    // rejects with NoSuchKey. Open external URLs directly; only presign
-    // genuine MinIO keys.
-    if (/^https?:\/\//i.test(file.url)) {
-      await Linking.openURL(file.url).catch(() => {});
-      return;
-    }
-    try {
-      const res = await api<{ url: string }>(
-        `/api/upload/signed-url/${encodeURIComponent(file.url.replace(/^\/p2ptax\//, ""))}`
-      );
-      await Linking.openURL(res.url);
-    } catch {
-      // ignore
-    }
+  const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
+
+  const handleFilePress = useCallback((file: FileItem) => {
+    // Open in an in-page preview modal instead of jumping to a new tab.
+    // Resolution to a presigned URL happens inside FilePreviewModal so
+    // the modal can show a loading state and a clear download button.
+    setPreviewFile(file);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -821,6 +832,7 @@ export default function RequestDetail() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    <FilePreviewModal file={previewFile} visible={previewFile !== null} onClose={() => setPreviewFile(null)} />
+      </SafeAreaView>
   );
 }
