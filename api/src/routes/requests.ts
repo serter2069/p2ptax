@@ -245,10 +245,19 @@ router.get("/:id/public", async (req: Request, res: Response) => {
       }
     }
 
-    // Mask the author's last name to a single initial so we don't leak
-    // a full name to anonymous viewers. Owner gets the full name back
-    // via the /detail endpoint.
-    const lastNameInitial = result.user.lastName ? `${result.user.lastName[0]}.` : null;
+    // Two-tier name masking:
+    //   - Anonymous (no Bearer token): only initials ("И. Т."). The
+    //     visitor hasn't signed in, no need to expose a real name in
+    //     a publicly indexable surface.
+    //   - Authenticated viewer (any role): full first name + last
+    //     initial ("Иван Т."). Specialists need to know who they're
+    //     about to write to; the owner sees their own real name via
+    //     the /detail endpoint anyway.
+    const lastInitial = result.user.lastName ? `${result.user.lastName[0]}.` : null;
+    const firstInitial = result.user.firstName ? `${result.user.firstName[0]}.` : null;
+    const isAnonViewer = callerId === null;
+    const exposedFirstName = isAnonViewer ? firstInitial : result.user.firstName;
+    const exposedLastName = lastInitial;
 
     res.json({
       id: result.id,
@@ -262,10 +271,14 @@ router.get("/:id/public", async (req: Request, res: Response) => {
       fns: { id: result.fns.id, name: result.fns.name, code: result.fns.code },
       user: {
         id: result.user.id,
-        firstName: result.user.firstName,
-        lastName: lastNameInitial,
+        firstName: exposedFirstName,
+        lastName: exposedLastName,
         // Storage key → presigned URL so <Image> renders directly.
-        avatarUrl: await presignAvatarUrl(result.user.avatarUrl).catch(() => null),
+        // Anonymous viewers don't get the avatar (potentially identifying);
+        // authed viewers do.
+        avatarUrl: isAnonViewer
+          ? null
+          : await presignAvatarUrl(result.user.avatarUrl).catch(() => null),
       },
       // Presign every attachment URL inline so anon visitors can
       // download without going through /api/upload/signed-url
