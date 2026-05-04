@@ -350,16 +350,11 @@ function SpecialistView({
         <Card className="mb-4">
           <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wider">Клиент</Text>
           <Pressable
-            accessibilityRole={request.client.isSpecialist ? "link" : undefined}
-            accessibilityLabel={request.client.isSpecialist ? `Профиль ${request.client.name}` : undefined}
-            onPress={
-              request.client.isSpecialist
-                ? () => nav.dynamic.specialist(request.client!.id)
-                : undefined
-            }
-            disabled={!request.client.isSpecialist}
+            accessibilityRole="link"
+            accessibilityLabel={`Профиль ${request.client.name}`}
+            onPress={() => nav.dynamic.specialist(request.client!.id)}
             className="flex-row items-center"
-            style={({ pressed }) => [pressed && request.client?.isSpecialist ? { opacity: 0.7 } : null]}
+            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           >
             <Avatar
               name={request.client.name}
@@ -807,9 +802,34 @@ export default function RequestDetail() {
         closing={closing}
       />
 
+      {/* Smart back bar — drops the user back to wherever they came from
+          (catalog, /my-requests, /messages preview). Falls back to
+          /requests when there's no history (e.g. opened via direct
+          link), so the button is never a dead-end. */}
+      <View
+        className="flex-row items-center px-3 border-b border-border bg-white"
+        style={{ height: 48 }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Назад"
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              nav.replaceRoutes.tabsMyRequests();
+            }
+          }}
+          className="flex-row items-center"
+          style={{ minHeight: 44, paddingHorizontal: 6 }}
+        >
+          <ChevronLeft size={20} color={colors.text} />
+          <Text className="text-text-base ml-1">Назад</Text>
+        </Pressable>
+      </View>
+
       <ScrollView className="flex-1">
         <View style={containerStyle} className={isDesktop ? "py-6" : "px-4"}>
-          {/* Title header — no "Назад" button (breadcrumb in AppHeader + sidebar nav) */}
           <View className="pt-4 pb-4">
             <Text
               className="text-xl font-bold text-text-base"

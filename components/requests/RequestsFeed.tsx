@@ -325,29 +325,81 @@ export default function RequestsFeed({
 
     if (displayedRequests.length === 0) {
       if (mode === "mine") {
-        // showArchiveOnly && empty → user toggled into Archive but
-        // they have nothing closed yet. Offer them 'К активным' so
-        // they can switch back without hunting for the small toggle
-        // up top — that toggle disappears altogether on the empty
-        // branch. Plus 'Создать запрос' as a secondary path.
+        // Keep the action row (Создать запрос / Архив toggle) above
+        // the empty state so the navigation pattern stays the same
+        // whether the list is full or empty. Previously toggling into
+        // an empty Архив hid the toggle, which made it fiddly to
+        // navigate back to active requests.
         return (
-          <EmptyState
-            icon={FileText}
-            title={showArchiveOnly ? "Закрытых запросов нет" : "Запросов нет"}
-            subtitle={
-              showArchiveOnly
-                ? "Закрытые запросы появятся здесь, когда вы их закроете."
-                : "Создайте первый запрос — специалисты из вашей ИФНС увидят его и предложат помощь"
-            }
-            actionLabel={
-              showArchiveOnly ? "К активным запросам" : "Создать запрос"
-            }
-            onAction={
-              showArchiveOnly
-                ? () => setShowArchiveOnly(false)
-                : () => nav.routes.requestsNew()
-            }
-          />
+          <View className="flex-1">
+            <View
+              className="px-4 pt-4 pb-3"
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                alignItems: isDesktop ? "center" : "stretch",
+                gap: 8,
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Создать запрос"
+                onPress={() => nav.routes.requestsNew()}
+                style={{
+                  backgroundColor: colors.primary,
+                  minHeight: 40,
+                  minWidth: isDesktop ? 200 : undefined,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderRadius: 12,
+                  paddingHorizontal: 20,
+                  alignSelf: isDesktop ? "flex-start" : "stretch",
+                }}
+              >
+                <Text numberOfLines={1} className="text-white font-semibold text-sm">
+                  + Создать запрос
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={showArchiveOnly ? "Показать все" : "Показать архив"}
+                onPress={() => setShowArchiveOnly((v) => !v)}
+                style={{
+                  minHeight: 40,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: showArchiveOnly ? colors.surface2 : "transparent",
+                  alignSelf: isDesktop ? "flex-start" : "stretch",
+                }}
+              >
+                <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: "500" }}>
+                  {showArchiveOnly ? "Все запросы" : "Архив"}
+                </Text>
+              </Pressable>
+            </View>
+            <View className="flex-1">
+              <EmptyState
+                icon={FileText}
+                title={showArchiveOnly ? "Закрытых запросов нет" : "Запросов нет"}
+                subtitle={
+                  showArchiveOnly
+                    ? "Закрытые запросы появятся здесь, когда вы их закроете."
+                    : "Создайте первый запрос — специалисты из вашей ИФНС увидят его и предложат помощь"
+                }
+                actionLabel={
+                  showArchiveOnly ? "К активным запросам" : "Создать запрос"
+                }
+                onAction={
+                  showArchiveOnly
+                    ? () => setShowArchiveOnly(false)
+                    : () => nav.routes.requestsNew()
+                }
+              />
+            </View>
+          </View>
         );
       }
       return (

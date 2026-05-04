@@ -77,8 +77,14 @@ export default function RequestCard({
         </View>
       )}
 
-      {/* top row: avatar + author + time */}
-      <View className="flex-row items-center justify-between mb-1" style={{ paddingRight: isClosed ? 60 : 0 }}>
+      {/* top row: avatar + author + time. When there's no author
+          (e.g. /my-requests, where every row is the viewer's own
+          request — printing your own name on every card adds noise),
+          collapse to a single time stamp on the right. */}
+      <View
+        className={`flex-row items-center mb-1 ${authorName ? "justify-between" : "justify-end"}`}
+        style={{ paddingRight: isClosed ? 60 : 0 }}
+      >
         {authorName ? (
           <View className="flex-row items-center" style={{ flexShrink: 1, gap: 8 }}>
             <Avatar
@@ -90,9 +96,7 @@ export default function RequestCard({
               {authorName}
             </Text>
           </View>
-        ) : (
-          <View />
-        )}
+        ) : null}
         <Text className="text-xs text-text-mute">{timeAgo(createdAt)}</Text>
       </View>
 
