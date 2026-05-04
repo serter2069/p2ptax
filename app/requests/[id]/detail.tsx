@@ -52,7 +52,12 @@ interface RequestDetailData {
   isOwner: boolean;
   hasExistingThread: boolean;
   existingThreadId: string | null;
-  client: { name: string } | null;
+  client: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    isSpecialist: boolean;
+  } | null;
 }
 
 // ─── Shared file list ─────────────────────────────────────────────────────────

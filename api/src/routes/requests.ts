@@ -641,7 +641,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         city: true,
         fns: true,
         files: true,
-        user: { select: { id: true, firstName: true, lastName: true } },
+        user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, isSpecialist: true } },
         _count: { select: { threads: true } },
       },
     });
@@ -785,7 +785,12 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         isOwner: false,
         hasExistingThread: !!existingThread,
         existingThreadId: existingThread?.id ?? null,
-        client: { name: clientName },
+        client: {
+          id: request.user.id,
+          name: clientName,
+          avatarUrl: await presignAvatarUrl(request.user.avatarUrl).catch(() => null),
+          isSpecialist: request.user.isSpecialist === true,
+        },
       });
     } else {
       // Public/client view: authenticated non-owner non-specialist — strip private fields
