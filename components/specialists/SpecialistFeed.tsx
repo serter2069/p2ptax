@@ -202,7 +202,11 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
           path += `&fnsServices=${encodeURIComponent(JSON.stringify(fnsServicesParam))}`;
         }
 
-        const res = await api<SpecialistsResponse>(path, { noAuth: true });
+        // Don't pass noAuth: when authenticated, the backend uses the
+        // caller id to exclude the user from their own catalog (you
+        // shouldn't see yourself as a specialist you can contact).
+        // Endpoint also works for anonymous visitors.
+        const res = await api<SpecialistsResponse>(path);
 
         setSpecialists((prev) => (append ? [...prev, ...res.items] : res.items));
         setHasMore(res.hasMore);

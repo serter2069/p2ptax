@@ -36,7 +36,8 @@ router.get("/", async (req: Request, res: Response) => {
       .map((id) => specialists.find((s) => s.id === id))
       .filter((s): s is NonNullable<typeof s> => s != null);
 
-    res.json({ items: sorted.map(mapSpecialist) });
+    const mapped = await Promise.all(sorted.map(mapSpecialist));
+    res.json({ items: mapped });
   } catch (err) {
     console.error("[saved-specialists] GET /", err);
     res.status(500).json({ error: "Internal server error" });

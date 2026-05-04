@@ -69,7 +69,7 @@ export const specialistListSelect = Prisma.validator<Prisma.UserSelect>()({
 
 export type SpecialistListItem = Prisma.UserGetPayload<{ select: typeof specialistListSelect }>;
 
-export function mapSpecialist(s: SpecialistListItem) {
+export async function mapSpecialist(s: SpecialistListItem) {
   const citiesMap = new Map<string, { id: string; name: string }>();
   const fnsNamesMap = new Map<string, { id: string; fnsId: string; fnsName: string }>();
   const specialistFns = s.specialistFns.map((sf) => {
@@ -97,7 +97,11 @@ export function mapSpecialist(s: SpecialistListItem) {
     id: s.id,
     firstName: s.firstName,
     lastName: s.lastName,
-    avatarUrl: s.avatarUrl,
+    // Catalog list stores the storage key (e.g. 'avatars/uuid.jpg') in
+    // user.avatarUrl — the FE can't render that as <Image src>. Presign
+    // here so each row carries a usable URL. Detail endpoint already
+    // does this; the list mapper was missed.
+    avatarUrl: await presignAvatarUrl(s.avatarUrl).catch(() => null),
     isAvailable: s.isAvailable,
     createdAt: s.createdAt,
     services: [...servicesMap.values()],
@@ -179,7 +183,8 @@ router.get("/featured", async (_req: Request, res: Response) => {
       .map((email) => pinned.find((p) => emailById.get(p.id) === email))
       .filter((s): s is (typeof pinned)[number] => Boolean(s));
 
-    res.json({ items: [...pinnedSorted, ...remaining].map(mapSpecialist) });
+    const mapped = await Promise.all([...pinnedSorted, ...remaining].map(mapSpecialist));
+    res.json({ items: mapped });
   } catch (error) {
     console.error("specialists/featured error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -357,8 +362,9 @@ router.get("/", async (req: Request, res: Response) => {
       prisma.user.count({ where }),
     ]);
 
+    const mappedItems = await Promise.all(items.map(mapSpecialist));
     res.json({
-      items: items.map(mapSpecialist),
+      items: mappedItems,
       total,
       page,
       limit,
