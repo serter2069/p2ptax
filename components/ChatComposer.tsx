@@ -106,10 +106,16 @@ export default function ChatComposer({
     const el = textareaRef.current;
     if (!el) return;
     // Reset to auto so scrollHeight reflects the natural content size,
-    // not the previous applied height. Then clamp to [MIN, MAX].
+    // not the previous applied height. Then clamp.
+    //
+    // The textarea sits inside a wrapper View with minHeight=MIN_HEIGHT
+    // and justifyContent:center, so a single-line textarea naturally
+    // ~20px tall is vertically centered inside the 44px row. We clamp
+    // to ≥ lineHeight (20) so the textarea doesn't collapse to 0, and
+    // ≤ MAX_HEIGHT so it scrolls instead of growing forever.
     el.style.height = "auto";
     const measured = el.scrollHeight;
-    const next = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, measured));
+    const next = Math.min(MAX_HEIGHT, Math.max(20, measured));
     el.style.height = next + "px";
   }, [value]);
 
@@ -181,64 +187,65 @@ export default function ChatComposer({
           onDragStateChange={setIsDragOver}
         />
 
-        {/* Text input — direct TextInput (not the global <Input> wrapper)
-            because <Input multiline> stacks its own paddingTop/paddingBottom
-            on top of the wrapper's padding, which left the placeholder
-            sitting visibly below the paperclip + send icons. Here the only
-            vertical padding is paddingVertical: (44 - 20) / 2 = 12, so
-            the single-line text is centered against the 44px button
-            squares. textAlignVertical="center" keeps the cursor at the top
-            once content wraps to multiple lines. */}
-        <TextInput
-          ref={captureTextareaRef as never}
-          accessibilityLabel={accessibilityLabel}
-          placeholder={placeholder}
-          placeholderTextColor={colors.placeholder}
-          value={value}
-          onChangeText={onChangeText}
-          multiline
-          maxLength={maxLength}
-          editable={!disabled}
-          textAlignVertical="center"
-          // Native-only: height comes from contentSize. On web the
-          // useEffect above measures scrollHeight via the textarea ref.
-          onContentSizeChange={
-            Platform.OS === "web"
-              ? undefined
-              : (e) => {
-                  const h = e.nativeEvent.contentSize.height;
-                  setInputHeight(Math.min(Math.max(MIN_HEIGHT, h), MAX_HEIGHT));
-                }
-          }
+        {/* Wrapper around the TextInput. justifyContent: 'center' anchors
+            a single-line textarea exactly to the vertical midpoint of
+            the row — so the placeholder / first row of text shares its
+            center line with the paperclip and send icons (44 / 2 = 22
+            from the top). When the user adds more lines and the textarea
+            grows past 44, the wrapper grows with it (alignSelf:stretch +
+            justifyContent has no effect when content > container) and
+            the icons stay pinned to the bottom thanks to row's items-end. */}
+        <View
           style={{
             flex: 1,
-            // Web: no fixed `height` — the useEffect manages it on the
-            // raw textarea so both grow and shrink work. minHeight pins
-            // the single-line state to the 44px button row; maxHeight
-            // caps it before the textarea takes over the screen.
-            // Native: explicit height driven by contentSize.
             minHeight: MIN_HEIGHT,
             maxHeight: MAX_HEIGHT,
-            ...(Platform.OS === "web" ? {} : { height: inputHeight }),
-            paddingVertical: 12,
-            paddingHorizontal: 12,
-            fontSize: 14,
-            lineHeight: 20,
-            color: colors.text,
-            backgroundColor: "transparent",
-            borderRadius: radiusValue.xl,
-            ...(Platform.OS === "web"
-              ? {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  outlineWidth: 0 as any,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  outlineStyle: "none" as any,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  resize: "none" as any,
-                }
-              : {}),
+            justifyContent: "center",
           }}
-        />
+        >
+          <TextInput
+            ref={captureTextareaRef as never}
+            accessibilityLabel={accessibilityLabel}
+            placeholder={placeholder}
+            placeholderTextColor={colors.placeholder}
+            value={value}
+            onChangeText={onChangeText}
+            multiline
+            maxLength={maxLength}
+            editable={!disabled}
+            textAlignVertical="center"
+            onContentSizeChange={
+              Platform.OS === "web"
+                ? undefined
+                : (e) => {
+                    const h = e.nativeEvent.contentSize.height;
+                    setInputHeight(Math.min(Math.max(20, h), MAX_HEIGHT));
+                  }
+            }
+            style={{
+              // Zero vertical padding here — the wrapper handles vertical
+              // centering via justifyContent. Padding inside the textarea
+              // would add to its scrollHeight, breaking the centering.
+              paddingVertical: 0,
+              paddingHorizontal: 12,
+              fontSize: 14,
+              lineHeight: 20,
+              color: colors.text,
+              backgroundColor: "transparent",
+              borderRadius: radiusValue.xl,
+              ...(Platform.OS === "web"
+                ? {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    outlineWidth: 0 as any,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    outlineStyle: "none" as any,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    resize: "none" as any,
+                  }
+                : { height: inputHeight }),
+            }}
+          />
+        </View>
 
         {/* Send button — aligned to flex-end so it stays at bottom when input expands. */}
         <Pressable

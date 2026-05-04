@@ -73,19 +73,21 @@ export default function ThreadCard({
       style={({ pressed }) => [
         {
           backgroundColor: selected
-            ? colors.accentSoft
+            ? colors.accentTintShape
             : hasUnread
               ? overlay.accent10
               : colors.surface,
           minHeight: 72,
-          // Left bar: 4px when this row is the open thread (selected wins
-          // over unread because selected = "you're reading this right
-          // now"), 3px for an unread row, hidden otherwise. Without this
-          // the open row had only a faint background tint and it wasn't
-          // obvious which thread the right pane was showing.
-          borderLeftWidth: selected ? 4 : hasUnread ? 3 : 0,
+          // Open-row affordance was too subtle (just a pale accentSoft tint
+          // + 4px left bar) — Сергей couldn't tell which thread the right
+          // pane was showing. Now: a denser accentTintShape background,
+          // a thicker 5px primary-color left bar, and bold name (handled
+          // in the row content via a `selected` flag). The unread state
+          // keeps its lighter overlay so 'unread vs open' is still
+          // distinguishable.
+          borderLeftWidth: selected ? 5 : hasUnread ? 3 : 0,
           borderLeftColor: selected
-            ? colors.accent
+            ? colors.primary
             : hasUnread
               ? colors.primary
               : "transparent",
@@ -145,7 +147,7 @@ export default function ThreadCard({
         <View className="flex-row items-center gap-2">
           <Text
             className={`flex-1 min-w-0 text-base ${
-              hasUnread
+              selected || hasUnread
                 ? "font-bold text-text-base"
                 : "font-semibold text-text-base"
             }`}
