@@ -278,17 +278,33 @@ export default function CreateRequest() {
         try { window.localStorage.removeItem("p2ptax_anon_session_v1"); } catch { /* ignore */ }
       }
 
-      // Native got a confirmation dialog; on web we navigated immediately.
-      // Now both routes show the same "Запрос опубликован" dialog so the
-      // success feedback is consistent across platforms.
+      // Post-publish: offer two paths. Default action is the friendly
+      // 'Перейти к запросу' (so passive users land on the detail page,
+      // unchanged behaviour). Confirm action — labelled 'Найти
+      // специалистов сами' — deep-links to the catalog filtered by
+      // the FNS the user just picked, so impatient clients can
+      // immediately browse matching specialists instead of waiting
+      // for replies.
       const goToDetail = () => nav.replaceAny(`/requests/${result.id}/detail`);
-      void dialog
-        .alert({
-          title: "Запрос опубликован",
-          message:
-            "Специалисты по вашей ФНС увидят его и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
-        })
-        .then(goToDetail);
+      const goToSpecialists = () => {
+        if (selectedFnsId) {
+          nav.replaceAny(`/specialists?fns_ids=${selectedFnsId}`);
+        } else {
+          nav.replaceRoutes.specialists();
+        }
+      };
+      const findThem = await dialog.confirm({
+        title: "Запрос опубликован",
+        message:
+          "Специалисты по вашей ИФНС увидят его и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
+        confirmLabel: "Найти специалистов сами",
+        cancelLabel: "Перейти к запросу",
+      });
+      if (findThem) {
+        goToSpecialists();
+      } else {
+        goToDetail();
+      }
     } catch (e: unknown) {
       const msg =
         e instanceof Error

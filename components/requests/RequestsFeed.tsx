@@ -317,17 +317,28 @@ export default function RequestsFeed({
 
     if (displayedRequests.length === 0) {
       if (mode === "mine") {
+        // showArchiveOnly && empty → user toggled into Archive but
+        // they have nothing closed yet. Offer them 'К активным' so
+        // they can switch back without hunting for the small toggle
+        // up top — that toggle disappears altogether on the empty
+        // branch. Plus 'Создать запрос' as a secondary path.
         return (
           <EmptyState
             icon={FileText}
             title={showArchiveOnly ? "Закрытых запросов нет" : "Запросов нет"}
             subtitle={
               showArchiveOnly
-                ? "Закрытые запросы появятся здесь"
-                : "Создайте первый запрос — специалисты из вашего города увидят его и предложат помощь"
+                ? "Закрытые запросы появятся здесь, когда вы их закроете."
+                : "Создайте первый запрос — специалисты из вашей ИФНС увидят его и предложат помощь"
             }
-            actionLabel={!showArchiveOnly ? "Создать запрос" : undefined}
-            onAction={!showArchiveOnly ? () => nav.routes.requestsNew() : undefined}
+            actionLabel={
+              showArchiveOnly ? "К активным запросам" : "Создать запрос"
+            }
+            onAction={
+              showArchiveOnly
+                ? () => setShowArchiveOnly(false)
+                : () => nav.routes.requestsNew()
+            }
           />
         );
       }
