@@ -14,7 +14,7 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { ChevronLeft, X } from "lucide-react-native";
+import { ChevronLeft, X, Check } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -77,6 +77,10 @@ export default function CreateRequest() {
   const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
 
   const [isPublic, setIsPublic] = useState(true);
+  // Terms acceptance — only enforced for anonymous visitors (authed
+  // users accepted at /login). Pre-checked so a returning user with
+  // a fresh tab isn't blocked by a stray uncheck.
+  const [termsAccepted, setTermsAccepted] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const loadingInit = citiesLoading || servicesLoading;
   const [submitted, setSubmitted] = useState(false);
@@ -302,6 +306,11 @@ export default function CreateRequest() {
     setSubmitError("");
     if (!formValid || submitting) return;
 
+    if (!isAuthenticated && !termsAccepted) {
+      setSubmitError("Чтобы продолжить, примите условия использования.");
+      return;
+    }
+
     if (isAuthenticated) {
       await submitRequestAuthed();
       return;
@@ -309,7 +318,7 @@ export default function CreateRequest() {
 
     // Anonymous path — open inline OTP block.
     setShowOtpFlow(true);
-  }, [formValid, submitting, isAuthenticated, submitRequestAuthed]);
+  }, [formValid, submitting, isAuthenticated, termsAccepted, submitRequestAuthed]);
 
   if (authLoading || loadingInit) {
     return (
@@ -560,16 +569,65 @@ export default function CreateRequest() {
 
           {/* Primary submit button — hidden once inline OTP block is open. */}
           {(isAuthenticated || !showOtpFlow) && (
-            <Button
-              label={
-                isAuthenticated
-                  ? "Опубликовать запрос"
-                  : "Отправить запрос"
-              }
-              onPress={handleSubmit}
-              disabled={submitting}
-              loading={submitting}
-            />
+            <>
+              {!isAuthenticated && (
+                /* Terms-of-use checkbox — same shape as on /login.
+                   Hidden for authed users since they already accepted
+                   at sign-in time. Pre-checked; uncheck blocks submit. */
+                <View
+                  className="flex-row items-start mb-4"
+                  style={{ gap: 10 }}
+                >
+                  <Pressable
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: termsAccepted }}
+                    accessibilityLabel="Я принимаю условия использования"
+                    onPress={() => setTermsAccepted((v) => !v)}
+                    hitSlop={8}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      marginTop: 1,
+                      borderRadius: 6,
+                      borderWidth: 1.5,
+                      borderColor: termsAccepted ? colors.accent : colors.border,
+                      backgroundColor: termsAccepted ? colors.accent : "transparent",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {termsAccepted ? (
+                      <Check size={14} color={colors.white} strokeWidth={3} />
+                    ) : null}
+                  </Pressable>
+                  <Text
+                    className="flex-1 text-text-base"
+                    style={{ fontSize: 13, lineHeight: 18 }}
+                  >
+                    Я принимаю{" "}
+                    <Text
+                      accessibilityRole="link"
+                      onPress={() => nav.routes.legalIndex()}
+                      className="underline"
+                      style={{ color: colors.accent }}
+                    >
+                      условия использования и политику конфиденциальности
+                    </Text>
+                    .
+                  </Text>
+                </View>
+              )}
+              <Button
+                label={
+                  isAuthenticated
+                    ? "Опубликовать запрос"
+                    : "Отправить запрос"
+                }
+                onPress={handleSubmit}
+                disabled={submitting || (!isAuthenticated && !termsAccepted)}
+                loading={submitting}
+              />
+            </>
           )}
         </View>
       </ScrollView>
