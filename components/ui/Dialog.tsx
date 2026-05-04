@@ -99,59 +99,67 @@ export default function DialogHost() {
 
           {/* Buttons row. Stacks vertically when the cumulative label
               length is too long for one row (e.g. 'Найти специалистов
-              сами' + 'Перейти к запросу'). Primary always sits first
-              in tab/visual order; cancel below or to the left. */}
+              сами' + 'Перейти к запросу'). When stacking, primary sits
+              on top — RN doesn't support CSS `order`, so we render the
+              JSX children in different sequence per branch. */}
           {(() => {
             const cancelLabel = current.cancelLabel ?? "Отмена";
             const confirmLabel = current.confirmLabel ?? (isConfirm ? "Подтвердить" : "OK");
             const stack = isConfirm && cancelLabel.length + confirmLabel.length > 24;
+            const PrimaryBtn = (
+              <Pressable
+                key="primary"
+                accessibilityRole="button"
+                accessibilityLabel={confirmLabel}
+                onPress={() => resolve(true)}
+                style={{
+                  paddingHorizontal: 18,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  backgroundColor: destructive ? colors.error : colors.primary,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 15, color: colors.white, fontWeight: "600" }}>
+                  {confirmLabel}
+                </Text>
+              </Pressable>
+            );
+            const CancelBtn = isConfirm ? (
+              <Pressable
+                key="cancel"
+                accessibilityRole="button"
+                accessibilityLabel={cancelLabel}
+                onPress={() => resolve(false)}
+                style={{
+                  paddingHorizontal: 18,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: "transparent",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 15, color: colors.text, fontWeight: "500" }}>
+                  {cancelLabel}
+                </Text>
+              </Pressable>
+            ) : null;
             return (
               <View
                 style={{
                   flexDirection: stack ? "column" : "row",
-                  gap: stack ? 8 : 8,
+                  gap: 8,
                   justifyContent: "flex-end",
                   marginTop: 4,
                 }}
               >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={confirmLabel}
-                  onPress={() => resolve(true)}
-                  style={{
-                    paddingHorizontal: 18,
-                    paddingVertical: 12,
-                    borderRadius: 12,
-                    backgroundColor: destructive ? colors.error : colors.primary,
-                    alignItems: "center",
-                    order: stack ? 1 : 2,
-                  }}
-                >
-                  <Text style={{ fontSize: 15, color: colors.white, fontWeight: "600" }}>
-                    {confirmLabel}
-                  </Text>
-                </Pressable>
-                {isConfirm && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={cancelLabel}
-                    onPress={() => resolve(false)}
-                    style={{
-                      paddingHorizontal: 18,
-                      paddingVertical: 12,
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      backgroundColor: "transparent",
-                      alignItems: "center",
-                      order: stack ? 2 : 1,
-                    }}
-                  >
-                    <Text style={{ fontSize: 15, color: colors.text, fontWeight: "500" }}>
-                      {cancelLabel}
-                    </Text>
-                  </Pressable>
-                )}
+                {/* Stacked: primary on top, cancel below.
+                    Inline (single row): cancel on the left, primary on
+                    the right (standard 'destructive on right' RTL). */}
+                {stack ? PrimaryBtn : CancelBtn}
+                {stack ? CancelBtn : PrimaryBtn}
               </View>
             );
           })()}
