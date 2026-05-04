@@ -10,6 +10,7 @@ import {
 import { Pencil } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { dialog } from "@/lib/dialog";
+import AvatarCropModal from "@/components/settings/AvatarCropModal";
 import {
   ApiError,
   AVATAR_MAX_BYTES,
@@ -76,6 +77,12 @@ export default function AvatarUploader({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [lastFile, setLastFile] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Crop flow (web only): a file picked from the OS dialog opens the
+  // AvatarCropModal first; only after the user confirms the crop does
+  // the resulting Blob hit /api/upload/avatar. Native skips this and
+  // uploads the source file directly (the OS picker already lets the
+  // user choose a region).
+  const [cropFile, setCropFile] = useState<File | null>(null);
   // Wave 6 polish — fall back to initials when avatarUrl 404s (MinIO rotation,
   // deleted file, broken CDN). Without this, a stale URL renders a blank
   // circle with just the edit-pencil overlay. Reset on every avatarUrl change
@@ -164,9 +171,24 @@ export default function AvatarUploader({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      void uploadAvatar(file);
+      // Pre-flight size check before opening the cropper — no point
+      // letting the user crop a 50MB file we'll reject anyway.
+      if (file.size > AVATAR_MAX_BYTES) {
+        dialog.alert({ title: AVATAR_TOO_LARGE_TITLE, message: AVATAR_TOO_LARGE_MESSAGE });
+        e.target.value = "";
+        return;
+      }
+      setCropFile(file);
       e.target.value = "";
     }
+  };
+
+  const handleCropConfirm = (blob: Blob) => {
+    setCropFile(null);
+    // Wrap the cropped Blob in a File so uploadAvatar's existing
+    // FormData append picks up a proper filename + mimetype.
+    const cropped = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+    void uploadAvatar(cropped);
   };
 
   const handleRetry = () => {
@@ -177,6 +199,12 @@ export default function AvatarUploader({
 
   return (
     <View className="items-center mb-4">
+      <AvatarCropModal
+        file={cropFile}
+        visible={cropFile !== null}
+        onCancel={() => setCropFile(null)}
+        onConfirm={handleCropConfirm}
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Фото профиля"
