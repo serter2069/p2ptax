@@ -489,13 +489,16 @@ router.get("/my", async (req: Request, res: Response) => {
         // which expects every thread to carry request.title for the
         // second line of ThreadCard — still works. Without this branch
         // DMs were silently dropped from /messages.
+        // The cast goes through `unknown` because RequestStatus is an
+        // enum and we want a sentinel value frontend can detect; the
+        // FE only reads { id, title, status } from this stub.
         groups.set(`dm:${th.id}`, {
           request: {
             id: `dm:${th.id}`,
             title: "Личное сообщение",
             status: "DM",
-            userId: th.clientId,
-          } as typeof th.request,
+            userId: "",
+          } as unknown as typeof th.request,
           threads: [th],
         });
         continue;
