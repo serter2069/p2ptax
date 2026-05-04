@@ -3,16 +3,17 @@ import { User, Briefcase } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 /**
- * PerspectiveBadge — chip indicating whether the current user is
- * participating in a thread as the client or as the specialist.
+ * PerspectiveBadge — chip describing the OTHER party in a thread.
+ *
+ * `perspective` is the viewer's own role; the chip displays the
+ * counterpart so the inbox can be scanned at a glance ('this thread is
+ * with a specialist' vs 'with a client'). Without the inversion every
+ * row showed 'Клиент' for a viewer who only ever acts as a client —
+ * dead-weight badge (UX feedback May 2026).
  *
  * Used in:
  *  - Inbox row (`app/(tabs)/messages.tsx`) — distinguish dual-role threads.
  *  - Thread header (`components/InlineChatView.tsx`) — reinforce context.
- *
- * Two visual variants make the perspective glanceable:
- *   as_client      → blue (accentSoft / accent) + User icon
- *   as_specialist  → green (greenSoft / success) + Briefcase icon
  *
  * Two sizes:
  *   sm  — for thread cards in the inbox list (compact, dense)
@@ -27,18 +28,20 @@ export default function PerspectiveBadge({
   perspective,
   size = "sm",
 }: PerspectiveBadgeProps) {
-  const isClient = perspective === "as_client";
-  const label = isClient ? "Клиент" : "Специалист";
+  const otherIsSpecialist = perspective === "as_client";
+  const label = otherIsSpecialist ? "Специалист" : "Клиент";
 
-  const bg = isClient ? colors.accentSoft : colors.greenSoft;
-  const fg = isClient ? colors.accent : colors.success;
+  // Specialist → green (matches specialist surfaces elsewhere),
+  // Client → blue (the regular accent).
+  const bg = otherIsSpecialist ? colors.greenSoft : colors.accentSoft;
+  const fg = otherIsSpecialist ? colors.success : colors.accent;
 
   const isMd = size === "md";
   const fontSize = isMd ? 12 : 11;
   const paddingH = isMd ? 10 : 8;
   const paddingV = isMd ? 4 : 2;
   const iconSize = isMd ? 13 : 11;
-  const Icon = isClient ? User : Briefcase;
+  const Icon = otherIsSpecialist ? Briefcase : User;
 
   return (
     <View

@@ -79,8 +79,17 @@ export default function ThreadCard({
               ? overlay.accent10
               : colors.surface,
           minHeight: 72,
-          borderLeftWidth: hasUnread ? 3 : 0,
-          borderLeftColor: hasUnread ? colors.primary : "transparent",
+          // Left bar: 4px when this row is the open thread (selected wins
+          // over unread because selected = "you're reading this right
+          // now"), 3px for an unread row, hidden otherwise. Without this
+          // the open row had only a faint background tint and it wasn't
+          // obvious which thread the right pane was showing.
+          borderLeftWidth: selected ? 4 : hasUnread ? 3 : 0,
+          borderLeftColor: selected
+            ? colors.accent
+            : hasUnread
+              ? colors.primary
+              : "transparent",
           shadowColor: colors.black,
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.06,

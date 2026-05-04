@@ -14,7 +14,10 @@ import {
 import { colors } from "@/lib/theme";
 import { getShortServiceName, isAllCoreServicesSelected } from "@/lib/services";
 import { layer } from "@/lib/zIndex";
-import { MessageCircle, Bookmark } from "lucide-react-native";
+// MessageSquare matches the icon on the public profile detail page
+// (SpecialistContactCTA / SpecialistMobileBottomCTA) so the catalog and
+// detail use a single 'Написать' visual.
+import { MessageSquare, Bookmark } from "lucide-react-native";
 
 function formatSpecialistName(firstName: string | null, lastName: string | null): string {
   const f = (firstName || "").trim();
@@ -288,7 +291,7 @@ function DesktopSpecialistRow({
               pressed && { opacity: 0.8 },
             ]}
           >
-            <MessageCircle size={14} color={colors.white} />
+            <MessageSquare size={14} color={colors.white} />
             <Text style={{ color: colors.white, fontSize: 13, fontWeight: "600" }}>
               Написать
             </Text>

@@ -84,9 +84,13 @@ export default function ChatComposer({
   const canSend =
     !disabled && !sending && (value.trim().length > 0 || files.length > 0);
 
-  // Auto-expand: track TextInput content height, clamped between 40 and 120px.
-  const MIN_HEIGHT = 40;
-  const MAX_HEIGHT = 120;
+  // Auto-expand: track TextInput content height, clamped between
+  // MIN_HEIGHT (single-line ~36px) and MAX_HEIGHT (≈5 rows). The inner
+  // <Input multiline> has its own 80px floor for general descriptions —
+  // the composer explicitly overrides it via containerStyle.minHeight
+  // below so it can start at one short row.
+  const MIN_HEIGHT = 36;
+  const MAX_HEIGHT = 140;
   const [inputHeight, setInputHeight] = useState(MIN_HEIGHT);
 
   // Composer-wide drop target — used by FileUploadZone via dropTargetRef.
@@ -175,6 +179,10 @@ export default function ChatComposer({
           containerStyle={{
             borderRadius: radiusValue.xl,
             height: inputHeight,
+            // Explicit minHeight beats the Input component's default 80px
+            // multiline floor — composer needs to start at one row.
+            minHeight: MIN_HEIGHT,
+            paddingVertical: 4,
             borderBottomWidth: 0,
             borderTopWidth: 0,
             borderLeftWidth: 0,
