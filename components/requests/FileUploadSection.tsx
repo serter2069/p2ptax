@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
 import { FileImage, File, X, Upload } from "lucide-react-native";
 import { API_URL } from "@/lib/api";
@@ -130,23 +130,55 @@ export default function FileUploadSection({
     e.target.value = "";
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    setHover(false);
-    if (disabled) return;
-    const dropped = Array.from(e.dataTransfer.files as FileList);
-    dropped.forEach((file) => {
-      if (filesRef.current.length >= MAX_FILES || file.size > MAX_FILE_SIZE) return;
-      void uploadFile(file);
-    });
-  };
+  // Drag-and-drop: RN-Web's <View> strips React's onDragOver/onDrop
+  // synthetic-event props, so the drop zone never received native dragover
+  // events. Wire DOM listeners ourselves once the host node mounts —
+  // mirrors the pattern used in components/ui/FileUploadZone.tsx that
+  // works fine in the chat composer.
+  const dropZoneRef = useRef<HTMLElement | null>(null);
+  const setDropZoneNode = useCallback((node: unknown) => {
+    dropZoneRef.current = (node as HTMLElement | null) ?? null;
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    if (!disabled) setHover(true);
-  };
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const node = dropZoneRef.current;
+    if (!node || typeof node.addEventListener !== "function") return;
 
-  const handleDragLeave = () => setHover(false);
+    const onDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      if (!disabled) setHover(true);
+    };
+    const onDragOver = (e: DragEvent) => {
+      // preventDefault on dragover is what tells the browser this is a
+      // valid drop target — without it the browser refuses the drop.
+      e.preventDefault();
+      if (!disabled) setHover(true);
+    };
+    const onDragLeave = () => setHover(false);
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      setHover(false);
+      if (disabled) return;
+      const fl = e.dataTransfer?.files;
+      if (!fl) return;
+      Array.from(fl).forEach((file) => {
+        if (filesRef.current.length >= MAX_FILES || file.size > MAX_FILE_SIZE) return;
+        void uploadFile(file);
+      });
+    };
+
+    node.addEventListener("dragenter", onDragEnter);
+    node.addEventListener("dragover", onDragOver);
+    node.addEventListener("dragleave", onDragLeave);
+    node.addEventListener("drop", onDrop);
+    return () => {
+      node.removeEventListener("dragenter", onDragEnter);
+      node.removeEventListener("dragover", onDragOver);
+      node.removeEventListener("dragleave", onDragLeave);
+      node.removeEventListener("drop", onDrop);
+    };
+  }, [disabled, uploadFile]);
 
   const handleRemoveFile = (index: number) => {
     const next = filesRef.current.filter((_, i) => i !== index);
@@ -198,11 +230,7 @@ export default function FileUploadSection({
 
       {files.length < MAX_FILES && !disabled && Platform.OS === "web" && (
         <View
-          {...({
-            onDragOver: handleDragOver,
-            onDragLeave: handleDragLeave,
-            onDrop: handleDrop,
-          } as object)}
+          ref={setDropZoneNode as never}
           style={{
             borderWidth: 2,
             borderStyle: "dashed",
