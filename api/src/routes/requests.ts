@@ -208,6 +208,7 @@ router.get("/:id/public", async (req: Request, res: Response) => {
       include: {
         city: true,
         fns: true,
+        service: { select: { id: true, name: true } },
         user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
         files: {
           select: { id: true, url: true, filename: true, size: true, mimeType: true },
@@ -413,7 +414,7 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { title, cityId, fnsId, description, fileIds, pendingFileSessionId, isPublic } = req.body;
+    const { title, cityId, fnsId, serviceId, description, fileIds, pendingFileSessionId, isPublic } = req.body;
 
     // Validate
     if (!title || title.length < 3 || title.length > 100) {
@@ -461,11 +462,16 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
       return;
     }
 
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const serviceIdToStore =
+      typeof serviceId === "string" && uuidRe.test(serviceId) ? serviceId : null;
+
     const request = await prisma.request.create({
       data: {
         title: stripHtml(title),
         cityId,
         fnsId,
+        serviceId: serviceIdToStore,
         description: stripHtml(description),
         userId,
         isPublic: typeof isPublic === "boolean" ? isPublic : true,
@@ -473,6 +479,7 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
       include: {
         city: true,
         fns: true,
+        service: true,
       },
     });
 
@@ -645,6 +652,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         city: true,
         fns: true,
         files: true,
+        service: { select: { id: true, name: true } },
         user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, isSpecialist: true } },
         _count: { select: { threads: true } },
       },
@@ -732,7 +740,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         maxExtensions,
         city: { id: request.city.id, name: request.city.name },
         fns: { id: request.fns.id, name: request.fns.name, code: request.fns.code },
-        service: null,
+        service: request.service ? { id: request.service.id, name: request.service.name } : null,
         files: request.files.map((f) => ({
           id: f.id,
           url: f.url,
@@ -775,7 +783,7 @@ router.get("/:id/detail", authMiddleware, async (req: Request, res: Response) =>
         maxExtensions: 0,
         city: { id: request.city.id, name: request.city.name },
         fns: { id: request.fns.id, name: request.fns.name, code: request.fns.code },
-        service: null,
+        service: request.service ? { id: request.service.id, name: request.service.name } : null,
         files: request.files.map((f) => ({
           id: f.id,
           url: f.url,

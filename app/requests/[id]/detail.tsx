@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { dialog } from "@/lib/dialog";
-import { File, FileImage, Download, ChevronLeft, MessageSquare } from "lucide-react-native";
+import { File, FileImage, Download, ChevronLeft, MessageSquare, Search, Lock, RefreshCw } from "lucide-react-native";
 import LandingHeader from "@/components/landing/LandingHeader";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
@@ -246,11 +246,12 @@ function OwnerView({
           accessibilityRole="button"
           accessibilityLabel="Найти специалистов сами"
           onPress={() => nav.any(`/specialists?fns_ids=${request.fns.id}`)}
-          className="bg-accent rounded-xl py-3 items-center mb-3"
+          className="bg-accent rounded-xl py-3 flex-row items-center justify-center mb-3"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
-          <Text className="text-white font-semibold text-sm">
-            Найти специалистов по этой ИФНС →
+          <Search size={16} color="#fff" />
+          <Text className="text-white font-semibold text-sm ml-2">
+            Найти специалистов по этой ИФНС
           </Text>
         </Pressable>
       )}
@@ -261,20 +262,22 @@ function OwnerView({
           accessibilityRole="button"
           accessibilityLabel="Открыть запрос снова"
           onPress={onReopen}
-          className="border border-accent rounded-xl py-3 items-center mb-6"
+          className="border border-accent rounded-xl py-3 flex-row items-center justify-center mb-6"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
-          <Text className="text-accent font-semibold text-sm">Открыть запрос снова</Text>
+          <RefreshCw size={16} color={colors.accent} />
+          <Text className="text-accent font-semibold text-sm ml-2">Открыть запрос снова</Text>
         </Pressable>
       ) : (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Закрыть заявку"
           onPress={onClose}
-          className="border border-danger rounded-xl py-3 items-center mb-6"
+          className="border border-danger rounded-xl py-3 flex-row items-center justify-center mb-6"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
-          <Text className="text-danger font-semibold text-sm">Закрыть заявку</Text>
+          <Lock size={16} color={colors.danger} />
+          <Text className="text-danger font-semibold text-sm ml-2">Закрыть заявку</Text>
         </Pressable>
       )}
     </View>

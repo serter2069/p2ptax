@@ -222,6 +222,7 @@ model Request {
   title           String
   cityId          String        @map("city_id")
   fnsId           String        @map("fns_id")
+  serviceId       String?       @map("service_id")
   description     String
   status          RequestStatus @default(ACTIVE)
   isPublic        Boolean       @default(true) @map("is_public")
@@ -232,6 +233,7 @@ model Request {
   user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   city    City      @relation(fields: [cityId], references: [id])
   fns     FnsOffice @relation(fields: [fnsId], references: [id])
+  service Service?  @relation(fields: [serviceId], references: [id])
   threads Thread[]
   files   File[]
 
