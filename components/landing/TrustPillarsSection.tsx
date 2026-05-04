@@ -1,5 +1,4 @@
 import { View, Text } from "react-native";
-import { MapPin, MessageCircle, Star } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 
 interface TrustPillarsSectionProps {
@@ -7,34 +6,38 @@ interface TrustPillarsSectionProps {
 }
 
 interface Pillar {
-  Icon: typeof MapPin;
+  /** Big number / metric. Single line, must read as a numeric claim. */
+  metric: string;
+  /** Short headline tying the metric to a benefit. */
   title: string;
+  /** Supporting one-liner. */
   desc: string;
 }
 
 const PILLARS: Pillar[] = [
   {
-    Icon: MapPin,
-    title: "Привязка к вашей ИФНС",
-    desc: "Каталог отбирает специалистов, которые работают именно с вашей инспекцией.",
+    metric: "150+",
+    title: "Инспекций в каталоге",
+    desc: "Москва, Питер, Екб, Новосиб, Казань. Ваша точно есть.",
   },
   {
-    Icon: MessageCircle,
-    title: "Прямой контакт",
-    desc: "Переписка со специалистом внутри платформы — без посредников и звонков из колл-центра.",
+    metric: "3 минуты",
+    title: "На запрос — и всё",
+    desc: "Не форма из 12 полей и не «оставьте заявку, мы перезвоним».",
   },
   {
-    Icon: Star,
-    title: "Профиль и отзывы",
-    desc: "Опыт, услуги и отзывы клиентов в одном профиле — выбираете осознанно.",
+    metric: "0 ₽",
+    title: "За платформу",
+    desc: "Платите специалисту напрямую. Цены и условия — между вами.",
   },
 ];
 
 /**
- * Trust pillars row — three columns on desktop, vertical stack on mobile.
- * Anchors the value props on what the platform actually delivers
- * (FNS-binding, in-platform messaging, public profile + reviews) rather
- * than on outcome guarantees the platform can't make.
+ * Trust pillars — three numeric data-points instead of generic
+ * 'feature with icon' tiles. Numbers first because they're concrete
+ * and instantly tell the user what to expect (vs the previous
+ * 'привязка к ИФНС / прямой контакт / профиль и отзывы' which read
+ * as generic landing copy).
  */
 export default function TrustPillarsSection({ isDesktop }: TrustPillarsSectionProps) {
   return (
@@ -62,23 +65,25 @@ export default function TrustPillarsSection({ isDesktop }: TrustPillarsSectionPr
             className="rounded-2xl"
             style={{
               flex: isDesktop ? 1 : undefined,
-              padding: isDesktop ? 24 : 20,
+              padding: isDesktop ? 28 : 22,
               borderWidth: 1,
               borderColor: colors.border,
               backgroundColor: colors.white,
-              gap: 12,
+              gap: 6,
             }}
           >
-            <View
-              className="items-center justify-center rounded-full"
+            <Text
               style={{
-                width: 48,
-                height: 48,
-                backgroundColor: colors.successSoft,
+                color: colors.primary,
+                fontSize: isDesktop ? 40 : 32,
+                lineHeight: isDesktop ? 44 : 36,
+                fontWeight: "800",
+                letterSpacing: -1,
+                marginBottom: 6,
               }}
             >
-              <p.Icon size={22} color={colors.success} />
-            </View>
+              {p.metric}
+            </Text>
             <Text
               className="font-bold"
               style={{ color: colors.text, fontSize: 17, lineHeight: 22 }}
