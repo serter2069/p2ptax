@@ -141,7 +141,12 @@ function DesktopSpecialistRow({
             padding: 16,
             marginBottom: 10,
             flexDirection: "row",
-            alignItems: "center",
+            // 'stretch' lets the right column expand to the card's
+            // height. The Write button inside that column then anchors
+            // to the BOTTOM of the row (justifyContent:'flex-end') —
+            // user wanted the CTA at bottom-right rather than the old
+            // vertical-center placement.
+            alignItems: "stretch",
             gap: 16,
             shadowColor: colors.black,
             shadowOffset: { width: 0, height: 1 },
@@ -268,8 +273,18 @@ function DesktopSpecialistRow({
           )}
         </View>
 
-        {/* Right: only the primary CTA — bookmark moves to top-right corner. */}
-        <View style={{ alignItems: "flex-end", flexShrink: 0 }}>
+        {/* Right column: primary CTA pinned to the bottom-right of the
+            card (bookmark stays at top-right via the absolute Pressable
+            below). The flex column takes the full card height (parent
+            uses alignItems:'stretch') and pushes its child down with
+            justifyContent:'flex-end'. */}
+        <View
+          style={{
+            alignItems: "flex-end",
+            justifyContent: "flex-end",
+            flexShrink: 0,
+          }}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Написать"

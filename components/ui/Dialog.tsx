@@ -97,57 +97,64 @@ export default function DialogHost() {
             </Text>
           ) : null}
 
-          <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
-            {isConfirm ? (
-              <>
+          {/* Buttons row. Stacks vertically when the cumulative label
+              length is too long for one row (e.g. 'Найти специалистов
+              сами' + 'Перейти к запросу'). Primary always sits first
+              in tab/visual order; cancel below or to the left. */}
+          {(() => {
+            const cancelLabel = current.cancelLabel ?? "Отмена";
+            const confirmLabel = current.confirmLabel ?? (isConfirm ? "Подтвердить" : "OK");
+            const stack = isConfirm && cancelLabel.length + confirmLabel.length > 24;
+            return (
+              <View
+                style={{
+                  flexDirection: stack ? "column" : "row",
+                  gap: stack ? 8 : 8,
+                  justifyContent: "flex-end",
+                  marginTop: 4,
+                }}
+              >
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={current.cancelLabel ?? "Отмена"}
-                  onPress={() => resolve(false)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: "500" }}>
-                    {current.cancelLabel ?? "Отмена"}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={current.confirmLabel ?? "Подтвердить"}
+                  accessibilityLabel={confirmLabel}
                   onPress={() => resolve(true)}
                   style={{
                     paddingHorizontal: 18,
-                    paddingVertical: 10,
+                    paddingVertical: 12,
                     borderRadius: 12,
                     backgroundColor: destructive ? colors.error : colors.primary,
+                    alignItems: "center",
+                    order: stack ? 1 : 2,
                   }}
                 >
                   <Text style={{ fontSize: 15, color: colors.white, fontWeight: "600" }}>
-                    {current.confirmLabel ?? "Подтвердить"}
+                    {confirmLabel}
                   </Text>
                 </Pressable>
-              </>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={current.confirmLabel ?? "OK"}
-                onPress={() => resolve(true)}
-                style={{
-                  paddingHorizontal: 22,
-                  paddingVertical: 10,
-                  borderRadius: 12,
-                  backgroundColor: colors.primary,
-                }}
-              >
-                <Text style={{ fontSize: 15, color: colors.white, fontWeight: "600" }}>
-                  {current.confirmLabel ?? "OK"}
-                </Text>
-              </Pressable>
-            )}
-          </View>
+                {isConfirm && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={cancelLabel}
+                    onPress={() => resolve(false)}
+                    style={{
+                      paddingHorizontal: 18,
+                      paddingVertical: 12,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: "transparent",
+                      alignItems: "center",
+                      order: stack ? 2 : 1,
+                    }}
+                  >
+                    <Text style={{ fontSize: 15, color: colors.text, fontWeight: "500" }}>
+                      {cancelLabel}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            );
+          })()}
         </Pressable>
       </Pressable>
     </Modal>

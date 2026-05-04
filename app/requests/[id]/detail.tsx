@@ -230,6 +230,24 @@ function OwnerView({
 
   const ActionPanel = () => (
     <View>
+      {/* 'Найти специалистов сами' — same CTA the post-publish dialog
+          offers, but reachable from the detail page so the owner can
+          jump to the catalog filtered by this request's ИФНС at any
+          time, not only right after publish. */}
+      {!isClosed && request.fns?.id && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Найти специалистов сами"
+          onPress={() => nav.any(`/specialists?fns_ids=${request.fns.id}`)}
+          className="bg-accent rounded-xl py-3 items-center mb-3"
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
+          <Text className="text-white font-semibold text-sm">
+            Найти специалистов по этой ИФНС →
+          </Text>
+        </Pressable>
+      )}
+
       {/* Close / Reopen button */}
       {isClosed ? (
         <Pressable
