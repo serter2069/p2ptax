@@ -200,20 +200,11 @@ export default function AuthEmailScreen() {
               Я принимаю{" "}
               <Text
                 accessibilityRole="link"
-                onPress={() => nav.routes.legalTerms()}
+                onPress={() => nav.routes.legalIndex()}
                 className="underline"
                 style={{ color: colors.accent }}
               >
-                условия использования
-              </Text>{" "}
-              и{" "}
-              <Text
-                accessibilityRole="link"
-                onPress={() => nav.routes.legalPrivacy()}
-                className="underline"
-                style={{ color: colors.accent }}
-              >
-                политику конфиденциальности
+                условия использования и политику конфиденциальности
               </Text>
               .
             </Text>
