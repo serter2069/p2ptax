@@ -15,15 +15,27 @@ import {
 
 const router = Router();
 
-// Token refresh has its own tighter window — kept inline because the limit
-// (5/min/IP) is specific to token rotation and not reused elsewhere.
+// Token refresh rate limit. Bumped from 5→30 per minute because a single
+// browser session legitimately fires multiple refreshes when tabs wake
+// from background, the proactive timer overlaps with a 401 interceptor,
+// or several SPA mounts happen back-to-back. With single-flight refresh
+// on the FE side, real abusive traffic is much higher than 30/min.
 const refreshRateLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Слишком много запросов обновления токена. Попробуйте через минуту." },
 });
+
+// Refresh-token lifetime — sliding (every successful refresh extends it
+// back out to REFRESH_TTL_MS from now). Year-long window so a user who
+// logs in once and uses the site weekly never hits a re-auth wall;
+// shorter than infinite so an abandoned token eventually expires.
+const REFRESH_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+function newRefreshExpiry() {
+  return new Date(Date.now() + REFRESH_TTL_MS);
+}
 
 // POST /api/auth/request-otp
 router.post("/request-otp", otpRequestLimiter, async (req: Request, res: Response) => {
@@ -139,7 +151,7 @@ router.post("/verify-otp", otpVerifyLimiter, async (req: Request, res: Response)
       data: {
         userId: user.id,
         token: refreshTokenValue,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        expiresAt: newRefreshExpiry(),
       },
     });
 
@@ -218,7 +230,7 @@ router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) 
       data: {
         userId: storedToken.user.id,
         token: newRefreshToken,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expiresAt: newRefreshExpiry(),
       },
     });
 

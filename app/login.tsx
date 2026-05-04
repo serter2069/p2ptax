@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { useState, useEffect } from "react";
-import { Mail } from "lucide-react-native";
+import { Mail, Check } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOtpRequest } from "@/lib/hooks/useOtpRequest";
 import { colors } from "@/lib/theme";
@@ -32,6 +32,9 @@ export default function AuthEmailScreen() {
         : undefined;
   const [email, setEmail] = useState("");
   const [localError, setLocalError] = useState("");
+  // Pre-checked by default — flipping it off on first visit would feel
+  // hostile, and the link to the legal text is right next to it.
+  const [agreed, setAgreed] = useState(true);
   const { request: requestOtp, loading: isLoading, error: otpError } = useOtpRequest();
 
   useEffect(() => {
@@ -54,6 +57,10 @@ export default function AuthEmailScreen() {
     const trimmed = email.trim().toLowerCase();
     if (!EMAIL_REGEX.test(trimmed)) {
       setLocalError("Некорректный email");
+      return;
+    }
+    if (!agreed) {
+      setLocalError("Чтобы продолжить, примите условия использования");
       return;
     }
     const ok = await requestOtp(trimmed);
@@ -156,10 +163,61 @@ export default function AuthEmailScreen() {
           <Button
             label="Продолжить"
             onPress={handleContinue}
-            disabled={isLoading || !email.trim()}
+            disabled={isLoading || !email.trim() || !agreed}
             loading={isLoading}
             testID="send-otp"
           />
+
+          {/* Terms-of-use checkbox. Pre-checked; flipping off blocks
+              "Продолжить" with an inline error. The whole row is one
+              tappable hit-target so accidental tap on the link doesn't
+              also flip the checkbox state. */}
+          <View className="flex-row items-start mt-4" style={{ gap: 10 }}>
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: agreed }}
+              accessibilityLabel="Я принимаю условия использования"
+              onPress={() => setAgreed((v) => !v)}
+              hitSlop={8}
+              style={{
+                width: 20,
+                height: 20,
+                marginTop: 1,
+                borderRadius: 6,
+                borderWidth: 1.5,
+                borderColor: agreed ? colors.accent : colors.border,
+                backgroundColor: agreed ? colors.accent : "transparent",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {agreed ? <Check size={14} color={colors.white} strokeWidth={3} /> : null}
+            </Pressable>
+            <Text
+              className="flex-1 text-text-base"
+              style={{ fontSize: 13, lineHeight: 18 }}
+            >
+              Я принимаю{" "}
+              <Text
+                accessibilityRole="link"
+                onPress={() => nav.routes.legalTerms()}
+                className="underline"
+                style={{ color: colors.accent }}
+              >
+                условия использования
+              </Text>{" "}
+              и{" "}
+              <Text
+                accessibilityRole="link"
+                onPress={() => nav.routes.legalPrivacy()}
+                className="underline"
+                style={{ color: colors.accent }}
+              >
+                политику конфиденциальности
+              </Text>
+              .
+            </Text>
+          </View>
 
           {/* Trust microcopy */}
           <Text
@@ -168,18 +226,6 @@ export default function AuthEmailScreen() {
           >
             Без паролей. 6-значный код на email.
           </Text>
-
-          {/* Terms link */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Условия использования"
-            onPress={() => nav.routes.legalTerms()}
-            className="mt-4 min-h-[44px] items-center justify-center"
-          >
-            <Text className="text-text-mute text-center underline" style={{ fontSize: 13 }}>
-              Условия использования
-            </Text>
-          </Pressable>
         </View>
       </View>
     </SafeAreaView>
