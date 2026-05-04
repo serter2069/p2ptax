@@ -48,43 +48,80 @@ function getApiUrl(): string {
   return process.env.EXPO_PUBLIC_API_URL || "http://localhost:3812";
 }
 
-async function doRefresh(): Promise<RefreshResult> {
-  const refreshToken = await AsyncStorage.getItem(REFRESH_KEY);
-  if (!refreshToken) {
-    return { ok: false };
-  }
+/**
+ * Single attempt at hitting /api/auth/refresh.
+ * Returns:
+ *   { kind: "ok", … } — got a new access token + user payload
+ *   { kind: "auth-rejected" } — server explicitly refused (401)
+ *   { kind: "transient" }    — 5xx / network / no-response (api restarting,
+ *                              CDN blip, etc.). Caller may retry.
+ */
+type RefreshAttempt =
+  | { kind: "ok"; accessToken: string; refreshToken: string; user: RefreshUserPayload }
+  | { kind: "auth-rejected" }
+  | { kind: "transient" };
+
+async function refreshAttempt(refreshToken: string): Promise<RefreshAttempt> {
   try {
     const res = await fetch(`${getApiUrl()}/api/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     });
-
-    if (!res.ok) {
-      // Only treat 401 as "log out". 5xx / network blips must keep the
-      // user signed in — they'll re-try on the next action.
-      if (res.status === 401) {
-        await AsyncStorage.removeItem(TOKEN_KEY);
-        await AsyncStorage.removeItem(REFRESH_KEY);
-        return { ok: false };
-      }
-      // Transient — leave tokens in place, signal "not refreshed".
-      return { ok: false };
-    }
-
+    if (res.status === 401) return { kind: "auth-rejected" };
+    if (!res.ok) return { kind: "transient" };
     const data = await res.json();
-    await AsyncStorage.setItem(TOKEN_KEY, data.accessToken);
-    await AsyncStorage.setItem(REFRESH_KEY, data.refreshToken);
-
     return {
-      ok: true,
+      kind: "ok",
       accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
       user: data.user,
     };
   } catch {
-    // Network error — keep tokens, retry on next action.
+    return { kind: "transient" };
+  }
+}
+
+async function doRefresh(): Promise<RefreshResult> {
+  const refreshToken = await AsyncStorage.getItem(REFRESH_KEY);
+  if (!refreshToken) {
     return { ok: false };
   }
+
+  // Try once. If we got an explicit 401, give the API one more chance —
+  // the most common cause of a single transient 401 right after a server
+  // restart is that prisma/jwt verification middleware hasn't fully
+  // initialized yet, and a stale request races the boot. A second attempt
+  // ~1.5s later either succeeds or confirms the token is genuinely
+  // invalid. Without this retry, every routine `pm2 restart p2ptax-api`
+  // could log random users out (Сергей's 2026-05-04 incident).
+  let attempt = await refreshAttempt(refreshToken);
+
+  if (attempt.kind === "auth-rejected") {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    attempt = await refreshAttempt(refreshToken);
+  }
+
+  if (attempt.kind === "ok") {
+    await AsyncStorage.setItem(TOKEN_KEY, attempt.accessToken);
+    await AsyncStorage.setItem(REFRESH_KEY, attempt.refreshToken);
+    return {
+      ok: true,
+      accessToken: attempt.accessToken,
+      user: attempt.user,
+    };
+  }
+
+  if (attempt.kind === "auth-rejected") {
+    // Confirmed real auth failure — token genuinely invalid. Clear.
+    await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.removeItem(REFRESH_KEY);
+    return { ok: false };
+  }
+
+  // Transient (5xx / network / restart in progress). Keep tokens — the
+  // user can retry on their next action when the api is back up.
+  return { ok: false };
 }
 
 /**
