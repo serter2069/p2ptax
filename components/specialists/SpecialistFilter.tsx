@@ -42,12 +42,14 @@ export default function SpecialistFilter({
       const fns = fnsAll.find((f) => f.id === fnsId);
       if (!fns) continue;
       const svcIds = value.fnsServices?.[fnsId] ?? [];
-      // "Все услуги" master-checkbox — when every available service is
-      // selected, show a single chip-segment instead of the full
-      // comma-joined list (which can run a 4-line wrap).
-      const allServicesPicked =
-        services.length > 0 && svcIds.length >= services.length;
-      const svcLabels = allServicesPicked
+      // "Все услуги" — the picker emits an empty serviceIds array as a
+      // marker for "any service in this FNS" when the master checkbox
+      // is on (see CityFnsServicePicker.finalize: anyService → []).
+      // We surface that explicitly in the chip; otherwise the chip would
+      // read just "ИФНС №39" and the user can't tell whether they
+      // restricted services or picked all of them.
+      const isAnyService = svcIds.length === 0;
+      const svcLabels = isAnyService
         ? "Все услуги"
         : svcIds
             .map((id) => services.find((s) => s.id === id)?.name)
@@ -56,7 +58,7 @@ export default function SpecialistFilter({
       // City is already encoded in the FNS name (e.g. "ИФНС №39, Уфа"),
       // so don't prefix it a second time — the chip would read "Уфа ·
       // ИФНС №39, Уфа · …" which the user flagged as redundant.
-      const label = svcLabels ? `${fns.name} · ${svcLabels}` : fns.name;
+      const label = `${fns.name} · ${svcLabels}`;
       out.push({
         key: `fns-${fnsId}`,
         label,
