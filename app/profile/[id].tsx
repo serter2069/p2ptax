@@ -50,18 +50,26 @@ export default function SpecialistPublicProfile() {
   // Iter11 — specialist mode is an opt-in flag, not a role.
   const isSpecialist = user?.isSpecialist === true;
 
+  // Wave 7 / contact-views: contacts gated behind 'Показать контакты'.
+  // Initial load is authenticated so the server can detect the caller
+  // (owner / already-revealed-viewer) and return contacts immediately.
+  // revealed=false means the FE shows the reveal button; click → POST
+  // /reveal logs the click + returns contacts.
+  const [contactsRevealed, setContactsRevealed] = useState(false);
+  const [revealing, setRevealing] = useState(false);
+
   useEffect(() => {
     async function load() {
       try {
         const [specRes, contactsRes] = await Promise.all([
           api<SpecialistDetail>(`/api/specialists/${id}`, { noAuth: true }),
-          api<{ items: ContactMethodItem[] }>(
+          api<{ items: ContactMethodItem[]; revealed: boolean }>(
             `/api/specialists/${id}/contacts`,
-            { noAuth: true },
-          ),
+          ).catch(() => ({ items: [], revealed: false })),
         ]);
         setSpecialist(specRes);
         setContacts(contactsRes.items);
+        setContactsRevealed(contactsRes.revealed);
       } catch (e) {
         setError("Не удалось загрузить профиль");
         if (__DEV__) console.error("Specialist detail error:", e);
@@ -71,6 +79,27 @@ export default function SpecialistPublicProfile() {
     }
     if (id) load();
   }, [id]);
+
+  const handleRevealContacts = useCallback(async () => {
+    if (!id) return;
+    if (!isAuthenticated) {
+      router.push(`/login?returnTo=/profile/${id}` as never);
+      return;
+    }
+    setRevealing(true);
+    try {
+      const res = await apiPost<{ items: ContactMethodItem[]; revealed: boolean }>(
+        `/api/specialists/${id}/contacts/reveal`,
+        {},
+      );
+      setContacts(res.items);
+      setContactsRevealed(true);
+    } catch {
+      // Silent — keeps existing UI state.
+    } finally {
+      setRevealing(false);
+    }
+  }, [id, isAuthenticated, router]);
 
   // Funnel — fire once per id mount. Re-fires when the user navigates between
   // specialist profiles, which is the desired granularity for PostHog cohorts.
@@ -309,7 +338,12 @@ export default function SpecialistPublicProfile() {
           fnsServices={specialist.fnsServices ?? []}
           cardShadow={legacyShadow}
         />
-        {isAuthenticated ? (
+        {!isAuthenticated ? (
+          <SpecialistGuestLockedContacts
+            cardShadow={legacyShadow}
+            onLogin={() => nav.dynamic.loginWithReturnTo(`/profile/${id}`)}
+          />
+        ) : contactsRevealed ? (
           <ContactsView
             contacts={contacts}
             officeAddress={profile?.officeAddress ?? null}
@@ -317,10 +351,48 @@ export default function SpecialistPublicProfile() {
             cardShadow={legacyShadow}
           />
         ) : (
-          <SpecialistGuestLockedContacts
-            cardShadow={legacyShadow}
-            onLogin={() => nav.dynamic.loginWithReturnTo(`/profile/${id}`)}
-          />
+          /* Reveal CTA — click logs the view (server records viewerId,
+             ip, UA, ownerId, ts) before returning the contact list. */
+          <View
+            className="bg-white rounded-2xl border border-border mx-4 mt-4 px-4 py-5"
+            style={legacyShadow}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                letterSpacing: 3,
+                color: colors.textSecondary,
+                marginBottom: 8,
+              }}
+            >
+              КОНТАКТЫ
+            </Text>
+            <Text
+              className="text-sm leading-5 mb-4"
+              style={{ color: colors.textSecondary }}
+            >
+              Телефон, Telegram, WhatsApp и другие способы связи —
+              нажмите, чтобы увидеть.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Показать контакты"
+              onPress={handleRevealContacts}
+              disabled={revealing}
+              className="items-center justify-center rounded-xl py-3 px-4"
+              style={{
+                backgroundColor: revealing ? colors.surface2 : colors.primary,
+                opacity: revealing ? 0.7 : 1,
+              }}
+            >
+              <Text
+                className="text-sm font-semibold"
+                style={{ color: revealing ? colors.textSecondary : colors.white }}
+              >
+                {revealing ? "Открываем…" : "Показать контакты"}
+              </Text>
+            </Pressable>
+          </View>
         )}
       </View>
       <SpecialistReviewsPlaceholder cardShadow={legacyShadow} />

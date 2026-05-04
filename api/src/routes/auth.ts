@@ -15,6 +15,18 @@ import {
 
 const router = Router();
 
+/** First IP from X-Forwarded-For header (nginx adds it), else socket. */
+function clientIp(req: Request): string | null {
+  const xff = req.headers["x-forwarded-for"];
+  if (typeof xff === "string" && xff.length > 0) return xff.split(",")[0]!.trim();
+  if (Array.isArray(xff) && xff.length > 0) return xff[0]!;
+  return req.ip ?? req.socket?.remoteAddress ?? null;
+}
+function clientUserAgent(req: Request): string | null {
+  const ua = req.headers["user-agent"];
+  return typeof ua === "string" ? ua.slice(0, 500) : null;
+}
+
 // Token refresh rate limit. Bumped from 5→30 per minute because a single
 // browser session legitimately fires multiple refreshes when tabs wake
 // from background, the proactive timer overlaps with a 401 interceptor,
@@ -155,6 +167,20 @@ router.post("/verify-otp", otpVerifyLimiter, async (req: Request, res: Response)
       },
     });
 
+    // Wave 7: log a Session row alongside the refresh token. Captures
+    // ip + userAgent so the future admin panel can show 'where did this
+    // user log in from'. Fire-and-forget — never blocks login response.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (prisma as any).session.create({
+      data: {
+        userId: user.id,
+        ip: clientIp(req),
+        userAgent: clientUserAgent(req),
+      },
+    }).catch((err: unknown) => {
+      console.error("session log (verify-otp) failed:", err);
+    });
+
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
@@ -232,6 +258,27 @@ router.post("/refresh", refreshRateLimiter, async (req: Request, res: Response) 
         token: newRefreshToken,
         expiresAt: newRefreshExpiry(),
       },
+    });
+
+    // Wave 7: bump lastSeenAt on the user's most recent session so the
+    // future admin panel can show "active in last 5 minutes" type
+    // signals. We don't create a new session row on refresh — refresh
+    // is silent token rotation, not a fresh login event.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (prisma as any).session.findFirst({
+      where: { userId: storedToken.user.id },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }).then((s: any) => {
+      if (!s) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (prisma as any).session.update({
+        where: { id: s.id },
+        data: { lastSeenAt: new Date() },
+      });
+    }).catch((err: unknown) => {
+      console.error("session lastSeenAt bump (refresh) failed:", err);
     });
 
     res.json({

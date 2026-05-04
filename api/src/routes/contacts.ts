@@ -1,34 +1,123 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
+import { verifyAccessToken } from "../lib/jwt";
 
 const router = Router();
 
 const VALID_TYPES = ["phone", "email", "telegram", "whatsapp", "max", "vk", "website"];
 const MAX_CONTACTS = 6;
 
-// GET /api/specialists/:id/contacts — public
+/** Optional auth — returns the caller's userId if a valid Bearer is present. */
+function resolveCallerId(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  try {
+    return verifyAccessToken(authHeader.slice(7)).userId;
+  } catch {
+    return null;
+  }
+}
+
+function clientIp(req: Request): string | null {
+  const xff = req.headers["x-forwarded-for"];
+  if (typeof xff === "string" && xff.length > 0) return xff.split(",")[0]!.trim();
+  if (Array.isArray(xff) && xff.length > 0) return xff[0]!;
+  return req.ip ?? req.socket?.remoteAddress ?? null;
+}
+function clientUserAgent(req: Request): string | null {
+  const ua = req.headers["user-agent"];
+  return typeof ua === "string" ? ua.slice(0, 500) : null;
+}
+
+async function fetchContactsForOwner(ownerId: string) {
+  const profile = await prisma.specialistProfile.findFirst({
+    where: { userId: ownerId },
+    select: { id: true },
+  });
+  if (!profile) return [];
+  return prisma.contactMethod.findMany({
+    where: { profileId: profile.id },
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    select: { id: true, type: true, value: true, label: true, order: true },
+  });
+}
+
+// GET /api/specialists/:id/contacts — public.
+// Returns { items, revealed }. Only owners or viewers who already
+// clicked 'Показать контакты' (logged in contact_views) get items[]
+// inline; everyone else gets revealed:false and an empty list.
 router.get("/specialists/:id/contacts", async (req: Request, res: Response) => {
   try {
-    const profile = await prisma.specialistProfile.findFirst({
-      where: { userId: req.params.id as string },
-      select: { id: true },
-    });
+    const ownerId = req.params.id as string;
+    const callerId = resolveCallerId(req);
 
-    if (!profile) {
-      res.json({ items: [] });
+    if (callerId === ownerId) {
+      const items = await fetchContactsForOwner(ownerId);
+      res.json({ items, revealed: true });
       return;
     }
 
-    const contacts = await prisma.contactMethod.findMany({
-      where: { profileId: profile.id },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: { id: true, type: true, value: true, label: true, order: true },
-    });
+    if (callerId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const seen = await (prisma as any).contactView.findFirst({
+        where: { ownerId, viewerId: callerId },
+        select: { id: true },
+      });
+      if (seen) {
+        const items = await fetchContactsForOwner(ownerId);
+        res.json({ items, revealed: true });
+        return;
+      }
+    }
 
-    res.json({ items: contacts });
+    res.json({ items: [], revealed: false });
   } catch (error) {
     console.error("contacts public error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/specialists/:id/contacts/reveal — log click, return contacts.
+// Requires a valid token. Idempotent — every reveal creates a fresh log
+// row so future analytics can count visits, not just unique viewers.
+router.post("/specialists/:id/contacts/reveal", async (req: Request, res: Response) => {
+  try {
+    const ownerId = req.params.id as string;
+    const callerId = resolveCallerId(req);
+    if (!callerId) {
+      res.status(401).json({ error: "Authentication required to view contacts" });
+      return;
+    }
+    if (callerId === ownerId) {
+      const items = await fetchContactsForOwner(ownerId);
+      res.json({ items, revealed: true });
+      return;
+    }
+
+    const owner = await prisma.user.findUnique({
+      where: { id: ownerId },
+      select: { id: true, isBanned: true, deletedAt: true },
+    });
+    if (!owner || owner.isBanned || owner.deletedAt) {
+      res.status(404).json({ error: "Profile not found" });
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma as any).contactView.create({
+      data: {
+        ownerId,
+        viewerId: callerId,
+        ip: clientIp(req),
+        userAgent: clientUserAgent(req),
+      },
+    });
+
+    const items = await fetchContactsForOwner(ownerId);
+    res.json({ items, revealed: true });
+  } catch (error) {
+    console.error("contacts reveal error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
