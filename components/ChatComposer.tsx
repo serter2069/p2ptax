@@ -199,7 +199,7 @@ export default function ChatComposer({
           multiline
           maxLength={maxLength}
           editable={!disabled}
-          textAlignVertical="top"
+          textAlignVertical="center"
           // Native-only: height comes from contentSize. On web the
           // useEffect above measures scrollHeight via the textarea ref.
           onContentSizeChange={
