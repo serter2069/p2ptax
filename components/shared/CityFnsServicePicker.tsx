@@ -258,12 +258,35 @@ function EntryPicker({
     if (id) finalize([id], false);
     else finalize([], true);
   };
+  // 'Все услуги' acts as a master checkbox in multiService mode:
+  // toggling it ON ticks every available service, OFF unticks them all.
+  // anyService stays as a derived UI signal (true when every available
+  // service is checked) so finalize() still emits an empty serviceIds
+  // array on submit ('any service' marker for the work-area save +
+  // catalog filter — semantically equivalent to all-selected).
+  const allSelected =
+    services.length > 0 && services.every((s) => serviceIds.includes(s.id));
+
   const toggleService = (id: string) => {
     if (disabled) return;
-    setAnyService(false);
-    setServiceIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+    setServiceIds((cur) => {
+      const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+      setAnyService(
+        services.length > 0 && services.every((s) => next.includes(s.id))
+      );
+      return next;
+    });
   };
-  const toggleAnyService = () => { setServiceIds([]); setAnyService((v) => !v); };
+  const toggleAnyService = () => {
+    if (disabled) return;
+    if (allSelected) {
+      setServiceIds([]);
+      setAnyService(false);
+    } else {
+      setServiceIds(services.map((s) => s.id));
+      setAnyService(true);
+    }
+  };
   const resetCity = () => { setCityId(null); setFnsId(null); setAnyFns(false); };
   const resetFns = () => { setFnsId(null); setAnyFns(false); setServiceIds([]); setAnyService(false); };
 
@@ -341,12 +364,12 @@ function EntryPicker({
       <View style={{ marginTop: 12, gap: 8 }}>
         {services.map((s) => (
           <ServiceRow key={s.id} label={s.name} hint={SERVICE_HINT[s.name]}
-            selected={!anyService && serviceIds.includes(s.id)} kind="checkbox"
+            selected={serviceIds.includes(s.id)} kind="checkbox"
             onPress={() => toggleService(s.id)} />
         ))}
         {allowAnyService && (
           <ServiceRow label="Все услуги" hint="Любая услуга в этой инспекции."
-            selected={anyService} kind="checkbox" onPress={toggleAnyService} />
+            selected={allSelected} kind="checkbox" onPress={toggleAnyService} />
         )}
       </View>
       <View style={{ marginTop: 16 }}>
