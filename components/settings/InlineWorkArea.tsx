@@ -164,7 +164,7 @@ export default function InlineWorkArea({ onDone, onCancel, initialEntries }: Pro
       >
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider">
-            Стать специалистом
+            {isSpecialistUser ? "Рабочая зона" : "Стать специалистом"}
           </Text>
         </View>
 

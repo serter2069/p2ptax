@@ -273,7 +273,7 @@ export default function SpecialistPublicProfile() {
           marginTop: 8,
         }}
       >
-        Специалист временно не принимает новых клиентов
+        Профиль не является публичным
       </Text>
     </View>
   );
@@ -293,31 +293,16 @@ export default function SpecialistPublicProfile() {
         isExFns={false}
       />
       <SpecialistAbout description={profile?.description} />
-      {profileExperienceText ? (
-        <View
-          className="mx-4 mt-3 rounded-2xl bg-white border border-border px-4 py-4"
-          style={legacyShadow}
-        >
-          <Text
-            style={{
-              fontSize: 12,
-              letterSpacing: 3,
-              color: colors.textSecondary,
-              marginBottom: 6,
-            }}
-          >
-            ОПЫТ
-          </Text>
-          <Text className="text-sm leading-6" style={{ color: colors.text }}>
-            {profileExperienceText}
-          </Text>
-        </View>
-      ) : null}
       <SpecialistCredentials
         isTablet={isTablet}
         yearsExp={yearsExp}
         cities={cities}
         serviceNames={serviceNames}
+        experienceText={profileExperienceText}
+        specializationText={
+          (specialist.profile as { specializationText?: string | null } | null)
+            ?.specializationText ?? null
+        }
       />
       <View className="mt-8">
         <WorkAreaSection

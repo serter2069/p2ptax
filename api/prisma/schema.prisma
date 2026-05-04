@@ -54,6 +54,9 @@ model User {
   specialistThreads       Thread[]                 @relation("SpecialistThreads")
   messages                Message[]
   refreshTokens           RefreshToken[]
+  sessions                Session[]
+  contactViewsAsOwner     ContactView[]            @relation("ContactViewOwner")
+  contactViewsAsViewer    ContactView[]            @relation("ContactViewViewer")
   notifications           Notification[]
   notificationPreferences NotificationPreference[]
   complaintsReported      Complaint[]              @relation("ComplaintReporter")
@@ -331,6 +334,49 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+// Wave 7: per-login session record. One row per OTP verification, with
+// ip + userAgent captured at login. lastSeenAt is bumped on each
+// successful /refresh so admins can see active vs idle sessions.
+// Doesn't replace RefreshToken (which the auth flow needs as a primary
+// key for rotation) — it's a separate analytics-grade log.
+model Session {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("sessions")
+}
+
+// Wave 7: 'Показать контакты' click event. Owner-side analytics so
+// specialists can see who looked at their contacts (and admins can
+// audit suspicious viewer patterns later).
+model ContactView {
+  id              String   @id @default(uuid())
+  // Profile being viewed (owner of the contacts) — always a
+  // specialist's userId.
+  ownerId         String   @map("owner_id")
+  // Caller who clicked 'Показать контакты'. Null for anon viewers
+  // (we let signed-in users skip the button, so anon stays gated by
+  // the existing 'войдите чтобы увидеть' UI).
+  viewerId        String?  @map("viewer_id")
+  ip              String?
+  userAgent       String?  @map("user_agent")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  owner  User  @relation("ContactViewOwner",  fields: [ownerId],  references: [id], onDelete: Cascade)
+  viewer User? @relation("ContactViewViewer", fields: [viewerId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId, createdAt])
+  @@index([viewerId, createdAt])
+  @@map("contact_views")
 }
 
 model Notification {

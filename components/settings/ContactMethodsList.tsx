@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Modal } from "react-native";
 import { dialog } from "@/lib/dialog";
 import {
   Trash2, ChevronDown, Plus,
@@ -9,7 +9,6 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
-import { Z, layer } from "@/lib/zIndex";
 
 export interface ContactMethodItem {
   id: string;
@@ -167,11 +166,16 @@ export default function ContactMethodsList({
         <View className="bg-surface2 border border-border rounded-xl p-4 mb-2">
           <Text className="text-sm font-medium text-text-base mb-2">Тип контакта</Text>
 
-          <View style={{ position: "relative", zIndex: Z.STICKY, marginBottom: 12 }}>
+          {/* Trigger row. The dropdown opens as a Modal — RN Modal escapes
+              every parent stacking context, so the picker can't get
+              clipped by Card border-radius / overflow rules anywhere up
+              the tree. The previous absolute-positioned <View> was
+              partially hidden behind sibling sections on /profile. */}
+          <View style={{ marginBottom: 12 }}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Выбрать тип контакта"
-              onPress={() => onShowTypePickerChange(!showTypePicker)}
+              onPress={() => onShowTypePickerChange(true)}
               className="flex-row items-center justify-between bg-white border border-border rounded-xl px-4 py-3"
             >
               <View className="flex-row items-center">
@@ -185,19 +189,51 @@ export default function ContactMethodsList({
               </View>
               <ChevronDown size={14} color={colors.placeholder} />
             </Pressable>
+          </View>
 
-            {showTypePicker && (
-              <View
-                className="absolute left-0 right-0 bg-white border border-border rounded-xl overflow-hidden"
+          <Modal
+            transparent
+            animationType="fade"
+            visible={showTypePicker}
+            onRequestClose={() => onShowTypePickerChange(false)}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Закрыть"
+              onPress={() => onShowTypePickerChange(false)}
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(15, 23, 42, 0.45)",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+              }}
+            >
+              <Pressable
+                onPress={() => {}}
                 style={{
-                  top: 52,
-                  ...layer("POPOVER"),
+                  backgroundColor: colors.white,
+                  borderRadius: 16,
+                  width: "100%",
+                  maxWidth: 360,
+                  paddingVertical: 8,
                   shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 16,
+                  shadowOffset: { width: 0, height: 12 },
+                  shadowOpacity: 0.18,
+                  shadowRadius: 32,
                 }}
               >
+                <Text
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    color: colors.textMuted,
+                    paddingHorizontal: 16,
+                    paddingTop: 8,
+                    paddingBottom: 8,
+                  }}
+                >
+                  Тип контакта
+                </Text>
                 {CONTACT_TYPES.map((t) => {
                   const Icon = CONTACT_TYPE_ICONS[t] ?? Globe;
                   const active = newContactType === t;
@@ -215,9 +251,9 @@ export default function ContactMethodsList({
                       }`}
                     >
                       <Icon
-                        size={16}
+                        size={18}
                         color={active ? colors.accent : colors.textMuted}
-                        style={{ marginRight: 10 }}
+                        style={{ marginRight: 12 }}
                       />
                       <Text
                         className={`text-base ${
@@ -229,9 +265,9 @@ export default function ContactMethodsList({
                     </Pressable>
                   );
                 })}
-              </View>
-            )}
-          </View>
+              </Pressable>
+            </Pressable>
+          </Modal>
 
           <View className="mb-3">
             <Input

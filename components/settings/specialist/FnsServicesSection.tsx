@@ -93,13 +93,13 @@ export default function FnsServicesSection({
           ))}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Добавить рабочую зону"
+            accessibilityLabel="Редактировать рабочую зону"
             onPress={onGoToWorkArea}
             className="flex-row items-center justify-center py-2 mt-1"
           >
             <Plus size={14} color={colors.accent} />
             <Text className="text-sm text-accent ml-1.5 font-medium">
-              Добавить рабочую зону
+              Редактировать рабочую зону
             </Text>
           </Pressable>
         </>
