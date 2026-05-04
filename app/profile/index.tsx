@@ -47,7 +47,9 @@ import { dialog } from "@/lib/dialog";
  *      When isSpecialist=false: just personal data + the toggle.
  *   2. 'Аккаунт' → email + Выйти + Удалить аккаунт. Nothing else.
  *
- * URL: /profile?tab=profile|account. Default is 'profile'.
+ * URL: /profile?tab=account|profile. Default is 'account' — the
+ * sidebar 'Профиль' link lands here, user actively switches to
+ * 'Профиль / Специалист' tab to edit identity / role.
  */
 
 type Tab = "profile" | "account";
@@ -140,8 +142,8 @@ interface TabStripProps {
 
 function TabStrip({ active, profileLabel, onChange }: TabStripProps) {
   const items: { key: Tab; label: string }[] = [
-    { key: "profile", label: profileLabel },
     { key: "account", label: "Аккаунт" },
+    { key: "profile", label: profileLabel },
   ];
   return (
     <View
@@ -193,10 +195,14 @@ export default function UnifiedProfile() {
     return undefined;
   }, [params.focus]);
 
+  // Default tab is 'account' — sidebar profile link lands here. Users
+  // actively switch to the second tab ('Профиль' or 'Специалист') to
+  // edit personal data and role-specific fields. Onboarding from the
+  // landing page sets ?tab=profile&focus=specialist explicitly.
   const tabFromQuery: Tab = useMemo(() => {
     const t = params.tab;
     const v = typeof t === "string" ? t : Array.isArray(t) ? t[0] : undefined;
-    return v === "account" ? "account" : "profile";
+    return v === "profile" ? "profile" : "account";
   }, [params.tab]);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);

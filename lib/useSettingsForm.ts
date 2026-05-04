@@ -328,7 +328,18 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         // index.tsx) — no full navigation, no broken back button.
         try {
           await apiPost("/api/user/leave-specialist-toggle", { enable: true });
-          updateUser({ isSpecialist: true });
+          // Wave 9: turning 'Я специалист' ON also publishes the public
+          // profile (isAvailable=true) so the catalog picks it up the
+          // moment the user finishes editing. Без этого юзер мог
+          // включить режим специалиста и не понимать, что нужно ещё
+          // отдельно щёлкнуть «Публичный профиль».
+          try {
+            await apiPatch("/api/specialist/profile", { isAvailable: true });
+          } catch {
+            // non-fatal — user can flip the public-profile toggle manually
+          }
+          setIsAvailable(true);
+          updateUser({ isSpecialist: true, isAvailable: true });
           await loadSpecialistData();
         } catch {
           dialog.alert({ title: "Ошибка", message: "Не удалось включить режим специалиста" });
