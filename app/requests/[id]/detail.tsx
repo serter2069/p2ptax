@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import Head from "expo-router/head";
 import { useTypedRouter } from "@/lib/navigation";
 import { dialog } from "@/lib/dialog";
 import { File, FileImage, Download, ChevronLeft, MessageSquare, Search, XCircle, RefreshCw } from "lucide-react-native";
@@ -40,6 +41,7 @@ interface RequestDetailData {
   title: string;
   description: string;
   status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
+  isPublic?: boolean;
   createdAt: string;
   lastActivityAt: string;
   extensionsCount: number;
@@ -808,8 +810,26 @@ export default function RequestDetail() {
   }
 
   // ── MOBILE + DESKTOP LAYOUT ───────────────────────────────────────────
+  const ogTitle = `${request.title} — запрос на p2ptax`;
+  const ogDescription =
+    request.description.length > 200
+      ? request.description.slice(0, 197) + "…"
+      : request.description;
   return (
     <SafeAreaView className="flex-1 bg-surface2">
+      <Head>
+        <title>{ogTitle}</title>
+        <meta name="description" content={ogDescription} />
+        <meta property="og:title" content={ogTitle} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://p2ptax.smartlaunchhub.com/requests/${request.id}/detail`} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={ogTitle} />
+        <meta name="twitter:description" content={ogDescription} />
+        {/* Private requests should not be indexed even if someone scrapes. */}
+        {!request.isPublic ? <meta name="robots" content="noindex,nofollow" /> : null}
+      </Head>
       {/* Close confirmation modal */}
       <CloseConfirmModal
         visible={showCloseConfirm}
