@@ -73,7 +73,7 @@ export default function WorkAreaEntry({ entry, onRemove }: Props) {
               className="text-xs font-medium"
               style={{ color: colors.accentSoftInk }}
             >
-              Любая услуга
+              Все услуги
             </Text>
           </View>
         ) : (

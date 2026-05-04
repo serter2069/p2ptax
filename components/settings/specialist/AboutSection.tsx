@@ -15,13 +15,14 @@ export default function AboutSection({
   onChange,
   onBlur,
 }: AboutSectionProps) {
-  // Auto-grow textarea: keep enough rows to render whatever the user has
-  // typed. Capped at ~14 rows so a giant bio doesn't push everything else
-  // off-screen — they can still scroll inside the textarea after that.
-  const lineCount = Math.max(4, Math.min(14, description.split("\n").length + Math.floor(description.length / 60)));
+  // Auto-grow textarea — fully unbounded. The 380px cap that used to be
+  // here forced the user to scroll inside the field once their bio passed
+  // ~10 lines, even though the entire page is already scrollable. Outer
+  // scroll handles overflow now; minHeight just guards an empty box.
+  const lineCount = Math.max(4, description.split("\n").length + Math.floor(description.length / 60));
   const [contentHeight, setContentHeight] = useState<number>(0);
   const minHeight = 96;
-  const computedHeight = Math.max(minHeight, Math.min(contentHeight + 24, 380));
+  const computedHeight = Math.max(minHeight, contentHeight + 24);
 
   return (
     <Card padding="none" className="mb-4" style={{ paddingHorizontal: 16, paddingVertical: 20 }}>

@@ -342,13 +342,78 @@ export default function RequestsFeed({
       );
     }
 
+    // Header content rendered INSIDE the list so it scrolls away with the
+    // feed (matches /specialists pattern). Was previously rendered as a
+    // sibling above the FlatList — that pinned title + filters to the top
+    // even though the rest of the list scrolled.
+    const inlineHeader = (
+      <View>
+        {title && <PageTitle title={title} subtitle={subtitle} />}
+        {mode === "catalog" && (
+          <View className="bg-white border-b border-border px-4 pb-3">
+            <CityFnsCascade
+              mode="typeahead"
+              value={filterValue}
+              onChange={setFilterValue}
+              citiesSource={cities}
+              fnsSource={fnsAll}
+              services={servicesHook}
+            />
+          </View>
+        )}
+        {mode === "mine" && (
+          <View className="px-4 pb-3" style={{ flexDirection: isDesktop ? "row" : "column", alignItems: isDesktop ? "center" : "stretch", gap: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Создать запрос"
+              onPress={() => nav.routes.requestsNew()}
+              style={{
+                backgroundColor: colors.primary,
+                minHeight: 40,
+                minWidth: isDesktop ? 200 : undefined,
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 12,
+                paddingHorizontal: 20,
+                alignSelf: isDesktop ? "flex-start" : "stretch",
+              }}
+            >
+              <Text numberOfLines={1} className="text-white font-semibold text-sm">+ Создать запрос</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showArchiveOnly ? "Показать все" : "Показать архив"}
+              onPress={() => setShowArchiveOnly((v) => !v)}
+              style={{
+                minHeight: 40,
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: showArchiveOnly ? colors.surface2 : "transparent",
+                alignSelf: isDesktop ? "flex-start" : "stretch",
+              }}
+            >
+              <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: "500" }}>
+                {showArchiveOnly ? "Все запросы" : "Архив"}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    );
+
     return (
       <FlatList
         data={displayedRequests}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={inlineHeader}
         contentContainerStyle={{
           paddingHorizontal: isDesktop ? 24 : 16,
-          paddingTop: 12,
+          paddingTop: 0,
           paddingBottom: 100,
           // House rule: content/list/feed pages cap at 960 with 24 padding (CLAUDE.md).
           maxWidth: isDesktop ? 960 : undefined,
@@ -406,70 +471,8 @@ export default function RequestsFeed({
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={safeEdges}>
-      {/* Page header */}
-      {title && <PageTitle title={title} subtitle={subtitle} />}
-
-      {/* Catalog: typeahead CityFnsCascade filter — no pt-* needed,
-          PageTitle already provides the 16px gap (#1716). pb-3 stays to keep
-          the white chrome strip separated from the list below. */}
-      {mode === "catalog" && (
-        <View className="bg-white border-b border-border px-4 pb-3" style={{ zIndex: Z.STICKY }}>
-          <CityFnsCascade
-            mode="typeahead"
-            value={filterValue}
-            onChange={setFilterValue}
-            citiesSource={cities}
-            fnsSource={fnsAll}
-            services={servicesHook}
-          />
-        </View>
-      )}
-
-      {/* Mine: create button + archive toggle — no pt-* needed, PageTitle's
-          pb-4 already provides the 16px gap. Keep pb-3 for separation. */}
-      {mode === "mine" && (
-        <View className="px-4 pb-3" style={{ flexDirection: isDesktop ? "row" : "column", alignItems: isDesktop ? "center" : "stretch", gap: 8 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Создать запрос"
-            onPress={() => nav.routes.requestsNew()}
-            style={{
-              backgroundColor: colors.primary,
-              minHeight: 40,
-              minWidth: isDesktop ? 200 : undefined,
-              justifyContent: "center",
-              alignItems: "center",
-              borderRadius: 12,
-              paddingHorizontal: 20,
-              alignSelf: isDesktop ? "flex-start" : "stretch",
-            }}
-          >
-            <Text numberOfLines={1} className="text-white font-semibold text-sm">+ Создать запрос</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={showArchiveOnly ? "Показать все" : "Показать архив"}
-            onPress={() => setShowArchiveOnly((v) => !v)}
-            style={{
-              minHeight: 40,
-              justifyContent: "center",
-              alignItems: "center",
-              borderRadius: 12,
-              paddingHorizontal: 16,
-              borderWidth: 1,
-              borderColor: colors.border,
-              backgroundColor: showArchiveOnly ? colors.surface2 : "transparent",
-              alignSelf: isDesktop ? "flex-start" : "stretch",
-            }}
-          >
-            <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: "500" }}>
-              {showArchiveOnly ? "Все запросы" : "Архив"}
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
+      {/* Title + filter strip moved INTO the FlatList header (renderContent)
+          so they scroll away with the list, matching /specialists. */}
       <View className="flex-1">{renderContent()}</View>
     </SafeAreaView>
   );

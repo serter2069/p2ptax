@@ -170,7 +170,13 @@ export default function ProfileTab({
                 <StyledSwitch value={isAvailable} onValueChange={onToggleAvailable} />
               )}
             </View>
-            {isAvailable && userId && (
+            {!isAvailable && userId && (
+              <Text className="text-xs leading-5 mb-2" style={{ color: colors.textSecondary }}>
+                Профиль скрыт из каталога. Откройте «Посмотреть мой профиль»,
+                чтобы увидеть, как страница выглядит для других.
+              </Text>
+            )}
+            {userId && (
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
                 <Pressable
                   accessibilityRole="button"
