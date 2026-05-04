@@ -433,7 +433,7 @@ export default function CreateRequest() {
 
           <Card className="mb-4">
             <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-              Куда обращаемся
+              Налоговая инспекция и ситуация
             </Text>
             <CityFnsServicePicker
               mode="single"
@@ -518,8 +518,31 @@ export default function CreateRequest() {
               </Text>
             </View>
 
-            {/* Visibility toggle */}
-            <View className="flex-row items-center justify-between py-3 mb-1">
+            {/* Files section. Hint copy lists common attachment types
+                so the user knows what to upload — was previously a
+                bare 'Документы' label with no guidance. */}
+            <View className="mb-1">
+              <Text className="text-sm font-medium text-text-base mb-0.5">
+                Документы
+              </Text>
+              <Text className="text-xs text-text-mute leading-5 mb-2">
+                Например: требование от ФНС, копия декларации, акт
+                камеральной проверки, переписка с инспекцией. Можно
+                прикрепить несколько файлов.
+              </Text>
+            </View>
+            <FileUploadSection
+              files={attachedFiles}
+              disabled={submitting}
+              onFilesChange={setAttachedFiles}
+              authToken={token}
+              anonSessionId={anonSessionId}
+            />
+
+            {/* Visibility toggle — sits at the very bottom of the card
+                (just above the publish button) since it's the final
+                'shape' decision the author makes about their request. */}
+            <View className="flex-row items-center justify-between py-3 mt-3 border-t border-border">
               <View className="flex-1 mr-4">
                 <Text className="text-sm font-medium text-text-base mb-0.5">
                   Публичный запрос
@@ -534,14 +557,6 @@ export default function CreateRequest() {
                 disabled={submitting}
               />
             </View>
-
-            <FileUploadSection
-              files={attachedFiles}
-              disabled={submitting}
-              onFilesChange={setAttachedFiles}
-              authToken={token}
-              anonSessionId={anonSessionId}
-            />
           </Card>
 
           {submitError ? (

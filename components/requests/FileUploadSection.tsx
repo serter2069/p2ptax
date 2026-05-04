@@ -188,8 +188,9 @@ export default function FileUploadSection({
 
   return (
     <View className="mb-4">
-      <Text className="text-sm font-medium text-text-base mb-2">Документы</Text>
-
+      {/* The 'Документы' header lives in the parent (Создать запрос
+          renders it with hint copy). Other call-sites still show their
+          own label above this component — keep the bare structure. */}
       {files.map((file, index) => (
         <View
           key={`file-${index}`}

@@ -91,7 +91,7 @@ export default function CityFnsServicePicker(props: CityFnsServicePickerProps) {
 function SinglePicker({
   cities, fnsAll = [], services = [], value, onChange,
   submitted = false, disabled = false,
-  labelCities = "Город", labelServices = "Тип обращения",
+  labelCities = "Город", labelServices = "Тип ситуации",
 }: SingleModeProps) {
   const [cityQuery, setCityQuery] = useState("");
   const [fnsQuery, setFnsQuery] = useState("");
