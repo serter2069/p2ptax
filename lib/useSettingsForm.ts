@@ -321,16 +321,15 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   const handleToggleSpecialist = useCallback(
     async (value: boolean) => {
       if (value) {
-        // Wave 5/specialist-split: enabling 'Я специалист' immediately
-        // sends the user to /specialist (the dedicated editor) so the
-        // editing surface is impossible to miss. The /profile page now
-        // only owns account stuff; specialist editing was hidden 'below
-        // the fold' under the old single-page layout.
+        // Wave 6/profile-tabs: enabling 'Я специалист' just flips the
+        // server flag and refreshes specialist data. The /profile page
+        // wrapper handles switching the in-page tab to 'specialist'
+        // afterwards (see handleToggleSpecialistTabAware in app/profile/
+        // index.tsx) — no full navigation, no broken back button.
         try {
           await apiPost("/api/user/leave-specialist-toggle", { enable: true });
           updateUser({ isSpecialist: true });
           await loadSpecialistData();
-          nav.routes.specialistEdit();
         } catch {
           dialog.alert({ title: "Ошибка", message: "Не удалось включить режим специалиста" });
         }

@@ -301,11 +301,11 @@ router.patch("/profile", async (req: Request, res: Response) => {
       profileUpdate.specializations = trimmed ? [trimmed] : null;
     }
     if (experienceText !== undefined) {
-      const t = typeof experienceText === "string" ? experienceText.trim().slice(0, 2000) : "";
+      const t = typeof experienceText === "string" ? experienceText.trim().slice(0, 200) : "";
       profileUpdate.experienceText = t || null;
     }
     if (specializationText !== undefined) {
-      const t = typeof specializationText === "string" ? specializationText.trim().slice(0, 2000) : "";
+      const t = typeof specializationText === "string" ? specializationText.trim().slice(0, 200) : "";
       profileUpdate.specializationText = t || null;
     }
 

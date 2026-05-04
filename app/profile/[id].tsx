@@ -225,19 +225,23 @@ export default function SpecialistPublicProfile() {
     elevation: 1,
   };
 
-  // Role label: prefer the specialist-edited value
-  // (SpecialistProfile.specializations[0]), fall back to the first
-  // service from work-area entries when nothing's set explicitly. So
-  // the public profile shows what the specialist typed in the
-  // 'Специализация' input — empty means we keep the auto-derived
-  // service-line so the UI never shows blank.
+  // Role label: prefer the new long-form specializationText (Wave 6),
+  // fall back to legacy specializations[0], then to the first
+  // service-name from the work area. Same priority for the experience
+  // line below the credentials strip.
   const profileSpec = (() => {
+    const long = (specialist.profile as { specializationText?: string | null } | null)
+      ?.specializationText;
+    if (typeof long === "string" && long.trim()) return long.trim();
     const specs = (
       specialist.profile?.specializations as string[] | undefined
     ) ?? null;
     return specs && specs.length > 0 ? specs[0] : null;
   })();
   const rolePrimary = profileSpec ?? [...serviceNames][0] ?? null;
+  const profileExperienceText =
+    (specialist.profile as { experienceText?: string | null } | null)?.experienceText ??
+    null;
 
   // Closed profile block shown instead of full content
   const closedBlock = (
@@ -289,6 +293,26 @@ export default function SpecialistPublicProfile() {
         isExFns={false}
       />
       <SpecialistAbout description={profile?.description} />
+      {profileExperienceText ? (
+        <View
+          className="mx-4 mt-3 rounded-2xl bg-white border border-border px-4 py-4"
+          style={legacyShadow}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              letterSpacing: 3,
+              color: colors.textSecondary,
+              marginBottom: 6,
+            }}
+          >
+            ОПЫТ
+          </Text>
+          <Text className="text-sm leading-6" style={{ color: colors.text }}>
+            {profileExperienceText}
+          </Text>
+        </View>
+      ) : null}
       <SpecialistCredentials
         isTablet={isTablet}
         yearsExp={yearsExp}

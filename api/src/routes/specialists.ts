@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { verifyAccessToken } from "../lib/jwt";
 import { authMiddleware, requireSpecialistFeatures } from "../middleware/auth";
 import { notSeedUserWhere } from "../lib/seedFilter";
+import { presignAvatarUrl } from "../lib/minio";
 
 const router = Router();
 
@@ -611,7 +612,11 @@ router.get("/:id", async (req: Request, res: Response) => {
       id: specialist.id,
       firstName: specialist.firstName,
       lastName: specialist.lastName,
-      avatarUrl: specialist.avatarUrl,
+      // Presign so <Image> can fetch directly. Storing the bare key in
+      // user.avatarUrl ('avatars/uuid.jpg') means the FE can't render it
+      // without going through the presign endpoint — was rendering as a
+      // broken <img> on the public detail page (user feedback).
+      avatarUrl: await presignAvatarUrl(specialist.avatarUrl).catch(() => null),
       isAvailable: specialist.isAvailable,
       createdAt: specialist.createdAt,
       requestsCount,
@@ -628,6 +633,9 @@ router.get("/:id", async (req: Request, res: Response) => {
             yearsOfExperience: profile.yearsOfExperience,
             specializations: (profile.specializations as string[] | null) ?? null,
             certifications: (profile.certifications as string[] | null) ?? null,
+            // Wave 5/6: long-form free-text editable from /profile?tab=specialist.
+            experienceText: profile.experienceText,
+            specializationText: profile.specializationText,
           }
         : null,
       fnsServices: [...fnsMap.values()],

@@ -17,7 +17,10 @@ interface ExperienceSectionProps {
   onBlur?: () => void;
 }
 
-const MAX_LEN = 2000;
+// 200 chars — plenty for one terse paragraph, far short of the
+// 2000-char ceiling that made the field look 'too much' (user feedback).
+// Backend validation in api/specialist.ts is aligned to the same cap.
+const MAX_LEN = 200;
 
 /**
  * Two multiline cards. Each uses numberOfLines (which RN-Web translates
@@ -25,7 +28,7 @@ const MAX_LEN = 2000;
  * avoiding the runtime resize-loop that AboutSection hit when it tracked
  * heights in JS state. lineCount is purely derived from the string.
  */
-function deriveLineCount(text: string, min = 4, max = 24): number {
+function deriveLineCount(text: string, min = 2, max = 6): number {
   const explicit = text.split("\n").length;
   const wrapped = Math.floor(text.length / 60);
   return Math.max(min, Math.min(max, explicit + wrapped));
