@@ -21,17 +21,17 @@ export default function TrustStrip({
   const items = [
     {
       value: formatNumber(specialistsCount),
-      label: "практикующих специалистов",
+      label: "специалистов в каталоге",
     },
     {
       value: formatNumber(citiesCount),
-      label: "городов от Калининграда до Владивостока",
+      label: "городов России",
     },
   ];
   if (resolvedCases > 0) {
     items.push({
       value: formatNumber(resolvedCases),
-      label: "закрытых запросов на платформе",
+      label: "закрытых дел",
     });
   }
 
@@ -66,20 +66,23 @@ export default function TrustStrip({
             <Text
               style={{
                 color: colors.white,
-                fontSize: isDesktop ? 56 : 44,
-                lineHeight: isDesktop ? 60 : 48,
+                fontSize: isDesktop ? 80 : 56,
+                lineHeight: isDesktop ? 84 : 60,
                 fontWeight: "800",
-                letterSpacing: -2,
+                letterSpacing: -3,
               }}
             >
               {it.value}
             </Text>
             <Text
               style={{
-                marginTop: 8,
+                marginTop: 10,
                 color: overlay.white70,
-                fontSize: 13,
-                lineHeight: 18,
+                fontSize: 14,
+                lineHeight: 20,
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
+                fontWeight: "500",
               }}
             >
               {it.label}
