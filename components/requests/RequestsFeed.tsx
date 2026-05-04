@@ -350,7 +350,11 @@ export default function RequestsFeed({
       <View>
         {title && <PageTitle title={title} subtitle={subtitle} />}
         {mode === "catalog" && (
-          <View className="bg-white border-b border-border px-4 pb-3">
+          /* Card styling matches the request rows below it (rounded
+             border, mx-4 to align with .mx-4 on RequestCard). The
+             previous full-width 'bg-white + border-b' strip clashed
+             visually — square chrome above rounded cards. */
+          <View className="bg-white border border-border rounded-2xl mx-4 mt-2 mb-3 px-4 py-3">
             <CityFnsCascade
               mode="typeahead"
               value={filterValue}
