@@ -134,25 +134,29 @@ router.get("/public", async (req: Request, res: Response) => {
       prisma.request.count({ where }),
     ]);
 
-    const mapped = items.map((r) => ({
-      id: r.id,
-      title: r.title,
-      description: r.description,
-      status: r.status,
-      isPublic: r.isPublic,
-      createdAt: r.createdAt,
-      city: { id: r.city.id, name: r.city.name },
-      fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
-      threadsCount: r._count.threads,
-      hasFiles: r._count.files > 0,
-      filesCount: r._count.files,
-      user: {
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        avatarUrl: r.user.avatarUrl,
-        memberSince: r.user.createdAt.getFullYear(),
-      },
-    }));
+    const mapped = await Promise.all(
+      items.map(async (r) => ({
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        status: r.status,
+        isPublic: r.isPublic,
+        createdAt: r.createdAt,
+        city: { id: r.city.id, name: r.city.name },
+        fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
+        threadsCount: r._count.threads,
+        hasFiles: r._count.files > 0,
+        filesCount: r._count.files,
+        user: {
+          firstName: r.user.firstName,
+          lastName: r.user.lastName,
+          // Presign — the DB stores a storage key like "avatars/uuid.jpg"
+          // which the FE can't render as <Image src> without signing.
+          avatarUrl: await presignAvatarUrl(r.user.avatarUrl).catch(() => null),
+          memberSince: r.user.createdAt.getFullYear(),
+        },
+      }))
+    );
 
     res.json({
       items: mapped,

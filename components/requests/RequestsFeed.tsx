@@ -47,7 +47,11 @@ interface RequestItem {
   threadsCount: number;
   hasFiles?: boolean;
   filesCount?: number;
-  user?: { firstName: string | null; lastName: string | null };
+  user?: {
+    firstName: string | null;
+    lastName: string | null;
+    avatarUrl?: string | null;
+  };
 }
 
 interface RequestsResponse {
@@ -163,7 +167,11 @@ export default function RequestsFeed({
         if (selectedCityId) path += `&city_id=${selectedCityId}`;
         if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
 
-        const res = await api<RequestsResponse>(path, { noAuth: true });
+        // Don't pass noAuth: when the caller is authenticated, the
+        // backend uses the token to filter the user's own requests
+        // out of the public feed (`where.userId = { not: callerId }`).
+        // Anonymous visitors still get the full feed.
+        const res = await api<RequestsResponse>(path);
         setRequests((prev) => (append ? [...prev, ...res.items] : res.items));
         setHasMore(res.hasMore);
         setTotal(res.total);

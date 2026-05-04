@@ -1,5 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { Paperclip } from "lucide-react-native";
+import Avatar from "@/components/ui/Avatar";
 import { colors } from "@/lib/theme";
 
 function timeAgo(dateStr: string): string {
@@ -21,7 +22,7 @@ interface RequestCardProps {
   createdAt: string;
   hasFiles?: boolean;
   filesCount?: number;
-  user?: { firstName: string | null; lastName: string | null };
+  user?: { firstName: string | null; lastName: string | null; avatarUrl?: string | null };
   onPress: (id: string) => void;
 }
 
@@ -76,10 +77,19 @@ export default function RequestCard({
         </View>
       )}
 
-      {/* top row: author + time */}
+      {/* top row: avatar + author + time */}
       <View className="flex-row items-center justify-between mb-1" style={{ paddingRight: isClosed ? 60 : 0 }}>
         {authorName ? (
-          <Text className="text-xs font-medium text-text-mute">{authorName}</Text>
+          <View className="flex-row items-center" style={{ flexShrink: 1, gap: 8 }}>
+            <Avatar
+              name={authorName}
+              imageUrl={user?.avatarUrl ?? undefined}
+              size={20}
+            />
+            <Text className="text-xs font-medium text-text-mute" numberOfLines={1}>
+              {authorName}
+            </Text>
+          </View>
         ) : (
           <View />
         )}
